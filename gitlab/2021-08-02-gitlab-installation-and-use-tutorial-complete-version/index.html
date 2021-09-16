@@ -1596,4 +1596,1340 @@ gitlab_rails<span class="token punctuation">[</span><span class="token string">'
 </ul>
 <p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/0220210802164146.png"></p>
 <p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/0220210802164132.png"></p>
-<h3 id="7-2-创建分支进行功能开发"><a href="#7-2-创�
+<h3 id="7-2-创建分支进行功能开发"><a href="#7-2-创建分支进行功能开发" class="headerlink" title="7.2 创建分支进行功能开发"></a>7.2 创建分支进行功能开发</h3><p><strong>1）新建立一个叫“pay”的分支</strong></p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/0220210802164122.png"></p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/0220210802164113.png"></p>
+<p><strong>2）进行功能开发</strong></p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/0220210802164103.png"></p>
+<h3 id="7-3-提交项目"><a href="#7-3-提交项目" class="headerlink" title="7.3 提交项目"></a>7.3 提交项目</h3><p><strong>1）开发pay功能完成后进行提交</strong></p>
+<ul>
+<li>  可以看到SourceTree中已经有“未提交的更改”</li>
+</ul>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/0220210802164054.png"></p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/0220210802164042.png"></p>
+<p><strong>2）添加“用户信息”</strong></p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/0220210802164029.png"></p>
+<p>** 3）进行提交**</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/0220210802164014.png"></p>
+<ul>
+<li>  注释也可以写成  close #3    ，作用是提交完成后关闭3号issue</li>
+</ul>
+<h3 id="7-4-推送到仓库"><a href="#7-4-推送到仓库" class="headerlink" title="7.4 推送到仓库"></a><strong>7.4 推送到仓库</strong></h3><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/0220210802164002.png"></p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/0220210802163947.png"></p>
+<ul>
+<li>   然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了</li>
+</ul>
+<h3 id="7-5-项目上线"><a href="#7-5-项目上线" class="headerlink" title="7.5 项目上线"></a>7.5 项目上线</h3><p><strong>1）当所有工作完成之后，就可以进行上线了</strong></p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/0220210802163932.png"></p>
+<p><strong>2）打标签</strong></p>
+<ul>
+<li>   上线先打个标签</li>
+</ul>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/0220210802163916.png"></p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/0220210802163907.png"></p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/05/2820210528225256.png"></p>
+<p>** 3）删除无用分支**</p>
+<ul>
+<li>  然后删除已经合并到主干中的不必要的分支，如index、pay等</li>
+<li>最后一定要注意时间一定要同步，不然会错乱</li>
+</ul>
+<h2 id="8-Gitlab调优"><a href="#8-Gitlab调优" class="headerlink" title="8. Gitlab调优"></a><strong>8. Gitlab调优</strong></h2><p>gitlab对内存资源的消耗比较厉害<br>其中尤以 sidekiq队列 及 unicorn服务 两个组件对内存消耗最多<br>可以再容器启动时对相关参数进行微调：</p>
+<pre class="line-numbers language-yml" data-language="yml"><code class="language-yml">unicorn<span class="token punctuation">[</span><span class="token string">'worker_processes'</span><span class="token punctuation">]</span> = 1
+unicorn<span class="token punctuation">[</span><span class="token string">'worker_memory_limit_min'</span><span class="token punctuation">]</span> = "300 * 1 &lt;&lt; 20"
+unicorn<span class="token punctuation">[</span><span class="token string">'worker_memory_limit_max'</span><span class="token punctuation">]</span> = "400 * 1 &lt;&lt; 20"
+unicorn<span class="token punctuation">[</span><span class="token string">'worker_timeout'</span><span class="token punctuation">]</span> = 15
+sidekiq<span class="token punctuation">[</span><span class="token string">'concurrency'</span><span class="token punctuation">]</span> = 10
+sidekiq_cluster<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
+sidekiq_cluster<span class="token punctuation">[</span><span class="token string">'ha'</span><span class="token punctuation">]</span> = false
+redis<span class="token punctuation">[</span><span class="token string">'maxclients'</span><span class="token punctuation">]</span> = "100"
+nginx<span class="token punctuation">[</span><span class="token string">'worker_processes'</span><span class="token punctuation">]</span> = 2
+nginx<span class="token punctuation">[</span><span class="token string">'worker_connections'</span><span class="token punctuation">]</span> = 512
+nginx<span class="token punctuation">[</span><span class="token string">'keepalive_timeout'</span><span class="token punctuation">]</span> = 300
+nginx<span class="token punctuation">[</span><span class="token string">'cache_max_size'</span><span class="token punctuation">]</span> = '200m'
+mattermost<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
+mattermost_nginx<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
+gitlab_pages<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
+pages_nginx<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
+postgresql<span class="token punctuation">[</span><span class="token string">'shared_buffers'</span><span class="token punctuation">]</span> = "256MB"
+postgresql<span class="token punctuation">[</span><span class="token string">'max_connections'</span><span class="token punctuation">]</span> = 30
+postgresql<span class="token punctuation">[</span><span class="token string">'work_mem'</span><span class="token punctuation">]</span> = "8MB"
+postgresql<span class="token punctuation">[</span><span class="token string">'maintenance_work_mem'</span><span class="token punctuation">]</span> = "16MB"
+postgresql<span class="token punctuation">[</span><span class="token string">'effective_cache_size'</span><span class="token punctuation">]</span> = "1MB"
+postgresql<span class="token punctuation">[</span><span class="token string">'checkpoint_timeout'</span><span class="token punctuation">]</span> = "5min"
+postgresql<span class="token punctuation">[</span><span class="token string">'checkpoint_warning'</span><span class="token punctuation">]</span> = "30s"
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>配置调整后需要重载一下</p>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker <span class="token builtin class-name">exec</span> gitlab gitlab-ctl reconfigure
+docker-compose down
+docker-compose up -d
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<hr>
+<h2 id="9-Gitlab-启用-ContainerRegistry"><a href="#9-Gitlab-启用-ContainerRegistry" class="headerlink" title="9. Gitlab 启用 ContainerRegistry"></a>9. Gitlab 启用 ContainerRegistry</h2><ul>
+<li>  <code>ContainerRegistry</code>是<code>Gitlab</code>内置的<code>Docker Registry</code>集成组件</li>
+<li>  集成后每个项目可获得私有的 <code>Docker</code> 镜像存储空间</li>
+<li>  <code>ContainerRegistry</code> 可以复用 <code>Gitlab</code> 域名 或者 独立域名</li>
+<li>  这里配置为复用域名（此时<code>ContainerRegistry</code> 将复用 <code>Gitlab</code> 的 <code>TLS</code> 证书）</li>
+</ul>
+<ol>
+<li> <code>docker-compose.yaml</code>中Gitlab服务的 <code>GITLAB_OMNIBUS_CONFIG</code> 节点下增加如下配置：</li>
+</ol>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">registry_external_url <span class="token string">"https://gitlab.example.com:4567"</span>  <span class="token comment"># ContainerRegistry的外部访问地址</span>
+registry_nginx<span class="token punctuation">[</span><span class="token string">'ssl_certificate'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"/etc/gitlab/ssl/domain.crt"</span>
+registry_nginx<span class="token punctuation">[</span><span class="token string">'ssl_certificate_key'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"/etc/gitlab/ssl/domain.key"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'registry_host'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"gitlab.example.com"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'registry_port'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"4567"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'registry_api_url'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"http://localhost:5000"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_default_projects_features_builds'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">false</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_default_projects_features_container_registry'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">false</span>
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<ol start="2">
+<li> 端口开放增加 <code>- 4567:4567</code></li>
+<li> 服务重启 <code>docker-compose restart Gitlab</code></li>
+</ol>
+<p><code>ContainerRegistry</code> 集成后可以通过 <code>Gitlab</code> 账户登录： <code>docker login gitlab.example.com:4567</code></p>
+<hr>
+<h2 id="日常维护命令"><a href="#日常维护命令" class="headerlink" title="日常维护命令"></a>日常维护命令</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># Gitlab维护</span>
+docker <span class="token builtin class-name">exec</span> gitlab gitlab-ctl status  <span class="token comment"># gitlab各组件服务状态</span>
+docker <span class="token builtin class-name">exec</span> gitlab gitlab-ctl start/restart/stop <span class="token punctuation">[</span>组件名<span class="token punctuation">]</span>  <span class="token comment"># gitlab所有组件的统一控制（其中Unicorn组件重启完成前GitLab会报502）</span>
+docker <span class="token builtin class-name">exec</span> gitlab gitlab-ctl <span class="token function">tail</span> <span class="token punctuation">[</span>/var/log/gitlab下的某子目录<span class="token punctuation">]</span>  <span class="token comment"># 实时查看日志</span>
+ 
+docker <span class="token builtin class-name">exec</span> gitlab update-permissions  <span class="token comment"># 修复gitlab版本升级后出现的权限问题</span>
+docker <span class="token builtin class-name">exec</span> gitlab gitlab-ctl reconfigure  <span class="token comment"># 重载配置</span>
+docker <span class="token builtin class-name">exec</span> -t gitlab gitlab-rake gitlab:backup:create  <span class="token comment"># 创建备份</span>
+ 
+<span class="token comment"># ContainerRegistry维护</span>
+docker <span class="token builtin class-name">exec</span> gitlab gitlab-ctl registry-garbage-collect  <span class="token comment"># 垃圾回收，清理废弃layer（registry停机）</span>
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<hr>
+<h3 id="Import-Repository-Repo-By-Url"><a href="#Import-Repository-Repo-By-Url" class="headerlink" title="Import Repository(Repo By Url)"></a>Import Repository(Repo By Url)</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 账号密码若存在特殊字符则需要url编码</span>
+https://username:password@host:port/group/project.git
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="10-GitLab重置用户名密码"><a href="#10-GitLab重置用户名密码" class="headerlink" title="10. GitLab重置用户名密码"></a><strong>10. GitLab重置用户名密码</strong></h2><p>打开终端，访问：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rails console<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>输入：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">user <span class="token operator">=</span> User.where<span class="token punctuation">(</span>id: <span class="token number">1</span><span class="token punctuation">)</span>.first
+user.password<span class="token operator">=</span><span class="token string">'123456'</span>
+user.password_confirmation <span class="token operator">=</span> <span class="token string">'123456'</span>
+user.save<span class="token operator">!</span> <span class="token comment">#注意加上 “！”</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>然后退出命令行即可。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">quit<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"> gitlab-rails console production 命令 开始初始化密码
+<span class="token comment"># 在irb(main):001:0&gt; 后面通过 u=User.where(id:1).first 来查找与切换账号（User.all 可以查看所有用户）</span>
+<span class="token comment"># 通过u.password='12345678'设置密码为12345678(这里的密码看自己喜欢)：</span>
+<span class="token comment"># 通过u.password_confirmation='12345678' 再次确认密码</span>
+<span class="token comment"># 通过 u.save!进行保存</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="11-HTTPS-SSL-支持"><a href="#11-HTTPS-SSL-支持" class="headerlink" title="11. HTTPS SSL 支持"></a><strong>11. HTTPS SSL 支持</strong></h2><ul>
+<li><p>nginx反向代理方式</p>
+<ul>
+<li> 注意docker 内部没有ca支持， 需要手动添加</li>
+</ul>
+</li>
+<li><p>域名提供商提供的免费证书</p>
+<ul>
+<li>这种证书直接用，如果是自签名证书，需要添加自己的ca root证书到服务器</li>
+</ul>
+</li>
+</ul>
+<h2 id="12-Gitlab恢复数据出现must-be-owner-of解决方法"><a href="#12-Gitlab恢复数据出现must-be-owner-of解决方法" class="headerlink" title="12. Gitlab恢复数据出现must be owner of解决方法"></a>12. Gitlab恢复数据出现must be owner of解决方法</h2><p>按正常Gitlab备份数据gitlab-rake gitlab:backup:create</p>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">ERROR: must be owner <span class="token keyword">of</span> extension plpgsql
+ERROR: must be owner <span class="token keyword">of</span> <span class="token keyword">schema</span> <span class="token keyword">public</span>
+ERROR: <span class="token keyword">schema</span> “<span class="token keyword">public</span>” already <span class="token keyword">exists</span>
+ERROR: must be owner <span class="token keyword">of</span> <span class="token keyword">schema</span> <span class="token keyword">public</span>
+ERROR: must be owner <span class="token keyword">of</span> extension plpgsql
+WARNING: <span class="token keyword">no</span> <span class="token keyword">privileges</span> could be revoked <span class="token keyword">for</span> “<span class="token keyword">public</span>”
+WARNING: <span class="token keyword">no</span> <span class="token keyword">privileges</span> could be revoked <span class="token keyword">for</span> “<span class="token keyword">public</span>”
+WARNING: <span class="token keyword">no</span> <span class="token keyword">privileges</span> were granted <span class="token keyword">for</span> “<span class="token keyword">public</span>”
+WARNING: <span class="token keyword">no</span> <span class="token keyword">privileges</span> were granted <span class="token keyword">for</span> “<span class="token keyword">public</span>”<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>解决方法：</p>
+<h4 id="1-修改postgresql配置"><a href="#1-修改postgresql配置" class="headerlink" title="**1. 修改postgresql配置 **"></a>**1. 修改postgresql配置 **</h4><pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token builtin class-name">cd</span> /var/opt/gitlab/postgresql/data
+$ <span class="token function">vi</span> /var/opt/gitlab/postgresql/data/postgresql.conf
+listen_addresses <span class="token operator">=</span> <span class="token string">'*'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p>找到listen_addresses = ” 改为listen_addresses = ‘*’</p>
+<p>修改 /var/opt/gitlab/postgresql/data/pg_hba.conf<br>在这个文件最后面加入</p>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">$ <span class="token function">vi</span> /var/opt/gitlab/postgresql/data/pg_hba.conf
+<span class="token builtin class-name">local</span>   all         all                               trust
+<span class="token function">host</span>    all         all                               <span class="token number">127.0</span>.0.1/32 trust
+<span class="token function">host</span>    all         all                               ::1/128 trust    <span class="token comment">#ipv6 可以不配置</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h4 id="2-重启gitlab生效"><a href="#2-重启gitlab生效" class="headerlink" title="2. 重启gitlab生效"></a><strong>2. 重启gitlab生效</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h4 id="3-修改gitlab账号为超级用户"><a href="#3-修改gitlab账号为超级用户" class="headerlink" title="3. 修改gitlab账号为超级用户"></a><strong>3. 修改gitlab账号为超级用户</strong></h4><p>进入postgresql命令行</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /opt/gitlab/embedded/bin
+<span class="token function">su</span> gitlab-psql
+./psql -h <span class="token number">127.0</span>.0.1 gitlabhq_production<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p>查看账户权限</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">\</span>du<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>执行修改gitlab用户为超级权限</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">ALTER <span class="token environment constant">USER</span> gitlab WITH SUPERUSER<span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>退出</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">\</span>q<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/0220210802135016.png" alt="img"></p>
+<h5 id="4-从1462989681编号备份中恢复"><a href="#4-从1462989681编号备份中恢复" class="headerlink" title="4. 从1462989681编号备份中恢复"></a>4. 从1462989681编号备份中恢复</h5><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rake gitlab:backup:restore <span class="token assign-left variable">BACKUP</span><span class="token operator">=</span><span class="token number">1462989681</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>这样Gitlab恢复数据就不会再报must be owner of extension plpgsql错误。</p>
+<h4 id="4-重启gitlab"><a href="#4-重启gitlab" class="headerlink" title="4. 重启gitlab"></a><strong>4. 重启gitlab</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>本文作者：夜法之书       写作不易，转载请注明来源地址！</p>
+<h2 id="参考链接："><a href="#参考链接：" class="headerlink" title="参考链接："></a>参考链接：</h2><ol>
+<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/hgzero/p/14088215.html">https://www.cnblogs.com/hgzero/p/14088215.html</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.51blogs.net/2017/11/10/1110113243.html">http://www.51blogs.net/2017/11/10/1110113243.html</a></li>
+<li><a target="_blank" rel="noopener" href="https://my.oschina.net/u/2400083/blog/808097">https://my.oschina.net/u/2400083/blog/808097</a></li>
+</ol>
+<hr>
+
+                
+            </div>
+            <hr/>
+
+            
+
+    <div class="reprint" id="reprint-statement">
+        
+            <div class="reprint__author">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-user">
+                        文章作者:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    <a href="https://blog.17lai.fun" rel="external nofollow noreferrer">夜法之书</a>
+                </span>
+            </div>
+            <div class="reprint__type">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-link">
+                        文章链接:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    <a href="https://blog.17lai.fun/gitlab/2021-08-02-gitlab-installation-and-use-tutorial-complete-version/">https://blog.17lai.fun/gitlab/2021-08-02-gitlab-installation-and-use-tutorial-complete-version/</a>
+                </span>
+            </div>
+            <div class="reprint__notice">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-copyright">
+                        版权声明:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    本博客所有文章除特別声明外，均采用
+                    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow noreferrer" target="_blank">CC BY-NC-SA 4.0</a>
+                    许可协议。转载请注明来源
+                    <a href="https://blog.17lai.fun" target="_blank">夜法之书</a>
+                    !
+                </span>
+            </div>
+        
+    </div>
+
+    <script async defer>
+      document.addEventListener("copy", function (e) {
+        let toastHTML = '<span>复制成功，请遵循本文的转载规则</span><button class="btn-flat toast-action" onclick="navToReprintStatement()" style="font-size: smaller">查看</a>';
+        M.toast({html: toastHTML})
+      });
+
+      function navToReprintStatement() {
+        $("html, body").animate({scrollTop: $("#reprint-statement").offset().top - 80}, 800);
+      }
+    </script>
+
+
+
+            <div class="tag_share" style="display: block;">
+                <div class="post-meta__tag-list" style="display: inline-block;">
+                    
+                        <div class="article-tag">
+                            
+                                <a href="/tags/Gitlab/">
+                                    <span class="chip bg-color">Gitlab</span>
+                                </a>
+                            
+                                <a href="/tags/Git/">
+                                    <span class="chip bg-color">Git</span>
+                                </a>
+                            
+                                <a href="/tags/Docker/">
+                                    <span class="chip bg-color">Docker</span>
+                                </a>
+                            
+                                <a href="/tags/%E6%95%99%E7%A8%8B/">
+                                    <span class="chip bg-color">教程</span>
+                                </a>
+                            
+                                <a href="/tags/Rigistry/">
+                                    <span class="chip bg-color">Rigistry</span>
+                                </a>
+                            
+                                <a href="/tags/email/">
+                                    <span class="chip bg-color">email</span>
+                                </a>
+                            
+                                <a href="/tags/https/">
+                                    <span class="chip bg-color">https</span>
+                                </a>
+                            
+                                <a href="/tags/ssl/">
+                                    <span class="chip bg-color">ssl</span>
+                                </a>
+                            
+                        </div>
+                    
+                </div>
+                <div class="post_share" style="zoom: 80%; width: fit-content; display: inline-block; float: right; margin: -0.15rem 0;">
+                    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/share/css/share.min.css">
+<div id="article-share">
+
+    
+    <div class="social-share" data-sites="twitter,facebook,google,qq,qzone,wechat,weibo,douban,linkedin" data-wechat-qrcode-helper="<p>微信扫一扫即可分享！</p>"></div>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/share/js/social-share.min.js"></script>
+    
+
+    
+
+</div>
+
+                </div>
+            </div>
+            
+                <style>
+    #reward {
+        margin: 40px 0;
+        text-align: center;
+    }
+
+    #reward .reward-link {
+        font-size: 1.4rem;
+        line-height: 38px;
+    }
+
+    #reward .btn-floating:hover {
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    #rewardModal {
+        width: 320px;
+        height: 350px;
+    }
+
+    #rewardModal .reward-title {
+        margin: 15px auto;
+        padding-bottom: 5px;
+    }
+
+    #rewardModal .modal-content {
+        padding: 10px;
+    }
+
+    #rewardModal .close {
+        position: absolute;
+        right: 15px;
+        top: 15px;
+        color: rgba(0, 0, 0, 0.5);
+        font-size: 1.3rem;
+        line-height: 20px;
+        cursor: pointer;
+    }
+
+    #rewardModal .close:hover {
+        color: #ef5350;
+        transform: scale(1.3);
+        -moz-transform:scale(1.3);
+        -webkit-transform:scale(1.3);
+        -o-transform:scale(1.3);
+    }
+
+    #rewardModal .reward-tabs {
+        margin: 0 auto;
+        width: 210px;
+    }
+
+    .reward-tabs .tabs {
+        height: 38px;
+        margin: 10px auto;
+        padding-left: 0;
+    }
+
+    .reward-content ul {
+        padding-left: 0 !important;
+    }
+
+    .reward-tabs .tabs .tab {
+        height: 38px;
+        line-height: 38px;
+    }
+
+    .reward-tabs .tab a {
+        color: #fff;
+        background-color: #ccc;
+    }
+
+    .reward-tabs .tab a:hover {
+        background-color: #ccc;
+        color: #fff;
+    }
+
+    .reward-tabs .wechat-tab .active {
+        color: #fff !important;
+        background-color: #22AB38 !important;
+    }
+
+    .reward-tabs .alipay-tab .active {
+        color: #fff !important;
+        background-color: #019FE8 !important;
+    }
+
+    .reward-tabs .reward-img {
+        width: 210px;
+        height: 210px;
+    }
+</style>
+
+<div id="reward">
+    <a href="#rewardModal" class="reward-link modal-trigger btn-floating btn-medium waves-effect waves-light red">赏</a>
+
+    <!-- Modal Structure -->
+    <div id="rewardModal" class="modal">
+        <div class="modal-content">
+            <a class="close modal-close"><i class="fas fa-times"></i></a>
+            <h4 class="reward-title">码字辛苦，打赏作者！</h4>
+            <div class="reward-content">
+                <div class="reward-tabs">
+                    <ul class="tabs row">
+                        <li class="tab col s6 alipay-tab waves-effect waves-light"><a href="#alipay">支付宝</a></li>
+                        <li class="tab col s6 wechat-tab waves-effect waves-light"><a href="#wechat">微 信</a></li>
+                    </ul>
+                    <div id="alipay">
+                        <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/medias/reward/alipay.jpg" class="reward-img" alt="支付宝打赏二维码">
+                    </div>
+                    <div id="wechat">
+                        <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/medias/reward/wechat.jpg" class="reward-img" alt="微信打赏二维码">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        $('.tabs').tabs();
+    });
+</script>
+
+            
+        </div>
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+        <style>
+    .valine-card {
+        margin: 1.5rem auto;
+    }
+
+    .valine-card .card-content {
+        padding: 20px 20px 5px 20px;
+    }
+
+    #vcomments textarea {
+        box-sizing: border-box;
+        background: url("/medias/comment_bg.png") 100% 100% no-repeat;
+    }
+
+    #vcomments p {
+        margin: 2px 2px 10px;
+        font-size: 1.05rem;
+        line-height: 1.78rem;
+    }
+
+    #vcomments blockquote p {
+        text-indent: 0.2rem;
+    }
+
+    #vcomments a {
+        padding: 0 2px;
+        color: #4cbf30;
+        font-weight: 500;
+        text-decoration: none;
+    }
+
+    #vcomments img {
+        max-width: 100%;
+        height: auto;
+        cursor: pointer;
+    }
+
+    #vcomments ol li {
+        list-style-type: decimal;
+    }
+
+    #vcomments ol,
+    ul {
+        display: block;
+        padding-left: 2em;
+        word-spacing: 0.05rem;
+    }
+
+    #vcomments ul li,
+    ol li {
+        display: list-item;
+        line-height: 1.8rem;
+        font-size: 1rem;
+    }
+
+    #vcomments ul li {
+        list-style-type: disc;
+    }
+
+    #vcomments ul ul li {
+        list-style-type: circle;
+    }
+
+    #vcomments table, th, td {
+        padding: 12px 13px;
+        border: 1px solid #dfe2e5;
+    }
+
+    #vcomments table, th, td {
+        border: 0;
+    }
+
+    table tr:nth-child(2n), thead {
+        background-color: #fafafa;
+    }
+
+    #vcomments table th {
+        background-color: #f2f2f2;
+        min-width: 80px;
+    }
+
+    #vcomments table td {
+        min-width: 80px;
+    }
+
+    #vcomments h1 {
+        font-size: 1.85rem;
+        font-weight: bold;
+        line-height: 2.2rem;
+    }
+
+    #vcomments h2 {
+        font-size: 1.65rem;
+        font-weight: bold;
+        line-height: 1.9rem;
+    }
+
+    #vcomments h3 {
+        font-size: 1.45rem;
+        font-weight: bold;
+        line-height: 1.7rem;
+    }
+
+    #vcomments h4 {
+        font-size: 1.25rem;
+        font-weight: bold;
+        line-height: 1.5rem;
+    }
+
+    #vcomments h5 {
+        font-size: 1.1rem;
+        font-weight: bold;
+        line-height: 1.4rem;
+    }
+
+    #vcomments h6 {
+        font-size: 1rem;
+        line-height: 1.3rem;
+    }
+
+    #vcomments p {
+        font-size: 1rem;
+        line-height: 1.5rem;
+    }
+
+    #vcomments hr {
+        margin: 12px 0;
+        border: 0;
+        border-top: 1px solid #ccc;
+    }
+
+    #vcomments blockquote {
+        margin: 15px 0;
+        border-left: 5px solid #42b983;
+        padding: 1rem 0.8rem 0.3rem 0.8rem;
+        color: #666;
+        background-color: rgba(66, 185, 131, .1);
+    }
+
+    #vcomments pre {
+        font-family: monospace, monospace;
+        padding: 1.2em;
+        margin: .5em 0;
+        background: #272822;
+        overflow: auto;
+        border-radius: 0.3em;
+        tab-size: 4;
+    }
+
+    #vcomments code {
+        font-family: monospace, monospace;
+        padding: 1px 3px;
+        font-size: 0.92rem;
+        color: #e96900;
+        background-color: #f8f8f8;
+        border-radius: 2px;
+    }
+
+    #vcomments pre code {
+        font-family: monospace, monospace;
+        padding: 0;
+        color: #e8eaf6;
+        background-color: #272822;
+    }
+
+    #vcomments pre[class*="language-"] {
+        padding: 1.2em;
+        margin: .5em 0;
+    }
+
+    #vcomments code[class*="language-"],
+    pre[class*="language-"] {
+        color: #e8eaf6;
+    }
+
+    #vcomments [type="checkbox"]:not(:checked), [type="checkbox"]:checked {
+        position: inherit;
+        margin-left: -1.3rem;
+        margin-right: 0.4rem;
+        margin-top: -1px;
+        vertical-align: middle;
+        left: unset;
+        visibility: visible;
+    }
+
+    #vcomments b,
+    strong {
+        font-weight: bold;
+    }
+
+    #vcomments dfn {
+        font-style: italic;
+    }
+
+    #vcomments small {
+        font-size: 85%;
+    }
+
+    #vcomments cite {
+        font-style: normal;
+    }
+
+    #vcomments mark {
+        background-color: #fcf8e3;
+        padding: .2em;
+    }
+
+    #vcomments table, th, td {
+        padding: 12px 13px;
+        border: 1px solid #dfe2e5;
+    }
+
+    table tr:nth-child(2n), thead {
+        background-color: #fafafa;
+    }
+
+    #vcomments table th {
+        background-color: #f2f2f2;
+        min-width: 80px;
+    }
+
+    #vcomments table td {
+        min-width: 80px;
+    }
+
+    #vcomments [type="checkbox"]:not(:checked), [type="checkbox"]:checked {
+        position: inherit;
+        margin-left: -1.3rem;
+        margin-right: 0.4rem;
+        margin-top: -1px;
+        vertical-align: middle;
+        left: unset;
+        visibility: visible;
+    }
+</style>
+
+<div class="card valine-card" data-aos="fade-up">
+    <div class="comment_headling" style="font-size: 20px; font-weight: 700; position: relative; padding-left: 20px; top: 15px; padding-bottom: 5px;">
+        <i class="fas fa-comments fa-fw" aria-hidden="true"></i>
+        <span>评论</span>
+    </div>
+    <div id="vcomments" class="card-content" style="display: grid">
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/valine/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/valine/Valine.min.js"></script>
+<script>
+    new Valine({
+        el: '#vcomments',
+        appId: 'NON7YJ9g8jb5yl2R31VUgsht-MdYXbMMI',
+        appKey: 'eqLpfTyhvVUu2J2HDhjgk3c8',
+        notify: 'false' === 'true',
+        verify: 'false' === 'true',
+        visitor: 'true' === 'true',
+        avatar: 'mm',
+        pageSize: '10',
+        lang: 'zh-cn',
+        placeholder: '雁过留声，人过留名！说点什么... \ PS:在昵称栏输入QQ号可以自动获取QQ昵称和QQ头像哦~'
+    });
+</script>
+
+<!--酷Q推送-->
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+<article id="prenext-posts" class="prev-next articles">
+    <div class="row article-row">
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge left-badge text-color">
+                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+            <div class="card">
+                <a href="/bt/2021-08-18-transmission-parameter-reference-configuration/">
+                    <div class="card-image">
+                        
+                        <img src="/medias/cover/transmission.jpg" class="responsive-img" alt="transmission 使用及其配置">
+                        
+                        <span class="card-title">transmission 使用及其配置</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary block-with-text">
+                        
+                            transmission 使用及其配置全介绍，以及一些常见问题。
+                        
+                    </div>
+                    <div class="publish-info">
+                        <span class="publish-date">
+                            <i class="far fa-clock fa-fw icon-date"></i>2021-08-18
+                        </span>
+                        <span class="publish-author">
+                            
+                            <i class="fas fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/bt/" class="post-category">
+                                    bt
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/QNAP/">
+                        <span class="chip bg-color">QNAP</span>
+                    </a>
+                    
+                    <a href="/tags/nas/">
+                        <span class="chip bg-color">nas</span>
+                    </a>
+                    
+                    <a href="/tags/PT/">
+                        <span class="chip bg-color">PT</span>
+                    </a>
+                    
+                    <a href="/tags/BT/">
+                        <span class="chip bg-color">BT</span>
+                    </a>
+                    
+                    <a href="/tags/transmission/">
+                        <span class="chip bg-color">transmission</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge right-badge text-color">
+                下一篇&nbsp;<i class="fas fa-chevron-right"></i>
+            </div>
+            <div class="card">
+                <a href="/docker/2021-08-01-docker-use-brief-tutorial/">
+                    <div class="card-image">
+                        
+                        <img src="/medias/cover/docker.jpg" class="responsive-img" alt="docker使用简明教程">
+                        
+                        <span class="card-title">docker使用简明教程</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary block-with-text">
+                        
+                            docker使用简明教程
+                        
+                    </div>
+                    <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2021-08-01
+                            </span>
+                        <span class="publish-author">
+                            
+                            <i class="fas fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/docker/" class="post-category">
+                                    docker
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/Linux/">
+                        <span class="chip bg-color">Linux</span>
+                    </a>
+                    
+                    <a href="/tags/MySQL/">
+                        <span class="chip bg-color">MySQL</span>
+                    </a>
+                    
+                    <a href="/tags/Docker/">
+                        <span class="chip bg-color">Docker</span>
+                    </a>
+                    
+                    <a href="/tags/LAMP/">
+                        <span class="chip bg-color">LAMP</span>
+                    </a>
+                    
+                    <a href="/tags/PHP/">
+                        <span class="chip bg-color">PHP</span>
+                    </a>
+                    
+                    <a href="/tags/Tomcat/">
+                        <span class="chip bg-color">Tomcat</span>
+                    </a>
+                    
+                    <a href="/tags/JSP/">
+                        <span class="chip bg-color">JSP</span>
+                    </a>
+                    
+                    <a href="/tags/%E6%95%99%E7%A8%8B/">
+                        <span class="chip bg-color">教程</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+    </div>
+</article>
+
+</div>
+
+
+<script>
+    $('#articleContent').on('copy', function (e) {
+        // IE8 or earlier browser is 'undefined'
+        if (typeof window.getSelection === 'undefined') return;
+
+        var selection = window.getSelection();
+        // if the selection is short let's not annoy our users.
+        if (('' + selection).length < Number.parseInt('100')) {
+            return;
+        }
+
+        // create a div outside of the visible area and fill it with the selected text.
+        var bodyElement = document.getElementsByTagName('body')[0];
+        var newdiv = document.createElement('div');
+        newdiv.style.position = 'absolute';
+        newdiv.style.left = '-99999px';
+        bodyElement.appendChild(newdiv);
+        newdiv.appendChild(selection.getRangeAt(0).cloneContents());
+
+        // we need a <pre> tag workaround.
+        // otherwise the text inside "pre" loses all the line breaks!
+        if (selection.getRangeAt(0).commonAncestorContainer.nodeName === 'PRE' || selection.getRangeAt(0).commonAncestorContainer.nodeName === 'CODE') {
+            newdiv.innerHTML = "<pre>" + newdiv.innerHTML + "</pre>";
+        }
+
+        var url = document.location.href;
+        newdiv.innerHTML += '<br />'
+            + '来源: 夜法之书<br />'
+            + '文章作者: 夜法之书<br />'
+            + '文章链接: <a href="' + url + '">' + url + '</a><br />'
+            + '本文章著作权归作者所有，任何形式的转载都请注明出处。';
+
+        selection.selectAllChildren(newdiv);
+        window.setTimeout(function () {bodyElement.removeChild(newdiv);}, 200);
+    });
+</script>
+
+
+<!-- 代码块功能依赖 -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/codeBlock/codeBlockFuction.js"></script>
+
+<!-- 代码语言 -->
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/codeBlock/codeLang.js"></script>
+
+
+<!-- 代码块复制 -->
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/codeBlock/codeCopy.js"></script>
+
+
+<!-- 代码块收缩 -->
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/codeBlock/codeShrink.js"></script>
+
+
+    </div>
+    <div id="toc-aside" class="expanded col l3 hide-on-med-and-down">
+        <div class="toc-widget card" style="background-color: white;">
+            <div class="toc-title"><i class="far fa-list-alt"></i>&nbsp;&nbsp;目录</div>
+            <div id="toc-content"></div>
+        </div>
+    </div>
+</div>
+
+<!-- TOC 悬浮按钮. -->
+
+<div id="floating-toc-btn" class="hide-on-med-and-down">
+    <a class="btn-floating btn-large bg-color">
+        <i class="fas fa-list-ul"></i>
+    </a>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/tocbot/tocbot.min.js"></script>
+<script>
+    $(function () {
+        tocbot.init({
+            tocSelector: '#toc-content',
+            contentSelector: '#articleContent',
+            headingsOffset: -($(window).height() * 0.4 - 45),
+            collapseDepth: Number('0'),
+            headingSelector: 'h2, h3, h4'
+        });
+
+        // modify the toc link href to support Chinese.
+        let i = 0;
+        let tocHeading = 'toc-heading-';
+        $('#toc-content a').each(function () {
+            $(this).attr('href', '#' + tocHeading + (++i));
+        });
+
+        // modify the heading title id to support Chinese.
+        i = 0;
+        $('#articleContent').children('h2, h3, h4').each(function () {
+            $(this).attr('id', tocHeading + (++i));
+        });
+
+        // Set scroll toc fixed.
+        let tocHeight = parseInt($(window).height() * 0.4 - 64);
+        let $tocWidget = $('.toc-widget');
+        $(window).scroll(function () {
+            let scroll = $(window).scrollTop();
+            /* add post toc fixed. */
+            if (scroll > tocHeight) {
+                $tocWidget.addClass('toc-fixed');
+            } else {
+                $tocWidget.removeClass('toc-fixed');
+            }
+        });
+
+        
+        /* 修复文章卡片 div 的宽度. */
+        let fixPostCardWidth = function (srcId, targetId) {
+            let srcDiv = $('#' + srcId);
+            if (srcDiv.length === 0) {
+                return;
+            }
+
+            let w = srcDiv.width();
+            if (w >= 450) {
+                w = w + 21;
+            } else if (w >= 350 && w < 450) {
+                w = w + 18;
+            } else if (w >= 300 && w < 350) {
+                w = w + 16;
+            } else {
+                w = w + 14;
+            }
+            $('#' + targetId).width(w);
+        };
+
+        // 切换TOC目录展开收缩的相关操作.
+        const expandedClass = 'expanded';
+        let $tocAside = $('#toc-aside');
+        let $mainContent = $('#main-content');
+        $('#floating-toc-btn .btn-floating').click(function () {
+            if ($tocAside.hasClass(expandedClass)) {
+                $tocAside.removeClass(expandedClass).hide();
+                $mainContent.removeClass('l9');
+            } else {
+                $tocAside.addClass(expandedClass).show();
+                $mainContent.addClass('l9');
+            }
+            fixPostCardWidth('artDetail', 'prenext-posts');
+        });
+        
+    });
+</script>
+
+    
+
+</main>
+
+
+
+
+    <footer class="page-footer bg-color">
+    
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/aplayer/APlayer.min.css">
+<style>
+    .aplayer .aplayer-lrc p {
+        
+        display: none;
+        
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 16px !important;
+    }
+
+    .aplayer .aplayer-lrc p.aplayer-lrc-current {
+        
+        display: none;
+        
+        font-size: 15px;
+        color: #42b983;
+    }
+
+    
+    .aplayer.aplayer-fixed.aplayer-narrow .aplayer-body {
+        left: -66px !important;
+    }
+
+    .aplayer.aplayer-fixed.aplayer-narrow .aplayer-body:hover {
+        left: 0px !important;
+    }
+
+    
+</style>
+<div class="">
+    
+    <div class="row">
+        <meting-js class="col l8 offset-l2 m10 offset-m1 s12"
+                   server="netease"
+                   type="playlist"
+                   id="4965675848"
+                   fixed='true'
+                   autoplay='false'
+                   theme='#42b983'
+                   loop='all'
+                   order='random'
+                   preload='auto'
+                   volume='0.7'
+                   list-folded='true'
+        >
+        </meting-js>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/aplayer/APlayer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/meting@2/dist/Meting.min.js"></script>
+
+    
+
+    <div class="container row center-align"
+         style="margin-bottom: 0px !important;">
+        <div class="col s12 m8 l8 copy-right">
+            Copyright&nbsp;&copy;
+            
+                <span id="year">2008-2021</span>
+            
+            <span id="year">2008</span>
+            <a href="/about" target="_blank">夜法之书</a>
+            |&nbsp;Powered by&nbsp;<a href="https://hexo.io/" target="_blank">Hexo</a>
+            |&nbsp;Theme&nbsp;<a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank">Matery</a>
+            <br>
+            
+                &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
+                        class="white-color">117.1k</span>
+            
+            
+            
+                
+            
+            
+                <span id="busuanzi_container_site_pv">
+                &nbsp;|&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;
+                    <span id="busuanzi_value_site_pv" class="white-color"></span>
+            </span>
+            
+            
+                <span id="busuanzi_container_site_uv">
+                &nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;
+                    <span id="busuanzi_value_site_uv" class="white-color"></span>
+            </span>
+            
+            <br>
+
+            <!-- 运行天数提醒. -->
+            
+            <br>
+            
+        </div>
+        <div class="col s12 m4 l4 social-link social-statis">
+    <a href="https://github.com/appotry" class="tooltipped" target="_blank" data-tooltip="访问我的GitHub" data-position="top" data-delay="50">
+        <i class="fab fa-github"></i>
+    </a>
+
+
+
+    <a href="https://hub.docker.com/u/bloodstar" class="tooltipped" target="_blank" data-tooltip="访问我的DockerHub" data-position="top" data-delay="50">
+        <i class="fab fa-docker"></i>
+    </a>
+
+
+
+    <a href="mailto:andycrusoe@gmail.com" class="tooltipped" target="_blank" data-tooltip="邮件联系我" data-position="top" data-delay="50">
+        <i class="fas fa-envelope-open"></i>
+    </a>
+
+
+
+
+
+    <a href="https://twitter.com/firedingden" class="tooltipped" target="_blank" data-tooltip="关注我的Twitter: https://twitter.com/firedingden" data-position="top" data-delay="50">
+        <i class="fab fa-twitter"></i>
+    </a>
+
+
+
+
+
+
+
+
+
+    <a href="/atom.xml" class="tooltipped" target="_blank" data-tooltip="RSS 订阅" data-position="top" data-delay="50">
+        <i class="fas fa-rss"></i>
+    </a>
+
+</div>
+    </div>
+</footer>
+
+<div class="progress-bar"></div>
+
+
+    <!-- 搜索遮罩框 -->
+<div id="searchModal" class="modal">
+    <div class="modal-content">
+        <div class="search-header">
+            <span class="title"><i class="fas fa-search"></i>&nbsp;&nbsp;搜索</span>
+            <input type="search" id="searchInput" name="s" placeholder="请输入搜索的关键字"
+                   class="search-input">
+        </div>
+        <div id="searchResult"></div>
+    </div>
+</div>
+
+<script type="text/javascript">
+$(function () {
+    var searchFunc = function (path, search_id, content_id) {
+        'use strict';
+        $.ajax({
+            url: path,
+            dataType: "xml",
+            success: function (xmlResponse) {
+                // get the contents from search data
+                var datas = $("entry", xmlResponse).map(function () {
+                    return {
+                        title: $("title", this).text(),
+                        content: $("content", this).text(),
+                        url: $("url", this).text()
+                    };
+                }).get();
+                var $input = document.getElementById(search_id);
+                var $resultContent = document.getElementById(content_id);
+                $input.addEventListener('input', function () {
+                    var str = '<ul class=\"search-result-list\">';
+                    var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+                    $resultContent.innerHTML = "";
+                    if (this.value.trim().length <= 0) {
+                        return;
+                    }
+                    // perform local searching
+                    datas.forEach(function (data) {
+                        var isMatch = true;
+                        var data_title = data.title.trim().toLowerCase();
+                        var data_content = data.content.trim().replace(/<[^>]+>/g, "").toLowerCase();
+                        var data_url = data.url;
+                        data_url = data_url.indexOf('/') === 0 ? data.url : '/' + data_url;
+                        var index_title = -1;
+                        var index_content = -1;
+                        var first_occur = -1;
+                        // only match artiles with not empty titles and contents
+                        if (data_title !== '' && data_content !== '') {
+                            keywords.forEach(function (keyword, i) {
+                                index_title = data_title.indexOf(keyword);
+                                index_content = data_content.indexOf(keyword);
+                                if (index_title < 0 && index_content < 0) {
+                                    isMatch = false;
+                                } else {
+                                    if (index_content < 0) {
+                                        index_content = 0;
+                                    }
+                                    if (i === 0) {
+                                        first_occur = index_content;
+                                    }
+                                }
+                            });
+                        }
+                        // show search results
+                        if (isMatch) {
+                            str += "<li><a href='" + data_url + "' class='search-result-title'>" + data_title + "</a>";
+                            var content = data.content.trim().replace(/<[^>]+>/g, "");
+                            if (first_occur >= 0) {
+                                // cut out 100 characters
+                                var start = first_occur - 20;
+                                var end = first_occur + 80;
+                                if (start < 0) {
+                                    start = 0;
+                                }
+                                if (start === 0) {
+                                    end = 100;
+                                }
+                                if (end > content.length) {
+                                    end = content.length;
+                                }
+                                var match_content = content.substr(start, end);
+                                // highlight all keywords
+                                keywords.forEach(function (keyword) {
+                                    var regS = new RegExp(keyword, "gi");
+                                    match_content = match_content.replace(regS, "<em class=\"search-keyword\">" + keyword + "</em>");
+                                });
+
+                                str += "<p class=\"search-result\">" + match_content + "...</p>"
+                            }
+                            str += "</li>";
+                        }
+                    });
+                    str += "</ul>";
+                    $resultContent.innerHTML = str;
+                });
+            }
+        });
+    };
+
+    searchFunc('/search.xml', 'searchInput', 'searchResult');
+});
+</script>
+
+    <!-- 回到顶部按钮 -->
+<div id="backTop" class="top-scroll">
+    <a class="btn-floating btn-large waves-effect waves-light" href="#!">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+</div>
+
+
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/materialize/materialize.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/masonry/masonry.pkgd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/aos/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/scrollprogress/scrollProgress.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/lightGallery/js/lightgallery-all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/js/matery.js"></script>
+
+    <!-- Baidu Analytics -->
+
+    <!-- Baidu Push -->
+
+<script>
+    (function () {
+        var bp = document.createElement('script');
+        var curProtocol = window.location.protocol.split(':')[0];
+        if (curProtocol === 'https') {
+            bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+        } else {
+            bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+    })();
+</script>
+
+    
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/others/clicklove.js" async="async"></script>
+    
+    
+    <script async src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/others/busuanzi.pure.mini.js"></script>
+    
+
+    
+
+    
+
+    <!--腾讯兔小巢-->
+    
+    
+    <script type="text/javascript" color="0,0,255"
+        pointColor="0,0,255" opacity='0.7'
+        zIndex="-1" count="99"
+        src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/background/canvas-nest.js"></script>
+    
+
+    
+
+    
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/background/ribbon-dynamic.js" async="async"></script>
+    
+
+    
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.8/libs/instantpage/instantpage.js" type="module"></script>
+    
+
+<script src="https://cdn.jsdelivr.net/npm/live2d-widget@3.x/lib/L2Dwidget.min.js"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"https://cdn.jsdelivr.net/npm/live2d-widget-model-lwet@1.0.0/assets/14.json"},"display":{"position":"left","width":150,"height":300,"hOffset":35,"vOffset":5},"mobile":{"show":false}});</script></body>
+
+</html>
