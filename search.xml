@@ -187,6 +187,136 @@ dirlink.sh /share/Download/tmp/src /share/Download/tmp/dst<span aria-hidden="tru
       </tags>
   </entry>
   <entry>
+    <title>破解Gitlab EE</title>
+    <url>/gitlab/2021-07-09-carck-gitlabee/</url>
+    <content><![CDATA[<p>由于需要一些镜像等 gitlab 高级功能，所有破解gitlab ee版本。</p>
+<h2 id="安装ruby"><a href="#安装ruby" class="headerlink" title="安装ruby"></a>安装ruby</h2><p>安装完gitlab ee之后</p>
+<p>安装ruby：yum install ruby</p>
+<p>ruby版本需要2.3或以上。</p>
+<h2 id="生成许可证"><a href="#生成许可证" class="headerlink" title="生成许可证"></a><strong>生成许可证</strong></h2><p>gem install gitlab-license</p>
+<h2 id="创建一个rb文件"><a href="#创建一个rb文件" class="headerlink" title="创建一个rb文件"></a>创建一个rb文件</h2><p>license.rb</p>
+<hr>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby"><span class="token keyword">require</span> <span class="token string">"openssl"</span>
+<span class="token keyword">require</span> <span class="token string">"gitlab/license"</span>
+ 
+key_pair <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span>generate<span class="token punctuation">(</span><span class="token number">2048</span><span class="token punctuation">)</span>
+<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"license_key"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>key_pair<span class="token punctuation">.</span>to_pem<span class="token punctuation">)</span> <span class="token punctuation">}</span>
+ 
+public_key <span class="token operator">=</span> key_pair<span class="token punctuation">.</span>public_key
+<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"license_key.pub"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>public_key<span class="token punctuation">.</span>to_pem<span class="token punctuation">)</span> <span class="token punctuation">}</span>
+ 
+private_key <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"license_key"</span><span class="token punctuation">)</span>
+<span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>encryption_key <span class="token operator">=</span> private_key
+ 
+license <span class="token operator">=</span> <span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span><span class="token keyword">new</span>
+license<span class="token punctuation">.</span>licensee <span class="token operator">=</span> <span class="token punctuation">{</span>
+  <span class="token string">"Name"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"none"</span><span class="token punctuation">,</span>
+  <span class="token string">"Company"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"none"</span><span class="token punctuation">,</span>
+  <span class="token string">"Email"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"example@test.com"</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span>
+license<span class="token punctuation">.</span>starts_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2020</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment"># 开始时间</span>
+license<span class="token punctuation">.</span>expires_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2050</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment"># 结束时间</span>
+license<span class="token punctuation">.</span>notify_admins_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2049</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
+license<span class="token punctuation">.</span>notify_users_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2049</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
+license<span class="token punctuation">.</span>block_changes_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2050</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
+license<span class="token punctuation">.</span>restrictions <span class="token operator">=</span> <span class="token punctuation">{</span>
+  active_user_count<span class="token punctuation">:</span> <span class="token number">10000</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span>
+ 
+puts <span class="token string">"License:"</span>
+puts license
+ 
+data <span class="token operator">=</span> license<span class="token punctuation">.</span>export
+puts <span class="token string">"Exported license:"</span>
+puts data
+<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"GitLabBV.gitlab-license"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>data<span class="token punctuation">)</span> <span class="token punctuation">}</span>
+ 
+public_key <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"license_key.pub"</span><span class="token punctuation">)</span>
+<span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>encryption_key <span class="token operator">=</span> public_key
+ 
+data <span class="token operator">=</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"GitLabBV.gitlab-license"</span><span class="token punctuation">)</span>
+<span class="token variable">$license</span> <span class="token operator">=</span> <span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>import<span class="token punctuation">(</span>data<span class="token punctuation">)</span>
+ 
+puts <span class="token string">"Imported license:"</span>
+puts <span class="token variable">$license</span>
+ 
+<span class="token keyword">unless</span> <span class="token variable">$license</span>
+  <span class="token keyword">raise</span> <span class="token string">"The license is invalid."</span>
+<span class="token keyword">end</span>
+ 
+<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>restricted<span class="token operator">?</span><span class="token punctuation">(</span><span class="token symbol">:active_user_count</span><span class="token punctuation">)</span>
+  active_user_count <span class="token operator">=</span> <span class="token number">10000</span>
+  <span class="token keyword">if</span> active_user_count <span class="token operator">&gt;</span> <span class="token variable">$license</span><span class="token punctuation">.</span>restrictions<span class="token punctuation">[</span><span class="token symbol">:active_user_count</span><span class="token punctuation">]</span>
+    <span class="token keyword">raise</span> <span class="token string">"The active user count exceeds the allowed amount!"</span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+ 
+<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>notify_admins<span class="token operator">?</span>
+  puts <span class="token string">"The license is due to expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>."</span>
+<span class="token keyword">end</span>
+ 
+<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>notify_users<span class="token operator">?</span>
+  puts <span class="token string">"The license is due to expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>."</span>
+<span class="token keyword">end</span>
+ 
+<span class="token keyword">module</span> <span class="token constant">Gitlab</span>
+  <span class="token keyword">class</span> <span class="token class-name">GitAccess</span>
+    <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">check</span></span><span class="token punctuation">(</span>cmd<span class="token punctuation">,</span> changes <span class="token operator">=</span> <span class="token keyword">nil</span><span class="token punctuation">)</span>
+      <span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>block_changes<span class="token operator">?</span>
+        <span class="token keyword">return</span> build_status_object<span class="token punctuation">(</span><span class="token boolean">false</span><span class="token punctuation">,</span> <span class="token string">"License expired"</span><span class="token punctuation">)</span>
+      <span class="token keyword">end</span>
+    <span class="token keyword">end</span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+ 
+puts <span class="token string">"This instance of GitLab Enterprise Edition is licensed to:"</span>
+<span class="token variable">$license</span><span class="token punctuation">.</span>licensee<span class="token punctuation">.</span><span class="token keyword">each</span> <span class="token keyword">do</span> <span class="token operator">|</span>key<span class="token punctuation">,</span> value<span class="token operator">|</span>
+  puts <span class="token string">"<span class="token interpolation"><span class="token delimiter tag">#{</span>key<span class="token delimiter tag">}</span></span>: <span class="token interpolation"><span class="token delimiter tag">#{</span>value<span class="token delimiter tag">}</span></span>"</span>
+<span class="token keyword">end</span>
+ 
+<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>expired<span class="token operator">?</span>
+  puts <span class="token string">"The license expired on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>"</span>
+<span class="token keyword">elsif</span> <span class="token variable">$license</span><span class="token punctuation">.</span>will_expire<span class="token operator">?</span>
+  puts <span class="token string">"The license will expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>"</span>
+<span class="token keyword">else</span>
+  puts <span class="token string">"The license will never expire."</span>
+<span class="token keyword">end</span>
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<hr>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">ruby license.rb<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>生成 <code>GitLabBV.gitlab-license</code> <code>license_key</code> <code>license_key.pub</code> 这三个文件。</p>
+<h2 id="使用许可证"><a href="#使用许可证" class="headerlink" title="使用许可证"></a><strong>使用许可证</strong></h2><p>用 <code>license_key.pub</code> 文件替换 <code>/opt/gitlab/embedded/service/gitlab-rails/.license_encryption_key.pub</code>。</p>
+<p><code>GitLabBV.gitlab-license</code> 即是许可证，填入 <code>${address}/admin/license</code> 地址并重启 <code>gitlab-ctl restart</code> 。</p>
+<h2 id="修改等级"><a href="#修改等级" class="headerlink" title="修改等级"></a><strong>修改等级</strong></h2><pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby"><span class="token operator">--</span><span class="token operator">-</span> <span class="token operator">/</span>opt<span class="token operator">/</span>gitlab<span class="token operator">/</span>embedded<span class="token operator">/</span>service<span class="token operator">/</span>gitlab<span class="token operator">-</span>rails<span class="token operator">/</span>ee<span class="token operator">/</span>app<span class="token operator">/</span>models<span class="token operator">/</span>license<span class="token punctuation">.</span>rb
+<span class="token operator">++</span><span class="token operator">+</span> <span class="token operator">/</span>opt<span class="token operator">/</span>gitlab<span class="token operator">/</span>embedded<span class="token operator">/</span>service<span class="token operator">/</span>gitlab<span class="token operator">-</span>rails<span class="token operator">/</span>ee<span class="token operator">/</span>app<span class="token operator">/</span>models<span class="token operator">/</span>license<span class="token punctuation">.</span>rb
+@@ <span class="token operator">-</span><span class="token number">458</span><span class="token punctuation">,</span><span class="token number">7</span> <span class="token operator">+</span><span class="token number">458</span><span class="token punctuation">,</span><span class="token number">7</span> @@
+  <span class="token keyword">end</span>
+ 
+  <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">plan</span></span>
+<span class="token operator">-</span>    restricted_attr<span class="token punctuation">(</span><span class="token symbol">:plan</span><span class="token punctuation">)</span><span class="token punctuation">.</span>presence <span class="token operator">||</span> <span class="token constant">STARTER_PLAN</span>
+<span class="token operator">+</span>    restricted_attr<span class="token punctuation">(</span><span class="token symbol">:plan</span><span class="token punctuation">)</span><span class="token punctuation">.</span>presence <span class="token operator">||</span> <span class="token constant">ULTIMATE_PLAN</span>
+  <span class="token keyword">end</span>
+ 
+  <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">edition</span></span>
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>修改完成后使用 <code>gitlab-ctl restart</code> 重新加载配置。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a><strong>参考</strong></h2><ul>
+<li>  <a href="https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md">https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>gitlab</category>
+      </categories>
+      <tags>
+        <tag>Gitlab</tag>
+        <tag>Git</tag>
+        <tag>Crack</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程</title>
     <url>/docker/2021-07-09-use-jeckett-sonarr-iyuu-qt-emby-building-automatic-movie-anime-process/</url>
     <content><![CDATA[<blockquote>
@@ -426,133 +556,23 @@ services:
       </tags>
   </entry>
   <entry>
-    <title>破解Gitlab EE</title>
-    <url>/gitlab/2021-07-09-carck-gitlabee/</url>
-    <content><![CDATA[<p>由于需要一些镜像等 gitlab 高级功能，所有破解gitlab ee版本。</p>
-<h2 id="安装ruby"><a href="#安装ruby" class="headerlink" title="安装ruby"></a>安装ruby</h2><p>安装完gitlab ee之后</p>
-<p>安装ruby：yum install ruby</p>
-<p>ruby版本需要2.3或以上。</p>
-<h2 id="生成许可证"><a href="#生成许可证" class="headerlink" title="生成许可证"></a><strong>生成许可证</strong></h2><p>gem install gitlab-license</p>
-<h2 id="创建一个rb文件"><a href="#创建一个rb文件" class="headerlink" title="创建一个rb文件"></a>创建一个rb文件</h2><p>license.rb</p>
-<hr>
-<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby"><span class="token keyword">require</span> <span class="token string">"openssl"</span>
-<span class="token keyword">require</span> <span class="token string">"gitlab/license"</span>
- 
-key_pair <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span>generate<span class="token punctuation">(</span><span class="token number">2048</span><span class="token punctuation">)</span>
-<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"license_key"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>key_pair<span class="token punctuation">.</span>to_pem<span class="token punctuation">)</span> <span class="token punctuation">}</span>
- 
-public_key <span class="token operator">=</span> key_pair<span class="token punctuation">.</span>public_key
-<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"license_key.pub"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>public_key<span class="token punctuation">.</span>to_pem<span class="token punctuation">)</span> <span class="token punctuation">}</span>
- 
-private_key <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"license_key"</span><span class="token punctuation">)</span>
-<span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>encryption_key <span class="token operator">=</span> private_key
- 
-license <span class="token operator">=</span> <span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span><span class="token keyword">new</span>
-license<span class="token punctuation">.</span>licensee <span class="token operator">=</span> <span class="token punctuation">{</span>
-  <span class="token string">"Name"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"none"</span><span class="token punctuation">,</span>
-  <span class="token string">"Company"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"none"</span><span class="token punctuation">,</span>
-  <span class="token string">"Email"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"example@test.com"</span><span class="token punctuation">,</span>
-<span class="token punctuation">}</span>
-license<span class="token punctuation">.</span>starts_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2020</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment"># 开始时间</span>
-license<span class="token punctuation">.</span>expires_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2050</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment"># 结束时间</span>
-license<span class="token punctuation">.</span>notify_admins_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2049</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
-license<span class="token punctuation">.</span>notify_users_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2049</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
-license<span class="token punctuation">.</span>block_changes_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2050</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
-license<span class="token punctuation">.</span>restrictions <span class="token operator">=</span> <span class="token punctuation">{</span>
-  active_user_count<span class="token punctuation">:</span> <span class="token number">10000</span><span class="token punctuation">,</span>
-<span class="token punctuation">}</span>
- 
-puts <span class="token string">"License:"</span>
-puts license
- 
-data <span class="token operator">=</span> license<span class="token punctuation">.</span>export
-puts <span class="token string">"Exported license:"</span>
-puts data
-<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"GitLabBV.gitlab-license"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>data<span class="token punctuation">)</span> <span class="token punctuation">}</span>
- 
-public_key <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"license_key.pub"</span><span class="token punctuation">)</span>
-<span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>encryption_key <span class="token operator">=</span> public_key
- 
-data <span class="token operator">=</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"GitLabBV.gitlab-license"</span><span class="token punctuation">)</span>
-<span class="token variable">$license</span> <span class="token operator">=</span> <span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>import<span class="token punctuation">(</span>data<span class="token punctuation">)</span>
- 
-puts <span class="token string">"Imported license:"</span>
-puts <span class="token variable">$license</span>
- 
-<span class="token keyword">unless</span> <span class="token variable">$license</span>
-  <span class="token keyword">raise</span> <span class="token string">"The license is invalid."</span>
-<span class="token keyword">end</span>
- 
-<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>restricted<span class="token operator">?</span><span class="token punctuation">(</span><span class="token symbol">:active_user_count</span><span class="token punctuation">)</span>
-  active_user_count <span class="token operator">=</span> <span class="token number">10000</span>
-  <span class="token keyword">if</span> active_user_count <span class="token operator">&gt;</span> <span class="token variable">$license</span><span class="token punctuation">.</span>restrictions<span class="token punctuation">[</span><span class="token symbol">:active_user_count</span><span class="token punctuation">]</span>
-    <span class="token keyword">raise</span> <span class="token string">"The active user count exceeds the allowed amount!"</span>
-  <span class="token keyword">end</span>
-<span class="token keyword">end</span>
- 
-<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>notify_admins<span class="token operator">?</span>
-  puts <span class="token string">"The license is due to expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>."</span>
-<span class="token keyword">end</span>
- 
-<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>notify_users<span class="token operator">?</span>
-  puts <span class="token string">"The license is due to expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>."</span>
-<span class="token keyword">end</span>
- 
-<span class="token keyword">module</span> <span class="token constant">Gitlab</span>
-  <span class="token keyword">class</span> <span class="token class-name">GitAccess</span>
-    <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">check</span></span><span class="token punctuation">(</span>cmd<span class="token punctuation">,</span> changes <span class="token operator">=</span> <span class="token keyword">nil</span><span class="token punctuation">)</span>
-      <span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>block_changes<span class="token operator">?</span>
-        <span class="token keyword">return</span> build_status_object<span class="token punctuation">(</span><span class="token boolean">false</span><span class="token punctuation">,</span> <span class="token string">"License expired"</span><span class="token punctuation">)</span>
-      <span class="token keyword">end</span>
-    <span class="token keyword">end</span>
-  <span class="token keyword">end</span>
-<span class="token keyword">end</span>
- 
-puts <span class="token string">"This instance of GitLab Enterprise Edition is licensed to:"</span>
-<span class="token variable">$license</span><span class="token punctuation">.</span>licensee<span class="token punctuation">.</span><span class="token keyword">each</span> <span class="token keyword">do</span> <span class="token operator">|</span>key<span class="token punctuation">,</span> value<span class="token operator">|</span>
-  puts <span class="token string">"<span class="token interpolation"><span class="token delimiter tag">#{</span>key<span class="token delimiter tag">}</span></span>: <span class="token interpolation"><span class="token delimiter tag">#{</span>value<span class="token delimiter tag">}</span></span>"</span>
-<span class="token keyword">end</span>
- 
-<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>expired<span class="token operator">?</span>
-  puts <span class="token string">"The license expired on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>"</span>
-<span class="token keyword">elsif</span> <span class="token variable">$license</span><span class="token punctuation">.</span>will_expire<span class="token operator">?</span>
-  puts <span class="token string">"The license will expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>"</span>
-<span class="token keyword">else</span>
-  puts <span class="token string">"The license will never expire."</span>
-<span class="token keyword">end</span>
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<hr>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">ruby license.rb<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p>生成 <code>GitLabBV.gitlab-license</code> <code>license_key</code> <code>license_key.pub</code> 这三个文件。</p>
-<h2 id="使用许可证"><a href="#使用许可证" class="headerlink" title="使用许可证"></a><strong>使用许可证</strong></h2><p>用 <code>license_key.pub</code> 文件替换 <code>/opt/gitlab/embedded/service/gitlab-rails/.license_encryption_key.pub</code>。</p>
-<p><code>GitLabBV.gitlab-license</code> 即是许可证，填入 <code>${address}/admin/license</code> 地址并重启 <code>gitlab-ctl restart</code> 。</p>
-<h2 id="修改等级"><a href="#修改等级" class="headerlink" title="修改等级"></a><strong>修改等级</strong></h2><pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby"><span class="token operator">--</span><span class="token operator">-</span> <span class="token operator">/</span>opt<span class="token operator">/</span>gitlab<span class="token operator">/</span>embedded<span class="token operator">/</span>service<span class="token operator">/</span>gitlab<span class="token operator">-</span>rails<span class="token operator">/</span>ee<span class="token operator">/</span>app<span class="token operator">/</span>models<span class="token operator">/</span>license<span class="token punctuation">.</span>rb
-<span class="token operator">++</span><span class="token operator">+</span> <span class="token operator">/</span>opt<span class="token operator">/</span>gitlab<span class="token operator">/</span>embedded<span class="token operator">/</span>service<span class="token operator">/</span>gitlab<span class="token operator">-</span>rails<span class="token operator">/</span>ee<span class="token operator">/</span>app<span class="token operator">/</span>models<span class="token operator">/</span>license<span class="token punctuation">.</span>rb
-@@ <span class="token operator">-</span><span class="token number">458</span><span class="token punctuation">,</span><span class="token number">7</span> <span class="token operator">+</span><span class="token number">458</span><span class="token punctuation">,</span><span class="token number">7</span> @@
-  <span class="token keyword">end</span>
- 
-  <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">plan</span></span>
-<span class="token operator">-</span>    restricted_attr<span class="token punctuation">(</span><span class="token symbol">:plan</span><span class="token punctuation">)</span><span class="token punctuation">.</span>presence <span class="token operator">||</span> <span class="token constant">STARTER_PLAN</span>
-<span class="token operator">+</span>    restricted_attr<span class="token punctuation">(</span><span class="token symbol">:plan</span><span class="token punctuation">)</span><span class="token punctuation">.</span>presence <span class="token operator">||</span> <span class="token constant">ULTIMATE_PLAN</span>
-  <span class="token keyword">end</span>
- 
-  <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">edition</span></span>
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>修改完成后使用 <code>gitlab-ctl restart</code> 重新加载配置。</p>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a><strong>参考</strong></h2><ul>
-<li>  <a href="https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md">https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md</a></li>
-</ul>
+    <title>qnap硬盘移动位置</title>
+    <url>/qnap/2021-07-25-qnap-move-hard-disk-position/</url>
+    <content><![CDATA[<p>qnap硬盘移动位置，改变硬盘位</p>
+<h2 id="需求：硬盘位4的硬盘移动到硬盘位3"><a href="#需求：硬盘位4的硬盘移动到硬盘位3" class="headerlink" title="需求：硬盘位4的硬盘移动到硬盘位3"></a>需求：硬盘位4的硬盘移动到硬盘位3</h2><h2 id="步骤1"><a href="#步骤1" class="headerlink" title="步骤1"></a>步骤1</h2><p>造作步骤： 存储和快照总管app-&gt;存储/快照-&gt;管理-&gt;操作-&gt;安全卸载磁盘区</p>
+<p>如此，硬盘4卸载下来了，如下图</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/2520210725213003.png" alt="image-20210725213000780"></p>
+<h2 id="步骤2"><a href="#步骤2" class="headerlink" title="步骤2"></a>步骤2</h2><p>再把硬盘4拔下来，插入硬盘位3。等待硬盘被识别到，一般1分钟之内。</p>
+<h2 id="步骤3"><a href="#步骤3" class="headerlink" title="步骤3"></a>步骤3</h2><p>造作步骤： 存储和快照总管app-&gt;磁盘/VJBOD-&gt;点击磁盘3-&gt;还原-&gt;链接并回复存储池</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/2520210725213820.png" alt="image-20210725213818567"></p>
 ]]></content>
       <categories>
-        <category>gitlab</category>
+        <category>qnap</category>
       </categories>
       <tags>
-        <tag>Gitlab</tag>
-        <tag>Git</tag>
-        <tag>Crack</tag>
+        <tag>QNAP</tag>
+        <tag>硬盘</tag>
+        <tag>nas</tag>
       </tags>
   </entry>
   <entry>
@@ -677,26 +697,6 @@ $ joplin use <span class="token string">"My-Project"</span><span aria-hidden="tr
         <tag>wiz</tag>
         <tag>Joplin</tag>
         <tag>Typora</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>qnap硬盘移动位置</title>
-    <url>/qnap/2021-07-25-qnap-move-hard-disk-position/</url>
-    <content><![CDATA[<p>qnap硬盘移动位置，改变硬盘位</p>
-<h2 id="需求：硬盘位4的硬盘移动到硬盘位3"><a href="#需求：硬盘位4的硬盘移动到硬盘位3" class="headerlink" title="需求：硬盘位4的硬盘移动到硬盘位3"></a>需求：硬盘位4的硬盘移动到硬盘位3</h2><h2 id="步骤1"><a href="#步骤1" class="headerlink" title="步骤1"></a>步骤1</h2><p>造作步骤： 存储和快照总管app-&gt;存储/快照-&gt;管理-&gt;操作-&gt;安全卸载磁盘区</p>
-<p>如此，硬盘4卸载下来了，如下图</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/2520210725213003.png" alt="image-20210725213000780"></p>
-<h2 id="步骤2"><a href="#步骤2" class="headerlink" title="步骤2"></a>步骤2</h2><p>再把硬盘4拔下来，插入硬盘位3。等待硬盘被识别到，一般1分钟之内。</p>
-<h2 id="步骤3"><a href="#步骤3" class="headerlink" title="步骤3"></a>步骤3</h2><p>造作步骤： 存储和快照总管app-&gt;磁盘/VJBOD-&gt;点击磁盘3-&gt;还原-&gt;链接并回复存储池</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/2520210725213820.png" alt="image-20210725213818567"></p>
-]]></content>
-      <categories>
-        <category>qnap</category>
-      </categories>
-      <tags>
-        <tag>QNAP</tag>
-        <tag>硬盘</tag>
-        <tag>nas</tag>
       </tags>
   </entry>
   <entry>
@@ -1131,6 +1131,36 @@ tail <span class="token punctuation">-</span>f /root/tomcat/conf/server.xml<span
       </tags>
   </entry>
   <entry>
+    <title>qBittorrent 参数详细设置教程</title>
+    <url>/bt/2021-08-18-qbittorrent-parameter-reference-configuration/</url>
+    <content><![CDATA[<p>全文将以目前的最新版v4.2.1为例，进行参数设置，老版本某些功能不太一致，请知悉。特别鸣谢 原创者：Evine！</p>
+<h2 id="行为参数"><a href="#行为参数" class="headerlink" title="行为参数"></a>行为参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154449.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="下载参数"><a href="#下载参数" class="headerlink" title="下载参数"></a>下载参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154453.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="连接参数"><a href="#连接参数" class="headerlink" title="连接参数"></a>连接参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154528.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="速度参数"><a href="#速度参数" class="headerlink" title="速度参数"></a>速度参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154500.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="BT参数"><a href="#BT参数" class="headerlink" title="BT参数"></a>BT参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154539.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="RSS设置"><a href="#RSS设置" class="headerlink" title="RSS设置"></a>RSS设置</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154502.png" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="web参数"><a href="#web参数" class="headerlink" title="web参数"></a>web参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154508.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="高级参数"><a href="#高级参数" class="headerlink" title="高级参数"></a>高级参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154558.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h3 id="关于磁盘缓存的补充说明："><a href="#关于磁盘缓存的补充说明：" class="headerlink" title="关于磁盘缓存的补充说明："></a><strong>关于磁盘缓存的补充说明：</strong></h3><p>经常有人吐槽qB特别吃内存，个人猜测应该是磁盘缓存设置不正确导致的。磁盘缓存设置过小，磁盘缓存到期间隔过长，先下载的文件块来不及写入硬盘，新的文件块又到了，可能就会导致内存爆掉甚至磁盘I/O错误。个人建议：在进行高速下载时，适当将磁盘缓存调高，磁盘缓存到期间隔调低（下载时间隔越低写入越频繁，自己根据电脑的资源占用情况调整最适合自己的值）。实在不知道怎么调的，就干脆把磁盘缓存设置为-1（自动）好了，还不行，就把磁盘缓存到期间隔再调低一些。举一个例子，比如设置2048MiB磁盘缓存、300s磁盘缓存到期间隔时，当下载速度为50MiB/s的时候，300s的时间总共可以下载15000MiB，早就远远超过2048MiB了，不爆内存、不I/O错误才怪。所以当达到这个下载速度的时候，在磁盘缓存不变的情况下，根据简单的除法（磁盘缓存除以下载速度）可知，磁盘缓存到期间隔就应该设置到40s以下了。</p>
+<p>qB在正常运行后，其占用的内存会比你所设置的磁盘缓存多几百M。所有的参数没有标准答案，一切都得根据你机子的本身属性以及实际的使用场景（比如CPU性能、内存大小、硬盘写入速度、下载速度等）来设置，建议大家多试验。</p>
+<h3 id="关于TCP、UTP的补充说明："><a href="#关于TCP、UTP的补充说明：" class="headerlink" title="关于TCP、UTP的补充说明："></a><strong>关于TCP、UTP的补充说明：</strong></h3><p>TCP是Internet上最常用的协议，是一种面向连接的、可靠的、基于字节流的传输层通信协议。TCP的优势在于双向互动机制兼顾数据传输的完整性、可控制性和可靠性，但复杂的校验与控制机制也使其没有UDP传输效率高。</p>
+<p>UDP协议与TCP协议一样用于处理数据包，是一种无连接的协议。UDP的缺点是不提供数据包分组、组装和不能对数据包进行排序的缺点，也就是说，当报文发送之后，是无法得知其是否安全完整到达的。UDP优势在于带宽占用小、传输效率和连接成功率高，有益于内网用户（如通过UDP内网穿透UDP Hole Punching连接），但UDP与TCP协议相比也存在无反向确认机制、无流量和序列控制等弊端。</p>
+<p>uTP(Micro Transport Protocol)是一种正在标准化的开放式BT协议，主要功能是提高宽带使用效率、减少网络问题。在减缓网络延迟和拥堵的同时最大化网络吞吐量、克服多数防火墙和NAT的阻碍，增强网络穿透和传输效率，同时增益流量控制，这对BT用户和ISP都是互利的。uTP虽基于UDP协议但有所不同，uTP通过拥堵控制算法（Ledbat）可限制延时，当延时不严重时可最大限度利用带宽，并能通过uTP提供的信息用于选择TCP连接的传输率，即使在不作限速设置的情况下，也能减少网络拥堵产生，当用户端之间都启用uTP时，可见明显的传输速率提升。内网无法实现端口映射的用户启用uTP，可以改善与网外用户的连接。</p>
+<p>使用uTP进行连接的用户，其标志将包含“P”。</p>
+]]></content>
+      <categories>
+        <category>bt</category>
+      </categories>
+      <tags>
+        <tag>QNAP</tag>
+        <tag>nas</tag>
+        <tag>PT</tag>
+        <tag>BT</tag>
+        <tag>qbittorrent</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>几种常用管理模型和方法</title>
     <url>/pmbok/2021-08-18-several-common-management-models-and-methods/</url>
     <content><![CDATA[<p>这些只是基本的工具，你需要了解。但是，和行业相关的知识更重要。就像做数学题，把一堆错综复杂的线索中归纳总结出来问题，提出解决方法，这中间需要丰富的行业知识，这个没法速成。总结完后，执行阶段，就像数学加减乘除一样，这些是基本的工具和方法。</p>
@@ -1260,33 +1290,34 @@ tail <span class="token punctuation">-</span>f /root/tomcat/conf/server.xml<span
       </tags>
   </entry>
   <entry>
-    <title>qBittorrent 参数详细设置教程</title>
-    <url>/bt/2021-08-18-qbittorrent-parameter-reference-configuration/</url>
-    <content><![CDATA[<p>全文将以目前的最新版v4.2.1为例，进行参数设置，老版本某些功能不太一致，请知悉。特别鸣谢 原创者：Evine！</p>
-<h2 id="行为参数"><a href="#行为参数" class="headerlink" title="行为参数"></a>行为参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154449.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="下载参数"><a href="#下载参数" class="headerlink" title="下载参数"></a>下载参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154453.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="连接参数"><a href="#连接参数" class="headerlink" title="连接参数"></a>连接参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154528.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="速度参数"><a href="#速度参数" class="headerlink" title="速度参数"></a>速度参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154500.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="BT参数"><a href="#BT参数" class="headerlink" title="BT参数"></a>BT参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154539.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="RSS设置"><a href="#RSS设置" class="headerlink" title="RSS设置"></a>RSS设置</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154502.png" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="web参数"><a href="#web参数" class="headerlink" title="web参数"></a>web参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154508.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="高级参数"><a href="#高级参数" class="headerlink" title="高级参数"></a>高级参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154558.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h3 id="关于磁盘缓存的补充说明："><a href="#关于磁盘缓存的补充说明：" class="headerlink" title="关于磁盘缓存的补充说明："></a><strong>关于磁盘缓存的补充说明：</strong></h3><p>经常有人吐槽qB特别吃内存，个人猜测应该是磁盘缓存设置不正确导致的。磁盘缓存设置过小，磁盘缓存到期间隔过长，先下载的文件块来不及写入硬盘，新的文件块又到了，可能就会导致内存爆掉甚至磁盘I/O错误。个人建议：在进行高速下载时，适当将磁盘缓存调高，磁盘缓存到期间隔调低（下载时间隔越低写入越频繁，自己根据电脑的资源占用情况调整最适合自己的值）。实在不知道怎么调的，就干脆把磁盘缓存设置为-1（自动）好了，还不行，就把磁盘缓存到期间隔再调低一些。举一个例子，比如设置2048MiB磁盘缓存、300s磁盘缓存到期间隔时，当下载速度为50MiB/s的时候，300s的时间总共可以下载15000MiB，早就远远超过2048MiB了，不爆内存、不I/O错误才怪。所以当达到这个下载速度的时候，在磁盘缓存不变的情况下，根据简单的除法（磁盘缓存除以下载速度）可知，磁盘缓存到期间隔就应该设置到40s以下了。</p>
-<p>qB在正常运行后，其占用的内存会比你所设置的磁盘缓存多几百M。所有的参数没有标准答案，一切都得根据你机子的本身属性以及实际的使用场景（比如CPU性能、内存大小、硬盘写入速度、下载速度等）来设置，建议大家多试验。</p>
-<h3 id="关于TCP、UTP的补充说明："><a href="#关于TCP、UTP的补充说明：" class="headerlink" title="关于TCP、UTP的补充说明："></a><strong>关于TCP、UTP的补充说明：</strong></h3><p>TCP是Internet上最常用的协议，是一种面向连接的、可靠的、基于字节流的传输层通信协议。TCP的优势在于双向互动机制兼顾数据传输的完整性、可控制性和可靠性，但复杂的校验与控制机制也使其没有UDP传输效率高。</p>
-<p>UDP协议与TCP协议一样用于处理数据包，是一种无连接的协议。UDP的缺点是不提供数据包分组、组装和不能对数据包进行排序的缺点，也就是说，当报文发送之后，是无法得知其是否安全完整到达的。UDP优势在于带宽占用小、传输效率和连接成功率高，有益于内网用户（如通过UDP内网穿透UDP Hole Punching连接），但UDP与TCP协议相比也存在无反向确认机制、无流量和序列控制等弊端。</p>
-<p>uTP(Micro Transport Protocol)是一种正在标准化的开放式BT协议，主要功能是提高宽带使用效率、减少网络问题。在减缓网络延迟和拥堵的同时最大化网络吞吐量、克服多数防火墙和NAT的阻碍，增强网络穿透和传输效率，同时增益流量控制，这对BT用户和ISP都是互利的。uTP虽基于UDP协议但有所不同，uTP通过拥堵控制算法（Ledbat）可限制延时，当延时不严重时可最大限度利用带宽，并能通过uTP提供的信息用于选择TCP连接的传输率，即使在不作限速设置的情况下，也能减少网络拥堵产生，当用户端之间都启用uTP时，可见明显的传输速率提升。内网无法实现端口映射的用户启用uTP，可以改善与网外用户的连接。</p>
-<p>使用uTP进行连接的用户，其标志将包含“P”。</p>
+    <title>QNAP 修改应用启动顺序</title>
+    <url>/qnap/2021-09-01-qnap-change-app-start-sequence/</url>
+    <content><![CDATA[<ul>
+<li>关于本blog，<strong>图床</strong>一般使用<strong>github</strong>，已经配置了CDN，如果图片还是未显示请自行代理解决</li>
+</ul>
+<p>有时候，你想修改一下安装的应用启动顺序。该怎么做了？</p>
+<p>在无意中，博主发现了这个技巧。配置方法如下：</p>
+<h2 id="配置文件路径"><a href="#配置文件路径" class="headerlink" title="配置文件路径"></a>配置文件路径</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0120210901233948.png" alt="image-20210901233946469"></p>
+<h2 id="配置文件内容"><a href="#配置文件内容" class="headerlink" title="配置文件内容"></a>配置文件内容</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0120210901234357.png" alt="image-20210901234355622"></p>
+<p>RC_Number是qnap配置应用启动顺序，数字越小优先级越高。看着100差不多就是用户程序高优先级上限了。如此，你可以把一些应用调整高优先级启动，例如代理配置v2ray, dns配置DNSCrypt Proxy和DNSMasq，以实现其它应用采用这些服务。把一些应用调整低优先级，如qbittorrent等。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">ls</span> /etc/config -alh
+lrwxrwxrwx <span class="token number">1</span> admin administrators <span class="token number">21</span> <span class="token number">2021</span>-08-31 <span class="token number">17</span>:20 /etc/config -<span class="token operator">&gt;</span> /mnt/HDA_ROOT/.config/<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<h2 id="qnap使用init-v系统。"><a href="#qnap使用init-v系统。" class="headerlink" title="qnap使用init v系统。"></a>qnap使用init v系统。</h2><p>如果改为systemd 系统启动，可以加快启动速度。一些应用延迟加载技术看起来也没做好。用户这里修改RC_Number 可以手动实现一些延迟加载功能。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">/etc/init.d/QTransmission3.sh start         <span class="token comment">#启动</span>
+/etc/init.d/QTransmission3.sh stop            <span class="token comment">#停止</span>
+/etc/init.d/QTransmission3.sh restart        <span class="token comment">#重启</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="原创首发"><a href="#原创首发" class="headerlink" title="原创首发"></a>原创首发</h2><p>可以转载，但必须完整转载，并且带上原始地址链接。</p>
+<hr>
 ]]></content>
       <categories>
-        <category>bt</category>
+        <category>qnap</category>
       </categories>
       <tags>
         <tag>QNAP</tag>
         <tag>nas</tag>
-        <tag>PT</tag>
-        <tag>BT</tag>
-        <tag>qbittorrent</tag>
+        <tag>启动</tag>
       </tags>
   </entry>
   <entry>
@@ -1491,37 +1522,6 @@ ta/WikiLeaks-Year-Zero-2017-v1.7z <span class="token operator">&amp;</span><span
         <tag>PT</tag>
         <tag>BT</tag>
         <tag>transmission</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>QNAP 修改应用启动顺序</title>
-    <url>/qnap/2021-09-01-qnap-change-app-start-sequence/</url>
-    <content><![CDATA[<ul>
-<li>关于本blog，<strong>图床</strong>一般使用<strong>github</strong>，已经配置了CDN，如果图片还是未显示请自行代理解决</li>
-</ul>
-<p>有时候，你想修改一下安装的应用启动顺序。该怎么做了？</p>
-<p>在无意中，博主发现了这个技巧。配置方法如下：</p>
-<h2 id="配置文件路径"><a href="#配置文件路径" class="headerlink" title="配置文件路径"></a>配置文件路径</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0120210901233948.png" alt="image-20210901233946469"></p>
-<h2 id="配置文件内容"><a href="#配置文件内容" class="headerlink" title="配置文件内容"></a>配置文件内容</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0120210901234357.png" alt="image-20210901234355622"></p>
-<p>RC_Number是qnap配置应用启动顺序，数字越小优先级越高。看着100差不多就是用户程序高优先级上限了。如此，你可以把一些应用调整高优先级启动，例如代理配置v2ray, dns配置DNSCrypt Proxy和DNSMasq，以实现其它应用采用这些服务。把一些应用调整低优先级，如qbittorrent等。</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">ls</span> /etc/config -alh
-lrwxrwxrwx <span class="token number">1</span> admin administrators <span class="token number">21</span> <span class="token number">2021</span>-08-31 <span class="token number">17</span>:20 /etc/config -<span class="token operator">&gt;</span> /mnt/HDA_ROOT/.config/<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-
-<h2 id="qnap使用init-v系统。"><a href="#qnap使用init-v系统。" class="headerlink" title="qnap使用init v系统。"></a>qnap使用init v系统。</h2><p>如果改为systemd 系统启动，可以加快启动速度。一些应用延迟加载技术看起来也没做好。用户这里修改RC_Number 可以手动实现一些延迟加载功能。</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">/etc/init.d/QTransmission3.sh start         <span class="token comment">#启动</span>
-/etc/init.d/QTransmission3.sh stop            <span class="token comment">#停止</span>
-/etc/init.d/QTransmission3.sh restart        <span class="token comment">#重启</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="原创首发"><a href="#原创首发" class="headerlink" title="原创首发"></a>原创首发</h2><p>可以转载，但必须完整转载，并且带上原始地址链接。</p>
-<hr>
-]]></content>
-      <categories>
-        <category>qnap</category>
-      </categories>
-      <tags>
-        <tag>QNAP</tag>
-        <tag>nas</tag>
-        <tag>启动</tag>
       </tags>
   </entry>
   <entry>
