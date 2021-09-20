@@ -1,1 +1,290 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><title>Git Subversion</title><link href="style.css" rel="stylesheet"><link href="//dash_ref/Category/Creating a Repository/1"><link href="//dash_ref_Creating a Repository/Entry/Initialize a git-svn repo/0"><link href="//dash_ref_Creating a Repository/Entry/Fetch subversion commits/0"><link href="//dash_ref_Creating a Repository/Entry/Initialize and fetch together/0"><link href="//dash_ref/Category/Using the Repository/1"><link href="//dash_ref_Using the Repository/Entry/Update your repository/0"><link href="//dash_ref_Using the Repository/Entry/Push your commits/0"><link href="//dash_ref/Category/Branches/1"><link href="//dash_ref_Branches/Entry/Create branch in subversion/0"><link href="//dash_ref_Branches/Entry/Create tag in subversion/0"><link href="//dash_ref_Branches/Entry/List remote branches/0"><link href="//dash_ref_Branches/Entry/Fetch new branches/0"><link href="//dash_ref_Branches/Entry/Create a local branch/0"><link href="//dash_ref_Branches/Entry/Switch to a local branch/0"><link href="//dash_ref_Branches/Entry/Create branch and checkout/0"><link href="//dash_ref/Category/Metadata/1"><link href="//dash_ref_Metadata/Entry/Finding git commit for svn revision/0"><link href="//dash_ref_Metadata/Entry/Getting subversion info/0"><link href="//dash_ref_Metadata/Entry/Copy subversion ignores/0"></head><body><header><h1>Git Subversion</h1></header><article><p></p><p>Cheat sheet for git-svn, using a git client to connect to a subversion repository. See <a href="http://git-scm.com/book/en/Git-and-Other-Systems-Git-and-Subversion">Git and Subversion</a>.</p><p></p><section class="category"><h2 id="//dash_ref/Category/Creating a Repository/1"> Creating a Repository</h2><div class="scrollable"><table><tr id="//dash_ref_Creating a Repository/Entry/Initialize a git-svn repo/0"><td class="command"><p> <code>git svn init</code></p></td><td class="description"><div class="name"><p>Initialize a git-svn repo</p></div><div class="notes"><p>Initializes the git-svn repository corresponding to a remote subversion repository with the standard layout.</p><pre class="highlight plaintext">git svn init &lt;svn-repo-url&gt; --stdlayout --prefix=origin/</pre><p>Standard layout consists of <code>trunk/</code>, <code>tags/</code>, <code>branches/</code>. If the layout isn&#39;t standard, you can instead specify the subfolders :</p><pre class="highlight plaintext">git svn init &lt;svn-repo-url&gt; --trunk=&lt;folder&gt; --tags=&lt;folder&gt; --branches=&lt;folder&gt; --prefix=origin/</pre><p>Prefix is optional, but the default for git-svn will soon be <code>origin/</code>.</p></div></td></tr><tr id="//dash_ref_Creating a Repository/Entry/Fetch subversion commits/0"><td class="command"><p> <code>git svn fetch</code></p></td><td class="description"><div class="name"><p>Fetch subversion commits</p></div><div class="notes"><p>Once you&#39;ve initialized the repository, you need to populate it with the commits from subversion. If you prefer, you can use <code>git svn clone</code> to do an init and fetch together.</p></div></td></tr><tr id="//dash_ref_Creating a Repository/Entry/Initialize and fetch together/0"><td class="command"><p> <code>git svn clone</code></p></td><td class="description"><div class="name"><p>Initialize and fetch together</p></div><div class="notes"><p>If you prefer to initialize the repository and fetch all at once, you might prefer:</p><pre class="highlight plaintext">git svn clone &lt;svn-repo-url&gt; --stdlayout --prefix=origin/</pre><p>You have roughly the same options as you would for <code>git svn init</code>, but it will be followed up with an implicit fetch.</p></div></td></tr></table></div></section><section class="category"><h2 id="//dash_ref/Category/Using the Repository/1"> Using the Repository</h2><div class="scrollable"><table><tr id="//dash_ref_Using the Repository/Entry/Update your repository/0"><td class="command"><p> <code>git svn rebase</code></p></td><td class="description"><div class="name"><p>Update your repository</p></div><div class="notes"><p>You can&#39;t have local changes when you do this, so you&#39;ll need to commit or stash first.</p></div></td></tr><tr id="//dash_ref_Using the Repository/Entry/Push your commits/0"><td class="command"><p> <code>git svn dcommit</code></p></td><td class="description"><div class="name"><p>Push your commits</p></div><div class="notes"><p>Push the commits that you&#39;ve committed to your git repository to the remote subversion repository.</p></div></td></tr></table></div></section><section class="category"><h2 id="//dash_ref/Category/Branches/1"> Branches</h2><div class="scrollable"><table><tr id="//dash_ref_Branches/Entry/Create branch in subversion/0"><td class="command"><p> <code>git svn branch</code></p></td><td class="description"><div class="name"><p>Create branch in subversion</p></div><div class="notes"><p>Create a new branch in the remote subversion repository:</p><pre class="highlight plaintext">command 'git svn branch &lt;branch name&gt;'</pre><p>If you specify <code>-t</code> or <code>--tag</code>, it&#39;ll be a tag instead of a branch, but <code>git svn tag</code> is maybe simpler.</p></div></td></tr><tr id="//dash_ref_Branches/Entry/Create tag in subversion/0"><td class="command"><p> <code>git svn tag</code></p></td><td class="description"><div class="name"><p>Create tag in subversion</p></div><div class="notes"><p>Create a new tag in the remote subversion repository:</p><pre class="highlight plaintext">git svn tag &lt;tag name&gt;</pre><p>This may be easier to remember than <code>git svn branch --tag &lt;branchname&gt;</code>.</p></div></td></tr><tr id="//dash_ref_Branches/Entry/List remote branches/0"><td class="command"><p> <code>git branch -r</code></p></td><td class="description"><div class="name"><p>List remote branches</p></div><div class="notes"><p>List all the remote subversion branches that your git repository knows about. This is the same command you&#39;d use in git.</p></div></td></tr><tr id="//dash_ref_Branches/Entry/Fetch new branches/0"><td class="command"><p> <code>git svn fetch</code></p></td><td class="description"><div class="name"><p>Fetch new branches</p></div><div class="notes"><p>Fetches new branches from subversion that your git repository doesn&#39;t know about.</p></div></td></tr><tr id="//dash_ref_Branches/Entry/Create a local branch/0"><td class="command"><p> <code>git branch</code></p></td><td class="description"><div class="name"><p>Create a local branch</p></div><div class="notes"><p>If you want to create a local branch matching a remote branch but you don&#39;t want to switch to it:</p><pre class="highlight plaintext">git branch &lt;local branch name&gt; remotes/&lt;prefix&gt;/&lt;remote branch name&gt;</pre></div></td></tr><tr id="//dash_ref_Branches/Entry/Switch to a local branch/0"><td class="command"><p> <code>git checkout</code></p></td><td class="description"><div class="name"><p>Switch to a local branch</p></div><div class="notes"><p>Once you&#39;ve created your local branch, switching to it is done in the same way as within git:</p><pre class="highlight plaintext">git checkout &lt;local-branch-name&gt;</pre></div></td></tr><tr id="//dash_ref_Branches/Entry/Create branch and checkout/0"><td class="command"><p> <code>git checkout -b</code></p></td><td class="description"><div class="name"><p>Create branch and checkout</p></div><div class="notes"><p>If you want to create the branch and switch to it right away, you can combine the two:</p><pre class="highlight plaintext">git checkout -b &lt;local-branch-name&gt; remotes/&lt;prefix&gt;/&lt;remote-branch-name&gt;</pre></div></td></tr></table></div></section><section class="category"><h2 id="//dash_ref/Category/Metadata/1"> Metadata</h2><div class="scrollable"><table><tr id="//dash_ref_Metadata/Entry/Finding git commit for svn revision/0"><td class="command"><p> <code>git svn find-rev</code></p></td><td class="description"><div class="name"><p>Finding git commit for svn revision</p></div><div class="notes"><p>Finding the git commit corresponding to a revision number in the remote subversion repository:</p><pre class="highlight plaintext">git svn find-rev r&lt;change number&gt;</pre></div></td></tr><tr id="//dash_ref_Metadata/Entry/Getting subversion info/0"><td class="command"><p> <code>git svn info</code></p></td><td class="description"><div class="name"><p>Getting subversion info</p></div><div class="notes"><p>Getting the subversion repository information like <code>svn info</code> would.</p></div></td></tr><tr id="//dash_ref_Metadata/Entry/Copy subversion ignores/0"><td class="command"><p> <code>git svn show-ignore</code></p></td><td class="description"><div class="name"><p>Copy subversion ignores</p></div><div class="notes"><p>Extract subversion ignore metadata and put it in your git config directory:</p><pre class="highlight plaintext">git svn show-ignore &gt;&gt; .git/info/exclude&#x000A;</pre></div></td></tr></table></div></section><section class="notes"><h2>Notes</h2><ul><li>Created by <a href="http://geoffreywiseman.ca">Geoffrey Wiseman</a>. Contributions welcome.</li></ul></section></article><footer> You can modify and improve this cheat sheet <a onclick="return window.dash.openExternal_(this.href),!1" href="http://cheat.kapeli.com">here</a></footer></body></html>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8'>
+<title>Git Subversion</title>
+<link href='style.css' rel='stylesheet'>
+<link href='//dash_ref/Category/Creating a Repository/1'>
+<link href='//dash_ref_Creating a Repository/Entry/Initialize a git-svn repo/0'>
+<link href='//dash_ref_Creating a Repository/Entry/Fetch subversion commits/0'>
+<link href='//dash_ref_Creating a Repository/Entry/Initialize and fetch together/0'>
+<link href='//dash_ref/Category/Using the Repository/1'>
+<link href='//dash_ref_Using the Repository/Entry/Update your repository/0'>
+<link href='//dash_ref_Using the Repository/Entry/Push your commits/0'>
+<link href='//dash_ref/Category/Branches/1'>
+<link href='//dash_ref_Branches/Entry/Create branch in subversion/0'>
+<link href='//dash_ref_Branches/Entry/Create tag in subversion/0'>
+<link href='//dash_ref_Branches/Entry/List remote branches/0'>
+<link href='//dash_ref_Branches/Entry/Fetch new branches/0'>
+<link href='//dash_ref_Branches/Entry/Create a local branch/0'>
+<link href='//dash_ref_Branches/Entry/Switch to a local branch/0'>
+<link href='//dash_ref_Branches/Entry/Create branch and checkout/0'>
+<link href='//dash_ref/Category/Metadata/1'>
+<link href='//dash_ref_Metadata/Entry/Finding git commit for svn revision/0'>
+<link href='//dash_ref_Metadata/Entry/Getting subversion info/0'>
+<link href='//dash_ref_Metadata/Entry/Copy subversion ignores/0'>
+</head>
+<body>
+<header>
+<h1>Git Subversion</h1>
+</header>
+<article>
+<p><p>Cheat sheet for git-svn, using a git client to connect to a subversion repository. See <a href="http://git-scm.com/book/en/Git-and-Other-Systems-Git-and-Subversion">Git and Subversion</a>.</p>
+</p>
+<section class='category'>
+<h2 id='//dash_ref/Category/Creating a Repository/1'>
+Creating a Repository
+</h2>
+<div class='scrollable'>
+<table>
+<tr id='//dash_ref_Creating a Repository/Entry/Initialize a git-svn repo/0'>
+<td class='command'>
+<p>
+<code>git svn init</code>
+</p>
+</td>
+<td class='description'>
+<div class='name'><p>Initialize a git-svn repo</p>
+</div>
+<div class='notes'><p>Initializes the git-svn repository corresponding to a remote subversion repository with the standard layout.</p>
+<pre class="highlight plaintext">git svn init &lt;svn-repo-url&gt; --stdlayout --prefix=origin/</pre>
+<p>Standard layout consists of <code>trunk/</code>, <code>tags/</code>, <code>branches/</code>.
+If the layout isn&#39;t standard, you can instead specify the subfolders : </p>
+<pre class="highlight plaintext">git svn init &lt;svn-repo-url&gt; --trunk=&lt;folder&gt; --tags=&lt;folder&gt; --branches=&lt;folder&gt; --prefix=origin/</pre>
+<p>Prefix is optional, but the default for git-svn will soon be <code>origin/</code>.</p>
+</div>
+</td>
+</tr>
+<tr id='//dash_ref_Creating a Repository/Entry/Fetch subversion commits/0'>
+<td class='command'>
+<p>
+<code>git svn fetch</code>
+</p>
+</td>
+<td class='description'>
+<div class='name'><p>Fetch subversion commits</p>
+</div>
+<div class='notes'><p>Once you&#39;ve initialized the repository, you need to populate it with the commits from subversion. 
+If you prefer, you can use <code>git svn clone</code> to do an init and fetch together.</p>
+</div>
+</td>
+</tr>
+<tr id='//dash_ref_Creating a Repository/Entry/Initialize and fetch together/0'>
+<td class='command'>
+<p>
+<code>git svn clone</code>
+</p>
+</td>
+<td class='description'>
+<div class='name'><p>Initialize and fetch together</p>
+</div>
+<div class='notes'><p>If you prefer to initialize the repository and fetch all at once, you might prefer:</p>
+<pre class="highlight plaintext">git svn clone &lt;svn-repo-url&gt; --stdlayout --prefix=origin/</pre>
+<p>You have roughly the same options as you would for <code>git svn init</code>, but it will be followed up with an implicit fetch.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</section>
+<section class='category'>
+<h2 id='//dash_ref/Category/Using the Repository/1'>
+Using the Repository
+</h2>
+<div class='scrollable'>
+<table>
+<tr id='//dash_ref_Using the Repository/Entry/Update your repository/0'>
+<td class='command'>
+<p>
+<code>git svn rebase</code>
+</p>
+</td>
+<td class='description'>
+<div class='name'><p>Update your repository</p>
+</div>
+<div class='notes'><p>You can&#39;t have local changes when you do this, so you&#39;ll need to commit or stash first.</p>
+</div>
+</td>
+</tr>
+<tr id='//dash_ref_Using the Repository/Entry/Push your commits/0'>
+<td class='command'>
+<p>
+<code>git svn dcommit</code>
+</p>
+</td>
+<td class='description'>
+<div class='name'><p>Push your commits</p>
+</div>
+<div class='notes'><p>Push the commits that you&#39;ve committed to your git repository to the remote subversion repository.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</section>
+<section class='category'>
+<h2 id='//dash_ref/Category/Branches/1'>
+Branches
+</h2>
+<div class='scrollable'>
+<table>
+<tr id='//dash_ref_Branches/Entry/Create branch in subversion/0'>
+<td class='command'>
+<p>
+<code>git svn branch</code>
+</p>
+</td>
+<td class='description'>
+<div class='name'><p>Create branch in subversion</p>
+</div>
+<div class='notes'><p>Create a new branch in the remote subversion repository:</p>
+<pre class="highlight plaintext">command 'git svn branch &lt;branch name&gt;'</pre>
+<p>If you specify <code>-t</code> or <code>--tag</code>, it&#39;ll be a tag instead of a branch, but <code>git svn tag</code> is maybe simpler.</p>
+</div>
+</td>
+</tr>
+<tr id='//dash_ref_Branches/Entry/Create tag in subversion/0'>
+<td class='command'>
+<p>
+<code>git svn tag</code>
+</p>
+</td>
+<td class='description'>
+<div class='name'><p>Create tag in subversion</p>
+</div>
+<div class='notes'><p>Create a new tag in the remote subversion repository:</p>
+<pre class="highlight plaintext">git svn tag &lt;tag name&gt;</pre>
+<p>This may be easier to remember than <code>git svn branch --tag &lt;branchname&gt;</code>.</p>
+</div>
+</td>
+</tr>
+<tr id='//dash_ref_Branches/Entry/List remote branches/0'>
+<td class='command'>
+<p>
+<code>git branch -r</code>
+</p>
+</td>
+<td class='description'>
+<div class='name'><p>List remote branches</p>
+</div>
+<div class='notes'><p>List all the remote subversion branches that your git repository knows about. 
+This is the same command you&#39;d use in git.</p>
+</div>
+</td>
+</tr>
+<tr id='//dash_ref_Branches/Entry/Fetch new branches/0'>
+<td class='command'>
+<p>
+<code>git svn fetch</code>
+</p>
+</td>
+<td class='description'>
+<div class='name'><p>Fetch new branches</p>
+</div>
+<div class='notes'><p>Fetches new branches from subversion that your git repository doesn&#39;t know about.</p>
+</div>
+</td>
+</tr>
+<tr id='//dash_ref_Branches/Entry/Create a local branch/0'>
+<td class='command'>
+<p>
+<code>git branch</code>
+</p>
+</td>
+<td class='description'>
+<div class='name'><p>Create a local branch</p>
+</div>
+<div class='notes'><p>If you want to create a local branch matching a remote branch but you don&#39;t want to switch to it:</p>
+<pre class="highlight plaintext">git branch &lt;local branch name&gt; remotes/&lt;prefix&gt;/&lt;remote branch name&gt;</pre></div>
+</td>
+</tr>
+<tr id='//dash_ref_Branches/Entry/Switch to a local branch/0'>
+<td class='command'>
+<p>
+<code>git checkout</code>
+</p>
+</td>
+<td class='description'>
+<div class='name'><p>Switch to a local branch</p>
+</div>
+<div class='notes'><p>Once you&#39;ve created your local branch, switching to it is done in the same way as within git:</p>
+<pre class="highlight plaintext">git checkout &lt;local-branch-name&gt;</pre></div>
+</td>
+</tr>
+<tr id='//dash_ref_Branches/Entry/Create branch and checkout/0'>
+<td class='command'>
+<p>
+<code>git checkout -b</code>
+</p>
+</td>
+<td class='description'>
+<div class='name'><p>Create branch and checkout</p>
+</div>
+<div class='notes'><p>If you want to create the branch and switch to it right away, you can combine the two:</p>
+<pre class="highlight plaintext">git checkout -b &lt;local-branch-name&gt; remotes/&lt;prefix&gt;/&lt;remote-branch-name&gt;</pre></div>
+</td>
+</tr>
+</table>
+</div>
+</section>
+<section class='category'>
+<h2 id='//dash_ref/Category/Metadata/1'>
+Metadata
+</h2>
+<div class='scrollable'>
+<table>
+<tr id='//dash_ref_Metadata/Entry/Finding git commit for svn revision/0'>
+<td class='command'>
+<p>
+<code>git svn find-rev</code>
+</p>
+</td>
+<td class='description'>
+<div class='name'><p>Finding git commit for svn revision</p>
+</div>
+<div class='notes'><p>Finding the git commit corresponding to a revision number in the remote subversion repository:</p>
+<pre class="highlight plaintext">git svn find-rev r&lt;change number&gt;</pre></div>
+</td>
+</tr>
+<tr id='//dash_ref_Metadata/Entry/Getting subversion info/0'>
+<td class='command'>
+<p>
+<code>git svn info</code>
+</p>
+</td>
+<td class='description'>
+<div class='name'><p>Getting subversion info</p>
+</div>
+<div class='notes'><p>Getting the subversion repository information like <code>svn info</code> would.</p>
+</div>
+</td>
+</tr>
+<tr id='//dash_ref_Metadata/Entry/Copy subversion ignores/0'>
+<td class='command'>
+<p>
+<code>git svn show-ignore</code>
+</p>
+</td>
+<td class='description'>
+<div class='name'><p>Copy subversion ignores</p>
+</div>
+<div class='notes'><p>Extract subversion ignore metadata and put it in your git config directory:</p>
+<pre class="highlight plaintext">git svn show-ignore &gt;&gt; .git/info/exclude&#x000A;</pre></div>
+</td>
+</tr>
+</table>
+</div>
+</section>
+<section class='notes'>
+<h2>Notes</h2>
+<ul>
+<li>Created by <a href="http://geoffreywiseman.ca">Geoffrey Wiseman</a>. Contributions welcome.</li>
+</ul>
+
+</section>
+</article>
+<footer>
+You can modify and improve this cheat sheet <a onclick="window.dash.openExternal_(this.href); return false;" href="http://cheat.kapeli.com">here</a>
+</footer>
+</body>
+</html>
