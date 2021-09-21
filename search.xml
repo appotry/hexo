@@ -1260,6 +1260,36 @@ tail <span class="token punctuation">-</span>f /root/tomcat/conf/server.xml<span
       </tags>
   </entry>
   <entry>
+    <title>qBittorrent 参数详细设置教程</title>
+    <url>/bt/2021-08-18-qbittorrent-parameter-reference-configuration/</url>
+    <content><![CDATA[<p>全文将以目前的最新版v4.2.1为例，进行参数设置，老版本某些功能不太一致，请知悉。特别鸣谢 原创者：Evine！</p>
+<h2 id="行为参数"><a href="#行为参数" class="headerlink" title="行为参数"></a>行为参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154449.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="下载参数"><a href="#下载参数" class="headerlink" title="下载参数"></a>下载参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154453.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="连接参数"><a href="#连接参数" class="headerlink" title="连接参数"></a>连接参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154528.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="速度参数"><a href="#速度参数" class="headerlink" title="速度参数"></a>速度参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154500.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="BT参数"><a href="#BT参数" class="headerlink" title="BT参数"></a>BT参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154539.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="RSS设置"><a href="#RSS设置" class="headerlink" title="RSS设置"></a>RSS设置</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154502.png" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="web参数"><a href="#web参数" class="headerlink" title="web参数"></a>web参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154508.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="高级参数"><a href="#高级参数" class="headerlink" title="高级参数"></a>高级参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154558.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h3 id="关于磁盘缓存的补充说明："><a href="#关于磁盘缓存的补充说明：" class="headerlink" title="关于磁盘缓存的补充说明："></a><strong>关于磁盘缓存的补充说明：</strong></h3><p>经常有人吐槽qB特别吃内存，个人猜测应该是磁盘缓存设置不正确导致的。磁盘缓存设置过小，磁盘缓存到期间隔过长，先下载的文件块来不及写入硬盘，新的文件块又到了，可能就会导致内存爆掉甚至磁盘I/O错误。个人建议：在进行高速下载时，适当将磁盘缓存调高，磁盘缓存到期间隔调低（下载时间隔越低写入越频繁，自己根据电脑的资源占用情况调整最适合自己的值）。实在不知道怎么调的，就干脆把磁盘缓存设置为-1（自动）好了，还不行，就把磁盘缓存到期间隔再调低一些。举一个例子，比如设置2048MiB磁盘缓存、300s磁盘缓存到期间隔时，当下载速度为50MiB/s的时候，300s的时间总共可以下载15000MiB，早就远远超过2048MiB了，不爆内存、不I/O错误才怪。所以当达到这个下载速度的时候，在磁盘缓存不变的情况下，根据简单的除法（磁盘缓存除以下载速度）可知，磁盘缓存到期间隔就应该设置到40s以下了。</p>
+<p>qB在正常运行后，其占用的内存会比你所设置的磁盘缓存多几百M。所有的参数没有标准答案，一切都得根据你机子的本身属性以及实际的使用场景（比如CPU性能、内存大小、硬盘写入速度、下载速度等）来设置，建议大家多试验。</p>
+<h3 id="关于TCP、UTP的补充说明："><a href="#关于TCP、UTP的补充说明：" class="headerlink" title="关于TCP、UTP的补充说明："></a><strong>关于TCP、UTP的补充说明：</strong></h3><p>TCP是Internet上最常用的协议，是一种面向连接的、可靠的、基于字节流的传输层通信协议。TCP的优势在于双向互动机制兼顾数据传输的完整性、可控制性和可靠性，但复杂的校验与控制机制也使其没有UDP传输效率高。</p>
+<p>UDP协议与TCP协议一样用于处理数据包，是一种无连接的协议。UDP的缺点是不提供数据包分组、组装和不能对数据包进行排序的缺点，也就是说，当报文发送之后，是无法得知其是否安全完整到达的。UDP优势在于带宽占用小、传输效率和连接成功率高，有益于内网用户（如通过UDP内网穿透UDP Hole Punching连接），但UDP与TCP协议相比也存在无反向确认机制、无流量和序列控制等弊端。</p>
+<p>uTP(Micro Transport Protocol)是一种正在标准化的开放式BT协议，主要功能是提高宽带使用效率、减少网络问题。在减缓网络延迟和拥堵的同时最大化网络吞吐量、克服多数防火墙和NAT的阻碍，增强网络穿透和传输效率，同时增益流量控制，这对BT用户和ISP都是互利的。uTP虽基于UDP协议但有所不同，uTP通过拥堵控制算法（Ledbat）可限制延时，当延时不严重时可最大限度利用带宽，并能通过uTP提供的信息用于选择TCP连接的传输率，即使在不作限速设置的情况下，也能减少网络拥堵产生，当用户端之间都启用uTP时，可见明显的传输速率提升。内网无法实现端口映射的用户启用uTP，可以改善与网外用户的连接。</p>
+<p>使用uTP进行连接的用户，其标志将包含“P”。</p>
+]]></content>
+      <categories>
+        <category>bt</category>
+      </categories>
+      <tags>
+        <tag>QNAP</tag>
+        <tag>nas</tag>
+        <tag>PT</tag>
+        <tag>BT</tag>
+        <tag>qbittorrent</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>transmission 使用及其配置</title>
     <url>/bt/2021-08-18-transmission-parameter-reference-configuration/</url>
     <content><![CDATA[<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><h3 id="qnapclub"><a href="#qnapclub" class="headerlink" title="qnapclub"></a><strong>qnapclub</strong></h3><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818163248.png" alt="image-20210818163246709"></p>
@@ -1538,6 +1568,74 @@ lrwxrwxrwx <span class="token number">1</span> admin administrators <span class=
         <tag>Linux</tag>
         <tag>MySQL</tag>
         <tag>优化</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>ESNI和加密DNS - 保护信息隐私的最后一块拼图</title>
+    <url>/web/2021-09-06-encrypted-sni-anti-censorship/</url>
+    <content><![CDATA[<p>随着<a href="https://www.ietf.org/blog/tls13/">TLS1.3</a>的发布，让该协议成为有史以来最安全、也是最复杂的TLS协议。在该协议之中，有很多的对于以往协议安全漏洞的修复，包括废弃RSA启用新的秘钥交换机制PSK等等。而<code>Encrypted SNI</code>作为一个<code>TLS1.3</code>的扩展协议用来防止传统的HTTPS流量受到ISP或者陌生网络环境的窥探以及一些网络审查。在过去，由于<code>HTTPS</code>协议之中<code>Server Name Indication - SNI</code>的使用，我们的HTTPS流量经常被窥探我们所访问站点的域名</p>
+<h3 id="那么什么是SNI？⌗"><a href="#那么什么是SNI？⌗" class="headerlink" title="那么什么是SNI？⌗"></a>那么什么是SNI？<a href="#%E9%82%A3%E4%B9%88%E4%BB%80%E4%B9%88%E6%98%AFsni">⌗</a></h3><blockquote>
+<p>服务器名称指示（英语：Server Name Indication，简称SNI）是一个扩展的TLS计算机联网协议，在该协议下，在握手过程开始时客户端告诉它正在连接的服务器要连接的主机名称。这允许服务器在相同的IP地址和TCP端口号上呈现多个证书，并且因此允许在相同的IP地址上提供多个安全（HTTPS）网站（或其他任何基于TLS的服务），而不需要所有这些站点使用相同的证书。它与HTTP/1.1基于名称的虚拟主机的概念相同，但是用于HTTPS。所需的主机名未加密， 因此窃听者可以查看请求的网站 为了使SNI协议起作用，绝大多数访问者必须使用实现它的Web浏览器。使用未实现SNI浏览器的用户将被提供默认证书，因此很可能会收到证书警告</p>
+</blockquote>
+<ul>
+<li>  SNI协议示意图</li>
+</ul>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144946.webp"></p>
+<ul>
+<li>  TLS1.3完整握手流程</li>
+</ul>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144904.webp"></p>
+<h3 id="为了弥补缺陷因应运而生的ESNI⌗"><a href="#为了弥补缺陷因应运而生的ESNI⌗" class="headerlink" title="为了弥补缺陷因应运而生的ESNI⌗"></a>为了弥补缺陷因应运而生的ESNI<a href="#%E4%B8%BA%E4%BA%86%E5%BC%A5%E8%A1%A5%E7%BC%BA%E9%99%B7%E5%9B%A0%E5%BA%94%E8%BF%90%E8%80%8C%E7%94%9F%E7%9A%84esni">⌗</a></h3><p>在上述过程之中，存在的问题就是，在ClientHello环节中，TLS会在这个位置以<strong>明文</strong>的形式讲要请求的Host写在数据包之中，如果在网络路由中有任何的监听节点，那么用户所访问网站的域名将暴露无遗，这将是巨大的用户隐私泄露: <img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144907.webp"></p>
+<p>所以在最新的关于<a href="https://tools.ietf.org/html/draft-rescorla-tls-esni-00">ESNI的草案</a>中，<code>IETF</code>重新设计了一种加密的Client Hello机制，从而修复了这个问题: <img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144915.webp"></p>
+<p><strong>不过这里问题又来了，之前服务器和客户端并没有事先交换任何数据啊，这个加密的凭证从何而来啊？？？</strong></p>
+<h3 id="依靠安全DNS的ESNI⌗"><a href="#依靠安全DNS的ESNI⌗" class="headerlink" title="依靠安全DNS的ESNI⌗"></a>依靠安全DNS的ESNI<a href="#%E4%BE%9D%E9%9D%A0%E5%AE%89%E5%85%A8dns%E7%9A%84esni">⌗</a></h3><p>上一个问题没有难倒工程师们，他们设计了这样一个办法。首先让网站提供者在DNS提供商上公布一个记录，这个记录包含着一个<code>公钥</code>，这个公钥由网站提供者生成，其<code>私钥</code>存储在Web服务器等待着被Web程序读取。如此，当用户想通过TLS1.3协议访问这个域名的时候，首先读取这个公开的公钥，在用公钥加密其想访问的<code>域名Host</code>，装在<code>Client Hello</code>里面发送给目标服务器，目标服务器再用自己的私钥解密，从而和用户建立HTTPS链接，这样就不会暴露Host信息 这时候有人会想，如果有人某Wall想给你的DNS偷天换日，那会不会很不安全啊,请继续向下看</p>
+<p>在<code>ESNI</code>的实现草案之中，里面要求<code>安全加密的DNS</code><strong>是推荐的</strong>。大家都知道我们的DNS查询一般是<code>TCP</code>报文或者是<code>UDP</code>报文，本身它是不加密的，所以如果有人想在篡改你的DNS是相对简单的，大家可能都知道我们伟大的妨炎蔷会使用DNS污染的方式干扰一些网站的正常访问。正式由于DNS的非加密性，DNS也成为了审查信息的利器。此时加密的DNS势在必行</p>
+<h3 id="DNS-over-TLS-DoT-and-DNS-over-HTTPS-DoH-⌗"><a href="#DNS-over-TLS-DoT-and-DNS-over-HTTPS-DoH-⌗" class="headerlink" title="DNS over TLS (DoT) and DNS over HTTPS (DoH)⌗"></a>DNS over TLS (DoT) and DNS over HTTPS (DoH)<a href="#dns-over-tls-dot-and-dns-over-https-doh">⌗</a></h3><p>于是出现了这两种新型的DNS查询方式</p>
+<ul>
+<li>  DNS over HTTPS (DoH)</li>
+</ul>
+<blockquote>
+<p>DNS Over HTTPS (DOH) 是一个进行安全化的域名解析的方案，当前尚处于实验性阶段。其意义在于以加密的HTTPS协议进行DNS解析请求，避免原始DNS协议中用户的DNS解析请求被窃听或者修改的问题（例如中间人攻击）来达到保护用户隐私的目的。 Google及Mozilla基金会正在测试这一协议，作为其提高网络安全性的努力的一部分。 当前，该方案由IETF支持，其规范文档以 RFC 8484 的名义发布。2018年9月5日发布的Firefox 62正式版加入了这项功能，但需要用户手动开启 DNS Over HTTPS利用HTTP协议的GET命令发出经由JSON等编码的DNS解析请求。较于传统的DNS协议，此处的HTTP协议通信处于具有加密作用的SSL/TLS协议（两者统称作HTTPS）的保护之下。但是，由于其基于HTTPS，而HTTPS本身需要经由多次数据来回传递才能完成协议初始化，其域名解析耗时较原DNS协议会显著增加。 传统的DNS协议形成于互联网早期，直接基于UDP或TCP协议，且彼时未虑及现代安全性的需要，未利用密码学等手段进行加密或验证。因而，其无法抵御现代互联网常见的DNS投毒污染等攻击手段或监听。虽然后来的DNSSEC方案通过电子签名进行验证，强化了DNS的安全性，并能够抵御DNS投毒污染等篡改通信的手段，但其对于中间网络设备进行的监听仍然没有抵御能力（随后，监听者可以通过获取的通信数据知晓用户访问了哪一域名，而域名往往与具体的网站相关系）。此外，DNSSEC的起效要求现有的大量DNS解析服务的提供商（常为互联网服务提供商或第三方大型互联网机构）对已有的DNS服务器进行大范围修改等问题，其推进进程并不理想。而对于DNS Over HTTPS，在正确部署服务端并妥善配置客户端的前提下，互联网服务提供商或其它中间网络设备无法解密（亦即无法获知请求的实际内容）或者篡改已经加密的HTTPS通信，故其能够有效保护互联网用户的安全及隐私；另一方面，其基于已经成熟并已广泛部署的HTTPS协议，客户端进行利用较为方便。</p>
+</blockquote>
+<ul>
+<li>  DNS over TLS (DoT)</li>
+</ul>
+<blockquote>
+<p>DNS over TLS (DoT) 是通过传输层安全协议（TLS）来加密并打包域名系统（DNS）的安全协议。此协议旨在防止中间人攻击与控制DNS数据以保护用户隐私。 RFC 7858及RFC 8310定义了DNS over TLS。 截至2018年，Cloudflare、Quad9与CleanBrowsing均向大众提供支持DNS over TLS的公共DNS解析服务。2018年4月，Google宣布Android P将包含对DNS over TLS的支持。PowerDNS的DNSDist也宣布在其最新的1.3.0版本中添加了对DNS over TLS的支持。BIND用户也可以通过stunnel代理提供DNS over TLS服务。</p>
+</blockquote>
+<h3 id="手动配置⌗"><a href="#手动配置⌗" class="headerlink" title="手动配置⌗"></a>手动配置<a href="#%E6%89%8B%E5%8A%A8%E9%85%8D%E7%BD%AE">⌗</a></h3><p>Firefox所在的Mozilla宣布从<code>Firefox 62</code>版本之后开始支持<code>ESNI</code>，默认没有开启，需要用户手动配置打开，那么我们现在试验一下 这里Firefox的解决方案是使用<code>DNS over HTTPS (DoH)</code>和<code>ESNI</code></p>
+<ol>
+<li>安装<code>Firefox Nightly</code>版本，这个版本是预发布版本，使得开发这和即可门可以提前尝鲜到新功能。<a href="https://www.mozilla.org/zh-CN/firefox/nightly/all/">下载地址</a></li>
+<li>在浏览器地址栏输入<code>about:config</code>并回车，打开配置页面，在搜索位置搜索<code>network.trr.mode</code>，这个是打开浏览器对于<code>DoH</code>的支持，将此项的数值修改为3（<code>0</code>对应的是不开启此功能；<code>1</code>对应的是交由浏览器选择<code>DoH</code>与传统方式那种更快；<code>2</code>代表优先使用加密DNS查询，如果失败则回落到普通DNS查询；<code>3</code>代表只使用加密DNS查询；<code>5</code>代表明确的关闭此功能）</li>
+<li>继续搜索<code>network.trr.uri</code>，将此项的值修改为<code>https://mozilla.cloudflare-dns.com/dns-query</code>，这个是默认的<code>DoH</code>查询地址，当然我们也可以使用诸如<code>https://1.1.1.1/dns-query</code>、<code>https://dns.google.com/experimental</code>这样的地址，我们可以事先<code>ping</code>检测一下对比哪个延迟更低来使用</li>
+<li>（可选）搜索<code>network.trr.bootstrapAddress</code>，讲此值修改位第三步的DNS域名的<code>IP</code>。此举是为了避免使用操作系统DNS查询域名受到劫持，一般来说这些DNS的<code>IP</code>是不会变的</li>
+</ol>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828145006.webp"></p>
+<ol start="5">
+<li>将<code>network.security.esni.enabled</code>设置为<code>true</code>,此举为了打开浏览器对于ESNI的支持（感谢<a href="https://github.com/chenIshi">chenlshi</a>同学的提醒，在原版的文章中我不小心遗漏了这个关键的步骤）</li>
+<li>完成配置后重启浏览器，再打开<a href="https://encryptedsni.com/">在线验证页面验证</a>来查询你的浏览器是否完全支持<code>ESNI</code>功能，如果出现如图说明配置成功了</li>
+</ol>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144924.webp"></p>
+<h3 id="验证⌗"><a href="#验证⌗" class="headerlink" title="验证⌗"></a>验证<a href="#%E9%AA%8C%E8%AF%81">⌗</a></h3><p>为了验证是否真的加密了<code>Client Hello</code>，我们使用<code>Wireshark</code>进行网络抓包 由于这个特性仍在试验阶段，并没有太多站点支持这个特性，<a href="https://cloudflare.com/">CloudFlare</a>是第一个全站支持<code>ESNI</code>的网站，这里我们使用<a href="https://blog.cloudflare.com/">blog.cloudflare.com</a>来做测试：</p>
+<ol>
+<li> 首先打开<code>Wireshark</code>的抓包功能，然后开启<code>Chrome</code>浏览器打开上述网址，页面加载完后停止抓包，在得到的结果中查询协议为<code>TLS1.3</code>和报文为<code>Client Hello</code>的报文，通过观察发现域名的Host果然被以明文形式写在数据包中（参见<code>Server_Name</code>字段）：</li>
+</ol>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144932.webp"></p>
+<ol start="2">
+<li> 然后打开<code>Firefox Nightly</code>浏览器重复上述操作，这次发现在整个数据包中根本找不到<code>Server_Name</code>字段，说明<code>Host</code>已经被加密：</li>
+</ol>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144933.webp"></p>
+<p>目前来说，我查阅了相关的关键词，仍然没有任何一篇教程有介绍如何在自己的服务器上支持<code>ESNI</code>，同时我也看到在<code>Nginx</code>的论坛里面有人呼吁尽快支持<code>ESNI</code>，所以我推测这个功能仍然在试验期，还没有被这两个Web软件所支持，起劲为止我也没有查阅到任何的Web软件预计支持此项功能。这项扩展已经进入<code>IETF</code>的草案阶段，可以预见到，在不就的将来，这项技术可以普及开来，为我们的网络隐私保驾护航 目前来说，有了<code>HTTPS</code>+<code>TLS1.3</code>+<code>ESNI</code>+<code>DoH/DoT</code>的加持，我们的网络隐私的到了极大的保障，最后还有一个问题是访问服务器<code>IP</code>的泄露仍然无法被避免，迫于<code>IP协议</code>设计的机制，他目前还不能被解决。不过我相信，随着网技术不断的趋于保护个人隐私和更快速的发展方向，这个问题可以最终被解决</p>
+<p>From: <a href="https://blog.hackerchai.com/post/encrypted-sni-anti-censorship/">hackerchai</a></p>
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>SSL</tag>
+        <tag>TLS</tag>
+        <tag>隐私</tag>
+        <tag>安全</tag>
       </tags>
   </entry>
   <entry>
@@ -2068,6 +2166,106 @@ pm2 start app.js --name<span class="token operator">=</span><span class="token s
       </tags>
   </entry>
   <entry>
+    <title>替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化</title>
+    <url>/note/2021-09-09-start-to-use-joplin/</url>
+    <content><![CDATA[<p>Evernote笔记是我们常用的一个笔记服务，国内叫印象笔记，免费版本的Evernote笔记其实已经足够我们使用了，但是对于重度的笔记用户，Evernote某些功能可能需要付费升级才可以使用，而且你的笔记是存放在Evernote的服务器上。</p>
+<p>有些同学可能觉得放在Evernote服务器上的笔记会不安全，况且有些隐私性很强的笔记确实不适合放在公共的服务器上。此时，你需要一个可以保护个人隐私同时还可以与Evernote笔记功能相媲美的免费笔记服务：Joplin，它是一款免费开源的笔记软件。</p>
+<p>Joplin跨平台支持，包括PC桌面端，移动端，甚至提供了命令行版本，原生支持 markdown 格式，搜索速度快，可以通过其他第三方同步工具 (Dropbox/NextCloud/OneDrive/WebDAV/etc) 进行备份以及同步 ，支持浏览器Web clipper即网页剪贴。</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_00.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135705.png"></a></p>
+<p>Evernote笔记该有的功能Joplin都有了，如果你不想掏钱购买Evernote付费版本，Joplin将是最佳的替代品。更多的自建服务还有：</p>
+<ol>
+<li> <a href="https://wzfou.com/chevereto/">Chevereto免费相册程序安装与使用-免费自建图床和公共图片相册</a></li>
+<li> <a href="https://wzfou.com/tt-rss/">自建RSS阅读器Tiny Tiny RSS安装和配置自动更新,全文RSS,更换主题,手机RSS登录</a></li>
+<li> <a href="https://wzfou.com/bitwarden-rs/">放弃付费1Password改用免费开源的bitwarden_rs自建密码管理系统-安装,使用和备份</a></li>
+</ol>
+<p><strong>PS：更新记录</strong></p>
+<blockquote>
+<p>1、平时经常要校对文本，以及有大量的文件需要在电脑和移动硬盘同步，可以试试这些免费的同步对比工具：<a href="https://wzfou.com/files-sync-softs/">八大免费的文件对比同步工具-免费文件对比分析与复制同步备份软件</a>。2021.3.24</p>
+<p>2、对于1Password这类的密码管理软件重度依赖，但是苦于囊中羞涩的话，不防自建密码管理平台：<a href="https://wzfou.com/bitwarden-mima/">Bitwarden自建密码存储系统图文教程-开源免费的bitwarden_rs安装与使用</a>。2020.10.10</p>
+</blockquote>
+<h2 id="一、Joplin安装和使用"><a href="#一、Joplin安装和使用" class="headerlink" title="一、Joplin安装和使用"></a>一、Joplin安装和使用</h2><p>网站：</p>
+<ol>
+<li> <a href="https://joplinapp.org/">https://joplinapp.org/</a></li>
+</ol>
+<p>直接到官网下载Joplin安装包，安装好了就可以启动Joplin了，以下是Joplin的软件界面，分成三栏，和我们平时熟悉的笔记软件是一样的。（点击放大）</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_01.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135716.png"></a></p>
+<p>这是Joplin的编辑器，支持 MarkDown，图片、数学公式、复选框等 MarkDown 语法。</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_02.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135813.png"></a></p>
+<p>不习惯MarkDown，直接切换为可视编辑即可。</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_03.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135820.png"></a></p>
+<p>在Joplin的设置选项中还提供了非常多的MarkDown的插件，对于MarkDown深度用户来是一个福音。</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_05.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135723.png"></a></p>
+<h2 id="二、Joplin的特色功能"><a href="#二、Joplin的特色功能" class="headerlink" title="二、Joplin的特色功能"></a>二、Joplin的特色功能</h2><h3 id="2-1-笔记历史版本"><a href="#2-1-笔记历史版本" class="headerlink" title="2.1 笔记历史版本"></a>2.1 笔记历史版本</h3><p>Joplin提供了笔记历史版本，让你轻松地恢复任意时间的笔记版本。在“工具” &gt; “选项” &gt; “笔记历史”中启用，以及设置保留的笔记历史天数。要查看笔记的历史版本，点击编辑器上方的笔记属性图标，然后选择恢复：</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_12.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135828.png"></a></p>
+<h3 id="2-2-E2EE安全加密"><a href="#2-2-E2EE安全加密" class="headerlink" title="2.2 E2EE安全加密"></a>2.2 E2EE安全加密</h3><p>在同步过程中，笔记本、笔记、标签等均以纯文本文件的方式同步，如果你还觉得不安全，你可以开启端到端加密（E2EE），把文件加密后同步到云端。由于 Joplin 的去中心化，密码必须手动在每个终端设置。</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_19.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135736.png"></a></p>
+<p><strong>注意：不要在多个设备上同时启用加密，否则可能会造成加密密钥问题。特别提醒：****加密之前，先将笔记导出JEX备份一份，以防万一。</strong></p>
+<h3 id="2-3-Joplin手机APP"><a href="#2-3-Joplin手机APP" class="headerlink" title="2.3 Joplin手机APP"></a>2.3 Joplin手机APP</h3><p>Joplin可以直接在各大应用市场上下载，使用起来也很方便。</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_15.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135835.png"></a></p>
+<h3 id="2-4-外部编辑器"><a href="#2-4-外部编辑器" class="headerlink" title="2.4 外部编辑器"></a>2.4 外部编辑器</h3><p>Joplin自带的编辑已经非常强大的，如果你想要使用自己的编辑器来编辑笔记也是可以的，包括 文本编辑器（如 Notepad++）、 Markdown 编辑器（如 Typora）等。</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_22.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135928.png"></a></p>
+<p>通过 Ctrl+E，或 Joplin 编辑器上方的图标（如下图）从外部编辑器打开笔记，从外部编辑器打开后，Joplin 将持续监控该文件，当你从外部编辑机保存后，Joplin 将自动同步最新变动。</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_21.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135841.png"></a></p>
+<p>你可以在“工具” &gt; “选项” &gt; “通用选项”中指定编辑器的路径。</p>
+<h2 id="三、Joplin同步与备份"><a href="#三、Joplin同步与备份" class="headerlink" title="三、Joplin同步与备份"></a>三、Joplin同步与备份</h2><p>Joplin与其它的笔记软件很大的不同就是没有存储功能，你需要将Joplin的笔记放在自己的主机或者网盘里，幸运的是Joplin支持多种方式的云同步：Nextcloud / Dropbox / OneDrive / File system / WebDAV。</p>
+<h3 id="3-1-Joplin免费网盘同步"><a href="#3-1-Joplin免费网盘同步" class="headerlink" title="3.1 Joplin免费网盘同步"></a>3.1 Joplin免费网盘同步</h3><p>目前，Joplin支持Dropbox 、OneDrive 网盘同步，在同步选项中选择OneDrive，然后就会打开认证。</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_06.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135739.png"></a></p>
+<p>同意验证。</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_07.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135848.png"></a></p>
+<p>与 OneDrive 同步时，Joplin 会在 OneDrive 中创建一个子目录：<code>/Apps/Joplin</code>，Joplin 仅有此目录的读写权限。如下图：</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135746.png"></p>
+<h3 id="3-2-Joplin使用WebDAV同步"><a href="#3-2-Joplin使用WebDAV同步" class="headerlink" title="3.2 Joplin使用WebDAV同步"></a>3.2 Joplin使用WebDAV同步</h3><p>WebDAV 可以自建，或使用支持 WebDAV 的云盘，另外 NAS（如群晖）通常也支持 WebDAV。</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_13.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135855.png"></a></p>
+<p>**Nextcloud：**Nextcloud是一个开源的免费的自建个人云存储方案，要启用 Nextcloud 同步，你需要在 Nextcloud 中创建一个目录（比如：Joplin），在左下角的“设置”中获取 WebDAV 的 URL，在 Joplin 同步设置中，填入 WebDAV URL、用户名和密码。</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_20.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135902.png"></a></p>
+<p>有关于Nextcloud安装与使用教程，请参考：<a href="https://wzfou.com/nextcloud-lixian/">Oneinstack安装NextCloud以及使用Aria2离线下载和ocDownloader插件配置</a>。</p>
+<p><strong>坚果云：</strong>首次同步时会因为 WebDAV 短时间内的大量请求被坚果云临时限制，坚果云提示为“Too many requests”，这个封锁会持续大约6小时。同步之前，在 Joplin 的“工具” &gt; “选项” &gt; “同步” &gt; “高级选项”中，将“最大并发连接数”改为1可以有效避免。</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_14.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135753.png"></a></p>
+<p>关于坚果云的使用方法，请参考：<a href="https://wzfou.com/upyun-jianguoyun/">巧用又拍云FTP和坚果云WebDAV-打造个人文件备份和数据云存储</a>。</p>
+<h2 id="四、Joplin导入与导出"><a href="#四、Joplin导入与导出" class="headerlink" title="四、Joplin导入与导出"></a>四、Joplin导入与导出</h2><p>Joplin可以很方便地支持从Evernote（印象笔记）导入，方法如下：</p>
+<p>从 Evernote（印象笔记）导入：</p>
+<blockquote>
+<p>打开 Evernote，右击要导出的笔记本，选择“导出笔记“，导出 .enex 格式文件。</p>
+<p>在 Joplin 中，选择“文件” &gt; “导入” &gt; “ENEX – Evernote导出文件（Markdown）”即可导入。</p>
+</blockquote>
+<p>从 Markdown 文件导入：</p>
+<blockquote>
+<p>使用 Joplin 可以轻松导入 Markdown 文件或整个目录，选择“文件” &gt; “导入” &gt; “MD – Markdown（文件/目录）”导入即可。</p>
+</blockquote>
+<p>从其他应用程序导入：</p>
+<blockquote>
+<p>通常，很多应用程序都支持导入到 Evernote 中，所以从其他应用程序导入的思路是先导入 Evernote，再导出 .enex 文件，最后导入 Joplin 中。</p>
+</blockquote>
+<p>如下图：</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_09.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135909.png"></a></p>
+<p>如果哪天你不想使用Joplin了，也可以很方便地导出。Joplin 支持多种导出格式，导出格式均为标准格式，可以在不依赖 Joplin 的情况下查看、编辑，部分格式支持无损/有损重新导入：</p>
+<blockquote>
+<p>JEX：Joplin 的无损导出格式，包含所有的元数据如标签、更新时间等。JEX是实际上是一个tar文件，可以直接解压出 MarkDown 文件。这种格式常用于备份，<strong>可以无损重新导入</strong>。</p>
+<p>RAW：同 JEX 格式相似，只是数据会保存为目录，并且每个笔记都会导出为一个单独的文件。<strong>可以无损重新导入</strong>。</p>
+<p>JSON：导出为 JSON 格式的文件。不支持重新导入。</p>
+<p>MD：按照笔记本的分级结构导出为目录，每条笔记在对应的目录中导出为 Markdown 格式的文件，目录名和文件名与原笔记本对应，此种格式易于读取，但是导出的文件将丢失元数据。可以有损导入（丢失元数据）。</p>
+<p>HTML：导出为网页文件，将 Markdown 格式转为 html 标签，带有样式。不支持导入。</p>
+<p>PDF：将单个笔记导出为 PDF 格式的文件。不支持导入。</p>
+</blockquote>
+<p>如下图：</p>
+<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_10.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135801.png"></a></p>
+<h2 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h2><p>免费开源的笔记Joplin无论在功能上还是使用体验上基本上与Evernote印象笔记无异了，在隐私保护方面做得非常好，特别适合那些想要保存个人信息笔记的用户。</p>
+<p>使用免费开源的笔记Joplin最大的问题就是找好同步的网盘或者云存储，另外强烈建议大家在对Joplin的设置进行调整时先备份一个，以免同步后删除了所有的笔记。</p>
+<p>编辑整理 From：<a href="https://wzfou.com/joplin/">挖站否</a></p>
+]]></content>
+      <categories>
+        <category>note</category>
+      </categories>
+      <tags>
+        <tag>Linux</tag>
+        <tag>note</tag>
+        <tag>Docker</tag>
+        <tag>Nas</tag>
+        <tag>Webdav</tag>
+        <tag>Joplinr</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Joplin 插件使用推荐</title>
     <url>/note/2021-09-10-the-joplin-plugin-recommend/</url>
     <content><![CDATA[<h2 id="Joplin插件推荐"><a href="#Joplin插件推荐" class="headerlink" title="Joplin插件推荐"></a>Joplin插件推荐</h2><blockquote>
@@ -2499,36 +2697,6 @@ This is the admonition body
       </tags>
   </entry>
   <entry>
-    <title>qBittorrent 参数详细设置教程</title>
-    <url>/bt/2021-08-18-qbittorrent-parameter-reference-configuration/</url>
-    <content><![CDATA[<p>全文将以目前的最新版v4.2.1为例，进行参数设置，老版本某些功能不太一致，请知悉。特别鸣谢 原创者：Evine！</p>
-<h2 id="行为参数"><a href="#行为参数" class="headerlink" title="行为参数"></a>行为参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154449.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="下载参数"><a href="#下载参数" class="headerlink" title="下载参数"></a>下载参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154453.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="连接参数"><a href="#连接参数" class="headerlink" title="连接参数"></a>连接参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154528.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="速度参数"><a href="#速度参数" class="headerlink" title="速度参数"></a>速度参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154500.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="BT参数"><a href="#BT参数" class="headerlink" title="BT参数"></a>BT参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154539.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="RSS设置"><a href="#RSS设置" class="headerlink" title="RSS设置"></a>RSS设置</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154502.png" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="web参数"><a href="#web参数" class="headerlink" title="web参数"></a>web参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154508.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="高级参数"><a href="#高级参数" class="headerlink" title="高级参数"></a>高级参数</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/1820210818154558.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h3 id="关于磁盘缓存的补充说明："><a href="#关于磁盘缓存的补充说明：" class="headerlink" title="关于磁盘缓存的补充说明："></a><strong>关于磁盘缓存的补充说明：</strong></h3><p>经常有人吐槽qB特别吃内存，个人猜测应该是磁盘缓存设置不正确导致的。磁盘缓存设置过小，磁盘缓存到期间隔过长，先下载的文件块来不及写入硬盘，新的文件块又到了，可能就会导致内存爆掉甚至磁盘I/O错误。个人建议：在进行高速下载时，适当将磁盘缓存调高，磁盘缓存到期间隔调低（下载时间隔越低写入越频繁，自己根据电脑的资源占用情况调整最适合自己的值）。实在不知道怎么调的，就干脆把磁盘缓存设置为-1（自动）好了，还不行，就把磁盘缓存到期间隔再调低一些。举一个例子，比如设置2048MiB磁盘缓存、300s磁盘缓存到期间隔时，当下载速度为50MiB/s的时候，300s的时间总共可以下载15000MiB，早就远远超过2048MiB了，不爆内存、不I/O错误才怪。所以当达到这个下载速度的时候，在磁盘缓存不变的情况下，根据简单的除法（磁盘缓存除以下载速度）可知，磁盘缓存到期间隔就应该设置到40s以下了。</p>
-<p>qB在正常运行后，其占用的内存会比你所设置的磁盘缓存多几百M。所有的参数没有标准答案，一切都得根据你机子的本身属性以及实际的使用场景（比如CPU性能、内存大小、硬盘写入速度、下载速度等）来设置，建议大家多试验。</p>
-<h3 id="关于TCP、UTP的补充说明："><a href="#关于TCP、UTP的补充说明：" class="headerlink" title="关于TCP、UTP的补充说明："></a><strong>关于TCP、UTP的补充说明：</strong></h3><p>TCP是Internet上最常用的协议，是一种面向连接的、可靠的、基于字节流的传输层通信协议。TCP的优势在于双向互动机制兼顾数据传输的完整性、可控制性和可靠性，但复杂的校验与控制机制也使其没有UDP传输效率高。</p>
-<p>UDP协议与TCP协议一样用于处理数据包，是一种无连接的协议。UDP的缺点是不提供数据包分组、组装和不能对数据包进行排序的缺点，也就是说，当报文发送之后，是无法得知其是否安全完整到达的。UDP优势在于带宽占用小、传输效率和连接成功率高，有益于内网用户（如通过UDP内网穿透UDP Hole Punching连接），但UDP与TCP协议相比也存在无反向确认机制、无流量和序列控制等弊端。</p>
-<p>uTP(Micro Transport Protocol)是一种正在标准化的开放式BT协议，主要功能是提高宽带使用效率、减少网络问题。在减缓网络延迟和拥堵的同时最大化网络吞吐量、克服多数防火墙和NAT的阻碍，增强网络穿透和传输效率，同时增益流量控制，这对BT用户和ISP都是互利的。uTP虽基于UDP协议但有所不同，uTP通过拥堵控制算法（Ledbat）可限制延时，当延时不严重时可最大限度利用带宽，并能通过uTP提供的信息用于选择TCP连接的传输率，即使在不作限速设置的情况下，也能减少网络拥堵产生，当用户端之间都启用uTP时，可见明显的传输速率提升。内网无法实现端口映射的用户启用uTP，可以改善与网外用户的连接。</p>
-<p>使用uTP进行连接的用户，其标志将包含“P”。</p>
-]]></content>
-      <categories>
-        <category>bt</category>
-      </categories>
-      <tags>
-        <tag>QNAP</tag>
-        <tag>nas</tag>
-        <tag>PT</tag>
-        <tag>BT</tag>
-        <tag>qbittorrent</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Vim IDE Docker 以及中文指南</title>
     <url>/ide/2021-09-15-vim-checklist/</url>
     <content><![CDATA[<blockquote>
@@ -2602,106 +2770,6 @@ docker run -v <span class="token variable"><span class="token variable">$(</span
         <tag>vim</tag>
         <tag>ide</tag>
         <tag>docker</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化</title>
-    <url>/note/2021-09-09-start-to-use-joplin/</url>
-    <content><![CDATA[<p>Evernote笔记是我们常用的一个笔记服务，国内叫印象笔记，免费版本的Evernote笔记其实已经足够我们使用了，但是对于重度的笔记用户，Evernote某些功能可能需要付费升级才可以使用，而且你的笔记是存放在Evernote的服务器上。</p>
-<p>有些同学可能觉得放在Evernote服务器上的笔记会不安全，况且有些隐私性很强的笔记确实不适合放在公共的服务器上。此时，你需要一个可以保护个人隐私同时还可以与Evernote笔记功能相媲美的免费笔记服务：Joplin，它是一款免费开源的笔记软件。</p>
-<p>Joplin跨平台支持，包括PC桌面端，移动端，甚至提供了命令行版本，原生支持 markdown 格式，搜索速度快，可以通过其他第三方同步工具 (Dropbox/NextCloud/OneDrive/WebDAV/etc) 进行备份以及同步 ，支持浏览器Web clipper即网页剪贴。</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_00.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135705.png"></a></p>
-<p>Evernote笔记该有的功能Joplin都有了，如果你不想掏钱购买Evernote付费版本，Joplin将是最佳的替代品。更多的自建服务还有：</p>
-<ol>
-<li> <a href="https://wzfou.com/chevereto/">Chevereto免费相册程序安装与使用-免费自建图床和公共图片相册</a></li>
-<li> <a href="https://wzfou.com/tt-rss/">自建RSS阅读器Tiny Tiny RSS安装和配置自动更新,全文RSS,更换主题,手机RSS登录</a></li>
-<li> <a href="https://wzfou.com/bitwarden-rs/">放弃付费1Password改用免费开源的bitwarden_rs自建密码管理系统-安装,使用和备份</a></li>
-</ol>
-<p><strong>PS：更新记录</strong></p>
-<blockquote>
-<p>1、平时经常要校对文本，以及有大量的文件需要在电脑和移动硬盘同步，可以试试这些免费的同步对比工具：<a href="https://wzfou.com/files-sync-softs/">八大免费的文件对比同步工具-免费文件对比分析与复制同步备份软件</a>。2021.3.24</p>
-<p>2、对于1Password这类的密码管理软件重度依赖，但是苦于囊中羞涩的话，不防自建密码管理平台：<a href="https://wzfou.com/bitwarden-mima/">Bitwarden自建密码存储系统图文教程-开源免费的bitwarden_rs安装与使用</a>。2020.10.10</p>
-</blockquote>
-<h2 id="一、Joplin安装和使用"><a href="#一、Joplin安装和使用" class="headerlink" title="一、Joplin安装和使用"></a>一、Joplin安装和使用</h2><p>网站：</p>
-<ol>
-<li> <a href="https://joplinapp.org/">https://joplinapp.org/</a></li>
-</ol>
-<p>直接到官网下载Joplin安装包，安装好了就可以启动Joplin了，以下是Joplin的软件界面，分成三栏，和我们平时熟悉的笔记软件是一样的。（点击放大）</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_01.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135716.png"></a></p>
-<p>这是Joplin的编辑器，支持 MarkDown，图片、数学公式、复选框等 MarkDown 语法。</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_02.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135813.png"></a></p>
-<p>不习惯MarkDown，直接切换为可视编辑即可。</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_03.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135820.png"></a></p>
-<p>在Joplin的设置选项中还提供了非常多的MarkDown的插件，对于MarkDown深度用户来是一个福音。</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_05.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135723.png"></a></p>
-<h2 id="二、Joplin的特色功能"><a href="#二、Joplin的特色功能" class="headerlink" title="二、Joplin的特色功能"></a>二、Joplin的特色功能</h2><h3 id="2-1-笔记历史版本"><a href="#2-1-笔记历史版本" class="headerlink" title="2.1 笔记历史版本"></a>2.1 笔记历史版本</h3><p>Joplin提供了笔记历史版本，让你轻松地恢复任意时间的笔记版本。在“工具” &gt; “选项” &gt; “笔记历史”中启用，以及设置保留的笔记历史天数。要查看笔记的历史版本，点击编辑器上方的笔记属性图标，然后选择恢复：</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_12.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135828.png"></a></p>
-<h3 id="2-2-E2EE安全加密"><a href="#2-2-E2EE安全加密" class="headerlink" title="2.2 E2EE安全加密"></a>2.2 E2EE安全加密</h3><p>在同步过程中，笔记本、笔记、标签等均以纯文本文件的方式同步，如果你还觉得不安全，你可以开启端到端加密（E2EE），把文件加密后同步到云端。由于 Joplin 的去中心化，密码必须手动在每个终端设置。</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_19.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135736.png"></a></p>
-<p><strong>注意：不要在多个设备上同时启用加密，否则可能会造成加密密钥问题。特别提醒：****加密之前，先将笔记导出JEX备份一份，以防万一。</strong></p>
-<h3 id="2-3-Joplin手机APP"><a href="#2-3-Joplin手机APP" class="headerlink" title="2.3 Joplin手机APP"></a>2.3 Joplin手机APP</h3><p>Joplin可以直接在各大应用市场上下载，使用起来也很方便。</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_15.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135835.png"></a></p>
-<h3 id="2-4-外部编辑器"><a href="#2-4-外部编辑器" class="headerlink" title="2.4 外部编辑器"></a>2.4 外部编辑器</h3><p>Joplin自带的编辑已经非常强大的，如果你想要使用自己的编辑器来编辑笔记也是可以的，包括 文本编辑器（如 Notepad++）、 Markdown 编辑器（如 Typora）等。</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_22.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135928.png"></a></p>
-<p>通过 Ctrl+E，或 Joplin 编辑器上方的图标（如下图）从外部编辑器打开笔记，从外部编辑器打开后，Joplin 将持续监控该文件，当你从外部编辑机保存后，Joplin 将自动同步最新变动。</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_21.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135841.png"></a></p>
-<p>你可以在“工具” &gt; “选项” &gt; “通用选项”中指定编辑器的路径。</p>
-<h2 id="三、Joplin同步与备份"><a href="#三、Joplin同步与备份" class="headerlink" title="三、Joplin同步与备份"></a>三、Joplin同步与备份</h2><p>Joplin与其它的笔记软件很大的不同就是没有存储功能，你需要将Joplin的笔记放在自己的主机或者网盘里，幸运的是Joplin支持多种方式的云同步：Nextcloud / Dropbox / OneDrive / File system / WebDAV。</p>
-<h3 id="3-1-Joplin免费网盘同步"><a href="#3-1-Joplin免费网盘同步" class="headerlink" title="3.1 Joplin免费网盘同步"></a>3.1 Joplin免费网盘同步</h3><p>目前，Joplin支持Dropbox 、OneDrive 网盘同步，在同步选项中选择OneDrive，然后就会打开认证。</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_06.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135739.png"></a></p>
-<p>同意验证。</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_07.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135848.png"></a></p>
-<p>与 OneDrive 同步时，Joplin 会在 OneDrive 中创建一个子目录：<code>/Apps/Joplin</code>，Joplin 仅有此目录的读写权限。如下图：</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135746.png"></p>
-<h3 id="3-2-Joplin使用WebDAV同步"><a href="#3-2-Joplin使用WebDAV同步" class="headerlink" title="3.2 Joplin使用WebDAV同步"></a>3.2 Joplin使用WebDAV同步</h3><p>WebDAV 可以自建，或使用支持 WebDAV 的云盘，另外 NAS（如群晖）通常也支持 WebDAV。</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_13.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135855.png"></a></p>
-<p>**Nextcloud：**Nextcloud是一个开源的免费的自建个人云存储方案，要启用 Nextcloud 同步，你需要在 Nextcloud 中创建一个目录（比如：Joplin），在左下角的“设置”中获取 WebDAV 的 URL，在 Joplin 同步设置中，填入 WebDAV URL、用户名和密码。</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_20.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135902.png"></a></p>
-<p>有关于Nextcloud安装与使用教程，请参考：<a href="https://wzfou.com/nextcloud-lixian/">Oneinstack安装NextCloud以及使用Aria2离线下载和ocDownloader插件配置</a>。</p>
-<p><strong>坚果云：</strong>首次同步时会因为 WebDAV 短时间内的大量请求被坚果云临时限制，坚果云提示为“Too many requests”，这个封锁会持续大约6小时。同步之前，在 Joplin 的“工具” &gt; “选项” &gt; “同步” &gt; “高级选项”中，将“最大并发连接数”改为1可以有效避免。</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_14.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135753.png"></a></p>
-<p>关于坚果云的使用方法，请参考：<a href="https://wzfou.com/upyun-jianguoyun/">巧用又拍云FTP和坚果云WebDAV-打造个人文件备份和数据云存储</a>。</p>
-<h2 id="四、Joplin导入与导出"><a href="#四、Joplin导入与导出" class="headerlink" title="四、Joplin导入与导出"></a>四、Joplin导入与导出</h2><p>Joplin可以很方便地支持从Evernote（印象笔记）导入，方法如下：</p>
-<p>从 Evernote（印象笔记）导入：</p>
-<blockquote>
-<p>打开 Evernote，右击要导出的笔记本，选择“导出笔记“，导出 .enex 格式文件。</p>
-<p>在 Joplin 中，选择“文件” &gt; “导入” &gt; “ENEX – Evernote导出文件（Markdown）”即可导入。</p>
-</blockquote>
-<p>从 Markdown 文件导入：</p>
-<blockquote>
-<p>使用 Joplin 可以轻松导入 Markdown 文件或整个目录，选择“文件” &gt; “导入” &gt; “MD – Markdown（文件/目录）”导入即可。</p>
-</blockquote>
-<p>从其他应用程序导入：</p>
-<blockquote>
-<p>通常，很多应用程序都支持导入到 Evernote 中，所以从其他应用程序导入的思路是先导入 Evernote，再导出 .enex 文件，最后导入 Joplin 中。</p>
-</blockquote>
-<p>如下图：</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_09.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135909.png"></a></p>
-<p>如果哪天你不想使用Joplin了，也可以很方便地导出。Joplin 支持多种导出格式，导出格式均为标准格式，可以在不依赖 Joplin 的情况下查看、编辑，部分格式支持无损/有损重新导入：</p>
-<blockquote>
-<p>JEX：Joplin 的无损导出格式，包含所有的元数据如标签、更新时间等。JEX是实际上是一个tar文件，可以直接解压出 MarkDown 文件。这种格式常用于备份，<strong>可以无损重新导入</strong>。</p>
-<p>RAW：同 JEX 格式相似，只是数据会保存为目录，并且每个笔记都会导出为一个单独的文件。<strong>可以无损重新导入</strong>。</p>
-<p>JSON：导出为 JSON 格式的文件。不支持重新导入。</p>
-<p>MD：按照笔记本的分级结构导出为目录，每条笔记在对应的目录中导出为 Markdown 格式的文件，目录名和文件名与原笔记本对应，此种格式易于读取，但是导出的文件将丢失元数据。可以有损导入（丢失元数据）。</p>
-<p>HTML：导出为网页文件，将 Markdown 格式转为 html 标签，带有样式。不支持导入。</p>
-<p>PDF：将单个笔记导出为 PDF 格式的文件。不支持导入。</p>
-</blockquote>
-<p>如下图：</p>
-<p><a href="https://wzfou.cdn.bcebos.com/wp-content/uploads/2020/09/joplin_10.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0920210909135801.png"></a></p>
-<h2 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h2><p>免费开源的笔记Joplin无论在功能上还是使用体验上基本上与Evernote印象笔记无异了，在隐私保护方面做得非常好，特别适合那些想要保存个人信息笔记的用户。</p>
-<p>使用免费开源的笔记Joplin最大的问题就是找好同步的网盘或者云存储，另外强烈建议大家在对Joplin的设置进行调整时先备份一个，以免同步后删除了所有的笔记。</p>
-<p>编辑整理 From：<a href="https://wzfou.com/joplin/">挖站否</a></p>
-]]></content>
-      <categories>
-        <category>note</category>
-      </categories>
-      <tags>
-        <tag>Linux</tag>
-        <tag>note</tag>
-        <tag>Docker</tag>
-        <tag>Nas</tag>
-        <tag>Webdav</tag>
-        <tag>Joplinr</tag>
       </tags>
   </entry>
   <entry>
@@ -2952,74 +3020,6 @@ docker run -v <span class="token variable"><span class="token variable">$(</span
         <tag>MPP</tag>
         <tag>嵌入式</tag>
         <tag>物联网</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>ESNI和加密DNS - 保护信息隐私的最后一块拼图</title>
-    <url>/web/2021-09-06-encrypted-sni-anti-censorship/</url>
-    <content><![CDATA[<p>随着<a href="https://www.ietf.org/blog/tls13/">TLS1.3</a>的发布，让该协议成为有史以来最安全、也是最复杂的TLS协议。在该协议之中，有很多的对于以往协议安全漏洞的修复，包括废弃RSA启用新的秘钥交换机制PSK等等。而<code>Encrypted SNI</code>作为一个<code>TLS1.3</code>的扩展协议用来防止传统的HTTPS流量受到ISP或者陌生网络环境的窥探以及一些网络审查。在过去，由于<code>HTTPS</code>协议之中<code>Server Name Indication - SNI</code>的使用，我们的HTTPS流量经常被窥探我们所访问站点的域名</p>
-<h3 id="那么什么是SNI？⌗"><a href="#那么什么是SNI？⌗" class="headerlink" title="那么什么是SNI？⌗"></a>那么什么是SNI？<a href="#%E9%82%A3%E4%B9%88%E4%BB%80%E4%B9%88%E6%98%AFsni">⌗</a></h3><blockquote>
-<p>服务器名称指示（英语：Server Name Indication，简称SNI）是一个扩展的TLS计算机联网协议，在该协议下，在握手过程开始时客户端告诉它正在连接的服务器要连接的主机名称。这允许服务器在相同的IP地址和TCP端口号上呈现多个证书，并且因此允许在相同的IP地址上提供多个安全（HTTPS）网站（或其他任何基于TLS的服务），而不需要所有这些站点使用相同的证书。它与HTTP/1.1基于名称的虚拟主机的概念相同，但是用于HTTPS。所需的主机名未加密， 因此窃听者可以查看请求的网站 为了使SNI协议起作用，绝大多数访问者必须使用实现它的Web浏览器。使用未实现SNI浏览器的用户将被提供默认证书，因此很可能会收到证书警告</p>
-</blockquote>
-<ul>
-<li>  SNI协议示意图</li>
-</ul>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144946.webp"></p>
-<ul>
-<li>  TLS1.3完整握手流程</li>
-</ul>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144904.webp"></p>
-<h3 id="为了弥补缺陷因应运而生的ESNI⌗"><a href="#为了弥补缺陷因应运而生的ESNI⌗" class="headerlink" title="为了弥补缺陷因应运而生的ESNI⌗"></a>为了弥补缺陷因应运而生的ESNI<a href="#%E4%B8%BA%E4%BA%86%E5%BC%A5%E8%A1%A5%E7%BC%BA%E9%99%B7%E5%9B%A0%E5%BA%94%E8%BF%90%E8%80%8C%E7%94%9F%E7%9A%84esni">⌗</a></h3><p>在上述过程之中，存在的问题就是，在ClientHello环节中，TLS会在这个位置以<strong>明文</strong>的形式讲要请求的Host写在数据包之中，如果在网络路由中有任何的监听节点，那么用户所访问网站的域名将暴露无遗，这将是巨大的用户隐私泄露: <img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144907.webp"></p>
-<p>所以在最新的关于<a href="https://tools.ietf.org/html/draft-rescorla-tls-esni-00">ESNI的草案</a>中，<code>IETF</code>重新设计了一种加密的Client Hello机制，从而修复了这个问题: <img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144915.webp"></p>
-<p><strong>不过这里问题又来了，之前服务器和客户端并没有事先交换任何数据啊，这个加密的凭证从何而来啊？？？</strong></p>
-<h3 id="依靠安全DNS的ESNI⌗"><a href="#依靠安全DNS的ESNI⌗" class="headerlink" title="依靠安全DNS的ESNI⌗"></a>依靠安全DNS的ESNI<a href="#%E4%BE%9D%E9%9D%A0%E5%AE%89%E5%85%A8dns%E7%9A%84esni">⌗</a></h3><p>上一个问题没有难倒工程师们，他们设计了这样一个办法。首先让网站提供者在DNS提供商上公布一个记录，这个记录包含着一个<code>公钥</code>，这个公钥由网站提供者生成，其<code>私钥</code>存储在Web服务器等待着被Web程序读取。如此，当用户想通过TLS1.3协议访问这个域名的时候，首先读取这个公开的公钥，在用公钥加密其想访问的<code>域名Host</code>，装在<code>Client Hello</code>里面发送给目标服务器，目标服务器再用自己的私钥解密，从而和用户建立HTTPS链接，这样就不会暴露Host信息 这时候有人会想，如果有人某Wall想给你的DNS偷天换日，那会不会很不安全啊,请继续向下看</p>
-<p>在<code>ESNI</code>的实现草案之中，里面要求<code>安全加密的DNS</code><strong>是推荐的</strong>。大家都知道我们的DNS查询一般是<code>TCP</code>报文或者是<code>UDP</code>报文，本身它是不加密的，所以如果有人想在篡改你的DNS是相对简单的，大家可能都知道我们伟大的妨炎蔷会使用DNS污染的方式干扰一些网站的正常访问。正式由于DNS的非加密性，DNS也成为了审查信息的利器。此时加密的DNS势在必行</p>
-<h3 id="DNS-over-TLS-DoT-and-DNS-over-HTTPS-DoH-⌗"><a href="#DNS-over-TLS-DoT-and-DNS-over-HTTPS-DoH-⌗" class="headerlink" title="DNS over TLS (DoT) and DNS over HTTPS (DoH)⌗"></a>DNS over TLS (DoT) and DNS over HTTPS (DoH)<a href="#dns-over-tls-dot-and-dns-over-https-doh">⌗</a></h3><p>于是出现了这两种新型的DNS查询方式</p>
-<ul>
-<li>  DNS over HTTPS (DoH)</li>
-</ul>
-<blockquote>
-<p>DNS Over HTTPS (DOH) 是一个进行安全化的域名解析的方案，当前尚处于实验性阶段。其意义在于以加密的HTTPS协议进行DNS解析请求，避免原始DNS协议中用户的DNS解析请求被窃听或者修改的问题（例如中间人攻击）来达到保护用户隐私的目的。 Google及Mozilla基金会正在测试这一协议，作为其提高网络安全性的努力的一部分。 当前，该方案由IETF支持，其规范文档以 RFC 8484 的名义发布。2018年9月5日发布的Firefox 62正式版加入了这项功能，但需要用户手动开启 DNS Over HTTPS利用HTTP协议的GET命令发出经由JSON等编码的DNS解析请求。较于传统的DNS协议，此处的HTTP协议通信处于具有加密作用的SSL/TLS协议（两者统称作HTTPS）的保护之下。但是，由于其基于HTTPS，而HTTPS本身需要经由多次数据来回传递才能完成协议初始化，其域名解析耗时较原DNS协议会显著增加。 传统的DNS协议形成于互联网早期，直接基于UDP或TCP协议，且彼时未虑及现代安全性的需要，未利用密码学等手段进行加密或验证。因而，其无法抵御现代互联网常见的DNS投毒污染等攻击手段或监听。虽然后来的DNSSEC方案通过电子签名进行验证，强化了DNS的安全性，并能够抵御DNS投毒污染等篡改通信的手段，但其对于中间网络设备进行的监听仍然没有抵御能力（随后，监听者可以通过获取的通信数据知晓用户访问了哪一域名，而域名往往与具体的网站相关系）。此外，DNSSEC的起效要求现有的大量DNS解析服务的提供商（常为互联网服务提供商或第三方大型互联网机构）对已有的DNS服务器进行大范围修改等问题，其推进进程并不理想。而对于DNS Over HTTPS，在正确部署服务端并妥善配置客户端的前提下，互联网服务提供商或其它中间网络设备无法解密（亦即无法获知请求的实际内容）或者篡改已经加密的HTTPS通信，故其能够有效保护互联网用户的安全及隐私；另一方面，其基于已经成熟并已广泛部署的HTTPS协议，客户端进行利用较为方便。</p>
-</blockquote>
-<ul>
-<li>  DNS over TLS (DoT)</li>
-</ul>
-<blockquote>
-<p>DNS over TLS (DoT) 是通过传输层安全协议（TLS）来加密并打包域名系统（DNS）的安全协议。此协议旨在防止中间人攻击与控制DNS数据以保护用户隐私。 RFC 7858及RFC 8310定义了DNS over TLS。 截至2018年，Cloudflare、Quad9与CleanBrowsing均向大众提供支持DNS over TLS的公共DNS解析服务。2018年4月，Google宣布Android P将包含对DNS over TLS的支持。PowerDNS的DNSDist也宣布在其最新的1.3.0版本中添加了对DNS over TLS的支持。BIND用户也可以通过stunnel代理提供DNS over TLS服务。</p>
-</blockquote>
-<h3 id="手动配置⌗"><a href="#手动配置⌗" class="headerlink" title="手动配置⌗"></a>手动配置<a href="#%E6%89%8B%E5%8A%A8%E9%85%8D%E7%BD%AE">⌗</a></h3><p>Firefox所在的Mozilla宣布从<code>Firefox 62</code>版本之后开始支持<code>ESNI</code>，默认没有开启，需要用户手动配置打开，那么我们现在试验一下 这里Firefox的解决方案是使用<code>DNS over HTTPS (DoH)</code>和<code>ESNI</code></p>
-<ol>
-<li>安装<code>Firefox Nightly</code>版本，这个版本是预发布版本，使得开发这和即可门可以提前尝鲜到新功能。<a href="https://www.mozilla.org/zh-CN/firefox/nightly/all/">下载地址</a></li>
-<li>在浏览器地址栏输入<code>about:config</code>并回车，打开配置页面，在搜索位置搜索<code>network.trr.mode</code>，这个是打开浏览器对于<code>DoH</code>的支持，将此项的数值修改为3（<code>0</code>对应的是不开启此功能；<code>1</code>对应的是交由浏览器选择<code>DoH</code>与传统方式那种更快；<code>2</code>代表优先使用加密DNS查询，如果失败则回落到普通DNS查询；<code>3</code>代表只使用加密DNS查询；<code>5</code>代表明确的关闭此功能）</li>
-<li>继续搜索<code>network.trr.uri</code>，将此项的值修改为<code>https://mozilla.cloudflare-dns.com/dns-query</code>，这个是默认的<code>DoH</code>查询地址，当然我们也可以使用诸如<code>https://1.1.1.1/dns-query</code>、<code>https://dns.google.com/experimental</code>这样的地址，我们可以事先<code>ping</code>检测一下对比哪个延迟更低来使用</li>
-<li>（可选）搜索<code>network.trr.bootstrapAddress</code>，讲此值修改位第三步的DNS域名的<code>IP</code>。此举是为了避免使用操作系统DNS查询域名受到劫持，一般来说这些DNS的<code>IP</code>是不会变的</li>
-</ol>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828145006.webp"></p>
-<ol start="5">
-<li>将<code>network.security.esni.enabled</code>设置为<code>true</code>,此举为了打开浏览器对于ESNI的支持（感谢<a href="https://github.com/chenIshi">chenlshi</a>同学的提醒，在原版的文章中我不小心遗漏了这个关键的步骤）</li>
-<li>完成配置后重启浏览器，再打开<a href="https://encryptedsni.com/">在线验证页面验证</a>来查询你的浏览器是否完全支持<code>ESNI</code>功能，如果出现如图说明配置成功了</li>
-</ol>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144924.webp"></p>
-<h3 id="验证⌗"><a href="#验证⌗" class="headerlink" title="验证⌗"></a>验证<a href="#%E9%AA%8C%E8%AF%81">⌗</a></h3><p>为了验证是否真的加密了<code>Client Hello</code>，我们使用<code>Wireshark</code>进行网络抓包 由于这个特性仍在试验阶段，并没有太多站点支持这个特性，<a href="https://cloudflare.com/">CloudFlare</a>是第一个全站支持<code>ESNI</code>的网站，这里我们使用<a href="https://blog.cloudflare.com/">blog.cloudflare.com</a>来做测试：</p>
-<ol>
-<li> 首先打开<code>Wireshark</code>的抓包功能，然后开启<code>Chrome</code>浏览器打开上述网址，页面加载完后停止抓包，在得到的结果中查询协议为<code>TLS1.3</code>和报文为<code>Client Hello</code>的报文，通过观察发现域名的Host果然被以明文形式写在数据包中（参见<code>Server_Name</code>字段）：</li>
-</ol>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144932.webp"></p>
-<ol start="2">
-<li> 然后打开<code>Firefox Nightly</code>浏览器重复上述操作，这次发现在整个数据包中根本找不到<code>Server_Name</code>字段，说明<code>Host</code>已经被加密：</li>
-</ol>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144933.webp"></p>
-<p>目前来说，我查阅了相关的关键词，仍然没有任何一篇教程有介绍如何在自己的服务器上支持<code>ESNI</code>，同时我也看到在<code>Nginx</code>的论坛里面有人呼吁尽快支持<code>ESNI</code>，所以我推测这个功能仍然在试验期，还没有被这两个Web软件所支持，起劲为止我也没有查阅到任何的Web软件预计支持此项功能。这项扩展已经进入<code>IETF</code>的草案阶段，可以预见到，在不就的将来，这项技术可以普及开来，为我们的网络隐私保驾护航 目前来说，有了<code>HTTPS</code>+<code>TLS1.3</code>+<code>ESNI</code>+<code>DoH/DoT</code>的加持，我们的网络隐私的到了极大的保障，最后还有一个问题是访问服务器<code>IP</code>的泄露仍然无法被避免，迫于<code>IP协议</code>设计的机制，他目前还不能被解决。不过我相信，随着网技术不断的趋于保护个人隐私和更快速的发展方向，这个问题可以最终被解决</p>
-<p>From: <a href="https://blog.hackerchai.com/post/encrypted-sni-anti-censorship/">hackerchai</a></p>
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>SSL</tag>
-        <tag>TLS</tag>
-        <tag>隐私</tag>
-        <tag>安全</tag>
       </tags>
   </entry>
   <entry>
@@ -3331,6 +3331,278 @@ gitlab_rails<span class="token punctuation">[</span><span class="token string">'
         <tag>Gitlab</tag>
         <tag>Git</tag>
         <tag>Crack</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>3G,4G,Wifi选型需求分析及技术简介</title>
+    <url>/embeded/2021-07-30-3g-4g-iot-module-embedded-transplantation/</url>
+    <content><![CDATA[<h2 id="3G-4G-Wifi选型需求分析及技术简介"><a href="#3G-4G-Wifi选型需求分析及技术简介" class="headerlink" title="3G,4G,Wifi选型需求分析及技术简介"></a>3G,4G,Wifi选型需求分析及技术简介</h2><ul>
+<li><p>文章写了好多年了，只在一个网站发布过PDF版本。行业内应该很多人看过这个。</p>
+</li>
+<li><p>关于本blog，<strong>图床</strong>一般使用<strong>github</strong>，已经配置了CDN，如果图片还是未显示请自行代理解决</p>
+</li>
+<li><p><strong>原创声明警告</strong>，文章<strong>禁止转载</strong>，禁止发布到其它任何网站，可以接受约稿。</p>
+</li>
+</ul>
+<h2 id="用户需求分析"><a href="#用户需求分析" class="headerlink" title="用户需求分析"></a>用户需求分析</h2><p>减少布线，或有的地方很难布线。</p>
+<p>​    例如：偏远森林，沙漠，海岛，土地所有制导致不能随便开挖等各种原因。</p>
+<h3 id="–3G，4G–"><a href="#–3G，4G–" class="headerlink" title="–3G，4G–"></a>–3G，4G–</h3><p>优点： 布线，距离远。</p>
+<p>缺点：流量费高（可以和运营商合作 ）</p>
+<h3 id="–Wifi–"><a href="#–Wifi–" class="headerlink" title="–Wifi–"></a>–Wifi–</h3><p>优点：费用低，</p>
+<p>缺点：距离近</p>
+<h2 id="研发需求分析"><a href="#研发需求分析" class="headerlink" title="研发需求分析"></a>研发需求分析</h2><h2 id="WANTED"><a href="#WANTED" class="headerlink" title="WANTED!"></a>WANTED!</h2><h3 id="3G，4G选型标准需求"><a href="#3G，4G选型标准需求" class="headerlink" title="3G，4G选型标准需求"></a>3G，4G选型标准需求</h3><p>1：产品生命周期，时间空间的重叠。 初产时间较近，出货时间长，</p>
+<p>2：客户那里运营商网络制式？？（例如<strong>TD-LTE<strong><strong>，</strong></strong>FDD-LTE<strong><strong>，</strong></strong>CDMA2000****等等</strong>）， </p>
+<p>​    运营商名称？？（一般不同国家不一样，一个国家很多个运营商）</p>
+<p>3：3G，4G具体型号选择： 1：厂家选择？？？ 2：网络制式选择（需要选择制式尽可能支持区域大的，亚洲，欧美，日韩）？？？ 3：USB 使用的技术代差（1：usb猫，2：usb光驱，3：html拨号）</p>
+<p>4：客户3G，4G使用场景？？。流量大小，费用</p>
+<p><strong>注意：</strong>可能客户那里支持的制式和国内不一样，我们这边验证的制式在客户那里不能用，客户那里支持的制式在国内又没法验证。选择制式的时候特别需要注意。</p>
+<h3 id="Wifi选择需求"><a href="#Wifi选择需求" class="headerlink" title="Wifi选择需求"></a>Wifi选择需求</h3><p>5：芯片厂家需要支持Linux驱动。 芯片出来年代？？？，价格？？？，协议标准（决定速度），网络信号质量？？？，传输速度（不同距离速度，是否要求穿墙）？？？</p>
+<p>6：对应的无线路由器调试</p>
+<p>7：客户Wifi使用场景？？。 主要是使用距离引起速度衰变， 现在有2,4G，5G路由，速度有150Mbit/s 300Mbit/s，450Mbit/s。需要ap评估这种速度能否满足各种场景使用需求</p>
+<h2 id="3G，4G部分"><a href="#3G，4G部分" class="headerlink" title="3G，4G部分"></a>3G，4G部分</h2><h3 id="中国2G，3G，4G制式标准"><a href="#中国2G，3G，4G制式标准" class="headerlink" title="中国2G，3G，4G制式标准"></a>中国2G，3G，4G制式标准</h3><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141533.jpg" alt="运营商制式"></p>
+<p>UMTS(Universal Mobile Telecommunications System)，意即通用移动通信系统。UMTS是国际标准化组织3GPP制定的全球3G标准之一。作为一个完整的3G移动通信技术标准，UMTS并不仅限于定义空中接口。它的主体包括CDMA接入网络和分组化的核心网络等一系列技术规范和接口协议。除WCDMA作为首选空中接口技术获得不断完善外，UMTS还相继引入了TD-SCDMA和HSDPA技术。<br>   UMTS网络优先选择的就是WCDMA，国内就是中国联通</p>
+<h3 id="电信"><a href="#电信" class="headerlink" title="*电信*"></a>*<strong>电信*</strong></h3><ul>
+<li><strong>2G CDMA</strong></li>
+<li><strong>3G CDMA2000</strong></li>
+<li><strong>4G TD-LTE<strong><strong>，</strong></strong>FDD-LTE</strong></li>
+</ul>
+<h3 id="移动"><a href="#移动" class="headerlink" title="*移动*"></a>*<strong>移动*</strong></h3><ul>
+<li><strong>2G GSM</strong></li>
+<li><strong>3G TD-SCDMA</strong></li>
+<li><strong>4G TD-LTE<strong><strong>，</strong></strong>FDD-LTE</strong></li>
+</ul>
+<h3 id="联通"><a href="#联通" class="headerlink" title="*联通*"></a>*<strong>联通*</strong></h3><ul>
+<li><p><strong>2G GSM</strong></p>
+</li>
+<li><p><strong>3G WCDMA</strong></p>
+</li>
+<li><p><strong>4G TD-LTE<strong><strong>，</strong></strong>FDD-LTE</strong></p>
+</li>
+<li><p>中国移动TD-LTE：支持频段38、39、40</p>
+</li>
+<li><p>中国联通TD-LTE：支持频段40、41</p>
+</li>
+<li><p>中国电信TD-LTE：支持频段40、41</p>
+</li>
+<li><p>中国联通FDD-LTE：支持频段3</p>
+</li>
+<li><p>中国电信FDD-LTE：支持频段3</p>
+</li>
+</ul>
+<h3 id="全球制式和区域"><a href="#全球制式和区域" class="headerlink" title="全球制式和区域"></a>全球制式和区域</h3><h4 id="2G有GSM，还有CDMA。"><a href="#2G有GSM，还有CDMA。" class="headerlink" title="2G有GSM，还有CDMA。"></a>2G有GSM，还有CDMA。</h4><p>​    我们平时说的G 网或者C 网了。联通和移动都是GSM，电信的133号段（之前是联通主营，后来转移给电信）是C网</p>
+<h4 id="3G有3种：WCDMA，CDMA2000，TD-CDMA"><a href="#3G有3种：WCDMA，CDMA2000，TD-CDMA" class="headerlink" title="3G有3种：WCDMA，CDMA2000，TD_CDMA"></a>3G有3种：WCDMA，CDMA2000，TD_CDMA</h4><p>WCDMA（日本、欧洲）、CDMA2000（北美）、TD-SCDMA（中国移动）</p>
+<p>使用最广泛的是WCDMA。美国、欧洲等国很多是WCDMA和CDMA2000都有的。<br> 另外WCDMA、CDMA2000里面还有更细的划分，主要是技术、标准、速度的细微差别。</p>
+<p>WCDMA（欧洲版）：这个是欧洲的主流，也是目前世界范围3G 的使用模式最广的，在中国大陆，是中国联通3G （沃）的模式。<br> CDMA2000（美国版）：这个数量相对少些，由美国为代表。在大陆，是中国电信3G （天翼）的模式<br> TD-SCDMA（中国版）：这个是中国大陆自主知识产权的，可以说是中国特色的3G ，虽然大部分的通讯厂商宣布对此技术可以支持，但世界范围内使用的范围有限。在大陆，是中国移动3G的网络模式。</p>
+<h4 id="4G有2种-LTE-FDD，LTE-TDD"><a href="#4G有2种-LTE-FDD，LTE-TDD" class="headerlink" title="4G有2种: LTE FDD，LTE TDD"></a>4G有2种: LTE FDD，LTE TDD</h4><p>LTE FDD（世界绝大多数国家）、LTE TDD（中国移动和国外极少数地区的个别运营商）。</p>
+<p>TD- LTE是我国自主研发的4G标准，是由TD-SCDMA（3G网络）发展而来。</p>
+<p>LTE FDD是现在国际上主流的，使用最广泛的4G网络，由WCDMA演化而来。</p>
+<p>现在全球有超过200个LTE的商用网络，其中超过90%是FDD的。</p>
+<p>从技术上说，TD- LTE采用的是时分双工，而LTE FDD采用的是频分双工</p>
+<p>TD-LTE和FDD-LTE 是4G的两种国际标准，各有利弊。TD-LTE占用频段少，节省资源，带宽长，适合区域热点覆盖；FDD速度更快，覆盖更广，但占用资源多。适合广域覆盖。</p>
+<h4 id="国内三家运营商4G网络制式分别如下："><a href="#国内三家运营商4G网络制式分别如下：" class="headerlink" title="国内三家运营商4G网络制式分别如下："></a>国内三家运营商4G网络制式分别如下：</h4><p>联通4G：TD-LTE、FDD-LTE</p>
+<p>电信4G：TD-LTE、FDD-LTE</p>
+<p>移动4G：TD-LTE</p>
+<p>虽然联通跟电信都是采用双4G网络制式，但目前4G网络仅在部分地区覆盖，3G网络仍然是不可或缺的。而联通3G采用的是WCDMA，为欧洲标准，是技术发展最成熟、国际通用和覆盖范围最广的制式，目前是国内3G网络最快的，最高可达42Mbps，在国外已将其定义为4G标准。</p>
+<p>综合以上，选型推荐。</p>
+<h2 id="3G推荐选型：WCDMA欧洲，CDMA2000美国"><a href="#3G推荐选型：WCDMA欧洲，CDMA2000美国" class="headerlink" title="3G推荐选型：WCDMA欧洲，CDMA2000美国"></a>3G推荐选型：WCDMA欧洲，CDMA2000美国</h2><h2 id="4G推荐选型：FDD-LTE"><a href="#4G推荐选型：FDD-LTE" class="headerlink" title="4G推荐选型：FDD-LTE"></a>4G推荐选型：FDD-LTE</h2><h2 id="WIFI部分"><a href="#WIFI部分" class="headerlink" title="WIFI部分"></a>WIFI部分</h2><h2 id="2-4G和5G究竟是什么"><a href="#2-4G和5G究竟是什么" class="headerlink" title="2.4G和5G究竟是什么"></a>2.4G和5G究竟是什么</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141643.jpg" alt="img">   以往我们一直使用的Wi-Fi大多数是支持 IEEE 802.11n（第四代）无线标准的，而且工作在2.4GHz这个频段上的，所以称之为2.4gWi-Fi，但是严格来说工作在5GHz频段上的不一定就是5G Wi-Fi，因为IEEE 802.11a（第一代）IEEE 802.11n（第四代）和IEEE 802.11ac（第五代)这三种标准都可以工作在5GHz这个频段上。</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141655.jpg" alt="img">   严格来说只有支持802.11ac的才是真正5G Wi-Fi（在这个视频里我们将它称作ac 5G)，现来在说支持2.4G和5G双频的路由器其实很多都是指支持第四代无线标准，也就是802.11n的双频，而真正支持ac 5G的路由最便宜都要400、500甚至上千元</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141748.jpg" alt="img">   我们的路由器一般会有标有一些类似54Mbps，150Mbps，300Mbps这样的参数，要说明一下，这个参数不是指路由器的无线覆盖范围，而是指它的最高传输速率。若要支持ac 5G的也要双方同时支持，单方面支持是不行的。</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141738.jpg" alt="img">   这个速率就相当于车道上的限速标志，当然也不能完全等同与限速标志，因为如果网络中多个设备同时传输要分流的</p>
+<p><strong><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141801.jpg" alt="img"></strong></p>
+<p>最后不要忘记要考虑空间的大小，200多平米的房子一般普通无线路由器的2.4G勉强可以覆盖，5G的话150平米就开始有压力，如果房屋太大或者多楼层的话可能就要考虑一下多个无线路由桥接了。</p>
+<h3 id="5GWifi速度快，穿墙弱"><a href="#5GWifi速度快，穿墙弱" class="headerlink" title="5GWifi速度快，穿墙弱"></a>5GWifi速度快，穿墙弱</h3><p>5G Wi-Fi的最大缺点就是穿墙能力比较弱，墙体对Wi-Fi信号的强度影响是比较大的，每穿过一面墙，Wi-Fi信号就要减弱不少。</p>
+<h3 id="路由器摆放小技巧。增强信号。"><a href="#路由器摆放小技巧。增强信号。" class="headerlink" title="路由器摆放小技巧。增强信号。"></a>路由器摆放小技巧。增强信号。</h3><h4 id="最根本一半是有线速度限制，但信号强度也很重要"><a href="#最根本一半是有线速度限制，但信号强度也很重要" class="headerlink" title="最根本一半是有线速度限制，但信号强度也很重要"></a>最根本一半是有线速度限制，但信号强度也很重要</h4><p>另外分享一个摆放路由器的方法，如果受制与网线或者台式电脑的位置就没得说，但是如果可以移动的话，这个位置的原则是要经过尽量少的墙体</p>
+<p>最好不要放在地上，更不要放在角落，</p>
+<h4 id="放在高处"><a href="#放在高处" class="headerlink" title="放在高处"></a>放在高处</h4><p>而且应该经适当的放高一点，而不是放在地上，这和手机信号塔的原理是一样的，更加不应该因为他碍眼把它放进抽屉、柜子等里面。这些方法可以略微增强信号强度，不过想从根本上解决信号问题，还是要换一款更好的路由。</p>
+<h2 id="无线网卡选购简介"><a href="#无线网卡选购简介" class="headerlink" title="无线网卡选购简介"></a>无线网卡选购简介</h2><p>常见值得选购的USB无线网卡按技术规格和价位，大致可以分为如下3类：</p>
+<p>单频11n网卡，标注速度200-300M，20-30元。</p>
+<p>双频11n网卡，支持5g频段，标注速度600M，40-50元。</p>
+<p>双频11ac网卡，支持5g频段，标注速度900-1200M或更高，80元以上。</p>
+<p>无线网卡要想达到标注的技术标准和速度，首先需要路由器支持该标准及速度，否则会降速运行。</p>
+<h3 id="USB协议：速度，选择2-0还是3-0"><a href="#USB协议：速度，选择2-0还是3-0" class="headerlink" title="USB协议：速度，选择2.0还是3.0"></a>USB协议：速度，选择2.0还是3.0</h3><p>USB2.0的速度传输，理论最大速率480M bit/S。 60MB/S</p>
+<p>USB3.0的理论最大速率是5G bit/S，要比USB2.0快10倍！ 640MB/S</p>
+<p>看线路，工艺质量，实际速度可能不到理论速度一半</p>
+<h3 id="USB3-0-对wifi和BlueTooth干扰。"><a href="#USB3-0-对wifi和BlueTooth干扰。" class="headerlink" title="USB3.0 对wifi和BlueTooth干扰。"></a>USB3.0 对wifi和BlueTooth干扰。</h3><p>USB3.0的传输频率确实是5GHz串行，但USB3.0使用4条数据线组成2组，每组负责一个传输方向，实现全双工双向5GHz，而每条数据线的基准频率是2.5GHz。</p>
+<p>所以，总带宽是5GHz没错，但每条线上是2.5GHz，这个频率距离2.4G Wifi的频率太近了，又因为高频设备大多数都使用了SSC技术（扩频时钟？）使得信号不完全分布在一个固定频率上，所以就波及了2.5GHz附近的其它频率，所以对Wifi和蓝牙产生了较大的干扰。</p>
+<h3 id="USB-3-0-干扰-Wifi-2-4G通讯的问题和解决方法"><a href="#USB-3-0-干扰-Wifi-2-4G通讯的问题和解决方法" class="headerlink" title="USB 3.0 干扰 Wifi 2.4G通讯的问题和解决方法"></a>USB 3.0 干扰 Wifi 2.4G通讯的问题和解决方法</h3><h4 id="USB3-0-WIFI干扰解决方法"><a href="#USB3-0-WIFI干扰解决方法" class="headerlink" title="USB3.0 WIFI干扰解决方法"></a>USB3.0 WIFI干扰解决方法</h4><p>USB3.0的确对2.4G有影响，不过一样可以解决，比如<strong>网件</strong>的解决方法就是，USB3.0 和网口,天线不在一面，USB3.0接口弄到前面，而且是所有接口有<strong>金属屏蔽罩</strong>（包括WAN和LAN口），连USB接口与主板连线处都用<strong>屏蔽胶布</strong>包裹。可惜国内厂商哪怕是大如华为，网口也舍不得这点成本用金属屏蔽的。</p>
+<p>带有USB 3.0接口的无线路由，如果出现外接3.0移动硬盘后网速下降，断网，或者ping延时变得很高，说明出现了3.0对无线的干扰。</p>
+<p>USB3.0与无线冲突解决办法：</p>
+<p>第一种：给USB接口加金属膜做屏蔽可以适当降低干扰，但不能完全屏蔽</p>
+<p>第二种：给主板的USB底座增加统一（并与使用设备）接地和增加金属屏蔽罩，基本可以排除</p>
+<p>【推荐】第三种：用1.2米 双磁环带屏蔽层的USB延长线将移动硬盘放到一米外的地方使用，基本可以完全可以排除</p>
+<p>其实不单是无线路由，像我们平常使用的无线鼠标键盘、蓝牙、wifi电视、iPad、手机等各种使用民用2.4G的通信设备都会出现与USB3.0冲突的情况。</p>
+<h4 id="USB3-0-移动硬盘干扰解决方法"><a href="#USB3-0-移动硬盘干扰解决方法" class="headerlink" title="USB3.0 移动硬盘干扰解决方法"></a>USB3.0 移动硬盘干扰解决方法</h4><p>相信随着USB3.0使用的用户越来越多，不少人遇到了一插上USB3.0的硬盘，wifi就出现降速或者中断的问题。其本质原因是USB 3.0 干扰2.4GHz下的Wifi通讯。</p>
+<p> 解决方法如下，</p>
+<p> 1.更换无线路由为5GHz，因为USB 3.0对5GHz的Wifi干扰程度较低<br> 2.把硬盘盒从USB3.0接口换到USB2.0接口也可以将问题解决<br> 3.使用高质量带屏蔽的USB3.0设备/线缆/接口。或者在USB3.0接口处加屏蔽罩（金属箔即可）<br> 4.最简单的，使用1m以上的高质量USB3.0延长线。将USB3.0设备远离电脑主机。</p>
+<p> Intel官方对USB3.0对WIFI干扰的描述文档：</p>
+<p> <a href="http://www.usb.org/developers/whitepapers/327216.pdf">http://www.usb.org/developers/whitepapers/327216.pdf</a></p>
+<h2 id="目前在调试的两款型号："><a href="#目前在调试的两款型号：" class="headerlink" title="目前在调试的两款型号："></a>目前在调试的两款型号：</h2><h3 id="TL-WN823N"><a href="#TL-WN823N" class="headerlink" title="TL-WN823N"></a>TL-WN823N</h3><ul>
+<li>​         Bus 002 Device 007: ID 0bda:818b</li>
+<li>​         RTL8192EU</li>
+<li>​         300M迷你型无线USB网卡 TL-WN823N</li>
+</ul>
+<h3 id="TL-WN725N"><a href="#TL-WN725N" class="headerlink" title="TL-WN725N"></a>TL-WN725N</h3><ul>
+<li>​         Bus 002 Device 008: ID 0bda:8179</li>
+<li>​         rtl8188eu</li>
+<li>​         150M无线USB网卡 TL-WN725N</li>
+<li>​         网上的驱动版本数据结构和3.10差异较大，不能用</li>
+</ul>
+<h2 id="Wifi芯片厂家"><a href="#Wifi芯片厂家" class="headerlink" title="Wifi芯片厂家"></a>Wifi芯片厂家</h2><h3 id="Realtek："><a href="#Realtek：" class="headerlink" title="Realtek："></a>Realtek：</h3><p>​         官方无linux驱动支持</p>
+<h3 id="Ralink"><a href="#Ralink" class="headerlink" title="Ralink"></a>Ralink</h3><p>（已经被MTK收购）： 官方有linux驱动</p>
+<h3 id="Atheros"><a href="#Atheros" class="headerlink" title="Atheros"></a>Atheros</h3><p>（已经被高通qualcomm收购）：AR9271</p>
+<h2 id="整理推荐芯片型号："><a href="#整理推荐芯片型号：" class="headerlink" title="整理推荐芯片型号："></a>整理推荐芯片型号：</h2><p>USB 2.0 Mbit/s</p>
+<h3 id="rt3070"><a href="#rt3070" class="headerlink" title="rt3070"></a>rt3070</h3><ul>
+<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt3070">http://www.mediatek.cn/products/broadbandWifi/rt3070</a></li>
+<li>IEEE 802.11:b/g/n</li>
+<li>Wi-Fi Frequency:2.4GHz</li>
+<li>Antenna:1T1R</li>
+<li>Data Throughput:150Mbit/s</li>
+</ul>
+<h3 id="rt5370"><a href="#rt5370" class="headerlink" title="rt5370"></a>rt5370</h3><ul>
+<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt5370">http://www.mediatek.cn/products/broadbandWifi/rt5370</a></li>
+<li>IEEE 802.11:b/g/n</li>
+<li>Wi-Fi Frequency:2.4GHz</li>
+<li>Antenna:1T1R</li>
+<li>Data Throughput:150Mbit/s</li>
+</ul>
+<h3 id="RT3573"><a href="#RT3573" class="headerlink" title="RT3573"></a>RT3573</h3><ul>
+<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt3573">http://www.mediatek.cn/products/broadbandWifi/rt3573</a></li>
+<li>IEEE 802.11:b/g/n/ac</li>
+<li>Wi-Fi Frequency:2.4GHz, 5GHz</li>
+<li>Antenna:3T3R</li>
+<li>Data Throughput:450Mbit/s</li>
+</ul>
+<h3 id="RT5572"><a href="#RT5572" class="headerlink" title="RT5572"></a>RT5572</h3><ul>
+<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt5572">http://www.mediatek.cn/products/broadbandWifi/rt5572</a></li>
+<li>IEEE 802.11:b/g/n/ac</li>
+<li>Wi-Fi Frequency:2.4GHz, 5GHz</li>
+<li>Antenna:2T2R</li>
+<li>Data Throughput:300Mbit/s</li>
+</ul>
+<h1 id="集成分析"><a href="#集成分析" class="headerlink" title="集成分析"></a>集成分析</h1><h2 id="3G，4G集成分析"><a href="#3G，4G集成分析" class="headerlink" title="3G，4G集成分析"></a>3G，4G集成分析</h2><p>根据拨号技术流程，现在已经发现的USB上网有三种</p>
+<ul>
+<li>1：默认识别为USB Modem，使用pppoe拨号脚本拨号。</li>
+<li>2：默认识别为usb cdrom，使用usb-modeswitch 转换usb设备工作状态，转换为USB Modem后再采用pppoe拨号脚本拨号。</li>
+<li>3：使用CGI 调用Html链接方式拨号。不需要我们配置用户名密码，网络制式，最方便。</li>
+</ul>
+<h3 id="1：Pppoe拨号"><a href="#1：Pppoe拨号" class="headerlink" title="1：Pppoe拨号"></a>1：Pppoe拨号</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">pppd call wcdma <span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+
+
+<h3 id="2：usb-modeswitch转换usb设备工作模式。"><a href="#2：usb-modeswitch转换usb设备工作模式。" class="headerlink" title="2：usb_modeswitch转换usb设备工作模式。"></a>2：usb_modeswitch转换usb设备工作模式。</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">usb_modeswitch -W -c /etc/usb_modeswitch.d/19D2:0117<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+
+
+<h3 id="3：CGI拨号示例"><a href="#3：CGI拨号示例" class="headerlink" title="3：CGI拨号示例"></a>3：CGI拨号示例</h3><p>从集成实现来说，这种最方便。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">./curl --header <span class="token string">"Referer: http://192.168.0.1/index.html"</span> http://192.168.0.1/goform/goform_set_cmd_process?goformId<span class="token operator">=</span>SET_CONNECTION_MODE<span class="token operator">&amp;</span><span class="token assign-left variable">ConnectionMode</span><span class="token operator">=</span>auto_dial
+
+./curl --header <span class="token string">"Referer: http://192.168.0.1/index.html"</span> http://192.168.0.1/goform/goform_process?goformId<span class="token operator">=</span>MODE_SWITCH<span class="token operator">&amp;</span><span class="token assign-left variable">switchCmd</span><span class="token operator">=</span>FACTORY<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+
+
+<h2 id="Wifi集成分析"><a href="#Wifi集成分析" class="headerlink" title="Wifi集成分析"></a>Wifi集成分析</h2><p>步骤：</p>
+<ul>
+<li>1：驱动移植识别</li>
+<li>2：wireless_tools或者wpa_supplicant拨号</li>
+</ul>
+<p>wpa_supplicant依赖openssl和libnl，支持PSK加密需要用到这个。wireless_tools只支持普通web加密。</p>
+<h1 id="带宽性能测试"><a href="#带宽性能测试" class="headerlink" title="带宽性能测试"></a>带宽性能测试</h1><p>服务器运行 iperf -s </p>
+<p>客户端运行 iperf -c 服务器ip -t 60000 -i 2</p>
+<pre class="line-numbers language-none"><code class="language-none">iperf -c 192.168.1.100 -t 60000 -i 2
+TP—Link 845<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<p>笔记本有线连接运行服务端, H3531a（2716TE_C）使用TL-WN823N连接</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">[</span>root@Tvt iperf<span class="token punctuation">]</span><span class="token comment"># ./iperf.hisi3531A -c 192.168.1.100 -t 60000 -i 2</span>
+<span class="token punctuation">\</span>------------------------------------------------------------
+Client connecting to <span class="token number">192.168</span>.1.100, TCP port <span class="token number">5001</span>
+TCP window size: <span class="token number">21.0</span> KByte <span class="token punctuation">(</span>default<span class="token punctuation">)</span>
+<span class="token punctuation">\</span>------------------------------------------------------------
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token builtin class-name">local</span> <span class="token number">192.168</span>.1.103 port <span class="token number">47671</span> connected with <span class="token number">192.168</span>.1.100 port <span class="token number">5001</span>
+<span class="token punctuation">[</span> ID<span class="token punctuation">]</span> Interval    Transfer   Bandwidth
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">0.0</span>- <span class="token number">2.0</span> sec <span class="token number">2.25</span> MBytes <span class="token number">9.44</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">2.0</span>- <span class="token number">4.0</span> sec  <span class="token number">256</span> KBytes <span class="token number">1.05</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">4.0</span>- <span class="token number">6.0</span> sec  <span class="token number">128</span> KBytes  <span class="token number">524</span> Kbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">6.0</span>- <span class="token number">8.0</span> sec  <span class="token number">256</span> KBytes <span class="token number">1.05</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">8.0</span>-10.0 sec <span class="token number">1.25</span> MBytes <span class="token number">5.24</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">10.0</span>-12.0 sec <span class="token number">3.75</span> MBytes <span class="token number">15.7</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">12.0</span>-14.0 sec <span class="token number">4.25</span> MBytes <span class="token number">17.8</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">14.0</span>-16.0 sec <span class="token number">3.13</span> MBytes <span class="token number">13.1</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">16.0</span>-18.0 sec <span class="token number">1.75</span> MBytes <span class="token number">7.34</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">18.0</span>-20.0 sec <span class="token number">1.38</span> MBytes <span class="token number">5.77</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">20.0</span>-22.0 sec <span class="token number">1.13</span> MBytes <span class="token number">4.72</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">22.0</span>-24.0 sec  <span class="token number">256</span> KBytes <span class="token number">1.05</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">24.0</span>-26.0 sec  <span class="token number">128</span> KBytes  <span class="token number">524</span> Kbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">26.0</span>-28.0 sec  <span class="token number">128</span> KBytes  <span class="token number">524</span> Kbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">28.0</span>-30.0 sec  <span class="token number">512</span> KBytes <span class="token number">2.10</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">30.0</span>-32.0 sec <span class="token number">2.88</span> MBytes <span class="token number">12.1</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">32.0</span>-34.0 sec <span class="token number">1.63</span> MBytes <span class="token number">6.82</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">34.0</span>-36.0 sec <span class="token number">3.50</span> MBytes <span class="token number">14.7</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">36.0</span>-38.0 sec  <span class="token number">768</span> KBytes <span class="token number">3.15</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">38.0</span>-40.0 sec <span class="token number">4.38</span> MBytes <span class="token number">18.4</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">40.0</span>-42.0 sec <span class="token number">5.38</span> MBytes <span class="token number">22.5</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">42.0</span>-44.0 sec <span class="token number">7.13</span> MBytes <span class="token number">29.9</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">44.0</span>-46.0 sec <span class="token number">6.63</span> MBytes <span class="token number">27.8</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">46.0</span>-48.0 sec <span class="token number">5.38</span> MBytes <span class="token number">22.5</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">48.0</span>-50.0 sec <span class="token number">5.75</span> MBytes <span class="token number">24.1</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">50.0</span>-52.0 sec <span class="token number">7.50</span> MBytes <span class="token number">31.5</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">52.0</span>-54.0 sec <span class="token number">4.63</span> MBytes <span class="token number">19.4</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">54.0</span>-56.0 sec <span class="token number">7.50</span> MBytes <span class="token number">31.5</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">56.0</span>-58.0 sec <span class="token number">6.75</span> MBytes <span class="token number">28.3</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">58.0</span>-60.0 sec <span class="token number">5.13</span> MBytes <span class="token number">21.5</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">60.0</span>-62.0 sec <span class="token number">5.38</span> MBytes <span class="token number">22.5</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">62.0</span>-64.0 sec <span class="token number">4.75</span> MBytes <span class="token number">19.9</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">64.0</span>-66.0 sec <span class="token number">6.00</span> MBytes <span class="token number">25.2</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">66.0</span>-68.0 sec <span class="token number">3.50</span> MBytes <span class="token number">14.7</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">68.0</span>-70.0 sec <span class="token number">5.50</span> MBytes <span class="token number">23.1</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">70.0</span>-72.0 sec <span class="token number">4.75</span> MBytes <span class="token number">19.9</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">72.0</span>-74.0 sec <span class="token number">1.50</span> MBytes <span class="token number">6.29</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">74.0</span>-76.0 sec <span class="token number">4.50</span> MBytes <span class="token number">18.9</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">76.0</span>-78.0 sec <span class="token number">4.25</span> MBytes <span class="token number">17.8</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">78.0</span>-80.0 sec <span class="token number">5.13</span> MBytes <span class="token number">21.5</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">80.0</span>-82.0 sec <span class="token number">7.88</span> MBytes <span class="token number">33.0</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">82.0</span>-84.0 sec <span class="token number">7.38</span> MBytes <span class="token number">30.9</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">84.0</span>-86.0 sec <span class="token number">4.38</span> MBytes <span class="token number">18.4</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">86.0</span>-88.0 sec <span class="token number">5.25</span> MBytes <span class="token number">22.0</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">88.0</span>-90.0 sec <span class="token number">6.63</span> MBytes <span class="token number">27.8</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">90.0</span>-92.0 sec <span class="token number">5.00</span> MBytes <span class="token number">21.0</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">92.0</span>-94.0 sec <span class="token number">6.88</span> MBytes <span class="token number">28.8</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">94.0</span>-96.0 sec <span class="token number">8.25</span> MBytes <span class="token number">34.6</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">96.0</span>-98.0 sec <span class="token number">7.25</span> MBytes <span class="token number">30.4</span> Mbits/sec<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+
+
+<h1 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h1><h2 id="1：TD-LTE和LTE-FDD标准差异"><a href="#1：TD-LTE和LTE-FDD标准差异" class="headerlink" title="1：TD- LTE和LTE FDD标准差异"></a>1：TD- LTE和LTE FDD标准差异</h2><p> TD- LTE是我国自主研发的4G标准，是由TD-SCDMA（3G网络）发展而来。</p>
+<p>LTE FDD是现在国际上主流的，使用最广泛的4G网络。</p>
+<p>现在全球有超过200个LTE的商用网络，其中超过90%是FDD的。</p>
+<p>从技术上说，TD- LTE采用的是时分双工，而LTE FDD采用的是频分双工</p>
+<p>那什么是频分双工，什么又是时分双工呢？</p>
+<p>先来解释“双工”。</p>
+<p>移动通信系统的工作方式分为：单工、半双工和全双工</p>
+<p>1，单工就是信息只能向一个方向传播。例如寻呼机和收音机，只能接收信息，不能发出信息。</p>
+<p>2，半双工就是信息可以双向传播，但是上传信息的时候只能上传，下载的时候只能下载。例如对讲机，你说话的时候听不见别人别人说，听别人说的时候自己不能说。</p>
+<p>3， 全双工就是信息可以同时双向传播。例如手机，可以边听边说。<br> 其中全双工又分为：时分双工TDD，与频分双工FDD。</p>
+<p>​    所谓的频分双工就是将信息上传和信息下载放在两个不同的频段，称为上行频段和下行频段，且这两个频段必须对称。为了不防止上下行频段之间的信息串频，两个频段不能重叠，而且中间必须隔开一段，称为保护频。如下图：上行和下行频段相互分开</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730142158.jpg" alt="保护帧"></p>
+<p>  所谓的时分双工就是将上传和下载放在同一个频段，也就是上行频段和下行频段完全一样。那它是如何做到上下的信息不串频呢？其实很简单，顾名思义，频分双工分的是频段，那时分双工分的就是时间。将波传播的时间轴一分为二，</p>
+<p>前半部分用于信息的上传，后一部分用于信息的下载。其实这从理论上更像是同步的半双工，但是由于上行和下行时间差距极短，我们无法感觉到，所以从效果上也是全双工。如下图：时间帧的第一帧为上行，第二帧而为下行，上下行共用一个频段，用时间的差将他们隔开。</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730142220.jpg" alt="数据帧"></p>
+<p>​    接下来说一说移动TD- LTE和电信联通LTE FDD的优缺点，其实就是时分双工与频分双工的特点。</p>
+<p>​     TD- LTE由于采用上行和下行分时，所以上行和下行的时间差导致他信息传输的速度受到一定的限制。他的理论下载峰值为100Mbps，相比FDD的150Mbps来说，慢了不少。当然TD- LTE的基站信号覆盖半径也比LTE FDD小一点。</p>
+<p>​    LTE FDD也并非都是优点。FDD制式必须要找对称分开的上行、下行频段，也就是说它必须浪费更多的频段资源。那中国联通的FDD网为例，工信部给他发的频段牌照为，上行1755<del>1765MHz和下行1850</del>1860MHz（2×10M），实际联通只得到了上下各10M的频段，但是加上当中的保护频段，一共占用了1755~1860MHz也就是105MHz的频段。这就导致了频段资源利用率低，是一种资源的浪费。目前，频率资源本身就紧张，能找到对称的上行和下行频段就尤其难。频率除了用在手机上网通讯上，像广播，军事,甚至无线路由器等民用领域也广泛使用。将来随着科技的进步，频率频段的稀缺会日益严重。</p>
+<p>​    TD-LTE和FDD-LTE 是4G的两种国际标准，各有利弊。TD-LTE占用频段少，节省资源，带宽长，适合区域热点覆盖；FDD速度更快，覆盖更广，但占用资源多。适合广域覆盖。</p>
+<hr>
+]]></content>
+      <categories>
+        <category>embeded</category>
+      </categories>
+      <tags>
+        <tag>Linux</tag>
+        <tag>嵌入式</tag>
+        <tag>embeded</tag>
+        <tag>3G</tag>
+        <tag>4G</tag>
+        <tag>3531a</tag>
+        <tag>移植</tag>
       </tags>
   </entry>
   <entry>
@@ -4351,278 +4623,6 @@ log<span class="token operator">-</span>slave<span class="token operator">-</spa
         <tag>MySql</tag>
         <tag>Mariadb</tag>
         <tag>技巧</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>3G,4G,Wifi选型需求分析及技术简介</title>
-    <url>/embeded/2021-07-30-3g-4g-iot-module-embedded-transplantation/</url>
-    <content><![CDATA[<h2 id="3G-4G-Wifi选型需求分析及技术简介"><a href="#3G-4G-Wifi选型需求分析及技术简介" class="headerlink" title="3G,4G,Wifi选型需求分析及技术简介"></a>3G,4G,Wifi选型需求分析及技术简介</h2><ul>
-<li><p>文章写了好多年了，只在一个网站发布过PDF版本。行业内应该很多人看过这个。</p>
-</li>
-<li><p>关于本blog，<strong>图床</strong>一般使用<strong>github</strong>，已经配置了CDN，如果图片还是未显示请自行代理解决</p>
-</li>
-<li><p><strong>原创声明警告</strong>，文章<strong>禁止转载</strong>，禁止发布到其它任何网站，可以接受约稿。</p>
-</li>
-</ul>
-<h2 id="用户需求分析"><a href="#用户需求分析" class="headerlink" title="用户需求分析"></a>用户需求分析</h2><p>减少布线，或有的地方很难布线。</p>
-<p>​    例如：偏远森林，沙漠，海岛，土地所有制导致不能随便开挖等各种原因。</p>
-<h3 id="–3G，4G–"><a href="#–3G，4G–" class="headerlink" title="–3G，4G–"></a>–3G，4G–</h3><p>优点： 布线，距离远。</p>
-<p>缺点：流量费高（可以和运营商合作 ）</p>
-<h3 id="–Wifi–"><a href="#–Wifi–" class="headerlink" title="–Wifi–"></a>–Wifi–</h3><p>优点：费用低，</p>
-<p>缺点：距离近</p>
-<h2 id="研发需求分析"><a href="#研发需求分析" class="headerlink" title="研发需求分析"></a>研发需求分析</h2><h2 id="WANTED"><a href="#WANTED" class="headerlink" title="WANTED!"></a>WANTED!</h2><h3 id="3G，4G选型标准需求"><a href="#3G，4G选型标准需求" class="headerlink" title="3G，4G选型标准需求"></a>3G，4G选型标准需求</h3><p>1：产品生命周期，时间空间的重叠。 初产时间较近，出货时间长，</p>
-<p>2：客户那里运营商网络制式？？（例如<strong>TD-LTE<strong><strong>，</strong></strong>FDD-LTE<strong><strong>，</strong></strong>CDMA2000****等等</strong>）， </p>
-<p>​    运营商名称？？（一般不同国家不一样，一个国家很多个运营商）</p>
-<p>3：3G，4G具体型号选择： 1：厂家选择？？？ 2：网络制式选择（需要选择制式尽可能支持区域大的，亚洲，欧美，日韩）？？？ 3：USB 使用的技术代差（1：usb猫，2：usb光驱，3：html拨号）</p>
-<p>4：客户3G，4G使用场景？？。流量大小，费用</p>
-<p><strong>注意：</strong>可能客户那里支持的制式和国内不一样，我们这边验证的制式在客户那里不能用，客户那里支持的制式在国内又没法验证。选择制式的时候特别需要注意。</p>
-<h3 id="Wifi选择需求"><a href="#Wifi选择需求" class="headerlink" title="Wifi选择需求"></a>Wifi选择需求</h3><p>5：芯片厂家需要支持Linux驱动。 芯片出来年代？？？，价格？？？，协议标准（决定速度），网络信号质量？？？，传输速度（不同距离速度，是否要求穿墙）？？？</p>
-<p>6：对应的无线路由器调试</p>
-<p>7：客户Wifi使用场景？？。 主要是使用距离引起速度衰变， 现在有2,4G，5G路由，速度有150Mbit/s 300Mbit/s，450Mbit/s。需要ap评估这种速度能否满足各种场景使用需求</p>
-<h2 id="3G，4G部分"><a href="#3G，4G部分" class="headerlink" title="3G，4G部分"></a>3G，4G部分</h2><h3 id="中国2G，3G，4G制式标准"><a href="#中国2G，3G，4G制式标准" class="headerlink" title="中国2G，3G，4G制式标准"></a>中国2G，3G，4G制式标准</h3><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141533.jpg" alt="运营商制式"></p>
-<p>UMTS(Universal Mobile Telecommunications System)，意即通用移动通信系统。UMTS是国际标准化组织3GPP制定的全球3G标准之一。作为一个完整的3G移动通信技术标准，UMTS并不仅限于定义空中接口。它的主体包括CDMA接入网络和分组化的核心网络等一系列技术规范和接口协议。除WCDMA作为首选空中接口技术获得不断完善外，UMTS还相继引入了TD-SCDMA和HSDPA技术。<br>   UMTS网络优先选择的就是WCDMA，国内就是中国联通</p>
-<h3 id="电信"><a href="#电信" class="headerlink" title="*电信*"></a>*<strong>电信*</strong></h3><ul>
-<li><strong>2G CDMA</strong></li>
-<li><strong>3G CDMA2000</strong></li>
-<li><strong>4G TD-LTE<strong><strong>，</strong></strong>FDD-LTE</strong></li>
-</ul>
-<h3 id="移动"><a href="#移动" class="headerlink" title="*移动*"></a>*<strong>移动*</strong></h3><ul>
-<li><strong>2G GSM</strong></li>
-<li><strong>3G TD-SCDMA</strong></li>
-<li><strong>4G TD-LTE<strong><strong>，</strong></strong>FDD-LTE</strong></li>
-</ul>
-<h3 id="联通"><a href="#联通" class="headerlink" title="*联通*"></a>*<strong>联通*</strong></h3><ul>
-<li><p><strong>2G GSM</strong></p>
-</li>
-<li><p><strong>3G WCDMA</strong></p>
-</li>
-<li><p><strong>4G TD-LTE<strong><strong>，</strong></strong>FDD-LTE</strong></p>
-</li>
-<li><p>中国移动TD-LTE：支持频段38、39、40</p>
-</li>
-<li><p>中国联通TD-LTE：支持频段40、41</p>
-</li>
-<li><p>中国电信TD-LTE：支持频段40、41</p>
-</li>
-<li><p>中国联通FDD-LTE：支持频段3</p>
-</li>
-<li><p>中国电信FDD-LTE：支持频段3</p>
-</li>
-</ul>
-<h3 id="全球制式和区域"><a href="#全球制式和区域" class="headerlink" title="全球制式和区域"></a>全球制式和区域</h3><h4 id="2G有GSM，还有CDMA。"><a href="#2G有GSM，还有CDMA。" class="headerlink" title="2G有GSM，还有CDMA。"></a>2G有GSM，还有CDMA。</h4><p>​    我们平时说的G 网或者C 网了。联通和移动都是GSM，电信的133号段（之前是联通主营，后来转移给电信）是C网</p>
-<h4 id="3G有3种：WCDMA，CDMA2000，TD-CDMA"><a href="#3G有3种：WCDMA，CDMA2000，TD-CDMA" class="headerlink" title="3G有3种：WCDMA，CDMA2000，TD_CDMA"></a>3G有3种：WCDMA，CDMA2000，TD_CDMA</h4><p>WCDMA（日本、欧洲）、CDMA2000（北美）、TD-SCDMA（中国移动）</p>
-<p>使用最广泛的是WCDMA。美国、欧洲等国很多是WCDMA和CDMA2000都有的。<br> 另外WCDMA、CDMA2000里面还有更细的划分，主要是技术、标准、速度的细微差别。</p>
-<p>WCDMA（欧洲版）：这个是欧洲的主流，也是目前世界范围3G 的使用模式最广的，在中国大陆，是中国联通3G （沃）的模式。<br> CDMA2000（美国版）：这个数量相对少些，由美国为代表。在大陆，是中国电信3G （天翼）的模式<br> TD-SCDMA（中国版）：这个是中国大陆自主知识产权的，可以说是中国特色的3G ，虽然大部分的通讯厂商宣布对此技术可以支持，但世界范围内使用的范围有限。在大陆，是中国移动3G的网络模式。</p>
-<h4 id="4G有2种-LTE-FDD，LTE-TDD"><a href="#4G有2种-LTE-FDD，LTE-TDD" class="headerlink" title="4G有2种: LTE FDD，LTE TDD"></a>4G有2种: LTE FDD，LTE TDD</h4><p>LTE FDD（世界绝大多数国家）、LTE TDD（中国移动和国外极少数地区的个别运营商）。</p>
-<p>TD- LTE是我国自主研发的4G标准，是由TD-SCDMA（3G网络）发展而来。</p>
-<p>LTE FDD是现在国际上主流的，使用最广泛的4G网络，由WCDMA演化而来。</p>
-<p>现在全球有超过200个LTE的商用网络，其中超过90%是FDD的。</p>
-<p>从技术上说，TD- LTE采用的是时分双工，而LTE FDD采用的是频分双工</p>
-<p>TD-LTE和FDD-LTE 是4G的两种国际标准，各有利弊。TD-LTE占用频段少，节省资源，带宽长，适合区域热点覆盖；FDD速度更快，覆盖更广，但占用资源多。适合广域覆盖。</p>
-<h4 id="国内三家运营商4G网络制式分别如下："><a href="#国内三家运营商4G网络制式分别如下：" class="headerlink" title="国内三家运营商4G网络制式分别如下："></a>国内三家运营商4G网络制式分别如下：</h4><p>联通4G：TD-LTE、FDD-LTE</p>
-<p>电信4G：TD-LTE、FDD-LTE</p>
-<p>移动4G：TD-LTE</p>
-<p>虽然联通跟电信都是采用双4G网络制式，但目前4G网络仅在部分地区覆盖，3G网络仍然是不可或缺的。而联通3G采用的是WCDMA，为欧洲标准，是技术发展最成熟、国际通用和覆盖范围最广的制式，目前是国内3G网络最快的，最高可达42Mbps，在国外已将其定义为4G标准。</p>
-<p>综合以上，选型推荐。</p>
-<h2 id="3G推荐选型：WCDMA欧洲，CDMA2000美国"><a href="#3G推荐选型：WCDMA欧洲，CDMA2000美国" class="headerlink" title="3G推荐选型：WCDMA欧洲，CDMA2000美国"></a>3G推荐选型：WCDMA欧洲，CDMA2000美国</h2><h2 id="4G推荐选型：FDD-LTE"><a href="#4G推荐选型：FDD-LTE" class="headerlink" title="4G推荐选型：FDD-LTE"></a>4G推荐选型：FDD-LTE</h2><h2 id="WIFI部分"><a href="#WIFI部分" class="headerlink" title="WIFI部分"></a>WIFI部分</h2><h2 id="2-4G和5G究竟是什么"><a href="#2-4G和5G究竟是什么" class="headerlink" title="2.4G和5G究竟是什么"></a>2.4G和5G究竟是什么</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141643.jpg" alt="img">   以往我们一直使用的Wi-Fi大多数是支持 IEEE 802.11n（第四代）无线标准的，而且工作在2.4GHz这个频段上的，所以称之为2.4gWi-Fi，但是严格来说工作在5GHz频段上的不一定就是5G Wi-Fi，因为IEEE 802.11a（第一代）IEEE 802.11n（第四代）和IEEE 802.11ac（第五代)这三种标准都可以工作在5GHz这个频段上。</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141655.jpg" alt="img">   严格来说只有支持802.11ac的才是真正5G Wi-Fi（在这个视频里我们将它称作ac 5G)，现来在说支持2.4G和5G双频的路由器其实很多都是指支持第四代无线标准，也就是802.11n的双频，而真正支持ac 5G的路由最便宜都要400、500甚至上千元</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141748.jpg" alt="img">   我们的路由器一般会有标有一些类似54Mbps，150Mbps，300Mbps这样的参数，要说明一下，这个参数不是指路由器的无线覆盖范围，而是指它的最高传输速率。若要支持ac 5G的也要双方同时支持，单方面支持是不行的。</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141738.jpg" alt="img">   这个速率就相当于车道上的限速标志，当然也不能完全等同与限速标志，因为如果网络中多个设备同时传输要分流的</p>
-<p><strong><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141801.jpg" alt="img"></strong></p>
-<p>最后不要忘记要考虑空间的大小，200多平米的房子一般普通无线路由器的2.4G勉强可以覆盖，5G的话150平米就开始有压力，如果房屋太大或者多楼层的话可能就要考虑一下多个无线路由桥接了。</p>
-<h3 id="5GWifi速度快，穿墙弱"><a href="#5GWifi速度快，穿墙弱" class="headerlink" title="5GWifi速度快，穿墙弱"></a>5GWifi速度快，穿墙弱</h3><p>5G Wi-Fi的最大缺点就是穿墙能力比较弱，墙体对Wi-Fi信号的强度影响是比较大的，每穿过一面墙，Wi-Fi信号就要减弱不少。</p>
-<h3 id="路由器摆放小技巧。增强信号。"><a href="#路由器摆放小技巧。增强信号。" class="headerlink" title="路由器摆放小技巧。增强信号。"></a>路由器摆放小技巧。增强信号。</h3><h4 id="最根本一半是有线速度限制，但信号强度也很重要"><a href="#最根本一半是有线速度限制，但信号强度也很重要" class="headerlink" title="最根本一半是有线速度限制，但信号强度也很重要"></a>最根本一半是有线速度限制，但信号强度也很重要</h4><p>另外分享一个摆放路由器的方法，如果受制与网线或者台式电脑的位置就没得说，但是如果可以移动的话，这个位置的原则是要经过尽量少的墙体</p>
-<p>最好不要放在地上，更不要放在角落，</p>
-<h4 id="放在高处"><a href="#放在高处" class="headerlink" title="放在高处"></a>放在高处</h4><p>而且应该经适当的放高一点，而不是放在地上，这和手机信号塔的原理是一样的，更加不应该因为他碍眼把它放进抽屉、柜子等里面。这些方法可以略微增强信号强度，不过想从根本上解决信号问题，还是要换一款更好的路由。</p>
-<h2 id="无线网卡选购简介"><a href="#无线网卡选购简介" class="headerlink" title="无线网卡选购简介"></a>无线网卡选购简介</h2><p>常见值得选购的USB无线网卡按技术规格和价位，大致可以分为如下3类：</p>
-<p>单频11n网卡，标注速度200-300M，20-30元。</p>
-<p>双频11n网卡，支持5g频段，标注速度600M，40-50元。</p>
-<p>双频11ac网卡，支持5g频段，标注速度900-1200M或更高，80元以上。</p>
-<p>无线网卡要想达到标注的技术标准和速度，首先需要路由器支持该标准及速度，否则会降速运行。</p>
-<h3 id="USB协议：速度，选择2-0还是3-0"><a href="#USB协议：速度，选择2-0还是3-0" class="headerlink" title="USB协议：速度，选择2.0还是3.0"></a>USB协议：速度，选择2.0还是3.0</h3><p>USB2.0的速度传输，理论最大速率480M bit/S。 60MB/S</p>
-<p>USB3.0的理论最大速率是5G bit/S，要比USB2.0快10倍！ 640MB/S</p>
-<p>看线路，工艺质量，实际速度可能不到理论速度一半</p>
-<h3 id="USB3-0-对wifi和BlueTooth干扰。"><a href="#USB3-0-对wifi和BlueTooth干扰。" class="headerlink" title="USB3.0 对wifi和BlueTooth干扰。"></a>USB3.0 对wifi和BlueTooth干扰。</h3><p>USB3.0的传输频率确实是5GHz串行，但USB3.0使用4条数据线组成2组，每组负责一个传输方向，实现全双工双向5GHz，而每条数据线的基准频率是2.5GHz。</p>
-<p>所以，总带宽是5GHz没错，但每条线上是2.5GHz，这个频率距离2.4G Wifi的频率太近了，又因为高频设备大多数都使用了SSC技术（扩频时钟？）使得信号不完全分布在一个固定频率上，所以就波及了2.5GHz附近的其它频率，所以对Wifi和蓝牙产生了较大的干扰。</p>
-<h3 id="USB-3-0-干扰-Wifi-2-4G通讯的问题和解决方法"><a href="#USB-3-0-干扰-Wifi-2-4G通讯的问题和解决方法" class="headerlink" title="USB 3.0 干扰 Wifi 2.4G通讯的问题和解决方法"></a>USB 3.0 干扰 Wifi 2.4G通讯的问题和解决方法</h3><h4 id="USB3-0-WIFI干扰解决方法"><a href="#USB3-0-WIFI干扰解决方法" class="headerlink" title="USB3.0 WIFI干扰解决方法"></a>USB3.0 WIFI干扰解决方法</h4><p>USB3.0的确对2.4G有影响，不过一样可以解决，比如<strong>网件</strong>的解决方法就是，USB3.0 和网口,天线不在一面，USB3.0接口弄到前面，而且是所有接口有<strong>金属屏蔽罩</strong>（包括WAN和LAN口），连USB接口与主板连线处都用<strong>屏蔽胶布</strong>包裹。可惜国内厂商哪怕是大如华为，网口也舍不得这点成本用金属屏蔽的。</p>
-<p>带有USB 3.0接口的无线路由，如果出现外接3.0移动硬盘后网速下降，断网，或者ping延时变得很高，说明出现了3.0对无线的干扰。</p>
-<p>USB3.0与无线冲突解决办法：</p>
-<p>第一种：给USB接口加金属膜做屏蔽可以适当降低干扰，但不能完全屏蔽</p>
-<p>第二种：给主板的USB底座增加统一（并与使用设备）接地和增加金属屏蔽罩，基本可以排除</p>
-<p>【推荐】第三种：用1.2米 双磁环带屏蔽层的USB延长线将移动硬盘放到一米外的地方使用，基本可以完全可以排除</p>
-<p>其实不单是无线路由，像我们平常使用的无线鼠标键盘、蓝牙、wifi电视、iPad、手机等各种使用民用2.4G的通信设备都会出现与USB3.0冲突的情况。</p>
-<h4 id="USB3-0-移动硬盘干扰解决方法"><a href="#USB3-0-移动硬盘干扰解决方法" class="headerlink" title="USB3.0 移动硬盘干扰解决方法"></a>USB3.0 移动硬盘干扰解决方法</h4><p>相信随着USB3.0使用的用户越来越多，不少人遇到了一插上USB3.0的硬盘，wifi就出现降速或者中断的问题。其本质原因是USB 3.0 干扰2.4GHz下的Wifi通讯。</p>
-<p> 解决方法如下，</p>
-<p> 1.更换无线路由为5GHz，因为USB 3.0对5GHz的Wifi干扰程度较低<br> 2.把硬盘盒从USB3.0接口换到USB2.0接口也可以将问题解决<br> 3.使用高质量带屏蔽的USB3.0设备/线缆/接口。或者在USB3.0接口处加屏蔽罩（金属箔即可）<br> 4.最简单的，使用1m以上的高质量USB3.0延长线。将USB3.0设备远离电脑主机。</p>
-<p> Intel官方对USB3.0对WIFI干扰的描述文档：</p>
-<p> <a href="http://www.usb.org/developers/whitepapers/327216.pdf">http://www.usb.org/developers/whitepapers/327216.pdf</a></p>
-<h2 id="目前在调试的两款型号："><a href="#目前在调试的两款型号：" class="headerlink" title="目前在调试的两款型号："></a>目前在调试的两款型号：</h2><h3 id="TL-WN823N"><a href="#TL-WN823N" class="headerlink" title="TL-WN823N"></a>TL-WN823N</h3><ul>
-<li>​         Bus 002 Device 007: ID 0bda:818b</li>
-<li>​         RTL8192EU</li>
-<li>​         300M迷你型无线USB网卡 TL-WN823N</li>
-</ul>
-<h3 id="TL-WN725N"><a href="#TL-WN725N" class="headerlink" title="TL-WN725N"></a>TL-WN725N</h3><ul>
-<li>​         Bus 002 Device 008: ID 0bda:8179</li>
-<li>​         rtl8188eu</li>
-<li>​         150M无线USB网卡 TL-WN725N</li>
-<li>​         网上的驱动版本数据结构和3.10差异较大，不能用</li>
-</ul>
-<h2 id="Wifi芯片厂家"><a href="#Wifi芯片厂家" class="headerlink" title="Wifi芯片厂家"></a>Wifi芯片厂家</h2><h3 id="Realtek："><a href="#Realtek：" class="headerlink" title="Realtek："></a>Realtek：</h3><p>​         官方无linux驱动支持</p>
-<h3 id="Ralink"><a href="#Ralink" class="headerlink" title="Ralink"></a>Ralink</h3><p>（已经被MTK收购）： 官方有linux驱动</p>
-<h3 id="Atheros"><a href="#Atheros" class="headerlink" title="Atheros"></a>Atheros</h3><p>（已经被高通qualcomm收购）：AR9271</p>
-<h2 id="整理推荐芯片型号："><a href="#整理推荐芯片型号：" class="headerlink" title="整理推荐芯片型号："></a>整理推荐芯片型号：</h2><p>USB 2.0 Mbit/s</p>
-<h3 id="rt3070"><a href="#rt3070" class="headerlink" title="rt3070"></a>rt3070</h3><ul>
-<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt3070">http://www.mediatek.cn/products/broadbandWifi/rt3070</a></li>
-<li>IEEE 802.11:b/g/n</li>
-<li>Wi-Fi Frequency:2.4GHz</li>
-<li>Antenna:1T1R</li>
-<li>Data Throughput:150Mbit/s</li>
-</ul>
-<h3 id="rt5370"><a href="#rt5370" class="headerlink" title="rt5370"></a>rt5370</h3><ul>
-<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt5370">http://www.mediatek.cn/products/broadbandWifi/rt5370</a></li>
-<li>IEEE 802.11:b/g/n</li>
-<li>Wi-Fi Frequency:2.4GHz</li>
-<li>Antenna:1T1R</li>
-<li>Data Throughput:150Mbit/s</li>
-</ul>
-<h3 id="RT3573"><a href="#RT3573" class="headerlink" title="RT3573"></a>RT3573</h3><ul>
-<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt3573">http://www.mediatek.cn/products/broadbandWifi/rt3573</a></li>
-<li>IEEE 802.11:b/g/n/ac</li>
-<li>Wi-Fi Frequency:2.4GHz, 5GHz</li>
-<li>Antenna:3T3R</li>
-<li>Data Throughput:450Mbit/s</li>
-</ul>
-<h3 id="RT5572"><a href="#RT5572" class="headerlink" title="RT5572"></a>RT5572</h3><ul>
-<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt5572">http://www.mediatek.cn/products/broadbandWifi/rt5572</a></li>
-<li>IEEE 802.11:b/g/n/ac</li>
-<li>Wi-Fi Frequency:2.4GHz, 5GHz</li>
-<li>Antenna:2T2R</li>
-<li>Data Throughput:300Mbit/s</li>
-</ul>
-<h1 id="集成分析"><a href="#集成分析" class="headerlink" title="集成分析"></a>集成分析</h1><h2 id="3G，4G集成分析"><a href="#3G，4G集成分析" class="headerlink" title="3G，4G集成分析"></a>3G，4G集成分析</h2><p>根据拨号技术流程，现在已经发现的USB上网有三种</p>
-<ul>
-<li>1：默认识别为USB Modem，使用pppoe拨号脚本拨号。</li>
-<li>2：默认识别为usb cdrom，使用usb-modeswitch 转换usb设备工作状态，转换为USB Modem后再采用pppoe拨号脚本拨号。</li>
-<li>3：使用CGI 调用Html链接方式拨号。不需要我们配置用户名密码，网络制式，最方便。</li>
-</ul>
-<h3 id="1：Pppoe拨号"><a href="#1：Pppoe拨号" class="headerlink" title="1：Pppoe拨号"></a>1：Pppoe拨号</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">pppd call wcdma <span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-
-
-<h3 id="2：usb-modeswitch转换usb设备工作模式。"><a href="#2：usb-modeswitch转换usb设备工作模式。" class="headerlink" title="2：usb_modeswitch转换usb设备工作模式。"></a>2：usb_modeswitch转换usb设备工作模式。</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">usb_modeswitch -W -c /etc/usb_modeswitch.d/19D2:0117<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-
-
-<h3 id="3：CGI拨号示例"><a href="#3：CGI拨号示例" class="headerlink" title="3：CGI拨号示例"></a>3：CGI拨号示例</h3><p>从集成实现来说，这种最方便。</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">./curl --header <span class="token string">"Referer: http://192.168.0.1/index.html"</span> http://192.168.0.1/goform/goform_set_cmd_process?goformId<span class="token operator">=</span>SET_CONNECTION_MODE<span class="token operator">&amp;</span><span class="token assign-left variable">ConnectionMode</span><span class="token operator">=</span>auto_dial
-
-./curl --header <span class="token string">"Referer: http://192.168.0.1/index.html"</span> http://192.168.0.1/goform/goform_process?goformId<span class="token operator">=</span>MODE_SWITCH<span class="token operator">&amp;</span><span class="token assign-left variable">switchCmd</span><span class="token operator">=</span>FACTORY<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-
-
-<h2 id="Wifi集成分析"><a href="#Wifi集成分析" class="headerlink" title="Wifi集成分析"></a>Wifi集成分析</h2><p>步骤：</p>
-<ul>
-<li>1：驱动移植识别</li>
-<li>2：wireless_tools或者wpa_supplicant拨号</li>
-</ul>
-<p>wpa_supplicant依赖openssl和libnl，支持PSK加密需要用到这个。wireless_tools只支持普通web加密。</p>
-<h1 id="带宽性能测试"><a href="#带宽性能测试" class="headerlink" title="带宽性能测试"></a>带宽性能测试</h1><p>服务器运行 iperf -s </p>
-<p>客户端运行 iperf -c 服务器ip -t 60000 -i 2</p>
-<pre class="line-numbers language-none"><code class="language-none">iperf -c 192.168.1.100 -t 60000 -i 2
-TP—Link 845<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-
-<p>笔记本有线连接运行服务端, H3531a（2716TE_C）使用TL-WN823N连接</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">[</span>root@Tvt iperf<span class="token punctuation">]</span><span class="token comment"># ./iperf.hisi3531A -c 192.168.1.100 -t 60000 -i 2</span>
-<span class="token punctuation">\</span>------------------------------------------------------------
-Client connecting to <span class="token number">192.168</span>.1.100, TCP port <span class="token number">5001</span>
-TCP window size: <span class="token number">21.0</span> KByte <span class="token punctuation">(</span>default<span class="token punctuation">)</span>
-<span class="token punctuation">\</span>------------------------------------------------------------
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token builtin class-name">local</span> <span class="token number">192.168</span>.1.103 port <span class="token number">47671</span> connected with <span class="token number">192.168</span>.1.100 port <span class="token number">5001</span>
-<span class="token punctuation">[</span> ID<span class="token punctuation">]</span> Interval    Transfer   Bandwidth
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">0.0</span>- <span class="token number">2.0</span> sec <span class="token number">2.25</span> MBytes <span class="token number">9.44</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">2.0</span>- <span class="token number">4.0</span> sec  <span class="token number">256</span> KBytes <span class="token number">1.05</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">4.0</span>- <span class="token number">6.0</span> sec  <span class="token number">128</span> KBytes  <span class="token number">524</span> Kbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">6.0</span>- <span class="token number">8.0</span> sec  <span class="token number">256</span> KBytes <span class="token number">1.05</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">8.0</span>-10.0 sec <span class="token number">1.25</span> MBytes <span class="token number">5.24</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">10.0</span>-12.0 sec <span class="token number">3.75</span> MBytes <span class="token number">15.7</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">12.0</span>-14.0 sec <span class="token number">4.25</span> MBytes <span class="token number">17.8</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">14.0</span>-16.0 sec <span class="token number">3.13</span> MBytes <span class="token number">13.1</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">16.0</span>-18.0 sec <span class="token number">1.75</span> MBytes <span class="token number">7.34</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">18.0</span>-20.0 sec <span class="token number">1.38</span> MBytes <span class="token number">5.77</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">20.0</span>-22.0 sec <span class="token number">1.13</span> MBytes <span class="token number">4.72</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">22.0</span>-24.0 sec  <span class="token number">256</span> KBytes <span class="token number">1.05</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">24.0</span>-26.0 sec  <span class="token number">128</span> KBytes  <span class="token number">524</span> Kbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">26.0</span>-28.0 sec  <span class="token number">128</span> KBytes  <span class="token number">524</span> Kbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">28.0</span>-30.0 sec  <span class="token number">512</span> KBytes <span class="token number">2.10</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">30.0</span>-32.0 sec <span class="token number">2.88</span> MBytes <span class="token number">12.1</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">32.0</span>-34.0 sec <span class="token number">1.63</span> MBytes <span class="token number">6.82</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">34.0</span>-36.0 sec <span class="token number">3.50</span> MBytes <span class="token number">14.7</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">36.0</span>-38.0 sec  <span class="token number">768</span> KBytes <span class="token number">3.15</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">38.0</span>-40.0 sec <span class="token number">4.38</span> MBytes <span class="token number">18.4</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">40.0</span>-42.0 sec <span class="token number">5.38</span> MBytes <span class="token number">22.5</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">42.0</span>-44.0 sec <span class="token number">7.13</span> MBytes <span class="token number">29.9</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">44.0</span>-46.0 sec <span class="token number">6.63</span> MBytes <span class="token number">27.8</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">46.0</span>-48.0 sec <span class="token number">5.38</span> MBytes <span class="token number">22.5</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">48.0</span>-50.0 sec <span class="token number">5.75</span> MBytes <span class="token number">24.1</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">50.0</span>-52.0 sec <span class="token number">7.50</span> MBytes <span class="token number">31.5</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">52.0</span>-54.0 sec <span class="token number">4.63</span> MBytes <span class="token number">19.4</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">54.0</span>-56.0 sec <span class="token number">7.50</span> MBytes <span class="token number">31.5</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">56.0</span>-58.0 sec <span class="token number">6.75</span> MBytes <span class="token number">28.3</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">58.0</span>-60.0 sec <span class="token number">5.13</span> MBytes <span class="token number">21.5</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">60.0</span>-62.0 sec <span class="token number">5.38</span> MBytes <span class="token number">22.5</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">62.0</span>-64.0 sec <span class="token number">4.75</span> MBytes <span class="token number">19.9</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">64.0</span>-66.0 sec <span class="token number">6.00</span> MBytes <span class="token number">25.2</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">66.0</span>-68.0 sec <span class="token number">3.50</span> MBytes <span class="token number">14.7</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">68.0</span>-70.0 sec <span class="token number">5.50</span> MBytes <span class="token number">23.1</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">70.0</span>-72.0 sec <span class="token number">4.75</span> MBytes <span class="token number">19.9</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">72.0</span>-74.0 sec <span class="token number">1.50</span> MBytes <span class="token number">6.29</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">74.0</span>-76.0 sec <span class="token number">4.50</span> MBytes <span class="token number">18.9</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">76.0</span>-78.0 sec <span class="token number">4.25</span> MBytes <span class="token number">17.8</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">78.0</span>-80.0 sec <span class="token number">5.13</span> MBytes <span class="token number">21.5</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">80.0</span>-82.0 sec <span class="token number">7.88</span> MBytes <span class="token number">33.0</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">82.0</span>-84.0 sec <span class="token number">7.38</span> MBytes <span class="token number">30.9</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">84.0</span>-86.0 sec <span class="token number">4.38</span> MBytes <span class="token number">18.4</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">86.0</span>-88.0 sec <span class="token number">5.25</span> MBytes <span class="token number">22.0</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">88.0</span>-90.0 sec <span class="token number">6.63</span> MBytes <span class="token number">27.8</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">90.0</span>-92.0 sec <span class="token number">5.00</span> MBytes <span class="token number">21.0</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">92.0</span>-94.0 sec <span class="token number">6.88</span> MBytes <span class="token number">28.8</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">94.0</span>-96.0 sec <span class="token number">8.25</span> MBytes <span class="token number">34.6</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">96.0</span>-98.0 sec <span class="token number">7.25</span> MBytes <span class="token number">30.4</span> Mbits/sec<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-
-
-<h1 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h1><h2 id="1：TD-LTE和LTE-FDD标准差异"><a href="#1：TD-LTE和LTE-FDD标准差异" class="headerlink" title="1：TD- LTE和LTE FDD标准差异"></a>1：TD- LTE和LTE FDD标准差异</h2><p> TD- LTE是我国自主研发的4G标准，是由TD-SCDMA（3G网络）发展而来。</p>
-<p>LTE FDD是现在国际上主流的，使用最广泛的4G网络。</p>
-<p>现在全球有超过200个LTE的商用网络，其中超过90%是FDD的。</p>
-<p>从技术上说，TD- LTE采用的是时分双工，而LTE FDD采用的是频分双工</p>
-<p>那什么是频分双工，什么又是时分双工呢？</p>
-<p>先来解释“双工”。</p>
-<p>移动通信系统的工作方式分为：单工、半双工和全双工</p>
-<p>1，单工就是信息只能向一个方向传播。例如寻呼机和收音机，只能接收信息，不能发出信息。</p>
-<p>2，半双工就是信息可以双向传播，但是上传信息的时候只能上传，下载的时候只能下载。例如对讲机，你说话的时候听不见别人别人说，听别人说的时候自己不能说。</p>
-<p>3， 全双工就是信息可以同时双向传播。例如手机，可以边听边说。<br> 其中全双工又分为：时分双工TDD，与频分双工FDD。</p>
-<p>​    所谓的频分双工就是将信息上传和信息下载放在两个不同的频段，称为上行频段和下行频段，且这两个频段必须对称。为了不防止上下行频段之间的信息串频，两个频段不能重叠，而且中间必须隔开一段，称为保护频。如下图：上行和下行频段相互分开</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730142158.jpg" alt="保护帧"></p>
-<p>  所谓的时分双工就是将上传和下载放在同一个频段，也就是上行频段和下行频段完全一样。那它是如何做到上下的信息不串频呢？其实很简单，顾名思义，频分双工分的是频段，那时分双工分的就是时间。将波传播的时间轴一分为二，</p>
-<p>前半部分用于信息的上传，后一部分用于信息的下载。其实这从理论上更像是同步的半双工，但是由于上行和下行时间差距极短，我们无法感觉到，所以从效果上也是全双工。如下图：时间帧的第一帧为上行，第二帧而为下行，上下行共用一个频段，用时间的差将他们隔开。</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730142220.jpg" alt="数据帧"></p>
-<p>​    接下来说一说移动TD- LTE和电信联通LTE FDD的优缺点，其实就是时分双工与频分双工的特点。</p>
-<p>​     TD- LTE由于采用上行和下行分时，所以上行和下行的时间差导致他信息传输的速度受到一定的限制。他的理论下载峰值为100Mbps，相比FDD的150Mbps来说，慢了不少。当然TD- LTE的基站信号覆盖半径也比LTE FDD小一点。</p>
-<p>​    LTE FDD也并非都是优点。FDD制式必须要找对称分开的上行、下行频段，也就是说它必须浪费更多的频段资源。那中国联通的FDD网为例，工信部给他发的频段牌照为，上行1755<del>1765MHz和下行1850</del>1860MHz（2×10M），实际联通只得到了上下各10M的频段，但是加上当中的保护频段，一共占用了1755~1860MHz也就是105MHz的频段。这就导致了频段资源利用率低，是一种资源的浪费。目前，频率资源本身就紧张，能找到对称的上行和下行频段就尤其难。频率除了用在手机上网通讯上，像广播，军事,甚至无线路由器等民用领域也广泛使用。将来随着科技的进步，频率频段的稀缺会日益严重。</p>
-<p>​    TD-LTE和FDD-LTE 是4G的两种国际标准，各有利弊。TD-LTE占用频段少，节省资源，带宽长，适合区域热点覆盖；FDD速度更快，覆盖更广，但占用资源多。适合广域覆盖。</p>
-<hr>
-]]></content>
-      <categories>
-        <category>embeded</category>
-      </categories>
-      <tags>
-        <tag>Linux</tag>
-        <tag>嵌入式</tag>
-        <tag>embeded</tag>
-        <tag>3G</tag>
-        <tag>4G</tag>
-        <tag>3531a</tag>
-        <tag>移植</tag>
       </tags>
   </entry>
   <entry>
