@@ -187,6 +187,136 @@ dirlink.sh /share/Download/tmp/src /share/Download/tmp/dst<span aria-hidden="tru
       </tags>
   </entry>
   <entry>
+    <title>破解Gitlab EE</title>
+    <url>/gitlab/2021-07-09-carck-gitlabee/</url>
+    <content><![CDATA[<p>由于需要一些镜像等 gitlab 高级功能，所有破解gitlab ee版本。</p>
+<h2 id="安装ruby"><a href="#安装ruby" class="headerlink" title="安装ruby"></a>安装ruby</h2><p>安装完gitlab ee之后</p>
+<p>安装ruby：yum install ruby</p>
+<p>ruby版本需要2.3或以上。</p>
+<h2 id="生成许可证"><a href="#生成许可证" class="headerlink" title="生成许可证"></a><strong>生成许可证</strong></h2><p>gem install gitlab-license</p>
+<h2 id="创建一个rb文件"><a href="#创建一个rb文件" class="headerlink" title="创建一个rb文件"></a>创建一个rb文件</h2><p>license.rb</p>
+<hr>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby"><span class="token keyword">require</span> <span class="token string">"openssl"</span>
+<span class="token keyword">require</span> <span class="token string">"gitlab/license"</span>
+ 
+key_pair <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span>generate<span class="token punctuation">(</span><span class="token number">2048</span><span class="token punctuation">)</span>
+<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"license_key"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>key_pair<span class="token punctuation">.</span>to_pem<span class="token punctuation">)</span> <span class="token punctuation">}</span>
+ 
+public_key <span class="token operator">=</span> key_pair<span class="token punctuation">.</span>public_key
+<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"license_key.pub"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>public_key<span class="token punctuation">.</span>to_pem<span class="token punctuation">)</span> <span class="token punctuation">}</span>
+ 
+private_key <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"license_key"</span><span class="token punctuation">)</span>
+<span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>encryption_key <span class="token operator">=</span> private_key
+ 
+license <span class="token operator">=</span> <span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span><span class="token keyword">new</span>
+license<span class="token punctuation">.</span>licensee <span class="token operator">=</span> <span class="token punctuation">{</span>
+  <span class="token string">"Name"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"none"</span><span class="token punctuation">,</span>
+  <span class="token string">"Company"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"none"</span><span class="token punctuation">,</span>
+  <span class="token string">"Email"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"example@test.com"</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span>
+license<span class="token punctuation">.</span>starts_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2020</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment"># 开始时间</span>
+license<span class="token punctuation">.</span>expires_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2050</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment"># 结束时间</span>
+license<span class="token punctuation">.</span>notify_admins_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2049</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
+license<span class="token punctuation">.</span>notify_users_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2049</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
+license<span class="token punctuation">.</span>block_changes_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2050</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
+license<span class="token punctuation">.</span>restrictions <span class="token operator">=</span> <span class="token punctuation">{</span>
+  active_user_count<span class="token punctuation">:</span> <span class="token number">10000</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span>
+ 
+puts <span class="token string">"License:"</span>
+puts license
+ 
+data <span class="token operator">=</span> license<span class="token punctuation">.</span>export
+puts <span class="token string">"Exported license:"</span>
+puts data
+<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"GitLabBV.gitlab-license"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>data<span class="token punctuation">)</span> <span class="token punctuation">}</span>
+ 
+public_key <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"license_key.pub"</span><span class="token punctuation">)</span>
+<span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>encryption_key <span class="token operator">=</span> public_key
+ 
+data <span class="token operator">=</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"GitLabBV.gitlab-license"</span><span class="token punctuation">)</span>
+<span class="token variable">$license</span> <span class="token operator">=</span> <span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>import<span class="token punctuation">(</span>data<span class="token punctuation">)</span>
+ 
+puts <span class="token string">"Imported license:"</span>
+puts <span class="token variable">$license</span>
+ 
+<span class="token keyword">unless</span> <span class="token variable">$license</span>
+  <span class="token keyword">raise</span> <span class="token string">"The license is invalid."</span>
+<span class="token keyword">end</span>
+ 
+<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>restricted<span class="token operator">?</span><span class="token punctuation">(</span><span class="token symbol">:active_user_count</span><span class="token punctuation">)</span>
+  active_user_count <span class="token operator">=</span> <span class="token number">10000</span>
+  <span class="token keyword">if</span> active_user_count <span class="token operator">&gt;</span> <span class="token variable">$license</span><span class="token punctuation">.</span>restrictions<span class="token punctuation">[</span><span class="token symbol">:active_user_count</span><span class="token punctuation">]</span>
+    <span class="token keyword">raise</span> <span class="token string">"The active user count exceeds the allowed amount!"</span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+ 
+<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>notify_admins<span class="token operator">?</span>
+  puts <span class="token string">"The license is due to expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>."</span>
+<span class="token keyword">end</span>
+ 
+<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>notify_users<span class="token operator">?</span>
+  puts <span class="token string">"The license is due to expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>."</span>
+<span class="token keyword">end</span>
+ 
+<span class="token keyword">module</span> <span class="token constant">Gitlab</span>
+  <span class="token keyword">class</span> <span class="token class-name">GitAccess</span>
+    <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">check</span></span><span class="token punctuation">(</span>cmd<span class="token punctuation">,</span> changes <span class="token operator">=</span> <span class="token keyword">nil</span><span class="token punctuation">)</span>
+      <span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>block_changes<span class="token operator">?</span>
+        <span class="token keyword">return</span> build_status_object<span class="token punctuation">(</span><span class="token boolean">false</span><span class="token punctuation">,</span> <span class="token string">"License expired"</span><span class="token punctuation">)</span>
+      <span class="token keyword">end</span>
+    <span class="token keyword">end</span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+ 
+puts <span class="token string">"This instance of GitLab Enterprise Edition is licensed to:"</span>
+<span class="token variable">$license</span><span class="token punctuation">.</span>licensee<span class="token punctuation">.</span><span class="token keyword">each</span> <span class="token keyword">do</span> <span class="token operator">|</span>key<span class="token punctuation">,</span> value<span class="token operator">|</span>
+  puts <span class="token string">"<span class="token interpolation"><span class="token delimiter tag">#{</span>key<span class="token delimiter tag">}</span></span>: <span class="token interpolation"><span class="token delimiter tag">#{</span>value<span class="token delimiter tag">}</span></span>"</span>
+<span class="token keyword">end</span>
+ 
+<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>expired<span class="token operator">?</span>
+  puts <span class="token string">"The license expired on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>"</span>
+<span class="token keyword">elsif</span> <span class="token variable">$license</span><span class="token punctuation">.</span>will_expire<span class="token operator">?</span>
+  puts <span class="token string">"The license will expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>"</span>
+<span class="token keyword">else</span>
+  puts <span class="token string">"The license will never expire."</span>
+<span class="token keyword">end</span>
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<hr>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">ruby license.rb<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>生成 <code>GitLabBV.gitlab-license</code> <code>license_key</code> <code>license_key.pub</code> 这三个文件。</p>
+<h2 id="使用许可证"><a href="#使用许可证" class="headerlink" title="使用许可证"></a><strong>使用许可证</strong></h2><p>用 <code>license_key.pub</code> 文件替换 <code>/opt/gitlab/embedded/service/gitlab-rails/.license_encryption_key.pub</code>。</p>
+<p><code>GitLabBV.gitlab-license</code> 即是许可证，填入 <code>${address}/admin/license</code> 地址并重启 <code>gitlab-ctl restart</code> 。</p>
+<h2 id="修改等级"><a href="#修改等级" class="headerlink" title="修改等级"></a><strong>修改等级</strong></h2><pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby"><span class="token operator">--</span><span class="token operator">-</span> <span class="token operator">/</span>opt<span class="token operator">/</span>gitlab<span class="token operator">/</span>embedded<span class="token operator">/</span>service<span class="token operator">/</span>gitlab<span class="token operator">-</span>rails<span class="token operator">/</span>ee<span class="token operator">/</span>app<span class="token operator">/</span>models<span class="token operator">/</span>license<span class="token punctuation">.</span>rb
+<span class="token operator">++</span><span class="token operator">+</span> <span class="token operator">/</span>opt<span class="token operator">/</span>gitlab<span class="token operator">/</span>embedded<span class="token operator">/</span>service<span class="token operator">/</span>gitlab<span class="token operator">-</span>rails<span class="token operator">/</span>ee<span class="token operator">/</span>app<span class="token operator">/</span>models<span class="token operator">/</span>license<span class="token punctuation">.</span>rb
+@@ <span class="token operator">-</span><span class="token number">458</span><span class="token punctuation">,</span><span class="token number">7</span> <span class="token operator">+</span><span class="token number">458</span><span class="token punctuation">,</span><span class="token number">7</span> @@
+  <span class="token keyword">end</span>
+ 
+  <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">plan</span></span>
+<span class="token operator">-</span>    restricted_attr<span class="token punctuation">(</span><span class="token symbol">:plan</span><span class="token punctuation">)</span><span class="token punctuation">.</span>presence <span class="token operator">||</span> <span class="token constant">STARTER_PLAN</span>
+<span class="token operator">+</span>    restricted_attr<span class="token punctuation">(</span><span class="token symbol">:plan</span><span class="token punctuation">)</span><span class="token punctuation">.</span>presence <span class="token operator">||</span> <span class="token constant">ULTIMATE_PLAN</span>
+  <span class="token keyword">end</span>
+ 
+  <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">edition</span></span>
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>修改完成后使用 <code>gitlab-ctl restart</code> 重新加载配置。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a><strong>参考</strong></h2><ul>
+<li>  <a href="https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md">https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>gitlab</category>
+      </categories>
+      <tags>
+        <tag>Gitlab</tag>
+        <tag>Git</tag>
+        <tag>Crack</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程</title>
     <url>/docker/2021-07-09-use-jeckett-sonarr-iyuu-qt-emby-building-automatic-movie-anime-process/</url>
     <content><![CDATA[<blockquote>
@@ -423,136 +553,6 @@ services:
         <tag>Watchtower</tag>
         <tag>DNSMasq</tag>
         <tag>DNSCrypt</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>破解Gitlab EE</title>
-    <url>/gitlab/2021-07-09-carck-gitlabee/</url>
-    <content><![CDATA[<p>由于需要一些镜像等 gitlab 高级功能，所有破解gitlab ee版本。</p>
-<h2 id="安装ruby"><a href="#安装ruby" class="headerlink" title="安装ruby"></a>安装ruby</h2><p>安装完gitlab ee之后</p>
-<p>安装ruby：yum install ruby</p>
-<p>ruby版本需要2.3或以上。</p>
-<h2 id="生成许可证"><a href="#生成许可证" class="headerlink" title="生成许可证"></a><strong>生成许可证</strong></h2><p>gem install gitlab-license</p>
-<h2 id="创建一个rb文件"><a href="#创建一个rb文件" class="headerlink" title="创建一个rb文件"></a>创建一个rb文件</h2><p>license.rb</p>
-<hr>
-<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby"><span class="token keyword">require</span> <span class="token string">"openssl"</span>
-<span class="token keyword">require</span> <span class="token string">"gitlab/license"</span>
- 
-key_pair <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span>generate<span class="token punctuation">(</span><span class="token number">2048</span><span class="token punctuation">)</span>
-<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"license_key"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>key_pair<span class="token punctuation">.</span>to_pem<span class="token punctuation">)</span> <span class="token punctuation">}</span>
- 
-public_key <span class="token operator">=</span> key_pair<span class="token punctuation">.</span>public_key
-<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"license_key.pub"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>public_key<span class="token punctuation">.</span>to_pem<span class="token punctuation">)</span> <span class="token punctuation">}</span>
- 
-private_key <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"license_key"</span><span class="token punctuation">)</span>
-<span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>encryption_key <span class="token operator">=</span> private_key
- 
-license <span class="token operator">=</span> <span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span><span class="token keyword">new</span>
-license<span class="token punctuation">.</span>licensee <span class="token operator">=</span> <span class="token punctuation">{</span>
-  <span class="token string">"Name"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"none"</span><span class="token punctuation">,</span>
-  <span class="token string">"Company"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"none"</span><span class="token punctuation">,</span>
-  <span class="token string">"Email"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"example@test.com"</span><span class="token punctuation">,</span>
-<span class="token punctuation">}</span>
-license<span class="token punctuation">.</span>starts_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2020</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment"># 开始时间</span>
-license<span class="token punctuation">.</span>expires_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2050</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment"># 结束时间</span>
-license<span class="token punctuation">.</span>notify_admins_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2049</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
-license<span class="token punctuation">.</span>notify_users_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2049</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
-license<span class="token punctuation">.</span>block_changes_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2050</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
-license<span class="token punctuation">.</span>restrictions <span class="token operator">=</span> <span class="token punctuation">{</span>
-  active_user_count<span class="token punctuation">:</span> <span class="token number">10000</span><span class="token punctuation">,</span>
-<span class="token punctuation">}</span>
- 
-puts <span class="token string">"License:"</span>
-puts license
- 
-data <span class="token operator">=</span> license<span class="token punctuation">.</span>export
-puts <span class="token string">"Exported license:"</span>
-puts data
-<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"GitLabBV.gitlab-license"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>data<span class="token punctuation">)</span> <span class="token punctuation">}</span>
- 
-public_key <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"license_key.pub"</span><span class="token punctuation">)</span>
-<span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>encryption_key <span class="token operator">=</span> public_key
- 
-data <span class="token operator">=</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"GitLabBV.gitlab-license"</span><span class="token punctuation">)</span>
-<span class="token variable">$license</span> <span class="token operator">=</span> <span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>import<span class="token punctuation">(</span>data<span class="token punctuation">)</span>
- 
-puts <span class="token string">"Imported license:"</span>
-puts <span class="token variable">$license</span>
- 
-<span class="token keyword">unless</span> <span class="token variable">$license</span>
-  <span class="token keyword">raise</span> <span class="token string">"The license is invalid."</span>
-<span class="token keyword">end</span>
- 
-<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>restricted<span class="token operator">?</span><span class="token punctuation">(</span><span class="token symbol">:active_user_count</span><span class="token punctuation">)</span>
-  active_user_count <span class="token operator">=</span> <span class="token number">10000</span>
-  <span class="token keyword">if</span> active_user_count <span class="token operator">&gt;</span> <span class="token variable">$license</span><span class="token punctuation">.</span>restrictions<span class="token punctuation">[</span><span class="token symbol">:active_user_count</span><span class="token punctuation">]</span>
-    <span class="token keyword">raise</span> <span class="token string">"The active user count exceeds the allowed amount!"</span>
-  <span class="token keyword">end</span>
-<span class="token keyword">end</span>
- 
-<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>notify_admins<span class="token operator">?</span>
-  puts <span class="token string">"The license is due to expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>."</span>
-<span class="token keyword">end</span>
- 
-<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>notify_users<span class="token operator">?</span>
-  puts <span class="token string">"The license is due to expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>."</span>
-<span class="token keyword">end</span>
- 
-<span class="token keyword">module</span> <span class="token constant">Gitlab</span>
-  <span class="token keyword">class</span> <span class="token class-name">GitAccess</span>
-    <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">check</span></span><span class="token punctuation">(</span>cmd<span class="token punctuation">,</span> changes <span class="token operator">=</span> <span class="token keyword">nil</span><span class="token punctuation">)</span>
-      <span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>block_changes<span class="token operator">?</span>
-        <span class="token keyword">return</span> build_status_object<span class="token punctuation">(</span><span class="token boolean">false</span><span class="token punctuation">,</span> <span class="token string">"License expired"</span><span class="token punctuation">)</span>
-      <span class="token keyword">end</span>
-    <span class="token keyword">end</span>
-  <span class="token keyword">end</span>
-<span class="token keyword">end</span>
- 
-puts <span class="token string">"This instance of GitLab Enterprise Edition is licensed to:"</span>
-<span class="token variable">$license</span><span class="token punctuation">.</span>licensee<span class="token punctuation">.</span><span class="token keyword">each</span> <span class="token keyword">do</span> <span class="token operator">|</span>key<span class="token punctuation">,</span> value<span class="token operator">|</span>
-  puts <span class="token string">"<span class="token interpolation"><span class="token delimiter tag">#{</span>key<span class="token delimiter tag">}</span></span>: <span class="token interpolation"><span class="token delimiter tag">#{</span>value<span class="token delimiter tag">}</span></span>"</span>
-<span class="token keyword">end</span>
- 
-<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>expired<span class="token operator">?</span>
-  puts <span class="token string">"The license expired on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>"</span>
-<span class="token keyword">elsif</span> <span class="token variable">$license</span><span class="token punctuation">.</span>will_expire<span class="token operator">?</span>
-  puts <span class="token string">"The license will expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>"</span>
-<span class="token keyword">else</span>
-  puts <span class="token string">"The license will never expire."</span>
-<span class="token keyword">end</span>
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<hr>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">ruby license.rb<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p>生成 <code>GitLabBV.gitlab-license</code> <code>license_key</code> <code>license_key.pub</code> 这三个文件。</p>
-<h2 id="使用许可证"><a href="#使用许可证" class="headerlink" title="使用许可证"></a><strong>使用许可证</strong></h2><p>用 <code>license_key.pub</code> 文件替换 <code>/opt/gitlab/embedded/service/gitlab-rails/.license_encryption_key.pub</code>。</p>
-<p><code>GitLabBV.gitlab-license</code> 即是许可证，填入 <code>${address}/admin/license</code> 地址并重启 <code>gitlab-ctl restart</code> 。</p>
-<h2 id="修改等级"><a href="#修改等级" class="headerlink" title="修改等级"></a><strong>修改等级</strong></h2><pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby"><span class="token operator">--</span><span class="token operator">-</span> <span class="token operator">/</span>opt<span class="token operator">/</span>gitlab<span class="token operator">/</span>embedded<span class="token operator">/</span>service<span class="token operator">/</span>gitlab<span class="token operator">-</span>rails<span class="token operator">/</span>ee<span class="token operator">/</span>app<span class="token operator">/</span>models<span class="token operator">/</span>license<span class="token punctuation">.</span>rb
-<span class="token operator">++</span><span class="token operator">+</span> <span class="token operator">/</span>opt<span class="token operator">/</span>gitlab<span class="token operator">/</span>embedded<span class="token operator">/</span>service<span class="token operator">/</span>gitlab<span class="token operator">-</span>rails<span class="token operator">/</span>ee<span class="token operator">/</span>app<span class="token operator">/</span>models<span class="token operator">/</span>license<span class="token punctuation">.</span>rb
-@@ <span class="token operator">-</span><span class="token number">458</span><span class="token punctuation">,</span><span class="token number">7</span> <span class="token operator">+</span><span class="token number">458</span><span class="token punctuation">,</span><span class="token number">7</span> @@
-  <span class="token keyword">end</span>
- 
-  <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">plan</span></span>
-<span class="token operator">-</span>    restricted_attr<span class="token punctuation">(</span><span class="token symbol">:plan</span><span class="token punctuation">)</span><span class="token punctuation">.</span>presence <span class="token operator">||</span> <span class="token constant">STARTER_PLAN</span>
-<span class="token operator">+</span>    restricted_attr<span class="token punctuation">(</span><span class="token symbol">:plan</span><span class="token punctuation">)</span><span class="token punctuation">.</span>presence <span class="token operator">||</span> <span class="token constant">ULTIMATE_PLAN</span>
-  <span class="token keyword">end</span>
- 
-  <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">edition</span></span>
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>修改完成后使用 <code>gitlab-ctl restart</code> 重新加载配置。</p>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a><strong>参考</strong></h2><ul>
-<li>  <a href="https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md">https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md</a></li>
-</ul>
-]]></content>
-      <categories>
-        <category>gitlab</category>
-      </categories>
-      <tags>
-        <tag>Gitlab</tag>
-        <tag>Git</tag>
-        <tag>Crack</tag>
       </tags>
   </entry>
   <entry>
@@ -2535,6 +2535,135 @@ This is the admonition body
       </tags>
   </entry>
   <entry>
+    <title>浏览器的渲染过程</title>
+    <url>/web/2021-09-13-the-browser-rendering-process/</url>
+    <content><![CDATA[<blockquote>
+<p>通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？</p>
+</blockquote>
+<h3 id="首先，请先看一张大图"><a href="#首先，请先看一张大图" class="headerlink" title="首先，请先看一张大图"></a><strong>首先，请先看一张大图</strong></h3><p>浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：</p>
+<ul>
+<li>  构建对象模型（DOM，CSSOM）</li>
+<li>  构建渲染树（RenderTree）</li>
+<li>  布局</li>
+<li>  渲染</li>
+</ul>
+<p>在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220512.jpeg"></p>
+<h3 id="1-DOMTree的构建"><a href="#1-DOMTree的构建" class="headerlink" title="1.DOMTree的构建"></a><strong>1.DOMTree的构建</strong></h3><p>浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220515.jpeg"></p>
+<ul>
+<li>第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符  </li>
+</ul>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220653.jpeg"></p>
+<ul>
+<li>第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是<code>开始标签</code>，还是<code>结束标签</code>，或者<code>文本标签</code>等。  </li>
+</ul>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220522.jpeg"></p>
+<ul>
+<li>第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的<code>开始标签</code>，<code>结束标签</code>，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。<br>  Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt;</code>标签最终生成出的节点对象中会保存图片地址等信息。<br>  事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取<code>深度遍历算法</code>消耗Token来生成Node，如下图所示：<br>  图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出<code>html Token</code>,并消耗Token创建出<code>html 节点对象</code>，接着生成<code>head Token</code>并消耗Token创建出<code>head节点对象</code>……，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。  </li>
+</ul>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220658.jpeg"></p>
+<p>这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？<br>因为在上述的解析的过程中，如果碰到了<code>script</code>或者<code>link</code>标签，就会根据<code>src</code>对应的地址去加载资源，在<code>script</code>标签没有设置<code>async/defer</code>属性时，这个加载过程是<code>下载并执行完全部的代码</code>，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出<strong>找不到该DOM元素</strong>的错误。<br>值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。</p>
+<h3 id="2-CSSOMTree的构建"><a href="#2-CSSOMTree的构建" class="headerlink" title="2.CSSOMTree的构建"></a><strong>2.CSSOMTree的构建</strong></h3><p>DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：</p>
+<p>假设浏览器收到了下面这样一段css:</p>
+<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">body</span> <span class="token punctuation">{</span><span class="token property">font-size</span><span class="token punctuation">:</span> 16px<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">p</span> <span class="token punctuation">{</span><span class="token property">font-weight</span><span class="token punctuation">:</span> bold<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">p span</span> <span class="token punctuation">{</span><span class="token property">display</span><span class="token punctuation">:</span>none<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">span</span> <span class="token punctuation">{</span><span class="token property">color</span><span class="token punctuation">:</span> red<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">img</span> <span class="token punctuation">{</span><span class="token property">float</span><span class="token punctuation">:</span> right<span class="token punctuation">;</span><span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>最终会生成如下的CSSOMTree:</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220529.jpeg"></p>
+<p>从图中可以看出，最开始<code>body</code>有一个样式规则是<code>font-size:16px</code>，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如<code>span</code>又添加了一个样式规则<code>color:red</code>。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：<strong>CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置</strong>。比如在上面的css代码基础上再添加一行代码<code>p {font-size:12px}</code>，那么之前设置的<code>16px</code>将会被覆盖成<code>12px</code>。</p>
+<p>下面是官方给的一种解释：</p>
+<blockquote>
+<p>未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。<br>所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。</p>
+</blockquote>
+<p>那么回到上面生成DOM时提到的JS问题：<strong>在标签没有设置<code>async/defer</code>属性时，js会阻塞DOM的生成</strong>。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。</p>
+<p>同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在<strong>浏览器还未完成CSSOMTree的下载和构建</strong>时去操作CSS样式，浏览器会<strong>暂停脚本的运行和DOM的构建</strong>，直至浏览器完成了CSSOM的下载和构建。也就是说，<strong>JS脚本的出现会让CSSOM的构建阻塞DOM的构建</strong>。</p>
+<blockquote>
+<p>平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？</p>
+</blockquote>
+<p>举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个<code>link</code>标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220540.jpeg"></p>
+<p>而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个<code>script</code>标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220546.jpeg"></p>
+<p>那如果我们把css放到前面，js放到最后引入时，构建时间会变成：</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220705.jpeg"></p>
+<p>由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。</p>
+<p>简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：</p>
+<ul>
+<li>  当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕</li>
+<li>  JavaScript可以查询和修改DOMTree与CSSOMTree</li>
+<li>  直至CSSOM构建完毕，JavaScript才会执行</li>
+<li>  脚本在文档中的位置很重要</li>
+</ul>
+<h3 id="3-渲染树的构建"><a href="#3-渲染树的构建" class="headerlink" title="3.渲染树的构建"></a><strong>3.渲染树的构建</strong></h3><p>现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220711.jpeg"></p>
+<p>接下来我们来谈几条概念</p>
+<ul>
+<li><p>  Render 树上的每一个节点被称为：<code>RenderObject</code>。</p>
+</li>
+<li><p>  RenderObject跟 DOM 节点几乎是一一对应的，当一个<code>可见的 DOM 节点</code>被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。</p>
+</li>
+<li><p>其中，可见的DOM节点不包括：  </p>
+</li>
+<li><p>  一些不会体现在渲染输出中的节点（<code>&lt;html&gt;&lt;script&gt;&lt;link&gt;….</code>），会直接被忽略掉。</p>
+</li>
+<li><p>  通过CSS隐藏的节点。例如上图中的<code>span</code>节点，因为有一个CSS显式规则在该节点上设置了<code>display:none</code>属性，那么它在生成RenderObject时会被直接忽略掉。</p>
+</li>
+<li><p>  Render 树是衔接浏览器排版引擎和渲染引擎之间的<strong>桥梁</strong>，它是<strong>排版引擎的输出，渲染引擎的输入</strong>。</p>
+</li>
+</ul>
+<p>此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？</p>
+<h3 id="RenderObject-and-RenderLayer"><a href="#RenderObject-and-RenderLayer" class="headerlink" title="RenderObject and RenderLayer"></a><strong>RenderObject and RenderLayer</strong></h3><blockquote>
+<p>浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理<strong>Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing</strong>等属性，浏览器需要生成另外一棵树：<strong>Layer树</strong></p>
+</blockquote>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220730.jpeg"></p>
+<p>浏览器会为一些<strong>特定</strong>的<code>RenderObject</code>生成对应的<code>RenderLayer</code>，其中的规则是：</p>
+<ul>
+<li>  是否是页面的根节点 <em>It’s the root object for the page</em></li>
+<li>  是否有css的一些布局属性（relative absolute or a transform) <em>It has explicit CSS position properties (relative, absolute or a transform)</em></li>
+<li>  是否透明 <em>It is transparent</em></li>
+<li>  是否有溢出 <em>Has overflow, an alpha mask or reflection</em></li>
+<li>  是否有css滤镜 <em>Has a CSS filter</em></li>
+<li>  是否包含一个canvas元素使得节点拥有视图上下文 <em>Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context</em></li>
+<li>  是否包含一个video元素 <em>Corresponds to a video element</em></li>
+</ul>
+<p>当满足上面其中一个条件时，这个<code>RrenderObject</code>就会被浏览器选中生成对应的<code>RenderLayer</code>。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。</p>
+<p>浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个<code>RenderLayer</code>，再遍历从属于这个RenderLayer的 <code>RrenderObject</code>，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 <code>RenderLayer</code> 和 <code>RrenderObject</code> 一起就决定了网页在屏幕上最终呈现出来的内容。</p>
+<h3 id="4-布局"><a href="#4-布局" class="headerlink" title="4.布局"></a><strong>4.布局</strong></h3><p>到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。</p>
+<p>布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220553.jpeg"></p>
+<h3 id="5-渲染"><a href="#5-渲染" class="headerlink" title="5.渲染"></a><strong>5.渲染</strong></h3><p>最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220718.jpeg"></p>
+<p>至此，我们就能够在浏览器上看到漂亮的网页了</p>
+<blockquote>
+<p>谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？</p>
+</blockquote>
+<p>我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~</p>
+<h3 id="总结："><a href="#总结：" class="headerlink" title="总结："></a><strong>总结：</strong></h3><ul>
+<li>  经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。</li>
+<li>  CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。</li>
+<li>  同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用<code>async/defer属性</code>异步加载JavaScript。</li>
+<li>  重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数</li>
+</ul>
+<h3 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a><strong>参考文献：</strong></h3><p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21%23wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect</a></p>
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
+        <tag>css</tag>
+        <tag>js</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>自动曝光原理</title>
     <url>/image/2021-09-14-auto-expose-theory/</url>
     <content><![CDATA[<h2 id="自动曝光的原理"><a href="#自动曝光的原理" class="headerlink" title="自动曝光的原理"></a>自动曝光的原理</h2><p>曝光是摄影中十分重要的一个环节，它决定了一张图片的明暗，如下图所示，第一张图片太暗，而第三种图片太亮。</p>
@@ -2688,6 +2817,45 @@ docker run -v <span class="token variable"><span class="token variable">$(</span
 <pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">link</span><span class="token punctuation">:</span> https<span class="token punctuation">:</span>//www.17lai.fun<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>关于本blog，<strong>图床</strong>一般使用<strong>github</strong>，已经配置了CDN，如果图片还是未显示请自行代理解决。</p>
+]]></content>
+      <categories>
+        <category>aboutme</category>
+      </categories>
+      <tags>
+        <tag>aboutme</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>我的文章</title>
+    <url>/aboutme/mypost/</url>
+    <content><![CDATA[<h2 id="推荐文章"><a href="#推荐文章" class="headerlink" title="推荐文章"></a><strong>推荐文章</strong></h2><h2 id="嵌入式物联网篇"><a href="#嵌入式物联网篇" class="headerlink" title="嵌入式物联网篇"></a><strong>嵌入式物联网篇</strong></h2><h3 id="海思MPP-amp-UNF构架源代码级分析"><a href="#海思MPP-amp-UNF构架源代码级分析" class="headerlink" title="海思MPP&amp;UNF构架源代码级分析"></a><a href="https://blog.17lai.site/embeded/2021-07-30-hisilicon-mpp-unf-architecture-source-code-level-analysis/"><strong>海思MPP&amp;UNF构架源代码级分析</strong></a></h3><ul>
+<li>行业中分析海思MPP内核构架，源码分析，多年经验总结积累结果。写了好多年了，禁止转载，第一次公开发表。</li>
+</ul>
+<h3 id="3G-4G-Wifi选型需求分析及技术简介"><a href="#3G-4G-Wifi选型需求分析及技术简介" class="headerlink" title="3G,4G,Wifi选型需求分析及技术简介"></a><a href="https://blog.17lai.site/embeded/2021-07-30-3g-4g-iot-module-embedded-transplantation/"><strong>3G,4G,Wifi选型需求分析及技术简介</strong></a></h3><ul>
+<li>详细介绍了3G，4G，wifi技术类型，选型，移植，性能介绍全过程。写了好多年了，禁止转载，第一次公开发表。</li>
+</ul>
+<h3 id="Gitlab的安装及使用教程完全版"><a href="#Gitlab的安装及使用教程完全版" class="headerlink" title="Gitlab的安装及使用教程完全版"></a><a href="https://blog.17lai.site/gitlab/2021-08-02-gitlab-installation-and-use-tutorial-complete-version/"><strong>Gitlab的安装及使用教程完全版</strong></a></h3><ul>
+<li>Git 服务端 gitlab 完整配置教程。 和开发，项目管理结合。</li>
+</ul>
+<h2 id="玩转-Linux"><a href="#玩转-Linux" class="headerlink" title="玩转 Linux"></a><strong>玩转 Linux</strong></h2><h3 id="Debian-Lenny-Laptop安装记录"><a href="#Debian-Lenny-Laptop安装记录" class="headerlink" title="Debian Lenny Laptop安装记录"></a><a href="https://blog.17lai.site/linux/2021-08-18-debian-lenny-laptop-installation-records/"><strong>Debian Lenny Laptop安装记录</strong></a></h3><ul>
+<li>一步一步，详细教你。完全采用Linux来工作，学习，娱乐。 </li>
+<li>陈年文章，依然具有非常高的参考价值。10多年前在Google doc 共享过。</li>
+</ul>
+<h2 id="写作笔记篇"><a href="#写作笔记篇" class="headerlink" title="写作笔记篇"></a><strong>写作笔记篇</strong></h2><h3 id="完美笔记进化论"><a href="#完美笔记进化论" class="headerlink" title="完美笔记进化论"></a><a href="https://blog.17lai.site/note/2021-07-25-how-to-make-perfect-note/"><strong>完美笔记进化论</strong></a></h3><ul>
+<li>构建一个趋近完美的记录笔记系统。</li>
+<li>wiznote docker版作为笔记管理搜索工具，typora作为markdown编辑器，只使用markdown格式笔记，Picgo作为图上上传工具，github作为图像图床，Snippaste作为截屏工具。一起组成笔记工具链。整体免费，满足selfhost， 富文本，多平台，版本管理，目录管理，可搜索，对图像友好的苛刻要求，超越市面所有产品，wiznote 还可以对外网提供服务。</li>
+</ul>
+<h2 id="多媒体篇"><a href="#多媒体篇" class="headerlink" title="多媒体篇"></a><strong>多媒体篇</strong></h2><h3 id="使用jeckett-sonarr-iyuu-qt-emby打造全自动追剧流程"><a href="#使用jeckett-sonarr-iyuu-qt-emby打造全自动追剧流程" class="headerlink" title="使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程"></a><a href="https://blog.17lai.site/docker/2021-07-09-use-jeckett-sonarr-iyuu-qt-emby-building-automatic-movie-anime-process/"><strong>使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程</strong></a></h3><ul>
+<li>jackett 作为种子源，sonarr剧集管理，bt下载，qbittorrent主力下载，使用iyuu转移辅种，emby，jellyfin做海报墙，sunfinder自动下载字幕。基本算是完美打通全流程自动追剧。bt种子文件命名规则SxxExx的自动识别下载，国内的资源手动查找下载，自动推送到emby刮削好</li>
+</ul>
+<h2 id="Web博客篇"><a href="#Web博客篇" class="headerlink" title="Web博客篇"></a><strong>Web博客篇</strong></h2><p><a href="https://blog.17lai.site/hexo/2021-09-10-use-hexo-and-matery-to-make-a-perfect-blog/">基于Hexo的matery主题搭建博客并深度优化</a></p>
+<ul>
+<li>一文介绍了Hexo利用github page搭建博客全过程，还附带一个博主自己定制过的<code>hexo Docker</code>，使用docker 配合博文将引导你搭建一个功能完善的blog，并指导全程免费seo优化，性能极致优化过程和工具。并附带几个常见问题的解决方案在文章最后。</li>
+</ul>
+<h2 id="其它各种笔记"><a href="#其它各种笔记" class="headerlink" title="其它各种笔记"></a><strong>其它各种笔记</strong></h2><ul>
+<li><a href="https://blog.17lai.site/tags/">其它文章标签云图</a>，页面上方<a href="https://blog.17lai.site/tags/">标签</a>按钮。</li>
+<li>各种笔记工具里面积累了几千篇各种文章。慢慢整理，有时间发出来。</li>
+</ul>
 ]]></content>
       <categories>
         <category>aboutme</category>
@@ -2852,174 +3020,6 @@ docker run -v <span class="token variable"><span class="token variable">$(</span
         <tag>MPP</tag>
         <tag>嵌入式</tag>
         <tag>物联网</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>我的文章</title>
-    <url>/aboutme/mypost/</url>
-    <content><![CDATA[<h2 id="推荐文章"><a href="#推荐文章" class="headerlink" title="推荐文章"></a><strong>推荐文章</strong></h2><h2 id="嵌入式物联网篇"><a href="#嵌入式物联网篇" class="headerlink" title="嵌入式物联网篇"></a><strong>嵌入式物联网篇</strong></h2><h3 id="海思MPP-amp-UNF构架源代码级分析"><a href="#海思MPP-amp-UNF构架源代码级分析" class="headerlink" title="海思MPP&amp;UNF构架源代码级分析"></a><a href="https://blog.17lai.site/embeded/2021-07-30-hisilicon-mpp-unf-architecture-source-code-level-analysis/"><strong>海思MPP&amp;UNF构架源代码级分析</strong></a></h3><ul>
-<li>行业中分析海思MPP内核构架，源码分析，多年经验总结积累结果。写了好多年了，禁止转载，第一次公开发表。</li>
-</ul>
-<h3 id="3G-4G-Wifi选型需求分析及技术简介"><a href="#3G-4G-Wifi选型需求分析及技术简介" class="headerlink" title="3G,4G,Wifi选型需求分析及技术简介"></a><a href="https://blog.17lai.site/embeded/2021-07-30-3g-4g-iot-module-embedded-transplantation/"><strong>3G,4G,Wifi选型需求分析及技术简介</strong></a></h3><ul>
-<li>详细介绍了3G，4G，wifi技术类型，选型，移植，性能介绍全过程。写了好多年了，禁止转载，第一次公开发表。</li>
-</ul>
-<h3 id="Gitlab的安装及使用教程完全版"><a href="#Gitlab的安装及使用教程完全版" class="headerlink" title="Gitlab的安装及使用教程完全版"></a><a href="https://blog.17lai.site/gitlab/2021-08-02-gitlab-installation-and-use-tutorial-complete-version/"><strong>Gitlab的安装及使用教程完全版</strong></a></h3><ul>
-<li>Git 服务端 gitlab 完整配置教程。 和开发，项目管理结合。</li>
-</ul>
-<h2 id="玩转-Linux"><a href="#玩转-Linux" class="headerlink" title="玩转 Linux"></a><strong>玩转 Linux</strong></h2><h3 id="Debian-Lenny-Laptop安装记录"><a href="#Debian-Lenny-Laptop安装记录" class="headerlink" title="Debian Lenny Laptop安装记录"></a><a href="https://blog.17lai.site/linux/2021-08-18-debian-lenny-laptop-installation-records/"><strong>Debian Lenny Laptop安装记录</strong></a></h3><ul>
-<li>一步一步，详细教你。完全采用Linux来工作，学习，娱乐。 </li>
-<li>陈年文章，依然具有非常高的参考价值。10多年前在Google doc 共享过。</li>
-</ul>
-<h2 id="写作笔记篇"><a href="#写作笔记篇" class="headerlink" title="写作笔记篇"></a><strong>写作笔记篇</strong></h2><h3 id="完美笔记进化论"><a href="#完美笔记进化论" class="headerlink" title="完美笔记进化论"></a><a href="https://blog.17lai.site/note/2021-07-25-how-to-make-perfect-note/"><strong>完美笔记进化论</strong></a></h3><ul>
-<li>构建一个趋近完美的记录笔记系统。</li>
-<li>wiznote docker版作为笔记管理搜索工具，typora作为markdown编辑器，只使用markdown格式笔记，Picgo作为图上上传工具，github作为图像图床，Snippaste作为截屏工具。一起组成笔记工具链。整体免费，满足selfhost， 富文本，多平台，版本管理，目录管理，可搜索，对图像友好的苛刻要求，超越市面所有产品，wiznote 还可以对外网提供服务。</li>
-</ul>
-<h2 id="多媒体篇"><a href="#多媒体篇" class="headerlink" title="多媒体篇"></a><strong>多媒体篇</strong></h2><h3 id="使用jeckett-sonarr-iyuu-qt-emby打造全自动追剧流程"><a href="#使用jeckett-sonarr-iyuu-qt-emby打造全自动追剧流程" class="headerlink" title="使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程"></a><a href="https://blog.17lai.site/docker/2021-07-09-use-jeckett-sonarr-iyuu-qt-emby-building-automatic-movie-anime-process/"><strong>使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程</strong></a></h3><ul>
-<li>jackett 作为种子源，sonarr剧集管理，bt下载，qbittorrent主力下载，使用iyuu转移辅种，emby，jellyfin做海报墙，sunfinder自动下载字幕。基本算是完美打通全流程自动追剧。bt种子文件命名规则SxxExx的自动识别下载，国内的资源手动查找下载，自动推送到emby刮削好</li>
-</ul>
-<h2 id="Web博客篇"><a href="#Web博客篇" class="headerlink" title="Web博客篇"></a><strong>Web博客篇</strong></h2><p><a href="https://blog.17lai.site/hexo/2021-09-10-use-hexo-and-matery-to-make-a-perfect-blog/">基于Hexo的matery主题搭建博客并深度优化</a></p>
-<ul>
-<li>一文介绍了Hexo利用github page搭建博客全过程，还附带一个博主自己定制过的<code>hexo Docker</code>，使用docker 配合博文将引导你搭建一个功能完善的blog，并指导全程免费seo优化，性能极致优化过程和工具。并附带几个常见问题的解决方案在文章最后。</li>
-</ul>
-<h2 id="其它各种笔记"><a href="#其它各种笔记" class="headerlink" title="其它各种笔记"></a><strong>其它各种笔记</strong></h2><ul>
-<li><a href="https://blog.17lai.site/tags/">其它文章标签云图</a>，页面上方<a href="https://blog.17lai.site/tags/">标签</a>按钮。</li>
-<li>各种笔记工具里面积累了几千篇各种文章。慢慢整理，有时间发出来。</li>
-</ul>
-]]></content>
-      <categories>
-        <category>aboutme</category>
-      </categories>
-      <tags>
-        <tag>aboutme</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>浏览器的渲染过程</title>
-    <url>/web/2021-09-13-the-browser-rendering-process/</url>
-    <content><![CDATA[<blockquote>
-<p>通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？</p>
-</blockquote>
-<h3 id="首先，请先看一张大图"><a href="#首先，请先看一张大图" class="headerlink" title="首先，请先看一张大图"></a><strong>首先，请先看一张大图</strong></h3><p>浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：</p>
-<ul>
-<li>  构建对象模型（DOM，CSSOM）</li>
-<li>  构建渲染树（RenderTree）</li>
-<li>  布局</li>
-<li>  渲染</li>
-</ul>
-<p>在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220512.jpeg"></p>
-<h3 id="1-DOMTree的构建"><a href="#1-DOMTree的构建" class="headerlink" title="1.DOMTree的构建"></a><strong>1.DOMTree的构建</strong></h3><p>浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220515.jpeg"></p>
-<ul>
-<li>第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符  </li>
-</ul>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220653.jpeg"></p>
-<ul>
-<li>第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是<code>开始标签</code>，还是<code>结束标签</code>，或者<code>文本标签</code>等。  </li>
-</ul>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220522.jpeg"></p>
-<ul>
-<li>第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的<code>开始标签</code>，<code>结束标签</code>，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。<br>  Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt;</code>标签最终生成出的节点对象中会保存图片地址等信息。<br>  事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取<code>深度遍历算法</code>消耗Token来生成Node，如下图所示：<br>  图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出<code>html Token</code>,并消耗Token创建出<code>html 节点对象</code>，接着生成<code>head Token</code>并消耗Token创建出<code>head节点对象</code>……，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。  </li>
-</ul>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220658.jpeg"></p>
-<p>这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？<br>因为在上述的解析的过程中，如果碰到了<code>script</code>或者<code>link</code>标签，就会根据<code>src</code>对应的地址去加载资源，在<code>script</code>标签没有设置<code>async/defer</code>属性时，这个加载过程是<code>下载并执行完全部的代码</code>，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出<strong>找不到该DOM元素</strong>的错误。<br>值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。</p>
-<h3 id="2-CSSOMTree的构建"><a href="#2-CSSOMTree的构建" class="headerlink" title="2.CSSOMTree的构建"></a><strong>2.CSSOMTree的构建</strong></h3><p>DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：</p>
-<p>假设浏览器收到了下面这样一段css:</p>
-<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">body</span> <span class="token punctuation">{</span><span class="token property">font-size</span><span class="token punctuation">:</span> 16px<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">p</span> <span class="token punctuation">{</span><span class="token property">font-weight</span><span class="token punctuation">:</span> bold<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">p span</span> <span class="token punctuation">{</span><span class="token property">display</span><span class="token punctuation">:</span>none<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">span</span> <span class="token punctuation">{</span><span class="token property">color</span><span class="token punctuation">:</span> red<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">img</span> <span class="token punctuation">{</span><span class="token property">float</span><span class="token punctuation">:</span> right<span class="token punctuation">;</span><span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>最终会生成如下的CSSOMTree:</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220529.jpeg"></p>
-<p>从图中可以看出，最开始<code>body</code>有一个样式规则是<code>font-size:16px</code>，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如<code>span</code>又添加了一个样式规则<code>color:red</code>。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：<strong>CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置</strong>。比如在上面的css代码基础上再添加一行代码<code>p {font-size:12px}</code>，那么之前设置的<code>16px</code>将会被覆盖成<code>12px</code>。</p>
-<p>下面是官方给的一种解释：</p>
-<blockquote>
-<p>未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。<br>所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。</p>
-</blockquote>
-<p>那么回到上面生成DOM时提到的JS问题：<strong>在标签没有设置<code>async/defer</code>属性时，js会阻塞DOM的生成</strong>。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。</p>
-<p>同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在<strong>浏览器还未完成CSSOMTree的下载和构建</strong>时去操作CSS样式，浏览器会<strong>暂停脚本的运行和DOM的构建</strong>，直至浏览器完成了CSSOM的下载和构建。也就是说，<strong>JS脚本的出现会让CSSOM的构建阻塞DOM的构建</strong>。</p>
-<blockquote>
-<p>平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？</p>
-</blockquote>
-<p>举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个<code>link</code>标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220540.jpeg"></p>
-<p>而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个<code>script</code>标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220546.jpeg"></p>
-<p>那如果我们把css放到前面，js放到最后引入时，构建时间会变成：</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220705.jpeg"></p>
-<p>由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。</p>
-<p>简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：</p>
-<ul>
-<li>  当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕</li>
-<li>  JavaScript可以查询和修改DOMTree与CSSOMTree</li>
-<li>  直至CSSOM构建完毕，JavaScript才会执行</li>
-<li>  脚本在文档中的位置很重要</li>
-</ul>
-<h3 id="3-渲染树的构建"><a href="#3-渲染树的构建" class="headerlink" title="3.渲染树的构建"></a><strong>3.渲染树的构建</strong></h3><p>现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220711.jpeg"></p>
-<p>接下来我们来谈几条概念</p>
-<ul>
-<li><p>  Render 树上的每一个节点被称为：<code>RenderObject</code>。</p>
-</li>
-<li><p>  RenderObject跟 DOM 节点几乎是一一对应的，当一个<code>可见的 DOM 节点</code>被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。</p>
-</li>
-<li><p>其中，可见的DOM节点不包括：  </p>
-</li>
-<li><p>  一些不会体现在渲染输出中的节点（<code>&lt;html&gt;&lt;script&gt;&lt;link&gt;….</code>），会直接被忽略掉。</p>
-</li>
-<li><p>  通过CSS隐藏的节点。例如上图中的<code>span</code>节点，因为有一个CSS显式规则在该节点上设置了<code>display:none</code>属性，那么它在生成RenderObject时会被直接忽略掉。</p>
-</li>
-<li><p>  Render 树是衔接浏览器排版引擎和渲染引擎之间的<strong>桥梁</strong>，它是<strong>排版引擎的输出，渲染引擎的输入</strong>。</p>
-</li>
-</ul>
-<p>此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？</p>
-<h3 id="RenderObject-and-RenderLayer"><a href="#RenderObject-and-RenderLayer" class="headerlink" title="RenderObject and RenderLayer"></a><strong>RenderObject and RenderLayer</strong></h3><blockquote>
-<p>浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理<strong>Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing</strong>等属性，浏览器需要生成另外一棵树：<strong>Layer树</strong></p>
-</blockquote>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220730.jpeg"></p>
-<p>浏览器会为一些<strong>特定</strong>的<code>RenderObject</code>生成对应的<code>RenderLayer</code>，其中的规则是：</p>
-<ul>
-<li>  是否是页面的根节点 <em>It’s the root object for the page</em></li>
-<li>  是否有css的一些布局属性（relative absolute or a transform) <em>It has explicit CSS position properties (relative, absolute or a transform)</em></li>
-<li>  是否透明 <em>It is transparent</em></li>
-<li>  是否有溢出 <em>Has overflow, an alpha mask or reflection</em></li>
-<li>  是否有css滤镜 <em>Has a CSS filter</em></li>
-<li>  是否包含一个canvas元素使得节点拥有视图上下文 <em>Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context</em></li>
-<li>  是否包含一个video元素 <em>Corresponds to a video element</em></li>
-</ul>
-<p>当满足上面其中一个条件时，这个<code>RrenderObject</code>就会被浏览器选中生成对应的<code>RenderLayer</code>。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。</p>
-<p>浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个<code>RenderLayer</code>，再遍历从属于这个RenderLayer的 <code>RrenderObject</code>，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 <code>RenderLayer</code> 和 <code>RrenderObject</code> 一起就决定了网页在屏幕上最终呈现出来的内容。</p>
-<h3 id="4-布局"><a href="#4-布局" class="headerlink" title="4.布局"></a><strong>4.布局</strong></h3><p>到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。</p>
-<p>布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220553.jpeg"></p>
-<h3 id="5-渲染"><a href="#5-渲染" class="headerlink" title="5.渲染"></a><strong>5.渲染</strong></h3><p>最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220718.jpeg"></p>
-<p>至此，我们就能够在浏览器上看到漂亮的网页了</p>
-<blockquote>
-<p>谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？</p>
-</blockquote>
-<p>我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~</p>
-<h3 id="总结："><a href="#总结：" class="headerlink" title="总结："></a><strong>总结：</strong></h3><ul>
-<li>  经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。</li>
-<li>  CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。</li>
-<li>  同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用<code>async/defer属性</code>异步加载JavaScript。</li>
-<li>  重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数</li>
-</ul>
-<h3 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a><strong>参考文献：</strong></h3><p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21%23wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect</a></p>
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
-        <tag>css</tag>
-        <tag>js</tag>
       </tags>
   </entry>
   <entry>
@@ -3331,6 +3331,278 @@ gitlab_rails<span class="token punctuation">[</span><span class="token string">'
         <tag>Gitlab</tag>
         <tag>Git</tag>
         <tag>Crack</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>3G,4G,Wifi选型需求分析及技术简介</title>
+    <url>/embeded/2021-07-30-3g-4g-iot-module-embedded-transplantation/</url>
+    <content><![CDATA[<h2 id="3G-4G-Wifi选型需求分析及技术简介"><a href="#3G-4G-Wifi选型需求分析及技术简介" class="headerlink" title="3G,4G,Wifi选型需求分析及技术简介"></a>3G,4G,Wifi选型需求分析及技术简介</h2><ul>
+<li><p>文章写了好多年了，只在一个网站发布过PDF版本。行业内应该很多人看过这个。</p>
+</li>
+<li><p>关于本blog，<strong>图床</strong>一般使用<strong>github</strong>，已经配置了CDN，如果图片还是未显示请自行代理解决</p>
+</li>
+<li><p><strong>原创声明警告</strong>，文章<strong>禁止转载</strong>，禁止发布到其它任何网站，可以接受约稿。</p>
+</li>
+</ul>
+<h2 id="用户需求分析"><a href="#用户需求分析" class="headerlink" title="用户需求分析"></a>用户需求分析</h2><p>减少布线，或有的地方很难布线。</p>
+<p>​    例如：偏远森林，沙漠，海岛，土地所有制导致不能随便开挖等各种原因。</p>
+<h3 id="–3G，4G–"><a href="#–3G，4G–" class="headerlink" title="–3G，4G–"></a>–3G，4G–</h3><p>优点： 布线，距离远。</p>
+<p>缺点：流量费高（可以和运营商合作 ）</p>
+<h3 id="–Wifi–"><a href="#–Wifi–" class="headerlink" title="–Wifi–"></a>–Wifi–</h3><p>优点：费用低，</p>
+<p>缺点：距离近</p>
+<h2 id="研发需求分析"><a href="#研发需求分析" class="headerlink" title="研发需求分析"></a>研发需求分析</h2><h2 id="WANTED"><a href="#WANTED" class="headerlink" title="WANTED!"></a>WANTED!</h2><h3 id="3G，4G选型标准需求"><a href="#3G，4G选型标准需求" class="headerlink" title="3G，4G选型标准需求"></a>3G，4G选型标准需求</h3><p>1：产品生命周期，时间空间的重叠。 初产时间较近，出货时间长，</p>
+<p>2：客户那里运营商网络制式？？（例如<strong>TD-LTE<strong><strong>，</strong></strong>FDD-LTE<strong><strong>，</strong></strong>CDMA2000****等等</strong>）， </p>
+<p>​    运营商名称？？（一般不同国家不一样，一个国家很多个运营商）</p>
+<p>3：3G，4G具体型号选择： 1：厂家选择？？？ 2：网络制式选择（需要选择制式尽可能支持区域大的，亚洲，欧美，日韩）？？？ 3：USB 使用的技术代差（1：usb猫，2：usb光驱，3：html拨号）</p>
+<p>4：客户3G，4G使用场景？？。流量大小，费用</p>
+<p><strong>注意：</strong>可能客户那里支持的制式和国内不一样，我们这边验证的制式在客户那里不能用，客户那里支持的制式在国内又没法验证。选择制式的时候特别需要注意。</p>
+<h3 id="Wifi选择需求"><a href="#Wifi选择需求" class="headerlink" title="Wifi选择需求"></a>Wifi选择需求</h3><p>5：芯片厂家需要支持Linux驱动。 芯片出来年代？？？，价格？？？，协议标准（决定速度），网络信号质量？？？，传输速度（不同距离速度，是否要求穿墙）？？？</p>
+<p>6：对应的无线路由器调试</p>
+<p>7：客户Wifi使用场景？？。 主要是使用距离引起速度衰变， 现在有2,4G，5G路由，速度有150Mbit/s 300Mbit/s，450Mbit/s。需要ap评估这种速度能否满足各种场景使用需求</p>
+<h2 id="3G，4G部分"><a href="#3G，4G部分" class="headerlink" title="3G，4G部分"></a>3G，4G部分</h2><h3 id="中国2G，3G，4G制式标准"><a href="#中国2G，3G，4G制式标准" class="headerlink" title="中国2G，3G，4G制式标准"></a>中国2G，3G，4G制式标准</h3><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141533.jpg" alt="运营商制式"></p>
+<p>UMTS(Universal Mobile Telecommunications System)，意即通用移动通信系统。UMTS是国际标准化组织3GPP制定的全球3G标准之一。作为一个完整的3G移动通信技术标准，UMTS并不仅限于定义空中接口。它的主体包括CDMA接入网络和分组化的核心网络等一系列技术规范和接口协议。除WCDMA作为首选空中接口技术获得不断完善外，UMTS还相继引入了TD-SCDMA和HSDPA技术。<br>   UMTS网络优先选择的就是WCDMA，国内就是中国联通</p>
+<h3 id="电信"><a href="#电信" class="headerlink" title="*电信*"></a>*<strong>电信*</strong></h3><ul>
+<li><strong>2G CDMA</strong></li>
+<li><strong>3G CDMA2000</strong></li>
+<li><strong>4G TD-LTE<strong><strong>，</strong></strong>FDD-LTE</strong></li>
+</ul>
+<h3 id="移动"><a href="#移动" class="headerlink" title="*移动*"></a>*<strong>移动*</strong></h3><ul>
+<li><strong>2G GSM</strong></li>
+<li><strong>3G TD-SCDMA</strong></li>
+<li><strong>4G TD-LTE<strong><strong>，</strong></strong>FDD-LTE</strong></li>
+</ul>
+<h3 id="联通"><a href="#联通" class="headerlink" title="*联通*"></a>*<strong>联通*</strong></h3><ul>
+<li><p><strong>2G GSM</strong></p>
+</li>
+<li><p><strong>3G WCDMA</strong></p>
+</li>
+<li><p><strong>4G TD-LTE<strong><strong>，</strong></strong>FDD-LTE</strong></p>
+</li>
+<li><p>中国移动TD-LTE：支持频段38、39、40</p>
+</li>
+<li><p>中国联通TD-LTE：支持频段40、41</p>
+</li>
+<li><p>中国电信TD-LTE：支持频段40、41</p>
+</li>
+<li><p>中国联通FDD-LTE：支持频段3</p>
+</li>
+<li><p>中国电信FDD-LTE：支持频段3</p>
+</li>
+</ul>
+<h3 id="全球制式和区域"><a href="#全球制式和区域" class="headerlink" title="全球制式和区域"></a>全球制式和区域</h3><h4 id="2G有GSM，还有CDMA。"><a href="#2G有GSM，还有CDMA。" class="headerlink" title="2G有GSM，还有CDMA。"></a>2G有GSM，还有CDMA。</h4><p>​    我们平时说的G 网或者C 网了。联通和移动都是GSM，电信的133号段（之前是联通主营，后来转移给电信）是C网</p>
+<h4 id="3G有3种：WCDMA，CDMA2000，TD-CDMA"><a href="#3G有3种：WCDMA，CDMA2000，TD-CDMA" class="headerlink" title="3G有3种：WCDMA，CDMA2000，TD_CDMA"></a>3G有3种：WCDMA，CDMA2000，TD_CDMA</h4><p>WCDMA（日本、欧洲）、CDMA2000（北美）、TD-SCDMA（中国移动）</p>
+<p>使用最广泛的是WCDMA。美国、欧洲等国很多是WCDMA和CDMA2000都有的。<br> 另外WCDMA、CDMA2000里面还有更细的划分，主要是技术、标准、速度的细微差别。</p>
+<p>WCDMA（欧洲版）：这个是欧洲的主流，也是目前世界范围3G 的使用模式最广的，在中国大陆，是中国联通3G （沃）的模式。<br> CDMA2000（美国版）：这个数量相对少些，由美国为代表。在大陆，是中国电信3G （天翼）的模式<br> TD-SCDMA（中国版）：这个是中国大陆自主知识产权的，可以说是中国特色的3G ，虽然大部分的通讯厂商宣布对此技术可以支持，但世界范围内使用的范围有限。在大陆，是中国移动3G的网络模式。</p>
+<h4 id="4G有2种-LTE-FDD，LTE-TDD"><a href="#4G有2种-LTE-FDD，LTE-TDD" class="headerlink" title="4G有2种: LTE FDD，LTE TDD"></a>4G有2种: LTE FDD，LTE TDD</h4><p>LTE FDD（世界绝大多数国家）、LTE TDD（中国移动和国外极少数地区的个别运营商）。</p>
+<p>TD- LTE是我国自主研发的4G标准，是由TD-SCDMA（3G网络）发展而来。</p>
+<p>LTE FDD是现在国际上主流的，使用最广泛的4G网络，由WCDMA演化而来。</p>
+<p>现在全球有超过200个LTE的商用网络，其中超过90%是FDD的。</p>
+<p>从技术上说，TD- LTE采用的是时分双工，而LTE FDD采用的是频分双工</p>
+<p>TD-LTE和FDD-LTE 是4G的两种国际标准，各有利弊。TD-LTE占用频段少，节省资源，带宽长，适合区域热点覆盖；FDD速度更快，覆盖更广，但占用资源多。适合广域覆盖。</p>
+<h4 id="国内三家运营商4G网络制式分别如下："><a href="#国内三家运营商4G网络制式分别如下：" class="headerlink" title="国内三家运营商4G网络制式分别如下："></a>国内三家运营商4G网络制式分别如下：</h4><p>联通4G：TD-LTE、FDD-LTE</p>
+<p>电信4G：TD-LTE、FDD-LTE</p>
+<p>移动4G：TD-LTE</p>
+<p>虽然联通跟电信都是采用双4G网络制式，但目前4G网络仅在部分地区覆盖，3G网络仍然是不可或缺的。而联通3G采用的是WCDMA，为欧洲标准，是技术发展最成熟、国际通用和覆盖范围最广的制式，目前是国内3G网络最快的，最高可达42Mbps，在国外已将其定义为4G标准。</p>
+<p>综合以上，选型推荐。</p>
+<h2 id="3G推荐选型：WCDMA欧洲，CDMA2000美国"><a href="#3G推荐选型：WCDMA欧洲，CDMA2000美国" class="headerlink" title="3G推荐选型：WCDMA欧洲，CDMA2000美国"></a>3G推荐选型：WCDMA欧洲，CDMA2000美国</h2><h2 id="4G推荐选型：FDD-LTE"><a href="#4G推荐选型：FDD-LTE" class="headerlink" title="4G推荐选型：FDD-LTE"></a>4G推荐选型：FDD-LTE</h2><h2 id="WIFI部分"><a href="#WIFI部分" class="headerlink" title="WIFI部分"></a>WIFI部分</h2><h2 id="2-4G和5G究竟是什么"><a href="#2-4G和5G究竟是什么" class="headerlink" title="2.4G和5G究竟是什么"></a>2.4G和5G究竟是什么</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141643.jpg" alt="img">   以往我们一直使用的Wi-Fi大多数是支持 IEEE 802.11n（第四代）无线标准的，而且工作在2.4GHz这个频段上的，所以称之为2.4gWi-Fi，但是严格来说工作在5GHz频段上的不一定就是5G Wi-Fi，因为IEEE 802.11a（第一代）IEEE 802.11n（第四代）和IEEE 802.11ac（第五代)这三种标准都可以工作在5GHz这个频段上。</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141655.jpg" alt="img">   严格来说只有支持802.11ac的才是真正5G Wi-Fi（在这个视频里我们将它称作ac 5G)，现来在说支持2.4G和5G双频的路由器其实很多都是指支持第四代无线标准，也就是802.11n的双频，而真正支持ac 5G的路由最便宜都要400、500甚至上千元</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141748.jpg" alt="img">   我们的路由器一般会有标有一些类似54Mbps，150Mbps，300Mbps这样的参数，要说明一下，这个参数不是指路由器的无线覆盖范围，而是指它的最高传输速率。若要支持ac 5G的也要双方同时支持，单方面支持是不行的。</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141738.jpg" alt="img">   这个速率就相当于车道上的限速标志，当然也不能完全等同与限速标志，因为如果网络中多个设备同时传输要分流的</p>
+<p><strong><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141801.jpg" alt="img"></strong></p>
+<p>最后不要忘记要考虑空间的大小，200多平米的房子一般普通无线路由器的2.4G勉强可以覆盖，5G的话150平米就开始有压力，如果房屋太大或者多楼层的话可能就要考虑一下多个无线路由桥接了。</p>
+<h3 id="5GWifi速度快，穿墙弱"><a href="#5GWifi速度快，穿墙弱" class="headerlink" title="5GWifi速度快，穿墙弱"></a>5GWifi速度快，穿墙弱</h3><p>5G Wi-Fi的最大缺点就是穿墙能力比较弱，墙体对Wi-Fi信号的强度影响是比较大的，每穿过一面墙，Wi-Fi信号就要减弱不少。</p>
+<h3 id="路由器摆放小技巧。增强信号。"><a href="#路由器摆放小技巧。增强信号。" class="headerlink" title="路由器摆放小技巧。增强信号。"></a>路由器摆放小技巧。增强信号。</h3><h4 id="最根本一半是有线速度限制，但信号强度也很重要"><a href="#最根本一半是有线速度限制，但信号强度也很重要" class="headerlink" title="最根本一半是有线速度限制，但信号强度也很重要"></a>最根本一半是有线速度限制，但信号强度也很重要</h4><p>另外分享一个摆放路由器的方法，如果受制与网线或者台式电脑的位置就没得说，但是如果可以移动的话，这个位置的原则是要经过尽量少的墙体</p>
+<p>最好不要放在地上，更不要放在角落，</p>
+<h4 id="放在高处"><a href="#放在高处" class="headerlink" title="放在高处"></a>放在高处</h4><p>而且应该经适当的放高一点，而不是放在地上，这和手机信号塔的原理是一样的，更加不应该因为他碍眼把它放进抽屉、柜子等里面。这些方法可以略微增强信号强度，不过想从根本上解决信号问题，还是要换一款更好的路由。</p>
+<h2 id="无线网卡选购简介"><a href="#无线网卡选购简介" class="headerlink" title="无线网卡选购简介"></a>无线网卡选购简介</h2><p>常见值得选购的USB无线网卡按技术规格和价位，大致可以分为如下3类：</p>
+<p>单频11n网卡，标注速度200-300M，20-30元。</p>
+<p>双频11n网卡，支持5g频段，标注速度600M，40-50元。</p>
+<p>双频11ac网卡，支持5g频段，标注速度900-1200M或更高，80元以上。</p>
+<p>无线网卡要想达到标注的技术标准和速度，首先需要路由器支持该标准及速度，否则会降速运行。</p>
+<h3 id="USB协议：速度，选择2-0还是3-0"><a href="#USB协议：速度，选择2-0还是3-0" class="headerlink" title="USB协议：速度，选择2.0还是3.0"></a>USB协议：速度，选择2.0还是3.0</h3><p>USB2.0的速度传输，理论最大速率480M bit/S。 60MB/S</p>
+<p>USB3.0的理论最大速率是5G bit/S，要比USB2.0快10倍！ 640MB/S</p>
+<p>看线路，工艺质量，实际速度可能不到理论速度一半</p>
+<h3 id="USB3-0-对wifi和BlueTooth干扰。"><a href="#USB3-0-对wifi和BlueTooth干扰。" class="headerlink" title="USB3.0 对wifi和BlueTooth干扰。"></a>USB3.0 对wifi和BlueTooth干扰。</h3><p>USB3.0的传输频率确实是5GHz串行，但USB3.0使用4条数据线组成2组，每组负责一个传输方向，实现全双工双向5GHz，而每条数据线的基准频率是2.5GHz。</p>
+<p>所以，总带宽是5GHz没错，但每条线上是2.5GHz，这个频率距离2.4G Wifi的频率太近了，又因为高频设备大多数都使用了SSC技术（扩频时钟？）使得信号不完全分布在一个固定频率上，所以就波及了2.5GHz附近的其它频率，所以对Wifi和蓝牙产生了较大的干扰。</p>
+<h3 id="USB-3-0-干扰-Wifi-2-4G通讯的问题和解决方法"><a href="#USB-3-0-干扰-Wifi-2-4G通讯的问题和解决方法" class="headerlink" title="USB 3.0 干扰 Wifi 2.4G通讯的问题和解决方法"></a>USB 3.0 干扰 Wifi 2.4G通讯的问题和解决方法</h3><h4 id="USB3-0-WIFI干扰解决方法"><a href="#USB3-0-WIFI干扰解决方法" class="headerlink" title="USB3.0 WIFI干扰解决方法"></a>USB3.0 WIFI干扰解决方法</h4><p>USB3.0的确对2.4G有影响，不过一样可以解决，比如<strong>网件</strong>的解决方法就是，USB3.0 和网口,天线不在一面，USB3.0接口弄到前面，而且是所有接口有<strong>金属屏蔽罩</strong>（包括WAN和LAN口），连USB接口与主板连线处都用<strong>屏蔽胶布</strong>包裹。可惜国内厂商哪怕是大如华为，网口也舍不得这点成本用金属屏蔽的。</p>
+<p>带有USB 3.0接口的无线路由，如果出现外接3.0移动硬盘后网速下降，断网，或者ping延时变得很高，说明出现了3.0对无线的干扰。</p>
+<p>USB3.0与无线冲突解决办法：</p>
+<p>第一种：给USB接口加金属膜做屏蔽可以适当降低干扰，但不能完全屏蔽</p>
+<p>第二种：给主板的USB底座增加统一（并与使用设备）接地和增加金属屏蔽罩，基本可以排除</p>
+<p>【推荐】第三种：用1.2米 双磁环带屏蔽层的USB延长线将移动硬盘放到一米外的地方使用，基本可以完全可以排除</p>
+<p>其实不单是无线路由，像我们平常使用的无线鼠标键盘、蓝牙、wifi电视、iPad、手机等各种使用民用2.4G的通信设备都会出现与USB3.0冲突的情况。</p>
+<h4 id="USB3-0-移动硬盘干扰解决方法"><a href="#USB3-0-移动硬盘干扰解决方法" class="headerlink" title="USB3.0 移动硬盘干扰解决方法"></a>USB3.0 移动硬盘干扰解决方法</h4><p>相信随着USB3.0使用的用户越来越多，不少人遇到了一插上USB3.0的硬盘，wifi就出现降速或者中断的问题。其本质原因是USB 3.0 干扰2.4GHz下的Wifi通讯。</p>
+<p> 解决方法如下，</p>
+<p> 1.更换无线路由为5GHz，因为USB 3.0对5GHz的Wifi干扰程度较低<br> 2.把硬盘盒从USB3.0接口换到USB2.0接口也可以将问题解决<br> 3.使用高质量带屏蔽的USB3.0设备/线缆/接口。或者在USB3.0接口处加屏蔽罩（金属箔即可）<br> 4.最简单的，使用1m以上的高质量USB3.0延长线。将USB3.0设备远离电脑主机。</p>
+<p> Intel官方对USB3.0对WIFI干扰的描述文档：</p>
+<p> <a href="http://www.usb.org/developers/whitepapers/327216.pdf">http://www.usb.org/developers/whitepapers/327216.pdf</a></p>
+<h2 id="目前在调试的两款型号："><a href="#目前在调试的两款型号：" class="headerlink" title="目前在调试的两款型号："></a>目前在调试的两款型号：</h2><h3 id="TL-WN823N"><a href="#TL-WN823N" class="headerlink" title="TL-WN823N"></a>TL-WN823N</h3><ul>
+<li>​         Bus 002 Device 007: ID 0bda:818b</li>
+<li>​         RTL8192EU</li>
+<li>​         300M迷你型无线USB网卡 TL-WN823N</li>
+</ul>
+<h3 id="TL-WN725N"><a href="#TL-WN725N" class="headerlink" title="TL-WN725N"></a>TL-WN725N</h3><ul>
+<li>​         Bus 002 Device 008: ID 0bda:8179</li>
+<li>​         rtl8188eu</li>
+<li>​         150M无线USB网卡 TL-WN725N</li>
+<li>​         网上的驱动版本数据结构和3.10差异较大，不能用</li>
+</ul>
+<h2 id="Wifi芯片厂家"><a href="#Wifi芯片厂家" class="headerlink" title="Wifi芯片厂家"></a>Wifi芯片厂家</h2><h3 id="Realtek："><a href="#Realtek：" class="headerlink" title="Realtek："></a>Realtek：</h3><p>​         官方无linux驱动支持</p>
+<h3 id="Ralink"><a href="#Ralink" class="headerlink" title="Ralink"></a>Ralink</h3><p>（已经被MTK收购）： 官方有linux驱动</p>
+<h3 id="Atheros"><a href="#Atheros" class="headerlink" title="Atheros"></a>Atheros</h3><p>（已经被高通qualcomm收购）：AR9271</p>
+<h2 id="整理推荐芯片型号："><a href="#整理推荐芯片型号：" class="headerlink" title="整理推荐芯片型号："></a>整理推荐芯片型号：</h2><p>USB 2.0 Mbit/s</p>
+<h3 id="rt3070"><a href="#rt3070" class="headerlink" title="rt3070"></a>rt3070</h3><ul>
+<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt3070">http://www.mediatek.cn/products/broadbandWifi/rt3070</a></li>
+<li>IEEE 802.11:b/g/n</li>
+<li>Wi-Fi Frequency:2.4GHz</li>
+<li>Antenna:1T1R</li>
+<li>Data Throughput:150Mbit/s</li>
+</ul>
+<h3 id="rt5370"><a href="#rt5370" class="headerlink" title="rt5370"></a>rt5370</h3><ul>
+<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt5370">http://www.mediatek.cn/products/broadbandWifi/rt5370</a></li>
+<li>IEEE 802.11:b/g/n</li>
+<li>Wi-Fi Frequency:2.4GHz</li>
+<li>Antenna:1T1R</li>
+<li>Data Throughput:150Mbit/s</li>
+</ul>
+<h3 id="RT3573"><a href="#RT3573" class="headerlink" title="RT3573"></a>RT3573</h3><ul>
+<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt3573">http://www.mediatek.cn/products/broadbandWifi/rt3573</a></li>
+<li>IEEE 802.11:b/g/n/ac</li>
+<li>Wi-Fi Frequency:2.4GHz, 5GHz</li>
+<li>Antenna:3T3R</li>
+<li>Data Throughput:450Mbit/s</li>
+</ul>
+<h3 id="RT5572"><a href="#RT5572" class="headerlink" title="RT5572"></a>RT5572</h3><ul>
+<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt5572">http://www.mediatek.cn/products/broadbandWifi/rt5572</a></li>
+<li>IEEE 802.11:b/g/n/ac</li>
+<li>Wi-Fi Frequency:2.4GHz, 5GHz</li>
+<li>Antenna:2T2R</li>
+<li>Data Throughput:300Mbit/s</li>
+</ul>
+<h1 id="集成分析"><a href="#集成分析" class="headerlink" title="集成分析"></a>集成分析</h1><h2 id="3G，4G集成分析"><a href="#3G，4G集成分析" class="headerlink" title="3G，4G集成分析"></a>3G，4G集成分析</h2><p>根据拨号技术流程，现在已经发现的USB上网有三种</p>
+<ul>
+<li>1：默认识别为USB Modem，使用pppoe拨号脚本拨号。</li>
+<li>2：默认识别为usb cdrom，使用usb-modeswitch 转换usb设备工作状态，转换为USB Modem后再采用pppoe拨号脚本拨号。</li>
+<li>3：使用CGI 调用Html链接方式拨号。不需要我们配置用户名密码，网络制式，最方便。</li>
+</ul>
+<h3 id="1：Pppoe拨号"><a href="#1：Pppoe拨号" class="headerlink" title="1：Pppoe拨号"></a>1：Pppoe拨号</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">pppd call wcdma <span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+
+
+<h3 id="2：usb-modeswitch转换usb设备工作模式。"><a href="#2：usb-modeswitch转换usb设备工作模式。" class="headerlink" title="2：usb_modeswitch转换usb设备工作模式。"></a>2：usb_modeswitch转换usb设备工作模式。</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">usb_modeswitch -W -c /etc/usb_modeswitch.d/19D2:0117<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+
+
+<h3 id="3：CGI拨号示例"><a href="#3：CGI拨号示例" class="headerlink" title="3：CGI拨号示例"></a>3：CGI拨号示例</h3><p>从集成实现来说，这种最方便。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">./curl --header <span class="token string">"Referer: http://192.168.0.1/index.html"</span> http://192.168.0.1/goform/goform_set_cmd_process?goformId<span class="token operator">=</span>SET_CONNECTION_MODE<span class="token operator">&amp;</span><span class="token assign-left variable">ConnectionMode</span><span class="token operator">=</span>auto_dial
+
+./curl --header <span class="token string">"Referer: http://192.168.0.1/index.html"</span> http://192.168.0.1/goform/goform_process?goformId<span class="token operator">=</span>MODE_SWITCH<span class="token operator">&amp;</span><span class="token assign-left variable">switchCmd</span><span class="token operator">=</span>FACTORY<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+
+
+<h2 id="Wifi集成分析"><a href="#Wifi集成分析" class="headerlink" title="Wifi集成分析"></a>Wifi集成分析</h2><p>步骤：</p>
+<ul>
+<li>1：驱动移植识别</li>
+<li>2：wireless_tools或者wpa_supplicant拨号</li>
+</ul>
+<p>wpa_supplicant依赖openssl和libnl，支持PSK加密需要用到这个。wireless_tools只支持普通web加密。</p>
+<h1 id="带宽性能测试"><a href="#带宽性能测试" class="headerlink" title="带宽性能测试"></a>带宽性能测试</h1><p>服务器运行 iperf -s </p>
+<p>客户端运行 iperf -c 服务器ip -t 60000 -i 2</p>
+<pre class="line-numbers language-none"><code class="language-none">iperf -c 192.168.1.100 -t 60000 -i 2
+TP—Link 845<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<p>笔记本有线连接运行服务端, H3531a（2716TE_C）使用TL-WN823N连接</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">[</span>root@Tvt iperf<span class="token punctuation">]</span><span class="token comment"># ./iperf.hisi3531A -c 192.168.1.100 -t 60000 -i 2</span>
+<span class="token punctuation">\</span>------------------------------------------------------------
+Client connecting to <span class="token number">192.168</span>.1.100, TCP port <span class="token number">5001</span>
+TCP window size: <span class="token number">21.0</span> KByte <span class="token punctuation">(</span>default<span class="token punctuation">)</span>
+<span class="token punctuation">\</span>------------------------------------------------------------
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token builtin class-name">local</span> <span class="token number">192.168</span>.1.103 port <span class="token number">47671</span> connected with <span class="token number">192.168</span>.1.100 port <span class="token number">5001</span>
+<span class="token punctuation">[</span> ID<span class="token punctuation">]</span> Interval    Transfer   Bandwidth
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">0.0</span>- <span class="token number">2.0</span> sec <span class="token number">2.25</span> MBytes <span class="token number">9.44</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">2.0</span>- <span class="token number">4.0</span> sec  <span class="token number">256</span> KBytes <span class="token number">1.05</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">4.0</span>- <span class="token number">6.0</span> sec  <span class="token number">128</span> KBytes  <span class="token number">524</span> Kbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">6.0</span>- <span class="token number">8.0</span> sec  <span class="token number">256</span> KBytes <span class="token number">1.05</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">8.0</span>-10.0 sec <span class="token number">1.25</span> MBytes <span class="token number">5.24</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">10.0</span>-12.0 sec <span class="token number">3.75</span> MBytes <span class="token number">15.7</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">12.0</span>-14.0 sec <span class="token number">4.25</span> MBytes <span class="token number">17.8</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">14.0</span>-16.0 sec <span class="token number">3.13</span> MBytes <span class="token number">13.1</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">16.0</span>-18.0 sec <span class="token number">1.75</span> MBytes <span class="token number">7.34</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">18.0</span>-20.0 sec <span class="token number">1.38</span> MBytes <span class="token number">5.77</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">20.0</span>-22.0 sec <span class="token number">1.13</span> MBytes <span class="token number">4.72</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">22.0</span>-24.0 sec  <span class="token number">256</span> KBytes <span class="token number">1.05</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">24.0</span>-26.0 sec  <span class="token number">128</span> KBytes  <span class="token number">524</span> Kbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">26.0</span>-28.0 sec  <span class="token number">128</span> KBytes  <span class="token number">524</span> Kbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">28.0</span>-30.0 sec  <span class="token number">512</span> KBytes <span class="token number">2.10</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">30.0</span>-32.0 sec <span class="token number">2.88</span> MBytes <span class="token number">12.1</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">32.0</span>-34.0 sec <span class="token number">1.63</span> MBytes <span class="token number">6.82</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">34.0</span>-36.0 sec <span class="token number">3.50</span> MBytes <span class="token number">14.7</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">36.0</span>-38.0 sec  <span class="token number">768</span> KBytes <span class="token number">3.15</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">38.0</span>-40.0 sec <span class="token number">4.38</span> MBytes <span class="token number">18.4</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">40.0</span>-42.0 sec <span class="token number">5.38</span> MBytes <span class="token number">22.5</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">42.0</span>-44.0 sec <span class="token number">7.13</span> MBytes <span class="token number">29.9</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">44.0</span>-46.0 sec <span class="token number">6.63</span> MBytes <span class="token number">27.8</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">46.0</span>-48.0 sec <span class="token number">5.38</span> MBytes <span class="token number">22.5</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">48.0</span>-50.0 sec <span class="token number">5.75</span> MBytes <span class="token number">24.1</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">50.0</span>-52.0 sec <span class="token number">7.50</span> MBytes <span class="token number">31.5</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">52.0</span>-54.0 sec <span class="token number">4.63</span> MBytes <span class="token number">19.4</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">54.0</span>-56.0 sec <span class="token number">7.50</span> MBytes <span class="token number">31.5</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">56.0</span>-58.0 sec <span class="token number">6.75</span> MBytes <span class="token number">28.3</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">58.0</span>-60.0 sec <span class="token number">5.13</span> MBytes <span class="token number">21.5</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">60.0</span>-62.0 sec <span class="token number">5.38</span> MBytes <span class="token number">22.5</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">62.0</span>-64.0 sec <span class="token number">4.75</span> MBytes <span class="token number">19.9</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">64.0</span>-66.0 sec <span class="token number">6.00</span> MBytes <span class="token number">25.2</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">66.0</span>-68.0 sec <span class="token number">3.50</span> MBytes <span class="token number">14.7</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">68.0</span>-70.0 sec <span class="token number">5.50</span> MBytes <span class="token number">23.1</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">70.0</span>-72.0 sec <span class="token number">4.75</span> MBytes <span class="token number">19.9</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">72.0</span>-74.0 sec <span class="token number">1.50</span> MBytes <span class="token number">6.29</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">74.0</span>-76.0 sec <span class="token number">4.50</span> MBytes <span class="token number">18.9</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">76.0</span>-78.0 sec <span class="token number">4.25</span> MBytes <span class="token number">17.8</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">78.0</span>-80.0 sec <span class="token number">5.13</span> MBytes <span class="token number">21.5</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">80.0</span>-82.0 sec <span class="token number">7.88</span> MBytes <span class="token number">33.0</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">82.0</span>-84.0 sec <span class="token number">7.38</span> MBytes <span class="token number">30.9</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">84.0</span>-86.0 sec <span class="token number">4.38</span> MBytes <span class="token number">18.4</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">86.0</span>-88.0 sec <span class="token number">5.25</span> MBytes <span class="token number">22.0</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">88.0</span>-90.0 sec <span class="token number">6.63</span> MBytes <span class="token number">27.8</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">90.0</span>-92.0 sec <span class="token number">5.00</span> MBytes <span class="token number">21.0</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">92.0</span>-94.0 sec <span class="token number">6.88</span> MBytes <span class="token number">28.8</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">94.0</span>-96.0 sec <span class="token number">8.25</span> MBytes <span class="token number">34.6</span> Mbits/sec
+<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">96.0</span>-98.0 sec <span class="token number">7.25</span> MBytes <span class="token number">30.4</span> Mbits/sec<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+
+
+<h1 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h1><h2 id="1：TD-LTE和LTE-FDD标准差异"><a href="#1：TD-LTE和LTE-FDD标准差异" class="headerlink" title="1：TD- LTE和LTE FDD标准差异"></a>1：TD- LTE和LTE FDD标准差异</h2><p> TD- LTE是我国自主研发的4G标准，是由TD-SCDMA（3G网络）发展而来。</p>
+<p>LTE FDD是现在国际上主流的，使用最广泛的4G网络。</p>
+<p>现在全球有超过200个LTE的商用网络，其中超过90%是FDD的。</p>
+<p>从技术上说，TD- LTE采用的是时分双工，而LTE FDD采用的是频分双工</p>
+<p>那什么是频分双工，什么又是时分双工呢？</p>
+<p>先来解释“双工”。</p>
+<p>移动通信系统的工作方式分为：单工、半双工和全双工</p>
+<p>1，单工就是信息只能向一个方向传播。例如寻呼机和收音机，只能接收信息，不能发出信息。</p>
+<p>2，半双工就是信息可以双向传播，但是上传信息的时候只能上传，下载的时候只能下载。例如对讲机，你说话的时候听不见别人别人说，听别人说的时候自己不能说。</p>
+<p>3， 全双工就是信息可以同时双向传播。例如手机，可以边听边说。<br> 其中全双工又分为：时分双工TDD，与频分双工FDD。</p>
+<p>​    所谓的频分双工就是将信息上传和信息下载放在两个不同的频段，称为上行频段和下行频段，且这两个频段必须对称。为了不防止上下行频段之间的信息串频，两个频段不能重叠，而且中间必须隔开一段，称为保护频。如下图：上行和下行频段相互分开</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730142158.jpg" alt="保护帧"></p>
+<p>  所谓的时分双工就是将上传和下载放在同一个频段，也就是上行频段和下行频段完全一样。那它是如何做到上下的信息不串频呢？其实很简单，顾名思义，频分双工分的是频段，那时分双工分的就是时间。将波传播的时间轴一分为二，</p>
+<p>前半部分用于信息的上传，后一部分用于信息的下载。其实这从理论上更像是同步的半双工，但是由于上行和下行时间差距极短，我们无法感觉到，所以从效果上也是全双工。如下图：时间帧的第一帧为上行，第二帧而为下行，上下行共用一个频段，用时间的差将他们隔开。</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730142220.jpg" alt="数据帧"></p>
+<p>​    接下来说一说移动TD- LTE和电信联通LTE FDD的优缺点，其实就是时分双工与频分双工的特点。</p>
+<p>​     TD- LTE由于采用上行和下行分时，所以上行和下行的时间差导致他信息传输的速度受到一定的限制。他的理论下载峰值为100Mbps，相比FDD的150Mbps来说，慢了不少。当然TD- LTE的基站信号覆盖半径也比LTE FDD小一点。</p>
+<p>​    LTE FDD也并非都是优点。FDD制式必须要找对称分开的上行、下行频段，也就是说它必须浪费更多的频段资源。那中国联通的FDD网为例，工信部给他发的频段牌照为，上行1755<del>1765MHz和下行1850</del>1860MHz（2×10M），实际联通只得到了上下各10M的频段，但是加上当中的保护频段，一共占用了1755~1860MHz也就是105MHz的频段。这就导致了频段资源利用率低，是一种资源的浪费。目前，频率资源本身就紧张，能找到对称的上行和下行频段就尤其难。频率除了用在手机上网通讯上，像广播，军事,甚至无线路由器等民用领域也广泛使用。将来随着科技的进步，频率频段的稀缺会日益严重。</p>
+<p>​    TD-LTE和FDD-LTE 是4G的两种国际标准，各有利弊。TD-LTE占用频段少，节省资源，带宽长，适合区域热点覆盖；FDD速度更快，覆盖更广，但占用资源多。适合广域覆盖。</p>
+<hr>
+]]></content>
+      <categories>
+        <category>embeded</category>
+      </categories>
+      <tags>
+        <tag>Linux</tag>
+        <tag>嵌入式</tag>
+        <tag>embeded</tag>
+        <tag>3G</tag>
+        <tag>4G</tag>
+        <tag>3531a</tag>
+        <tag>移植</tag>
       </tags>
   </entry>
   <entry>
@@ -4717,278 +4989,6 @@ pie
         <tag>Joplin</tag>
         <tag>MarkDown</tag>
         <tag>Mermaid</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>3G,4G,Wifi选型需求分析及技术简介</title>
-    <url>/embeded/2021-07-30-3g-4g-iot-module-embedded-transplantation/</url>
-    <content><![CDATA[<h2 id="3G-4G-Wifi选型需求分析及技术简介"><a href="#3G-4G-Wifi选型需求分析及技术简介" class="headerlink" title="3G,4G,Wifi选型需求分析及技术简介"></a>3G,4G,Wifi选型需求分析及技术简介</h2><ul>
-<li><p>文章写了好多年了，只在一个网站发布过PDF版本。行业内应该很多人看过这个。</p>
-</li>
-<li><p>关于本blog，<strong>图床</strong>一般使用<strong>github</strong>，已经配置了CDN，如果图片还是未显示请自行代理解决</p>
-</li>
-<li><p><strong>原创声明警告</strong>，文章<strong>禁止转载</strong>，禁止发布到其它任何网站，可以接受约稿。</p>
-</li>
-</ul>
-<h2 id="用户需求分析"><a href="#用户需求分析" class="headerlink" title="用户需求分析"></a>用户需求分析</h2><p>减少布线，或有的地方很难布线。</p>
-<p>​    例如：偏远森林，沙漠，海岛，土地所有制导致不能随便开挖等各种原因。</p>
-<h3 id="–3G，4G–"><a href="#–3G，4G–" class="headerlink" title="–3G，4G–"></a>–3G，4G–</h3><p>优点： 布线，距离远。</p>
-<p>缺点：流量费高（可以和运营商合作 ）</p>
-<h3 id="–Wifi–"><a href="#–Wifi–" class="headerlink" title="–Wifi–"></a>–Wifi–</h3><p>优点：费用低，</p>
-<p>缺点：距离近</p>
-<h2 id="研发需求分析"><a href="#研发需求分析" class="headerlink" title="研发需求分析"></a>研发需求分析</h2><h2 id="WANTED"><a href="#WANTED" class="headerlink" title="WANTED!"></a>WANTED!</h2><h3 id="3G，4G选型标准需求"><a href="#3G，4G选型标准需求" class="headerlink" title="3G，4G选型标准需求"></a>3G，4G选型标准需求</h3><p>1：产品生命周期，时间空间的重叠。 初产时间较近，出货时间长，</p>
-<p>2：客户那里运营商网络制式？？（例如<strong>TD-LTE<strong><strong>，</strong></strong>FDD-LTE<strong><strong>，</strong></strong>CDMA2000****等等</strong>）， </p>
-<p>​    运营商名称？？（一般不同国家不一样，一个国家很多个运营商）</p>
-<p>3：3G，4G具体型号选择： 1：厂家选择？？？ 2：网络制式选择（需要选择制式尽可能支持区域大的，亚洲，欧美，日韩）？？？ 3：USB 使用的技术代差（1：usb猫，2：usb光驱，3：html拨号）</p>
-<p>4：客户3G，4G使用场景？？。流量大小，费用</p>
-<p><strong>注意：</strong>可能客户那里支持的制式和国内不一样，我们这边验证的制式在客户那里不能用，客户那里支持的制式在国内又没法验证。选择制式的时候特别需要注意。</p>
-<h3 id="Wifi选择需求"><a href="#Wifi选择需求" class="headerlink" title="Wifi选择需求"></a>Wifi选择需求</h3><p>5：芯片厂家需要支持Linux驱动。 芯片出来年代？？？，价格？？？，协议标准（决定速度），网络信号质量？？？，传输速度（不同距离速度，是否要求穿墙）？？？</p>
-<p>6：对应的无线路由器调试</p>
-<p>7：客户Wifi使用场景？？。 主要是使用距离引起速度衰变， 现在有2,4G，5G路由，速度有150Mbit/s 300Mbit/s，450Mbit/s。需要ap评估这种速度能否满足各种场景使用需求</p>
-<h2 id="3G，4G部分"><a href="#3G，4G部分" class="headerlink" title="3G，4G部分"></a>3G，4G部分</h2><h3 id="中国2G，3G，4G制式标准"><a href="#中国2G，3G，4G制式标准" class="headerlink" title="中国2G，3G，4G制式标准"></a>中国2G，3G，4G制式标准</h3><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141533.jpg" alt="运营商制式"></p>
-<p>UMTS(Universal Mobile Telecommunications System)，意即通用移动通信系统。UMTS是国际标准化组织3GPP制定的全球3G标准之一。作为一个完整的3G移动通信技术标准，UMTS并不仅限于定义空中接口。它的主体包括CDMA接入网络和分组化的核心网络等一系列技术规范和接口协议。除WCDMA作为首选空中接口技术获得不断完善外，UMTS还相继引入了TD-SCDMA和HSDPA技术。<br>   UMTS网络优先选择的就是WCDMA，国内就是中国联通</p>
-<h3 id="电信"><a href="#电信" class="headerlink" title="*电信*"></a>*<strong>电信*</strong></h3><ul>
-<li><strong>2G CDMA</strong></li>
-<li><strong>3G CDMA2000</strong></li>
-<li><strong>4G TD-LTE<strong><strong>，</strong></strong>FDD-LTE</strong></li>
-</ul>
-<h3 id="移动"><a href="#移动" class="headerlink" title="*移动*"></a>*<strong>移动*</strong></h3><ul>
-<li><strong>2G GSM</strong></li>
-<li><strong>3G TD-SCDMA</strong></li>
-<li><strong>4G TD-LTE<strong><strong>，</strong></strong>FDD-LTE</strong></li>
-</ul>
-<h3 id="联通"><a href="#联通" class="headerlink" title="*联通*"></a>*<strong>联通*</strong></h3><ul>
-<li><p><strong>2G GSM</strong></p>
-</li>
-<li><p><strong>3G WCDMA</strong></p>
-</li>
-<li><p><strong>4G TD-LTE<strong><strong>，</strong></strong>FDD-LTE</strong></p>
-</li>
-<li><p>中国移动TD-LTE：支持频段38、39、40</p>
-</li>
-<li><p>中国联通TD-LTE：支持频段40、41</p>
-</li>
-<li><p>中国电信TD-LTE：支持频段40、41</p>
-</li>
-<li><p>中国联通FDD-LTE：支持频段3</p>
-</li>
-<li><p>中国电信FDD-LTE：支持频段3</p>
-</li>
-</ul>
-<h3 id="全球制式和区域"><a href="#全球制式和区域" class="headerlink" title="全球制式和区域"></a>全球制式和区域</h3><h4 id="2G有GSM，还有CDMA。"><a href="#2G有GSM，还有CDMA。" class="headerlink" title="2G有GSM，还有CDMA。"></a>2G有GSM，还有CDMA。</h4><p>​    我们平时说的G 网或者C 网了。联通和移动都是GSM，电信的133号段（之前是联通主营，后来转移给电信）是C网</p>
-<h4 id="3G有3种：WCDMA，CDMA2000，TD-CDMA"><a href="#3G有3种：WCDMA，CDMA2000，TD-CDMA" class="headerlink" title="3G有3种：WCDMA，CDMA2000，TD_CDMA"></a>3G有3种：WCDMA，CDMA2000，TD_CDMA</h4><p>WCDMA（日本、欧洲）、CDMA2000（北美）、TD-SCDMA（中国移动）</p>
-<p>使用最广泛的是WCDMA。美国、欧洲等国很多是WCDMA和CDMA2000都有的。<br> 另外WCDMA、CDMA2000里面还有更细的划分，主要是技术、标准、速度的细微差别。</p>
-<p>WCDMA（欧洲版）：这个是欧洲的主流，也是目前世界范围3G 的使用模式最广的，在中国大陆，是中国联通3G （沃）的模式。<br> CDMA2000（美国版）：这个数量相对少些，由美国为代表。在大陆，是中国电信3G （天翼）的模式<br> TD-SCDMA（中国版）：这个是中国大陆自主知识产权的，可以说是中国特色的3G ，虽然大部分的通讯厂商宣布对此技术可以支持，但世界范围内使用的范围有限。在大陆，是中国移动3G的网络模式。</p>
-<h4 id="4G有2种-LTE-FDD，LTE-TDD"><a href="#4G有2种-LTE-FDD，LTE-TDD" class="headerlink" title="4G有2种: LTE FDD，LTE TDD"></a>4G有2种: LTE FDD，LTE TDD</h4><p>LTE FDD（世界绝大多数国家）、LTE TDD（中国移动和国外极少数地区的个别运营商）。</p>
-<p>TD- LTE是我国自主研发的4G标准，是由TD-SCDMA（3G网络）发展而来。</p>
-<p>LTE FDD是现在国际上主流的，使用最广泛的4G网络，由WCDMA演化而来。</p>
-<p>现在全球有超过200个LTE的商用网络，其中超过90%是FDD的。</p>
-<p>从技术上说，TD- LTE采用的是时分双工，而LTE FDD采用的是频分双工</p>
-<p>TD-LTE和FDD-LTE 是4G的两种国际标准，各有利弊。TD-LTE占用频段少，节省资源，带宽长，适合区域热点覆盖；FDD速度更快，覆盖更广，但占用资源多。适合广域覆盖。</p>
-<h4 id="国内三家运营商4G网络制式分别如下："><a href="#国内三家运营商4G网络制式分别如下：" class="headerlink" title="国内三家运营商4G网络制式分别如下："></a>国内三家运营商4G网络制式分别如下：</h4><p>联通4G：TD-LTE、FDD-LTE</p>
-<p>电信4G：TD-LTE、FDD-LTE</p>
-<p>移动4G：TD-LTE</p>
-<p>虽然联通跟电信都是采用双4G网络制式，但目前4G网络仅在部分地区覆盖，3G网络仍然是不可或缺的。而联通3G采用的是WCDMA，为欧洲标准，是技术发展最成熟、国际通用和覆盖范围最广的制式，目前是国内3G网络最快的，最高可达42Mbps，在国外已将其定义为4G标准。</p>
-<p>综合以上，选型推荐。</p>
-<h2 id="3G推荐选型：WCDMA欧洲，CDMA2000美国"><a href="#3G推荐选型：WCDMA欧洲，CDMA2000美国" class="headerlink" title="3G推荐选型：WCDMA欧洲，CDMA2000美国"></a>3G推荐选型：WCDMA欧洲，CDMA2000美国</h2><h2 id="4G推荐选型：FDD-LTE"><a href="#4G推荐选型：FDD-LTE" class="headerlink" title="4G推荐选型：FDD-LTE"></a>4G推荐选型：FDD-LTE</h2><h2 id="WIFI部分"><a href="#WIFI部分" class="headerlink" title="WIFI部分"></a>WIFI部分</h2><h2 id="2-4G和5G究竟是什么"><a href="#2-4G和5G究竟是什么" class="headerlink" title="2.4G和5G究竟是什么"></a>2.4G和5G究竟是什么</h2><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141643.jpg" alt="img">   以往我们一直使用的Wi-Fi大多数是支持 IEEE 802.11n（第四代）无线标准的，而且工作在2.4GHz这个频段上的，所以称之为2.4gWi-Fi，但是严格来说工作在5GHz频段上的不一定就是5G Wi-Fi，因为IEEE 802.11a（第一代）IEEE 802.11n（第四代）和IEEE 802.11ac（第五代)这三种标准都可以工作在5GHz这个频段上。</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141655.jpg" alt="img">   严格来说只有支持802.11ac的才是真正5G Wi-Fi（在这个视频里我们将它称作ac 5G)，现来在说支持2.4G和5G双频的路由器其实很多都是指支持第四代无线标准，也就是802.11n的双频，而真正支持ac 5G的路由最便宜都要400、500甚至上千元</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141748.jpg" alt="img">   我们的路由器一般会有标有一些类似54Mbps，150Mbps，300Mbps这样的参数，要说明一下，这个参数不是指路由器的无线覆盖范围，而是指它的最高传输速率。若要支持ac 5G的也要双方同时支持，单方面支持是不行的。</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141738.jpg" alt="img">   这个速率就相当于车道上的限速标志，当然也不能完全等同与限速标志，因为如果网络中多个设备同时传输要分流的</p>
-<p><strong><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730141801.jpg" alt="img"></strong></p>
-<p>最后不要忘记要考虑空间的大小，200多平米的房子一般普通无线路由器的2.4G勉强可以覆盖，5G的话150平米就开始有压力，如果房屋太大或者多楼层的话可能就要考虑一下多个无线路由桥接了。</p>
-<h3 id="5GWifi速度快，穿墙弱"><a href="#5GWifi速度快，穿墙弱" class="headerlink" title="5GWifi速度快，穿墙弱"></a>5GWifi速度快，穿墙弱</h3><p>5G Wi-Fi的最大缺点就是穿墙能力比较弱，墙体对Wi-Fi信号的强度影响是比较大的，每穿过一面墙，Wi-Fi信号就要减弱不少。</p>
-<h3 id="路由器摆放小技巧。增强信号。"><a href="#路由器摆放小技巧。增强信号。" class="headerlink" title="路由器摆放小技巧。增强信号。"></a>路由器摆放小技巧。增强信号。</h3><h4 id="最根本一半是有线速度限制，但信号强度也很重要"><a href="#最根本一半是有线速度限制，但信号强度也很重要" class="headerlink" title="最根本一半是有线速度限制，但信号强度也很重要"></a>最根本一半是有线速度限制，但信号强度也很重要</h4><p>另外分享一个摆放路由器的方法，如果受制与网线或者台式电脑的位置就没得说，但是如果可以移动的话，这个位置的原则是要经过尽量少的墙体</p>
-<p>最好不要放在地上，更不要放在角落，</p>
-<h4 id="放在高处"><a href="#放在高处" class="headerlink" title="放在高处"></a>放在高处</h4><p>而且应该经适当的放高一点，而不是放在地上，这和手机信号塔的原理是一样的，更加不应该因为他碍眼把它放进抽屉、柜子等里面。这些方法可以略微增强信号强度，不过想从根本上解决信号问题，还是要换一款更好的路由。</p>
-<h2 id="无线网卡选购简介"><a href="#无线网卡选购简介" class="headerlink" title="无线网卡选购简介"></a>无线网卡选购简介</h2><p>常见值得选购的USB无线网卡按技术规格和价位，大致可以分为如下3类：</p>
-<p>单频11n网卡，标注速度200-300M，20-30元。</p>
-<p>双频11n网卡，支持5g频段，标注速度600M，40-50元。</p>
-<p>双频11ac网卡，支持5g频段，标注速度900-1200M或更高，80元以上。</p>
-<p>无线网卡要想达到标注的技术标准和速度，首先需要路由器支持该标准及速度，否则会降速运行。</p>
-<h3 id="USB协议：速度，选择2-0还是3-0"><a href="#USB协议：速度，选择2-0还是3-0" class="headerlink" title="USB协议：速度，选择2.0还是3.0"></a>USB协议：速度，选择2.0还是3.0</h3><p>USB2.0的速度传输，理论最大速率480M bit/S。 60MB/S</p>
-<p>USB3.0的理论最大速率是5G bit/S，要比USB2.0快10倍！ 640MB/S</p>
-<p>看线路，工艺质量，实际速度可能不到理论速度一半</p>
-<h3 id="USB3-0-对wifi和BlueTooth干扰。"><a href="#USB3-0-对wifi和BlueTooth干扰。" class="headerlink" title="USB3.0 对wifi和BlueTooth干扰。"></a>USB3.0 对wifi和BlueTooth干扰。</h3><p>USB3.0的传输频率确实是5GHz串行，但USB3.0使用4条数据线组成2组，每组负责一个传输方向，实现全双工双向5GHz，而每条数据线的基准频率是2.5GHz。</p>
-<p>所以，总带宽是5GHz没错，但每条线上是2.5GHz，这个频率距离2.4G Wifi的频率太近了，又因为高频设备大多数都使用了SSC技术（扩频时钟？）使得信号不完全分布在一个固定频率上，所以就波及了2.5GHz附近的其它频率，所以对Wifi和蓝牙产生了较大的干扰。</p>
-<h3 id="USB-3-0-干扰-Wifi-2-4G通讯的问题和解决方法"><a href="#USB-3-0-干扰-Wifi-2-4G通讯的问题和解决方法" class="headerlink" title="USB 3.0 干扰 Wifi 2.4G通讯的问题和解决方法"></a>USB 3.0 干扰 Wifi 2.4G通讯的问题和解决方法</h3><h4 id="USB3-0-WIFI干扰解决方法"><a href="#USB3-0-WIFI干扰解决方法" class="headerlink" title="USB3.0 WIFI干扰解决方法"></a>USB3.0 WIFI干扰解决方法</h4><p>USB3.0的确对2.4G有影响，不过一样可以解决，比如<strong>网件</strong>的解决方法就是，USB3.0 和网口,天线不在一面，USB3.0接口弄到前面，而且是所有接口有<strong>金属屏蔽罩</strong>（包括WAN和LAN口），连USB接口与主板连线处都用<strong>屏蔽胶布</strong>包裹。可惜国内厂商哪怕是大如华为，网口也舍不得这点成本用金属屏蔽的。</p>
-<p>带有USB 3.0接口的无线路由，如果出现外接3.0移动硬盘后网速下降，断网，或者ping延时变得很高，说明出现了3.0对无线的干扰。</p>
-<p>USB3.0与无线冲突解决办法：</p>
-<p>第一种：给USB接口加金属膜做屏蔽可以适当降低干扰，但不能完全屏蔽</p>
-<p>第二种：给主板的USB底座增加统一（并与使用设备）接地和增加金属屏蔽罩，基本可以排除</p>
-<p>【推荐】第三种：用1.2米 双磁环带屏蔽层的USB延长线将移动硬盘放到一米外的地方使用，基本可以完全可以排除</p>
-<p>其实不单是无线路由，像我们平常使用的无线鼠标键盘、蓝牙、wifi电视、iPad、手机等各种使用民用2.4G的通信设备都会出现与USB3.0冲突的情况。</p>
-<h4 id="USB3-0-移动硬盘干扰解决方法"><a href="#USB3-0-移动硬盘干扰解决方法" class="headerlink" title="USB3.0 移动硬盘干扰解决方法"></a>USB3.0 移动硬盘干扰解决方法</h4><p>相信随着USB3.0使用的用户越来越多，不少人遇到了一插上USB3.0的硬盘，wifi就出现降速或者中断的问题。其本质原因是USB 3.0 干扰2.4GHz下的Wifi通讯。</p>
-<p> 解决方法如下，</p>
-<p> 1.更换无线路由为5GHz，因为USB 3.0对5GHz的Wifi干扰程度较低<br> 2.把硬盘盒从USB3.0接口换到USB2.0接口也可以将问题解决<br> 3.使用高质量带屏蔽的USB3.0设备/线缆/接口。或者在USB3.0接口处加屏蔽罩（金属箔即可）<br> 4.最简单的，使用1m以上的高质量USB3.0延长线。将USB3.0设备远离电脑主机。</p>
-<p> Intel官方对USB3.0对WIFI干扰的描述文档：</p>
-<p> <a href="http://www.usb.org/developers/whitepapers/327216.pdf">http://www.usb.org/developers/whitepapers/327216.pdf</a></p>
-<h2 id="目前在调试的两款型号："><a href="#目前在调试的两款型号：" class="headerlink" title="目前在调试的两款型号："></a>目前在调试的两款型号：</h2><h3 id="TL-WN823N"><a href="#TL-WN823N" class="headerlink" title="TL-WN823N"></a>TL-WN823N</h3><ul>
-<li>​         Bus 002 Device 007: ID 0bda:818b</li>
-<li>​         RTL8192EU</li>
-<li>​         300M迷你型无线USB网卡 TL-WN823N</li>
-</ul>
-<h3 id="TL-WN725N"><a href="#TL-WN725N" class="headerlink" title="TL-WN725N"></a>TL-WN725N</h3><ul>
-<li>​         Bus 002 Device 008: ID 0bda:8179</li>
-<li>​         rtl8188eu</li>
-<li>​         150M无线USB网卡 TL-WN725N</li>
-<li>​         网上的驱动版本数据结构和3.10差异较大，不能用</li>
-</ul>
-<h2 id="Wifi芯片厂家"><a href="#Wifi芯片厂家" class="headerlink" title="Wifi芯片厂家"></a>Wifi芯片厂家</h2><h3 id="Realtek："><a href="#Realtek：" class="headerlink" title="Realtek："></a>Realtek：</h3><p>​         官方无linux驱动支持</p>
-<h3 id="Ralink"><a href="#Ralink" class="headerlink" title="Ralink"></a>Ralink</h3><p>（已经被MTK收购）： 官方有linux驱动</p>
-<h3 id="Atheros"><a href="#Atheros" class="headerlink" title="Atheros"></a>Atheros</h3><p>（已经被高通qualcomm收购）：AR9271</p>
-<h2 id="整理推荐芯片型号："><a href="#整理推荐芯片型号：" class="headerlink" title="整理推荐芯片型号："></a>整理推荐芯片型号：</h2><p>USB 2.0 Mbit/s</p>
-<h3 id="rt3070"><a href="#rt3070" class="headerlink" title="rt3070"></a>rt3070</h3><ul>
-<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt3070">http://www.mediatek.cn/products/broadbandWifi/rt3070</a></li>
-<li>IEEE 802.11:b/g/n</li>
-<li>Wi-Fi Frequency:2.4GHz</li>
-<li>Antenna:1T1R</li>
-<li>Data Throughput:150Mbit/s</li>
-</ul>
-<h3 id="rt5370"><a href="#rt5370" class="headerlink" title="rt5370"></a>rt5370</h3><ul>
-<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt5370">http://www.mediatek.cn/products/broadbandWifi/rt5370</a></li>
-<li>IEEE 802.11:b/g/n</li>
-<li>Wi-Fi Frequency:2.4GHz</li>
-<li>Antenna:1T1R</li>
-<li>Data Throughput:150Mbit/s</li>
-</ul>
-<h3 id="RT3573"><a href="#RT3573" class="headerlink" title="RT3573"></a>RT3573</h3><ul>
-<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt3573">http://www.mediatek.cn/products/broadbandWifi/rt3573</a></li>
-<li>IEEE 802.11:b/g/n/ac</li>
-<li>Wi-Fi Frequency:2.4GHz, 5GHz</li>
-<li>Antenna:3T3R</li>
-<li>Data Throughput:450Mbit/s</li>
-</ul>
-<h3 id="RT5572"><a href="#RT5572" class="headerlink" title="RT5572"></a>RT5572</h3><ul>
-<li><a href="http://www.mediatek.cn/products/broadbandWifi/rt5572">http://www.mediatek.cn/products/broadbandWifi/rt5572</a></li>
-<li>IEEE 802.11:b/g/n/ac</li>
-<li>Wi-Fi Frequency:2.4GHz, 5GHz</li>
-<li>Antenna:2T2R</li>
-<li>Data Throughput:300Mbit/s</li>
-</ul>
-<h1 id="集成分析"><a href="#集成分析" class="headerlink" title="集成分析"></a>集成分析</h1><h2 id="3G，4G集成分析"><a href="#3G，4G集成分析" class="headerlink" title="3G，4G集成分析"></a>3G，4G集成分析</h2><p>根据拨号技术流程，现在已经发现的USB上网有三种</p>
-<ul>
-<li>1：默认识别为USB Modem，使用pppoe拨号脚本拨号。</li>
-<li>2：默认识别为usb cdrom，使用usb-modeswitch 转换usb设备工作状态，转换为USB Modem后再采用pppoe拨号脚本拨号。</li>
-<li>3：使用CGI 调用Html链接方式拨号。不需要我们配置用户名密码，网络制式，最方便。</li>
-</ul>
-<h3 id="1：Pppoe拨号"><a href="#1：Pppoe拨号" class="headerlink" title="1：Pppoe拨号"></a>1：Pppoe拨号</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">pppd call wcdma <span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-
-
-<h3 id="2：usb-modeswitch转换usb设备工作模式。"><a href="#2：usb-modeswitch转换usb设备工作模式。" class="headerlink" title="2：usb_modeswitch转换usb设备工作模式。"></a>2：usb_modeswitch转换usb设备工作模式。</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">usb_modeswitch -W -c /etc/usb_modeswitch.d/19D2:0117<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-
-
-<h3 id="3：CGI拨号示例"><a href="#3：CGI拨号示例" class="headerlink" title="3：CGI拨号示例"></a>3：CGI拨号示例</h3><p>从集成实现来说，这种最方便。</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">./curl --header <span class="token string">"Referer: http://192.168.0.1/index.html"</span> http://192.168.0.1/goform/goform_set_cmd_process?goformId<span class="token operator">=</span>SET_CONNECTION_MODE<span class="token operator">&amp;</span><span class="token assign-left variable">ConnectionMode</span><span class="token operator">=</span>auto_dial
-
-./curl --header <span class="token string">"Referer: http://192.168.0.1/index.html"</span> http://192.168.0.1/goform/goform_process?goformId<span class="token operator">=</span>MODE_SWITCH<span class="token operator">&amp;</span><span class="token assign-left variable">switchCmd</span><span class="token operator">=</span>FACTORY<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-
-
-<h2 id="Wifi集成分析"><a href="#Wifi集成分析" class="headerlink" title="Wifi集成分析"></a>Wifi集成分析</h2><p>步骤：</p>
-<ul>
-<li>1：驱动移植识别</li>
-<li>2：wireless_tools或者wpa_supplicant拨号</li>
-</ul>
-<p>wpa_supplicant依赖openssl和libnl，支持PSK加密需要用到这个。wireless_tools只支持普通web加密。</p>
-<h1 id="带宽性能测试"><a href="#带宽性能测试" class="headerlink" title="带宽性能测试"></a>带宽性能测试</h1><p>服务器运行 iperf -s </p>
-<p>客户端运行 iperf -c 服务器ip -t 60000 -i 2</p>
-<pre class="line-numbers language-none"><code class="language-none">iperf -c 192.168.1.100 -t 60000 -i 2
-TP—Link 845<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-
-<p>笔记本有线连接运行服务端, H3531a（2716TE_C）使用TL-WN823N连接</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">[</span>root@Tvt iperf<span class="token punctuation">]</span><span class="token comment"># ./iperf.hisi3531A -c 192.168.1.100 -t 60000 -i 2</span>
-<span class="token punctuation">\</span>------------------------------------------------------------
-Client connecting to <span class="token number">192.168</span>.1.100, TCP port <span class="token number">5001</span>
-TCP window size: <span class="token number">21.0</span> KByte <span class="token punctuation">(</span>default<span class="token punctuation">)</span>
-<span class="token punctuation">\</span>------------------------------------------------------------
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token builtin class-name">local</span> <span class="token number">192.168</span>.1.103 port <span class="token number">47671</span> connected with <span class="token number">192.168</span>.1.100 port <span class="token number">5001</span>
-<span class="token punctuation">[</span> ID<span class="token punctuation">]</span> Interval    Transfer   Bandwidth
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">0.0</span>- <span class="token number">2.0</span> sec <span class="token number">2.25</span> MBytes <span class="token number">9.44</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">2.0</span>- <span class="token number">4.0</span> sec  <span class="token number">256</span> KBytes <span class="token number">1.05</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">4.0</span>- <span class="token number">6.0</span> sec  <span class="token number">128</span> KBytes  <span class="token number">524</span> Kbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">6.0</span>- <span class="token number">8.0</span> sec  <span class="token number">256</span> KBytes <span class="token number">1.05</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">8.0</span>-10.0 sec <span class="token number">1.25</span> MBytes <span class="token number">5.24</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">10.0</span>-12.0 sec <span class="token number">3.75</span> MBytes <span class="token number">15.7</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">12.0</span>-14.0 sec <span class="token number">4.25</span> MBytes <span class="token number">17.8</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">14.0</span>-16.0 sec <span class="token number">3.13</span> MBytes <span class="token number">13.1</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">16.0</span>-18.0 sec <span class="token number">1.75</span> MBytes <span class="token number">7.34</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">18.0</span>-20.0 sec <span class="token number">1.38</span> MBytes <span class="token number">5.77</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">20.0</span>-22.0 sec <span class="token number">1.13</span> MBytes <span class="token number">4.72</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">22.0</span>-24.0 sec  <span class="token number">256</span> KBytes <span class="token number">1.05</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">24.0</span>-26.0 sec  <span class="token number">128</span> KBytes  <span class="token number">524</span> Kbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">26.0</span>-28.0 sec  <span class="token number">128</span> KBytes  <span class="token number">524</span> Kbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">28.0</span>-30.0 sec  <span class="token number">512</span> KBytes <span class="token number">2.10</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">30.0</span>-32.0 sec <span class="token number">2.88</span> MBytes <span class="token number">12.1</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">32.0</span>-34.0 sec <span class="token number">1.63</span> MBytes <span class="token number">6.82</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">34.0</span>-36.0 sec <span class="token number">3.50</span> MBytes <span class="token number">14.7</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">36.0</span>-38.0 sec  <span class="token number">768</span> KBytes <span class="token number">3.15</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">38.0</span>-40.0 sec <span class="token number">4.38</span> MBytes <span class="token number">18.4</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">40.0</span>-42.0 sec <span class="token number">5.38</span> MBytes <span class="token number">22.5</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">42.0</span>-44.0 sec <span class="token number">7.13</span> MBytes <span class="token number">29.9</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">44.0</span>-46.0 sec <span class="token number">6.63</span> MBytes <span class="token number">27.8</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">46.0</span>-48.0 sec <span class="token number">5.38</span> MBytes <span class="token number">22.5</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">48.0</span>-50.0 sec <span class="token number">5.75</span> MBytes <span class="token number">24.1</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">50.0</span>-52.0 sec <span class="token number">7.50</span> MBytes <span class="token number">31.5</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">52.0</span>-54.0 sec <span class="token number">4.63</span> MBytes <span class="token number">19.4</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">54.0</span>-56.0 sec <span class="token number">7.50</span> MBytes <span class="token number">31.5</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">56.0</span>-58.0 sec <span class="token number">6.75</span> MBytes <span class="token number">28.3</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">58.0</span>-60.0 sec <span class="token number">5.13</span> MBytes <span class="token number">21.5</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">60.0</span>-62.0 sec <span class="token number">5.38</span> MBytes <span class="token number">22.5</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">62.0</span>-64.0 sec <span class="token number">4.75</span> MBytes <span class="token number">19.9</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">64.0</span>-66.0 sec <span class="token number">6.00</span> MBytes <span class="token number">25.2</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">66.0</span>-68.0 sec <span class="token number">3.50</span> MBytes <span class="token number">14.7</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">68.0</span>-70.0 sec <span class="token number">5.50</span> MBytes <span class="token number">23.1</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">70.0</span>-72.0 sec <span class="token number">4.75</span> MBytes <span class="token number">19.9</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">72.0</span>-74.0 sec <span class="token number">1.50</span> MBytes <span class="token number">6.29</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">74.0</span>-76.0 sec <span class="token number">4.50</span> MBytes <span class="token number">18.9</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">76.0</span>-78.0 sec <span class="token number">4.25</span> MBytes <span class="token number">17.8</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">78.0</span>-80.0 sec <span class="token number">5.13</span> MBytes <span class="token number">21.5</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">80.0</span>-82.0 sec <span class="token number">7.88</span> MBytes <span class="token number">33.0</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">82.0</span>-84.0 sec <span class="token number">7.38</span> MBytes <span class="token number">30.9</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">84.0</span>-86.0 sec <span class="token number">4.38</span> MBytes <span class="token number">18.4</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">86.0</span>-88.0 sec <span class="token number">5.25</span> MBytes <span class="token number">22.0</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">88.0</span>-90.0 sec <span class="token number">6.63</span> MBytes <span class="token number">27.8</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">90.0</span>-92.0 sec <span class="token number">5.00</span> MBytes <span class="token number">21.0</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">92.0</span>-94.0 sec <span class="token number">6.88</span> MBytes <span class="token number">28.8</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">94.0</span>-96.0 sec <span class="token number">8.25</span> MBytes <span class="token number">34.6</span> Mbits/sec
-<span class="token punctuation">[</span> <span class="token number">3</span><span class="token punctuation">]</span> <span class="token number">96.0</span>-98.0 sec <span class="token number">7.25</span> MBytes <span class="token number">30.4</span> Mbits/sec<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-
-
-<h1 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h1><h2 id="1：TD-LTE和LTE-FDD标准差异"><a href="#1：TD-LTE和LTE-FDD标准差异" class="headerlink" title="1：TD- LTE和LTE FDD标准差异"></a>1：TD- LTE和LTE FDD标准差异</h2><p> TD- LTE是我国自主研发的4G标准，是由TD-SCDMA（3G网络）发展而来。</p>
-<p>LTE FDD是现在国际上主流的，使用最广泛的4G网络。</p>
-<p>现在全球有超过200个LTE的商用网络，其中超过90%是FDD的。</p>
-<p>从技术上说，TD- LTE采用的是时分双工，而LTE FDD采用的是频分双工</p>
-<p>那什么是频分双工，什么又是时分双工呢？</p>
-<p>先来解释“双工”。</p>
-<p>移动通信系统的工作方式分为：单工、半双工和全双工</p>
-<p>1，单工就是信息只能向一个方向传播。例如寻呼机和收音机，只能接收信息，不能发出信息。</p>
-<p>2，半双工就是信息可以双向传播，但是上传信息的时候只能上传，下载的时候只能下载。例如对讲机，你说话的时候听不见别人别人说，听别人说的时候自己不能说。</p>
-<p>3， 全双工就是信息可以同时双向传播。例如手机，可以边听边说。<br> 其中全双工又分为：时分双工TDD，与频分双工FDD。</p>
-<p>​    所谓的频分双工就是将信息上传和信息下载放在两个不同的频段，称为上行频段和下行频段，且这两个频段必须对称。为了不防止上下行频段之间的信息串频，两个频段不能重叠，而且中间必须隔开一段，称为保护频。如下图：上行和下行频段相互分开</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730142158.jpg" alt="保护帧"></p>
-<p>  所谓的时分双工就是将上传和下载放在同一个频段，也就是上行频段和下行频段完全一样。那它是如何做到上下的信息不串频呢？其实很简单，顾名思义，频分双工分的是频段，那时分双工分的就是时间。将波传播的时间轴一分为二，</p>
-<p>前半部分用于信息的上传，后一部分用于信息的下载。其实这从理论上更像是同步的半双工，但是由于上行和下行时间差距极短，我们无法感觉到，所以从效果上也是全双工。如下图：时间帧的第一帧为上行，第二帧而为下行，上下行共用一个频段，用时间的差将他们隔开。</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/07/3020210730142220.jpg" alt="数据帧"></p>
-<p>​    接下来说一说移动TD- LTE和电信联通LTE FDD的优缺点，其实就是时分双工与频分双工的特点。</p>
-<p>​     TD- LTE由于采用上行和下行分时，所以上行和下行的时间差导致他信息传输的速度受到一定的限制。他的理论下载峰值为100Mbps，相比FDD的150Mbps来说，慢了不少。当然TD- LTE的基站信号覆盖半径也比LTE FDD小一点。</p>
-<p>​    LTE FDD也并非都是优点。FDD制式必须要找对称分开的上行、下行频段，也就是说它必须浪费更多的频段资源。那中国联通的FDD网为例，工信部给他发的频段牌照为，上行1755<del>1765MHz和下行1850</del>1860MHz（2×10M），实际联通只得到了上下各10M的频段，但是加上当中的保护频段，一共占用了1755~1860MHz也就是105MHz的频段。这就导致了频段资源利用率低，是一种资源的浪费。目前，频率资源本身就紧张，能找到对称的上行和下行频段就尤其难。频率除了用在手机上网通讯上，像广播，军事,甚至无线路由器等民用领域也广泛使用。将来随着科技的进步，频率频段的稀缺会日益严重。</p>
-<p>​    TD-LTE和FDD-LTE 是4G的两种国际标准，各有利弊。TD-LTE占用频段少，节省资源，带宽长，适合区域热点覆盖；FDD速度更快，覆盖更广，但占用资源多。适合广域覆盖。</p>
-<hr>
-]]></content>
-      <categories>
-        <category>embeded</category>
-      </categories>
-      <tags>
-        <tag>Linux</tag>
-        <tag>嵌入式</tag>
-        <tag>embeded</tag>
-        <tag>3G</tag>
-        <tag>4G</tag>
-        <tag>3531a</tag>
-        <tag>移植</tag>
       </tags>
   </entry>
   <entry>
