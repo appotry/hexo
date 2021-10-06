@@ -1,4 +1,968 @@
-<!DOCTYPE HTML><html lang="zh-CN"><head><meta charset="utf-8"><meta name="keywords" content="web, http, css, js"><meta name="description" content=""><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><meta name="renderer" content="webkit|ie-stand|ie-comp"><meta name="mobile-web-app-capable" content="yes"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="referrer" content="no-referrer-when-downgrade"><script async src="https://www.googletagmanager.com/gtag/js?id=G-JNYZP4ZLDJ"></script><script>function gtag(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],gtag("js",new Date),gtag("config","G-JNYZP4ZLDJ")</script><title>浏览器的渲染过程 | 夜法之书</title><link rel="manifest" href="/manifest.json"><link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/favicon.png"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/awesome/css/all.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/materialize/materialize.min.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/aos/aos.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/animate/animate.min.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/lightGallery/css/lightgallery.min.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/css/matery.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/css/my.css"><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/jquery/jquery.min.js"></script><meta name="generator" content="Hexo 5.4.0"><style>.github-emoji{position:relative;display:inline-block;width:1.2em;min-height:1.2em;overflow:hidden;vertical-align:top;color:transparent}.github-emoji>span{position:relative;z-index:10}.github-emoji .fancybox,.github-emoji img{margin:0!important;padding:0!important;border:none!important;outline:0!important;text-decoration:none!important;user-select:none!important;cursor:auto!important}.github-emoji img{height:1.2em!important;width:1.2em!important;position:absolute!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;user-select:none!important;cursor:auto!important}.github-emoji-fallback{color:inherit}.github-emoji-fallback img{opacity:0!important}</style><link rel="alternate" href="/atom.xml" title="夜法之书" type="application/atom+xml"></head><body><header class="navbar-fixed"><nav id="headNav" class="bg-color nav-transparent"><div id="navContainer" class="nav-wrapper container"><div class="brand-logo"> <a href="/" class="waves-effect waves-light"><img src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/medias/logo.png" class="logo-img" alt="LOGO"> <span class="logo-span">夜法之书</span></a></div><a href="#" data-target="mobile-nav" class="sidenav-trigger button-collapse"><i class="fas fa-bars"></i></a><ul class="right nav-menu"><li class="hide-on-med-and-down nav-item"><a href="/" class="waves-effect waves-light"><i class="fas fa-home" style="zoom:.6"></i> <span>首页</span></a></li><li class="hide-on-med-and-down nav-item"><a href="/tags" class="waves-effect waves-light"><i class="fas fa-tags" style="zoom:.6"></i> <span>标签</span></a></li><li class="hide-on-med-and-down nav-item"><a href="/categories" class="waves-effect waves-light"><i class="fas fa-bookmark" style="zoom:.6"></i> <span>分类</span></a></li><li class="hide-on-med-and-down nav-item"><a href="/archives" class="waves-effect waves-light"><i class="fas fa-archive" style="zoom:.6"></i> <span>归档</span></a></li><li class="hide-on-med-and-down nav-item"><a href="/friends" class="waves-effect waves-light"><i class="fas fa-link" style="zoom:.6"></i> <span>友链</span></a></li><li class="hide-on-med-and-down nav-item"><a href="" class="waves-effect waves-light"><i class="fas fa-comments" style="zoom:.6"></i> <span>交流</span><i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li><a href="/contact"><i class="fas fa-comments" style="margin-top:-20px;zoom:.6"></i> <span>留言</span></a></li><li><a href="/bb"><i class="fas fa-bullhorn" style="margin-top:-20px;zoom:.6"></i> <span>哔哔</span></a></li><li><a target="_blank" rel="noopener" href="https://t.me/joinchat/Sg3__qc4LBE2VsLO"><i class="fab fa-telegram-plane" style="margin-top:-20px;zoom:.6"></i> <span>TG群</span></a></li></ul></li><li class="hide-on-med-and-down nav-item"><a href="" class="waves-effect waves-light"><i class="fas fa-code" style="zoom:.6"></i> <span>快查</span><i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li><a href="/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/"><i class="fab fa-vimeo-v" style="margin-top:-20px;zoom:.6"></i> <span>Vim快查表</span></a></li><li><a href="/cheatsheets/Visual_Studio_Code.docset/Contents/Resources/Documents/"><i class="fas fa-code" style="margin-top:-20px;zoom:.6"></i> <span>VSCode快查表</span></a></li><li><a href="/cheatsheets/Git.docset/Contents/Resources/Documents/"><i class="fab fa-git-square" style="margin-top:-20px;zoom:.6"></i> <span>Git快查表</span></a></li><li><a href="/cheatsheets/SQLite.docset/Contents/Resources/Documents/"><i class="fas fa-database" style="margin-top:-20px;zoom:.6"></i> <span>SQLite快查表</span></a></li><li><a href="/cheatsheets/tmux.docset/Contents/Resources/Documents/"><i class="fas fa-terminal" style="margin-top:-20px;zoom:.6"></i> <span>Tmux快查表</span></a></li><li><a href="/cheatsheets/Bash_Shortcuts.docset/Contents/Resources/Documents/"><i class="fas fa-terminal" style="margin-top:-20px;zoom:.6"></i> <span>Bash快查表</span></a></li><li><a href="/cheatsheets/"><i class="fas fa-laptop-code" style="margin-top:-20px;zoom:.6"></i> <span>更多快查表</span></a></li></ul></li><li class="hide-on-med-and-down nav-item"><a href="" class="waves-effect waves-light"><i class="fas fa-laptop-code" style="zoom:.6"></i> <span>项目</span><i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li><a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/drop-in"><i class="fab fa-docker" style="margin-top:-20px;zoom:.6"></i> <span>Docker:VimIDE</span></a></li><li><a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/hexo"><i class="fab fa-docker" style="margin-top:-20px;zoom:.6"></i> <span>Docker:hexo</span></a></li><li><a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/v2fly-privoxy"><i class="fab fa-docker" style="margin-top:-20px;zoom:.6"></i> <span>Docker:v2fly-privoxy</span></a></li><li><a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/nginx-purge"><i class="fab fa-docker" style="margin-top:-20px;zoom:.6"></i> <span>Docker:nginx-purge</span></a></li><li><a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/rclonebrowser"><i class="fab fa-docker" style="margin-top:-20px;zoom:.6"></i> <span>Docker:rclonebrowser</span></a></li><li><a target="_blank" rel="noopener" href="https://github.com/appotry/PTtool"><i class="fab fa-linux" style="margin-top:-20px;zoom:.6"></i> <span>LinuxHarkLinkTools</span></a></li><li><a target="_blank" rel="noopener" href="https://github.com/appotry/"><i class="fab fa-github" style="margin-top:-20px;zoom:.6"></i> <span>更多项目</span></a></li></ul></li><li class="hide-on-med-and-down nav-item"><a href="" class="waves-effect waves-light"><i class="fas fa-toolbox" style="zoom:.6"></i> <span>工具</span><i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li><a target="_blank" rel="noopener" href="https://linux-command.17lai.site/"><i class="fas fa-terminal" style="margin-top:-20px;zoom:.6"></i> <span>Linux命令查询</span></a></li><li><a target="_blank" rel="noopener" href="http://encode.chahuo.com/"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>在线加密解密</span></a></li><li><a target="_blank" rel="noopener" href="https://markmap.js.org/repl"><i class="fas fa-brain" style="margin-top:-20px;zoom:.6"></i> <span>在线思维导图</span></a></li><li><a target="_blank" rel="noopener" href="https://fontawesome.com/v5.15/icons"><i class="fab fa-font-awesome" style="margin-top:-20px;zoom:.6"></i> <span>Awesome图标</span></a></li><li><a target="_blank" rel="noopener" href="http://ping.chinaz.com/"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>在线站长工具</span></a></li><li><a target="_blank" rel="noopener" href="http://tool.chinaz.com/port/"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>在线端口扫描</span></a></li><li><a target="_blank" rel="noopener" href="https://music.17lai.site/"><i class="fas fa-music" style="margin-top:-20px;zoom:.6"></i> <span>私人音乐播放</span></a></li><li><a target="_blank" rel="noopener" href="https://rclone.17lai.site/"><i class="fas fa-music" style="margin-top:-20px;zoom:.6"></i> <span>私人网盘管理</span></a></li><li><a target="_blank" rel="noopener" href="https://docker.17lai.site/"><i class="fab fa-docker" style="margin-top:-20px;zoom:.6"></i> <span>私人服务管理</span></a></li></ul></li><li class="hide-on-med-and-down nav-item"><a href="" class="waves-effect waves-light"><i class="fas fa-id-badge" style="zoom:.6"></i> <span>关于</span><i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li><a href="/about"><i class="fas fa-user-circle" style="margin-top:-20px;zoom:.6"></i> <span>关于我</span></a></li><li><a href="/aboutme/mytech/"><i class="fas fa-address-card" style="margin-top:-20px;zoom:.6"></i> <span>我的技术</span></a></li><li><a href="/aboutme/myproject/"><i class="fas fa-laptop-code" style="margin-top:-20px;zoom:.6"></i> <span>我的项目</span></a></li><li><a href="/aboutme/mypost/"><i class="fas fa-pen-nib" style="margin-top:-20px;zoom:.6"></i> <span>我的文章</span></a></li><li><a href="/aboutme/needtoread/"><i class="fas fa-exclamation-circle" style="margin-top:-20px;zoom:.6"></i> <span>博客须知</span></a></li></ul></li><li><a href="#searchModal" class="modal-trigger waves-effect waves-light"><i id="searchIcon" class="fas fa-search" title="搜索" style="zoom:.85"></i></a></li></ul><div id="mobile-nav" class="side-nav sidenav"><div class="mobile-head bg-color"> <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/medias/logo.png" class="logo-img circle responsive-img"><div class="logo-name">夜法之书</div><div class="logo-desc"> Never really desperate, only the lost of the soul.</div></div><ul class="menu-list mobile-menu-list"><li class="m-nav-item"><a href="/" class="waves-effect waves-light"><i class="fa-fw fas fa-home"></i> 首页</a></li><li class="m-nav-item"><a href="/tags" class="waves-effect waves-light"><i class="fa-fw fas fa-tags"></i> 标签</a></li><li class="m-nav-item"><a href="/categories" class="waves-effect waves-light"><i class="fa-fw fas fa-bookmark"></i> 分类</a></li><li class="m-nav-item"><a href="/archives" class="waves-effect waves-light"><i class="fa-fw fas fa-archive"></i> 归档</a></li><li class="m-nav-item"><a href="/friends" class="waves-effect waves-light"><i class="fa-fw fas fa-link"></i> 友链</a></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-comments"></i> 交流<span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul style=""><li><a href="/contact" style="margin-left:75px"><i class="fa fas fa-comments" style="position:absolute;left:50px"></i> <span>留言</span></a></li><li><a href="/bb" style="margin-left:75px"><i class="fa fas fa-bullhorn" style="position:absolute;left:50px"></i> <span>哔哔</span></a></li><li><a target="_blank" rel="noopener" href="https://t.me/joinchat/Sg3__qc4LBE2VsLO" style="margin-left:75px"><i class="fa fab fa-telegram-plane" style="position:absolute;left:50px"></i> <span>TG群</span></a></li></ul></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-code"></i> 快查<span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul style=""><li><a href="/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fab fa-vimeo-v" style="position:absolute;left:50px"></i> <span>Vim快查表</span></a></li><li><a href="/cheatsheets/Visual_Studio_Code.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fas fa-code" style="position:absolute;left:50px"></i> <span>VSCode快查表</span></a></li><li><a href="/cheatsheets/Git.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fab fa-git-square" style="position:absolute;left:50px"></i> <span>Git快查表</span></a></li><li><a href="/cheatsheets/SQLite.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fas fa-database" style="position:absolute;left:50px"></i> <span>SQLite快查表</span></a></li><li><a href="/cheatsheets/tmux.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fas fa-terminal" style="position:absolute;left:50px"></i> <span>Tmux快查表</span></a></li><li><a href="/cheatsheets/Bash_Shortcuts.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fas fa-terminal" style="position:absolute;left:50px"></i> <span>Bash快查表</span></a></li><li><a href="/cheatsheets/" style="margin-left:75px"><i class="fa fas fa-laptop-code" style="position:absolute;left:50px"></i> <span>更多快查表</span></a></li></ul></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-laptop-code"></i> 项目<span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul style=""><li><a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/drop-in" style="margin-left:75px"><i class="fa fab fa-docker" style="position:absolute;left:50px"></i> <span>Docker:VimIDE</span></a></li><li><a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/hexo" style="margin-left:75px"><i class="fa fab fa-docker" style="position:absolute;left:50px"></i> <span>Docker:hexo</span></a></li><li><a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/v2fly-privoxy" style="margin-left:75px"><i class="fa fab fa-docker" style="position:absolute;left:50px"></i> <span>Docker:v2fly-privoxy</span></a></li><li><a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/nginx-purge" style="margin-left:75px"><i class="fa fab fa-docker" style="position:absolute;left:50px"></i> <span>Docker:nginx-purge</span></a></li><li><a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/rclonebrowser" style="margin-left:75px"><i class="fa fab fa-docker" style="position:absolute;left:50px"></i> <span>Docker:rclonebrowser</span></a></li><li><a target="_blank" rel="noopener" href="https://github.com/appotry/PTtool" style="margin-left:75px"><i class="fa fab fa-linux" style="position:absolute;left:50px"></i> <span>LinuxHarkLinkTools</span></a></li><li><a target="_blank" rel="noopener" href="https://github.com/appotry/" style="margin-left:75px"><i class="fa fab fa-github" style="position:absolute;left:50px"></i> <span>更多项目</span></a></li></ul></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-toolbox"></i> 工具<span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul style=""><li><a target="_blank" rel="noopener" href="https://linux-command.17lai.site/" style="margin-left:75px"><i class="fa fas fa-terminal" style="position:absolute;left:50px"></i> <span>Linux命令查询</span></a></li><li><a target="_blank" rel="noopener" href="http://encode.chahuo.com/" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>在线加密解密</span></a></li><li><a target="_blank" rel="noopener" href="https://markmap.js.org/repl" style="margin-left:75px"><i class="fa fas fa-brain" style="position:absolute;left:50px"></i> <span>在线思维导图</span></a></li><li><a target="_blank" rel="noopener" href="https://fontawesome.com/v5.15/icons" style="margin-left:75px"><i class="fa fab fa-font-awesome" style="position:absolute;left:50px"></i> <span>Awesome图标</span></a></li><li><a target="_blank" rel="noopener" href="http://ping.chinaz.com/" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>在线站长工具</span></a></li><li><a target="_blank" rel="noopener" href="http://tool.chinaz.com/port/" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>在线端口扫描</span></a></li><li><a target="_blank" rel="noopener" href="https://music.17lai.site/" style="margin-left:75px"><i class="fa fas fa-music" style="position:absolute;left:50px"></i> <span>私人音乐播放</span></a></li><li><a target="_blank" rel="noopener" href="https://rclone.17lai.site/" style="margin-left:75px"><i class="fa fas fa-music" style="position:absolute;left:50px"></i> <span>私人网盘管理</span></a></li><li><a target="_blank" rel="noopener" href="https://docker.17lai.site/" style="margin-left:75px"><i class="fa fab fa-docker" style="position:absolute;left:50px"></i> <span>私人服务管理</span></a></li></ul></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-id-badge"></i> 关于<span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul style=""><li><a href="/about" style="margin-left:75px"><i class="fa fas fa-user-circle" style="position:absolute;left:50px"></i> <span>关于我</span></a></li><li><a href="/aboutme/mytech/" style="margin-left:75px"><i class="fa fas fa-address-card" style="position:absolute;left:50px"></i> <span>我的技术</span></a></li><li><a href="/aboutme/myproject/" style="margin-left:75px"><i class="fa fas fa-laptop-code" style="position:absolute;left:50px"></i> <span>我的项目</span></a></li><li><a href="/aboutme/mypost/" style="margin-left:75px"><i class="fa fas fa-pen-nib" style="position:absolute;left:50px"></i> <span>我的文章</span></a></li><li><a href="/aboutme/needtoread/" style="margin-left:75px"><i class="fa fas fa-exclamation-circle" style="position:absolute;left:50px"></i> <span>博客须知</span></a></li></ul></li></ul></div></div></nav></header><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/cryptojs/crypto-js.min.js"></script><script>
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="keywords" content="web, http, css, js">
+    <meta name="description" content="">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="renderer" content="webkit|ie-stand|ie-comp">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JNYZP4ZLDJ"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+        dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+    gtag('config', 'G-JNYZP4ZLDJ');
+</script>
+
+
+    <title>浏览器的渲染过程 | 夜法之书</title>
+    <!-- hexo-offline -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/favicon.png">
+
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/awesome/css/all.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/materialize/materialize.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/aos/aos.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/animate/animate.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/lightGallery/css/lightgallery.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/css/matery.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/css/my.css">
+
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/jquery/jquery.min.js"></script>
+
+<meta name="generator" content="Hexo 5.4.0">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="夜法之书" type="application/atom+xml">
+</head>
+
+
+
+
+<body>
+    <header class="navbar-fixed">
+    <nav id="headNav" class="bg-color nav-transparent">
+        <div id="navContainer" class="nav-wrapper container">
+            <div class="brand-logo">
+                <a href="/" class="waves-effect waves-light">
+                    
+                    <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/medias/logo.png" class="logo-img" alt="LOGO">
+                    
+                    <span class="logo-span">夜法之书</span>
+                </a>
+            </div>
+            
+
+<a href="#" data-target="mobile-nav" class="sidenav-trigger button-collapse"><i class="fas fa-bars"></i></a>
+<ul class="right nav-menu">
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/" class="waves-effect waves-light">
+      
+      <i class="fas fa-home" style="zoom: 0.6;"></i>
+      
+      <span>首页</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/tags" class="waves-effect waves-light">
+      
+      <i class="fas fa-tags" style="zoom: 0.6;"></i>
+      
+      <span>标签</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/categories" class="waves-effect waves-light">
+      
+      <i class="fas fa-bookmark" style="zoom: 0.6;"></i>
+      
+      <span>分类</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/archives" class="waves-effect waves-light">
+      
+      <i class="fas fa-archive" style="zoom: 0.6;"></i>
+      
+      <span>归档</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/friends" class="waves-effect waves-light">
+      
+      <i class="fas fa-link" style="zoom: 0.6;"></i>
+      
+      <span>友链</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="" class="waves-effect waves-light">
+
+      
+      <i class="fas fa-comments" style="zoom: 0.6;"></i>
+      
+      <span>交流</span>
+      <i class="fas fa-chevron-down" aria-hidden="true" style="zoom: 0.6;"></i>
+    </a>
+    <ul class="sub-nav menus_item_child ">
+      
+      <li>
+        <a href="/contact">
+          
+          <i class="fas fa-comments" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>留言</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/bb">
+          
+          <i class="fas fa-bullhorn" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>哔哔</span>
+        </a>
+      </li>
+      
+      <li>
+        <a target="_blank" rel="noopener" href="https://t.me/joinchat/Sg3__qc4LBE2VsLO">
+          
+          <i class="fab fa-telegram-plane" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>TG群</span>
+        </a>
+      </li>
+      
+    </ul>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="" class="waves-effect waves-light">
+
+      
+      <i class="fas fa-code" style="zoom: 0.6;"></i>
+      
+      <span>快查</span>
+      <i class="fas fa-chevron-down" aria-hidden="true" style="zoom: 0.6;"></i>
+    </a>
+    <ul class="sub-nav menus_item_child ">
+      
+      <li>
+        <a href="/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/">
+          
+          <i class="fab fa-vimeo-v" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Vim快查表</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/cheatsheets/Visual_Studio_Code.docset/Contents/Resources/Documents/">
+          
+          <i class="fas fa-code" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>VSCode快查表</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/cheatsheets/Git.docset/Contents/Resources/Documents/">
+          
+          <i class="fab fa-git-square" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Git快查表</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/cheatsheets/SQLite.docset/Contents/Resources/Documents/">
+          
+          <i class="fas fa-database" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>SQLite快查表</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/cheatsheets/tmux.docset/Contents/Resources/Documents/">
+          
+          <i class="fas fa-terminal" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Tmux快查表</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/cheatsheets/Bash_Shortcuts.docset/Contents/Resources/Documents/">
+          
+          <i class="fas fa-terminal" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Bash快查表</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/cheatsheets/">
+          
+          <i class="fas fa-laptop-code" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>更多快查表</span>
+        </a>
+      </li>
+      
+    </ul>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="" class="waves-effect waves-light">
+
+      
+      <i class="fas fa-laptop-code" style="zoom: 0.6;"></i>
+      
+      <span>项目</span>
+      <i class="fas fa-chevron-down" aria-hidden="true" style="zoom: 0.6;"></i>
+    </a>
+    <ul class="sub-nav menus_item_child ">
+      
+      <li>
+        <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/drop-in">
+          
+          <i class="fab fa-docker" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Docker:VimIDE</span>
+        </a>
+      </li>
+      
+      <li>
+        <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/hexo">
+          
+          <i class="fab fa-docker" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Docker:hexo</span>
+        </a>
+      </li>
+      
+      <li>
+        <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/v2fly-privoxy">
+          
+          <i class="fab fa-docker" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Docker:v2fly-privoxy</span>
+        </a>
+      </li>
+      
+      <li>
+        <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/nginx-purge">
+          
+          <i class="fab fa-docker" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Docker:nginx-purge</span>
+        </a>
+      </li>
+      
+      <li>
+        <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/rclonebrowser">
+          
+          <i class="fab fa-docker" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Docker:rclonebrowser</span>
+        </a>
+      </li>
+      
+      <li>
+        <a target="_blank" rel="noopener" href="https://github.com/appotry/PTtool">
+          
+          <i class="fab fa-linux" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>LinuxHarkLinkTools</span>
+        </a>
+      </li>
+      
+      <li>
+        <a target="_blank" rel="noopener" href="https://github.com/appotry/">
+          
+          <i class="fab fa-github" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>更多项目</span>
+        </a>
+      </li>
+      
+    </ul>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="" class="waves-effect waves-light">
+
+      
+      <i class="fas fa-toolbox" style="zoom: 0.6;"></i>
+      
+      <span>工具</span>
+      <i class="fas fa-chevron-down" aria-hidden="true" style="zoom: 0.6;"></i>
+    </a>
+    <ul class="sub-nav menus_item_child ">
+      
+      <li>
+        <a target="_blank" rel="noopener" href="https://linux-command.17lai.site/">
+          
+          <i class="fas fa-terminal" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Linux命令查询</span>
+        </a>
+      </li>
+      
+      <li>
+        <a target="_blank" rel="noopener" href="http://encode.chahuo.com/">
+          
+          <i class="fas fa-tools" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>在线加密解密</span>
+        </a>
+      </li>
+      
+      <li>
+        <a target="_blank" rel="noopener" href="https://markmap.js.org/repl">
+          
+          <i class="fas fa-brain" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>在线思维导图</span>
+        </a>
+      </li>
+      
+      <li>
+        <a target="_blank" rel="noopener" href="https://fontawesome.com/v5.15/icons">
+          
+          <i class="fab fa-font-awesome" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Awesome图标</span>
+        </a>
+      </li>
+      
+      <li>
+        <a target="_blank" rel="noopener" href="http://ping.chinaz.com/">
+          
+          <i class="fas fa-tools" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>在线站长工具</span>
+        </a>
+      </li>
+      
+      <li>
+        <a target="_blank" rel="noopener" href="http://tool.chinaz.com/port/">
+          
+          <i class="fas fa-tools" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>在线端口扫描</span>
+        </a>
+      </li>
+      
+      <li>
+        <a target="_blank" rel="noopener" href="https://music.17lai.site/">
+          
+          <i class="fas fa-music" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>私人音乐播放</span>
+        </a>
+      </li>
+      
+      <li>
+        <a target="_blank" rel="noopener" href="https://rclone.17lai.site/">
+          
+          <i class="fas fa-music" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>私人网盘管理</span>
+        </a>
+      </li>
+      
+      <li>
+        <a target="_blank" rel="noopener" href="https://docker.17lai.site/">
+          
+          <i class="fab fa-docker" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>私人服务管理</span>
+        </a>
+      </li>
+      
+    </ul>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="" class="waves-effect waves-light">
+
+      
+      <i class="fas fa-id-badge" style="zoom: 0.6;"></i>
+      
+      <span>关于</span>
+      <i class="fas fa-chevron-down" aria-hidden="true" style="zoom: 0.6;"></i>
+    </a>
+    <ul class="sub-nav menus_item_child ">
+      
+      <li>
+        <a href="/about">
+          
+          <i class="fas fa-user-circle" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>关于我</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/aboutme/mytech/">
+          
+          <i class="fas fa-address-card" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>我的技术</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/aboutme/myproject/">
+          
+          <i class="fas fa-laptop-code" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>我的项目</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/aboutme/mypost/">
+          
+          <i class="fas fa-pen-nib" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>我的文章</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/aboutme/needtoread/">
+          
+          <i class="fas fa-exclamation-circle" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>博客须知</span>
+        </a>
+      </li>
+      
+    </ul>
+    
+  </li>
+  
+  <li>
+    <a href="#searchModal" class="modal-trigger waves-effect waves-light">
+      <i id="searchIcon" class="fas fa-search" title="搜索" style="zoom: 0.85;"></i>
+    </a>
+  </li>
+</ul>
+
+
+<div id="mobile-nav" class="side-nav sidenav">
+
+    <div class="mobile-head bg-color">
+        
+        <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/medias/logo.png" class="logo-img circle responsive-img">
+        
+        <div class="logo-name">夜法之书</div>
+        <div class="logo-desc">
+            
+            Never really desperate, only the lost of the soul.
+            
+        </div>
+    </div>
+
+    
+
+    <ul class="menu-list mobile-menu-list">
+        
+        <li class="m-nav-item">
+	  
+		<a href="/" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-home"></i>
+			
+			首页
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/tags" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-tags"></i>
+			
+			标签
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/categories" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-bookmark"></i>
+			
+			分类
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/archives" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-archive"></i>
+			
+			归档
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/friends" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-link"></i>
+			
+			友链
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="javascript:;">
+			
+				<i class="fa-fw fas fa-comments"></i>
+			
+			交流
+			<span class="m-icon"><i class="fas fa-chevron-right"></i></span>
+		</a>
+            <ul  style="background:  ;" >
+              
+                <li>
+
+                  <a href="/contact " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-comments" style="position: absolute;left:50px" ></i>
+			      
+		          <span>留言</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/bb " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-bullhorn" style="position: absolute;left:50px" ></i>
+			      
+		          <span>哔哔</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="https://t.me/joinchat/Sg3__qc4LBE2VsLO " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-telegram-plane" style="position: absolute;left:50px" ></i>
+			      
+		          <span>TG群</span>
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="javascript:;">
+			
+				<i class="fa-fw fas fa-code"></i>
+			
+			快查
+			<span class="m-icon"><i class="fas fa-chevron-right"></i></span>
+		</a>
+            <ul  style="background:  ;" >
+              
+                <li>
+
+                  <a href="/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/ " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-vimeo-v" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Vim快查表</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/cheatsheets/Visual_Studio_Code.docset/Contents/Resources/Documents/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-code" style="position: absolute;left:50px" ></i>
+			      
+		          <span>VSCode快查表</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/cheatsheets/Git.docset/Contents/Resources/Documents/ " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-git-square" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Git快查表</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/cheatsheets/SQLite.docset/Contents/Resources/Documents/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-database" style="position: absolute;left:50px" ></i>
+			      
+		          <span>SQLite快查表</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/cheatsheets/tmux.docset/Contents/Resources/Documents/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-terminal" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Tmux快查表</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/cheatsheets/Bash_Shortcuts.docset/Contents/Resources/Documents/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-terminal" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Bash快查表</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/cheatsheets/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-laptop-code" style="position: absolute;left:50px" ></i>
+			      
+		          <span>更多快查表</span>
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="javascript:;">
+			
+				<i class="fa-fw fas fa-laptop-code"></i>
+			
+			项目
+			<span class="m-icon"><i class="fas fa-chevron-right"></i></span>
+		</a>
+            <ul  style="background:  ;" >
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/drop-in " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-docker" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Docker:VimIDE</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/hexo " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-docker" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Docker:hexo</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/v2fly-privoxy " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-docker" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Docker:v2fly-privoxy</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/nginx-purge " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-docker" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Docker:nginx-purge</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/rclonebrowser " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-docker" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Docker:rclonebrowser</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="https://github.com/appotry/PTtool " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-linux" style="position: absolute;left:50px" ></i>
+			      
+		          <span>LinuxHarkLinkTools</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="https://github.com/appotry/ " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-github" style="position: absolute;left:50px" ></i>
+			      
+		          <span>更多项目</span>
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="javascript:;">
+			
+				<i class="fa-fw fas fa-toolbox"></i>
+			
+			工具
+			<span class="m-icon"><i class="fas fa-chevron-right"></i></span>
+		</a>
+            <ul  style="background:  ;" >
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="https://linux-command.17lai.site/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-terminal" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Linux命令查询</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="http://encode.chahuo.com/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-tools" style="position: absolute;left:50px" ></i>
+			      
+		          <span>在线加密解密</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="https://markmap.js.org/repl " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-brain" style="position: absolute;left:50px" ></i>
+			      
+		          <span>在线思维导图</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="https://fontawesome.com/v5.15/icons " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-font-awesome" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Awesome图标</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="http://ping.chinaz.com/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-tools" style="position: absolute;left:50px" ></i>
+			      
+		          <span>在线站长工具</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="http://tool.chinaz.com/port/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-tools" style="position: absolute;left:50px" ></i>
+			      
+		          <span>在线端口扫描</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="https://music.17lai.site/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-music" style="position: absolute;left:50px" ></i>
+			      
+		          <span>私人音乐播放</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="https://rclone.17lai.site/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-music" style="position: absolute;left:50px" ></i>
+			      
+		          <span>私人网盘管理</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a target="_blank" rel="noopener" href="https://docker.17lai.site/ " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-docker" style="position: absolute;left:50px" ></i>
+			      
+		          <span>私人服务管理</span>
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="javascript:;">
+			
+				<i class="fa-fw fas fa-id-badge"></i>
+			
+			关于
+			<span class="m-icon"><i class="fas fa-chevron-right"></i></span>
+		</a>
+            <ul  style="background:  ;" >
+              
+                <li>
+
+                  <a href="/about " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-user-circle" style="position: absolute;left:50px" ></i>
+			      
+		          <span>关于我</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/aboutme/mytech/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-address-card" style="position: absolute;left:50px" ></i>
+			      
+		          <span>我的技术</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/aboutme/myproject/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-laptop-code" style="position: absolute;left:50px" ></i>
+			      
+		          <span>我的项目</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/aboutme/mypost/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-pen-nib" style="position: absolute;left:50px" ></i>
+			      
+		          <span>我的文章</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/aboutme/needtoread/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-exclamation-circle" style="position: absolute;left:50px" ></i>
+			      
+		          <span>博客须知</span>
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </li>
+        
+        
+    </ul>
+</div>
+
+
+        </div>
+
+        
+    </nav>
+
+</header>
+
+    
+<script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/cryptojs/crypto-js.min.js"></script>
+<script>
     (function() {
         let pwd = '';
         if (pwd && pwd.length > 0) {
@@ -8,11 +972,380 @@
             }
         }
     })();
-</script><div class="bg-cover pd-header post-cover" style="background-image:url(/medias/cover/web.jpg)"><div class="container" style="right:0;left:0"><div class="row"><div class="col s12 m12 l12"><div class="brand"><h1 class="description center-align post-title">浏览器的渲染过程</h1></div></div></div></div></div><main class="post-container content"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/tocbot/tocbot.css"><style>#articleContent h1::before,#articleContent h2::before,#articleContent h3::before,#articleContent h4::before,#articleContent h5::before,#articleContent h6::before{display:block;content:" ";height:100px;margin-top:-100px;visibility:hidden}#articleContent :focus{outline:0}.toc-fixed{position:fixed;top:64px}.toc-widget{width:345px;padding-left:20px}.toc-widget .toc-title{padding:35px 0 15px 17px;font-size:1.5rem;font-weight:700;line-height:1.5rem}.toc-widget ol{padding:0;list-style:none}#toc-content{padding-bottom:30px;overflow:auto}#toc-content ol{padding-left:10px}#toc-content ol li{padding-left:10px}#toc-content .toc-link:hover{color:#42b983;font-weight:700;text-decoration:underline}#toc-content .toc-link::before{background-color:transparent;max-height:25px;position:absolute;right:23.5vw;display:block}#toc-content .is-active-link{color:#42b983}#floating-toc-btn{position:fixed;right:15px;bottom:76px;padding-top:15px;margin-bottom:0;z-index:998}#floating-toc-btn .btn-floating{width:48px;height:48px}#floating-toc-btn .btn-floating i{line-height:48px;font-size:1.4rem}</style><div class="row"><div id="main-content" class="col s12 m12 l9"><div id="artDetail"><div class="card"><div class="card-content article-info"><div class="row tag-cate"><div class="col s7"><div class="article-tag"> <a href="/tags/web/"><span class="chip bg-color">web</span></a> <a href="/tags/http/"><span class="chip bg-color">http</span></a> <a href="/tags/css/"><span class="chip bg-color">css</span></a> <a href="/tags/js/"><span class="chip bg-color">js</span></a></div></div><div class="col s5 right-align"><div class="post-cate"><i class="fas fa-bookmark fa-fw icon-category"></i> <a href="/categories/web/" class="post-category">web</a></div></div></div><div class="post-info"><div class="post-date info-break-policy"><i class="far fa-calendar-minus fa-fw"></i> 发布日期:&nbsp;&nbsp; 2021-09-13</div><div class="post-date info-break-policy"><i class="far fa-calendar-check fa-fw"></i> 更新日期:&nbsp;&nbsp; 2021-09-16</div><div class="info-break-policy"><i class="far fa-file-word fa-fw"></i> 文章字数:&nbsp;&nbsp; 3.2k</div><div class="info-break-policy"><i class="far fa-clock fa-fw"></i> 阅读时长:&nbsp;&nbsp; 11 分</div><div id="busuanzi_container_page_pv" class="info-break-policy"><i class="far fa-eye fa-fw"></i> 阅读次数:&nbsp;&nbsp;<span id="busuanzi_value_page_pv"></span></div></div></div><hr class="clearfix"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/prism/prism.css"><style type="text/css">code[class*=language-],pre[class*=language-]{white-space:pre-wrap!important}</style><div class="card-content article-card-content"><div id="articleContent"><blockquote><p>通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？</p></blockquote><h3 id="首先，请先看一张大图"><a href="#首先，请先看一张大图" class="headerlink" title="首先，请先看一张大图"></a><strong>首先，请先看一张大图</strong></h3><p>浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：</p><ul><li> 构建对象模型（DOM，CSSOM）</li><li> 构建渲染树（RenderTree）</li><li> 布局</li><li> 渲染</li></ul><p>在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：</p><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220512.jpeg"></p><h3 id="1-DOMTree的构建"><a href="#1-DOMTree的构建" class="headerlink" title="1.DOMTree的构建"></a><strong>1.DOMTree的构建</strong></h3><p>浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：</p><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220515.jpeg"></p><ul><li>第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符</li></ul><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220653.jpeg"></p><ul><li>第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是<code>开始标签</code>，还是<code>结束标签</code>，或者<code>文本标签</code>等。</li></ul><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220522.jpeg"></p><ul><li>第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的<code>开始标签</code>，<code>结束标签</code>，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。<br> Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt;</code>标签最终生成出的节点对象中会保存图片地址等信息。<br> 事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取<code>深度遍历算法</code>消耗Token来生成Node，如下图所示：<br> 图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出<code>html Token</code>,并消耗Token创建出<code>html 节点对象</code>，接着生成<code>head Token</code>并消耗Token创建出<code>head节点对象</code>……，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。</li></ul><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220658.jpeg"></p><p>这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？<br>因为在上述的解析的过程中，如果碰到了<code>script</code>或者<code>link</code>标签，就会根据<code>src</code>对应的地址去加载资源，在<code>script</code>标签没有设置<code>async/defer</code>属性时，这个加载过程是<code>下载并执行完全部的代码</code>，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出<strong>找不到该DOM元素</strong>的错误。<br>值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。</p><h3 id="2-CSSOMTree的构建"><a href="#2-CSSOMTree的构建" class="headerlink" title="2.CSSOMTree的构建"></a><strong>2.CSSOMTree的构建</strong></h3><p>DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：</p><p>假设浏览器收到了下面这样一段css:</p><pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">body</span> <span class="token punctuation">{</span><span class="token property">font-size</span><span class="token punctuation">:</span> 16px<span class="token punctuation">;</span><span class="token punctuation">}</span>
+</script>
+
+
+
+
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/cover/web.jpg')">
+    <div class="container" style="right: 0px;left: 0px;">
+        <div class="row">
+            <div class="col s12 m12 l12">
+                <div class="brand">
+                    <h1 class="description center-align post-title">浏览器的渲染过程</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<main class="post-container content">
+
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/tocbot/tocbot.css">
+<style>
+    #articleContent h1::before,
+    #articleContent h2::before,
+    #articleContent h3::before,
+    #articleContent h4::before,
+    #articleContent h5::before,
+    #articleContent h6::before {
+        display: block;
+        content: " ";
+        height: 100px;
+        margin-top: -100px;
+        visibility: hidden;
+    }
+
+    #articleContent :focus {
+        outline: none;
+    }
+
+    .toc-fixed {
+        position: fixed;
+        top: 64px;
+    }
+
+    .toc-widget {
+        width: 345px;
+        padding-left: 20px;
+    }
+
+    .toc-widget .toc-title {
+        padding: 35px 0 15px 17px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        line-height: 1.5rem;
+    }
+
+    .toc-widget ol {
+        padding: 0;
+        list-style: none;
+    }
+
+    #toc-content {
+        padding-bottom: 30px;
+        overflow: auto;
+    }
+
+    #toc-content ol {
+        padding-left: 10px;
+    }
+
+    #toc-content ol li {
+        padding-left: 10px;
+    }
+
+    #toc-content .toc-link:hover {
+        color: #42b983;
+        font-weight: 700;
+        text-decoration: underline;
+    }
+
+    #toc-content .toc-link::before {
+        background-color: transparent;
+        max-height: 25px;
+
+        position: absolute;
+        right: 23.5vw;
+        display: block;
+    }
+
+    #toc-content .is-active-link {
+        color: #42b983;
+    }
+
+    #floating-toc-btn {
+        position: fixed;
+        right: 15px;
+        bottom: 76px;
+        padding-top: 15px;
+        margin-bottom: 0;
+        z-index: 998;
+    }
+
+    #floating-toc-btn .btn-floating {
+        width: 48px;
+        height: 48px;
+    }
+
+    #floating-toc-btn .btn-floating i {
+        line-height: 48px;
+        font-size: 1.4rem;
+    }
+</style>
+<div class="row">
+    <div id="main-content" class="col s12 m12 l9">
+        <!-- 文章内容详情 -->
+<div id="artDetail">
+    <div class="card">
+        <div class="card-content article-info">
+            <div class="row tag-cate">
+                <div class="col s7">
+                    
+                    <div class="article-tag">
+                        
+                            <a href="/tags/web/">
+                                <span class="chip bg-color">web</span>
+                            </a>
+                        
+                            <a href="/tags/http/">
+                                <span class="chip bg-color">http</span>
+                            </a>
+                        
+                            <a href="/tags/css/">
+                                <span class="chip bg-color">css</span>
+                            </a>
+                        
+                            <a href="/tags/js/">
+                                <span class="chip bg-color">js</span>
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+                <div class="col s5 right-align">
+                    
+                    <div class="post-cate">
+                        <i class="fas fa-bookmark fa-fw icon-category"></i>
+                        
+                            <a href="/categories/web/" class="post-category">
+                                web
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+            </div>
+
+            <div class="post-info">
+                
+                <div class="post-date info-break-policy">
+                    <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
+                    2021-09-13
+                </div>
+                
+
+                
+                <div class="post-date info-break-policy">
+                    <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
+                    2021-09-16
+                </div>
+                
+
+                
+                <div class="info-break-policy">
+                    <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
+                    3.2k
+                </div>
+                
+
+                
+                <div class="info-break-policy">
+                    <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
+                    11 分
+                </div>
+                
+
+                
+                    <div id="busuanzi_container_page_pv" class="info-break-policy">
+                        <i class="far fa-eye fa-fw"></i>阅读次数:&nbsp;&nbsp;
+                        <span id="busuanzi_value_page_pv"></span>
+                    </div>
+				
+            </div>
+        </div>
+        <hr class="clearfix">
+
+        
+        <!-- 是否加载使用自带的 prismjs. -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/prism/prism.css">
+        
+
+        
+        <!-- 代码块折行 -->
+        <style type="text/css">
+            code[class*="language-"], pre[class*="language-"] { white-space: pre-wrap !important; }
+        </style>
+        
+
+        <div class="card-content article-card-content">
+            <div id="articleContent">
+                <blockquote>
+<p>通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？</p>
+</blockquote>
+<h3 id="首先，请先看一张大图"><a href="#首先，请先看一张大图" class="headerlink" title="首先，请先看一张大图"></a><strong>首先，请先看一张大图</strong></h3><p>浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：</p>
+<ul>
+<li>  构建对象模型（DOM，CSSOM）</li>
+<li>  构建渲染树（RenderTree）</li>
+<li>  布局</li>
+<li>  渲染</li>
+</ul>
+<p>在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220512.jpeg"></p>
+<h3 id="1-DOMTree的构建"><a href="#1-DOMTree的构建" class="headerlink" title="1.DOMTree的构建"></a><strong>1.DOMTree的构建</strong></h3><p>浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220515.jpeg"></p>
+<ul>
+<li>第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符  </li>
+</ul>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220653.jpeg"></p>
+<ul>
+<li>第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是<code>开始标签</code>，还是<code>结束标签</code>，或者<code>文本标签</code>等。  </li>
+</ul>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220522.jpeg"></p>
+<ul>
+<li>第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的<code>开始标签</code>，<code>结束标签</code>，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。<br>  Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt;</code>标签最终生成出的节点对象中会保存图片地址等信息。<br>  事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取<code>深度遍历算法</code>消耗Token来生成Node，如下图所示：<br>  图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出<code>html Token</code>,并消耗Token创建出<code>html 节点对象</code>，接着生成<code>head Token</code>并消耗Token创建出<code>head节点对象</code>……，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。  </li>
+</ul>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220658.jpeg"></p>
+<p>这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？<br>因为在上述的解析的过程中，如果碰到了<code>script</code>或者<code>link</code>标签，就会根据<code>src</code>对应的地址去加载资源，在<code>script</code>标签没有设置<code>async/defer</code>属性时，这个加载过程是<code>下载并执行完全部的代码</code>，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出<strong>找不到该DOM元素</strong>的错误。<br>值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。</p>
+<h3 id="2-CSSOMTree的构建"><a href="#2-CSSOMTree的构建" class="headerlink" title="2.CSSOMTree的构建"></a><strong>2.CSSOMTree的构建</strong></h3><p>DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：</p>
+<p>假设浏览器收到了下面这样一段css:</p>
+<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">body</span> <span class="token punctuation">{</span><span class="token property">font-size</span><span class="token punctuation">:</span> 16px<span class="token punctuation">;</span><span class="token punctuation">}</span>
 <span class="token selector">p</span> <span class="token punctuation">{</span><span class="token property">font-weight</span><span class="token punctuation">:</span> bold<span class="token punctuation">;</span><span class="token punctuation">}</span>
 <span class="token selector">p span</span> <span class="token punctuation">{</span><span class="token property">display</span><span class="token punctuation">:</span>none<span class="token punctuation">;</span><span class="token punctuation">}</span>
 <span class="token selector">span</span> <span class="token punctuation">{</span><span class="token property">color</span><span class="token punctuation">:</span> red<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">img</span> <span class="token punctuation">{</span><span class="token property">float</span><span class="token punctuation">:</span> right<span class="token punctuation">;</span><span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre><p>最终会生成如下的CSSOMTree:</p><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220529.jpeg"></p><p>从图中可以看出，最开始<code>body</code>有一个样式规则是<code>font-size:16px</code>，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如<code>span</code>又添加了一个样式规则<code>color:red</code>。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：<strong>CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置</strong>。比如在上面的css代码基础上再添加一行代码<code>p {font-size:12px}</code>，那么之前设置的<code>16px</code>将会被覆盖成<code>12px</code>。</p><p>下面是官方给的一种解释：</p><blockquote><p>未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。<br>所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。</p></blockquote><p>那么回到上面生成DOM时提到的JS问题：<strong>在标签没有设置<code>async/defer</code>属性时，js会阻塞DOM的生成</strong>。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。</p><p>同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在<strong>浏览器还未完成CSSOMTree的下载和构建</strong>时去操作CSS样式，浏览器会<strong>暂停脚本的运行和DOM的构建</strong>，直至浏览器完成了CSSOM的下载和构建。也就是说，<strong>JS脚本的出现会让CSSOM的构建阻塞DOM的构建</strong>。</p><blockquote><p>平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？</p></blockquote><p>举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个<code>link</code>标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：</p><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220540.jpeg"></p><p>而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个<code>script</code>标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：</p><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220546.jpeg"></p><p>那如果我们把css放到前面，js放到最后引入时，构建时间会变成：</p><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220705.jpeg"></p><p>由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。</p><p>简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：</p><ul><li> 当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕</li><li> JavaScript可以查询和修改DOMTree与CSSOMTree</li><li> 直至CSSOM构建完毕，JavaScript才会执行</li><li> 脚本在文档中的位置很重要</li></ul><h3 id="3-渲染树的构建"><a href="#3-渲染树的构建" class="headerlink" title="3.渲染树的构建"></a><strong>3.渲染树的构建</strong></h3><p>现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树</p><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220711.jpeg"></p><p>接下来我们来谈几条概念</p><ul><li><p> Render 树上的每一个节点被称为：<code>RenderObject</code>。</p></li><li><p> RenderObject跟 DOM 节点几乎是一一对应的，当一个<code>可见的 DOM 节点</code>被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。</p></li><li><p>其中，可见的DOM节点不包括：</p></li><li><p> 一些不会体现在渲染输出中的节点（<code>&lt;html&gt;&lt;script&gt;&lt;link&gt;….</code>），会直接被忽略掉。</p></li><li><p> 通过CSS隐藏的节点。例如上图中的<code>span</code>节点，因为有一个CSS显式规则在该节点上设置了<code>display:none</code>属性，那么它在生成RenderObject时会被直接忽略掉。</p></li><li><p> Render 树是衔接浏览器排版引擎和渲染引擎之间的<strong>桥梁</strong>，它是<strong>排版引擎的输出，渲染引擎的输入</strong>。</p></li></ul><p>此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？</p><h3 id="RenderObject-and-RenderLayer"><a href="#RenderObject-and-RenderLayer" class="headerlink" title="RenderObject and RenderLayer"></a><strong>RenderObject and RenderLayer</strong></h3><blockquote><p>浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理<strong>Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing</strong>等属性，浏览器需要生成另外一棵树：<strong>Layer树</strong></p></blockquote><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220730.jpeg"></p><p>浏览器会为一些<strong>特定</strong>的<code>RenderObject</code>生成对应的<code>RenderLayer</code>，其中的规则是：</p><ul><li> 是否是页面的根节点 <em>It’s the root object for the page</em></li><li> 是否有css的一些布局属性（relative absolute or a transform) <em>It has explicit CSS position properties (relative, absolute or a transform)</em></li><li> 是否透明 <em>It is transparent</em></li><li> 是否有溢出 <em>Has overflow, an alpha mask or reflection</em></li><li> 是否有css滤镜 <em>Has a CSS filter</em></li><li> 是否包含一个canvas元素使得节点拥有视图上下文 <em>Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context</em></li><li> 是否包含一个video元素 <em>Corresponds to a video element</em></li></ul><p>当满足上面其中一个条件时，这个<code>RrenderObject</code>就会被浏览器选中生成对应的<code>RenderLayer</code>。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。</p><p>浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个<code>RenderLayer</code>，再遍历从属于这个RenderLayer的 <code>RrenderObject</code>，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 <code>RenderLayer</code> 和 <code>RrenderObject</code> 一起就决定了网页在屏幕上最终呈现出来的内容。</p><h3 id="4-布局"><a href="#4-布局" class="headerlink" title="4.布局"></a><strong>4.布局</strong></h3><p>到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。</p><p>布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。</p><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220553.jpeg"></p><h3 id="5-渲染"><a href="#5-渲染" class="headerlink" title="5.渲染"></a><strong>5.渲染</strong></h3><p>最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。</p><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220718.jpeg"></p><p>至此，我们就能够在浏览器上看到漂亮的网页了</p><blockquote><p>谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？</p></blockquote><p>我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~</p><h3 id="总结："><a href="#总结：" class="headerlink" title="总结："></a><strong>总结：</strong></h3><ul><li> 经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。</li><li> CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。</li><li> 同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用<code>async/defer属性</code>异步加载JavaScript。</li><li> 重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数</li></ul><h3 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a><strong>参考文献：</strong></h3><p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn</a></p><p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn</a></p><p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn</a></p><p><a href="https://link.zhihu.com/?target=https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21%23wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect</a></p></div><hr><div class="reprint" id="reprint-statement"><div class="reprint__author"> <span class="reprint-meta" style="font-weight:700"><i class="fas fa-user">文章作者:</i></span> <span class="reprint-info"><a href="https://blog.17lai.site" rel="external nofollow noreferrer">夜法之书浏览器的渲染过程</a></span></div><div class="reprint__type"> <span class="reprint-meta" style="font-weight:700"><i class="fas fa-link">文章链接:</i></span> <span class="reprint-info"><a href="https://blog.17lai.site/web/2021-09-13-the-browser-rendering-process/">https://blog.17lai.site/web/2021-09-13-the-browser-rendering-process/</a></span></div><div class="reprint__notice"> <span class="reprint-meta" style="font-weight:700"><i class="fas fa-copyright">版权声明:</i></span> <span class="reprint-info">本博客所有文章除特別声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow noreferrer" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://blog.17lai.site" target="_blank">夜法之书浏览器的渲染过程</a> !</span></div></div><script async defer="defer">
+<span class="token selector">img</span> <span class="token punctuation">{</span><span class="token property">float</span><span class="token punctuation">:</span> right<span class="token punctuation">;</span><span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>最终会生成如下的CSSOMTree:</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220529.jpeg"></p>
+<p>从图中可以看出，最开始<code>body</code>有一个样式规则是<code>font-size:16px</code>，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如<code>span</code>又添加了一个样式规则<code>color:red</code>。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：<strong>CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置</strong>。比如在上面的css代码基础上再添加一行代码<code>p {font-size:12px}</code>，那么之前设置的<code>16px</code>将会被覆盖成<code>12px</code>。</p>
+<p>下面是官方给的一种解释：</p>
+<blockquote>
+<p>未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。<br>所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。</p>
+</blockquote>
+<p>那么回到上面生成DOM时提到的JS问题：<strong>在标签没有设置<code>async/defer</code>属性时，js会阻塞DOM的生成</strong>。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。</p>
+<p>同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在<strong>浏览器还未完成CSSOMTree的下载和构建</strong>时去操作CSS样式，浏览器会<strong>暂停脚本的运行和DOM的构建</strong>，直至浏览器完成了CSSOM的下载和构建。也就是说，<strong>JS脚本的出现会让CSSOM的构建阻塞DOM的构建</strong>。</p>
+<blockquote>
+<p>平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？</p>
+</blockquote>
+<p>举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个<code>link</code>标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220540.jpeg"></p>
+<p>而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个<code>script</code>标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220546.jpeg"></p>
+<p>那如果我们把css放到前面，js放到最后引入时，构建时间会变成：</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220705.jpeg"></p>
+<p>由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。</p>
+<p>简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：</p>
+<ul>
+<li>  当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕</li>
+<li>  JavaScript可以查询和修改DOMTree与CSSOMTree</li>
+<li>  直至CSSOM构建完毕，JavaScript才会执行</li>
+<li>  脚本在文档中的位置很重要</li>
+</ul>
+<h3 id="3-渲染树的构建"><a href="#3-渲染树的构建" class="headerlink" title="3.渲染树的构建"></a><strong>3.渲染树的构建</strong></h3><p>现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220711.jpeg"></p>
+<p>接下来我们来谈几条概念</p>
+<ul>
+<li><p>  Render 树上的每一个节点被称为：<code>RenderObject</code>。</p>
+</li>
+<li><p>  RenderObject跟 DOM 节点几乎是一一对应的，当一个<code>可见的 DOM 节点</code>被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。</p>
+</li>
+<li><p>其中，可见的DOM节点不包括：  </p>
+</li>
+<li><p>  一些不会体现在渲染输出中的节点（<code>&lt;html&gt;&lt;script&gt;&lt;link&gt;….</code>），会直接被忽略掉。</p>
+</li>
+<li><p>  通过CSS隐藏的节点。例如上图中的<code>span</code>节点，因为有一个CSS显式规则在该节点上设置了<code>display:none</code>属性，那么它在生成RenderObject时会被直接忽略掉。</p>
+</li>
+<li><p>  Render 树是衔接浏览器排版引擎和渲染引擎之间的<strong>桥梁</strong>，它是<strong>排版引擎的输出，渲染引擎的输入</strong>。</p>
+</li>
+</ul>
+<p>此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？</p>
+<h3 id="RenderObject-and-RenderLayer"><a href="#RenderObject-and-RenderLayer" class="headerlink" title="RenderObject and RenderLayer"></a><strong>RenderObject and RenderLayer</strong></h3><blockquote>
+<p>浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理<strong>Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing</strong>等属性，浏览器需要生成另外一棵树：<strong>Layer树</strong></p>
+</blockquote>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220730.jpeg"></p>
+<p>浏览器会为一些<strong>特定</strong>的<code>RenderObject</code>生成对应的<code>RenderLayer</code>，其中的规则是：</p>
+<ul>
+<li>  是否是页面的根节点 <em>It’s the root object for the page</em></li>
+<li>  是否有css的一些布局属性（relative absolute or a transform) <em>It has explicit CSS position properties (relative, absolute or a transform)</em></li>
+<li>  是否透明 <em>It is transparent</em></li>
+<li>  是否有溢出 <em>Has overflow, an alpha mask or reflection</em></li>
+<li>  是否有css滤镜 <em>Has a CSS filter</em></li>
+<li>  是否包含一个canvas元素使得节点拥有视图上下文 <em>Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context</em></li>
+<li>  是否包含一个video元素 <em>Corresponds to a video element</em></li>
+</ul>
+<p>当满足上面其中一个条件时，这个<code>RrenderObject</code>就会被浏览器选中生成对应的<code>RenderLayer</code>。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。</p>
+<p>浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个<code>RenderLayer</code>，再遍历从属于这个RenderLayer的 <code>RrenderObject</code>，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 <code>RenderLayer</code> 和 <code>RrenderObject</code> 一起就决定了网页在屏幕上最终呈现出来的内容。</p>
+<h3 id="4-布局"><a href="#4-布局" class="headerlink" title="4.布局"></a><strong>4.布局</strong></h3><p>到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。</p>
+<p>布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220553.jpeg"></p>
+<h3 id="5-渲染"><a href="#5-渲染" class="headerlink" title="5.渲染"></a><strong>5.渲染</strong></h3><p>最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。</p>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/1320210913220718.jpeg"></p>
+<p>至此，我们就能够在浏览器上看到漂亮的网页了</p>
+<blockquote>
+<p>谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？</p>
+</blockquote>
+<p>我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~</p>
+<h3 id="总结："><a href="#总结：" class="headerlink" title="总结："></a><strong>总结：</strong></h3><ul>
+<li>  经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。</li>
+<li>  CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。</li>
+<li>  同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用<code>async/defer属性</code>异步加载JavaScript。</li>
+<li>  重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数</li>
+</ul>
+<h3 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a><strong>参考文献：</strong></h3><p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21%23wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect</a></p>
+
+                
+            </div>
+            <hr/>
+
+            
+
+    <div class="reprint" id="reprint-statement">
+        
+            <div class="reprint__author">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-user">
+                        文章作者:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    <a href="https://blog.17lai.site" rel="external nofollow noreferrer">夜法之书浏览器的渲染过程</a>
+                </span>
+            </div>
+            <div class="reprint__type">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-link">
+                        文章链接:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    <a href="https://blog.17lai.site/web/2021-09-13-the-browser-rendering-process/">https://blog.17lai.site/web/2021-09-13-the-browser-rendering-process/</a>
+                </span>
+            </div>
+            <div class="reprint__notice">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-copyright">
+                        版权声明:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    本博客所有文章除特別声明外，均采用
+                    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow noreferrer" target="_blank">CC BY-NC-SA 4.0</a>
+                    许可协议。转载请注明来源
+                    <a href="https://blog.17lai.site" target="_blank">夜法之书浏览器的渲染过程</a>
+                    !
+                </span>
+            </div>
+        
+    </div>
+
+    <script async defer>
       document.addEventListener("copy", function (e) {
         let toastHTML = '<span>复制成功，请遵循本文的转载规则</span><button class="btn-flat toast-action" onclick="navToReprintStatement()" style="font-size: smaller">查看</a>';
         M.toast({html: toastHTML})
@@ -21,7 +1354,654 @@
       function navToReprintStatement() {
         $("html, body").animate({scrollTop: $("#reprint-statement").offset().top - 80}, 800);
       }
-    </script><div class="tag_share" style="display:block"><div class="post-meta__tag-list" style="display:inline-block"><div class="article-tag"> <a href="/tags/web/"><span class="chip bg-color">web</span></a> <a href="/tags/http/"><span class="chip bg-color">http</span></a> <a href="/tags/css/"><span class="chip bg-color">css</span></a> <a href="/tags/js/"><span class="chip bg-color">js</span></a></div></div><div class="post_share" style="zoom:80%;width:fit-content;display:inline-block;float:right;margin:-.15rem 0"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/share/css/share.min.css"><div id="article-share"><div class="social-share" data-sites="twitter,facebook,google,qq,qzone,wechat,weibo,douban,linkedin" data-wechat-qrcode-helper="<p>微信扫一扫即可分享！</p>"></div><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/share/js/social-share.min.js"></script></div></div></div><style>#reward{margin:40px 0;text-align:center}#reward .reward-link{font-size:1.4rem;line-height:38px}#reward .btn-floating:hover{box-shadow:0 6px 12px rgba(0,0,0,.2),0 5px 15px rgba(0,0,0,.2)}#rewardModal{width:320px;height:350px}#rewardModal .reward-title{margin:15px auto;padding-bottom:5px}#rewardModal .modal-content{padding:10px}#rewardModal .close{position:absolute;right:15px;top:15px;color:rgba(0,0,0,.5);font-size:1.3rem;line-height:20px;cursor:pointer}#rewardModal .close:hover{color:#ef5350;transform:scale(1.3);-moz-transform:scale(1.3);-webkit-transform:scale(1.3);-o-transform:scale(1.3)}#rewardModal .reward-tabs{margin:0 auto;width:210px}.reward-tabs .tabs{height:38px;margin:10px auto;padding-left:0}.reward-content ul{padding-left:0!important}.reward-tabs .tabs .tab{height:38px;line-height:38px}.reward-tabs .tab a{color:#fff;background-color:#ccc}.reward-tabs .tab a:hover{background-color:#ccc;color:#fff}.reward-tabs .wechat-tab .active{color:#fff!important;background-color:#22ab38!important}.reward-tabs .alipay-tab .active{color:#fff!important;background-color:#019fe8!important}.reward-tabs .reward-img{width:210px;height:210px}</style><div id="reward"> <a href="#rewardModal" class="reward-link modal-trigger btn-floating btn-medium waves-effect waves-light red">赏</a><div id="rewardModal" class="modal"><div class="modal-content"><a class="close modal-close"><i class="fas fa-times"></i></a><h4 class="reward-title">码字辛苦，打赏作者！</h4><div class="reward-content"><div class="reward-tabs"><ul class="tabs row"><li class="tab col s6 alipay-tab waves-effect waves-light"><a href="#alipay">支付宝</a></li><li class="tab col s6 wechat-tab waves-effect waves-light"><a href="#wechat">微 信</a></li></ul><div id="alipay"> <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/medias/reward/alipay.jpg" class="reward-img" alt="支付宝打赏二维码"></div><div id="wechat"> <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/medias/reward/wechat.jpg" class="reward-img" alt="微信打赏二维码"></div></div></div></div></div></div><script>$(function(){$(".tabs").tabs()})</script></div></div><style>.valine-card{margin:1.5rem auto}.valine-card .card-content{padding:20px 20px 5px 20px}#vcomments textarea{box-sizing:border-box;background:url(/medias/comment_bg.png) 100% 100% no-repeat}#vcomments p{margin:2px 2px 10px;font-size:1.05rem;line-height:1.78rem}#vcomments blockquote p{text-indent:.2rem}#vcomments a{padding:0 2px;color:#4cbf30;font-weight:500;text-decoration:none}#vcomments img{max-width:100%;height:auto;cursor:pointer}#vcomments ol li{list-style-type:decimal}#vcomments ol,ul{display:block;padding-left:2em;word-spacing:.05rem}#vcomments ul li,ol li{display:list-item;line-height:1.8rem;font-size:1rem}#vcomments ul li{list-style-type:disc}#vcomments ul ul li{list-style-type:circle}#vcomments table,td,th{padding:12px 13px;border:1px solid #dfe2e5}#vcomments table,td,th{border:0}table tr:nth-child(2n),thead{background-color:#fafafa}#vcomments table th{background-color:#f2f2f2;min-width:80px}#vcomments table td{min-width:80px}#vcomments h1{font-size:1.85rem;font-weight:700;line-height:2.2rem}#vcomments h2{font-size:1.65rem;font-weight:700;line-height:1.9rem}#vcomments h3{font-size:1.45rem;font-weight:700;line-height:1.7rem}#vcomments h4{font-size:1.25rem;font-weight:700;line-height:1.5rem}#vcomments h5{font-size:1.1rem;font-weight:700;line-height:1.4rem}#vcomments h6{font-size:1rem;line-height:1.3rem}#vcomments p{font-size:1rem;line-height:1.5rem}#vcomments hr{margin:12px 0;border:0;border-top:1px solid #ccc}#vcomments blockquote{margin:15px 0;border-left:5px solid #42b983;padding:1rem .8rem .3rem .8rem;color:#666;background-color:rgba(66,185,131,.1)}#vcomments pre{font-family:monospace,monospace;padding:1.2em;margin:.5em 0;background:#272822;overflow:auto;border-radius:.3em;tab-size:4}#vcomments code{font-family:monospace,monospace;padding:1px 3px;font-size:.92rem;color:#e96900;background-color:#f8f8f8;border-radius:2px}#vcomments pre code{font-family:monospace,monospace;padding:0;color:#e8eaf6;background-color:#272822}#vcomments pre[class*=language-]{padding:1.2em;margin:.5em 0}#vcomments code[class*=language-],pre[class*=language-]{color:#e8eaf6}#vcomments [type=checkbox]:not(:checked),[type=checkbox]:checked{position:inherit;margin-left:-1.3rem;margin-right:.4rem;margin-top:-1px;vertical-align:middle;left:unset;visibility:visible}#vcomments b,strong{font-weight:700}#vcomments dfn{font-style:italic}#vcomments small{font-size:85%}#vcomments cite{font-style:normal}#vcomments mark{background-color:#fcf8e3;padding:.2em}#vcomments table,td,th{padding:12px 13px;border:1px solid #dfe2e5}table tr:nth-child(2n),thead{background-color:#fafafa}#vcomments table th{background-color:#f2f2f2;min-width:80px}#vcomments table td{min-width:80px}#vcomments [type=checkbox]:not(:checked),[type=checkbox]:checked{position:inherit;margin-left:-1.3rem;margin-right:.4rem;margin-top:-1px;vertical-align:middle;left:unset;visibility:visible}</style><div class="card valine-card" data-aos="fade-up"><div class="comment_headling" style="font-size:20px;font-weight:700;position:relative;padding-left:20px;top:15px;padding-bottom:5px"><i class="fas fa-comments fa-fw" aria-hidden="true"></i> <span>评论</span></div><div id="vcomments" class="card-content" style="display:grid"></div></div><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/valine/av-min.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/valine/Valine.min.js"></script><script>new Valine({el:"#vcomments",appId:"v2hJTCLDHLnGF4iSJkBJ8mga-MdYXbMMI",appKey:"Hu4UNHLVERHkhfH6G5xqdqN3",notify:!1,verify:!1,visitor:!0,avatar:"mm",pageSize:"10",lang:"zh-cn",placeholder:"雁过留声，人过留名！说点什么...  公开网络空间，请不要发表任何包含个人或其他人的隐私信息！ PS:在昵称栏输入QQ号可以自动获取QQ昵称和QQ头像哦~"})</script><article id="prenext-posts" class="prev-next articles"><div class="row article-row"><div class="article col s12 m6" data-aos="fade-up"><div class="article-badge left-badge text-color"><i class="fas fa-chevron-left"></i> &nbsp;上一篇</div><div class="card"><a href="/image/2021-09-14-auto-expose-theory/"><div class="card-image"> <img src="/medias/cover/imgprogress.jpg" class="responsive-img" alt="自动曝光原理"> <span class="card-title">自动曝光原理</span></div></a><div class="card-content article-content"><div class="summary block-with-text"> 自动曝光原理简单介绍，以及其简单实现方法原理。自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。</div><div class="publish-info"><span class="publish-date"><i class="far fa-clock fa-fw icon-date"></i> 2021-09-14</span><span class="publish-author"><i class="fas fa-bookmark fa-fw icon-category"></i> <a href="/categories/image/" class="post-category">image</a></span></div></div><div class="card-action article-tags"> <a href="/tags/3a/"><span class="chip bg-color">3a</span></a> <a href="/tags/ae/"><span class="chip bg-color">ae</span></a> <a href="/tags/image/"><span class="chip bg-color">image</span></a></div></div></div><div class="article col s12 m6" data-aos="fade-up"><div class="article-badge right-badge text-color"> 下一篇&nbsp;<i class="fas fa-chevron-right"></i></div><div class="card"><a href="/web/2021-09-13-what-happened-when-you-click-http/"><div class="card-image"> <img src="/medias/cover/web.jpg" class="responsive-img" alt="在浏览器输入 URL 回车之后发生了什么"> <span class="card-title">在浏览器输入 URL 回车之后发生了什么</span></div></a><div class="card-content article-content"><div class="summary block-with-text"> 在浏览器输入 URL 回车之后发生了什么? 本文将为你解答。本文的步骤是建立在，请求的是一个简单的 HTTP 请求，没有 HTTPS、HTTP2、最简单的 DNS、没有代理、并且服务器没有任何问题的基础上。</div><div class="publish-info"><span class="publish-date"><i class="far fa-clock fa-fw icon-date"></i> 2021-09-13</span><span class="publish-author"><i class="fas fa-bookmark fa-fw icon-category"></i> <a href="/categories/web/" class="post-category">web</a></span></div></div><div class="card-action article-tags"> <a href="/tags/web/"><span class="chip bg-color">web</span></a> <a href="/tags/http/"><span class="chip bg-color">http</span></a></div></div></div></div></article></div><script>$("#articleContent").on("copy",function(e){if(void 0!==window.getSelection){var n=window.getSelection();if(!((""+n).length<Number.parseInt("100"))){var t=document.getElementsByTagName("body")[0],o=document.createElement("div");o.style.position="absolute",o.style.left="-99999px",t.appendChild(o),o.appendChild(n.getRangeAt(0).cloneContents()),"PRE"!==n.getRangeAt(0).commonAncestorContainer.nodeName&&"CODE"!==n.getRangeAt(0).commonAncestorContainer.nodeName||(o.innerHTML="<pre>"+o.innerHTML+"</pre>");var i=document.location.href;o.innerHTML+='<br />来源: 夜法之书<br />文章作者: 夜法之书<br />文章链接: <a href="'+i+'">'+i+"</a><br />本文章著作权归作者所有，任何形式的转载都请注明出处。",n.selectAllChildren(o),window.setTimeout(function(){t.removeChild(o)},200)}}})</script><script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/codeBlock/codeBlockFuction.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/codeBlock/codeLang.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/codeBlock/codeCopy.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/codeBlock/codeShrink.js"></script></div><div id="toc-aside" class="expanded col l3 hide-on-med-and-down"><div class="toc-widget card" style="background-color:#fff"><div class="toc-title"><i class="far fa-list-alt"></i>&nbsp;&nbsp;目录</div><div id="toc-content"></div></div></div></div><div id="floating-toc-btn" class="hide-on-med-and-down"><a class="btn-floating btn-large bg-color"><i class="fas fa-list-ul"></i></a></div><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/tocbot/tocbot.min.js"></script><script>
+    </script>
+
+
+
+            <div class="tag_share" style="display: block;">
+                <div class="post-meta__tag-list" style="display: inline-block;">
+                    
+                        <div class="article-tag">
+                            
+                                <a href="/tags/web/">
+                                    <span class="chip bg-color">web</span>
+                                </a>
+                            
+                                <a href="/tags/http/">
+                                    <span class="chip bg-color">http</span>
+                                </a>
+                            
+                                <a href="/tags/css/">
+                                    <span class="chip bg-color">css</span>
+                                </a>
+                            
+                                <a href="/tags/js/">
+                                    <span class="chip bg-color">js</span>
+                                </a>
+                            
+                        </div>
+                    
+                </div>
+                <div class="post_share" style="zoom: 80%; width: fit-content; display: inline-block; float: right; margin: -0.15rem 0;">
+                    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/share/css/share.min.css">
+<div id="article-share">
+
+    
+    <div class="social-share" data-sites="twitter,facebook,google,qq,qzone,wechat,weibo,douban,linkedin" data-wechat-qrcode-helper="<p>微信扫一扫即可分享！</p>"></div>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/share/js/social-share.min.js"></script>
+    
+
+    
+
+</div>
+
+                </div>
+            </div>
+            
+                <style>
+    #reward {
+        margin: 40px 0;
+        text-align: center;
+    }
+
+    #reward .reward-link {
+        font-size: 1.4rem;
+        line-height: 38px;
+    }
+
+    #reward .btn-floating:hover {
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    #rewardModal {
+        width: 320px;
+        height: 350px;
+    }
+
+    #rewardModal .reward-title {
+        margin: 15px auto;
+        padding-bottom: 5px;
+    }
+
+    #rewardModal .modal-content {
+        padding: 10px;
+    }
+
+    #rewardModal .close {
+        position: absolute;
+        right: 15px;
+        top: 15px;
+        color: rgba(0, 0, 0, 0.5);
+        font-size: 1.3rem;
+        line-height: 20px;
+        cursor: pointer;
+    }
+
+    #rewardModal .close:hover {
+        color: #ef5350;
+        transform: scale(1.3);
+        -moz-transform:scale(1.3);
+        -webkit-transform:scale(1.3);
+        -o-transform:scale(1.3);
+    }
+
+    #rewardModal .reward-tabs {
+        margin: 0 auto;
+        width: 210px;
+    }
+
+    .reward-tabs .tabs {
+        height: 38px;
+        margin: 10px auto;
+        padding-left: 0;
+    }
+
+    .reward-content ul {
+        padding-left: 0 !important;
+    }
+
+    .reward-tabs .tabs .tab {
+        height: 38px;
+        line-height: 38px;
+    }
+
+    .reward-tabs .tab a {
+        color: #fff;
+        background-color: #ccc;
+    }
+
+    .reward-tabs .tab a:hover {
+        background-color: #ccc;
+        color: #fff;
+    }
+
+    .reward-tabs .wechat-tab .active {
+        color: #fff !important;
+        background-color: #22AB38 !important;
+    }
+
+    .reward-tabs .alipay-tab .active {
+        color: #fff !important;
+        background-color: #019FE8 !important;
+    }
+
+    .reward-tabs .reward-img {
+        width: 210px;
+        height: 210px;
+    }
+</style>
+
+<div id="reward">
+    <a href="#rewardModal" class="reward-link modal-trigger btn-floating btn-medium waves-effect waves-light red">赏</a>
+
+    <!-- Modal Structure -->
+    <div id="rewardModal" class="modal">
+        <div class="modal-content">
+            <a class="close modal-close"><i class="fas fa-times"></i></a>
+            <h4 class="reward-title">码字辛苦，打赏作者！</h4>
+            <div class="reward-content">
+                <div class="reward-tabs">
+                    <ul class="tabs row">
+                        <li class="tab col s6 alipay-tab waves-effect waves-light"><a href="#alipay">支付宝</a></li>
+                        <li class="tab col s6 wechat-tab waves-effect waves-light"><a href="#wechat">微 信</a></li>
+                    </ul>
+                    <div id="alipay">
+                        <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/medias/reward/alipay.jpg" class="reward-img" alt="支付宝打赏二维码">
+                    </div>
+                    <div id="wechat">
+                        <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/medias/reward/wechat.jpg" class="reward-img" alt="微信打赏二维码">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        $('.tabs').tabs();
+    });
+</script>
+
+            
+        </div>
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+        <style>
+    .valine-card {
+        margin: 1.5rem auto;
+    }
+
+    .valine-card .card-content {
+        padding: 20px 20px 5px 20px;
+    }
+
+    #vcomments textarea {
+        box-sizing: border-box;
+        background: url("/medias/comment_bg.png") 100% 100% no-repeat;
+    }
+
+    #vcomments p {
+        margin: 2px 2px 10px;
+        font-size: 1.05rem;
+        line-height: 1.78rem;
+    }
+
+    #vcomments blockquote p {
+        text-indent: 0.2rem;
+    }
+
+    #vcomments a {
+        padding: 0 2px;
+        color: #4cbf30;
+        font-weight: 500;
+        text-decoration: none;
+    }
+
+    #vcomments img {
+        max-width: 100%;
+        height: auto;
+        cursor: pointer;
+    }
+
+    #vcomments ol li {
+        list-style-type: decimal;
+    }
+
+    #vcomments ol,
+    ul {
+        display: block;
+        padding-left: 2em;
+        word-spacing: 0.05rem;
+    }
+
+    #vcomments ul li,
+    ol li {
+        display: list-item;
+        line-height: 1.8rem;
+        font-size: 1rem;
+    }
+
+    #vcomments ul li {
+        list-style-type: disc;
+    }
+
+    #vcomments ul ul li {
+        list-style-type: circle;
+    }
+
+    #vcomments table, th, td {
+        padding: 12px 13px;
+        border: 1px solid #dfe2e5;
+    }
+
+    #vcomments table, th, td {
+        border: 0;
+    }
+
+    table tr:nth-child(2n), thead {
+        background-color: #fafafa;
+    }
+
+    #vcomments table th {
+        background-color: #f2f2f2;
+        min-width: 80px;
+    }
+
+    #vcomments table td {
+        min-width: 80px;
+    }
+
+    #vcomments h1 {
+        font-size: 1.85rem;
+        font-weight: bold;
+        line-height: 2.2rem;
+    }
+
+    #vcomments h2 {
+        font-size: 1.65rem;
+        font-weight: bold;
+        line-height: 1.9rem;
+    }
+
+    #vcomments h3 {
+        font-size: 1.45rem;
+        font-weight: bold;
+        line-height: 1.7rem;
+    }
+
+    #vcomments h4 {
+        font-size: 1.25rem;
+        font-weight: bold;
+        line-height: 1.5rem;
+    }
+
+    #vcomments h5 {
+        font-size: 1.1rem;
+        font-weight: bold;
+        line-height: 1.4rem;
+    }
+
+    #vcomments h6 {
+        font-size: 1rem;
+        line-height: 1.3rem;
+    }
+
+    #vcomments p {
+        font-size: 1rem;
+        line-height: 1.5rem;
+    }
+
+    #vcomments hr {
+        margin: 12px 0;
+        border: 0;
+        border-top: 1px solid #ccc;
+    }
+
+    #vcomments blockquote {
+        margin: 15px 0;
+        border-left: 5px solid #42b983;
+        padding: 1rem 0.8rem 0.3rem 0.8rem;
+        color: #666;
+        background-color: rgba(66, 185, 131, .1);
+    }
+
+    #vcomments pre {
+        font-family: monospace, monospace;
+        padding: 1.2em;
+        margin: .5em 0;
+        background: #272822;
+        overflow: auto;
+        border-radius: 0.3em;
+        tab-size: 4;
+    }
+
+    #vcomments code {
+        font-family: monospace, monospace;
+        padding: 1px 3px;
+        font-size: 0.92rem;
+        color: #e96900;
+        background-color: #f8f8f8;
+        border-radius: 2px;
+    }
+
+    #vcomments pre code {
+        font-family: monospace, monospace;
+        padding: 0;
+        color: #e8eaf6;
+        background-color: #272822;
+    }
+
+    #vcomments pre[class*="language-"] {
+        padding: 1.2em;
+        margin: .5em 0;
+    }
+
+    #vcomments code[class*="language-"],
+    pre[class*="language-"] {
+        color: #e8eaf6;
+    }
+
+    #vcomments [type="checkbox"]:not(:checked), [type="checkbox"]:checked {
+        position: inherit;
+        margin-left: -1.3rem;
+        margin-right: 0.4rem;
+        margin-top: -1px;
+        vertical-align: middle;
+        left: unset;
+        visibility: visible;
+    }
+
+    #vcomments b,
+    strong {
+        font-weight: bold;
+    }
+
+    #vcomments dfn {
+        font-style: italic;
+    }
+
+    #vcomments small {
+        font-size: 85%;
+    }
+
+    #vcomments cite {
+        font-style: normal;
+    }
+
+    #vcomments mark {
+        background-color: #fcf8e3;
+        padding: .2em;
+    }
+
+    #vcomments table, th, td {
+        padding: 12px 13px;
+        border: 1px solid #dfe2e5;
+    }
+
+    table tr:nth-child(2n), thead {
+        background-color: #fafafa;
+    }
+
+    #vcomments table th {
+        background-color: #f2f2f2;
+        min-width: 80px;
+    }
+
+    #vcomments table td {
+        min-width: 80px;
+    }
+
+    #vcomments [type="checkbox"]:not(:checked), [type="checkbox"]:checked {
+        position: inherit;
+        margin-left: -1.3rem;
+        margin-right: 0.4rem;
+        margin-top: -1px;
+        vertical-align: middle;
+        left: unset;
+        visibility: visible;
+    }
+</style>
+
+<div class="card valine-card" data-aos="fade-up">
+    <div class="comment_headling" style="font-size: 20px; font-weight: 700; position: relative; padding-left: 20px; top: 15px; padding-bottom: 5px;">
+        <i class="fas fa-comments fa-fw" aria-hidden="true"></i>
+        <span>评论</span>
+    </div>
+    <div id="vcomments" class="card-content" style="display: grid">
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/valine/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/valine/Valine.min.js"></script>
+<script>
+    new Valine({
+        el: '#vcomments',
+        appId: 'v2hJTCLDHLnGF4iSJkBJ8mga-MdYXbMMI',
+        appKey: 'Hu4UNHLVERHkhfH6G5xqdqN3',
+        notify: 'false' === 'true',
+        verify: 'false' === 'true',
+        visitor: 'true' === 'true',
+        avatar: 'mm',
+        pageSize: '10',
+        lang: 'zh-cn',
+        placeholder: '雁过留声，人过留名！说点什么... \ 公开网络空间，请不要发表任何包含个人或其他人的隐私信息！\ PS:在昵称栏输入QQ号可以自动获取QQ昵称和QQ头像哦~'
+    });
+</script>
+
+<!--酷Q推送-->
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+<article id="prenext-posts" class="prev-next articles">
+    <div class="row article-row">
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge left-badge text-color">
+                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+            <div class="card">
+                <a href="/image/2021-09-14-auto-expose-theory/">
+                    <div class="card-image">
+                        
+                        <img src="/medias/cover/imgprogress.jpg" class="responsive-img" alt="自动曝光原理">
+                        
+                        <span class="card-title">自动曝光原理</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary block-with-text">
+                        
+                            自动曝光原理简单介绍，以及其简单实现方法原理。自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。
+                        
+                    </div>
+                    <div class="publish-info">
+                        <span class="publish-date">
+                            <i class="far fa-clock fa-fw icon-date"></i>2021-09-14
+                        </span>
+                        <span class="publish-author">
+                            
+                            <i class="fas fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/image/" class="post-category">
+                                    image
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/3a/">
+                        <span class="chip bg-color">3a</span>
+                    </a>
+                    
+                    <a href="/tags/ae/">
+                        <span class="chip bg-color">ae</span>
+                    </a>
+                    
+                    <a href="/tags/image/">
+                        <span class="chip bg-color">image</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge right-badge text-color">
+                下一篇&nbsp;<i class="fas fa-chevron-right"></i>
+            </div>
+            <div class="card">
+                <a href="/web/2021-09-13-what-happened-when-you-click-http/">
+                    <div class="card-image">
+                        
+                        <img src="/medias/cover/web.jpg" class="responsive-img" alt="在浏览器输入 URL 回车之后发生了什么">
+                        
+                        <span class="card-title">在浏览器输入 URL 回车之后发生了什么</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary block-with-text">
+                        
+                            在浏览器输入 URL 回车之后发生了什么? 本文将为你解答。本文的步骤是建立在，请求的是一个简单的 HTTP 请求，没有 HTTPS、HTTP2、最简单的 DNS、没有代理、并且服务器没有任何问题的基础上。
+                        
+                    </div>
+                    <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2021-09-13
+                            </span>
+                        <span class="publish-author">
+                            
+                            <i class="fas fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/web/" class="post-category">
+                                    web
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/web/">
+                        <span class="chip bg-color">web</span>
+                    </a>
+                    
+                    <a href="/tags/http/">
+                        <span class="chip bg-color">http</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+    </div>
+</article>
+
+</div>
+
+
+<script>
+    $('#articleContent').on('copy', function (e) {
+        // IE8 or earlier browser is 'undefined'
+        if (typeof window.getSelection === 'undefined') return;
+
+        var selection = window.getSelection();
+        // if the selection is short let's not annoy our users.
+        if (('' + selection).length < Number.parseInt('100')) {
+            return;
+        }
+
+        // create a div outside of the visible area and fill it with the selected text.
+        var bodyElement = document.getElementsByTagName('body')[0];
+        var newdiv = document.createElement('div');
+        newdiv.style.position = 'absolute';
+        newdiv.style.left = '-99999px';
+        bodyElement.appendChild(newdiv);
+        newdiv.appendChild(selection.getRangeAt(0).cloneContents());
+
+        // we need a <pre> tag workaround.
+        // otherwise the text inside "pre" loses all the line breaks!
+        if (selection.getRangeAt(0).commonAncestorContainer.nodeName === 'PRE' || selection.getRangeAt(0).commonAncestorContainer.nodeName === 'CODE') {
+            newdiv.innerHTML = "<pre>" + newdiv.innerHTML + "</pre>";
+        }
+
+        var url = document.location.href;
+        newdiv.innerHTML += '<br />'
+            + '来源: 夜法之书<br />'
+            + '文章作者: 夜法之书<br />'
+            + '文章链接: <a href="' + url + '">' + url + '</a><br />'
+            + '本文章著作权归作者所有，任何形式的转载都请注明出处。';
+
+        selection.selectAllChildren(newdiv);
+        window.setTimeout(function () {bodyElement.removeChild(newdiv);}, 200);
+    });
+</script>
+
+
+<!-- 代码块功能依赖 -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/codeBlock/codeBlockFuction.js"></script>
+
+<!-- 代码语言 -->
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/codeBlock/codeLang.js"></script>
+
+
+<!-- 代码块复制 -->
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/codeBlock/codeCopy.js"></script>
+
+
+<!-- 代码块收缩 -->
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/codeBlock/codeShrink.js"></script>
+
+
+    </div>
+    <div id="toc-aside" class="expanded col l3 hide-on-med-and-down">
+        <div class="toc-widget card" style="background-color: white;">
+            <div class="toc-title"><i class="far fa-list-alt"></i>&nbsp;&nbsp;目录</div>
+            <div id="toc-content"></div>
+        </div>
+    </div>
+</div>
+
+<!-- TOC 悬浮按钮. -->
+
+<div id="floating-toc-btn" class="hide-on-med-and-down">
+    <a class="btn-floating btn-large bg-color">
+        <i class="fas fa-list-ul"></i>
+    </a>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/tocbot/tocbot.min.js"></script>
+<script>
     $(function () {
         tocbot.init({
             tocSelector: '#toc-content',
@@ -94,4 +2074,332 @@
         });
         
     });
-</script></main><footer class="page-footer bg-color"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/aplayer/APlayer.min.css"><style>.aplayer .aplayer-lrc p{display:none;font-size:12px;font-weight:700;line-height:16px!important}.aplayer .aplayer-lrc p.aplayer-lrc-current{display:none;font-size:15px;color:#42b983}.aplayer.aplayer-fixed.aplayer-narrow .aplayer-body{left:-66px!important}.aplayer.aplayer-fixed.aplayer-narrow .aplayer-body:hover{left:0!important}</style><div class=""><div class="row"><meting-js class="col l8 offset-l2 m10 offset-m1 s12" server="netease" type="playlist" id="4965675848" fixed="true" autoplay="false" theme="#42b983" loop="all" order="random" preload="auto" volume="0.7" list-folded="true"></meting-js></div></div><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/aplayer/APlayer.min.js"></script><script src="https://cdn.jsdelivr.net/npm/meting@2/dist/Meting.min.js"></script><div class="container row center-align" style="margin-bottom:0!important"><div class="col s12 m8 l8 copy-right"> Copyright&nbsp;&copy; <span id="year">2008-2021</span> <span id="year">2008</span> <a href="/about" target="_blank">夜法之书</a> |&nbsp;Powered by&nbsp;<a href="https://hexo.io/" target="_blank">Hexo</a> |&nbsp;Theme&nbsp;<a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank">Matery</a><br> &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color">124.6k</span> <span id="busuanzi_container_site_pv">&nbsp;|&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;<span id="busuanzi_value_site_pv" class="white-color"></span></span> <span id="busuanzi_container_site_uv">&nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;<span id="busuanzi_value_site_uv" class="white-color"></span></span><br><br></div><div class="col s12 m4 l4 social-link social-statis"><a href="https://github.com/appotry" class="tooltipped" target="_blank" data-tooltip="访问我的GitHub" data-position="top" data-delay="50"><i class="fab fa-github"></i></a><a href="https://hub.docker.com/u/bloodstar" class="tooltipped" target="_blank" data-tooltip="访问我的DockerHub" data-position="top" data-delay="50"><i class="fab fa-docker"></i></a><a href="mailto:andycrusoe@gmail.com" class="tooltipped" target="_blank" data-tooltip="邮件联系我" data-position="top" data-delay="50"><i class="fas fa-envelope-open"></i></a><a href="https://twitter.com/firedingden" class="tooltipped" target="_blank" data-tooltip="关注我的Twitter: https://twitter.com/firedingden" data-position="top" data-delay="50"><i class="fab fa-twitter"></i></a><a href="/atom.xml" class="tooltipped" target="_blank" data-tooltip="RSS 订阅" data-position="top" data-delay="50"><i class="fas fa-rss"></i></a></div></div></footer><div class="progress-bar"></div><div id="searchModal" class="modal"><div class="modal-content"><div class="search-header"><span class="title"><i class="fas fa-search"></i> &nbsp;&nbsp;搜索</span> <input type="search" id="searchInput" name="s" placeholder="请输入搜索的关键字" class="search-input"></div><div id="searchResult"></div></div></div><script type="text/javascript">$(function(){!function(t,a,s){"use strict";$.ajax({url:t,dataType:"xml",success:function(t){var e=$("entry",t).map(function(){return{title:$("title",this).text(),content:$("content",this).text(),url:$("url",this).text()}}).get(),r=document.getElementById(a),n=document.getElementById(s);r.addEventListener("input",function(){var f='<ul class="search-result-list">',m=this.value.trim().toLowerCase().split(/[\s\-]+/);n.innerHTML="",this.value.trim().length<=0||(e.forEach(function(t){var r=!0,n=t.title.trim().toLowerCase(),a=t.content.trim().replace(/<[^>]+>/g,"").toLowerCase(),e=t.url;e=0===e.indexOf("/")?t.url:"/"+e;var s=-1,i=-1,l=-1;if(""!==n&&""!==a&&m.forEach(function(t,e){s=n.indexOf(t),i=a.indexOf(t),s<0&&i<0?r=!1:(i<0&&(i=0),0===e&&(l=i))}),r){f+="<li><a href='"+e+"' class='search-result-title'>"+n+"</a>";var c=t.content.trim().replace(/<[^>]+>/g,"");if(0<=l){var u=l-20,o=l+80;u<0&&(u=0),0===u&&(o=100),o>c.length&&(o=c.length);var h=c.substr(u,o);m.forEach(function(t){var e=new RegExp(t,"gi");h=h.replace(e,'<em class="search-keyword">'+t+"</em>")}),f+='<p class="search-result">'+h+"...</p>"}f+="</li>"}}),f+="</ul>",n.innerHTML=f)})}})}("/search.xml","searchInput","searchResult")})</script><div id="backTop" class="top-scroll"><a class="btn-floating btn-large waves-effect waves-light" href="#!"><i class="fas fa-arrow-up"></i></a></div><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/materialize/materialize.min.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/masonry/masonry.pkgd.min.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/aos/aos.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/scrollprogress/scrollProgress.min.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/lightGallery/js/lightgallery-all.min.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/js/matery.js"></script><script>var _hmt=_hmt||[];!function(){var e=document.createElement("script");e.src="https://hm.baidu.com/hm.js?22cc5bdea6e529c1349d44b7306b3b8c";var t=document.getElementsByTagName("script")[0];t.parentNode.insertBefore(e,t)}()</script><script>!function(){var t=document.createElement("script"),e=window.location.protocol.split(":")[0];t.src="https"===e?"https://zz.bdstatic.com/linksubmit/push.js":"http://push.zhanzhang.baidu.com/push.js";var s=document.getElementsByTagName("script")[0];s.parentNode.insertBefore(t,s)}()</script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/others/clicklove.js" async="async"></script><script async src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/others/busuanzi.pure.mini.js"></script><script type="text/javascript" color="0,0,255" pointcolor="0,0,255" opacity="0.7" zindex="-1" count="99" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/background/canvas-nest.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/background/ribbon-dynamic.js" async="async"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/instantpage/instantpage.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/live2d-widget@3.x/lib/L2Dwidget.min.js"></script><script>L2Dwidget.init({pluginRootPath:"live2dw/",pluginJsPath:"lib/",pluginModelPath:"assets/",tagMode:!1,log:!1,model:{jsonPath:"https://cdn.jsdelivr.net/npm/live2d-widget-model-lwet@1.0.0/assets/14.json"},display:{position:"left",width:150,height:300,hOffset:35,vOffset:5},mobile:{show:!1}})</script></body></html>
+</script>
+
+    
+
+</main>
+
+
+
+
+    <footer class="page-footer bg-color">
+    
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/aplayer/APlayer.min.css">
+<style>
+    .aplayer .aplayer-lrc p {
+        
+        display: none;
+        
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 16px !important;
+    }
+
+    .aplayer .aplayer-lrc p.aplayer-lrc-current {
+        
+        display: none;
+        
+        font-size: 15px;
+        color: #42b983;
+    }
+
+    
+    .aplayer.aplayer-fixed.aplayer-narrow .aplayer-body {
+        left: -66px !important;
+    }
+
+    .aplayer.aplayer-fixed.aplayer-narrow .aplayer-body:hover {
+        left: 0px !important;
+    }
+
+    
+</style>
+<div class="">
+    
+    <div class="row">
+        <meting-js class="col l8 offset-l2 m10 offset-m1 s12"
+                   server="netease"
+                   type="playlist"
+                   id="4965675848"
+                   fixed='true'
+                   autoplay='false'
+                   theme='#42b983'
+                   loop='all'
+                   order='random'
+                   preload='auto'
+                   volume='0.7'
+                   list-folded='true'
+        >
+        </meting-js>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/aplayer/APlayer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/meting@2/dist/Meting.min.js"></script>
+
+    
+
+    <div class="container row center-align"
+         style="margin-bottom: 0px !important;">
+        <div class="col s12 m8 l8 copy-right">
+            Copyright&nbsp;&copy;
+            
+                <span id="year">2008-2021</span>
+            
+            <span id="year">2008</span>
+            <a href="/about" target="_blank">夜法之书</a>
+            |&nbsp;Powered by&nbsp;<a href="https://hexo.io/" target="_blank">Hexo</a>
+            |&nbsp;Theme&nbsp;<a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank">Matery</a>
+            <br>
+            
+                &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
+                        class="white-color">124.6k</span>
+            
+            
+            
+                
+            
+            
+                <span id="busuanzi_container_site_pv">
+                &nbsp;|&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;
+                    <span id="busuanzi_value_site_pv" class="white-color"></span>
+            </span>
+            
+            
+                <span id="busuanzi_container_site_uv">
+                &nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;
+                    <span id="busuanzi_value_site_uv" class="white-color"></span>
+            </span>
+            
+            <br>
+
+            <!-- 运行天数提醒. -->
+            
+            <br>
+            
+        </div>
+        <div class="col s12 m4 l4 social-link social-statis">
+    <a href="https://github.com/appotry" class="tooltipped" target="_blank" data-tooltip="访问我的GitHub" data-position="top" data-delay="50">
+        <i class="fab fa-github"></i>
+    </a>
+
+
+
+    <a href="https://hub.docker.com/u/bloodstar" class="tooltipped" target="_blank" data-tooltip="访问我的DockerHub" data-position="top" data-delay="50">
+        <i class="fab fa-docker"></i>
+    </a>
+
+
+
+    <a href="mailto:andycrusoe@gmail.com" class="tooltipped" target="_blank" data-tooltip="邮件联系我" data-position="top" data-delay="50">
+        <i class="fas fa-envelope-open"></i>
+    </a>
+
+
+
+
+
+    <a href="https://twitter.com/firedingden" class="tooltipped" target="_blank" data-tooltip="关注我的Twitter: https://twitter.com/firedingden" data-position="top" data-delay="50">
+        <i class="fab fa-twitter"></i>
+    </a>
+
+
+
+
+
+
+
+
+
+    <a href="/atom.xml" class="tooltipped" target="_blank" data-tooltip="RSS 订阅" data-position="top" data-delay="50">
+        <i class="fas fa-rss"></i>
+    </a>
+
+</div>
+    </div>
+</footer>
+
+<div class="progress-bar"></div>
+
+
+    <!-- 搜索遮罩框 -->
+<div id="searchModal" class="modal">
+    <div class="modal-content">
+        <div class="search-header">
+            <span class="title"><i class="fas fa-search"></i>&nbsp;&nbsp;搜索</span>
+            <input type="search" id="searchInput" name="s" placeholder="请输入搜索的关键字"
+                   class="search-input">
+        </div>
+        <div id="searchResult"></div>
+    </div>
+</div>
+
+<script type="text/javascript">
+$(function () {
+    var searchFunc = function (path, search_id, content_id) {
+        'use strict';
+        $.ajax({
+            url: path,
+            dataType: "xml",
+            success: function (xmlResponse) {
+                // get the contents from search data
+                var datas = $("entry", xmlResponse).map(function () {
+                    return {
+                        title: $("title", this).text(),
+                        content: $("content", this).text(),
+                        url: $("url", this).text()
+                    };
+                }).get();
+                var $input = document.getElementById(search_id);
+                var $resultContent = document.getElementById(content_id);
+                $input.addEventListener('input', function () {
+                    var str = '<ul class=\"search-result-list\">';
+                    var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+                    $resultContent.innerHTML = "";
+                    if (this.value.trim().length <= 0) {
+                        return;
+                    }
+                    // perform local searching
+                    datas.forEach(function (data) {
+                        var isMatch = true;
+                        var data_title = data.title.trim().toLowerCase();
+                        var data_content = data.content.trim().replace(/<[^>]+>/g, "").toLowerCase();
+                        var data_url = data.url;
+                        data_url = data_url.indexOf('/') === 0 ? data.url : '/' + data_url;
+                        var index_title = -1;
+                        var index_content = -1;
+                        var first_occur = -1;
+                        // only match artiles with not empty titles and contents
+                        if (data_title !== '' && data_content !== '') {
+                            keywords.forEach(function (keyword, i) {
+                                index_title = data_title.indexOf(keyword);
+                                index_content = data_content.indexOf(keyword);
+                                if (index_title < 0 && index_content < 0) {
+                                    isMatch = false;
+                                } else {
+                                    if (index_content < 0) {
+                                        index_content = 0;
+                                    }
+                                    if (i === 0) {
+                                        first_occur = index_content;
+                                    }
+                                }
+                            });
+                        }
+                        // show search results
+                        if (isMatch) {
+                            str += "<li><a href='" + data_url + "' class='search-result-title'>" + data_title + "</a>";
+                            var content = data.content.trim().replace(/<[^>]+>/g, "");
+                            if (first_occur >= 0) {
+                                // cut out 100 characters
+                                var start = first_occur - 20;
+                                var end = first_occur + 80;
+                                if (start < 0) {
+                                    start = 0;
+                                }
+                                if (start === 0) {
+                                    end = 100;
+                                }
+                                if (end > content.length) {
+                                    end = content.length;
+                                }
+                                var match_content = content.substr(start, end);
+                                // highlight all keywords
+                                keywords.forEach(function (keyword) {
+                                    var regS = new RegExp(keyword, "gi");
+                                    match_content = match_content.replace(regS, "<em class=\"search-keyword\">" + keyword + "</em>");
+                                });
+
+                                str += "<p class=\"search-result\">" + match_content + "...</p>"
+                            }
+                            str += "</li>";
+                        }
+                    });
+                    str += "</ul>";
+                    $resultContent.innerHTML = str;
+                });
+            }
+        });
+    };
+
+    searchFunc('/search.xml', 'searchInput', 'searchResult');
+});
+</script>
+
+    <!-- 回到顶部按钮 -->
+<div id="backTop" class="top-scroll">
+    <a class="btn-floating btn-large waves-effect waves-light" href="#!">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+</div>
+
+
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/materialize/materialize.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/masonry/masonry.pkgd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/aos/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/scrollprogress/scrollProgress.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/lightGallery/js/lightgallery-all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/js/matery.js"></script>
+
+    <!-- Baidu Analytics -->
+
+<script>
+    var _hmt = _hmt || [];
+    (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?22cc5bdea6e529c1349d44b7306b3b8c";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+    })();
+</script>
+
+    <!-- Baidu Push -->
+
+<script>
+    (function () {
+        var bp = document.createElement('script');
+        var curProtocol = window.location.protocol.split(':')[0];
+        if (curProtocol === 'https') {
+            bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+        } else {
+            bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+    })();
+</script>
+
+    
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/others/clicklove.js" async="async"></script>
+    
+    
+    <script async src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/others/busuanzi.pure.mini.js"></script>
+    
+
+    
+
+    
+
+    <!--腾讯兔小巢-->
+    
+    
+    <script type="text/javascript" color="0,0,255"
+        pointColor="0,0,255" opacity='0.7'
+        zIndex="-1" count="99"
+        src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/background/canvas-nest.js"></script>
+    
+
+    
+
+    
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/background/ribbon-dynamic.js" async="async"></script>
+    
+
+    
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.12/libs/instantpage/instantpage.js" type="module"></script>
+    
+
+<script src="https://cdn.jsdelivr.net/npm/live2d-widget@3.x/lib/L2Dwidget.min.js"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"https://cdn.jsdelivr.net/npm/live2d-widget-model-lwet@1.0.0/assets/14.json"},"display":{"position":"left","width":150,"height":300,"hOffset":35,"vOffset":5},"mobile":{"show":false}});</script></body>
+
+</html>
