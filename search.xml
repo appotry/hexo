@@ -1571,6 +1571,74 @@ lrwxrwxrwx <span class="token number">1</span> admin administrators <span class=
       </tags>
   </entry>
   <entry>
+    <title>ESNI和加密DNS - 保护信息隐私的最后一块拼图</title>
+    <url>/web/2021-09-06-encrypted-sni-anti-censorship/</url>
+    <content><![CDATA[<p>随着<a href="https://www.ietf.org/blog/tls13/">TLS1.3</a>的发布，让该协议成为有史以来最安全、也是最复杂的TLS协议。在该协议之中，有很多的对于以往协议安全漏洞的修复，包括废弃RSA启用新的秘钥交换机制PSK等等。而<code>Encrypted SNI</code>作为一个<code>TLS1.3</code>的扩展协议用来防止传统的HTTPS流量受到ISP或者陌生网络环境的窥探以及一些网络审查。在过去，由于<code>HTTPS</code>协议之中<code>Server Name Indication - SNI</code>的使用，我们的HTTPS流量经常被窥探我们所访问站点的域名</p>
+<h3 id="那么什么是SNI？⌗"><a href="#那么什么是SNI？⌗" class="headerlink" title="那么什么是SNI？⌗"></a>那么什么是SNI？<a href="#%E9%82%A3%E4%B9%88%E4%BB%80%E4%B9%88%E6%98%AFsni">⌗</a></h3><blockquote>
+<p>服务器名称指示（英语：Server Name Indication，简称SNI）是一个扩展的TLS计算机联网协议，在该协议下，在握手过程开始时客户端告诉它正在连接的服务器要连接的主机名称。这允许服务器在相同的IP地址和TCP端口号上呈现多个证书，并且因此允许在相同的IP地址上提供多个安全（HTTPS）网站（或其他任何基于TLS的服务），而不需要所有这些站点使用相同的证书。它与HTTP/1.1基于名称的虚拟主机的概念相同，但是用于HTTPS。所需的主机名未加密， 因此窃听者可以查看请求的网站 为了使SNI协议起作用，绝大多数访问者必须使用实现它的Web浏览器。使用未实现SNI浏览器的用户将被提供默认证书，因此很可能会收到证书警告</p>
+</blockquote>
+<ul>
+<li>  SNI协议示意图</li>
+</ul>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144946.webp"></p>
+<ul>
+<li>  TLS1.3完整握手流程</li>
+</ul>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144904.webp"></p>
+<h3 id="为了弥补缺陷因应运而生的ESNI⌗"><a href="#为了弥补缺陷因应运而生的ESNI⌗" class="headerlink" title="为了弥补缺陷因应运而生的ESNI⌗"></a>为了弥补缺陷因应运而生的ESNI<a href="#%E4%B8%BA%E4%BA%86%E5%BC%A5%E8%A1%A5%E7%BC%BA%E9%99%B7%E5%9B%A0%E5%BA%94%E8%BF%90%E8%80%8C%E7%94%9F%E7%9A%84esni">⌗</a></h3><p>在上述过程之中，存在的问题就是，在ClientHello环节中，TLS会在这个位置以<strong>明文</strong>的形式讲要请求的Host写在数据包之中，如果在网络路由中有任何的监听节点，那么用户所访问网站的域名将暴露无遗，这将是巨大的用户隐私泄露: <img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144907.webp"></p>
+<p>所以在最新的关于<a href="https://tools.ietf.org/html/draft-rescorla-tls-esni-00">ESNI的草案</a>中，<code>IETF</code>重新设计了一种加密的Client Hello机制，从而修复了这个问题: <img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144915.webp"></p>
+<p><strong>不过这里问题又来了，之前服务器和客户端并没有事先交换任何数据啊，这个加密的凭证从何而来啊？？？</strong></p>
+<h3 id="依靠安全DNS的ESNI⌗"><a href="#依靠安全DNS的ESNI⌗" class="headerlink" title="依靠安全DNS的ESNI⌗"></a>依靠安全DNS的ESNI<a href="#%E4%BE%9D%E9%9D%A0%E5%AE%89%E5%85%A8dns%E7%9A%84esni">⌗</a></h3><p>上一个问题没有难倒工程师们，他们设计了这样一个办法。首先让网站提供者在DNS提供商上公布一个记录，这个记录包含着一个<code>公钥</code>，这个公钥由网站提供者生成，其<code>私钥</code>存储在Web服务器等待着被Web程序读取。如此，当用户想通过TLS1.3协议访问这个域名的时候，首先读取这个公开的公钥，在用公钥加密其想访问的<code>域名Host</code>，装在<code>Client Hello</code>里面发送给目标服务器，目标服务器再用自己的私钥解密，从而和用户建立HTTPS链接，这样就不会暴露Host信息 这时候有人会想，如果有人某Wall想给你的DNS偷天换日，那会不会很不安全啊,请继续向下看</p>
+<p>在<code>ESNI</code>的实现草案之中，里面要求<code>安全加密的DNS</code><strong>是推荐的</strong>。大家都知道我们的DNS查询一般是<code>TCP</code>报文或者是<code>UDP</code>报文，本身它是不加密的，所以如果有人想在篡改你的DNS是相对简单的，大家可能都知道我们伟大的妨炎蔷会使用DNS污染的方式干扰一些网站的正常访问。正式由于DNS的非加密性，DNS也成为了审查信息的利器。此时加密的DNS势在必行</p>
+<h3 id="DNS-over-TLS-DoT-and-DNS-over-HTTPS-DoH-⌗"><a href="#DNS-over-TLS-DoT-and-DNS-over-HTTPS-DoH-⌗" class="headerlink" title="DNS over TLS (DoT) and DNS over HTTPS (DoH)⌗"></a>DNS over TLS (DoT) and DNS over HTTPS (DoH)<a href="#dns-over-tls-dot-and-dns-over-https-doh">⌗</a></h3><p>于是出现了这两种新型的DNS查询方式</p>
+<ul>
+<li>  DNS over HTTPS (DoH)</li>
+</ul>
+<blockquote>
+<p>DNS Over HTTPS (DOH) 是一个进行安全化的域名解析的方案，当前尚处于实验性阶段。其意义在于以加密的HTTPS协议进行DNS解析请求，避免原始DNS协议中用户的DNS解析请求被窃听或者修改的问题（例如中间人攻击）来达到保护用户隐私的目的。 Google及Mozilla基金会正在测试这一协议，作为其提高网络安全性的努力的一部分。 当前，该方案由IETF支持，其规范文档以 RFC 8484 的名义发布。2018年9月5日发布的Firefox 62正式版加入了这项功能，但需要用户手动开启 DNS Over HTTPS利用HTTP协议的GET命令发出经由JSON等编码的DNS解析请求。较于传统的DNS协议，此处的HTTP协议通信处于具有加密作用的SSL/TLS协议（两者统称作HTTPS）的保护之下。但是，由于其基于HTTPS，而HTTPS本身需要经由多次数据来回传递才能完成协议初始化，其域名解析耗时较原DNS协议会显著增加。 传统的DNS协议形成于互联网早期，直接基于UDP或TCP协议，且彼时未虑及现代安全性的需要，未利用密码学等手段进行加密或验证。因而，其无法抵御现代互联网常见的DNS投毒污染等攻击手段或监听。虽然后来的DNSSEC方案通过电子签名进行验证，强化了DNS的安全性，并能够抵御DNS投毒污染等篡改通信的手段，但其对于中间网络设备进行的监听仍然没有抵御能力（随后，监听者可以通过获取的通信数据知晓用户访问了哪一域名，而域名往往与具体的网站相关系）。此外，DNSSEC的起效要求现有的大量DNS解析服务的提供商（常为互联网服务提供商或第三方大型互联网机构）对已有的DNS服务器进行大范围修改等问题，其推进进程并不理想。而对于DNS Over HTTPS，在正确部署服务端并妥善配置客户端的前提下，互联网服务提供商或其它中间网络设备无法解密（亦即无法获知请求的实际内容）或者篡改已经加密的HTTPS通信，故其能够有效保护互联网用户的安全及隐私；另一方面，其基于已经成熟并已广泛部署的HTTPS协议，客户端进行利用较为方便。</p>
+</blockquote>
+<ul>
+<li>  DNS over TLS (DoT)</li>
+</ul>
+<blockquote>
+<p>DNS over TLS (DoT) 是通过传输层安全协议（TLS）来加密并打包域名系统（DNS）的安全协议。此协议旨在防止中间人攻击与控制DNS数据以保护用户隐私。 RFC 7858及RFC 8310定义了DNS over TLS。 截至2018年，Cloudflare、Quad9与CleanBrowsing均向大众提供支持DNS over TLS的公共DNS解析服务。2018年4月，Google宣布Android P将包含对DNS over TLS的支持。PowerDNS的DNSDist也宣布在其最新的1.3.0版本中添加了对DNS over TLS的支持。BIND用户也可以通过stunnel代理提供DNS over TLS服务。</p>
+</blockquote>
+<h3 id="手动配置⌗"><a href="#手动配置⌗" class="headerlink" title="手动配置⌗"></a>手动配置<a href="#%E6%89%8B%E5%8A%A8%E9%85%8D%E7%BD%AE">⌗</a></h3><p>Firefox所在的Mozilla宣布从<code>Firefox 62</code>版本之后开始支持<code>ESNI</code>，默认没有开启，需要用户手动配置打开，那么我们现在试验一下 这里Firefox的解决方案是使用<code>DNS over HTTPS (DoH)</code>和<code>ESNI</code></p>
+<ol>
+<li>安装<code>Firefox Nightly</code>版本，这个版本是预发布版本，使得开发这和即可门可以提前尝鲜到新功能。<a href="https://www.mozilla.org/zh-CN/firefox/nightly/all/">下载地址</a></li>
+<li>在浏览器地址栏输入<code>about:config</code>并回车，打开配置页面，在搜索位置搜索<code>network.trr.mode</code>，这个是打开浏览器对于<code>DoH</code>的支持，将此项的数值修改为3（<code>0</code>对应的是不开启此功能；<code>1</code>对应的是交由浏览器选择<code>DoH</code>与传统方式那种更快；<code>2</code>代表优先使用加密DNS查询，如果失败则回落到普通DNS查询；<code>3</code>代表只使用加密DNS查询；<code>5</code>代表明确的关闭此功能）</li>
+<li>继续搜索<code>network.trr.uri</code>，将此项的值修改为<code>https://mozilla.cloudflare-dns.com/dns-query</code>，这个是默认的<code>DoH</code>查询地址，当然我们也可以使用诸如<code>https://1.1.1.1/dns-query</code>、<code>https://dns.google.com/experimental</code>这样的地址，我们可以事先<code>ping</code>检测一下对比哪个延迟更低来使用</li>
+<li>（可选）搜索<code>network.trr.bootstrapAddress</code>，讲此值修改位第三步的DNS域名的<code>IP</code>。此举是为了避免使用操作系统DNS查询域名受到劫持，一般来说这些DNS的<code>IP</code>是不会变的</li>
+</ol>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828145006.webp"></p>
+<ol start="5">
+<li>将<code>network.security.esni.enabled</code>设置为<code>true</code>,此举为了打开浏览器对于ESNI的支持（感谢<a href="https://github.com/chenIshi">chenlshi</a>同学的提醒，在原版的文章中我不小心遗漏了这个关键的步骤）</li>
+<li>完成配置后重启浏览器，再打开<a href="https://encryptedsni.com/">在线验证页面验证</a>来查询你的浏览器是否完全支持<code>ESNI</code>功能，如果出现如图说明配置成功了</li>
+</ol>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144924.webp"></p>
+<h3 id="验证⌗"><a href="#验证⌗" class="headerlink" title="验证⌗"></a>验证<a href="#%E9%AA%8C%E8%AF%81">⌗</a></h3><p>为了验证是否真的加密了<code>Client Hello</code>，我们使用<code>Wireshark</code>进行网络抓包 由于这个特性仍在试验阶段，并没有太多站点支持这个特性，<a href="https://cloudflare.com/">CloudFlare</a>是第一个全站支持<code>ESNI</code>的网站，这里我们使用<a href="https://blog.cloudflare.com/">blog.cloudflare.com</a>来做测试：</p>
+<ol>
+<li> 首先打开<code>Wireshark</code>的抓包功能，然后开启<code>Chrome</code>浏览器打开上述网址，页面加载完后停止抓包，在得到的结果中查询协议为<code>TLS1.3</code>和报文为<code>Client Hello</code>的报文，通过观察发现域名的Host果然被以明文形式写在数据包中（参见<code>Server_Name</code>字段）：</li>
+</ol>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144932.webp"></p>
+<ol start="2">
+<li> 然后打开<code>Firefox Nightly</code>浏览器重复上述操作，这次发现在整个数据包中根本找不到<code>Server_Name</code>字段，说明<code>Host</code>已经被加密：</li>
+</ol>
+<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144933.webp"></p>
+<p>目前来说，我查阅了相关的关键词，仍然没有任何一篇教程有介绍如何在自己的服务器上支持<code>ESNI</code>，同时我也看到在<code>Nginx</code>的论坛里面有人呼吁尽快支持<code>ESNI</code>，所以我推测这个功能仍然在试验期，还没有被这两个Web软件所支持，起劲为止我也没有查阅到任何的Web软件预计支持此项功能。这项扩展已经进入<code>IETF</code>的草案阶段，可以预见到，在不就的将来，这项技术可以普及开来，为我们的网络隐私保驾护航 目前来说，有了<code>HTTPS</code>+<code>TLS1.3</code>+<code>ESNI</code>+<code>DoH/DoT</code>的加持，我们的网络隐私的到了极大的保障，最后还有一个问题是访问服务器<code>IP</code>的泄露仍然无法被避免，迫于<code>IP协议</code>设计的机制，他目前还不能被解决。不过我相信，随着网技术不断的趋于保护个人隐私和更快速的发展方向，这个问题可以最终被解决</p>
+<p>From: <a href="https://blog.hackerchai.com/post/encrypted-sni-anti-censorship/">hackerchai</a></p>
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>SSL</tag>
+        <tag>TLS</tag>
+        <tag>隐私</tag>
+        <tag>安全</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>【Gitlab】GitBook+GitLab撰写发布技术文档-Part2:GitLab篇</title>
     <url>/gitbook/2021-09-07-gitbook-gitlab-write-and-publish-technical-documentation-part2-gitlab/</url>
     <content><![CDATA[<p>上一篇文章介绍了如果用 gitbook 写书，并且我们已经通过 <code>gitbook build</code>命令把书的内容打包成 HTML 格式发布到了<code>_book</code>文件夹中。<br>接下来这篇文章将向大家介绍如何把写好的书发布到 gitlab 上。这里 gitlab 是我们自己搭建在公司内网中的，不过要用到的原理其实都是一样的，就是利用其 CI/CD 功能。<br>关于 CI/CD 网上有很多详细的介绍，这里我就不不再重复啰嗦，如果有想学习的可以参看文末的致谢&amp;引用部分。</p>
@@ -1638,180 +1706,6 @@ $ <span class="token function">sudo</span> gitlab-runner start<span aria-hidden=
 <li><a href="https://docs.gitlab.com/runner/install/linux-manually.html">Install GitLab Runner manually on GNU/Linux(https://docs.gitlab.com/runner/install/linux-manually.html)</a></li>
 </ul>
 <p>From: <a href="http://lipeng1667.github.io/2019/01/15/public-doc-with-gitlab-ci-writing-with-gitbook/">lipeng1667</a></p>
-]]></content>
-      <categories>
-        <category>gitbook</category>
-      </categories>
-      <tags>
-        <tag>Git</tag>
-        <tag>linux</tag>
-        <tag>GitBook</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>【Gitbook】GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</title>
-    <url>/gitbook/2021-09-07-gitbook-gitlab-write-and-publish-technical-documents-part1-gitbook-chapter/</url>
-    <content><![CDATA[<p>随着工作时间越来越久，项目越做越多，很多时候，手里面的技术文档都是零散的技术点。最近一直在着手把项目的技术开发文档(Technical Document)系统地整理一下。正好看到了非常棒的 GitBook 工具，又顺带研究了如何借助 Gitlab 的 CI/CD 功能实现自动部署。<br>正好开个简短的教程，介绍一下 <code>GitBook</code> + <code>GitLab</code>怎样来撰写并发布文档。<br>第一部分先来介绍一下 GitBook。</p>
-<h1 id="系统环境"><a href="#系统环境" class="headerlink" title="系统环境"></a>系统环境</h1><p>惯例列出来我们的环境以及用到的工具。</p>
-<ul>
-<li>MacOS 10.12</li>
-<li>Node.js (版本 &gt; 4.0.0)</li>
-<li>Atom/MWebLite</li>
-</ul>
-<p>其实 Gitbook 有官方的编辑器，但是似乎对中文的支持不是很好，而且会有 bug，虽然最新版本做了优化，Mardown 格式的文字有些会自动显示成最终样式，而我个人还是比较喜欢原生的 markdown，所以我个人就没有用官方的编辑器。<br>如果读者注册了 gitbook，并且打算文章都发布到 gitbook 官网上的话，还是建议可以使用官方的编辑器。因为我的目标是发布到公司内网的 gitlab 上，所以这里就用 atom 或者 MWebLite 来编写文档。<br>其实这篇文章过后，大家对 Gitbook 的工作机制就很清楚了，完全可以自由地创作了。</p>
-<h1 id="基本使用"><a href="#基本使用" class="headerlink" title="基本使用"></a>基本使用</h1><h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>安装过程非常简单</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> <span class="token function">install</span> gitbook-cli -g<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h2 id="新建book"><a href="#新建book" class="headerlink" title="新建book"></a>新建book</h2><p>安装成功后，我们就可以开始用gitbook 的命令来进行各种操作了。如果熟悉<code>hexo</code>的同学会发现，其实大同小异，只不过一个用来写blog，一个用来写 book。</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token function">mkdir</span> myBook
-$ <span class="token builtin class-name">cd</span> myBook
-$ gitbook init<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<p>初始化后，我们能在<code>myBook</code>目录下看到两个 markdown 文f件。这两个文件就是我们写一本书唯二必须要用的文件了。</p>
-<p><a href="http://www.microwu.com/MichaelLee/20190114/1.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0720210907191936.png" alt="img"></a></p>
-<h2 id="预览book"><a href="#预览book" class="headerlink" title="预览book"></a>预览book</h2><p>先不做任何变动，模拟一下我们发布之后的页面的成品吧。</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ gitbook serve<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p><a href="http://www.microwu.com/MichaelLee/20190114/2.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0720210907191946.png" alt="img"></a></p>
-<p>我们打开浏览器，在浏览器中输入<code>0.0.0.0:4000</code>就可以在本地预览了。</p>
-<p><a href="http://www.microwu.com/MichaelLee/20190114/3.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0720210907191948.png" alt="img"></a></p>
-<p>可以看到，左侧是我们的菜单栏，自带一个搜索栏，右侧就是我们的 book 的内容了，右上角有默认的诸如 twitter,facebook 等分享快捷方式。基本上和其他人用 gitbook 写出来的页面是一样的。</p>
-<blockquote>
-<p>注：</p>
-<ol>
-<li>gitbook 新版本提供了本地预览功能的热更新，也就是说本地预览的页面会随着我们写书的内容变化而自动更新，这着实是一个很使用的功能。</li>
-<li>在命令行ctrl+c可以关闭本地服务器，即预览页面。</li>
-</ol>
-</blockquote>
-<p>我们可以尝试修改一下书的内容，看一下页面的变化。打开<code>README.md</code>文件，修改成如下内容：</p>
-<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Introduction</span>
- 
-Hello World!<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<p>再回头看一眼我们的预览页面，是不是自动变成了下面的样子。</p>
-<p><a href="http://www.microwu.com/MichaelLee/20190114/4.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0720210907192001.png" alt="img"></a></p>
-<p>关于 gitbook 自建的 README.md 文件我就不做过多的介绍了，都是一些 Markdown 的基本语法，相信使用 gitbook 的各位一定是对 markdown 语法非常熟悉的了。</p>
-<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><p>现在我们把注意力放到 gitbook 为我们创建的第二个文件<code>SUMMARY.md</code>上，这个文件决定了我们的目录结构。 一个比较简单的目录结构如下：</p>
-<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Summary</span>
- 
-<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">前言</span>](<span class="token url">README.md</span>)</span>
-<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">第一章</span>](<span class="token url">xx.md</span>)</span>
-<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">第二章</span>](<span class="token url">xx.md</span>)</span>
-<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">第三章</span>](<span class="token url">xx.md</span>)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p><code>xx.md</code>就是我们每个章节独立的 markdown 文件，所以用 gitbook 写一本书真的非常方便，一个目录文件，和若干个你的书的内容就好了。</p>
-<p><a href="http://www.microwu.com/MichaelLee/20190114/5.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0720210907192009.png" alt="img"></a></p>
-<h3 id="目录分层"><a href="#目录分层" class="headerlink" title="目录分层"></a>目录分层</h3><p>简单的目录有一个小的问题就是我们目录都只有一级，如果想要分层，比如第一章有1，2，3个小节，该怎么办呢？ 这里有两种方式：</p>
-<h4 id="标题区分"><a href="#标题区分" class="headerlink" title="标题区分"></a>标题区分</h4><p>我们把<code>SUMMARY.md</code>文件修改成如下内容</p>
-<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Summary</span>
- 
-<span class="token title important"><span class="token punctuation">##</span> 前言</span>
-<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">前言</span>](<span class="token url">README.md</span>)</span>
- 
-<span class="token title important"><span class="token punctuation">##</span> 第一章</span>
-<span class="token list punctuation">*</span> [1.1小节]()
-<span class="token list punctuation">*</span> [1.2小节]()
- 
-<span class="token title important"><span class="token punctuation">##</span> 第二章</span>
-<span class="token list punctuation">*</span> [2.1小节]()
-<span class="token list punctuation">*</span> [2.2小节]()
- 
-<span class="token title important"><span class="token punctuation">##</span> 第三章</span>
-<span class="token list punctuation">*</span> [3.1小节]()
-<span class="token list punctuation">*</span> [3.2小节]()<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>最终的样式如下：</p>
-<p><a href="http://www.microwu.com/MichaelLee/20190114/6.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0720210907192025.png" alt="img"></a></p>
-<h4 id="缩进区分"><a href="#缩进区分" class="headerlink" title="缩进区分"></a>缩进区分</h4><p>我们还可以用缩进的方式对目录进行级别的区分</p>
-<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Summary</span>
- 
-<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">前言</span>](<span class="token url">README.md</span>)</span>
-<span class="token list punctuation">*</span> [第一章]()
-    <span class="token list punctuation">*</span> [1.1小节]()
-    <span class="token list punctuation">*</span> [1.2小节]()
-<span class="token list punctuation">*</span> [第二章]()
-    <span class="token list punctuation">*</span> [2.1小节]()
-    <span class="token list punctuation">*</span> [2.2小节]()
-<span class="token list punctuation">*</span> [第三章]()
-    <span class="token list punctuation">*</span> [3.1小节]()
-    <span class="token list punctuation">*</span> [3.2小节]()<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>最终的样式如下：</p>
-<p><a href="http://www.microwu.com/MichaelLee/20190114/7.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0720210907192039.png" alt="img"></a></p>
-<p>大家可以根据自己的喜好选择不同的样式，也可以把这两者结合起来一起用，as you wish.</p>
-<h2 id="打包发布"><a href="#打包发布" class="headerlink" title="打包发布"></a>打包发布</h2><p>通过预览模式，我们可以随时掌握书籍的更新内容。当你完成了部分章节或者全书的编写后，我们需要把写好的内容打包并发布。</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ gitbook build<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p>执行完上面的命令后，我们会发现在根目录下出现了<code>_build</code>文件夹，里面的文件就是我们需要发布的内容，你可以把所有的内容放到你的网站目录下，或者 gitlab/github 的 page页面，就实现了 gitbook 的线上发布了~</p>
-<h1 id="进阶技巧"><a href="#进阶技巧" class="headerlink" title="进阶技巧"></a>进阶技巧</h1><p>看完上面的章节，你已经可以独立完成一本书的编写和发布，接下来的章节，我们提供一些进阶的技巧，你可以安装一些插件、更直观地规划你的目录结构等等。</p>
-<h2 id="插件"><a href="#插件" class="headerlink" title="插件"></a>插件</h2><p>和众多开源的软件一样，gitbook 也有一些插件，这些插件可以让你的书更加完美。这里我仅附上我个人觉得比较有用的几个插件，更多的插件，可以访问<a href="https://plugins.gitbook.com/">社区</a>来获取。<br>插件的引入和修改都是在配置文件中完成的，那我们可以在根目录下创建<code>book.json</code>文件来修改当前书的一些配置，因为是 json 格式的，所以诸如书的标题、作者、内容等都可以在配置文件中完成，我们重点来说插件。</p>
-<pre class="line-numbers language-json" data-language="json"><code class="language-json"><span class="token punctuation">{</span>
-     <span class="token property">"plugins"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
-          <span class="token string">"-lunr"</span><span class="token punctuation">,</span>
-          <span class="token string">"-search"</span><span class="token punctuation">,</span>
-          <span class="token string">"search-plus"</span><span class="token punctuation">,</span>
-          <span class="token string">"splitter"</span><span class="token punctuation">,</span>
-          <span class="token string">"copy-code-button"</span><span class="token punctuation">,</span>
-          <span class="token string">"expandable-chapters-small"</span>
-     <span class="token punctuation">]</span>
-<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>以上是我的<code>book.json</code>配置文件，只有一个关于插件的配置项，其实总共就4个</p>
-<ul>
-<li>search-plus 让搜索支持中文，注意需要先把默认的两个插件<code>lunr</code>和<code>serach</code>禁用掉，禁用的方式就是在前面加上<code>-</code>号</li>
-<li>spliter 菜单栏宽度可调节</li>
-<li>copy-code-button 代码可以一键 copy</li>
-<li>expandable-chapters-small 菜单栏可以折叠</li>
-</ul>
-<blockquote>
-<p>注：<br>如果引入了新的插件，需要通过<code>gitbook install</code> 命令来安装新的插件，否则在打包发布的时候会提示错误。</p>
-</blockquote>
-<h2 id="目录结构"><a href="#目录结构" class="headerlink" title="目录结构"></a>目录结构</h2><p>一个基本的目录结构是这样的</p>
-<pre class="line-numbers language-ini" data-language="ini"><code class="language-ini">.
-├── _book/
-├── book.json
-├── README.md
-├── SUMMARY.md
-├── xx1.md
-├── xx2.md
-├── xx3.md
-├── xx4.md
-├── ...<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>不过为了我们自己方便，个人建议的目录结构如下</p>
-<pre class="line-numbers language-ini" data-language="ini"><code class="language-ini">.
-├── _book/
-├── node_modules/
-├── .gitlab-ci.yml
-├── book.json
-├── SUMMARY.md
-├── content/
-|   ├── chapter1/
-|       ├── README.md
-|       └── something.md
-|   ├── chapter2/
-|       ├── README.md
-|       └── something.md
-├── res/
-|   ├── 1.png
-|   └── 2.jpg
-|   └── 3.jpeg
-|   └── ...<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>说明：</p>
-<ul>
-<li><code>_book</code> 目录是我们打包后要发布的文件目录</li>
-<li><code>node_modules</code> 目录是我们安装插件后默认生成的目录</li>
-<li><code>.gitlab-ci.yml</code>这个是 gitlab 要用的 ci 配置文件，下一章节我们马上就会用到</li>
-<li><code>book.json</code> 是我们的配置文件</li>
-<li><code>content</code>目录是我们的书的内容，所有章节都可以分类继续整理，方便自己查看</li>
-<li><code>res</code>目录是我们要用到的一些图片资源文件夹，除了用到床图，我们可以把其他本地图片资源也包含进来</li>
-</ul>
-<h1 id="参考-amp-致谢"><a href="#参考-amp-致谢" class="headerlink" title="参考&amp;致谢"></a>参考&amp;致谢</h1><ul>
-<li><a href="https://gitbook.zhangjikai.com/">Gitbook 简要介绍</a></li>
-<li><a href="https://yangjh.oschina.io/gitbook/">GitBook 学习笔记</a></li>
-</ul>
-<p>From: <a href="http://lipeng1667.github.io/2019/01/15/how-to-write-techdoc-with-gitbook/">lipeng1667</a></p>
 ]]></content>
       <categories>
         <category>gitbook</category>
@@ -2629,6 +2523,180 @@ This is the admonition body
       </tags>
   </entry>
   <entry>
+    <title>【Gitbook】GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</title>
+    <url>/gitbook/2021-09-07-gitbook-gitlab-write-and-publish-technical-documents-part1-gitbook-chapter/</url>
+    <content><![CDATA[<p>随着工作时间越来越久，项目越做越多，很多时候，手里面的技术文档都是零散的技术点。最近一直在着手把项目的技术开发文档(Technical Document)系统地整理一下。正好看到了非常棒的 GitBook 工具，又顺带研究了如何借助 Gitlab 的 CI/CD 功能实现自动部署。<br>正好开个简短的教程，介绍一下 <code>GitBook</code> + <code>GitLab</code>怎样来撰写并发布文档。<br>第一部分先来介绍一下 GitBook。</p>
+<h1 id="系统环境"><a href="#系统环境" class="headerlink" title="系统环境"></a>系统环境</h1><p>惯例列出来我们的环境以及用到的工具。</p>
+<ul>
+<li>MacOS 10.12</li>
+<li>Node.js (版本 &gt; 4.0.0)</li>
+<li>Atom/MWebLite</li>
+</ul>
+<p>其实 Gitbook 有官方的编辑器，但是似乎对中文的支持不是很好，而且会有 bug，虽然最新版本做了优化，Mardown 格式的文字有些会自动显示成最终样式，而我个人还是比较喜欢原生的 markdown，所以我个人就没有用官方的编辑器。<br>如果读者注册了 gitbook，并且打算文章都发布到 gitbook 官网上的话，还是建议可以使用官方的编辑器。因为我的目标是发布到公司内网的 gitlab 上，所以这里就用 atom 或者 MWebLite 来编写文档。<br>其实这篇文章过后，大家对 Gitbook 的工作机制就很清楚了，完全可以自由地创作了。</p>
+<h1 id="基本使用"><a href="#基本使用" class="headerlink" title="基本使用"></a>基本使用</h1><h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>安装过程非常简单</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> <span class="token function">install</span> gitbook-cli -g<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h2 id="新建book"><a href="#新建book" class="headerlink" title="新建book"></a>新建book</h2><p>安装成功后，我们就可以开始用gitbook 的命令来进行各种操作了。如果熟悉<code>hexo</code>的同学会发现，其实大同小异，只不过一个用来写blog，一个用来写 book。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token function">mkdir</span> myBook
+$ <span class="token builtin class-name">cd</span> myBook
+$ gitbook init<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p>初始化后，我们能在<code>myBook</code>目录下看到两个 markdown 文f件。这两个文件就是我们写一本书唯二必须要用的文件了。</p>
+<p><a href="http://www.microwu.com/MichaelLee/20190114/1.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0720210907191936.png" alt="img"></a></p>
+<h2 id="预览book"><a href="#预览book" class="headerlink" title="预览book"></a>预览book</h2><p>先不做任何变动，模拟一下我们发布之后的页面的成品吧。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ gitbook serve<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p><a href="http://www.microwu.com/MichaelLee/20190114/2.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0720210907191946.png" alt="img"></a></p>
+<p>我们打开浏览器，在浏览器中输入<code>0.0.0.0:4000</code>就可以在本地预览了。</p>
+<p><a href="http://www.microwu.com/MichaelLee/20190114/3.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0720210907191948.png" alt="img"></a></p>
+<p>可以看到，左侧是我们的菜单栏，自带一个搜索栏，右侧就是我们的 book 的内容了，右上角有默认的诸如 twitter,facebook 等分享快捷方式。基本上和其他人用 gitbook 写出来的页面是一样的。</p>
+<blockquote>
+<p>注：</p>
+<ol>
+<li>gitbook 新版本提供了本地预览功能的热更新，也就是说本地预览的页面会随着我们写书的内容变化而自动更新，这着实是一个很使用的功能。</li>
+<li>在命令行ctrl+c可以关闭本地服务器，即预览页面。</li>
+</ol>
+</blockquote>
+<p>我们可以尝试修改一下书的内容，看一下页面的变化。打开<code>README.md</code>文件，修改成如下内容：</p>
+<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Introduction</span>
+ 
+Hello World!<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p>再回头看一眼我们的预览页面，是不是自动变成了下面的样子。</p>
+<p><a href="http://www.microwu.com/MichaelLee/20190114/4.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0720210907192001.png" alt="img"></a></p>
+<p>关于 gitbook 自建的 README.md 文件我就不做过多的介绍了，都是一些 Markdown 的基本语法，相信使用 gitbook 的各位一定是对 markdown 语法非常熟悉的了。</p>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><p>现在我们把注意力放到 gitbook 为我们创建的第二个文件<code>SUMMARY.md</code>上，这个文件决定了我们的目录结构。 一个比较简单的目录结构如下：</p>
+<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Summary</span>
+ 
+<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">前言</span>](<span class="token url">README.md</span>)</span>
+<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">第一章</span>](<span class="token url">xx.md</span>)</span>
+<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">第二章</span>](<span class="token url">xx.md</span>)</span>
+<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">第三章</span>](<span class="token url">xx.md</span>)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><code>xx.md</code>就是我们每个章节独立的 markdown 文件，所以用 gitbook 写一本书真的非常方便，一个目录文件，和若干个你的书的内容就好了。</p>
+<p><a href="http://www.microwu.com/MichaelLee/20190114/5.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0720210907192009.png" alt="img"></a></p>
+<h3 id="目录分层"><a href="#目录分层" class="headerlink" title="目录分层"></a>目录分层</h3><p>简单的目录有一个小的问题就是我们目录都只有一级，如果想要分层，比如第一章有1，2，3个小节，该怎么办呢？ 这里有两种方式：</p>
+<h4 id="标题区分"><a href="#标题区分" class="headerlink" title="标题区分"></a>标题区分</h4><p>我们把<code>SUMMARY.md</code>文件修改成如下内容</p>
+<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Summary</span>
+ 
+<span class="token title important"><span class="token punctuation">##</span> 前言</span>
+<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">前言</span>](<span class="token url">README.md</span>)</span>
+ 
+<span class="token title important"><span class="token punctuation">##</span> 第一章</span>
+<span class="token list punctuation">*</span> [1.1小节]()
+<span class="token list punctuation">*</span> [1.2小节]()
+ 
+<span class="token title important"><span class="token punctuation">##</span> 第二章</span>
+<span class="token list punctuation">*</span> [2.1小节]()
+<span class="token list punctuation">*</span> [2.2小节]()
+ 
+<span class="token title important"><span class="token punctuation">##</span> 第三章</span>
+<span class="token list punctuation">*</span> [3.1小节]()
+<span class="token list punctuation">*</span> [3.2小节]()<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>最终的样式如下：</p>
+<p><a href="http://www.microwu.com/MichaelLee/20190114/6.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0720210907192025.png" alt="img"></a></p>
+<h4 id="缩进区分"><a href="#缩进区分" class="headerlink" title="缩进区分"></a>缩进区分</h4><p>我们还可以用缩进的方式对目录进行级别的区分</p>
+<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Summary</span>
+ 
+<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">前言</span>](<span class="token url">README.md</span>)</span>
+<span class="token list punctuation">*</span> [第一章]()
+    <span class="token list punctuation">*</span> [1.1小节]()
+    <span class="token list punctuation">*</span> [1.2小节]()
+<span class="token list punctuation">*</span> [第二章]()
+    <span class="token list punctuation">*</span> [2.1小节]()
+    <span class="token list punctuation">*</span> [2.2小节]()
+<span class="token list punctuation">*</span> [第三章]()
+    <span class="token list punctuation">*</span> [3.1小节]()
+    <span class="token list punctuation">*</span> [3.2小节]()<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>最终的样式如下：</p>
+<p><a href="http://www.microwu.com/MichaelLee/20190114/7.png"><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/09/0720210907192039.png" alt="img"></a></p>
+<p>大家可以根据自己的喜好选择不同的样式，也可以把这两者结合起来一起用，as you wish.</p>
+<h2 id="打包发布"><a href="#打包发布" class="headerlink" title="打包发布"></a>打包发布</h2><p>通过预览模式，我们可以随时掌握书籍的更新内容。当你完成了部分章节或者全书的编写后，我们需要把写好的内容打包并发布。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ gitbook build<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>执行完上面的命令后，我们会发现在根目录下出现了<code>_build</code>文件夹，里面的文件就是我们需要发布的内容，你可以把所有的内容放到你的网站目录下，或者 gitlab/github 的 page页面，就实现了 gitbook 的线上发布了~</p>
+<h1 id="进阶技巧"><a href="#进阶技巧" class="headerlink" title="进阶技巧"></a>进阶技巧</h1><p>看完上面的章节，你已经可以独立完成一本书的编写和发布，接下来的章节，我们提供一些进阶的技巧，你可以安装一些插件、更直观地规划你的目录结构等等。</p>
+<h2 id="插件"><a href="#插件" class="headerlink" title="插件"></a>插件</h2><p>和众多开源的软件一样，gitbook 也有一些插件，这些插件可以让你的书更加完美。这里我仅附上我个人觉得比较有用的几个插件，更多的插件，可以访问<a href="https://plugins.gitbook.com/">社区</a>来获取。<br>插件的引入和修改都是在配置文件中完成的，那我们可以在根目录下创建<code>book.json</code>文件来修改当前书的一些配置，因为是 json 格式的，所以诸如书的标题、作者、内容等都可以在配置文件中完成，我们重点来说插件。</p>
+<pre class="line-numbers language-json" data-language="json"><code class="language-json"><span class="token punctuation">{</span>
+     <span class="token property">"plugins"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+          <span class="token string">"-lunr"</span><span class="token punctuation">,</span>
+          <span class="token string">"-search"</span><span class="token punctuation">,</span>
+          <span class="token string">"search-plus"</span><span class="token punctuation">,</span>
+          <span class="token string">"splitter"</span><span class="token punctuation">,</span>
+          <span class="token string">"copy-code-button"</span><span class="token punctuation">,</span>
+          <span class="token string">"expandable-chapters-small"</span>
+     <span class="token punctuation">]</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>以上是我的<code>book.json</code>配置文件，只有一个关于插件的配置项，其实总共就4个</p>
+<ul>
+<li>search-plus 让搜索支持中文，注意需要先把默认的两个插件<code>lunr</code>和<code>serach</code>禁用掉，禁用的方式就是在前面加上<code>-</code>号</li>
+<li>spliter 菜单栏宽度可调节</li>
+<li>copy-code-button 代码可以一键 copy</li>
+<li>expandable-chapters-small 菜单栏可以折叠</li>
+</ul>
+<blockquote>
+<p>注：<br>如果引入了新的插件，需要通过<code>gitbook install</code> 命令来安装新的插件，否则在打包发布的时候会提示错误。</p>
+</blockquote>
+<h2 id="目录结构"><a href="#目录结构" class="headerlink" title="目录结构"></a>目录结构</h2><p>一个基本的目录结构是这样的</p>
+<pre class="line-numbers language-ini" data-language="ini"><code class="language-ini">.
+├── _book/
+├── book.json
+├── README.md
+├── SUMMARY.md
+├── xx1.md
+├── xx2.md
+├── xx3.md
+├── xx4.md
+├── ...<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>不过为了我们自己方便，个人建议的目录结构如下</p>
+<pre class="line-numbers language-ini" data-language="ini"><code class="language-ini">.
+├── _book/
+├── node_modules/
+├── .gitlab-ci.yml
+├── book.json
+├── SUMMARY.md
+├── content/
+|   ├── chapter1/
+|       ├── README.md
+|       └── something.md
+|   ├── chapter2/
+|       ├── README.md
+|       └── something.md
+├── res/
+|   ├── 1.png
+|   └── 2.jpg
+|   └── 3.jpeg
+|   └── ...<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>说明：</p>
+<ul>
+<li><code>_book</code> 目录是我们打包后要发布的文件目录</li>
+<li><code>node_modules</code> 目录是我们安装插件后默认生成的目录</li>
+<li><code>.gitlab-ci.yml</code>这个是 gitlab 要用的 ci 配置文件，下一章节我们马上就会用到</li>
+<li><code>book.json</code> 是我们的配置文件</li>
+<li><code>content</code>目录是我们的书的内容，所有章节都可以分类继续整理，方便自己查看</li>
+<li><code>res</code>目录是我们要用到的一些图片资源文件夹，除了用到床图，我们可以把其他本地图片资源也包含进来</li>
+</ul>
+<h1 id="参考-amp-致谢"><a href="#参考-amp-致谢" class="headerlink" title="参考&amp;致谢"></a>参考&amp;致谢</h1><ul>
+<li><a href="https://gitbook.zhangjikai.com/">Gitbook 简要介绍</a></li>
+<li><a href="https://yangjh.oschina.io/gitbook/">GitBook 学习笔记</a></li>
+</ul>
+<p>From: <a href="http://lipeng1667.github.io/2019/01/15/how-to-write-techdoc-with-gitbook/">lipeng1667</a></p>
+]]></content>
+      <categories>
+        <category>gitbook</category>
+      </categories>
+      <tags>
+        <tag>Git</tag>
+        <tag>linux</tag>
+        <tag>GitBook</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Vim IDE Docker 以及中文指南</title>
     <url>/ide/2021-09-15-vim-checklist/</url>
     <content><![CDATA[<blockquote>
@@ -2702,74 +2770,6 @@ docker run -v <span class="token variable"><span class="token variable">$(</span
         <tag>vim</tag>
         <tag>ide</tag>
         <tag>docker</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>ESNI和加密DNS - 保护信息隐私的最后一块拼图</title>
-    <url>/web/2021-09-06-encrypted-sni-anti-censorship/</url>
-    <content><![CDATA[<p>随着<a href="https://www.ietf.org/blog/tls13/">TLS1.3</a>的发布，让该协议成为有史以来最安全、也是最复杂的TLS协议。在该协议之中，有很多的对于以往协议安全漏洞的修复，包括废弃RSA启用新的秘钥交换机制PSK等等。而<code>Encrypted SNI</code>作为一个<code>TLS1.3</code>的扩展协议用来防止传统的HTTPS流量受到ISP或者陌生网络环境的窥探以及一些网络审查。在过去，由于<code>HTTPS</code>协议之中<code>Server Name Indication - SNI</code>的使用，我们的HTTPS流量经常被窥探我们所访问站点的域名</p>
-<h3 id="那么什么是SNI？⌗"><a href="#那么什么是SNI？⌗" class="headerlink" title="那么什么是SNI？⌗"></a>那么什么是SNI？<a href="#%E9%82%A3%E4%B9%88%E4%BB%80%E4%B9%88%E6%98%AFsni">⌗</a></h3><blockquote>
-<p>服务器名称指示（英语：Server Name Indication，简称SNI）是一个扩展的TLS计算机联网协议，在该协议下，在握手过程开始时客户端告诉它正在连接的服务器要连接的主机名称。这允许服务器在相同的IP地址和TCP端口号上呈现多个证书，并且因此允许在相同的IP地址上提供多个安全（HTTPS）网站（或其他任何基于TLS的服务），而不需要所有这些站点使用相同的证书。它与HTTP/1.1基于名称的虚拟主机的概念相同，但是用于HTTPS。所需的主机名未加密， 因此窃听者可以查看请求的网站 为了使SNI协议起作用，绝大多数访问者必须使用实现它的Web浏览器。使用未实现SNI浏览器的用户将被提供默认证书，因此很可能会收到证书警告</p>
-</blockquote>
-<ul>
-<li>  SNI协议示意图</li>
-</ul>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144946.webp"></p>
-<ul>
-<li>  TLS1.3完整握手流程</li>
-</ul>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144904.webp"></p>
-<h3 id="为了弥补缺陷因应运而生的ESNI⌗"><a href="#为了弥补缺陷因应运而生的ESNI⌗" class="headerlink" title="为了弥补缺陷因应运而生的ESNI⌗"></a>为了弥补缺陷因应运而生的ESNI<a href="#%E4%B8%BA%E4%BA%86%E5%BC%A5%E8%A1%A5%E7%BC%BA%E9%99%B7%E5%9B%A0%E5%BA%94%E8%BF%90%E8%80%8C%E7%94%9F%E7%9A%84esni">⌗</a></h3><p>在上述过程之中，存在的问题就是，在ClientHello环节中，TLS会在这个位置以<strong>明文</strong>的形式讲要请求的Host写在数据包之中，如果在网络路由中有任何的监听节点，那么用户所访问网站的域名将暴露无遗，这将是巨大的用户隐私泄露: <img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144907.webp"></p>
-<p>所以在最新的关于<a href="https://tools.ietf.org/html/draft-rescorla-tls-esni-00">ESNI的草案</a>中，<code>IETF</code>重新设计了一种加密的Client Hello机制，从而修复了这个问题: <img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144915.webp"></p>
-<p><strong>不过这里问题又来了，之前服务器和客户端并没有事先交换任何数据啊，这个加密的凭证从何而来啊？？？</strong></p>
-<h3 id="依靠安全DNS的ESNI⌗"><a href="#依靠安全DNS的ESNI⌗" class="headerlink" title="依靠安全DNS的ESNI⌗"></a>依靠安全DNS的ESNI<a href="#%E4%BE%9D%E9%9D%A0%E5%AE%89%E5%85%A8dns%E7%9A%84esni">⌗</a></h3><p>上一个问题没有难倒工程师们，他们设计了这样一个办法。首先让网站提供者在DNS提供商上公布一个记录，这个记录包含着一个<code>公钥</code>，这个公钥由网站提供者生成，其<code>私钥</code>存储在Web服务器等待着被Web程序读取。如此，当用户想通过TLS1.3协议访问这个域名的时候，首先读取这个公开的公钥，在用公钥加密其想访问的<code>域名Host</code>，装在<code>Client Hello</code>里面发送给目标服务器，目标服务器再用自己的私钥解密，从而和用户建立HTTPS链接，这样就不会暴露Host信息 这时候有人会想，如果有人某Wall想给你的DNS偷天换日，那会不会很不安全啊,请继续向下看</p>
-<p>在<code>ESNI</code>的实现草案之中，里面要求<code>安全加密的DNS</code><strong>是推荐的</strong>。大家都知道我们的DNS查询一般是<code>TCP</code>报文或者是<code>UDP</code>报文，本身它是不加密的，所以如果有人想在篡改你的DNS是相对简单的，大家可能都知道我们伟大的妨炎蔷会使用DNS污染的方式干扰一些网站的正常访问。正式由于DNS的非加密性，DNS也成为了审查信息的利器。此时加密的DNS势在必行</p>
-<h3 id="DNS-over-TLS-DoT-and-DNS-over-HTTPS-DoH-⌗"><a href="#DNS-over-TLS-DoT-and-DNS-over-HTTPS-DoH-⌗" class="headerlink" title="DNS over TLS (DoT) and DNS over HTTPS (DoH)⌗"></a>DNS over TLS (DoT) and DNS over HTTPS (DoH)<a href="#dns-over-tls-dot-and-dns-over-https-doh">⌗</a></h3><p>于是出现了这两种新型的DNS查询方式</p>
-<ul>
-<li>  DNS over HTTPS (DoH)</li>
-</ul>
-<blockquote>
-<p>DNS Over HTTPS (DOH) 是一个进行安全化的域名解析的方案，当前尚处于实验性阶段。其意义在于以加密的HTTPS协议进行DNS解析请求，避免原始DNS协议中用户的DNS解析请求被窃听或者修改的问题（例如中间人攻击）来达到保护用户隐私的目的。 Google及Mozilla基金会正在测试这一协议，作为其提高网络安全性的努力的一部分。 当前，该方案由IETF支持，其规范文档以 RFC 8484 的名义发布。2018年9月5日发布的Firefox 62正式版加入了这项功能，但需要用户手动开启 DNS Over HTTPS利用HTTP协议的GET命令发出经由JSON等编码的DNS解析请求。较于传统的DNS协议，此处的HTTP协议通信处于具有加密作用的SSL/TLS协议（两者统称作HTTPS）的保护之下。但是，由于其基于HTTPS，而HTTPS本身需要经由多次数据来回传递才能完成协议初始化，其域名解析耗时较原DNS协议会显著增加。 传统的DNS协议形成于互联网早期，直接基于UDP或TCP协议，且彼时未虑及现代安全性的需要，未利用密码学等手段进行加密或验证。因而，其无法抵御现代互联网常见的DNS投毒污染等攻击手段或监听。虽然后来的DNSSEC方案通过电子签名进行验证，强化了DNS的安全性，并能够抵御DNS投毒污染等篡改通信的手段，但其对于中间网络设备进行的监听仍然没有抵御能力（随后，监听者可以通过获取的通信数据知晓用户访问了哪一域名，而域名往往与具体的网站相关系）。此外，DNSSEC的起效要求现有的大量DNS解析服务的提供商（常为互联网服务提供商或第三方大型互联网机构）对已有的DNS服务器进行大范围修改等问题，其推进进程并不理想。而对于DNS Over HTTPS，在正确部署服务端并妥善配置客户端的前提下，互联网服务提供商或其它中间网络设备无法解密（亦即无法获知请求的实际内容）或者篡改已经加密的HTTPS通信，故其能够有效保护互联网用户的安全及隐私；另一方面，其基于已经成熟并已广泛部署的HTTPS协议，客户端进行利用较为方便。</p>
-</blockquote>
-<ul>
-<li>  DNS over TLS (DoT)</li>
-</ul>
-<blockquote>
-<p>DNS over TLS (DoT) 是通过传输层安全协议（TLS）来加密并打包域名系统（DNS）的安全协议。此协议旨在防止中间人攻击与控制DNS数据以保护用户隐私。 RFC 7858及RFC 8310定义了DNS over TLS。 截至2018年，Cloudflare、Quad9与CleanBrowsing均向大众提供支持DNS over TLS的公共DNS解析服务。2018年4月，Google宣布Android P将包含对DNS over TLS的支持。PowerDNS的DNSDist也宣布在其最新的1.3.0版本中添加了对DNS over TLS的支持。BIND用户也可以通过stunnel代理提供DNS over TLS服务。</p>
-</blockquote>
-<h3 id="手动配置⌗"><a href="#手动配置⌗" class="headerlink" title="手动配置⌗"></a>手动配置<a href="#%E6%89%8B%E5%8A%A8%E9%85%8D%E7%BD%AE">⌗</a></h3><p>Firefox所在的Mozilla宣布从<code>Firefox 62</code>版本之后开始支持<code>ESNI</code>，默认没有开启，需要用户手动配置打开，那么我们现在试验一下 这里Firefox的解决方案是使用<code>DNS over HTTPS (DoH)</code>和<code>ESNI</code></p>
-<ol>
-<li>安装<code>Firefox Nightly</code>版本，这个版本是预发布版本，使得开发这和即可门可以提前尝鲜到新功能。<a href="https://www.mozilla.org/zh-CN/firefox/nightly/all/">下载地址</a></li>
-<li>在浏览器地址栏输入<code>about:config</code>并回车，打开配置页面，在搜索位置搜索<code>network.trr.mode</code>，这个是打开浏览器对于<code>DoH</code>的支持，将此项的数值修改为3（<code>0</code>对应的是不开启此功能；<code>1</code>对应的是交由浏览器选择<code>DoH</code>与传统方式那种更快；<code>2</code>代表优先使用加密DNS查询，如果失败则回落到普通DNS查询；<code>3</code>代表只使用加密DNS查询；<code>5</code>代表明确的关闭此功能）</li>
-<li>继续搜索<code>network.trr.uri</code>，将此项的值修改为<code>https://mozilla.cloudflare-dns.com/dns-query</code>，这个是默认的<code>DoH</code>查询地址，当然我们也可以使用诸如<code>https://1.1.1.1/dns-query</code>、<code>https://dns.google.com/experimental</code>这样的地址，我们可以事先<code>ping</code>检测一下对比哪个延迟更低来使用</li>
-<li>（可选）搜索<code>network.trr.bootstrapAddress</code>，讲此值修改位第三步的DNS域名的<code>IP</code>。此举是为了避免使用操作系统DNS查询域名受到劫持，一般来说这些DNS的<code>IP</code>是不会变的</li>
-</ol>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828145006.webp"></p>
-<ol start="5">
-<li>将<code>network.security.esni.enabled</code>设置为<code>true</code>,此举为了打开浏览器对于ESNI的支持（感谢<a href="https://github.com/chenIshi">chenlshi</a>同学的提醒，在原版的文章中我不小心遗漏了这个关键的步骤）</li>
-<li>完成配置后重启浏览器，再打开<a href="https://encryptedsni.com/">在线验证页面验证</a>来查询你的浏览器是否完全支持<code>ESNI</code>功能，如果出现如图说明配置成功了</li>
-</ol>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144924.webp"></p>
-<h3 id="验证⌗"><a href="#验证⌗" class="headerlink" title="验证⌗"></a>验证<a href="#%E9%AA%8C%E8%AF%81">⌗</a></h3><p>为了验证是否真的加密了<code>Client Hello</code>，我们使用<code>Wireshark</code>进行网络抓包 由于这个特性仍在试验阶段，并没有太多站点支持这个特性，<a href="https://cloudflare.com/">CloudFlare</a>是第一个全站支持<code>ESNI</code>的网站，这里我们使用<a href="https://blog.cloudflare.com/">blog.cloudflare.com</a>来做测试：</p>
-<ol>
-<li> 首先打开<code>Wireshark</code>的抓包功能，然后开启<code>Chrome</code>浏览器打开上述网址，页面加载完后停止抓包，在得到的结果中查询协议为<code>TLS1.3</code>和报文为<code>Client Hello</code>的报文，通过观察发现域名的Host果然被以明文形式写在数据包中（参见<code>Server_Name</code>字段）：</li>
-</ol>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144932.webp"></p>
-<ol start="2">
-<li> 然后打开<code>Firefox Nightly</code>浏览器重复上述操作，这次发现在整个数据包中根本找不到<code>Server_Name</code>字段，说明<code>Host</code>已经被加密：</li>
-</ol>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/08/2820210828144933.webp"></p>
-<p>目前来说，我查阅了相关的关键词，仍然没有任何一篇教程有介绍如何在自己的服务器上支持<code>ESNI</code>，同时我也看到在<code>Nginx</code>的论坛里面有人呼吁尽快支持<code>ESNI</code>，所以我推测这个功能仍然在试验期，还没有被这两个Web软件所支持，起劲为止我也没有查阅到任何的Web软件预计支持此项功能。这项扩展已经进入<code>IETF</code>的草案阶段，可以预见到，在不就的将来，这项技术可以普及开来，为我们的网络隐私保驾护航 目前来说，有了<code>HTTPS</code>+<code>TLS1.3</code>+<code>ESNI</code>+<code>DoH/DoT</code>的加持，我们的网络隐私的到了极大的保障，最后还有一个问题是访问服务器<code>IP</code>的泄露仍然无法被避免，迫于<code>IP协议</code>设计的机制，他目前还不能被解决。不过我相信，随着网技术不断的趋于保护个人隐私和更快速的发展方向，这个问题可以最终被解决</p>
-<p>From: <a href="https://blog.hackerchai.com/post/encrypted-sni-anti-censorship/">hackerchai</a></p>
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>SSL</tag>
-        <tag>TLS</tag>
-        <tag>隐私</tag>
-        <tag>安全</tag>
       </tags>
   </entry>
   <entry>
