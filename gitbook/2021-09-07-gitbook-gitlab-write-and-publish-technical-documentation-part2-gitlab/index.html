@@ -1222,18 +1222,18 @@
 <h1 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h1><p>简单来说CI 就类似一个触发器，你可以设定响应触发的条件，比如 master 分支有新的 commit合并进来，或者带有特殊 tag 的合并，亦或者其他指定分支的特殊提交，可以触发指定的指令。<br>一般来说标准的流程是3步，打包(build)、测试(test)和发布(deploy)。也就是我们只需要把源码提交上以后，CI 可以帮我们完成自动化部署工作。<br>考虑到我们在用 gitbook 写书的过程中需要预览时，其实已经在做build 和 test 的工作了，所以我们只需要在代码传到 gitlab 上后，让服务器帮我们执行发布的工作。<br>所以前提是我们搭建好了一个web 服务，然后 CI 帮我们把打包好的内容部署到相应的网站目录中就好了。</p>
 <h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><p>我们就按照原理，来一步一步尝试着完成工作吧。</p>
 <h2 id="CI配置"><a href="#CI配置" class="headerlink" title="CI配置"></a>CI配置</h2><p>还记得我们上一篇文章中最后介绍目录结构时，有提到一个文件： <code>gitlab-ci.yml</code>。 这个文件是用YAML 进行配置，我们来看一下我们要用到的配置文件吧</p>
-<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml">deploy:
-  stage: deploy
-  script:
-    # make backup
-    - sudo rm -rf /usr/share/nginx/html/TechDocs/example_bak
-    - sudo mv /usr/share/nginx/html/TechDocs/example /usr/share/nginx/html/TechDocs/example_bak
-    - sudo mkdir /usr/share/nginx/html/TechDocs/example
-    # deploy latest files
-    - cd _book
-    - sudo cp -rf . /usr/share/nginx/html/TechDocs/example/
-  only:
-    - master # this job will affect only the 'master' branch<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">deploy</span><span class="token punctuation">:</span>
+  <span class="token key atrule">stage</span><span class="token punctuation">:</span> deploy
+  <span class="token key atrule">script</span><span class="token punctuation">:</span>
+    <span class="token comment"># make backup</span>
+    <span class="token punctuation">-</span> sudo rm <span class="token punctuation">-</span>rf /usr/share/nginx/html/TechDocs/example_bak
+    <span class="token punctuation">-</span> sudo mv /usr/share/nginx/html/TechDocs/example /usr/share/nginx/html/TechDocs/example_bak
+    <span class="token punctuation">-</span> sudo mkdir /usr/share/nginx/html/TechDocs/example
+    <span class="token comment"># deploy latest files</span>
+    <span class="token punctuation">-</span> cd _book
+    <span class="token punctuation">-</span> sudo cp <span class="token punctuation">-</span>rf . /usr/share/nginx/html/TechDocs/example/
+  <span class="token key atrule">only</span><span class="token punctuation">:</span>
+    <span class="token punctuation">-</span> master <span class="token comment"># this job will affect only the 'master' branch</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>这段 yaml 配置就只有deploy 的步骤，我们在 <code>script</code>部分进行了一系列的操作，完成旧文件的备份以及新文件的部署。当我们的代码上传到远端后，就会自动执行 script 里的内容了。让我们尝试下吧。</p>
 <h2 id="查看-CI-任务执行状态"><a href="#查看-CI-任务执行状态" class="headerlink" title="查看 CI 任务执行状态"></a>查看 CI 任务执行状态</h2><p>上传代码到 gitlab 的步骤这里就不介绍了。理论上说，当代码上传到 master 分支后，会自动执行我们设定好的部署任务。我们可以通过访问gitlab对应项目的页面， 在左侧菜单栏点击<code>CI/CD</code>来查看任务的执行情况。<br>但是如果你和我一样是第一次处理 CI 任务，我们会得到下面的提示：</p>
@@ -1245,11 +1245,11 @@
 <p>这个页面会显示当前所有的 runner，包括项目独享的 runner 和共享的 shared runner。 我们看到目前还没有一个可用的 runner，所以之前的任务才会停留在等待 runner 来运行的状态。<br>我们就根据页面的提示来创建 runner 吧。</p>
 <p><img src="https://cimg1.17lai.site/data/2021/09/0720210907192629.png"></p>
 <h3 id="安装-gitlab-runner-工具"><a href="#安装-gitlab-runner-工具" class="headerlink" title="安装 gitlab-runner 工具"></a>安装 gitlab-runner 工具</h3><p>第一步是安装工具，可以通过页面上的提示来进行不同主机环境的安装。我们这里用到的是 RHEL/CentOS，其他版本可以参见页面链接。<br>我们登录到自建 gitlab 所在的主机，然后执行以下脚本</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ sudo wget -O /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
-$ sudo chmod +x /usr/local/bin/gitlab-runner
-$ sudo useradd --comment 'GitLab Runner' --create-home gitlab-runner --shell /bin/bash
-$ sudo gitlab-runner install --user=gitlab-runner --working-directory=/home/gitlab-runner
-$ sudo gitlab-runner start<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token function">sudo</span> <span class="token function">wget</span> -O /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
+$ <span class="token function">sudo</span> <span class="token function">chmod</span> +x /usr/local/bin/gitlab-runner
+$ <span class="token function">sudo</span> <span class="token function">useradd</span> --comment <span class="token string">'GitLab Runner'</span> --create-home gitlab-runner --shell /bin/bash
+$ <span class="token function">sudo</span> gitlab-runner <span class="token function">install</span> --user<span class="token operator">=</span>gitlab-runner --working-directory<span class="token operator">=</span>/home/gitlab-runner
+$ <span class="token function">sudo</span> gitlab-runner start<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <h3 id="新建-shared-runner"><a href="#新建-shared-runner" class="headerlink" title="新建 shared runner"></a>新建 shared runner</h3><p>工具安装好了之后，我们就可以来创建用户了。</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ gitlab-runner register<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>

@@ -1279,52 +1279,52 @@
 <li>  <a target="_blank" rel="noopener" href="https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/">清华的源</a></li>
 </ul>
 <p>将对应版本的gitlab-ce下载到本地后，直接yum安装即可</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 要先将这个rpm包下载到本地
-yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 要先将这个rpm包下载到本地</span>
+yum <span class="token function">install</span> -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 
 <h3 id="2-2-方式二-配置yum源"><a href="#2-2-方式二-配置yum源" class="headerlink" title="2.2 方式二:配置yum源"></a>2.2 方式二:配置yum源</h3><p>在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">[gitlab-ce]
-name=gitlab-ce
-baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/
-Repo_gpgcheck=0
-Enabled=1
-Gpgkey=https://packages.gitlab.com/gpg.key<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">[</span>gitlab-ce<span class="token punctuation">]</span>
+<span class="token assign-left variable">name</span><span class="token operator">=</span>gitlab-ce
+<span class="token assign-left variable">baseurl</span><span class="token operator">=</span>https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/
+<span class="token assign-left variable">Repo_gpgcheck</span><span class="token operator">=</span><span class="token number">0</span>
+<span class="token assign-left variable">Enabled</span><span class="token operator">=</span><span class="token number">1</span>
+<span class="token assign-left variable">Gpgkey</span><span class="token operator">=</span>https://packages.gitlab.com/gpg.key<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>然后创建cache，再直接安装gitlab-ce</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum makecache  # 这一步会创建大量的数据
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum makecache  <span class="token comment"># 这一步会创建大量的数据</span>
  
-# 直接安装最新版
-yum install -y gitlab-ce
+<span class="token comment"># 直接安装最新版</span>
+yum <span class="token function">install</span> -y gitlab-ce
  
-# 如果要安装指定的版本，在后面填上版本号即可
-yum install -y  gitlab-ce-13.6.1
+<span class="token comment"># 如果要安装指定的版本，在后面填上版本号即可</span>
+yum <span class="token function">install</span> -y  gitlab-ce-13.6.1
  
-# 如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
-yum install gitlab-ce -y --nogpgcheck<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token comment"># 如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证</span>
+yum <span class="token function">install</span> gitlab-ce -y --nogpgcheck<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
-<h3 id="2-2-1-单服务启动模式"><a href="#2-2-1-单服务启动模式" class="headerlink" title="2.2.1. 单服务启动模式"></a><strong>2.2.1. 单服务启动模式</strong></h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker run -d --name gitlab --hostname gitlab.example.com \
--e GITLAB_OMNIBUS_CONFIG="
+<h3 id="2-2-1-单服务启动模式"><a href="#2-2-1-单服务启动模式" class="headerlink" title="2.2.1. 单服务启动模式"></a><strong>2.2.1. 单服务启动模式</strong></h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker run -d --name gitlab --hostname gitlab.example.com <span class="token punctuation">\</span>
+-e <span class="token assign-left variable">GITLAB_OMNIBUS_CONFIG</span><span class="token operator">=</span><span class="token string">"
     external_url 'https://gitlab.example.com'
     gitlab_rails['gitlab_shell_ssh_port'] = 22
     nginx['redirect_http_to_https'] = true
     nginx['ssl_dhparam'] = '/etc/gitlab/ssl/dhparam.pem'
     nginx['ssl_certificate'] = '/etc/gitlab/ssl/domain.crt'
     nginx['ssl_certificate_key'] = '/etc/gitlab/ssl/domain.key'
-    nginx['custom_gitlab_server_config'] = 'location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n'
+    nginx['custom_gitlab_server_config'] = 'location ^~ /.well-known {<span class="token entity" title="\n">\n</span> alias /var/opt/gitlab/letsencrypt/.well-known;<span class="token entity" title="\n">\n</span>}<span class="token entity" title="\n">\n</span>'
     high_availability['mountpoint'] = ['/etc/gitlab', '/var/log/gitlab' '/var/opt/gitlab'  # 严格限定gitlab服务启动前，指定文件系统挂完毕
-" \
--p 22:22 -p 80:80 -p 443:443 \
--v /srv/gitlab/config:/etc/gitlab \
--v /srv/gitlab/logs:/var/log/gitlab \
--v /srv/gitlab/data:/var/opt/gitlab \
--v /etc/certs:/etc/gitlab/ssl \
---restart=always gitlab/gitlab-ce:latest
+"</span> <span class="token punctuation">\</span>
+-p <span class="token number">22</span>:22 -p <span class="token number">80</span>:80 -p <span class="token number">443</span>:443 <span class="token punctuation">\</span>
+-v /srv/gitlab/config:/etc/gitlab <span class="token punctuation">\</span>
+-v /srv/gitlab/logs:/var/log/gitlab <span class="token punctuation">\</span>
+-v /srv/gitlab/data:/var/opt/gitlab <span class="token punctuation">\</span>
+-v /etc/certs:/etc/gitlab/ssl <span class="token punctuation">\</span>
+--restart<span class="token operator">=</span>always gitlab/gitlab-ce:latest
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <h3 id="2-2-1-Compose服务编排模式-推荐方式"><a href="#2-2-1-Compose服务编排模式-推荐方式" class="headerlink" title="2.2.1. Compose服务编排模式(推荐方式)"></a><strong>2.2.1. Compose服务编排模式(推荐方式)</strong></h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker pull gitlab/gitlab-ce:latest
  
-############################ 多行命令开始 ##########################
-cat &gt; docker-compose.yaml &lt;&lt;EOF
+<span class="token comment">############################ 多行命令开始 ##########################</span>
+<span class="token function">cat</span> <span class="token operator">&gt;</span> docker-compose.yaml <span class="token operator">&lt;&lt;</span><span class="token string">EOF
 version: '2'
  
 services:
@@ -1347,96 +1347,96 @@ services:
         nginx['ssl_dhparam'] = "/etc/gitlab/ssl/dhparam.pem"
         nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
         nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
-        nginx['custom_gitlab_server_config'] = "location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n"
+        nginx['custom_gitlab_server_config'] = "location ^~ /.well-known {<span class="token entity" title="\n">\n</span> alias /var/opt/gitlab/letsencrypt/.well-known;<span class="token entity" title="\n">\n</span>}<span class="token entity" title="\n">\n</span>"
         high_availability['mountpoint'] = ["/etc/gitlab", "/var/log/gitlab", "/var/opt/gitlab"]  # 严格限定gitlab服务启动前，指定文件系统挂完毕
     volumes:
       - /srv/gitlab/config:/etc/gitlab
       - /srv/gitlab/logs:/var/log/gitlab
       - /srv/gitlab/data:/var/opt/gitlab
       - /etc/certs:/etc/gitlab/ssl
-EOF
-############################ 多行命令结束 ##########################
+EOF</span>
+<span class="token comment">############################ 多行命令结束 ##########################</span>
  
-# 启动服务
+<span class="token comment"># 启动服务</span>
 docker-compose -f docker-compose.yaml up -d
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <h3 id="2-3-gitlab的配置"><a href="#2-3-gitlab的配置" class="headerlink" title="2.3 gitlab的配置"></a>2.3 gitlab的配置</h3><p>配置文件位置  /etc/gitlab/gitlab.rb</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">[root@centos7 test]# vim /etc/gitlab/gitlab.rb
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">[</span>root@centos7 test<span class="token punctuation">]</span><span class="token comment"># vim /etc/gitlab/gitlab.rb</span>
  
-[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
+<span class="token punctuation">[</span>root@centos7 test<span class="token punctuation">]</span><span class="token comment"># grep "^[a-Z]" /etc/gitlab/gitlab.rb</span>
  
-external_url 'http://10.0.0.51'  # 这里一定要加上http://
+external_url <span class="token string">'http://10.0.0.51'</span>  <span class="token comment"># 这里一定要加上http://</span>
  
-# 配置邮件服务
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.qq.com"
-gitlab_rails['smtp_port'] = 25
-gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
-gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
-gitlab_rails['smtp_domain'] = "qq.com"
-gitlab_rails['smtp_authentication'] = "login"
-gitlab_rails['smtp_enable_starttls_auto'] = true
-gitlab_rails['smtp_tls'] = false
-gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
-user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token comment"># 配置邮件服务</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_address'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp.qq.com"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_port'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">25</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_user_name'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"hgzerowzh@qq.com"</span>  <span class="token comment"># 自己的qq邮箱账号</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_password'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"xxx"</span>  <span class="token comment"># 开通smtp时返回的授权码</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_domain'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"qq.com"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_authentication'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"login"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable_starttls_auto'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_tls'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">false</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_from'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"hgzerowzh@qq.com"</span>  <span class="token comment"># 指定发送邮件的邮箱地址</span>
+user<span class="token punctuation">[</span><span class="token string">"git_user_email"</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"shit@qq.com"</span>   <span class="token comment"># 指定接收邮件的邮箱地址</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。</strong></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl reconfigure # 重载配置文件
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl reconfigure <span class="token comment"># 重载配置文件</span>
 gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 
 <h4 id="测试邮件服务器"><a href="#测试邮件服务器" class="headerlink" title="测试邮件服务器"></a>测试邮件服务器</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rails console
-Notify.test_email('rollinghell@foxmail.com','testbiaoti','testzhegnwen1').deliver_now<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+Notify.test_email<span class="token punctuation">(</span><span class="token string">'rollinghell@foxmail.com'</span>,<span class="token string">'testbiaoti'</span>,<span class="token string">'testzhegnwen1'</span><span class="token punctuation">)</span>.deliver_now<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">[root@test102 ~]# gitlab-rails console
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">[</span>root@test102 ~<span class="token punctuation">]</span><span class="token comment"># gitlab-rails console</span>
 --------------------------------------------------------------------------------
- GitLab:       12.5.0 (1f0ab8978ef)
-GitLab Shell: 10.2.0
- PostgreSQL:   10.9
+ GitLab:       <span class="token number">12.5</span>.0 <span class="token punctuation">(</span>1f0ab8978ef<span class="token punctuation">)</span>
+GitLab Shell: <span class="token number">10.2</span>.0
+ PostgreSQL:   <span class="token number">10.9</span>
 --------------------------------------------------------------------------------
-Loading production environment (Rails 5.2.3)
-irb(main):001:0&gt; Notify.test_email('andycrusoe@gmail.com','test','test').deliver_now
-Notify#test_email: processed outbound mail in 1.4ms
-Sent mail to anliven@126.com (73.0ms)
-Date: Wed, 27 Nov 2019 15:12:58 +0800
-From: GitLab &lt;gitlab@192.168.16.102&gt;
-Reply-To: GitLab &lt;noreply@192.168.16.102&gt;
+Loading production environment <span class="token punctuation">(</span>Rails <span class="token number">5.2</span>.3<span class="token punctuation">)</span>
+irb<span class="token punctuation">(</span>main<span class="token punctuation">)</span>:001:<span class="token operator"><span class="token file-descriptor important">0</span>&gt;</span> Notify.test_email<span class="token punctuation">(</span><span class="token string">'andycrusoe@gmail.com'</span>,<span class="token string">'test'</span>,<span class="token string">'test'</span><span class="token punctuation">)</span>.deliver_now
+Notify<span class="token comment">#test_email: processed outbound mail in 1.4ms</span>
+Sent mail to anliven@126.com <span class="token punctuation">(</span><span class="token number">73</span>.0ms<span class="token punctuation">)</span>
+Date: Wed, <span class="token number">27</span> Nov <span class="token number">2019</span> <span class="token number">15</span>:12:58 +0800
+From: GitLab <span class="token operator">&lt;</span>gitlab@192.168.16.10<span class="token operator"><span class="token file-descriptor important">2</span>&gt;</span>
+Reply-To: GitLab <span class="token operator">&lt;</span>noreply@192.168.16.10<span class="token operator"><span class="token file-descriptor important">2</span>&gt;</span>
 To: anliven@126.com
-Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;
-Subject: test
-Mime-Version: 1.0
-Content-Type: text/html;
-charset=UTF-8
+Message-ID: <span class="token operator">&lt;</span>5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail<span class="token operator">&gt;</span>
+Subject: <span class="token builtin class-name">test</span>
+Mime-Version: <span class="token number">1.0</span>
+Content-Type: text/html<span class="token punctuation">;</span>
+<span class="token assign-left variable">charset</span><span class="token operator">=</span>UTF-8
 Content-Transfer-Encoding: 7bit
 Auto-Submitted: auto-generated
 X-Auto-Response-Suppress: All
-&lt;!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd"&gt;
-&lt;html&gt;&lt;body&gt;&lt;p&gt;test&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
-=&gt; #&lt;Mail::Message:70141649239780, Multipart: false, Headers: &lt;Date: Wed, 27 Nov 2019 15:12:58 +0800&gt;, &lt;From: GitLab &lt;gitlab@192.168.16.102&gt;&gt;, &lt;Reply-To: GitLab &lt;noreply@192.168.16.102&gt;&gt;, &lt;To: anliven@126.com&gt;, &lt;Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;&gt;, &lt;Subject: test&gt;, &lt;Mime-Version: 1.0&gt;, &lt;Content-Type: text/html; charset=UTF-8&gt;, &lt;Content-Transfer-Encoding: 7bit&gt;, &lt;Auto-Submitted: auto-generated&gt;, &lt;X-Auto-Response-Suppress: All&gt;&gt;
-irb(main):002:0&gt;
-irb(main):003:0&gt; exit
-[root@test102 ~]#
+<span class="token operator">&lt;</span><span class="token operator">!</span>DOCTYPE html PUBLIC <span class="token string">"-//W3C//DTD HTML 4.0 Transitional//EN"</span> <span class="token string">"http://www.w3.org/TR/REC-html40/loose.dtd"</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>html<span class="token operator">&gt;</span><span class="token operator">&lt;</span>body<span class="token operator">&gt;</span><span class="token operator">&lt;</span>p<span class="token operator">&gt;</span>test<span class="token operator">&lt;</span>/p<span class="token operator">&gt;</span><span class="token operator">&lt;</span>/body<span class="token operator">&gt;</span><span class="token operator">&lt;</span>/html<span class="token operator">&gt;</span>
+<span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token comment">#&lt;Mail::Message:70141649239780, Multipart: false, Headers: &lt;Date: Wed, 27 Nov 2019 15:12:58 +0800&gt;, &lt;From: GitLab &lt;gitlab@192.168.16.102&gt;&gt;, &lt;Reply-To: GitLab &lt;noreply@192.168.16.102&gt;&gt;, &lt;To: anliven@126.com&gt;, &lt;Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;&gt;, &lt;Subject: test&gt;, &lt;Mime-Version: 1.0&gt;, &lt;Content-Type: text/html; charset=UTF-8&gt;, &lt;Content-Transfer-Encoding: 7bit&gt;, &lt;Auto-Submitted: auto-generated&gt;, &lt;X-Auto-Response-Suppress: All&gt;&gt;</span>
+irb<span class="token punctuation">(</span>main<span class="token punctuation">)</span>:002:<span class="token operator"><span class="token file-descriptor important">0</span>&gt;</span>
+irb<span class="token punctuation">(</span>main<span class="token punctuation">)</span>:003:<span class="token operator"><span class="token file-descriptor important">0</span>&gt;</span> <span class="token builtin class-name">exit</span>
+<span class="token punctuation">[</span>root@test102 ~<span class="token punctuation">]</span><span class="token comment">#</span>
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <h4 id="配置gitlab代理"><a href="#配置gitlab代理" class="headerlink" title="配置gitlab代理"></a>配置gitlab代理</h4><p><a target="_blank" rel="noopener" href="https://docs.gitlab.com/omnibus/settings/environment-variables.html">https://docs.gitlab.com/omnibus/settings/environment-variables.html</a></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitaly['env'] = {
-    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
-    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
-}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitaly<span class="token punctuation">[</span><span class="token string">'env'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+    <span class="token string">"http_proxy"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"http://USERNAME:PASSWORD@example.com:8080"</span>,
+    <span class="token string">"https_proxy"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"http://USERNAME:PASSWORD@example.com:8080"</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
 
-<h3 id="2-4-Gitlab常用命令"><a href="#2-4-Gitlab常用命令" class="headerlink" title="2.4 Gitlab常用命令"></a>2.4 Gitlab常用命令</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl start         # 启动所有 gitlab 组件
-gitlab-ctl stop          # 停止所有 gitlab 组件
-gitlab-ctl restart       # 重启所有 gitlab 组件
-gitlab-ctl status        # 查看服务状态
+<h3 id="2-4-Gitlab常用命令"><a href="#2-4-Gitlab常用命令" class="headerlink" title="2.4 Gitlab常用命令"></a>2.4 Gitlab常用命令</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl start         <span class="token comment"># 启动所有 gitlab 组件</span>
+gitlab-ctl stop          <span class="token comment"># 停止所有 gitlab 组件</span>
+gitlab-ctl restart       <span class="token comment"># 重启所有 gitlab 组件</span>
+gitlab-ctl status        <span class="token comment"># 查看服务状态</span>
  
-gitlab-ctl reconfigure   # 启动服务
-gitlab-ctl show-config   # 验证配置文件
+gitlab-ctl reconfigure   <span class="token comment"># 启动服务</span>
+gitlab-ctl show-config   <span class="token comment"># 验证配置文件</span>
  
-gitlab-ctl tail          # 查看日志
+gitlab-ctl <span class="token function">tail</span>          <span class="token comment"># 查看日志</span>
  
-gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
+gitlab-rake gitlab:check <span class="token assign-left variable">SANITIZE</span><span class="token operator">=</span>true --trace    <span class="token comment"># 检查gitlab</span>
  
-vim /etc/gitlab/gitlab.rb # 修改默认的配置文件<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token function">vim</span> /etc/gitlab/gitlab.rb <span class="token comment"># 修改默认的配置文件</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <h3 id="2-5-gitlab-ctl常用命令介绍"><a href="#2-5-gitlab-ctl常用命令介绍" class="headerlink" title="2.5 gitlab-ctl常用命令介绍"></a>2.5 gitlab-ctl常用命令介绍</h3><table>
 <thead>
@@ -1514,19 +1514,19 @@ vim /etc/gitlab/gitlab.rb # 修改默认的配置文件<span aria-hidden="true" 
 <p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222233.png"></p>
 <h3 id="3-5-在项目中添加成员"><a href="#3-5-在项目中添加成员" class="headerlink" title="3.5 在项目中添加成员"></a><strong>3.5 在项目中添加成员</strong></h3><p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164730.png"></p>
 <p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164804.png"></p>
-<h3 id="3-6-将本地文件推送到Gitlab"><a href="#3-6-将本地文件推送到Gitlab" class="headerlink" title="3.6 将本地文件推送到Gitlab"></a>3.6 将本地文件推送到Gitlab</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 将app01项目克隆下来
-git clone git@10.0.0.51:java/app01.git
+<h3 id="3-6-将本地文件推送到Gitlab"><a href="#3-6-将本地文件推送到Gitlab" class="headerlink" title="3.6 将本地文件推送到Gitlab"></a>3.6 将本地文件推送到Gitlab</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 将app01项目克隆下来</span>
+<span class="token function">git</span> clone git@10.0.0.51:java/app01.git
  
-# 初始化配置
-git config --global user.name "hgzero"
-git config --global user.email "hgzero@qq.com"
+<span class="token comment"># 初始化配置</span>
+<span class="token function">git</span> config --global user.name <span class="token string">"hgzero"</span>
+<span class="token function">git</span> config --global user.email <span class="token string">"hgzero@qq.com"</span>
  
-# 在app01目录下新建一些文件
+<span class="token comment"># 在app01目录下新建一些文件</span>
  
-# 推送到gitlab
-git add .
-git commit -m "first edition"
-git push origin master<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token comment"># 推送到gitlab</span>
+<span class="token function">git</span> <span class="token function">add</span> <span class="token builtin class-name">.</span>
+<span class="token function">git</span> commit -m <span class="token string">"first edition"</span>
+<span class="token function">git</span> push origin master<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164823.png"></p>
 <h2 id="4-制定开发计划"><a href="#4-制定开发计划" class="headerlink" title="4. 制定开发计划"></a>4. 制定开发计划</h2><h3 id="4-1-创建开发计划"><a href="#4-1-创建开发计划" class="headerlink" title="4.1 创建开发计划"></a><strong>4.1 创建开发计划</strong></h3><ul>
@@ -1558,24 +1558,24 @@ git push origin master<span aria-hidden="true" class="line-numbers-rows"><span><
 <h3 id="4-5-开发流程"><a href="#4-5-开发流程" class="headerlink" title="4.5 开发流程"></a><strong>4.5 开发流程</strong></h3><ul>
 <li>  公司里的开发开始任务</li>
 </ul>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"># 1. 先从仓库把项目拉下来
-git clone git@10.0.0.51:java/app01.git
-cd app01/
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token comment"># 1. 先从仓库把项目拉下来</span>
+<span class="token function">git</span> clone git@10.0.0.51:java/app01.git
+<span class="token builtin class-name">cd</span> app01/
  
-# 2.先创建一个自己的分支，然后进行开发
-git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
-git status
+<span class="token comment"># 2.先创建一个自己的分支，然后进行开发</span>
+<span class="token function">git</span> checkout -b index   <span class="token comment"># 创建一个叫index的分支，并切换到这个分支</span>
+<span class="token function">git</span> status
  
-# 3. 开始开发首页
-echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
+<span class="token comment"># 3. 开始开发首页</span>
+<span class="token builtin class-name">echo</span> <span class="token string">"&lt;h1&gt;welcome to this app&lt;/h1&gt;"</span> <span class="token operator">&gt;</span> index.html  <span class="token comment"># 假设就开发了一个index页面</span>
  
-# 4. 开发完成后，把项目传到仓库
-git add .
-git commit -m "index"
-# 如果写成 git commit -m "close #2" ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
+<span class="token comment"># 4. 开发完成后，把项目传到仓库</span>
+<span class="token function">git</span> <span class="token function">add</span> <span class="token builtin class-name">.</span>
+<span class="token function">git</span> commit -m <span class="token string">"index"</span>
+<span class="token comment"># 如果写成 git commit -m "close #2" ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue</span>
  
-# 传到index分支
-git push origin index<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token comment"># 传到index分支</span>
+<span class="token function">git</span> push origin index<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <h3 id="4-6-合并分支"><a href="#4-6-合并分支" class="headerlink" title="4.6 合并分支"></a><strong>4.6 合并分支</strong></h3><p><strong>1）开发dev1发送合并分支请求给pm</strong></p>
 <p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165333.png"></p>
@@ -1610,76 +1610,76 @@ git push origin index<span aria-hidden="true" class="line-numbers-rows"><span></
 <ul>
 <li>  <strong>/etc/gitlab/gitlab.rb</strong></li>
 </ul>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 备份保存的位置，这里是默认位置，可修改成指定的位置
-gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 备份保存的位置，这里是默认位置，可修改成指定的位置</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'backup_path'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"/var/opt/gitlab/backups"</span>
  
-# 设置备份保存的时间，超过此时间的日志将会被新覆盖
-gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
+<span class="token comment"># 设置备份保存的时间，超过此时间的日志将会被新覆盖</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'backup_keep_time'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">604800</span>  <span class="token comment"># 这里是默认设置，保存7天</span>
  
-# 特别注意：
-#     如果自定义了备份保存位置，则要修改备份目录的权限，比如：
-#     chown -R git.git /data/backup/gitlab<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token comment"># 特别注意：</span>
+<span class="token comment">#     如果自定义了备份保存位置，则要修改备份目录的权限，比如：</span>
+<span class="token comment">#     chown -R git.git /data/backup/gitlab</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <ul>
 <li>  配置完成后要重启以使配置生效</li>
 </ul>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 重读配置文件
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 重读配置文件</span>
 gitlab-ctl reconfigure
  
-# 重启gitlab
+<span class="token comment"># 重启gitlab</span>
 gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>2）设置定时任务</strong></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 每天凌晨2点定时创建备份
-# 将一下内容写入到定时任务中 crontab -e
-0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 每天凌晨2点定时创建备份</span>
+<span class="token comment"># 将一下内容写入到定时任务中 crontab -e</span>
+<span class="token number">0</span> <span class="token number">2</span> * * * /usr/bin/gitlab-rake gitlab:backup:create
  
-# 备份策略建议：
-#     本地保留3到7天，在异地备份永久保存<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token comment"># 备份策略建议：</span>
+<span class="token comment">#     本地保留3到7天，在异地备份永久保存</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>3）备份时间的识别</strong></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间</span>
  
 data  -d  @1494170842<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 
-<h3 id="5-2-恢复gitlab"><a href="#5-2-恢复gitlab" class="headerlink" title="5.2 恢复gitlab"></a>5.2 恢复gitlab</h3><h4 id="1）停止停止相关数据连接-数据写入服务"><a href="#1）停止停止相关数据连接-数据写入服务" class="headerlink" title="1）停止停止相关数据连接,数据写入服务"></a><strong>1）停止停止相关数据连接,数据写入服务</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 停止数据写入服务
+<h3 id="5-2-恢复gitlab"><a href="#5-2-恢复gitlab" class="headerlink" title="5.2 恢复gitlab"></a>5.2 恢复gitlab</h3><h4 id="1）停止停止相关数据连接-数据写入服务"><a href="#1）停止停止相关数据连接-数据写入服务" class="headerlink" title="1）停止停止相关数据连接,数据写入服务"></a><strong>1）停止停止相关数据连接,数据写入服务</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 停止数据写入服务</span>
 gitlab-ctl stop puma
 gitlab-ctl stop sidekiq<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 
-<h4 id="2）进行数据恢复并重启"><a href="#2）进行数据恢复并重启" class="headerlink" title="2）进行数据恢复并重启"></a><strong>2）进行数据恢复并重启</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 进行恢复
-gitlab-rake gitlab:backup:restore BACKUP=1627839447_2021_08_01_14.1.1-ee  # 这个时间戳就是刚刚备份的文件前面的时间戳
+<h4 id="2）进行数据恢复并重启"><a href="#2）进行数据恢复并重启" class="headerlink" title="2）进行数据恢复并重启"></a><strong>2）进行数据恢复并重启</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 进行恢复</span>
+gitlab-rake gitlab:backup:restore <span class="token assign-left variable">BACKUP</span><span class="token operator">=</span>1627839447_2021_08_01_14.1.1-ee  <span class="token comment"># 这个时间戳就是刚刚备份的文件前面的时间戳</span>
  
-# 重启
+<span class="token comment"># 重启</span>
 gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <h2 id="6-gitlab邮件通知配置"><a href="#6-gitlab邮件通知配置" class="headerlink" title="6. gitlab邮件通知配置"></a>6. gitlab邮件通知配置</h2><ul>
 <li>  vim  /etc/gitlab/gitlab.rb</li>
 </ul>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab_rails['time_zone'] = 'Asia/Shanghai'
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab_rails<span class="token punctuation">[</span><span class="token string">'time_zone'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'Asia/Shanghai'</span>
  
-gitlab_rails['gitlab_email_enabled'] = true
-gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
-gitlab_rails['gitlab_email_display_name'] = 'gitlab'
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_enabled'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_from'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'example@163.com'</span> <span class="token comment"># 填写发件人的邮箱地址</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_display_name'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'gitlab'</span>
  
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
-gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
-gitlab_rails['smtp_user_name'] = "smtp用户名"
-gitlab_rails['smtp_password'] = "smtp用户密码"
-gitlab_rails['smtp_domain'] = "163.com"
-gitlab_rails['smtp_authentication'] = "login"<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_address'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp.163.com"</span>  <span class="token comment"># smtp服务器的地址,如网易的地址</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_port'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">25</span>                 <span class="token comment"># 要注意如果使用了SSL/TLS的话,端口可能不是25</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_user_name'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp用户名"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_password'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp用户密码"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_domain'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"163.com"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_authentication'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"login"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>启用邮件功能</strong><br>Gitlab 的 Compose 配置 <code>GITLAB_OMNIBUS_CONFIG</code> 节点下增加如下几行：</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">########## 邮件服务配置 ##########
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.exmail.qq.com"
-gitlab_rails['smtp_port'] = 465
-gitlab_rails['smtp_tls'] = true
-gitlab_rails['smtp_user_name'] = "账号"
-gitlab_rails['smtp_password'] = "密码"
-gitlab_rails['smtp_authentication'] = "login"
-gitlab_rails['smtp_enable_starttls_auto'] = true 
-gitlab_rails['gitlab_email_from'] = "发件人邮箱"
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">########## 邮件服务配置 ##########</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_address'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp.exmail.qq.com"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_port'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">465</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_tls'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_user_name'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"账号"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_password'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"密码"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_authentication'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"login"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable_starttls_auto'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span> 
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_from'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"发件人邮箱"</span>
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <h2 id="7-使用SourceTree进行项目开发"><a href="#7-使用SourceTree进行项目开发" class="headerlink" title="7. 使用SourceTree进行项目开发"></a>7. 使用SourceTree进行项目开发</h2><hr>
@@ -1731,33 +1731,33 @@ gitlab_rails['gitlab_email_from'] = "发件人邮箱"
 <li>最后一定要注意时间一定要同步，不然会错乱</li>
 </ul>
 <h2 id="8-Gitlab调优"><a href="#8-Gitlab调优" class="headerlink" title="8. Gitlab调优"></a><strong>8. Gitlab调优</strong></h2><p>gitlab对内存资源的消耗比较厉害<br>其中尤以 sidekiq队列 及 unicorn服务 两个组件对内存消耗最多<br>可以再容器启动时对相关参数进行微调：</p>
-<pre class="line-numbers language-yml" data-language="yml"><code class="language-yml">unicorn['worker_processes'] = 1
-unicorn['worker_memory_limit_min'] = "300 * 1 &lt;&lt; 20"
-unicorn['worker_memory_limit_max'] = "400 * 1 &lt;&lt; 20"
-unicorn['worker_timeout'] = 15
-sidekiq['concurrency'] = 10
-sidekiq_cluster['enable'] = false
-sidekiq_cluster['ha'] = false
-redis['maxclients'] = "100"
-nginx['worker_processes'] = 2
-nginx['worker_connections'] = 512
-nginx['keepalive_timeout'] = 300
-nginx['cache_max_size'] = '200m'
-mattermost['enable'] = false
-mattermost_nginx['enable'] = false
-gitlab_pages['enable'] = false
-pages_nginx['enable'] = false
-postgresql['shared_buffers'] = "256MB"
-postgresql['max_connections'] = 30
-postgresql['work_mem'] = "8MB"
-postgresql['maintenance_work_mem'] = "16MB"
-postgresql['effective_cache_size'] = "1MB"
-postgresql['checkpoint_timeout'] = "5min"
-postgresql['checkpoint_warning'] = "30s"
+<pre class="line-numbers language-yml" data-language="yml"><code class="language-yml">unicorn<span class="token punctuation">[</span><span class="token string">'worker_processes'</span><span class="token punctuation">]</span> = 1
+unicorn<span class="token punctuation">[</span><span class="token string">'worker_memory_limit_min'</span><span class="token punctuation">]</span> = "300 * 1 &lt;&lt; 20"
+unicorn<span class="token punctuation">[</span><span class="token string">'worker_memory_limit_max'</span><span class="token punctuation">]</span> = "400 * 1 &lt;&lt; 20"
+unicorn<span class="token punctuation">[</span><span class="token string">'worker_timeout'</span><span class="token punctuation">]</span> = 15
+sidekiq<span class="token punctuation">[</span><span class="token string">'concurrency'</span><span class="token punctuation">]</span> = 10
+sidekiq_cluster<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
+sidekiq_cluster<span class="token punctuation">[</span><span class="token string">'ha'</span><span class="token punctuation">]</span> = false
+redis<span class="token punctuation">[</span><span class="token string">'maxclients'</span><span class="token punctuation">]</span> = "100"
+nginx<span class="token punctuation">[</span><span class="token string">'worker_processes'</span><span class="token punctuation">]</span> = 2
+nginx<span class="token punctuation">[</span><span class="token string">'worker_connections'</span><span class="token punctuation">]</span> = 512
+nginx<span class="token punctuation">[</span><span class="token string">'keepalive_timeout'</span><span class="token punctuation">]</span> = 300
+nginx<span class="token punctuation">[</span><span class="token string">'cache_max_size'</span><span class="token punctuation">]</span> = '200m'
+mattermost<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
+mattermost_nginx<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
+gitlab_pages<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
+pages_nginx<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
+postgresql<span class="token punctuation">[</span><span class="token string">'shared_buffers'</span><span class="token punctuation">]</span> = "256MB"
+postgresql<span class="token punctuation">[</span><span class="token string">'max_connections'</span><span class="token punctuation">]</span> = 30
+postgresql<span class="token punctuation">[</span><span class="token string">'work_mem'</span><span class="token punctuation">]</span> = "8MB"
+postgresql<span class="token punctuation">[</span><span class="token string">'maintenance_work_mem'</span><span class="token punctuation">]</span> = "16MB"
+postgresql<span class="token punctuation">[</span><span class="token string">'effective_cache_size'</span><span class="token punctuation">]</span> = "1MB"
+postgresql<span class="token punctuation">[</span><span class="token string">'checkpoint_timeout'</span><span class="token punctuation">]</span> = "5min"
+postgresql<span class="token punctuation">[</span><span class="token string">'checkpoint_warning'</span><span class="token punctuation">]</span> = "30s"
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>配置调整后需要重载一下</p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker exec gitlab gitlab-ctl reconfigure
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker <span class="token builtin class-name">exec</span> gitlab gitlab-ctl reconfigure
 docker-compose down
 docker-compose up -d
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
@@ -1772,14 +1772,14 @@ docker-compose up -d
 <ol>
 <li> <code>docker-compose.yaml</code>中Gitlab服务的 <code>GITLAB_OMNIBUS_CONFIG</code> 节点下增加如下配置：</li>
 </ol>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">registry_external_url "https://gitlab.example.com:4567"  # ContainerRegistry的外部访问地址
-registry_nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
-registry_nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
-gitlab_rails['registry_host'] = "gitlab.example.com"
-gitlab_rails['registry_port'] = "4567"
-gitlab_rails['registry_api_url'] = "http://localhost:5000"
-gitlab_rails['gitlab_default_projects_features_builds'] = false
-gitlab_rails['gitlab_default_projects_features_container_registry'] = false
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">registry_external_url <span class="token string">"https://gitlab.example.com:4567"</span>  <span class="token comment"># ContainerRegistry的外部访问地址</span>
+registry_nginx<span class="token punctuation">[</span><span class="token string">'ssl_certificate'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"/etc/gitlab/ssl/domain.crt"</span>
+registry_nginx<span class="token punctuation">[</span><span class="token string">'ssl_certificate_key'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"/etc/gitlab/ssl/domain.key"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'registry_host'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"gitlab.example.com"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'registry_port'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"4567"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'registry_api_url'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"http://localhost:5000"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_default_projects_features_builds'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">false</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_default_projects_features_container_registry'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">false</span>
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <ol start="2">
@@ -1788,21 +1788,21 @@ gitlab_rails['gitlab_default_projects_features_container_registry'] = false
 </ol>
 <p><code>ContainerRegistry</code> 集成后可以通过 <code>Gitlab</code> 账户登录： <code>docker login gitlab.example.com:4567</code></p>
 <hr>
-<h2 id="日常维护命令"><a href="#日常维护命令" class="headerlink" title="日常维护命令"></a>日常维护命令</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># Gitlab维护
-docker exec gitlab gitlab-ctl status  # gitlab各组件服务状态
-docker exec gitlab gitlab-ctl start/restart/stop [组件名]  # gitlab所有组件的统一控制（其中Unicorn组件重启完成前GitLab会报502）
-docker exec gitlab gitlab-ctl tail [/var/log/gitlab下的某子目录]  # 实时查看日志
+<h2 id="日常维护命令"><a href="#日常维护命令" class="headerlink" title="日常维护命令"></a>日常维护命令</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># Gitlab维护</span>
+docker <span class="token builtin class-name">exec</span> gitlab gitlab-ctl status  <span class="token comment"># gitlab各组件服务状态</span>
+docker <span class="token builtin class-name">exec</span> gitlab gitlab-ctl start/restart/stop <span class="token punctuation">[</span>组件名<span class="token punctuation">]</span>  <span class="token comment"># gitlab所有组件的统一控制（其中Unicorn组件重启完成前GitLab会报502）</span>
+docker <span class="token builtin class-name">exec</span> gitlab gitlab-ctl <span class="token function">tail</span> <span class="token punctuation">[</span>/var/log/gitlab下的某子目录<span class="token punctuation">]</span>  <span class="token comment"># 实时查看日志</span>
  
-docker exec gitlab update-permissions  # 修复gitlab版本升级后出现的权限问题
-docker exec gitlab gitlab-ctl reconfigure  # 重载配置
-docker exec -t gitlab gitlab-rake gitlab:backup:create  # 创建备份
+docker <span class="token builtin class-name">exec</span> gitlab update-permissions  <span class="token comment"># 修复gitlab版本升级后出现的权限问题</span>
+docker <span class="token builtin class-name">exec</span> gitlab gitlab-ctl reconfigure  <span class="token comment"># 重载配置</span>
+docker <span class="token builtin class-name">exec</span> -t gitlab gitlab-rake gitlab:backup:create  <span class="token comment"># 创建备份</span>
  
-# ContainerRegistry维护
-docker exec gitlab gitlab-ctl registry-garbage-collect  # 垃圾回收，清理废弃layer（registry停机）
+<span class="token comment"># ContainerRegistry维护</span>
+docker <span class="token builtin class-name">exec</span> gitlab gitlab-ctl registry-garbage-collect  <span class="token comment"># 垃圾回收，清理废弃layer（registry停机）</span>
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <hr>
-<h3 id="Import-Repository-Repo-By-Url"><a href="#Import-Repository-Repo-By-Url" class="headerlink" title="Import Repository(Repo By Url)"></a>Import Repository(Repo By Url)</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 账号密码若存在特殊字符则需要url编码
+<h3 id="Import-Repository-Repo-By-Url"><a href="#Import-Repository-Repo-By-Url" class="headerlink" title="Import Repository(Repo By Url)"></a>Import Repository(Repo By Url)</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 账号密码若存在特殊字符则需要url编码</span>
 https://username:password@host:port/group/project.git
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 
@@ -1810,19 +1810,19 @@ https://username:password@host:port/group/project.git
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rails console<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>输入：</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">user = User.where(id: 1).first
-user.password='123456'
-user.password_confirmation = '123456'
-user.save! #注意加上 “！”<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">user <span class="token operator">=</span> User.where<span class="token punctuation">(</span>id: <span class="token number">1</span><span class="token punctuation">)</span>.first
+user.password<span class="token operator">=</span><span class="token string">'123456'</span>
+user.password_confirmation <span class="token operator">=</span> <span class="token string">'123456'</span>
+user.save<span class="token operator">!</span> <span class="token comment">#注意加上 “！”</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>然后退出命令行即可。</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">quit<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"> gitlab-rails console production 命令 开始初始化密码
-# 在irb(main):001:0&gt; 后面通过 u=User.where(id:1).first 来查找与切换账号（User.all 可以查看所有用户）
-# 通过u.password='12345678'设置密码为12345678(这里的密码看自己喜欢)：
-# 通过u.password_confirmation='12345678' 再次确认密码
-# 通过 u.save!进行保存<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token comment"># 在irb(main):001:0&gt; 后面通过 u=User.where(id:1).first 来查找与切换账号（User.all 可以查看所有用户）</span>
+<span class="token comment"># 通过u.password='12345678'设置密码为12345678(这里的密码看自己喜欢)：</span>
+<span class="token comment"># 通过u.password_confirmation='12345678' 再次确认密码</span>
+<span class="token comment"># 通过 u.save!进行保存</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <h2 id="11-HTTPS-SSL-支持"><a href="#11-HTTPS-SSL-支持" class="headerlink" title="11. HTTPS SSL 支持"></a><strong>11. HTTPS SSL 支持</strong></h2><ul>
 <li><p>nginx反向代理方式</p>
@@ -1837,46 +1837,46 @@ user.save! #注意加上 “！”<span aria-hidden="true" class="line-numbers-r
 </li>
 </ul>
 <h2 id="12-Gitlab恢复数据出现must-be-owner-of解决方法"><a href="#12-Gitlab恢复数据出现must-be-owner-of解决方法" class="headerlink" title="12. Gitlab恢复数据出现must be owner of解决方法"></a>12. Gitlab恢复数据出现must be owner of解决方法</h2><p>按正常Gitlab备份数据gitlab-rake gitlab:backup:create</p>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">ERROR: must be owner of extension plpgsql
-ERROR: must be owner of schema public
-ERROR: schema “public” already exists
-ERROR: must be owner of schema public
-ERROR: must be owner of extension plpgsql
-WARNING: no privileges could be revoked for “public”
-WARNING: no privileges could be revoked for “public”
-WARNING: no privileges were granted for “public”
-WARNING: no privileges were granted for “public”<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">ERROR: must be owner <span class="token keyword">of</span> extension plpgsql
+ERROR: must be owner <span class="token keyword">of</span> <span class="token keyword">schema</span> <span class="token keyword">public</span>
+ERROR: <span class="token keyword">schema</span> “<span class="token keyword">public</span>” already <span class="token keyword">exists</span>
+ERROR: must be owner <span class="token keyword">of</span> <span class="token keyword">schema</span> <span class="token keyword">public</span>
+ERROR: must be owner <span class="token keyword">of</span> extension plpgsql
+WARNING: <span class="token keyword">no</span> <span class="token keyword">privileges</span> could be revoked <span class="token keyword">for</span> “<span class="token keyword">public</span>”
+WARNING: <span class="token keyword">no</span> <span class="token keyword">privileges</span> could be revoked <span class="token keyword">for</span> “<span class="token keyword">public</span>”
+WARNING: <span class="token keyword">no</span> <span class="token keyword">privileges</span> were granted <span class="token keyword">for</span> “<span class="token keyword">public</span>”
+WARNING: <span class="token keyword">no</span> <span class="token keyword">privileges</span> were granted <span class="token keyword">for</span> “<span class="token keyword">public</span>”<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>解决方法：</p>
-<h4 id="1-修改postgresql配置"><a href="#1-修改postgresql配置" class="headerlink" title="**1. 修改postgresql配置 **"></a>**1. 修改postgresql配置 **</h4><pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">cd /var/opt/gitlab/postgresql/data
-$ vi /var/opt/gitlab/postgresql/data/postgresql.conf
-listen_addresses = '*'<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<h4 id="1-修改postgresql配置"><a href="#1-修改postgresql配置" class="headerlink" title="**1. 修改postgresql配置 **"></a>**1. 修改postgresql配置 **</h4><pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token builtin class-name">cd</span> /var/opt/gitlab/postgresql/data
+$ <span class="token function">vi</span> /var/opt/gitlab/postgresql/data/postgresql.conf
+listen_addresses <span class="token operator">=</span> <span class="token string">'*'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 
 <p>找到listen_addresses = ” 改为listen_addresses = ‘*’</p>
 <p>修改 /var/opt/gitlab/postgresql/data/pg_hba.conf<br>在这个文件最后面加入</p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">$ vi /var/opt/gitlab/postgresql/data/pg_hba.conf
-local   all         all                               trust
-host    all         all                               127.0.0.1/32 trust
-host    all         all                               ::1/128 trust    #ipv6 可以不配置<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">$ <span class="token function">vi</span> /var/opt/gitlab/postgresql/data/pg_hba.conf
+<span class="token builtin class-name">local</span>   all         all                               trust
+<span class="token function">host</span>    all         all                               <span class="token number">127.0</span>.0.1/32 trust
+<span class="token function">host</span>    all         all                               ::1/128 trust    <span class="token comment">#ipv6 可以不配置</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
 
 <h4 id="2-重启gitlab生效"><a href="#2-重启gitlab生效" class="headerlink" title="2. 重启gitlab生效"></a><strong>2. 重启gitlab生效</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <h4 id="3-修改gitlab账号为超级用户"><a href="#3-修改gitlab账号为超级用户" class="headerlink" title="3. 修改gitlab账号为超级用户"></a><strong>3. 修改gitlab账号为超级用户</strong></h4><p>进入postgresql命令行</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">cd /opt/gitlab/embedded/bin
-su gitlab-psql
-./psql -h 127.0.0.1 gitlabhq_production<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /opt/gitlab/embedded/bin
+<span class="token function">su</span> gitlab-psql
+./psql -h <span class="token number">127.0</span>.0.1 gitlabhq_production<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 
 <p>查看账户权限</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">\du<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">\</span>du<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>执行修改gitlab用户为超级权限</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">ALTER USER gitlab WITH SUPERUSER;<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">ALTER <span class="token environment constant">USER</span> gitlab WITH SUPERUSER<span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>退出</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">\q<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">\</span>q<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p><img src="https://cimg1.17lai.site/data/2021/08/0220210802135016.png"></p>
-<h5 id="4-从1462989681编号备份中恢复"><a href="#4-从1462989681编号备份中恢复" class="headerlink" title="4. 从1462989681编号备份中恢复"></a>4. 从1462989681编号备份中恢复</h5><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rake gitlab:backup:restore BACKUP=1462989681<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h5 id="4-从1462989681编号备份中恢复"><a href="#4-从1462989681编号备份中恢复" class="headerlink" title="4. 从1462989681编号备份中恢复"></a>4. 从1462989681编号备份中恢复</h5><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rake gitlab:backup:restore <span class="token assign-left variable">BACKUP</span><span class="token operator">=</span><span class="token number">1462989681</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>这样Gitlab恢复数据就不会再报must be owner of extension plpgsql错误。</p>
 <h4 id="4-重启gitlab"><a href="#4-重启gitlab" class="headerlink" title="4. 重启gitlab"></a><strong>4. 重启gitlab</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>

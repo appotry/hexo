@@ -1229,8 +1229,8 @@
 <h2 id="5-cmake指定Debug和Release版本"><a href="#5-cmake指定Debug和Release版本" class="headerlink" title="5.cmake指定Debug和Release版本"></a>5.cmake指定Debug和Release版本</h2><p>指定Debug和Release一共有三种方法：</p>
 <p>1.使用ADD_COMPILE_OPTIONS()加入-g指定Debug版本.</p>
 <p>2.使用SET( CMAKE_BUILD_TYPE Debug/Rrelease)指定Debug<br>在下面加入：</p>
-<pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake">SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
-SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake"><span class="token function">SET</span><span class="token punctuation">(</span><span class="token variable">CMAKE_CXX_FLAGS_DEBUG</span> <span class="token string">"$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb"</span><span class="token punctuation">)</span>
+<span class="token function">SET</span><span class="token punctuation">(</span><span class="token variable">CMAKE_CXX_FLAGS_RELEASE</span> <span class="token string">"$ENV{CXXFLAGS} -O3 -Wall"</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 
 <p>上面的设置C++编译选项，对于C语言，设置CMAKE_C_FLAGS_DEBUG、CMAKE_._FLAGS_RELEASE变量，一般来说最好两个都设置原因是CMake 中有一个变量 CMAKE_BUILD_TYPE ,可以的取值是 Debug Release等.当这个变量值为 Debug 的时候,CMake 会使用变量 CMAKE_CXX_FLAGS_DEBUG 和 CMAKE_C_FLAGS_DEBUG 中的字符串作为编译选项生成 Makefile</p>
 <p>编译动态库or静态库时，最好通过修改CXXFLAGS和CFLAGS，以支持-fPIC，这个选项有时是默认开启，有时默认关闭，但为了以后的应用，库文件最好都使用-fPIC编译</p>
@@ -1239,52 +1239,52 @@ SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")<span aria-hidden="true" 
 </ol>
 <h2 id="5-cmake指定生成文件"><a href="#5-cmake指定生成文件" class="headerlink" title="5.cmake指定生成文件"></a>5.cmake指定生成文件</h2><p>CUDA_ADD_LIBRARY()指明目标文件是库文件,CUDA_ADD_EXECUTABLE()指明生成的文件为可执行文件</p>
 <h2 id="6-配置模板"><a href="#6-配置模板" class="headerlink" title="6.配置模板"></a>6.配置模板</h2><p>通常我们要在工程目录下面创建include、src文件夹，include文件夹里面存放头文件，src文件夹里面存放源代码，注意这时候的源代码里面包含头文件的路径应该是“../include/xx.h”，然后在工程根目录下面创建CMakeLists.txt文件，里面写入命令.在编译的时候为了不搞乱工程目录，在工程根目录下面创建build文件夹，在里面使用“cmake ..”命令创建CMakefile,再make即可。</p>
-<pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake">#指定cmake最低版本号
-cmake_minimum_required(VERSION 3.2)
+<pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake"><span class="token comment">#指定cmake最低版本号</span>
+<span class="token keyword">cmake_minimum_required</span><span class="token punctuation">(</span><span class="token property">VERSION</span> <span class="token number">3.2</span><span class="token punctuation">)</span>
 
-#指定项目名称
-PROJECT(Liner_Struct)
+<span class="token comment">#指定项目名称</span>
+<span class="token function">PROJECT</span><span class="token punctuation">(</span>Liner_Struct<span class="token punctuation">)</span>
 
-#指定头文件目录，不同目录用空格隔开,目录中有空格可用引号
-#如果是相对路径，相对于CMakeLists.txt文件
-INCLUDE_DIRECTORIES(include)
+<span class="token comment">#指定头文件目录，不同目录用空格隔开,目录中有空格可用引号</span>
+<span class="token comment">#如果是相对路径，相对于CMakeLists.txt文件</span>
+<span class="token property">INCLUDE_DIRECTORIES</span><span class="token punctuation">(</span>include<span class="token punctuation">)</span>
 
-#指定源文件目录，DIR_SRCS值自定义变量，下面的命令对其进行了赋值
-AUX_SOURCE_DIRECTORY(src DIR_SRCS)
+<span class="token comment">#指定源文件目录，DIR_SRCS值自定义变量，下面的命令对其进行了赋值</span>
+<span class="token function">AUX_SOURCE_DIRECTORY</span><span class="token punctuation">(</span>src DIR_SRCS<span class="token punctuation">)</span>
 
-#设置变量用于存放所有的编译文件，
-#TEST_LINER_STRUCT是自定义变量，使用SET给其赋值
-SET(TEST_LINER_STRUCT ${DIR_SRCS})
+<span class="token comment">#设置变量用于存放所有的编译文件，</span>
+<span class="token comment">#TEST_LINER_STRUCT是自定义变量，使用SET给其赋值</span>
+<span class="token function">SET</span><span class="token punctuation">(</span>TEST_LINER_STRUCT <span class="token punctuation">${</span>DIR_SRCS<span class="token punctuation">}</span><span class="token punctuation">)</span>
 
-#增加编译选项
-#判断是否为gcc编译器，如果是，增加编译选项
-#c99是c语言的标准，常用的还有c++标准c++11
-#下面的命令判断是否编译器是gcc
-#message命令是输出信息,例如下面的输出“optional:-std=c99”
-if(CMAKE_COMPILER_IS_GNUCXX)
-    ADD_COMPILE_OPTIONS(-std=c99)
-    message(STATUS "optional:-std=c99")
-endif(CMAKE_COMPILER_IS_GNUCXX)
+<span class="token comment">#增加编译选项</span>
+<span class="token comment">#判断是否为gcc编译器，如果是，增加编译选项</span>
+<span class="token comment">#c99是c语言的标准，常用的还有c++标准c++11</span>
+<span class="token comment">#下面的命令判断是否编译器是gcc</span>
+<span class="token comment">#message命令是输出信息,例如下面的输出“optional:-std=c99”</span>
+<span class="token keyword">if</span><span class="token punctuation">(</span><span class="token variable">CMAKE_COMPILER_IS_GNUCXX</span><span class="token punctuation">)</span>
+    <span class="token function">ADD_COMPILE_OPTIONS</span><span class="token punctuation">(</span>-std=c99<span class="token punctuation">)</span>
+    <span class="token keyword">message</span><span class="token punctuation">(</span>STATUS <span class="token string">"optional:-std=c99"</span><span class="token punctuation">)</span>
+<span class="token keyword">endif</span><span class="token punctuation">(</span><span class="token variable">CMAKE_COMPILER_IS_GNUCXX</span><span class="token punctuation">)</span>
 
-#配置生成文件
-#${PROJECT_NAME}是cmake自带变量，其值和PROJECT()命令指定的一样
-#${TEST_LINER_STRUCT}是自定义变量，上文赋值的
-ADD_EXECUTABLE(${PROJECT_NAME} ${TEST_LINER_STRUCT})<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token comment">#配置生成文件</span>
+<span class="token comment">#${PROJECT_NAME}是cmake自带变量，其值和PROJECT()命令指定的一样</span>
+<span class="token comment">#${TEST_LINER_STRUCT}是自定义变量，上文赋值的</span>
+<span class="token function">ADD_EXECUTABLE</span><span class="token punctuation">(</span><span class="token punctuation">${</span><span class="token variable">PROJECT_NAME</span><span class="token punctuation">}</span> <span class="token punctuation">${</span>TEST_LINER_STRUCT<span class="token punctuation">}</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <h2 id="7-if-else语句"><a href="#7-if-else语句" class="headerlink" title="7.if-else语句"></a>7.<a target="_blank" rel="noopener" href="https://cmake.org/cmake/help/v3.0/command/if.html">if-else</a>语句</h2><p>cmake中的if-else语句</p>
-<pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake">if(exp)
+<pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake"><span class="token keyword">if</span><span class="token punctuation">(</span>exp<span class="token punctuation">)</span>
      cmdA
      cmdB
-elseif(exp)
+<span class="token keyword">elseif</span><span class="token punctuation">(</span>exp<span class="token punctuation">)</span>
       cmdC
-endif(exp)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token keyword">endif</span><span class="token punctuation">(</span>exp<span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>最简单得到一个应用</p>
-<pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake">if(ARM)
-   #ARM平台
-else()
-  #非ARM平台 
-endif()<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake"><span class="token keyword">if</span><span class="token punctuation">(</span>ARM<span class="token punctuation">)</span>
+   <span class="token comment">#ARM平台</span>
+<span class="token keyword">else</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token comment">#非ARM平台 </span>
+<span class="token keyword">endif</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>使用cmake -DARM=1 .. 时编译ARM代码，使用cmake -DAMR=0 ..编译非ARM代码</p>
 <h2 id="8-与平台编译器的结合"><a href="#8-与平台编译器的结合" class="headerlink" title="8.与平台编译器的结合"></a>8.与平台编译器的结合</h2><h3 id="8-1windows"><a href="#8-1windows" class="headerlink" title="8.1windows"></a>8.1windows</h3><p>在windows上运行cmake可以生成对应的VS的工程文件，然后使用相应的VS打开工程就可以进行编译。要注意的是如果使用VS2010及其以前的版本，C不支持C99，也就是变量的命名必须放在函数或者域的最前面，不能放在中间，特别麻烦。VS2015在安装后可能还需要打开VS，新建工程时选择VC++可能相关组件还没有安装，如果这时候使用cmake会提示找不到C、C++编译器（类似yuNo CMAKE_CXX_COMPILER could be found）的错误。安装了相关的组件后cmake即不会有错误。</p>
