@@ -2495,674 +2495,6 @@ tail -f /root/tomcat/conf/server.xml<span aria-hidden="true" class="line-numbers
       </tags>
   </entry>
   <entry>
-    <title>Gitlab的安装及使用教程完全版</title>
-    <url>/gitlab/2021-08-02-gitlab-installation-and-use-tutorial-complete-version/</url>
-    <content><![CDATA[<h2 id="1-Gitlab概述"><a href="#1-Gitlab概述" class="headerlink" title="1. Gitlab概述"></a>1. Gitlab概述</h2><hr>
-<h3 id="1-1-GitLab介绍"><a href="#1-1-GitLab介绍" class="headerlink" title="1.1 GitLab介绍"></a>1.1 GitLab介绍</h3><p>GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。</p>
-<p>GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。</p>
-<p>它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找</p>
-<h3 id="1-2-Gitlab服务构成"><a href="#1-2-Gitlab服务构成" class="headerlink" title="1.2 Gitlab服务构成"></a>1.2 Gitlab服务构成</h3><p>Nginx：静态web服务器。</p>
-<p>gitlab-shell：用于处理Git命令和修改authorized keys列表。</p>
-<p>gitlab-workhorse: 轻量级的反向代理服务器。</p>
-<p>logrotate：日志文件管理工具。</p>
-<p>postgresql：数据库。</p>
-<p>redis：缓存数据库。</p>
-<p>sidekiq：用于在后台执行队列任务（异步执行）。</p>
-<p>unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。</p>
-<h3 id="1-3-Gitlab工作流程"><a href="#1-3-Gitlab工作流程" class="headerlink" title="1.3 Gitlab工作流程"></a>1.3 Gitlab工作流程</h3><p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222044.png"></p>
-<h3 id="1-4-GitLab-Shell"><a href="#1-4-GitLab-Shell" class="headerlink" title="1.4 GitLab Shell"></a>1.4 GitLab Shell</h3><p>GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表</p>
-<p>当通过SSH访问GitLab Server时，GitLab Shell会：</p>
-<ul>
-<li>  限制执行预定义好的Git命令（git push，git pull，git annex）</li>
-<li>  调用GitLab Rails API检查权限</li>
-<li>  执行pre-receive钩子（在企业版中叫做Git钩子）</li>
-<li>  执行用户请求的动作，处理GitLab的post-receive动作</li>
-<li>  处理自定义的post-receive动作</li>
-</ul>
-<p>当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：</p>
-<p>如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作</p>
-<p>如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：</p>
-<ul>
-<li>  调用GitLab Rails API 检查权限</li>
-<li>  执行pre-receive钩子（在GitLab企业版中叫做Git钩子）</li>
-<li>  执行你请求的动作</li>
-<li>  处理GitLab的post-receive动作</li>
-<li>  处理自定义的post-receive动作</li>
-</ul>
-<h3 id="1-5-GitLab-Workhorse"><a href="#1-5-GitLab-Workhorse" class="headerlink" title="1.5 GitLab Workhorse"></a>1.5 GitLab Workhorse</h3><p>GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。</p>
-<h2 id="2-Gitlab的安装部署"><a href="#2-Gitlab的安装部署" class="headerlink" title="2. Gitlab的安装部署"></a>2. Gitlab的安装部署</h2><ul>
-<li>  Gitlab要求服务器内存2G以上</li>
-</ul>
-<h3 id="2-1-方式一-下载gitlab-ce的rpm包"><a href="#2-1-方式一-下载gitlab-ce的rpm包" class="headerlink" title="2.1 方式一:下载gitlab-ce的rpm包"></a>2.1 方式一:下载gitlab-ce的rpm包</h3><ul>
-<li>  <a href="https://packages.gitlab.com/gitlab/gitlab-ce">gitlab官方rpm包下载</a></li>
-<li>  <a href="https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/">清华的源</a></li>
-</ul>
-<p>将对应版本的gitlab-ce下载到本地后，直接yum安装即可</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 要先将这个rpm包下载到本地
-yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-
-<h3 id="2-2-方式二-配置yum源"><a href="#2-2-方式二-配置yum源" class="headerlink" title="2.2 方式二:配置yum源"></a>2.2 方式二:配置yum源</h3><p>在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">[gitlab-ce]
-name=gitlab-ce
-baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/
-Repo_gpgcheck=0
-Enabled=1
-Gpgkey=https://packages.gitlab.com/gpg.key<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>然后创建cache，再直接安装gitlab-ce</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum makecache  # 这一步会创建大量的数据
- 
-# 直接安装最新版
-yum install -y gitlab-ce
- 
-# 如果要安装指定的版本，在后面填上版本号即可
-yum install -y  gitlab-ce-13.6.1
- 
-# 如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
-yum install gitlab-ce -y --nogpgcheck<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h3 id="2-2-1-单服务启动模式"><a href="#2-2-1-单服务启动模式" class="headerlink" title="2.2.1. 单服务启动模式"></a><strong>2.2.1. 单服务启动模式</strong></h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker run -d --name gitlab --hostname gitlab.example.com \
--e GITLAB_OMNIBUS_CONFIG="
-    external_url 'https://gitlab.example.com'
-    gitlab_rails['gitlab_shell_ssh_port'] = 22
-    nginx['redirect_http_to_https'] = true
-    nginx['ssl_dhparam'] = '/etc/gitlab/ssl/dhparam.pem'
-    nginx['ssl_certificate'] = '/etc/gitlab/ssl/domain.crt'
-    nginx['ssl_certificate_key'] = '/etc/gitlab/ssl/domain.key'
-    nginx['custom_gitlab_server_config'] = 'location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n'
-    high_availability['mountpoint'] = ['/etc/gitlab', '/var/log/gitlab' '/var/opt/gitlab'  # 严格限定gitlab服务启动前，指定文件系统挂完毕
-" \
--p 22:22 -p 80:80 -p 443:443 \
--v /srv/gitlab/config:/etc/gitlab \
--v /srv/gitlab/logs:/var/log/gitlab \
--v /srv/gitlab/data:/var/opt/gitlab \
--v /etc/certs:/etc/gitlab/ssl \
---restart=always gitlab/gitlab-ce:latest
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h3 id="2-2-1-Compose服务编排模式-推荐方式"><a href="#2-2-1-Compose服务编排模式-推荐方式" class="headerlink" title="2.2.1. Compose服务编排模式(推荐方式)"></a><strong>2.2.1. Compose服务编排模式(推荐方式)</strong></h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker pull gitlab/gitlab-ce:latest
- 
-############################ 多行命令开始 ##########################
-cat &gt; docker-compose.yaml &lt;&lt;EOF
-version: '2'
- 
-services:
- 
-  Gitlab:
-    image: 'gitlab/gitlab-ce:latest'
-    container_name: 'gitlab'
-    hostname: 'gitlab.example.com'
-    restart: always
-    ports:
-      - '22:22'
-      - '80:80'
-      - '443:443'
-    environment:
-      GITLAB_OMNIBUS_CONFIG: |
-        # Add any other gitlab.rb configuration here, each on its own line
-        external_url 'https://gitlab.example.com'
-        gitlab_rails['gitlab_shell_ssh_port'] = 22
-        nginx['redirect_http_to_https'] = true
-        nginx['ssl_dhparam'] = "/etc/gitlab/ssl/dhparam.pem"
-        nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
-        nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
-        nginx['custom_gitlab_server_config'] = "location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n"
-        high_availability['mountpoint'] = ["/etc/gitlab", "/var/log/gitlab", "/var/opt/gitlab"]  # 严格限定gitlab服务启动前，指定文件系统挂完毕
-    volumes:
-      - /srv/gitlab/config:/etc/gitlab
-      - /srv/gitlab/logs:/var/log/gitlab
-      - /srv/gitlab/data:/var/opt/gitlab
-      - /etc/certs:/etc/gitlab/ssl
-EOF
-############################ 多行命令结束 ##########################
- 
-# 启动服务
-docker-compose -f docker-compose.yaml up -d
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h3 id="2-3-gitlab的配置"><a href="#2-3-gitlab的配置" class="headerlink" title="2.3 gitlab的配置"></a>2.3 gitlab的配置</h3><p>配置文件位置  /etc/gitlab/gitlab.rb</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">[root@centos7 test]# vim /etc/gitlab/gitlab.rb
- 
-[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
- 
-external_url 'http://10.0.0.51'  # 这里一定要加上http://
- 
-# 配置邮件服务
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.qq.com"
-gitlab_rails['smtp_port'] = 25
-gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
-gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
-gitlab_rails['smtp_domain'] = "qq.com"
-gitlab_rails['smtp_authentication'] = "login"
-gitlab_rails['smtp_enable_starttls_auto'] = true
-gitlab_rails['smtp_tls'] = false
-gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
-user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p><strong>修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。</strong></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl reconfigure # 重载配置文件
-gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-
-<h4 id="测试邮件服务器"><a href="#测试邮件服务器" class="headerlink" title="测试邮件服务器"></a>测试邮件服务器</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rails console
-Notify.test_email('rollinghell@foxmail.com','testbiaoti','testzhegnwen1').deliver_now<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">[root@test102 ~]# gitlab-rails console
---------------------------------------------------------------------------------
- GitLab:       12.5.0 (1f0ab8978ef)
-GitLab Shell: 10.2.0
- PostgreSQL:   10.9
---------------------------------------------------------------------------------
-Loading production environment (Rails 5.2.3)
-irb(main):001:0&gt; Notify.test_email('andycrusoe@gmail.com','test','test').deliver_now
-Notify#test_email: processed outbound mail in 1.4ms
-Sent mail to anliven@126.com (73.0ms)
-Date: Wed, 27 Nov 2019 15:12:58 +0800
-From: GitLab &lt;gitlab@192.168.16.102&gt;
-Reply-To: GitLab &lt;noreply@192.168.16.102&gt;
-To: anliven@126.com
-Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;
-Subject: test
-Mime-Version: 1.0
-Content-Type: text/html;
-charset=UTF-8
-Content-Transfer-Encoding: 7bit
-Auto-Submitted: auto-generated
-X-Auto-Response-Suppress: All
-&lt;!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd"&gt;
-&lt;html&gt;&lt;body&gt;&lt;p&gt;test&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
-=&gt; #&lt;Mail::Message:70141649239780, Multipart: false, Headers: &lt;Date: Wed, 27 Nov 2019 15:12:58 +0800&gt;, &lt;From: GitLab &lt;gitlab@192.168.16.102&gt;&gt;, &lt;Reply-To: GitLab &lt;noreply@192.168.16.102&gt;&gt;, &lt;To: anliven@126.com&gt;, &lt;Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;&gt;, &lt;Subject: test&gt;, &lt;Mime-Version: 1.0&gt;, &lt;Content-Type: text/html; charset=UTF-8&gt;, &lt;Content-Transfer-Encoding: 7bit&gt;, &lt;Auto-Submitted: auto-generated&gt;, &lt;X-Auto-Response-Suppress: All&gt;&gt;
-irb(main):002:0&gt;
-irb(main):003:0&gt; exit
-[root@test102 ~]#
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h4 id="配置gitlab代理"><a href="#配置gitlab代理" class="headerlink" title="配置gitlab代理"></a>配置gitlab代理</h4><p><a href="https://docs.gitlab.com/omnibus/settings/environment-variables.html">https://docs.gitlab.com/omnibus/settings/environment-variables.html</a></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitaly['env'] = {
-    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
-    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
-}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h3 id="2-4-Gitlab常用命令"><a href="#2-4-Gitlab常用命令" class="headerlink" title="2.4 Gitlab常用命令"></a>2.4 Gitlab常用命令</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl start         # 启动所有 gitlab 组件
-gitlab-ctl stop          # 停止所有 gitlab 组件
-gitlab-ctl restart       # 重启所有 gitlab 组件
-gitlab-ctl status        # 查看服务状态
- 
-gitlab-ctl reconfigure   # 启动服务
-gitlab-ctl show-config   # 验证配置文件
- 
-gitlab-ctl tail          # 查看日志
- 
-gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
- 
-vim /etc/gitlab/gitlab.rb # 修改默认的配置文件<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h3 id="2-5-gitlab-ctl常用命令介绍"><a href="#2-5-gitlab-ctl常用命令介绍" class="headerlink" title="2.5 gitlab-ctl常用命令介绍"></a>2.5 gitlab-ctl常用命令介绍</h3><table>
-<thead>
-<tr>
-<th align="right">命令</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="right">check-config</td>
-<td>检查在gitlab中是否有任何配置。在指定版本中删除的rb</td>
-</tr>
-<tr>
-<td align="right">deploy-page</td>
-<td>安装部署页面</td>
-</tr>
-<tr>
-<td align="right">diff-config</td>
-<td>将用户配置与包可用配置进行比较</td>
-</tr>
-<tr>
-<td align="right">remove-accounts</td>
-<td>删除所有用户和组</td>
-</tr>
-<tr>
-<td align="right">upgrade</td>
-<td>升级</td>
-</tr>
-<tr>
-<td align="right">service-list</td>
-<td>查看所有服务</td>
-</tr>
-<tr>
-<td align="right">once</td>
-<td>如果GitLab服务停止了就启动服务，如果已启动就不做任何操作</td>
-</tr>
-<tr>
-<td align="right">restart</td>
-<td>重启GitLab服务</td>
-</tr>
-<tr>
-<td align="right">start</td>
-<td>如果GitLab服务停止了就启动服务，如果已启动就重启服务</td>
-</tr>
-<tr>
-<td align="right">stop</td>
-<td>停止GitLab服务</td>
-</tr>
-<tr>
-<td align="right">status</td>
-<td>查看GitLab服务状态</td>
-</tr>
-<tr>
-<td align="right">reconfigure</td>
-<td>重新配置GitLab并启动</td>
-</tr>
-</tbody></table>
-<h2 id="3-Gitlab的使用"><a href="#3-Gitlab的使用" class="headerlink" title="3. Gitlab的使用"></a>3. Gitlab的使用</h2><ul>
-<li>  Gitlab安装好后，设置密码，管理账户为root</li>
-</ul>
-<h3 id="3-1-创建Group"><a href="#3-1-创建Group" class="headerlink" title="3.1 创建Group"></a><strong>3.1 创建Group</strong></h3><ul>
-<li>  填上组名即可，这里组名为java</li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222105.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164637.png"></p>
-<h3 id="3-2-创建User"><a href="#3-2-创建User" class="headerlink" title="3.2 创建User"></a><strong>3.2 创建User</strong></h3><ul>
-<li>  创建四个User：pm、dev1、dev2、dev3</li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222131.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222120.png"></p>
-<h3 id="3-3-添加User到Group中并授权"><a href="#3-3-添加User到Group中并授权" class="headerlink" title="3.3 添加User到Group中并授权"></a><strong>3.3 添加User到Group中并授权</strong></h3><p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222140.png"></p>
-<h3 id="3-4-创建Project并配置SSH"><a href="#3-4-创建Project并配置SSH" class="headerlink" title="3.4 创建Project并配置SSH"></a><strong>3.4 创建Project并配置SSH</strong></h3><p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222147.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222154.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222201.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222233.png"></p>
-<h3 id="3-5-在项目中添加成员"><a href="#3-5-在项目中添加成员" class="headerlink" title="3.5 在项目中添加成员"></a><strong>3.5 在项目中添加成员</strong></h3><p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164730.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164804.png"></p>
-<h3 id="3-6-将本地文件推送到Gitlab"><a href="#3-6-将本地文件推送到Gitlab" class="headerlink" title="3.6 将本地文件推送到Gitlab"></a>3.6 将本地文件推送到Gitlab</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 将app01项目克隆下来
-git clone git@10.0.0.51:java/app01.git
- 
-# 初始化配置
-git config --global user.name "hgzero"
-git config --global user.email "hgzero@qq.com"
- 
-# 在app01目录下新建一些文件
- 
-# 推送到gitlab
-git add .
-git commit -m "first edition"
-git push origin master<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164823.png"></p>
-<h2 id="4-制定开发计划"><a href="#4-制定开发计划" class="headerlink" title="4. 制定开发计划"></a>4. 制定开发计划</h2><h3 id="4-1-创建开发计划"><a href="#4-1-创建开发计划" class="headerlink" title="4.1 创建开发计划"></a><strong>4.1 创建开发计划</strong></h3><ul>
-<li>  项目：app01</li>
-<li>  版本：v1.0</li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802173643.png"></p>
-<h3 id="4-2-创建里程碑Milestones"><a href="#4-2-创建里程碑Milestones" class="headerlink" title="4.2 创建里程碑Milestones"></a><strong>4.2 创建里程碑Milestones</strong></h3><ul>
-<li>  用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）</li>
-<li>  要根据开发计划来创建Milestones</li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164839.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164935.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164956.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165053.png"></p>
-<h3 id="4-3-根据开发计划创建issue"><a href="#4-3-根据开发计划创建issue" class="headerlink" title="4.3 根据开发计划创建issue"></a>4.3 根据开发计划创建issue</h3><ul>
-<li>  创建4个issue，分派给dev1和dev2这两个开发人员</li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165109.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165138.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165158.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165215.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165238.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165257.png"></p>
-<h3 id="4-4-开发者登录账号查看分派的任务"><a href="#4-4-开发者登录账号查看分派的任务" class="headerlink" title="**4.4 开发者登录账号查看分派的任务 **"></a>**4.4 开发者登录账号查看分派的任务 **</h3><ul>
-<li>  然后开发dev1登录gitlab，就能看到任务已经分配过来了</li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165316.png"></p>
-<h3 id="4-5-开发流程"><a href="#4-5-开发流程" class="headerlink" title="4.5 开发流程"></a><strong>4.5 开发流程</strong></h3><ul>
-<li>  公司里的开发开始任务</li>
-</ul>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"># 1. 先从仓库把项目拉下来
-git clone git@10.0.0.51:java/app01.git
-cd app01/
- 
-# 2.先创建一个自己的分支，然后进行开发
-git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
-git status
- 
-# 3. 开始开发首页
-echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
- 
-# 4. 开发完成后，把项目传到仓库
-git add .
-git commit -m "index"
-# 如果写成 git commit -m "close #2" ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
- 
-# 传到index分支
-git push origin index<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h3 id="4-6-合并分支"><a href="#4-6-合并分支" class="headerlink" title="4.6 合并分支"></a><strong>4.6 合并分支</strong></h3><p><strong>1）开发dev1发送合并分支请求给pm</strong></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165333.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165341.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165350.png"></p>
-<p><strong>2）pm收到开发的Merge请求后进行处理</strong></p>
-<ul>
-<li>   使用pm登录，就可以看到pm已经收到了合并请求merge request</li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165452.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165505.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165423.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164313.png"></p>
-<p><strong>3）开发dev1确认任务完成</strong></p>
-<ul>
-<li>  退出pm账户，登入dev1账户：</li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164301.png"></p>
-<ul>
-<li>   或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close</li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164248.png"></p>
-<ul>
-<li>  这个时候Milestones的进度已经往前进了一些了：</li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164237.png"></p>
-<h3 id="4-7-开发其他功能"><a href="#4-7-开发其他功能" class="headerlink" title="4.7 开发其他功能"></a>4.7 开发其他功能</h3><ul>
-<li>  然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发</li>
-</ul>
-<p>git checkout master  # 切换到master<br>git pull             # 从远端仓库拉取数据<br># 然后再进行其他操作</p>
-<h2 id="5-Gitlab备份恢复"><a href="#5-Gitlab备份恢复" class="headerlink" title="5. Gitlab备份恢复"></a>5. Gitlab备份恢复</h2><h3 id="5-1-备份gitlab"><a href="#5-1-备份gitlab" class="headerlink" title="5.1 备份gitlab"></a>5.1 备份gitlab</h3><p><strong>1）修改配置文件</strong></p>
-<ul>
-<li>  <strong>/etc/gitlab/gitlab.rb</strong></li>
-</ul>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 备份保存的位置，这里是默认位置，可修改成指定的位置
-gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
- 
-# 设置备份保存的时间，超过此时间的日志将会被新覆盖
-gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
- 
-# 特别注意：
-#     如果自定义了备份保存位置，则要修改备份目录的权限，比如：
-#     chown -R git.git /data/backup/gitlab<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<ul>
-<li>  配置完成后要重启以使配置生效</li>
-</ul>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 重读配置文件
-gitlab-ctl reconfigure
- 
-# 重启gitlab
-gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p><strong>2）设置定时任务</strong></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 每天凌晨2点定时创建备份
-# 将一下内容写入到定时任务中 crontab -e
-0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create
- 
-# 备份策略建议：
-#     本地保留3到7天，在异地备份永久保存<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p><strong>3）备份时间的识别</strong></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
- 
-data  -d  @1494170842<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<h3 id="5-2-恢复gitlab"><a href="#5-2-恢复gitlab" class="headerlink" title="5.2 恢复gitlab"></a>5.2 恢复gitlab</h3><h4 id="1）停止停止相关数据连接-数据写入服务"><a href="#1）停止停止相关数据连接-数据写入服务" class="headerlink" title="1）停止停止相关数据连接,数据写入服务"></a><strong>1）停止停止相关数据连接,数据写入服务</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 停止数据写入服务
-gitlab-ctl stop puma
-gitlab-ctl stop sidekiq<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<h4 id="2）进行数据恢复并重启"><a href="#2）进行数据恢复并重启" class="headerlink" title="2）进行数据恢复并重启"></a><strong>2）进行数据恢复并重启</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 进行恢复
-gitlab-rake gitlab:backup:restore BACKUP=1627839447_2021_08_01_14.1.1-ee  # 这个时间戳就是刚刚备份的文件前面的时间戳
- 
-# 重启
-gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="6-gitlab邮件通知配置"><a href="#6-gitlab邮件通知配置" class="headerlink" title="6. gitlab邮件通知配置"></a>6. gitlab邮件通知配置</h2><ul>
-<li>  vim  /etc/gitlab/gitlab.rb</li>
-</ul>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab_rails['time_zone'] = 'Asia/Shanghai'
- 
-gitlab_rails['gitlab_email_enabled'] = true
-gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
-gitlab_rails['gitlab_email_display_name'] = 'gitlab'
- 
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
-gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
-gitlab_rails['smtp_user_name'] = "smtp用户名"
-gitlab_rails['smtp_password'] = "smtp用户密码"
-gitlab_rails['smtp_domain'] = "163.com"
-gitlab_rails['smtp_authentication'] = "login"<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p><strong>启用邮件功能</strong><br>Gitlab 的 Compose 配置 <code>GITLAB_OMNIBUS_CONFIG</code> 节点下增加如下几行：</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">########## 邮件服务配置 ##########
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.exmail.qq.com"
-gitlab_rails['smtp_port'] = 465
-gitlab_rails['smtp_tls'] = true
-gitlab_rails['smtp_user_name'] = "账号"
-gitlab_rails['smtp_password'] = "密码"
-gitlab_rails['smtp_authentication'] = "login"
-gitlab_rails['smtp_enable_starttls_auto'] = true 
-gitlab_rails['gitlab_email_from'] = "发件人邮箱"
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="7-使用SourceTree进行项目开发"><a href="#7-使用SourceTree进行项目开发" class="headerlink" title="7. 使用SourceTree进行项目开发"></a>7. 使用SourceTree进行项目开发</h2><hr>
-<h3 id="7-1-项目拉取"><a href="#7-1-项目拉取" class="headerlink" title="7.1 项目拉取"></a>7.1 项目拉取</h3><ul>
-<li>  先把项目克隆下来</li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164210.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164157.png"></p>
-<ul>
-<li>   如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加</li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164146.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164132.png"></p>
-<h3 id="7-2-创建分支进行功能开发"><a href="#7-2-创建分支进行功能开发" class="headerlink" title="7.2 创建分支进行功能开发"></a>7.2 创建分支进行功能开发</h3><p><strong>1）新建立一个叫“pay”的分支</strong></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164122.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164113.png"></p>
-<p><strong>2）进行功能开发</strong></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164103.png"></p>
-<h3 id="7-3-提交项目"><a href="#7-3-提交项目" class="headerlink" title="7.3 提交项目"></a>7.3 提交项目</h3><p><strong>1）开发pay功能完成后进行提交</strong></p>
-<ul>
-<li>  可以看到SourceTree中已经有“未提交的更改”</li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164054.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164042.png"></p>
-<p><strong>2）添加“用户信息”</strong></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164029.png"></p>
-<p>** 3）进行提交**</p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164014.png"></p>
-<ul>
-<li>  注释也可以写成  close #3    ，作用是提交完成后关闭3号issue</li>
-</ul>
-<h3 id="7-4-推送到仓库"><a href="#7-4-推送到仓库" class="headerlink" title="7.4 推送到仓库"></a><strong>7.4 推送到仓库</strong></h3><p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164002.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802163947.png"></p>
-<ul>
-<li>   然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了</li>
-</ul>
-<h3 id="7-5-项目上线"><a href="#7-5-项目上线" class="headerlink" title="7.5 项目上线"></a>7.5 项目上线</h3><p><strong>1）当所有工作完成之后，就可以进行上线了</strong></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802163932.png"></p>
-<p><strong>2）打标签</strong></p>
-<ul>
-<li>   上线先打个标签</li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802163916.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802163907.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/05/2820210528225256.png"></p>
-<p>** 3）删除无用分支**</p>
-<ul>
-<li>  然后删除已经合并到主干中的不必要的分支，如index、pay等</li>
-<li>最后一定要注意时间一定要同步，不然会错乱</li>
-</ul>
-<h2 id="8-Gitlab调优"><a href="#8-Gitlab调优" class="headerlink" title="8. Gitlab调优"></a><strong>8. Gitlab调优</strong></h2><p>gitlab对内存资源的消耗比较厉害<br>其中尤以 sidekiq队列 及 unicorn服务 两个组件对内存消耗最多<br>可以再容器启动时对相关参数进行微调：</p>
-<pre class="line-numbers language-yml" data-language="yml"><code class="language-yml">unicorn['worker_processes'] = 1
-unicorn['worker_memory_limit_min'] = "300 * 1 &lt;&lt; 20"
-unicorn['worker_memory_limit_max'] = "400 * 1 &lt;&lt; 20"
-unicorn['worker_timeout'] = 15
-sidekiq['concurrency'] = 10
-sidekiq_cluster['enable'] = false
-sidekiq_cluster['ha'] = false
-redis['maxclients'] = "100"
-nginx['worker_processes'] = 2
-nginx['worker_connections'] = 512
-nginx['keepalive_timeout'] = 300
-nginx['cache_max_size'] = '200m'
-mattermost['enable'] = false
-mattermost_nginx['enable'] = false
-gitlab_pages['enable'] = false
-pages_nginx['enable'] = false
-postgresql['shared_buffers'] = "256MB"
-postgresql['max_connections'] = 30
-postgresql['work_mem'] = "8MB"
-postgresql['maintenance_work_mem'] = "16MB"
-postgresql['effective_cache_size'] = "1MB"
-postgresql['checkpoint_timeout'] = "5min"
-postgresql['checkpoint_warning'] = "30s"
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>配置调整后需要重载一下</p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker exec gitlab gitlab-ctl reconfigure
-docker-compose down
-docker-compose up -d
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-
-<hr>
-<h2 id="9-Gitlab-启用-ContainerRegistry"><a href="#9-Gitlab-启用-ContainerRegistry" class="headerlink" title="9. Gitlab 启用 ContainerRegistry"></a>9. Gitlab 启用 ContainerRegistry</h2><ul>
-<li>  <code>ContainerRegistry</code>是<code>Gitlab</code>内置的<code>Docker Registry</code>集成组件</li>
-<li>  集成后每个项目可获得私有的 <code>Docker</code> 镜像存储空间</li>
-<li>  <code>ContainerRegistry</code> 可以复用 <code>Gitlab</code> 域名 或者 独立域名</li>
-<li>  这里配置为复用域名（此时<code>ContainerRegistry</code> 将复用 <code>Gitlab</code> 的 <code>TLS</code> 证书）</li>
-</ul>
-<ol>
-<li> <code>docker-compose.yaml</code>中Gitlab服务的 <code>GITLAB_OMNIBUS_CONFIG</code> 节点下增加如下配置：</li>
-</ol>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">registry_external_url "https://gitlab.example.com:4567"  # ContainerRegistry的外部访问地址
-registry_nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
-registry_nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
-gitlab_rails['registry_host'] = "gitlab.example.com"
-gitlab_rails['registry_port'] = "4567"
-gitlab_rails['registry_api_url'] = "http://localhost:5000"
-gitlab_rails['gitlab_default_projects_features_builds'] = false
-gitlab_rails['gitlab_default_projects_features_container_registry'] = false
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<ol start="2">
-<li> 端口开放增加 <code>- 4567:4567</code></li>
-<li> 服务重启 <code>docker-compose restart Gitlab</code></li>
-</ol>
-<p><code>ContainerRegistry</code> 集成后可以通过 <code>Gitlab</code> 账户登录： <code>docker login gitlab.example.com:4567</code></p>
-<hr>
-<h2 id="日常维护命令"><a href="#日常维护命令" class="headerlink" title="日常维护命令"></a>日常维护命令</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># Gitlab维护
-docker exec gitlab gitlab-ctl status  # gitlab各组件服务状态
-docker exec gitlab gitlab-ctl start/restart/stop [组件名]  # gitlab所有组件的统一控制（其中Unicorn组件重启完成前GitLab会报502）
-docker exec gitlab gitlab-ctl tail [/var/log/gitlab下的某子目录]  # 实时查看日志
- 
-docker exec gitlab update-permissions  # 修复gitlab版本升级后出现的权限问题
-docker exec gitlab gitlab-ctl reconfigure  # 重载配置
-docker exec -t gitlab gitlab-rake gitlab:backup:create  # 创建备份
- 
-# ContainerRegistry维护
-docker exec gitlab gitlab-ctl registry-garbage-collect  # 垃圾回收，清理废弃layer（registry停机）
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<hr>
-<h3 id="Import-Repository-Repo-By-Url"><a href="#Import-Repository-Repo-By-Url" class="headerlink" title="Import Repository(Repo By Url)"></a>Import Repository(Repo By Url)</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 账号密码若存在特殊字符则需要url编码
-https://username:password@host:port/group/project.git
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="10-GitLab重置用户名密码"><a href="#10-GitLab重置用户名密码" class="headerlink" title="10. GitLab重置用户名密码"></a><strong>10. GitLab重置用户名密码</strong></h2><p>打开终端，访问：</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rails console<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p>输入：</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">user = User.where(id: 1).first
-user.password='123456'
-user.password_confirmation = '123456'
-user.save! #注意加上 “！”<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>然后退出命令行即可。</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">quit<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"> gitlab-rails console production 命令 开始初始化密码
-# 在irb(main):001:0&gt; 后面通过 u=User.where(id:1).first 来查找与切换账号（User.all 可以查看所有用户）
-# 通过u.password='12345678'设置密码为12345678(这里的密码看自己喜欢)：
-# 通过u.password_confirmation='12345678' 再次确认密码
-# 通过 u.save!进行保存<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="11-HTTPS-SSL-支持"><a href="#11-HTTPS-SSL-支持" class="headerlink" title="11. HTTPS SSL 支持"></a><strong>11. HTTPS SSL 支持</strong></h2><ul>
-<li><p>nginx反向代理方式</p>
-<ul>
-<li> 注意docker 内部没有ca支持， 需要手动添加</li>
-</ul>
-</li>
-<li><p>域名提供商提供的免费证书</p>
-<ul>
-<li>这种证书直接用，如果是自签名证书，需要添加自己的ca root证书到服务器</li>
-</ul>
-</li>
-</ul>
-<h2 id="12-Gitlab恢复数据出现must-be-owner-of解决方法"><a href="#12-Gitlab恢复数据出现must-be-owner-of解决方法" class="headerlink" title="12. Gitlab恢复数据出现must be owner of解决方法"></a>12. Gitlab恢复数据出现must be owner of解决方法</h2><p>按正常Gitlab备份数据gitlab-rake gitlab:backup:create</p>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">ERROR: must be owner of extension plpgsql
-ERROR: must be owner of schema public
-ERROR: schema “public” already exists
-ERROR: must be owner of schema public
-ERROR: must be owner of extension plpgsql
-WARNING: no privileges could be revoked for “public”
-WARNING: no privileges could be revoked for “public”
-WARNING: no privileges were granted for “public”
-WARNING: no privileges were granted for “public”<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>解决方法：</p>
-<h4 id="1-修改postgresql配置"><a href="#1-修改postgresql配置" class="headerlink" title="**1. 修改postgresql配置 **"></a>**1. 修改postgresql配置 **</h4><pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">cd /var/opt/gitlab/postgresql/data
-$ vi /var/opt/gitlab/postgresql/data/postgresql.conf
-listen_addresses = '*'<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<p>找到listen_addresses = ” 改为listen_addresses = ‘*’</p>
-<p>修改 /var/opt/gitlab/postgresql/data/pg_hba.conf<br>在这个文件最后面加入</p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">$ vi /var/opt/gitlab/postgresql/data/pg_hba.conf
-local   all         all                               trust
-host    all         all                               127.0.0.1/32 trust
-host    all         all                               ::1/128 trust    #ipv6 可以不配置<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h4 id="2-重启gitlab生效"><a href="#2-重启gitlab生效" class="headerlink" title="2. 重启gitlab生效"></a><strong>2. 重启gitlab生效</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h4 id="3-修改gitlab账号为超级用户"><a href="#3-修改gitlab账号为超级用户" class="headerlink" title="3. 修改gitlab账号为超级用户"></a><strong>3. 修改gitlab账号为超级用户</strong></h4><p>进入postgresql命令行</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">cd /opt/gitlab/embedded/bin
-su gitlab-psql
-./psql -h 127.0.0.1 gitlabhq_production<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<p>查看账户权限</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">\du<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p>执行修改gitlab用户为超级权限</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">ALTER USER gitlab WITH SUPERUSER;<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p>退出</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">\q<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802135016.png"></p>
-<h5 id="4-从1462989681编号备份中恢复"><a href="#4-从1462989681编号备份中恢复" class="headerlink" title="4. 从1462989681编号备份中恢复"></a>4. 从1462989681编号备份中恢复</h5><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rake gitlab:backup:restore BACKUP=1462989681<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p>这样Gitlab恢复数据就不会再报must be owner of extension plpgsql错误。</p>
-<h4 id="4-重启gitlab"><a href="#4-重启gitlab" class="headerlink" title="4. 重启gitlab"></a><strong>4. 重启gitlab</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p>本文作者：夜法之书       写作不易，转载请注明来源地址！</p>
-<h2 id="参考链接："><a href="#参考链接：" class="headerlink" title="参考链接："></a>参考链接：</h2><ol>
-<li><a href="https://www.cnblogs.com/hgzero/p/14088215.html">https://www.cnblogs.com/hgzero/p/14088215.html</a></li>
-<li><a href="http://www.51blogs.net/2017/11/10/1110113243.html">http://www.51blogs.net/2017/11/10/1110113243.html</a></li>
-<li><a href="https://my.oschina.net/u/2400083/blog/808097">https://my.oschina.net/u/2400083/blog/808097</a></li>
-</ol>
-<hr>
-<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
-      <categories>
-        <category>gitlab</category>
-      </categories>
-      <tags>
-        <tag>Gitlab</tag>
-        <tag>Git</tag>
-        <tag>Docker</tag>
-        <tag>教程</tag>
-        <tag>Rigistry</tag>
-        <tag>email</tag>
-        <tag>https</tag>
-        <tag>ssl</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Debian Lenny Laptop安装记录</title>
     <url>/linux/2021-08-18-debian-lenny-laptop-installation-records/</url>
     <content><![CDATA[<h2 id="Debian-Lenny-Laptop安装记录"><a href="#Debian-Lenny-Laptop安装记录" class="headerlink" title="Debian Lenny Laptop安装记录"></a>Debian Lenny Laptop安装记录</h2><p>这是一篇非常有历史的文章了，写了十多年了。只在个人google doc中公开共享过。时至今日，参考价值还是非常大的。</p>
@@ -4438,6 +3770,674 @@ lrwxrwxrwx 1 admin administrators 21 2021-08-31 17:20 /etc/config -&gt; /mnt/HDA
         <tag>Linux</tag>
         <tag>MySQL</tag>
         <tag>优化</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Gitlab的安装及使用教程完全版</title>
+    <url>/gitlab/2021-08-02-gitlab-installation-and-use-tutorial-complete-version/</url>
+    <content><![CDATA[<h2 id="1-Gitlab概述"><a href="#1-Gitlab概述" class="headerlink" title="1. Gitlab概述"></a>1. Gitlab概述</h2><hr>
+<h3 id="1-1-GitLab介绍"><a href="#1-1-GitLab介绍" class="headerlink" title="1.1 GitLab介绍"></a>1.1 GitLab介绍</h3><p>GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。</p>
+<p>GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。</p>
+<p>它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找</p>
+<h3 id="1-2-Gitlab服务构成"><a href="#1-2-Gitlab服务构成" class="headerlink" title="1.2 Gitlab服务构成"></a>1.2 Gitlab服务构成</h3><p>Nginx：静态web服务器。</p>
+<p>gitlab-shell：用于处理Git命令和修改authorized keys列表。</p>
+<p>gitlab-workhorse: 轻量级的反向代理服务器。</p>
+<p>logrotate：日志文件管理工具。</p>
+<p>postgresql：数据库。</p>
+<p>redis：缓存数据库。</p>
+<p>sidekiq：用于在后台执行队列任务（异步执行）。</p>
+<p>unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。</p>
+<h3 id="1-3-Gitlab工作流程"><a href="#1-3-Gitlab工作流程" class="headerlink" title="1.3 Gitlab工作流程"></a>1.3 Gitlab工作流程</h3><p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222044.png"></p>
+<h3 id="1-4-GitLab-Shell"><a href="#1-4-GitLab-Shell" class="headerlink" title="1.4 GitLab Shell"></a>1.4 GitLab Shell</h3><p>GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表</p>
+<p>当通过SSH访问GitLab Server时，GitLab Shell会：</p>
+<ul>
+<li>  限制执行预定义好的Git命令（git push，git pull，git annex）</li>
+<li>  调用GitLab Rails API检查权限</li>
+<li>  执行pre-receive钩子（在企业版中叫做Git钩子）</li>
+<li>  执行用户请求的动作，处理GitLab的post-receive动作</li>
+<li>  处理自定义的post-receive动作</li>
+</ul>
+<p>当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：</p>
+<p>如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作</p>
+<p>如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：</p>
+<ul>
+<li>  调用GitLab Rails API 检查权限</li>
+<li>  执行pre-receive钩子（在GitLab企业版中叫做Git钩子）</li>
+<li>  执行你请求的动作</li>
+<li>  处理GitLab的post-receive动作</li>
+<li>  处理自定义的post-receive动作</li>
+</ul>
+<h3 id="1-5-GitLab-Workhorse"><a href="#1-5-GitLab-Workhorse" class="headerlink" title="1.5 GitLab Workhorse"></a>1.5 GitLab Workhorse</h3><p>GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。</p>
+<h2 id="2-Gitlab的安装部署"><a href="#2-Gitlab的安装部署" class="headerlink" title="2. Gitlab的安装部署"></a>2. Gitlab的安装部署</h2><ul>
+<li>  Gitlab要求服务器内存2G以上</li>
+</ul>
+<h3 id="2-1-方式一-下载gitlab-ce的rpm包"><a href="#2-1-方式一-下载gitlab-ce的rpm包" class="headerlink" title="2.1 方式一:下载gitlab-ce的rpm包"></a>2.1 方式一:下载gitlab-ce的rpm包</h3><ul>
+<li>  <a href="https://packages.gitlab.com/gitlab/gitlab-ce">gitlab官方rpm包下载</a></li>
+<li>  <a href="https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/">清华的源</a></li>
+</ul>
+<p>将对应版本的gitlab-ce下载到本地后，直接yum安装即可</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 要先将这个rpm包下载到本地
+yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<h3 id="2-2-方式二-配置yum源"><a href="#2-2-方式二-配置yum源" class="headerlink" title="2.2 方式二:配置yum源"></a>2.2 方式二:配置yum源</h3><p>在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">[gitlab-ce]
+name=gitlab-ce
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/
+Repo_gpgcheck=0
+Enabled=1
+Gpgkey=https://packages.gitlab.com/gpg.key<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>然后创建cache，再直接安装gitlab-ce</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum makecache  # 这一步会创建大量的数据
+ 
+# 直接安装最新版
+yum install -y gitlab-ce
+ 
+# 如果要安装指定的版本，在后面填上版本号即可
+yum install -y  gitlab-ce-13.6.1
+ 
+# 如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
+yum install gitlab-ce -y --nogpgcheck<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="2-2-1-单服务启动模式"><a href="#2-2-1-单服务启动模式" class="headerlink" title="2.2.1. 单服务启动模式"></a><strong>2.2.1. 单服务启动模式</strong></h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker run -d --name gitlab --hostname gitlab.example.com \
+-e GITLAB_OMNIBUS_CONFIG="
+    external_url 'https://gitlab.example.com'
+    gitlab_rails['gitlab_shell_ssh_port'] = 22
+    nginx['redirect_http_to_https'] = true
+    nginx['ssl_dhparam'] = '/etc/gitlab/ssl/dhparam.pem'
+    nginx['ssl_certificate'] = '/etc/gitlab/ssl/domain.crt'
+    nginx['ssl_certificate_key'] = '/etc/gitlab/ssl/domain.key'
+    nginx['custom_gitlab_server_config'] = 'location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n'
+    high_availability['mountpoint'] = ['/etc/gitlab', '/var/log/gitlab' '/var/opt/gitlab'  # 严格限定gitlab服务启动前，指定文件系统挂完毕
+" \
+-p 22:22 -p 80:80 -p 443:443 \
+-v /srv/gitlab/config:/etc/gitlab \
+-v /srv/gitlab/logs:/var/log/gitlab \
+-v /srv/gitlab/data:/var/opt/gitlab \
+-v /etc/certs:/etc/gitlab/ssl \
+--restart=always gitlab/gitlab-ce:latest
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="2-2-1-Compose服务编排模式-推荐方式"><a href="#2-2-1-Compose服务编排模式-推荐方式" class="headerlink" title="2.2.1. Compose服务编排模式(推荐方式)"></a><strong>2.2.1. Compose服务编排模式(推荐方式)</strong></h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker pull gitlab/gitlab-ce:latest
+ 
+############################ 多行命令开始 ##########################
+cat &gt; docker-compose.yaml &lt;&lt;EOF
+version: '2'
+ 
+services:
+ 
+  Gitlab:
+    image: 'gitlab/gitlab-ce:latest'
+    container_name: 'gitlab'
+    hostname: 'gitlab.example.com'
+    restart: always
+    ports:
+      - '22:22'
+      - '80:80'
+      - '443:443'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        # Add any other gitlab.rb configuration here, each on its own line
+        external_url 'https://gitlab.example.com'
+        gitlab_rails['gitlab_shell_ssh_port'] = 22
+        nginx['redirect_http_to_https'] = true
+        nginx['ssl_dhparam'] = "/etc/gitlab/ssl/dhparam.pem"
+        nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
+        nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
+        nginx['custom_gitlab_server_config'] = "location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n"
+        high_availability['mountpoint'] = ["/etc/gitlab", "/var/log/gitlab", "/var/opt/gitlab"]  # 严格限定gitlab服务启动前，指定文件系统挂完毕
+    volumes:
+      - /srv/gitlab/config:/etc/gitlab
+      - /srv/gitlab/logs:/var/log/gitlab
+      - /srv/gitlab/data:/var/opt/gitlab
+      - /etc/certs:/etc/gitlab/ssl
+EOF
+############################ 多行命令结束 ##########################
+ 
+# 启动服务
+docker-compose -f docker-compose.yaml up -d
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="2-3-gitlab的配置"><a href="#2-3-gitlab的配置" class="headerlink" title="2.3 gitlab的配置"></a>2.3 gitlab的配置</h3><p>配置文件位置  /etc/gitlab/gitlab.rb</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">[root@centos7 test]# vim /etc/gitlab/gitlab.rb
+ 
+[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
+ 
+external_url 'http://10.0.0.51'  # 这里一定要加上http://
+ 
+# 配置邮件服务
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.qq.com"
+gitlab_rails['smtp_port'] = 25
+gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
+gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
+gitlab_rails['smtp_domain'] = "qq.com"
+gitlab_rails['smtp_authentication'] = "login"
+gitlab_rails['smtp_enable_starttls_auto'] = true
+gitlab_rails['smtp_tls'] = false
+gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
+user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><strong>修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。</strong></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl reconfigure # 重载配置文件
+gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<h4 id="测试邮件服务器"><a href="#测试邮件服务器" class="headerlink" title="测试邮件服务器"></a>测试邮件服务器</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rails console
+Notify.test_email('rollinghell@foxmail.com','testbiaoti','testzhegnwen1').deliver_now<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">[root@test102 ~]# gitlab-rails console
+--------------------------------------------------------------------------------
+ GitLab:       12.5.0 (1f0ab8978ef)
+GitLab Shell: 10.2.0
+ PostgreSQL:   10.9
+--------------------------------------------------------------------------------
+Loading production environment (Rails 5.2.3)
+irb(main):001:0&gt; Notify.test_email('andycrusoe@gmail.com','test','test').deliver_now
+Notify#test_email: processed outbound mail in 1.4ms
+Sent mail to anliven@126.com (73.0ms)
+Date: Wed, 27 Nov 2019 15:12:58 +0800
+From: GitLab &lt;gitlab@192.168.16.102&gt;
+Reply-To: GitLab &lt;noreply@192.168.16.102&gt;
+To: anliven@126.com
+Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;
+Subject: test
+Mime-Version: 1.0
+Content-Type: text/html;
+charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Auto-Submitted: auto-generated
+X-Auto-Response-Suppress: All
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd"&gt;
+&lt;html&gt;&lt;body&gt;&lt;p&gt;test&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
+=&gt; #&lt;Mail::Message:70141649239780, Multipart: false, Headers: &lt;Date: Wed, 27 Nov 2019 15:12:58 +0800&gt;, &lt;From: GitLab &lt;gitlab@192.168.16.102&gt;&gt;, &lt;Reply-To: GitLab &lt;noreply@192.168.16.102&gt;&gt;, &lt;To: anliven@126.com&gt;, &lt;Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;&gt;, &lt;Subject: test&gt;, &lt;Mime-Version: 1.0&gt;, &lt;Content-Type: text/html; charset=UTF-8&gt;, &lt;Content-Transfer-Encoding: 7bit&gt;, &lt;Auto-Submitted: auto-generated&gt;, &lt;X-Auto-Response-Suppress: All&gt;&gt;
+irb(main):002:0&gt;
+irb(main):003:0&gt; exit
+[root@test102 ~]#
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h4 id="配置gitlab代理"><a href="#配置gitlab代理" class="headerlink" title="配置gitlab代理"></a>配置gitlab代理</h4><p><a href="https://docs.gitlab.com/omnibus/settings/environment-variables.html">https://docs.gitlab.com/omnibus/settings/environment-variables.html</a></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitaly['env'] = {
+    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
+    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="2-4-Gitlab常用命令"><a href="#2-4-Gitlab常用命令" class="headerlink" title="2.4 Gitlab常用命令"></a>2.4 Gitlab常用命令</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl start         # 启动所有 gitlab 组件
+gitlab-ctl stop          # 停止所有 gitlab 组件
+gitlab-ctl restart       # 重启所有 gitlab 组件
+gitlab-ctl status        # 查看服务状态
+ 
+gitlab-ctl reconfigure   # 启动服务
+gitlab-ctl show-config   # 验证配置文件
+ 
+gitlab-ctl tail          # 查看日志
+ 
+gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
+ 
+vim /etc/gitlab/gitlab.rb # 修改默认的配置文件<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="2-5-gitlab-ctl常用命令介绍"><a href="#2-5-gitlab-ctl常用命令介绍" class="headerlink" title="2.5 gitlab-ctl常用命令介绍"></a>2.5 gitlab-ctl常用命令介绍</h3><table>
+<thead>
+<tr>
+<th align="right">命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">check-config</td>
+<td>检查在gitlab中是否有任何配置。在指定版本中删除的rb</td>
+</tr>
+<tr>
+<td align="right">deploy-page</td>
+<td>安装部署页面</td>
+</tr>
+<tr>
+<td align="right">diff-config</td>
+<td>将用户配置与包可用配置进行比较</td>
+</tr>
+<tr>
+<td align="right">remove-accounts</td>
+<td>删除所有用户和组</td>
+</tr>
+<tr>
+<td align="right">upgrade</td>
+<td>升级</td>
+</tr>
+<tr>
+<td align="right">service-list</td>
+<td>查看所有服务</td>
+</tr>
+<tr>
+<td align="right">once</td>
+<td>如果GitLab服务停止了就启动服务，如果已启动就不做任何操作</td>
+</tr>
+<tr>
+<td align="right">restart</td>
+<td>重启GitLab服务</td>
+</tr>
+<tr>
+<td align="right">start</td>
+<td>如果GitLab服务停止了就启动服务，如果已启动就重启服务</td>
+</tr>
+<tr>
+<td align="right">stop</td>
+<td>停止GitLab服务</td>
+</tr>
+<tr>
+<td align="right">status</td>
+<td>查看GitLab服务状态</td>
+</tr>
+<tr>
+<td align="right">reconfigure</td>
+<td>重新配置GitLab并启动</td>
+</tr>
+</tbody></table>
+<h2 id="3-Gitlab的使用"><a href="#3-Gitlab的使用" class="headerlink" title="3. Gitlab的使用"></a>3. Gitlab的使用</h2><ul>
+<li>  Gitlab安装好后，设置密码，管理账户为root</li>
+</ul>
+<h3 id="3-1-创建Group"><a href="#3-1-创建Group" class="headerlink" title="3.1 创建Group"></a><strong>3.1 创建Group</strong></h3><ul>
+<li>  填上组名即可，这里组名为java</li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222105.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164637.png"></p>
+<h3 id="3-2-创建User"><a href="#3-2-创建User" class="headerlink" title="3.2 创建User"></a><strong>3.2 创建User</strong></h3><ul>
+<li>  创建四个User：pm、dev1、dev2、dev3</li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222131.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222120.png"></p>
+<h3 id="3-3-添加User到Group中并授权"><a href="#3-3-添加User到Group中并授权" class="headerlink" title="3.3 添加User到Group中并授权"></a><strong>3.3 添加User到Group中并授权</strong></h3><p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222140.png"></p>
+<h3 id="3-4-创建Project并配置SSH"><a href="#3-4-创建Project并配置SSH" class="headerlink" title="3.4 创建Project并配置SSH"></a><strong>3.4 创建Project并配置SSH</strong></h3><p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222147.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222154.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222201.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/05/2820210528222233.png"></p>
+<h3 id="3-5-在项目中添加成员"><a href="#3-5-在项目中添加成员" class="headerlink" title="3.5 在项目中添加成员"></a><strong>3.5 在项目中添加成员</strong></h3><p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164730.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164804.png"></p>
+<h3 id="3-6-将本地文件推送到Gitlab"><a href="#3-6-将本地文件推送到Gitlab" class="headerlink" title="3.6 将本地文件推送到Gitlab"></a>3.6 将本地文件推送到Gitlab</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 将app01项目克隆下来
+git clone git@10.0.0.51:java/app01.git
+ 
+# 初始化配置
+git config --global user.name "hgzero"
+git config --global user.email "hgzero@qq.com"
+ 
+# 在app01目录下新建一些文件
+ 
+# 推送到gitlab
+git add .
+git commit -m "first edition"
+git push origin master<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164823.png"></p>
+<h2 id="4-制定开发计划"><a href="#4-制定开发计划" class="headerlink" title="4. 制定开发计划"></a>4. 制定开发计划</h2><h3 id="4-1-创建开发计划"><a href="#4-1-创建开发计划" class="headerlink" title="4.1 创建开发计划"></a><strong>4.1 创建开发计划</strong></h3><ul>
+<li>  项目：app01</li>
+<li>  版本：v1.0</li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802173643.png"></p>
+<h3 id="4-2-创建里程碑Milestones"><a href="#4-2-创建里程碑Milestones" class="headerlink" title="4.2 创建里程碑Milestones"></a><strong>4.2 创建里程碑Milestones</strong></h3><ul>
+<li>  用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）</li>
+<li>  要根据开发计划来创建Milestones</li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164839.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164935.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164956.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165053.png"></p>
+<h3 id="4-3-根据开发计划创建issue"><a href="#4-3-根据开发计划创建issue" class="headerlink" title="4.3 根据开发计划创建issue"></a>4.3 根据开发计划创建issue</h3><ul>
+<li>  创建4个issue，分派给dev1和dev2这两个开发人员</li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165109.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165138.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165158.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165215.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165238.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165257.png"></p>
+<h3 id="4-4-开发者登录账号查看分派的任务"><a href="#4-4-开发者登录账号查看分派的任务" class="headerlink" title="**4.4 开发者登录账号查看分派的任务 **"></a>**4.4 开发者登录账号查看分派的任务 **</h3><ul>
+<li>  然后开发dev1登录gitlab，就能看到任务已经分配过来了</li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165316.png"></p>
+<h3 id="4-5-开发流程"><a href="#4-5-开发流程" class="headerlink" title="4.5 开发流程"></a><strong>4.5 开发流程</strong></h3><ul>
+<li>  公司里的开发开始任务</li>
+</ul>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"># 1. 先从仓库把项目拉下来
+git clone git@10.0.0.51:java/app01.git
+cd app01/
+ 
+# 2.先创建一个自己的分支，然后进行开发
+git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
+git status
+ 
+# 3. 开始开发首页
+echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
+ 
+# 4. 开发完成后，把项目传到仓库
+git add .
+git commit -m "index"
+# 如果写成 git commit -m "close #2" ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
+ 
+# 传到index分支
+git push origin index<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="4-6-合并分支"><a href="#4-6-合并分支" class="headerlink" title="4.6 合并分支"></a><strong>4.6 合并分支</strong></h3><p><strong>1）开发dev1发送合并分支请求给pm</strong></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165333.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165341.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165350.png"></p>
+<p><strong>2）pm收到开发的Merge请求后进行处理</strong></p>
+<ul>
+<li>   使用pm登录，就可以看到pm已经收到了合并请求merge request</li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165452.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165505.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802165423.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164313.png"></p>
+<p><strong>3）开发dev1确认任务完成</strong></p>
+<ul>
+<li>  退出pm账户，登入dev1账户：</li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164301.png"></p>
+<ul>
+<li>   或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close</li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164248.png"></p>
+<ul>
+<li>  这个时候Milestones的进度已经往前进了一些了：</li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164237.png"></p>
+<h3 id="4-7-开发其他功能"><a href="#4-7-开发其他功能" class="headerlink" title="4.7 开发其他功能"></a>4.7 开发其他功能</h3><ul>
+<li>  然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发</li>
+</ul>
+<p>git checkout master  # 切换到master<br>git pull             # 从远端仓库拉取数据<br># 然后再进行其他操作</p>
+<h2 id="5-Gitlab备份恢复"><a href="#5-Gitlab备份恢复" class="headerlink" title="5. Gitlab备份恢复"></a>5. Gitlab备份恢复</h2><h3 id="5-1-备份gitlab"><a href="#5-1-备份gitlab" class="headerlink" title="5.1 备份gitlab"></a>5.1 备份gitlab</h3><p><strong>1）修改配置文件</strong></p>
+<ul>
+<li>  <strong>/etc/gitlab/gitlab.rb</strong></li>
+</ul>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 备份保存的位置，这里是默认位置，可修改成指定的位置
+gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
+ 
+# 设置备份保存的时间，超过此时间的日志将会被新覆盖
+gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
+ 
+# 特别注意：
+#     如果自定义了备份保存位置，则要修改备份目录的权限，比如：
+#     chown -R git.git /data/backup/gitlab<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<ul>
+<li>  配置完成后要重启以使配置生效</li>
+</ul>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 重读配置文件
+gitlab-ctl reconfigure
+ 
+# 重启gitlab
+gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><strong>2）设置定时任务</strong></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 每天凌晨2点定时创建备份
+# 将一下内容写入到定时任务中 crontab -e
+0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create
+ 
+# 备份策略建议：
+#     本地保留3到7天，在异地备份永久保存<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><strong>3）备份时间的识别</strong></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
+ 
+data  -d  @1494170842<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="5-2-恢复gitlab"><a href="#5-2-恢复gitlab" class="headerlink" title="5.2 恢复gitlab"></a>5.2 恢复gitlab</h3><h4 id="1）停止停止相关数据连接-数据写入服务"><a href="#1）停止停止相关数据连接-数据写入服务" class="headerlink" title="1）停止停止相关数据连接,数据写入服务"></a><strong>1）停止停止相关数据连接,数据写入服务</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 停止数据写入服务
+gitlab-ctl stop puma
+gitlab-ctl stop sidekiq<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h4 id="2）进行数据恢复并重启"><a href="#2）进行数据恢复并重启" class="headerlink" title="2）进行数据恢复并重启"></a><strong>2）进行数据恢复并重启</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 进行恢复
+gitlab-rake gitlab:backup:restore BACKUP=1627839447_2021_08_01_14.1.1-ee  # 这个时间戳就是刚刚备份的文件前面的时间戳
+ 
+# 重启
+gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="6-gitlab邮件通知配置"><a href="#6-gitlab邮件通知配置" class="headerlink" title="6. gitlab邮件通知配置"></a>6. gitlab邮件通知配置</h2><ul>
+<li>  vim  /etc/gitlab/gitlab.rb</li>
+</ul>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab_rails['time_zone'] = 'Asia/Shanghai'
+ 
+gitlab_rails['gitlab_email_enabled'] = true
+gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
+gitlab_rails['gitlab_email_display_name'] = 'gitlab'
+ 
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
+gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
+gitlab_rails['smtp_user_name'] = "smtp用户名"
+gitlab_rails['smtp_password'] = "smtp用户密码"
+gitlab_rails['smtp_domain'] = "163.com"
+gitlab_rails['smtp_authentication'] = "login"<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><strong>启用邮件功能</strong><br>Gitlab 的 Compose 配置 <code>GITLAB_OMNIBUS_CONFIG</code> 节点下增加如下几行：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">########## 邮件服务配置 ##########
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.exmail.qq.com"
+gitlab_rails['smtp_port'] = 465
+gitlab_rails['smtp_tls'] = true
+gitlab_rails['smtp_user_name'] = "账号"
+gitlab_rails['smtp_password'] = "密码"
+gitlab_rails['smtp_authentication'] = "login"
+gitlab_rails['smtp_enable_starttls_auto'] = true 
+gitlab_rails['gitlab_email_from'] = "发件人邮箱"
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="7-使用SourceTree进行项目开发"><a href="#7-使用SourceTree进行项目开发" class="headerlink" title="7. 使用SourceTree进行项目开发"></a>7. 使用SourceTree进行项目开发</h2><hr>
+<h3 id="7-1-项目拉取"><a href="#7-1-项目拉取" class="headerlink" title="7.1 项目拉取"></a>7.1 项目拉取</h3><ul>
+<li>  先把项目克隆下来</li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164210.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164157.png"></p>
+<ul>
+<li>   如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加</li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164146.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164132.png"></p>
+<h3 id="7-2-创建分支进行功能开发"><a href="#7-2-创建分支进行功能开发" class="headerlink" title="7.2 创建分支进行功能开发"></a>7.2 创建分支进行功能开发</h3><p><strong>1）新建立一个叫“pay”的分支</strong></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164122.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164113.png"></p>
+<p><strong>2）进行功能开发</strong></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164103.png"></p>
+<h3 id="7-3-提交项目"><a href="#7-3-提交项目" class="headerlink" title="7.3 提交项目"></a>7.3 提交项目</h3><p><strong>1）开发pay功能完成后进行提交</strong></p>
+<ul>
+<li>  可以看到SourceTree中已经有“未提交的更改”</li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164054.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164042.png"></p>
+<p><strong>2）添加“用户信息”</strong></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164029.png"></p>
+<p>** 3）进行提交**</p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164014.png"></p>
+<ul>
+<li>  注释也可以写成  close #3    ，作用是提交完成后关闭3号issue</li>
+</ul>
+<h3 id="7-4-推送到仓库"><a href="#7-4-推送到仓库" class="headerlink" title="7.4 推送到仓库"></a><strong>7.4 推送到仓库</strong></h3><p><img src="https://cimg1.17lai.site/data/2021/08/0220210802164002.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802163947.png"></p>
+<ul>
+<li>   然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了</li>
+</ul>
+<h3 id="7-5-项目上线"><a href="#7-5-项目上线" class="headerlink" title="7.5 项目上线"></a>7.5 项目上线</h3><p><strong>1）当所有工作完成之后，就可以进行上线了</strong></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802163932.png"></p>
+<p><strong>2）打标签</strong></p>
+<ul>
+<li>   上线先打个标签</li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802163916.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802163907.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/05/2820210528225256.png"></p>
+<p>** 3）删除无用分支**</p>
+<ul>
+<li>  然后删除已经合并到主干中的不必要的分支，如index、pay等</li>
+<li>最后一定要注意时间一定要同步，不然会错乱</li>
+</ul>
+<h2 id="8-Gitlab调优"><a href="#8-Gitlab调优" class="headerlink" title="8. Gitlab调优"></a><strong>8. Gitlab调优</strong></h2><p>gitlab对内存资源的消耗比较厉害<br>其中尤以 sidekiq队列 及 unicorn服务 两个组件对内存消耗最多<br>可以再容器启动时对相关参数进行微调：</p>
+<pre class="line-numbers language-yml" data-language="yml"><code class="language-yml">unicorn['worker_processes'] = 1
+unicorn['worker_memory_limit_min'] = "300 * 1 &lt;&lt; 20"
+unicorn['worker_memory_limit_max'] = "400 * 1 &lt;&lt; 20"
+unicorn['worker_timeout'] = 15
+sidekiq['concurrency'] = 10
+sidekiq_cluster['enable'] = false
+sidekiq_cluster['ha'] = false
+redis['maxclients'] = "100"
+nginx['worker_processes'] = 2
+nginx['worker_connections'] = 512
+nginx['keepalive_timeout'] = 300
+nginx['cache_max_size'] = '200m'
+mattermost['enable'] = false
+mattermost_nginx['enable'] = false
+gitlab_pages['enable'] = false
+pages_nginx['enable'] = false
+postgresql['shared_buffers'] = "256MB"
+postgresql['max_connections'] = 30
+postgresql['work_mem'] = "8MB"
+postgresql['maintenance_work_mem'] = "16MB"
+postgresql['effective_cache_size'] = "1MB"
+postgresql['checkpoint_timeout'] = "5min"
+postgresql['checkpoint_warning'] = "30s"
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>配置调整后需要重载一下</p>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker exec gitlab gitlab-ctl reconfigure
+docker-compose down
+docker-compose up -d
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<hr>
+<h2 id="9-Gitlab-启用-ContainerRegistry"><a href="#9-Gitlab-启用-ContainerRegistry" class="headerlink" title="9. Gitlab 启用 ContainerRegistry"></a>9. Gitlab 启用 ContainerRegistry</h2><ul>
+<li>  <code>ContainerRegistry</code>是<code>Gitlab</code>内置的<code>Docker Registry</code>集成组件</li>
+<li>  集成后每个项目可获得私有的 <code>Docker</code> 镜像存储空间</li>
+<li>  <code>ContainerRegistry</code> 可以复用 <code>Gitlab</code> 域名 或者 独立域名</li>
+<li>  这里配置为复用域名（此时<code>ContainerRegistry</code> 将复用 <code>Gitlab</code> 的 <code>TLS</code> 证书）</li>
+</ul>
+<ol>
+<li> <code>docker-compose.yaml</code>中Gitlab服务的 <code>GITLAB_OMNIBUS_CONFIG</code> 节点下增加如下配置：</li>
+</ol>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">registry_external_url "https://gitlab.example.com:4567"  # ContainerRegistry的外部访问地址
+registry_nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
+registry_nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
+gitlab_rails['registry_host'] = "gitlab.example.com"
+gitlab_rails['registry_port'] = "4567"
+gitlab_rails['registry_api_url'] = "http://localhost:5000"
+gitlab_rails['gitlab_default_projects_features_builds'] = false
+gitlab_rails['gitlab_default_projects_features_container_registry'] = false
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<ol start="2">
+<li> 端口开放增加 <code>- 4567:4567</code></li>
+<li> 服务重启 <code>docker-compose restart Gitlab</code></li>
+</ol>
+<p><code>ContainerRegistry</code> 集成后可以通过 <code>Gitlab</code> 账户登录： <code>docker login gitlab.example.com:4567</code></p>
+<hr>
+<h2 id="日常维护命令"><a href="#日常维护命令" class="headerlink" title="日常维护命令"></a>日常维护命令</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># Gitlab维护
+docker exec gitlab gitlab-ctl status  # gitlab各组件服务状态
+docker exec gitlab gitlab-ctl start/restart/stop [组件名]  # gitlab所有组件的统一控制（其中Unicorn组件重启完成前GitLab会报502）
+docker exec gitlab gitlab-ctl tail [/var/log/gitlab下的某子目录]  # 实时查看日志
+ 
+docker exec gitlab update-permissions  # 修复gitlab版本升级后出现的权限问题
+docker exec gitlab gitlab-ctl reconfigure  # 重载配置
+docker exec -t gitlab gitlab-rake gitlab:backup:create  # 创建备份
+ 
+# ContainerRegistry维护
+docker exec gitlab gitlab-ctl registry-garbage-collect  # 垃圾回收，清理废弃layer（registry停机）
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<hr>
+<h3 id="Import-Repository-Repo-By-Url"><a href="#Import-Repository-Repo-By-Url" class="headerlink" title="Import Repository(Repo By Url)"></a>Import Repository(Repo By Url)</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 账号密码若存在特殊字符则需要url编码
+https://username:password@host:port/group/project.git
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="10-GitLab重置用户名密码"><a href="#10-GitLab重置用户名密码" class="headerlink" title="10. GitLab重置用户名密码"></a><strong>10. GitLab重置用户名密码</strong></h2><p>打开终端，访问：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rails console<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>输入：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">user = User.where(id: 1).first
+user.password='123456'
+user.password_confirmation = '123456'
+user.save! #注意加上 “！”<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>然后退出命令行即可。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">quit<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"> gitlab-rails console production 命令 开始初始化密码
+# 在irb(main):001:0&gt; 后面通过 u=User.where(id:1).first 来查找与切换账号（User.all 可以查看所有用户）
+# 通过u.password='12345678'设置密码为12345678(这里的密码看自己喜欢)：
+# 通过u.password_confirmation='12345678' 再次确认密码
+# 通过 u.save!进行保存<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="11-HTTPS-SSL-支持"><a href="#11-HTTPS-SSL-支持" class="headerlink" title="11. HTTPS SSL 支持"></a><strong>11. HTTPS SSL 支持</strong></h2><ul>
+<li><p>nginx反向代理方式</p>
+<ul>
+<li> 注意docker 内部没有ca支持， 需要手动添加</li>
+</ul>
+</li>
+<li><p>域名提供商提供的免费证书</p>
+<ul>
+<li>这种证书直接用，如果是自签名证书，需要添加自己的ca root证书到服务器</li>
+</ul>
+</li>
+</ul>
+<h2 id="12-Gitlab恢复数据出现must-be-owner-of解决方法"><a href="#12-Gitlab恢复数据出现must-be-owner-of解决方法" class="headerlink" title="12. Gitlab恢复数据出现must be owner of解决方法"></a>12. Gitlab恢复数据出现must be owner of解决方法</h2><p>按正常Gitlab备份数据gitlab-rake gitlab:backup:create</p>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">ERROR: must be owner of extension plpgsql
+ERROR: must be owner of schema public
+ERROR: schema “public” already exists
+ERROR: must be owner of schema public
+ERROR: must be owner of extension plpgsql
+WARNING: no privileges could be revoked for “public”
+WARNING: no privileges could be revoked for “public”
+WARNING: no privileges were granted for “public”
+WARNING: no privileges were granted for “public”<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>解决方法：</p>
+<h4 id="1-修改postgresql配置"><a href="#1-修改postgresql配置" class="headerlink" title="**1. 修改postgresql配置 **"></a>**1. 修改postgresql配置 **</h4><pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">cd /var/opt/gitlab/postgresql/data
+$ vi /var/opt/gitlab/postgresql/data/postgresql.conf
+listen_addresses = '*'<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p>找到listen_addresses = ” 改为listen_addresses = ‘*’</p>
+<p>修改 /var/opt/gitlab/postgresql/data/pg_hba.conf<br>在这个文件最后面加入</p>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">$ vi /var/opt/gitlab/postgresql/data/pg_hba.conf
+local   all         all                               trust
+host    all         all                               127.0.0.1/32 trust
+host    all         all                               ::1/128 trust    #ipv6 可以不配置<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h4 id="2-重启gitlab生效"><a href="#2-重启gitlab生效" class="headerlink" title="2. 重启gitlab生效"></a><strong>2. 重启gitlab生效</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h4 id="3-修改gitlab账号为超级用户"><a href="#3-修改gitlab账号为超级用户" class="headerlink" title="3. 修改gitlab账号为超级用户"></a><strong>3. 修改gitlab账号为超级用户</strong></h4><p>进入postgresql命令行</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">cd /opt/gitlab/embedded/bin
+su gitlab-psql
+./psql -h 127.0.0.1 gitlabhq_production<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p>查看账户权限</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">\du<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>执行修改gitlab用户为超级权限</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">ALTER USER gitlab WITH SUPERUSER;<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>退出</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">\q<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p><img src="https://cimg1.17lai.site/data/2021/08/0220210802135016.png"></p>
+<h5 id="4-从1462989681编号备份中恢复"><a href="#4-从1462989681编号备份中恢复" class="headerlink" title="4. 从1462989681编号备份中恢复"></a>4. 从1462989681编号备份中恢复</h5><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rake gitlab:backup:restore BACKUP=1462989681<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>这样Gitlab恢复数据就不会再报must be owner of extension plpgsql错误。</p>
+<h4 id="4-重启gitlab"><a href="#4-重启gitlab" class="headerlink" title="4. 重启gitlab"></a><strong>4. 重启gitlab</strong></h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>本文作者：夜法之书       写作不易，转载请注明来源地址！</p>
+<h2 id="参考链接："><a href="#参考链接：" class="headerlink" title="参考链接："></a>参考链接：</h2><ol>
+<li><a href="https://www.cnblogs.com/hgzero/p/14088215.html">https://www.cnblogs.com/hgzero/p/14088215.html</a></li>
+<li><a href="http://www.51blogs.net/2017/11/10/1110113243.html">http://www.51blogs.net/2017/11/10/1110113243.html</a></li>
+<li><a href="https://my.oschina.net/u/2400083/blog/808097">https://my.oschina.net/u/2400083/blog/808097</a></li>
+</ol>
+<hr>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
+      <categories>
+        <category>gitlab</category>
+      </categories>
+      <tags>
+        <tag>Gitlab</tag>
+        <tag>Git</tag>
+        <tag>Docker</tag>
+        <tag>教程</tag>
+        <tag>Rigistry</tag>
+        <tag>email</tag>
+        <tag>https</tag>
+        <tag>ssl</tag>
       </tags>
   </entry>
   <entry>
@@ -10144,6 +10144,94 @@ echo 'Done!'<span aria-hidden="true" class="line-numbers-rows"><span></span><spa
         <tag>字幕</tag>
         <tag>emby</tag>
         <tag>plex</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CMake快速入门教程</title>
+    <url>/linux/2021-10-12-cmake-quick-start-tutorial/</url>
+    <content><![CDATA[<h2 id="1-cmake简介"><a href="#1-cmake简介" class="headerlink" title="1.cmake简介"></a>1.cmake简介</h2><p>cmake是跨平台的makefile文件生成工具,是为了解决各个平台下面make工具不同造成的makefile文件格式不同的问题.也就是cmake是用来解决跨平台编译问题的.常见的还有autotool工具集，该工具集用于GNU软件协议的makefile文件生成，方便GNU包的编译和安装。</p>
+<h2 id="2-cmake文件编辑规则"><a href="#2-cmake文件编辑规则" class="headerlink" title="2.cmake文件编辑规则"></a>2.cmake文件编辑规则</h2><ul>
+<li>1)<strong>命令不区分大小写，但是变量区分大小写</strong>。</li>
+<li>2)<strong>注释</strong>使用#符号</li>
+<li>3)命令如果有多个参数，互相之间用空格隔开</li>
+</ul>
+<h2 id="3-cmake保留变量"><a href="#3-cmake保留变量" class="headerlink" title="3.cmake保留变量"></a>3.cmake保留变量</h2><p>cmake里面有很多的预定义变量,是程序环境固有的,比如CUDA_NVCC_FLAGS,不同的变量有固定的作用,比如CUDA_NVCC_FLAGS是nvcc的参数list,变量可以使用set命令和list命令进行赋值和追加值,要注意的是变量可能可以有多个值,值与值之间用分号分开,可以使用set(var a b c)给var赋值a b c,还可以使用list命令给var追加删除插入值等,不同的变量有不同的值域,需要查阅<a href="https://cmake.org/documentation/">手册</a></p>
+<h2 id="4-cmake变量引用"><a href="#4-cmake变量引用" class="headerlink" title="4.cmake变量引用"></a>4.cmake变量引用</h2><p>cmake里面变量的取值引用要使用${var}的形式,但是在赋值的时候是不需要的,和shell命令有点相似.</p>
+<h2 id="5-cmake指定Debug和Release版本"><a href="#5-cmake指定Debug和Release版本" class="headerlink" title="5.cmake指定Debug和Release版本"></a>5.cmake指定Debug和Release版本</h2><p>指定Debug和Release一共有三种方法：</p>
+<p>1.使用ADD_COMPILE_OPTIONS()加入-g指定Debug版本.</p>
+<p>2.使用SET( CMAKE_BUILD_TYPE Debug/Rrelease)指定Debug<br>在下面加入：</p>
+<pre class="line-numbers language-none"><code class="language-none">SET(CMAKE_CXX_FLAGS_DEBUG "\$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
+SET(CMAKE_CXX_FLAGS_RELEASE "\$ENV{CXXFLAGS} -O3 -Wall")<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<p>上面的设置C++编译选项，对于C语言，设置CMAKE_C_FLAGS_DEBUG、CMAKE_._FLAGS_RELEASE变量，一般来说最好两个都设置原因是CMake 中有一个变量 CMAKE_BUILD_TYPE ,可以的取值是 Debug Release等.当这个变量值为 Debug 的时候,CMake 会使用变量 CMAKE_CXX_FLAGS_DEBUG 和 CMAKE_C_FLAGS_DEBUG 中的字符串作为编译选项生成 Makefile</p>
+<p>编译动态库or静态库时，最好通过修改CXXFLAGS和CFLAGS，以支持-fPIC，这个选项有时是默认开启，有时默认关闭，但为了以后的应用，库文件最好都使用-fPIC编译</p>
+<ol start="3">
+<li>在使用cmake命令时加上-DCMAKE_BUILD_TYPE=Debug/Release</li>
+</ol>
+<h2 id="5-cmake指定生成文件"><a href="#5-cmake指定生成文件" class="headerlink" title="5.cmake指定生成文件"></a>5.cmake指定生成文件</h2><p>CUDA_ADD_LIBRARY()指明目标文件是库文件,CUDA_ADD_EXECUTABLE()指明生成的文件为可执行文件</p>
+<h2 id="6-配置模板"><a href="#6-配置模板" class="headerlink" title="6.配置模板"></a>6.配置模板</h2><p>通常我们要在工程目录下面创建include、src文件夹，include文件夹里面存放头文件，src文件夹里面存放源代码，注意这时候的源代码里面包含头文件的路径应该是“../include/xx.h”，然后在工程根目录下面创建CMakeLists.txt文件，里面写入命令.在编译的时候为了不搞乱工程目录，在工程根目录下面创建build文件夹，在里面使用“cmake ..”命令创建CMakefile,再make即可。</p>
+<pre class="line-numbers language-none"><code class="language-none">#指定cmake最低版本号
+cmake_minimum_required(VERSION 3.2)
+
+#指定项目名称
+PROJECT(Liner_Struct)
+
+#指定头文件目录，不同目录用空格隔开,目录中有空格可用引号
+#如果是相对路径，相对于CMakeLists.txt文件
+INCLUDE_DIRECTORIES(include)
+
+#指定源文件目录，DIR_SRCS值自定义变量，下面的命令对其进行了赋值
+AUX_SOURCE_DIRECTORY(src DIR_SRCS)
+
+#设置变量用于存放所有的编译文件，
+#TEST_LINER_STRUCT是自定义变量，使用SET给其赋值
+SET(TEST_LINER_STRUCT ${DIR_SRCS})
+
+#增加编译选项
+#判断是否为gcc编译器，如果是，增加编译选项
+#c99是c语言的标准，常用的还有c++标准c++11
+#下面的命令判断是否编译器是gcc
+#message命令是输出信息,例如下面的输出“optional:-std=c99”
+if(CMAKE_COMPILER_IS_GNUCXX)
+    ADD_COMPILE_OPTIONS(-std=c99)
+    message(STATUS "optional:-std=c99")
+endif(CMAKE_COMPILER_IS_GNUCXX)
+
+#配置生成文件
+#${PROJECT_NAME}是cmake自带变量，其值和PROJECT()命令指定的一样
+#${TEST_LINER_STRUCT}是自定义变量，上文赋值的
+ADD_EXECUTABLE(${PROJECT_NAME} ${TEST_LINER_STRUCT})<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="7-if-else语句"><a href="#7-if-else语句" class="headerlink" title="7.if-else语句"></a>7.<a href="https://cmake.org/cmake/help/v3.0/command/if.html">if-else</a>语句</h2><p>cmake中的if-else语句</p>
+<pre class="line-numbers language-none"><code class="language-none">if(exp)
+     cmdA
+     cmdB
+elseif(exp)
+      cmdC
+endif(exp)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>最简单得到一个应用</p>
+<pre class="line-numbers language-none"><code class="language-none">if(ARM)
+   #ARM平台
+else()
+  #非ARM平台 
+endif()<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>使用cmake -DARM=1 .. 时编译ARM代码，使用cmake -DAMR=0 ..编译非ARM代码</p>
+<h2 id="8-与平台编译器的结合"><a href="#8-与平台编译器的结合" class="headerlink" title="8.与平台编译器的结合"></a>8.与平台编译器的结合</h2><h3 id="8-1windows"><a href="#8-1windows" class="headerlink" title="8.1windows"></a>8.1windows</h3><p>在windows上运行cmake可以生成对应的VS的工程文件，然后使用相应的VS打开工程就可以进行编译。要注意的是如果使用VS2010及其以前的版本，C不支持C99，也就是变量的命名必须放在函数或者域的最前面，不能放在中间，特别麻烦。VS2015在安装后可能还需要打开VS，新建工程时选择VC++可能相关组件还没有安装，如果这时候使用cmake会提示找不到C、C++编译器（类似yuNo CMAKE_CXX_COMPILER could be found）的错误。安装了相关的组件后cmake即不会有错误。</p>
+<h3 id="8-2-为VS2015生成的项目"><a href="#8-2-为VS2015生成的项目" class="headerlink" title="8.2 为VS2015生成的项目"></a>8.2 为VS2015生成的项目</h3><p>打开工程文件后可以看到有3个项目，其中只有一个和我们有直接关系，就是我们在CMakeLists.txt里面定义的PROJECT_NAME,剩下的两个是ALL_BUILD和ZERO_CHECK.</p>
+<p><strong>ZERO_CHECK</strong><br>该目标会检查生成工程的 CMake 配置文件（ CMakeLists.txt ）是否更新。如更新，将运行 CMake 重新生成工程文件。</p>
+<p>如果确信 CMakeLists.txt 不会被更新，或者希望手工运行 CMake 重新生成工程文件，可以在 CMakeLists.txt 配置文件中添加 set(CMAKE_SUPPRESS_REGENERATION FALSE) 命令， ZERO_CHECK 目标将不会生成。</p>
+<p><strong>ALL_BUILD</strong><br>该目标会导致工程中所有项目被构建，类似 Visual Studio 的 Build All 或者 make 的 make all命令。</p>
+<p>转载 <a href="https://lightzhan.xyz/index.php/2020/03/11/cmake-quick-tutorial/">CMake快速入门教程</a></p>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
+      <categories>
+        <category>linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>cmake</tag>
+        <tag>develop</tag>
       </tags>
   </entry>
   <entry>
