@@ -1276,36 +1276,36 @@
 <li>jellyfin中文字体显示方块问题</li>
 </ul>
 <p>上面两个问题见下面compose 配置解决方法</p>
-<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">version</span><span class="token punctuation">:</span> <span class="token string">'3'</span>
-<span class="token key atrule">services</span><span class="token punctuation">:</span>
-  <span class="token key atrule">jellyfin</span><span class="token punctuation">:</span>
-    <span class="token key atrule">image</span><span class="token punctuation">:</span> jellyfin/jellyfin
-    <span class="token key atrule">container_name</span><span class="token punctuation">:</span> jellyfin
-    <span class="token key atrule">user</span><span class="token punctuation">:</span> $<span class="token punctuation">{</span>PUID<span class="token punctuation">}</span><span class="token punctuation">:</span>$<span class="token punctuation">{</span>PGID<span class="token punctuation">}</span>
-    <span class="token key atrule">hostname</span><span class="token punctuation">:</span> jellyfin
-    <span class="token key atrule">restart</span><span class="token punctuation">:</span> always
-    <span class="token key atrule">devices</span><span class="token punctuation">:</span>
-     <span class="token punctuation">-</span> /dev/dri<span class="token punctuation">:</span>/dev/dri     <span class="token comment">#使jellfin支持硬件解码</span>
-    <span class="token key atrule">environment</span><span class="token punctuation">:</span>
-      <span class="token punctuation">-</span> PUID=$<span class="token punctuation">{</span>PUID<span class="token punctuation">}</span>
-      <span class="token punctuation">-</span> PGID=$<span class="token punctuation">{</span>PGID<span class="token punctuation">}</span>
-      <span class="token punctuation">-</span> TZ=$<span class="token punctuation">{</span>TZ<span class="token punctuation">}</span>
-      <span class="token comment"># 给一些插件做代理</span>
-      <span class="token punctuation">-</span> http_proxy=http<span class="token punctuation">:</span>//xxx.17lai.site<span class="token punctuation">:</span>1089/
-      <span class="token punctuation">-</span> https_proxy=http<span class="token punctuation">:</span>//xxx.17lai.site<span class="token punctuation">:</span>1089/
-    <span class="token comment"># ports:    # 使用nginx 反向代理，所以这里就不用开端口了</span>
-      <span class="token comment"># - 8098:8096</span>
-    <span class="token key atrule">volumes</span><span class="token punctuation">:</span>
-      <span class="token punctuation">-</span> $<span class="token punctuation">{</span>USERDIR<span class="token punctuation">}</span>/jellyfin/config<span class="token punctuation">:</span>/config
-      <span class="token punctuation">-</span> $<span class="token punctuation">{</span>USERDIR<span class="token punctuation">}</span>/jellyfin/cache<span class="token punctuation">:</span>/cache
-      <span class="token comment"># 把windowsfonts目录下面的字体都复制到`jellyfin/fonts`目录中</span>
-      <span class="token punctuation">-</span> $<span class="token punctuation">{</span>USERDIR<span class="token punctuation">}</span>/jellyfin/fonts<span class="token punctuation">:</span>/usr/share/fonts    <span class="token comment"># 给jellyfin装载更多字体，使中文显示正确，不再是方块</span>
-      <span class="token punctuation">-</span> $<span class="token punctuation">{</span>USERDIR<span class="token punctuation">}</span>/nginx/resolv.conf<span class="token punctuation">:</span>/etc/resolv.conf    <span class="token comment"># 定制dns</span>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml">version: '3'
+services:
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    user: ${PUID}:${PGID}
+    hostname: jellyfin
+    restart: always
+    devices:
+     - /dev/dri:/dev/dri     #使jellfin支持硬件解码
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      # 给一些插件做代理
+      - http_proxy=http://xxx.17lai.site:1089/
+      - https_proxy=http://xxx.17lai.site:1089/
+    # ports:    # 使用nginx 反向代理，所以这里就不用开端口了
+      # - 8098:8096
+    volumes:
+      - ${USERDIR}/jellyfin/config:/config
+      - ${USERDIR}/jellyfin/cache:/cache
+      # 把windowsfonts目录下面的字体都复制到`jellyfin/fonts`目录中
+      - ${USERDIR}/jellyfin/fonts:/usr/share/fonts    # 给jellyfin装载更多字体，使中文显示正确，不再是方块
+      - ${USERDIR}/nginx/resolv.conf:/etc/resolv.conf    # 定制dns
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>赋予emby，jellyfin访问硬件加速驱动权限</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">chmod</span> <span class="token number">755</span> /dev/dri
-<span class="token function">chmod</span> <span class="token number">666</span> /dev/dri/renderD128<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">chmod 755 /dev/dri
+chmod 666 /dev/dri/renderD128<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 
 <h2 id="TMM刮削，改名，目录整理"><a href="#TMM刮削，改名，目录整理" class="headerlink" title="TMM刮削，改名，目录整理"></a><strong>TMM刮削，改名，目录整理</strong></h2><blockquote>
 <p>电影，电视剧，动画等视频为了更好的体验效果，需要刮削元数据。</p>
@@ -1402,7 +1402,7 @@
 </blockquote>
 <p><img src="https://cimg1.17lai.site/data/2021/10/0620211006015739.png" alt="私人音乐服务"></p>
 <h2 id="Docker管理"><a href="#Docker管理" class="headerlink" title="Docker管理"></a>Docker管理</h2><h3 id="使用docker-compose-管理docker配置文件，一键安装，升级"><a href="#使用docker-compose-管理docker配置文件，一键安装，升级" class="headerlink" title="使用docker compose 管理docker配置文件，一键安装，升级"></a>使用docker compose 管理docker配置文件，一键安装，升级</h3><h3 id="使用portainer管理docker"><a href="#使用portainer管理docker" class="headerlink" title="使用portainer管理docker"></a><strong>使用portainer管理docker</strong></h3><p><img src="https://cimg1.17lai.site/data/2021/08/1920210819001116.png" alt="portainer"></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">version: <span class="token string">'3'</span>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">version: '3'
 services:
   portainer-ce:
     container_name:  portainer-ce
@@ -1410,36 +1410,36 @@ services:
     command: -H unix:///var/run/docker.sock
     restart: always
     ports:
-      - <span class="token number">9300</span>:9000
-      - <span class="token number">9301</span>:8000
+      - 9300:9000
+      - 9301:8000
     environment:
-      - <span class="token assign-left variable">TZ</span><span class="token operator">=</span>Asia/Shanghai
-      - <span class="token assign-left variable"><span class="token environment constant">LANG</span></span><span class="token operator">=</span>en_US.UTF-8
+      - TZ=Asia/Shanghai
+      - LANG=en_US.UTF-8
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /share/Container/portainer_data:/data<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <h3 id="使用watchtower自动升级docker"><a href="#使用watchtower自动升级docker" class="headerlink" title="使用watchtower自动升级docker"></a><strong>使用watchtower自动升级docker</strong></h3><p>使所有软件保持最新最佳状态</p>
 <p><img src="https://cimg1.17lai.site/data/2021/08/1920210819001124.png" alt="watchtower"></p>
-<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">version</span><span class="token punctuation">:</span> <span class="token string">'3'</span>
-<span class="token key atrule">services</span><span class="token punctuation">:</span>
-  <span class="token key atrule">watchtower</span><span class="token punctuation">:</span>
-    <span class="token key atrule">container_name</span><span class="token punctuation">:</span> watchtower
-    <span class="token key atrule">image</span><span class="token punctuation">:</span> containrrr/watchtower<span class="token punctuation">:</span>latest
-    <span class="token key atrule">volumes</span><span class="token punctuation">:</span>
-      <span class="token punctuation">-</span> /var/run/docker.sock<span class="token punctuation">:</span>/var/run/docker.sock
-    <span class="token key atrule">environment</span><span class="token punctuation">:</span>
-      <span class="token punctuation">-</span> TZ=Asia/Shanghai
-      <span class="token punctuation">-</span> WATCHTOWER_CLEANUP=true
-      <span class="token punctuation">-</span> WATCHTOWER_SCHEDULE=0 0 1 * * *
-    <span class="token key atrule">restart</span><span class="token punctuation">:</span> always
-    <span class="token key atrule">command</span><span class="token punctuation">:</span> nginx redis<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml">version: '3'
+services:
+  watchtower:
+    container_name: watchtower
+    image: containrrr/watchtower:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=Asia/Shanghai
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_SCHEDULE=0 0 1 * * *
+    restart: always
+    command: nginx redis<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>上述配置文件中<code>volumes</code>使用了绝对路径,使这个容器能访问系统<code>docker.sock</code>目录,用于方便监控容器镜像的版本以便更新.其他的一些环境变量,例如时区,清理旧镜像,定时任务都转换为<code>environment</code>,而特殊的<code>command</code>命令则定义了指定监控<code>nginx</code>和<code>redis</code>两个容器。没有command这一行，默认监控升级所有运行中的docker</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 运行一次，更新所有的容器，并清除旧的容器 </span>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 运行一次，更新所有的容器，并清除旧的容器 
 docker run -d --name watchtower -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower --cleanup --run-once<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#只更新nginx和redis</span>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">#只更新nginx和redis
 docker run -d --name watchtower -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower --cleanup --run-once nginx redis<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 
 <h3 id="使用muximux来管理多个docker入口"><a href="#使用muximux来管理多个docker入口" class="headerlink" title="使用muximux来管理多个docker入口"></a><strong>使用muximux来管理多个docker入口</strong></h3><p>主页面</p>
@@ -1453,21 +1453,21 @@ docker run -d --name watchtower -v /var/run/docker.sock:/var/run/docker.sock con
 <li>配置SSL证书访问，密码等敏感数据从此加密传输。并可以使用http2高级特性。</li>
 <li><img src="https://cimg1.17lai.site/data/2021/08/1920210819010407.png" alt="nginx"></li>
 </ul>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">version: <span class="token string">'3'</span>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">version: '3'
 services:
   nginxweb:
     image: bloodstar/nginx-purge
-    container_name: <span class="token string">"nginxweb"</span>
+    container_name: "nginxweb"
     hostname: nginxweb
     ports:
-      - <span class="token string">"80:80"</span>
-      - <span class="token string">"443:443"</span>
+      - "80:80"
+      - "443:443"
     restart: always
     volumes:
-      <span class="token comment"># 映射主机目录</span>
-      - <span class="token variable">${USERDIR}</span>/nginx/conf.d:/etc/nginx/conf.d:ro
-      - <span class="token variable">${USERDIR}</span>/nginxproxy/certs:/etc/nginx/certs:ro
-      - <span class="token variable">${USERDIR}</span>/nginx/nginx.conf:/etc/nginx/nginx.conf:ro<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+      # 映射主机目录
+      - ${USERDIR}/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ${USERDIR}/nginxproxy/certs:/etc/nginx/certs:ro
+      - ${USERDIR}/nginx/nginx.conf:/etc/nginx/nginx.conf:ro<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p> 这里推荐博主制作的nginx docker镜像： <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/nginx-purge">bloodstar/nginx-purge</a></p>
 <blockquote>
@@ -2371,7 +2371,7 @@ services:
             <br>
             
                 &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
-                        class="white-color">129.2k</span>
+                        class="white-color">129.6k</span>
             
             
             
@@ -2435,6 +2435,11 @@ services:
 
 </div>
     </div>
+    <!-- start webpushr tracking code --> 
+    <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";
+    fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));
+    webpushr('setup',{'key':'BDHamjevXR9yPJrttxl80MjCYEwm3CKzwsi3rwMXxq4Lnbzhr2fNQARqXJVhfBn_ucmy9QHixa3qps8eEFXBwmw' });</script>
+    <!-- end webpushr tracking code -->
 </footer>
 
 <div class="progress-bar"></div>
@@ -2617,6 +2622,7 @@ $(function () {
     <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.16/libs/instantpage/instantpage.js" type="module"></script>
     
 
-<!-- hexo injector body_end start --><script src="https://cdn.jsdelivr.net/npm/hexo-tag-common@latest/js/index.js"></script><!-- hexo injector body_end end --><script src="https://cdn.jsdelivr.net/npm/live2d-widget@3.x/lib/L2Dwidget.min.js"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"https://cdn.jsdelivr.net/npm/live2d-widget-model-lwet@1.0.0/assets/14.json"},"display":{"position":"left","width":150,"height":300,"hOffset":35,"vOffset":5},"mobile":{"show":false}});</script></body>
+<!-- hexo injector body_end start --><script src="https://cdn.jsdelivr.net/npm/hexo-tag-common@latest/js/index.js"></script><!-- hexo injector body_end end --><script src="https://cdn.jsdelivr.net/npm/live2d-widget@3.x/lib/L2Dwidget.min.js"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"https://cdn.jsdelivr.net/npm/live2d-widget-model-lwet@1.0.0/assets/14.json"},"display":{"position":"left","width":150,"height":300,"hOffset":35,"vOffset":5},"mobile":{"show":false}});</script><script>(function (w, d, s, id) {
+            if (typeof (w.webpushr) !== 'undefined') return; w.webpushr = w.webpushr || function () { (w.webpushr.q = w.webpushr.q || []).push(arguments) }; var js, fjs = d.getElementsByTagName(s)[0]; js = d.createElement(s); js.id = id; js.async = 1; js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window, document, 'script', 'webpushr-jssdk'));webpushr('setup', { 'key': 'BDHamjevXR9yPJrttxl80MjCYEwm3CKzwsi3rwMXxq4Lnbzhr2fNQARqXJVhfBn_ucmy9QHixa3qps8eEFXBwmw' });</script></body>
 
 </html>
