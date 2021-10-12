@@ -8772,82 +8772,6 @@ location<span class="token punctuation">.</span>href<span class="token operator"
       </tags>
   </entry>
   <entry>
-    <title>Vim IDE Docker 以及中文指南</title>
-    <url>/ide/2021-09-15-vim-checklist/</url>
-    <content><![CDATA[<blockquote>
-<p>Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！</p>
-</blockquote>
-<h2 id="Vim-Docker"><a href="#Vim-Docker" class="headerlink" title="Vim Docker"></a><a href="https://hub.docker.com/r/bloodstar/vim">Vim Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/G6KybVM.png" alt="Vim Docker"></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker pull bloodstar/vim<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit</span><span class="token operator">=</span><span class="token string">'docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim'</span> 
-edit some.file 
-<span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit_update</span><span class="token operator">=</span><span class="token string">"docker pull bloodstar/vim:latest"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="Vim-IDE-Docker"><a href="#Vim-IDE-Docker" class="headerlink" title="Vim IDE Docker"></a><a href="https://hub.docker.com/r/bloodstar/drop-in">Vim IDE Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/RVTlBBO.png" alt="drop-in"></p>
-<h4 id="What’s-inside"><a href="#What’s-inside" class="headerlink" title="What’s inside:"></a>What’s inside:</h4><ul>
-<li><a href="http://www.alpinelinux.org/"><code>Alpine Linux</code></a></li>
-<li><a href="http://www.vim.org/"><code>Vim</code></a> + a ton of awesome plugins <em>see <a href="https://hub.docker.com/r/bloodstar/vim/"><code>bloodstar/vim:latest</code></a></em></li>
-<li>Good support of <a href="https://golang.org/"><code>Golang</code></a> development with <a href="https://hub.docker.com/r/bloodstar/go-tools/"><code>bloodstar/go-tools</code></a> container</li>
-<li><a href="https://tmux.github.io/"><code>tmux</code></a></li>
-<li><a href="https://powerline.readthedocs.io/"><code>powerline</code></a></li>
-<li><a href="https://mosh.mit.edu/"><code>Mosh</code></a></li>
-<li>OpenSSH, Bash, OMF, Python, etc.</li>
-</ul>
-<h4 id="how-to-start-the-daemon-and-all-containers"><a href="#how-to-start-the-daemon-and-all-containers" class="headerlink" title="how to start the daemon(and all containers)"></a>how to start the daemon(and all containers)</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker create -v <span class="token string">'/usr/lib/go'</span> --name go-tools <span class="token punctuation">\</span>
-<span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
-
-docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
---volumes-from go-tools <span class="token punctuation">\</span>
--v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
--v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
--d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
---name drop-in bloodstar/drop-in<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p><em><code>-v /etc/localtime:/etc/localtime:ro</code> - makes tmux display local time</em></p>
-<h4 id="how-to-connect"><a href="#how-to-connect" class="headerlink" title="how to connect:"></a>how to connect:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h4 id="or-without-host-identity-check"><a href="#or-without-host-identity-check" class="headerlink" title="or without host identity check:"></a>or without host identity check:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -o StrictHostKeyChecking=no -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h4 id="Useful-Bash-scripts"><a href="#Useful-Bash-scripts" class="headerlink" title="Useful Bash scripts"></a>Useful Bash scripts</h4><h6 id="Connect"><a href="#Connect" class="headerlink" title="Connect"></a><strong>Connect</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
-<span class="token assign-left variable">ip</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker inspect --format <span class="token string">'{{ .NetworkSettings.IPAddress }}'</span> drop-in<span class="token variable">)</span></span>
-mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@<span class="token variable">$ip</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<h6 id="start-the-daemon-and-all-containers"><a href="#start-the-daemon-and-all-containers" class="headerlink" title="start the daemon(and all containers)"></a><strong>start the daemon(and all containers)</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
-<span class="token assign-left variable">dtc_id</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker <span class="token function">ps</span> -a -q --filter <span class="token string">'name=vim-go-tools'</span><span class="token variable">)</span></span>
-<span class="token keyword">if</span> <span class="token punctuation">[</span><span class="token punctuation">[</span> -z <span class="token string">"<span class="token variable">${dtc_id}</span>"</span> <span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">;</span> <span class="token keyword">then</span>
- <span class="token builtin class-name">echo</span> <span class="token string">'vim-go-tools container not found. Creating...'</span>
- docker create -v <span class="token string">'/usr/lib/go'</span> --name <span class="token string">'vim-go-tools'</span> <span class="token punctuation">\</span>
-   <span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
- <span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span>
-<span class="token keyword">fi</span>
-<span class="token builtin class-name">echo</span> <span class="token string">'starting daemon...'</span>
-docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
-  --volumes-from vim-go-tools <span class="token punctuation">\</span>
-  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
-  -v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
-  -e <span class="token string">"GEMAIL=&lt;github email&gt;"</span> <span class="token punctuation">\</span>
-  -e <span class="token string">"GNAME=&lt;github name&gt;"</span> <span class="token punctuation">\</span>
-  -d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
-  --name drop-in bloodstar/drop-in
-<span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="Vim-中文快查表-lt-戳这里"><a href="#Vim-中文快查表-lt-戳这里" class="headerlink" title="Vim 中文快查表   <= 戳这里"></a><a href="https://blog.17lai.site/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/">Vim 中文快查表</a>   &lt;= 戳这里</h2><blockquote>
-<p>Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！<br>快去看看吧。</p>
-</blockquote>
-<h2 id="Vim"><a href="#Vim" class="headerlink" title="Vim"></a>Vim</h2><p><img src="https://cimg1.17lai.site/data/2021/09/1520210915150901.png" alt="vim速查"></p>
-<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
-      <categories>
-        <category>ide</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>vim</tag>
-        <tag>ide</tag>
-        <tag>docker</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>1.5 万字 CSS 基础拾遗（核心知识、常见需求）</title>
     <url>/web/2021-09-15-ccs-basec-knowledge/</url>
     <content><![CDATA[<h2 id="1-5-万字-CSS-基础拾遗（核心知识、常见需求）"><a href="#1-5-万字-CSS-基础拾遗（核心知识、常见需求）" class="headerlink" title="1.5 万字 CSS 基础拾遗（核心知识、常见需求）"></a>1.5 万字 CSS 基础拾遗（核心知识、常见需求）</h2><p>本篇文章围绕了 CSS 的核心知识点和项目中常见的需求来展开。虽然行文偏长，但偏基础，适合初级中级前端阅读，阅读的时候请适当跳过已经掌握的部分。</p>
@@ -9821,41 +9745,79 @@ footer</span> <span class="token punctuation">{</span>
       </tags>
   </entry>
   <entry>
-    <title>解决Thinkpad笔记本喇叭破音问题！</title>
-    <url>/notebook/2021-10-05-repair-thinkpad-cracking-voice/</url>
-    <content><![CDATA[<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。</p>
-<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。</p>
-<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>如是，网购了一个新喇叭，拆机，换上，完美解决问题！</p>
-<p>喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/0520211005175831.jpg" alt="喇叭破裂施压图"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/0520211005175843.jpg" alt="喇叭破裂未施压图"></p>
-<blockquote>
-<p>这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。</p>
-<p>型号：Thinkpad T4X0S </p>
+    <title>Vim IDE Docker 以及中文指南</title>
+    <url>/ide/2021-09-15-vim-checklist/</url>
+    <content><![CDATA[<blockquote>
+<p>Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！</p>
 </blockquote>
+<h2 id="Vim-Docker"><a href="#Vim-Docker" class="headerlink" title="Vim Docker"></a><a href="https://hub.docker.com/r/bloodstar/vim">Vim Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/G6KybVM.png" alt="Vim Docker"></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker pull bloodstar/vim<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit</span><span class="token operator">=</span><span class="token string">'docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim'</span> 
+edit some.file 
+<span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit_update</span><span class="token operator">=</span><span class="token string">"docker pull bloodstar/vim:latest"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="Vim-IDE-Docker"><a href="#Vim-IDE-Docker" class="headerlink" title="Vim IDE Docker"></a><a href="https://hub.docker.com/r/bloodstar/drop-in">Vim IDE Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/RVTlBBO.png" alt="drop-in"></p>
+<h4 id="What’s-inside"><a href="#What’s-inside" class="headerlink" title="What’s inside:"></a>What’s inside:</h4><ul>
+<li><a href="http://www.alpinelinux.org/"><code>Alpine Linux</code></a></li>
+<li><a href="http://www.vim.org/"><code>Vim</code></a> + a ton of awesome plugins <em>see <a href="https://hub.docker.com/r/bloodstar/vim/"><code>bloodstar/vim:latest</code></a></em></li>
+<li>Good support of <a href="https://golang.org/"><code>Golang</code></a> development with <a href="https://hub.docker.com/r/bloodstar/go-tools/"><code>bloodstar/go-tools</code></a> container</li>
+<li><a href="https://tmux.github.io/"><code>tmux</code></a></li>
+<li><a href="https://powerline.readthedocs.io/"><code>powerline</code></a></li>
+<li><a href="https://mosh.mit.edu/"><code>Mosh</code></a></li>
+<li>OpenSSH, Bash, OMF, Python, etc.</li>
+</ul>
+<h4 id="how-to-start-the-daemon-and-all-containers"><a href="#how-to-start-the-daemon-and-all-containers" class="headerlink" title="how to start the daemon(and all containers)"></a>how to start the daemon(and all containers)</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker create -v <span class="token string">'/usr/lib/go'</span> --name go-tools <span class="token punctuation">\</span>
+<span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
+
+docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
+--volumes-from go-tools <span class="token punctuation">\</span>
+-v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
+-v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
+-d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
+--name drop-in bloodstar/drop-in<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><em><code>-v /etc/localtime:/etc/localtime:ro</code> - makes tmux display local time</em></p>
+<h4 id="how-to-connect"><a href="#how-to-connect" class="headerlink" title="how to connect:"></a>how to connect:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h4 id="or-without-host-identity-check"><a href="#or-without-host-identity-check" class="headerlink" title="or without host identity check:"></a>or without host identity check:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -o StrictHostKeyChecking=no -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h4 id="Useful-Bash-scripts"><a href="#Useful-Bash-scripts" class="headerlink" title="Useful Bash scripts"></a>Useful Bash scripts</h4><h6 id="Connect"><a href="#Connect" class="headerlink" title="Connect"></a><strong>Connect</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
+<span class="token assign-left variable">ip</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker inspect --format <span class="token string">'{{ .NetworkSettings.IPAddress }}'</span> drop-in<span class="token variable">)</span></span>
+mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@<span class="token variable">$ip</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h6 id="start-the-daemon-and-all-containers"><a href="#start-the-daemon-and-all-containers" class="headerlink" title="start the daemon(and all containers)"></a><strong>start the daemon(and all containers)</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
+<span class="token assign-left variable">dtc_id</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker <span class="token function">ps</span> -a -q --filter <span class="token string">'name=vim-go-tools'</span><span class="token variable">)</span></span>
+<span class="token keyword">if</span> <span class="token punctuation">[</span><span class="token punctuation">[</span> -z <span class="token string">"<span class="token variable">${dtc_id}</span>"</span> <span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">;</span> <span class="token keyword">then</span>
+ <span class="token builtin class-name">echo</span> <span class="token string">'vim-go-tools container not found. Creating...'</span>
+ docker create -v <span class="token string">'/usr/lib/go'</span> --name <span class="token string">'vim-go-tools'</span> <span class="token punctuation">\</span>
+   <span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
+ <span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span>
+<span class="token keyword">fi</span>
+<span class="token builtin class-name">echo</span> <span class="token string">'starting daemon...'</span>
+docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
+  --volumes-from vim-go-tools <span class="token punctuation">\</span>
+  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
+  -v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
+  -e <span class="token string">"GEMAIL=&lt;github email&gt;"</span> <span class="token punctuation">\</span>
+  -e <span class="token string">"GNAME=&lt;github name&gt;"</span> <span class="token punctuation">\</span>
+  -d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
+  --name drop-in bloodstar/drop-in
+<span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="Vim-中文快查表-lt-戳这里"><a href="#Vim-中文快查表-lt-戳这里" class="headerlink" title="Vim 中文快查表   <= 戳这里"></a><a href="https://blog.17lai.site/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/">Vim 中文快查表</a>   &lt;= 戳这里</h2><blockquote>
+<p>Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！<br>快去看看吧。</p>
+</blockquote>
+<h2 id="Vim"><a href="#Vim" class="headerlink" title="Vim"></a>Vim</h2><p><img src="https://cimg1.17lai.site/data/2021/09/1520210915150901.png" alt="vim速查"></p>
 <link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
       <categories>
-        <category>notebook</category>
+        <category>ide</category>
       </categories>
       <tags>
-        <tag>thinkpad</tag>
-        <tag>sound</tag>
-        <tag>speaker</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>http 错误代码表</title>
-    <url>/web/2021-10-06-http-error-code-table/</url>
-    <content><![CDATA[<p>所有 HTTP 状态代码及其定义。<br>　代码&nbsp;&nbsp;指示&nbsp;&nbsp;<br>2xx&nbsp;&nbsp;成功&nbsp;&nbsp;<br>200&nbsp;&nbsp;正常；请求已完成。&nbsp;&nbsp;<br>201&nbsp;&nbsp;正常；紧接 POST 命令。&nbsp;&nbsp;<br>202&nbsp;&nbsp;正常；已接受用于处理，但处理尚未完成。&nbsp;&nbsp;<br>203&nbsp;&nbsp;正常；部分信息 — 返回的信息只是一部分。&nbsp;&nbsp;<br>204&nbsp;&nbsp;正常；无响应 — 已接收请求，但不存在要回送的信息。&nbsp;&nbsp;<br>3xx&nbsp;&nbsp;重定向&nbsp;&nbsp;<br>301&nbsp;&nbsp;已移动 — 请求的数据具有新的位置且更改是永久的。&nbsp;&nbsp;<br>302&nbsp;&nbsp;已找到 — 请求的数据临时具有不同 URI。&nbsp;&nbsp;<br>303&nbsp;&nbsp;请参阅其它 — 可在另一 URI 下找到对请求的响应，且应使用 GET 方法检索此响应。&nbsp;&nbsp;<br>304&nbsp;&nbsp;未修改 — 未按预期修改文档。&nbsp;&nbsp;<br>305&nbsp;&nbsp;使用代理 — 必须通过位置字段中提供的代理来访问请求的资源。&nbsp;&nbsp;<br>306&nbsp;&nbsp;未使用 — 不再使用；保留此代码以便将来使用。&nbsp;&nbsp;<br>4xx&nbsp;&nbsp;客户机中出现的错误&nbsp;&nbsp;<br>400&nbsp;&nbsp;错误请求 — 请求中有语法问题，或不能满足请求。&nbsp;&nbsp;<br>401&nbsp;&nbsp;未授权 — 未授权客户机访问数据。&nbsp;&nbsp;<br>402&nbsp;&nbsp;需要付款 — 表示计费系统已有效。&nbsp;&nbsp;<br>403&nbsp;&nbsp;禁止 — 即使有授权也不需要访问。&nbsp;&nbsp;<br>404&nbsp;&nbsp;找不到 — 服务器找不到给定的资源；文档不存在。&nbsp;&nbsp;<br>407&nbsp;&nbsp;代理认证请求 — 客户机首先必须使用代理认证自身。&nbsp;&nbsp;<br>415&nbsp;&nbsp;介质类型不受支持 — 服务器拒绝服务请求，因为不支持请求实体的格式。&nbsp;&nbsp;<br>5xx&nbsp;&nbsp;服务器中出现的错误&nbsp;&nbsp;<br>500&nbsp;&nbsp;内部错误 — 因为意外情况，服务器不能完成请求。&nbsp;&nbsp;<br>501&nbsp;&nbsp;未执行 — 服务器不支持请求的工具。&nbsp;&nbsp;<br>502&nbsp;&nbsp;错误网关 — 服务器接收到来自上游服务器的无效响应。&nbsp;&nbsp;<br>503&nbsp;&nbsp;无法获得服务 — 由于临时过载或维护，服务器无法处理请求。  </p>
-<hr>
-<p>HTTP&nbsp;400&nbsp;-&nbsp;请求无效&nbsp;<br>HTTP&nbsp;401.1&nbsp;-&nbsp;未授权：登录失败&nbsp;<br>HTTP&nbsp;401.2&nbsp;-&nbsp;未授权：服务器配置问题导致登录失败&nbsp;<br>HTTP&nbsp;401.3&nbsp;-&nbsp;ACL&nbsp;禁止访问资源&nbsp;<br>HTTP&nbsp;401.4&nbsp;-&nbsp;未授权：授权被筛选器拒绝&nbsp;<br>HTTP&nbsp;401.5&nbsp;-&nbsp;未授权：ISAPI&nbsp;或&nbsp;CGI&nbsp;授权失败&nbsp;&nbsp;<br>HTTP&nbsp;403&nbsp;-&nbsp;禁止访问&nbsp;<br>HTTP&nbsp;403&nbsp;-&nbsp;对&nbsp;Internet&nbsp;服务管理器&nbsp;(HTML)&nbsp;的访问仅限于&nbsp;Localhost&nbsp;<br>HTTP&nbsp;403.1&nbsp;禁止访问：禁止可执行访问&nbsp;<br>HTTP&nbsp;403.2&nbsp;-&nbsp;禁止访问：禁止读访问&nbsp;<br>HTTP&nbsp;403.3&nbsp;-&nbsp;禁止访问：禁止写访问&nbsp;<br>HTTP&nbsp;403.4&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;<br>HTTP&nbsp;403.5&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;128&nbsp;<br>HTTP&nbsp;403.6&nbsp;-&nbsp;禁止访问：IP&nbsp;地址被拒绝&nbsp;<br>HTTP&nbsp;403.7&nbsp;-&nbsp;禁止访问：要求客户证书&nbsp;<br>HTTP&nbsp;403.8&nbsp;-&nbsp;禁止访问：禁止站点访问&nbsp;<br>HTTP&nbsp;403.9&nbsp;-&nbsp;禁止访问：连接的用户过多&nbsp;<br>HTTP&nbsp;403.10&nbsp;-&nbsp;禁止访问：配置无效&nbsp;<br>HTTP&nbsp;403.11&nbsp;-&nbsp;禁止访问：密码更改&nbsp;<br>HTTP&nbsp;403.12&nbsp;-&nbsp;禁止访问：映射器拒绝访问&nbsp;<br>HTTP&nbsp;403.13&nbsp;-&nbsp;禁止访问：客户证书已被吊销&nbsp;<br>HTTP&nbsp;403.15&nbsp;-&nbsp;禁止访问：客户访问许可过多&nbsp;<br>HTTP&nbsp;403.16&nbsp;-&nbsp;禁止访问：客户证书不可信或者无效&nbsp;<br>HTTP&nbsp;403.17&nbsp;-&nbsp;禁止访问：客户证书已经到期或者尚未生效&nbsp;<br>HTTP&nbsp;404.1&nbsp;-&nbsp;无法找到&nbsp;Web&nbsp;站点&nbsp;<br>HTTP&nbsp;404&nbsp;-&nbsp;无法找到文件&nbsp;<br>HTTP&nbsp;405&nbsp;-&nbsp;资源被禁止&nbsp;<br>HTTP&nbsp;406&nbsp;-&nbsp;无法接受&nbsp;<br>HTTP&nbsp;407&nbsp;-&nbsp;要求代理身份验证&nbsp;<br>HTTP&nbsp;410&nbsp;-&nbsp;永远不可用&nbsp;<br>HTTP&nbsp;412&nbsp;-&nbsp;先决条件失败&nbsp;<br>HTTP&nbsp;414&nbsp;-&nbsp;请求&nbsp;-&nbsp;URI&nbsp;太长&nbsp;<br>HTTP&nbsp;500&nbsp;-&nbsp;内部服务器错误&nbsp;<br>HTTP&nbsp;500.100&nbsp;-&nbsp;内部服务器错误&nbsp;-&nbsp;ASP&nbsp;错误&nbsp;<br>HTTP&nbsp;500-11&nbsp;服务器关闭&nbsp;<br>HTTP&nbsp;500-12&nbsp;应用程序重新启动&nbsp;<br>HTTP&nbsp;500-13&nbsp;-&nbsp;服务器太忙&nbsp;<br>HTTP&nbsp;500-14&nbsp;-&nbsp;应用程序无效&nbsp;<br>HTTP&nbsp;500-15&nbsp;-&nbsp;不允许请求&nbsp;global.asa&nbsp;<br>Error&nbsp;501&nbsp;-&nbsp;未实现&nbsp;<br>HTTP&nbsp;502&nbsp;-&nbsp;网关错误&nbsp;</p>
-<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
+        <tag>linux</tag>
+        <tag>vim</tag>
+        <tag>ide</tag>
+        <tag>docker</tag>
       </tags>
   </entry>
   <entry>
@@ -9901,6 +9863,44 @@ footer</span> <span class="token punctuation">{</span>
       <tags>
         <tag>music</tag>
         <tag>韩红</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>解决Thinkpad笔记本喇叭破音问题！</title>
+    <url>/notebook/2021-10-05-repair-thinkpad-cracking-voice/</url>
+    <content><![CDATA[<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。</p>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。</p>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>如是，网购了一个新喇叭，拆机，换上，完美解决问题！</p>
+<p>喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/0520211005175831.jpg" alt="喇叭破裂施压图"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/0520211005175843.jpg" alt="喇叭破裂未施压图"></p>
+<blockquote>
+<p>这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。</p>
+<p>型号：Thinkpad T4X0S </p>
+</blockquote>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
+      <categories>
+        <category>notebook</category>
+      </categories>
+      <tags>
+        <tag>thinkpad</tag>
+        <tag>sound</tag>
+        <tag>speaker</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>http 错误代码表</title>
+    <url>/web/2021-10-06-http-error-code-table/</url>
+    <content><![CDATA[<p>所有 HTTP 状态代码及其定义。<br>　代码&nbsp;&nbsp;指示&nbsp;&nbsp;<br>2xx&nbsp;&nbsp;成功&nbsp;&nbsp;<br>200&nbsp;&nbsp;正常；请求已完成。&nbsp;&nbsp;<br>201&nbsp;&nbsp;正常；紧接 POST 命令。&nbsp;&nbsp;<br>202&nbsp;&nbsp;正常；已接受用于处理，但处理尚未完成。&nbsp;&nbsp;<br>203&nbsp;&nbsp;正常；部分信息 — 返回的信息只是一部分。&nbsp;&nbsp;<br>204&nbsp;&nbsp;正常；无响应 — 已接收请求，但不存在要回送的信息。&nbsp;&nbsp;<br>3xx&nbsp;&nbsp;重定向&nbsp;&nbsp;<br>301&nbsp;&nbsp;已移动 — 请求的数据具有新的位置且更改是永久的。&nbsp;&nbsp;<br>302&nbsp;&nbsp;已找到 — 请求的数据临时具有不同 URI。&nbsp;&nbsp;<br>303&nbsp;&nbsp;请参阅其它 — 可在另一 URI 下找到对请求的响应，且应使用 GET 方法检索此响应。&nbsp;&nbsp;<br>304&nbsp;&nbsp;未修改 — 未按预期修改文档。&nbsp;&nbsp;<br>305&nbsp;&nbsp;使用代理 — 必须通过位置字段中提供的代理来访问请求的资源。&nbsp;&nbsp;<br>306&nbsp;&nbsp;未使用 — 不再使用；保留此代码以便将来使用。&nbsp;&nbsp;<br>4xx&nbsp;&nbsp;客户机中出现的错误&nbsp;&nbsp;<br>400&nbsp;&nbsp;错误请求 — 请求中有语法问题，或不能满足请求。&nbsp;&nbsp;<br>401&nbsp;&nbsp;未授权 — 未授权客户机访问数据。&nbsp;&nbsp;<br>402&nbsp;&nbsp;需要付款 — 表示计费系统已有效。&nbsp;&nbsp;<br>403&nbsp;&nbsp;禁止 — 即使有授权也不需要访问。&nbsp;&nbsp;<br>404&nbsp;&nbsp;找不到 — 服务器找不到给定的资源；文档不存在。&nbsp;&nbsp;<br>407&nbsp;&nbsp;代理认证请求 — 客户机首先必须使用代理认证自身。&nbsp;&nbsp;<br>415&nbsp;&nbsp;介质类型不受支持 — 服务器拒绝服务请求，因为不支持请求实体的格式。&nbsp;&nbsp;<br>5xx&nbsp;&nbsp;服务器中出现的错误&nbsp;&nbsp;<br>500&nbsp;&nbsp;内部错误 — 因为意外情况，服务器不能完成请求。&nbsp;&nbsp;<br>501&nbsp;&nbsp;未执行 — 服务器不支持请求的工具。&nbsp;&nbsp;<br>502&nbsp;&nbsp;错误网关 — 服务器接收到来自上游服务器的无效响应。&nbsp;&nbsp;<br>503&nbsp;&nbsp;无法获得服务 — 由于临时过载或维护，服务器无法处理请求。  </p>
+<hr>
+<p>HTTP&nbsp;400&nbsp;-&nbsp;请求无效&nbsp;<br>HTTP&nbsp;401.1&nbsp;-&nbsp;未授权：登录失败&nbsp;<br>HTTP&nbsp;401.2&nbsp;-&nbsp;未授权：服务器配置问题导致登录失败&nbsp;<br>HTTP&nbsp;401.3&nbsp;-&nbsp;ACL&nbsp;禁止访问资源&nbsp;<br>HTTP&nbsp;401.4&nbsp;-&nbsp;未授权：授权被筛选器拒绝&nbsp;<br>HTTP&nbsp;401.5&nbsp;-&nbsp;未授权：ISAPI&nbsp;或&nbsp;CGI&nbsp;授权失败&nbsp;&nbsp;<br>HTTP&nbsp;403&nbsp;-&nbsp;禁止访问&nbsp;<br>HTTP&nbsp;403&nbsp;-&nbsp;对&nbsp;Internet&nbsp;服务管理器&nbsp;(HTML)&nbsp;的访问仅限于&nbsp;Localhost&nbsp;<br>HTTP&nbsp;403.1&nbsp;禁止访问：禁止可执行访问&nbsp;<br>HTTP&nbsp;403.2&nbsp;-&nbsp;禁止访问：禁止读访问&nbsp;<br>HTTP&nbsp;403.3&nbsp;-&nbsp;禁止访问：禁止写访问&nbsp;<br>HTTP&nbsp;403.4&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;<br>HTTP&nbsp;403.5&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;128&nbsp;<br>HTTP&nbsp;403.6&nbsp;-&nbsp;禁止访问：IP&nbsp;地址被拒绝&nbsp;<br>HTTP&nbsp;403.7&nbsp;-&nbsp;禁止访问：要求客户证书&nbsp;<br>HTTP&nbsp;403.8&nbsp;-&nbsp;禁止访问：禁止站点访问&nbsp;<br>HTTP&nbsp;403.9&nbsp;-&nbsp;禁止访问：连接的用户过多&nbsp;<br>HTTP&nbsp;403.10&nbsp;-&nbsp;禁止访问：配置无效&nbsp;<br>HTTP&nbsp;403.11&nbsp;-&nbsp;禁止访问：密码更改&nbsp;<br>HTTP&nbsp;403.12&nbsp;-&nbsp;禁止访问：映射器拒绝访问&nbsp;<br>HTTP&nbsp;403.13&nbsp;-&nbsp;禁止访问：客户证书已被吊销&nbsp;<br>HTTP&nbsp;403.15&nbsp;-&nbsp;禁止访问：客户访问许可过多&nbsp;<br>HTTP&nbsp;403.16&nbsp;-&nbsp;禁止访问：客户证书不可信或者无效&nbsp;<br>HTTP&nbsp;403.17&nbsp;-&nbsp;禁止访问：客户证书已经到期或者尚未生效&nbsp;<br>HTTP&nbsp;404.1&nbsp;-&nbsp;无法找到&nbsp;Web&nbsp;站点&nbsp;<br>HTTP&nbsp;404&nbsp;-&nbsp;无法找到文件&nbsp;<br>HTTP&nbsp;405&nbsp;-&nbsp;资源被禁止&nbsp;<br>HTTP&nbsp;406&nbsp;-&nbsp;无法接受&nbsp;<br>HTTP&nbsp;407&nbsp;-&nbsp;要求代理身份验证&nbsp;<br>HTTP&nbsp;410&nbsp;-&nbsp;永远不可用&nbsp;<br>HTTP&nbsp;412&nbsp;-&nbsp;先决条件失败&nbsp;<br>HTTP&nbsp;414&nbsp;-&nbsp;请求&nbsp;-&nbsp;URI&nbsp;太长&nbsp;<br>HTTP&nbsp;500&nbsp;-&nbsp;内部服务器错误&nbsp;<br>HTTP&nbsp;500.100&nbsp;-&nbsp;内部服务器错误&nbsp;-&nbsp;ASP&nbsp;错误&nbsp;<br>HTTP&nbsp;500-11&nbsp;服务器关闭&nbsp;<br>HTTP&nbsp;500-12&nbsp;应用程序重新启动&nbsp;<br>HTTP&nbsp;500-13&nbsp;-&nbsp;服务器太忙&nbsp;<br>HTTP&nbsp;500-14&nbsp;-&nbsp;应用程序无效&nbsp;<br>HTTP&nbsp;500-15&nbsp;-&nbsp;不允许请求&nbsp;global.asa&nbsp;<br>Error&nbsp;501&nbsp;-&nbsp;未实现&nbsp;<br>HTTP&nbsp;502&nbsp;-&nbsp;网关错误&nbsp;</p>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
       </tags>
   </entry>
   <entry>
