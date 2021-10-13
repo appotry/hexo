@@ -126,67 +126,6 @@ This page tells you a little bit about me.
       </tags>
   </entry>
   <entry>
-    <title>Linux PT硬链接助手</title>
-    <url>/linux/2021-07-09-linux-pt-hard-link-tools/</url>
-    <content><![CDATA[<p>由于自我需求，写了两个脚本完成PT下载和保种两全其美的硬链接 Linux shell 脚本方案。</p>
-<h1 id="PT（Private-Tracker）"><a href="#PT（Private-Tracker）" class="headerlink" title="PT（Private Tracker）"></a>PT（Private Tracker）</h1><p>PT（Private Tracker）是一种改良自 BitTorrent 协定的 P2P 下载方式，“Private Tracker”指私有种子服务器。与 BT 最大的不同点分别为可进行私密范围下载，及可统计每个用户的上载及下载量。</p>
-<h2 id="PTtool"><a href="#PTtool" class="headerlink" title="PTtool"></a>PTtool</h2><p>github地址： <a href="https://github.com/appotry/PTtool"><strong>appotry/PTtool</strong></a></p>
-<h1 id="硬链接工具"><a href="#硬链接工具" class="headerlink" title="硬链接工具"></a>硬链接工具</h1><h2 id="设计目的"><a href="#设计目的" class="headerlink" title="设计目的"></a>设计目的</h2><p>方便PT用户硬链接文件，不需要再最大可能情况下节约空间，并保持做种。<br>小于1M的文件直接复制，方便emby，tmm等工具刮削修改nfo等小文件。<br>大于1M的文件硬链接到目的目录，可以修改文件名，但是不能修改文件内容！</p>
-<p>例如：<br>/share/Download/src #保存下载的PT文件<br>/share/Download/dst #保存你自己处理过的视频文件，吧emby，tmm的目录设置到dst下面<br>下载脚本后chmod +x mklink.sh给与执行权限<br>使用mklink脚本修改如下，然后直接运行mklink.sh。就可以把src下面的文件全部硬链接到dst目录。mklink适合一次性把源文件夹链接到目的文件夹</p>
-<pre class="line-numbers language-none"><code class="language-none">SRC="/share/Download/src"
-DST="/share/Download/dst"<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<p>注意，源目录，目的目录需要在一个分区里面。硬链接不能跨分区。</p>
-<h2 id="解决的问题"><a href="#解决的问题" class="headerlink" title="解决的问题"></a>解决的问题</h2><p>tmm，emby刮削的时候，必定修改nfo文件，下载的封面等图片不同刮削站点都不同，所以小文件复制，不怕修改。大文件硬链接，占有一份空间<br>被硬链接过的文件，同时存在地方，但是都指向一个存储空间，只有所有的硬链接都删除了，这个文件才会被系统删除。<br>同时，所有的硬链接文件，修改其中一个，其它所有指向这个位置的硬链接文件都被修改了。</p>
-<h2 id="使用说明"><a href="#使用说明" class="headerlink" title="使用说明"></a>使用说明</h2><p>下载资源目录/share/Download，qbittorrent资源分类下载到/share/Download/src/下面的各个子目录，例如tv, anime, tv, movie, 4k, soft等等<br>创建一个资源整理使用目录/share/Download/dst/目录，然后就可以把/share/Download/src和/share/Download/dst目录作为下面2个脚本的输入目录，来使用了</p>
-<p>小文件直接复制，方便tmm刮削修改nfo文件，大文件硬链接，只占有一份空间，但有2分文件，可以改名，移动目录，方便tmm整理刮削。 做种，emby使用两不误！</p>
-<h3 id="建议目录结构"><a href="#建议目录结构" class="headerlink" title="建议目录结构"></a>建议目录结构</h3><pre class="line-numbers language-none"><code class="language-none">/share/Downlosd/src
-/share/Download/dst
-在src目录下面建立子目录movie,music,anime,tv,4k等等，在qbittorrent里面设置分类，
-指向这里的movie,music,anime，tv等子目录。下载完后使用下面的硬链接脚本，
-把文件硬链接到目的文件夹。tmm，emby使用目的文件夹刮削数据。<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h4 id="qbittorrent使用设置"><a href="#qbittorrent使用设置" class="headerlink" title="qbittorrent使用设置"></a>qbittorrent使用设置</h4><ul>
-<li>移动种子保存位置<br>在qt的web界面种子上面右键，选择菜单保存位置</li>
-<li>设置分类目录<br>在qt的web界面种子上面右键，选择分类-&gt;新分类，先写分类名称和路径。种子添加时选择自动管理<h2 id="mklink-sh"><a href="#mklink-sh" class="headerlink" title="mklink.sh"></a>mklink.sh</h2>修改脚本参数源目录，目的目录,替换为你自己的目录。<br>脚本将把源目录所有文件硬链接到目的目录，小于1M的文件直接复制到目的目录。方便nfo等小文件刮削修改，大于1M的文件<br>硬链接到目的目录，以节约空间，2份文件只占有一份空间。<pre class="line-numbers language-none"><code class="language-none">SRC="/share/Download/tmp/src"
-DST="/share/Download/tmp/dst"<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-mklink 直接针对2个文件夹做硬链接，小于1m的复制，但是没有判断是否已经硬链接过。适合全新的没有硬链接过的目录。</li>
-</ul>
-<h2 id="dirlink-sh"><a href="#dirlink-sh" class="headerlink" title="dirlink.sh"></a>dirlink.sh</h2><p>设计原理：针对输入原路径下一级子目录判断是否有文件islinked.lk，<br>有这个文件就跳过，没有就硬链接这个子目录到目的目录生成对应的子目录。<br>小于1M的文件复制，大于1M的文件硬链接。</p>
-<p>可以直接修改脚本参数，可以从参数$!,$2输入源目录，目的目录。<br>此脚本和mklink.sh区别在于，将检查每个目录是否已经被硬链接过，已经连接过的将跳过去不再硬链接。<br>原理是在源文件夹目录下添加文件islinked.lk，通过检测这个文件来判断是否硬链接过</p>
-<pre class="line-numbers language-none"><code class="language-none">SRC="/share/Download/tmp/src/movie"
-DST="/share/Download/tmp/dst/movie"<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<p>注意：src目录下面的文件需要放到各个子目录下面去，例如src/anime/amine1,src/tv/tv2，这样才能保证islinked.lk工作正常<br>目录设置可以直接修改脚本，也可以命令行输入</p>
-<pre class="line-numbers language-none"><code class="language-none">#dirlink.sh sourcedir dstdir
-dirlink.sh /share/Download/tmp/src /share/Download/tmp/dst<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-
-<h3 id="重新建立连接，一次性删除所有islinked-lk文件"><a href="#重新建立连接，一次性删除所有islinked-lk文件" class="headerlink" title="重新建立连接，一次性删除所有islinked.lk文件"></a>重新建立连接，一次性删除所有islinked.lk文件</h3><pre class="line-numbers language-none"><code class="language-none">find /share/Download/tmp -name "islinked.lk" | xargs rm -f<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<p>替换前面的路径/share/Download/tmp为你自己的路径，操作和rm相关的命令一定注意不要输入错误，删错文件代价极大！</p>
-<h3 id="一次性硬链接多个目录"><a href="#一次性硬链接多个目录" class="headerlink" title="一次性硬链接多个目录"></a>一次性硬链接多个目录</h3><p>如下所示脚本link.sh</p>
-<pre class="line-numbers language-none"><code class="language-none">#!/bin/sh
-/share/Download/source/dirlink.sh /share/Download/source/anime /share/Download/dst/anime
-/share/Download/source/dirlink.sh /share/Download/source/movie /share/Download/dst/movie
-/share/Download/source/dirlink.sh /share/Download/source/tv /share/Download/dst/tv<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="修改限制2M大小以下的复制"><a href="#修改限制2M大小以下的复制" class="headerlink" title="修改限制2M大小以下的复制"></a>修改限制2M大小以下的复制</h2><p>修改脚本参数FILEGIG，原脚本是1M大小，修改为下面这样就是2M大小</p>
-<pre class="line-numbers language-none"><code class="language-none">FILEGIG=2000000c<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h2 id="使用声明"><a href="#使用声明" class="headerlink" title="使用声明"></a>使用声明</h2><p>数据无价，小心操作。<br>本脚本没有rm删除，只有mkdir和cp， 最多搞乱文件系统。但要注意不要把目的地目录设置到系统目录去了。<br>一切后果自负</p>
-<h2 id="感觉对你有帮助，来个star吧"><a href="#感觉对你有帮助，来个star吧" class="headerlink" title="感觉对你有帮助，来个star吧"></a>感觉对你有帮助，来个star吧</h2><h2 id="Contributing"><a href="#Contributing" class="headerlink" title="Contributing"></a>Contributing</h2><ol>
-<li>Fork it ( <a href="https://github.com/[my-github-username]/PTtool/fork">https://github.com/[my-github-username]/PTtool/fork</a> )</li>
-<li>Create your feature branch (<code>git checkout -b my-new-feature</code>)</li>
-<li>Commit your changes (<code>git commit -am 'Add some feature'</code>)</li>
-<li>Push to the branch (<code>git push origin my-new-feature</code>)</li>
-<li>Create a new Pull Request</li>
-</ol>
-<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
-      <categories>
-        <category>linux</category>
-      </categories>
-      <tags>
-        <tag>Linux</tag>
-        <tag>hardlink</tag>
-        <tag>bt</tag>
-        <tag>pt</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Gitlab的安装及使用</title>
     <url>/gitlab/2021-07-09-gitlab-install-and-usage/</url>
     <content><![CDATA[<h2 id="Gitlab概述"><a href="#Gitlab概述" class="headerlink" title="Gitlab概述"></a>Gitlab概述</h2><h3 id="1-1-GitLab介绍"><a href="#1-1-GitLab介绍" class="headerlink" title="1.1 GitLab介绍"></a>1.1 GitLab介绍</h3><p>GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。</p>
@@ -498,133 +437,64 @@ gitlab_rails<span class="token punctuation">[</span><span class="token string">'
       </tags>
   </entry>
   <entry>
-    <title>破解Gitlab EE</title>
-    <url>/gitlab/2021-07-09-carck-gitlabee/</url>
-    <content><![CDATA[<p>由于需要一些镜像等 gitlab 高级功能，所有破解gitlab ee版本。</p>
-<h2 id="安装ruby"><a href="#安装ruby" class="headerlink" title="安装ruby"></a>安装ruby</h2><p>安装完gitlab ee之后</p>
-<p>安装ruby：yum install ruby</p>
-<p>ruby版本需要2.3或以上。</p>
-<h2 id="生成许可证"><a href="#生成许可证" class="headerlink" title="生成许可证"></a><strong>生成许可证</strong></h2><p>gem install gitlab-license</p>
-<h2 id="创建一个rb文件"><a href="#创建一个rb文件" class="headerlink" title="创建一个rb文件"></a>创建一个rb文件</h2><p>license.rb</p>
-<hr>
-<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby"><span class="token keyword">require</span> <span class="token string">"openssl"</span>
-<span class="token keyword">require</span> <span class="token string">"gitlab/license"</span>
- 
-key_pair <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span>generate<span class="token punctuation">(</span><span class="token number">2048</span><span class="token punctuation">)</span>
-<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"license_key"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>key_pair<span class="token punctuation">.</span>to_pem<span class="token punctuation">)</span> <span class="token punctuation">}</span>
- 
-public_key <span class="token operator">=</span> key_pair<span class="token punctuation">.</span>public_key
-<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"license_key.pub"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>public_key<span class="token punctuation">.</span>to_pem<span class="token punctuation">)</span> <span class="token punctuation">}</span>
- 
-private_key <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"license_key"</span><span class="token punctuation">)</span>
-<span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>encryption_key <span class="token operator">=</span> private_key
- 
-license <span class="token operator">=</span> <span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span><span class="token keyword">new</span>
-license<span class="token punctuation">.</span>licensee <span class="token operator">=</span> <span class="token punctuation">{</span>
-  <span class="token string">"Name"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"none"</span><span class="token punctuation">,</span>
-  <span class="token string">"Company"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"none"</span><span class="token punctuation">,</span>
-  <span class="token string">"Email"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"example@test.com"</span><span class="token punctuation">,</span>
-<span class="token punctuation">}</span>
-license<span class="token punctuation">.</span>starts_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2020</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment"># 开始时间</span>
-license<span class="token punctuation">.</span>expires_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2050</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment"># 结束时间</span>
-license<span class="token punctuation">.</span>notify_admins_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2049</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
-license<span class="token punctuation">.</span>notify_users_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2049</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
-license<span class="token punctuation">.</span>block_changes_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2050</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
-license<span class="token punctuation">.</span>restrictions <span class="token operator">=</span> <span class="token punctuation">{</span>
-  active_user_count<span class="token punctuation">:</span> <span class="token number">10000</span><span class="token punctuation">,</span>
-<span class="token punctuation">}</span>
- 
-puts <span class="token string">"License:"</span>
-puts license
- 
-data <span class="token operator">=</span> license<span class="token punctuation">.</span>export
-puts <span class="token string">"Exported license:"</span>
-puts data
-<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"GitLabBV.gitlab-license"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>data<span class="token punctuation">)</span> <span class="token punctuation">}</span>
- 
-public_key <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"license_key.pub"</span><span class="token punctuation">)</span>
-<span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>encryption_key <span class="token operator">=</span> public_key
- 
-data <span class="token operator">=</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"GitLabBV.gitlab-license"</span><span class="token punctuation">)</span>
-<span class="token variable">$license</span> <span class="token operator">=</span> <span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>import<span class="token punctuation">(</span>data<span class="token punctuation">)</span>
- 
-puts <span class="token string">"Imported license:"</span>
-puts <span class="token variable">$license</span>
- 
-<span class="token keyword">unless</span> <span class="token variable">$license</span>
-  <span class="token keyword">raise</span> <span class="token string">"The license is invalid."</span>
-<span class="token keyword">end</span>
- 
-<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>restricted<span class="token operator">?</span><span class="token punctuation">(</span><span class="token symbol">:active_user_count</span><span class="token punctuation">)</span>
-  active_user_count <span class="token operator">=</span> <span class="token number">10000</span>
-  <span class="token keyword">if</span> active_user_count <span class="token operator">&gt;</span> <span class="token variable">$license</span><span class="token punctuation">.</span>restrictions<span class="token punctuation">[</span><span class="token symbol">:active_user_count</span><span class="token punctuation">]</span>
-    <span class="token keyword">raise</span> <span class="token string">"The active user count exceeds the allowed amount!"</span>
-  <span class="token keyword">end</span>
-<span class="token keyword">end</span>
- 
-<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>notify_admins<span class="token operator">?</span>
-  puts <span class="token string">"The license is due to expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>."</span>
-<span class="token keyword">end</span>
- 
-<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>notify_users<span class="token operator">?</span>
-  puts <span class="token string">"The license is due to expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>."</span>
-<span class="token keyword">end</span>
- 
-<span class="token keyword">module</span> <span class="token constant">Gitlab</span>
-  <span class="token keyword">class</span> <span class="token class-name">GitAccess</span>
-    <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">check</span></span><span class="token punctuation">(</span>cmd<span class="token punctuation">,</span> changes <span class="token operator">=</span> <span class="token keyword">nil</span><span class="token punctuation">)</span>
-      <span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>block_changes<span class="token operator">?</span>
-        <span class="token keyword">return</span> build_status_object<span class="token punctuation">(</span><span class="token boolean">false</span><span class="token punctuation">,</span> <span class="token string">"License expired"</span><span class="token punctuation">)</span>
-      <span class="token keyword">end</span>
-    <span class="token keyword">end</span>
-  <span class="token keyword">end</span>
-<span class="token keyword">end</span>
- 
-puts <span class="token string">"This instance of GitLab Enterprise Edition is licensed to:"</span>
-<span class="token variable">$license</span><span class="token punctuation">.</span>licensee<span class="token punctuation">.</span><span class="token keyword">each</span> <span class="token keyword">do</span> <span class="token operator">|</span>key<span class="token punctuation">,</span> value<span class="token operator">|</span>
-  puts <span class="token string">"<span class="token interpolation"><span class="token delimiter tag">#{</span>key<span class="token delimiter tag">}</span></span>: <span class="token interpolation"><span class="token delimiter tag">#{</span>value<span class="token delimiter tag">}</span></span>"</span>
-<span class="token keyword">end</span>
- 
-<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>expired<span class="token operator">?</span>
-  puts <span class="token string">"The license expired on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>"</span>
-<span class="token keyword">elsif</span> <span class="token variable">$license</span><span class="token punctuation">.</span>will_expire<span class="token operator">?</span>
-  puts <span class="token string">"The license will expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>"</span>
-<span class="token keyword">else</span>
-  puts <span class="token string">"The license will never expire."</span>
-<span class="token keyword">end</span>
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<hr>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">ruby license.rb<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p>生成 <code>GitLabBV.gitlab-license</code> <code>license_key</code> <code>license_key.pub</code> 这三个文件。</p>
-<h2 id="使用许可证"><a href="#使用许可证" class="headerlink" title="使用许可证"></a><strong>使用许可证</strong></h2><p>用 <code>license_key.pub</code> 文件替换 <code>/opt/gitlab/embedded/service/gitlab-rails/.license_encryption_key.pub</code>。</p>
-<p><code>GitLabBV.gitlab-license</code> 即是许可证，填入 <code>${address}/admin/license</code> 地址并重启 <code>gitlab-ctl restart</code> 。</p>
-<h2 id="修改等级"><a href="#修改等级" class="headerlink" title="修改等级"></a><strong>修改等级</strong></h2><pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby"><span class="token operator">--</span><span class="token operator">-</span> <span class="token operator">/</span>opt<span class="token operator">/</span>gitlab<span class="token operator">/</span>embedded<span class="token operator">/</span>service<span class="token operator">/</span>gitlab<span class="token operator">-</span>rails<span class="token operator">/</span>ee<span class="token operator">/</span>app<span class="token operator">/</span>models<span class="token operator">/</span>license<span class="token punctuation">.</span>rb
-<span class="token operator">++</span><span class="token operator">+</span> <span class="token operator">/</span>opt<span class="token operator">/</span>gitlab<span class="token operator">/</span>embedded<span class="token operator">/</span>service<span class="token operator">/</span>gitlab<span class="token operator">-</span>rails<span class="token operator">/</span>ee<span class="token operator">/</span>app<span class="token operator">/</span>models<span class="token operator">/</span>license<span class="token punctuation">.</span>rb
-@@ <span class="token operator">-</span><span class="token number">458</span><span class="token punctuation">,</span><span class="token number">7</span> <span class="token operator">+</span><span class="token number">458</span><span class="token punctuation">,</span><span class="token number">7</span> @@
-  <span class="token keyword">end</span>
- 
-  <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">plan</span></span>
-<span class="token operator">-</span>    restricted_attr<span class="token punctuation">(</span><span class="token symbol">:plan</span><span class="token punctuation">)</span><span class="token punctuation">.</span>presence <span class="token operator">||</span> <span class="token constant">STARTER_PLAN</span>
-<span class="token operator">+</span>    restricted_attr<span class="token punctuation">(</span><span class="token symbol">:plan</span><span class="token punctuation">)</span><span class="token punctuation">.</span>presence <span class="token operator">||</span> <span class="token constant">ULTIMATE_PLAN</span>
-  <span class="token keyword">end</span>
- 
-  <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">edition</span></span>
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>修改完成后使用 <code>gitlab-ctl restart</code> 重新加载配置。</p>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a><strong>参考</strong></h2><ul>
-<li>  <a href="https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md">https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md</a></li>
+    <title>Linux PT硬链接助手</title>
+    <url>/linux/2021-07-09-linux-pt-hard-link-tools/</url>
+    <content><![CDATA[<p>由于自我需求，写了两个脚本完成PT下载和保种两全其美的硬链接 Linux shell 脚本方案。</p>
+<h1 id="PT（Private-Tracker）"><a href="#PT（Private-Tracker）" class="headerlink" title="PT（Private Tracker）"></a>PT（Private Tracker）</h1><p>PT（Private Tracker）是一种改良自 BitTorrent 协定的 P2P 下载方式，“Private Tracker”指私有种子服务器。与 BT 最大的不同点分别为可进行私密范围下载，及可统计每个用户的上载及下载量。</p>
+<h2 id="PTtool"><a href="#PTtool" class="headerlink" title="PTtool"></a>PTtool</h2><p>github地址： <a href="https://github.com/appotry/PTtool"><strong>appotry/PTtool</strong></a></p>
+<h1 id="硬链接工具"><a href="#硬链接工具" class="headerlink" title="硬链接工具"></a>硬链接工具</h1><h2 id="设计目的"><a href="#设计目的" class="headerlink" title="设计目的"></a>设计目的</h2><p>方便PT用户硬链接文件，不需要再最大可能情况下节约空间，并保持做种。<br>小于1M的文件直接复制，方便emby，tmm等工具刮削修改nfo等小文件。<br>大于1M的文件硬链接到目的目录，可以修改文件名，但是不能修改文件内容！</p>
+<p>例如：<br>/share/Download/src #保存下载的PT文件<br>/share/Download/dst #保存你自己处理过的视频文件，吧emby，tmm的目录设置到dst下面<br>下载脚本后chmod +x mklink.sh给与执行权限<br>使用mklink脚本修改如下，然后直接运行mklink.sh。就可以把src下面的文件全部硬链接到dst目录。mklink适合一次性把源文件夹链接到目的文件夹</p>
+<pre class="line-numbers language-none"><code class="language-none">SRC="/share/Download/src"
+DST="/share/Download/dst"<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>注意，源目录，目的目录需要在一个分区里面。硬链接不能跨分区。</p>
+<h2 id="解决的问题"><a href="#解决的问题" class="headerlink" title="解决的问题"></a>解决的问题</h2><p>tmm，emby刮削的时候，必定修改nfo文件，下载的封面等图片不同刮削站点都不同，所以小文件复制，不怕修改。大文件硬链接，占有一份空间<br>被硬链接过的文件，同时存在地方，但是都指向一个存储空间，只有所有的硬链接都删除了，这个文件才会被系统删除。<br>同时，所有的硬链接文件，修改其中一个，其它所有指向这个位置的硬链接文件都被修改了。</p>
+<h2 id="使用说明"><a href="#使用说明" class="headerlink" title="使用说明"></a>使用说明</h2><p>下载资源目录/share/Download，qbittorrent资源分类下载到/share/Download/src/下面的各个子目录，例如tv, anime, tv, movie, 4k, soft等等<br>创建一个资源整理使用目录/share/Download/dst/目录，然后就可以把/share/Download/src和/share/Download/dst目录作为下面2个脚本的输入目录，来使用了</p>
+<p>小文件直接复制，方便tmm刮削修改nfo文件，大文件硬链接，只占有一份空间，但有2分文件，可以改名，移动目录，方便tmm整理刮削。 做种，emby使用两不误！</p>
+<h3 id="建议目录结构"><a href="#建议目录结构" class="headerlink" title="建议目录结构"></a>建议目录结构</h3><pre class="line-numbers language-none"><code class="language-none">/share/Downlosd/src
+/share/Download/dst
+在src目录下面建立子目录movie,music,anime,tv,4k等等，在qbittorrent里面设置分类，
+指向这里的movie,music,anime，tv等子目录。下载完后使用下面的硬链接脚本，
+把文件硬链接到目的文件夹。tmm，emby使用目的文件夹刮削数据。<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="qbittorrent使用设置"><a href="#qbittorrent使用设置" class="headerlink" title="qbittorrent使用设置"></a>qbittorrent使用设置</h4><ul>
+<li>移动种子保存位置<br>在qt的web界面种子上面右键，选择菜单保存位置</li>
+<li>设置分类目录<br>在qt的web界面种子上面右键，选择分类-&gt;新分类，先写分类名称和路径。种子添加时选择自动管理<h2 id="mklink-sh"><a href="#mklink-sh" class="headerlink" title="mklink.sh"></a>mklink.sh</h2>修改脚本参数源目录，目的目录,替换为你自己的目录。<br>脚本将把源目录所有文件硬链接到目的目录，小于1M的文件直接复制到目的目录。方便nfo等小文件刮削修改，大于1M的文件<br>硬链接到目的目录，以节约空间，2份文件只占有一份空间。<pre class="line-numbers language-none"><code class="language-none">SRC="/share/Download/tmp/src"
+DST="/share/Download/tmp/dst"<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+mklink 直接针对2个文件夹做硬链接，小于1m的复制，但是没有判断是否已经硬链接过。适合全新的没有硬链接过的目录。</li>
 </ul>
+<h2 id="dirlink-sh"><a href="#dirlink-sh" class="headerlink" title="dirlink.sh"></a>dirlink.sh</h2><p>设计原理：针对输入原路径下一级子目录判断是否有文件islinked.lk，<br>有这个文件就跳过，没有就硬链接这个子目录到目的目录生成对应的子目录。<br>小于1M的文件复制，大于1M的文件硬链接。</p>
+<p>可以直接修改脚本参数，可以从参数$!,$2输入源目录，目的目录。<br>此脚本和mklink.sh区别在于，将检查每个目录是否已经被硬链接过，已经连接过的将跳过去不再硬链接。<br>原理是在源文件夹目录下添加文件islinked.lk，通过检测这个文件来判断是否硬链接过</p>
+<pre class="line-numbers language-none"><code class="language-none">SRC="/share/Download/tmp/src/movie"
+DST="/share/Download/tmp/dst/movie"<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>注意：src目录下面的文件需要放到各个子目录下面去，例如src/anime/amine1,src/tv/tv2，这样才能保证islinked.lk工作正常<br>目录设置可以直接修改脚本，也可以命令行输入</p>
+<pre class="line-numbers language-none"><code class="language-none">#dirlink.sh sourcedir dstdir
+dirlink.sh /share/Download/tmp/src /share/Download/tmp/dst<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<h3 id="重新建立连接，一次性删除所有islinked-lk文件"><a href="#重新建立连接，一次性删除所有islinked-lk文件" class="headerlink" title="重新建立连接，一次性删除所有islinked.lk文件"></a>重新建立连接，一次性删除所有islinked.lk文件</h3><pre class="line-numbers language-none"><code class="language-none">find /share/Download/tmp -name "islinked.lk" | xargs rm -f<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>替换前面的路径/share/Download/tmp为你自己的路径，操作和rm相关的命令一定注意不要输入错误，删错文件代价极大！</p>
+<h3 id="一次性硬链接多个目录"><a href="#一次性硬链接多个目录" class="headerlink" title="一次性硬链接多个目录"></a>一次性硬链接多个目录</h3><p>如下所示脚本link.sh</p>
+<pre class="line-numbers language-none"><code class="language-none">#!/bin/sh
+/share/Download/source/dirlink.sh /share/Download/source/anime /share/Download/dst/anime
+/share/Download/source/dirlink.sh /share/Download/source/movie /share/Download/dst/movie
+/share/Download/source/dirlink.sh /share/Download/source/tv /share/Download/dst/tv<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="修改限制2M大小以下的复制"><a href="#修改限制2M大小以下的复制" class="headerlink" title="修改限制2M大小以下的复制"></a>修改限制2M大小以下的复制</h2><p>修改脚本参数FILEGIG，原脚本是1M大小，修改为下面这样就是2M大小</p>
+<pre class="line-numbers language-none"><code class="language-none">FILEGIG=2000000c<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h2 id="使用声明"><a href="#使用声明" class="headerlink" title="使用声明"></a>使用声明</h2><p>数据无价，小心操作。<br>本脚本没有rm删除，只有mkdir和cp， 最多搞乱文件系统。但要注意不要把目的地目录设置到系统目录去了。<br>一切后果自负</p>
+<h2 id="感觉对你有帮助，来个star吧"><a href="#感觉对你有帮助，来个star吧" class="headerlink" title="感觉对你有帮助，来个star吧"></a>感觉对你有帮助，来个star吧</h2><h2 id="Contributing"><a href="#Contributing" class="headerlink" title="Contributing"></a>Contributing</h2><ol>
+<li>Fork it ( <a href="https://github.com/[my-github-username]/PTtool/fork">https://github.com/[my-github-username]/PTtool/fork</a> )</li>
+<li>Create your feature branch (<code>git checkout -b my-new-feature</code>)</li>
+<li>Commit your changes (<code>git commit -am 'Add some feature'</code>)</li>
+<li>Push to the branch (<code>git push origin my-new-feature</code>)</li>
+<li>Create a new Pull Request</li>
+</ol>
 <link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
       <categories>
-        <category>gitlab</category>
+        <category>linux</category>
       </categories>
       <tags>
-        <tag>Gitlab</tag>
-        <tag>Git</tag>
-        <tag>Crack</tag>
+        <tag>Linux</tag>
+        <tag>hardlink</tag>
+        <tag>bt</tag>
+        <tag>pt</tag>
       </tags>
   </entry>
   <entry>
@@ -907,23 +777,133 @@ services:
       </tags>
   </entry>
   <entry>
-    <title>qnap硬盘移动位置</title>
-    <url>/qnap/2021-07-25-qnap-move-hard-disk-position/</url>
-    <content><![CDATA[<p>qnap硬盘移动位置，改变硬盘位</p>
-<h2 id="需求：硬盘位4的硬盘移动到硬盘位3"><a href="#需求：硬盘位4的硬盘移动到硬盘位3" class="headerlink" title="需求：硬盘位4的硬盘移动到硬盘位3"></a>需求：硬盘位4的硬盘移动到硬盘位3</h2><h2 id="步骤1"><a href="#步骤1" class="headerlink" title="步骤1"></a>步骤1</h2><p>造作步骤： 存储和快照总管app-&gt;存储/快照-&gt;管理-&gt;操作-&gt;安全卸载磁盘区</p>
-<p>如此，硬盘4卸载下来了，如下图</p>
-<p><img src="https://cimg1.17lai.site/data/2021/07/2520210725213003.png"></p>
-<h2 id="步骤2"><a href="#步骤2" class="headerlink" title="步骤2"></a>步骤2</h2><p>再把硬盘4拔下来，插入硬盘位3。等待硬盘被识别到，一般1分钟之内。</p>
-<h2 id="步骤3"><a href="#步骤3" class="headerlink" title="步骤3"></a>步骤3</h2><p>造作步骤： 存储和快照总管app-&gt;磁盘/VJBOD-&gt;点击磁盘3-&gt;还原-&gt;链接并回复存储池</p>
-<p><img src="https://cimg1.17lai.site/data/2021/07/2520210725213820.png"></p>
+    <title>破解Gitlab EE</title>
+    <url>/gitlab/2021-07-09-carck-gitlabee/</url>
+    <content><![CDATA[<p>由于需要一些镜像等 gitlab 高级功能，所有破解gitlab ee版本。</p>
+<h2 id="安装ruby"><a href="#安装ruby" class="headerlink" title="安装ruby"></a>安装ruby</h2><p>安装完gitlab ee之后</p>
+<p>安装ruby：yum install ruby</p>
+<p>ruby版本需要2.3或以上。</p>
+<h2 id="生成许可证"><a href="#生成许可证" class="headerlink" title="生成许可证"></a><strong>生成许可证</strong></h2><p>gem install gitlab-license</p>
+<h2 id="创建一个rb文件"><a href="#创建一个rb文件" class="headerlink" title="创建一个rb文件"></a>创建一个rb文件</h2><p>license.rb</p>
+<hr>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby"><span class="token keyword">require</span> <span class="token string">"openssl"</span>
+<span class="token keyword">require</span> <span class="token string">"gitlab/license"</span>
+ 
+key_pair <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span>generate<span class="token punctuation">(</span><span class="token number">2048</span><span class="token punctuation">)</span>
+<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"license_key"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>key_pair<span class="token punctuation">.</span>to_pem<span class="token punctuation">)</span> <span class="token punctuation">}</span>
+ 
+public_key <span class="token operator">=</span> key_pair<span class="token punctuation">.</span>public_key
+<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"license_key.pub"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>public_key<span class="token punctuation">.</span>to_pem<span class="token punctuation">)</span> <span class="token punctuation">}</span>
+ 
+private_key <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"license_key"</span><span class="token punctuation">)</span>
+<span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>encryption_key <span class="token operator">=</span> private_key
+ 
+license <span class="token operator">=</span> <span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span><span class="token keyword">new</span>
+license<span class="token punctuation">.</span>licensee <span class="token operator">=</span> <span class="token punctuation">{</span>
+  <span class="token string">"Name"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"none"</span><span class="token punctuation">,</span>
+  <span class="token string">"Company"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"none"</span><span class="token punctuation">,</span>
+  <span class="token string">"Email"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"example@test.com"</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span>
+license<span class="token punctuation">.</span>starts_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2020</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment"># 开始时间</span>
+license<span class="token punctuation">.</span>expires_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2050</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token comment"># 结束时间</span>
+license<span class="token punctuation">.</span>notify_admins_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2049</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
+license<span class="token punctuation">.</span>notify_users_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2049</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
+license<span class="token punctuation">.</span>block_changes_at <span class="token operator">=</span> <span class="token constant">Date</span><span class="token punctuation">.</span><span class="token keyword">new</span><span class="token punctuation">(</span><span class="token number">2050</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
+license<span class="token punctuation">.</span>restrictions <span class="token operator">=</span> <span class="token punctuation">{</span>
+  active_user_count<span class="token punctuation">:</span> <span class="token number">10000</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span>
+ 
+puts <span class="token string">"License:"</span>
+puts license
+ 
+data <span class="token operator">=</span> license<span class="token punctuation">.</span>export
+puts <span class="token string">"Exported license:"</span>
+puts data
+<span class="token builtin">File</span><span class="token punctuation">.</span>open<span class="token punctuation">(</span><span class="token string">"GitLabBV.gitlab-license"</span><span class="token punctuation">,</span> <span class="token string">"w"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token operator">|</span>f<span class="token operator">|</span> f<span class="token punctuation">.</span>write<span class="token punctuation">(</span>data<span class="token punctuation">)</span> <span class="token punctuation">}</span>
+ 
+public_key <span class="token operator">=</span> <span class="token constant">OpenSSL</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">PKey</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">RSA</span><span class="token punctuation">.</span><span class="token keyword">new</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"license_key.pub"</span><span class="token punctuation">)</span>
+<span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>encryption_key <span class="token operator">=</span> public_key
+ 
+data <span class="token operator">=</span> <span class="token builtin">File</span><span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token string">"GitLabBV.gitlab-license"</span><span class="token punctuation">)</span>
+<span class="token variable">$license</span> <span class="token operator">=</span> <span class="token constant">Gitlab</span><span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token constant">License</span><span class="token punctuation">.</span>import<span class="token punctuation">(</span>data<span class="token punctuation">)</span>
+ 
+puts <span class="token string">"Imported license:"</span>
+puts <span class="token variable">$license</span>
+ 
+<span class="token keyword">unless</span> <span class="token variable">$license</span>
+  <span class="token keyword">raise</span> <span class="token string">"The license is invalid."</span>
+<span class="token keyword">end</span>
+ 
+<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>restricted<span class="token operator">?</span><span class="token punctuation">(</span><span class="token symbol">:active_user_count</span><span class="token punctuation">)</span>
+  active_user_count <span class="token operator">=</span> <span class="token number">10000</span>
+  <span class="token keyword">if</span> active_user_count <span class="token operator">&gt;</span> <span class="token variable">$license</span><span class="token punctuation">.</span>restrictions<span class="token punctuation">[</span><span class="token symbol">:active_user_count</span><span class="token punctuation">]</span>
+    <span class="token keyword">raise</span> <span class="token string">"The active user count exceeds the allowed amount!"</span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+ 
+<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>notify_admins<span class="token operator">?</span>
+  puts <span class="token string">"The license is due to expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>."</span>
+<span class="token keyword">end</span>
+ 
+<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>notify_users<span class="token operator">?</span>
+  puts <span class="token string">"The license is due to expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>."</span>
+<span class="token keyword">end</span>
+ 
+<span class="token keyword">module</span> <span class="token constant">Gitlab</span>
+  <span class="token keyword">class</span> <span class="token class-name">GitAccess</span>
+    <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">check</span></span><span class="token punctuation">(</span>cmd<span class="token punctuation">,</span> changes <span class="token operator">=</span> <span class="token keyword">nil</span><span class="token punctuation">)</span>
+      <span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>block_changes<span class="token operator">?</span>
+        <span class="token keyword">return</span> build_status_object<span class="token punctuation">(</span><span class="token boolean">false</span><span class="token punctuation">,</span> <span class="token string">"License expired"</span><span class="token punctuation">)</span>
+      <span class="token keyword">end</span>
+    <span class="token keyword">end</span>
+  <span class="token keyword">end</span>
+<span class="token keyword">end</span>
+ 
+puts <span class="token string">"This instance of GitLab Enterprise Edition is licensed to:"</span>
+<span class="token variable">$license</span><span class="token punctuation">.</span>licensee<span class="token punctuation">.</span><span class="token keyword">each</span> <span class="token keyword">do</span> <span class="token operator">|</span>key<span class="token punctuation">,</span> value<span class="token operator">|</span>
+  puts <span class="token string">"<span class="token interpolation"><span class="token delimiter tag">#{</span>key<span class="token delimiter tag">}</span></span>: <span class="token interpolation"><span class="token delimiter tag">#{</span>value<span class="token delimiter tag">}</span></span>"</span>
+<span class="token keyword">end</span>
+ 
+<span class="token keyword">if</span> <span class="token variable">$license</span><span class="token punctuation">.</span>expired<span class="token operator">?</span>
+  puts <span class="token string">"The license expired on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>"</span>
+<span class="token keyword">elsif</span> <span class="token variable">$license</span><span class="token punctuation">.</span>will_expire<span class="token operator">?</span>
+  puts <span class="token string">"The license will expire on <span class="token interpolation"><span class="token delimiter tag">#{</span><span class="token variable">$license</span><span class="token punctuation">.</span>expires_at<span class="token delimiter tag">}</span></span>"</span>
+<span class="token keyword">else</span>
+  puts <span class="token string">"The license will never expire."</span>
+<span class="token keyword">end</span>
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<hr>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">ruby license.rb<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>生成 <code>GitLabBV.gitlab-license</code> <code>license_key</code> <code>license_key.pub</code> 这三个文件。</p>
+<h2 id="使用许可证"><a href="#使用许可证" class="headerlink" title="使用许可证"></a><strong>使用许可证</strong></h2><p>用 <code>license_key.pub</code> 文件替换 <code>/opt/gitlab/embedded/service/gitlab-rails/.license_encryption_key.pub</code>。</p>
+<p><code>GitLabBV.gitlab-license</code> 即是许可证，填入 <code>${address}/admin/license</code> 地址并重启 <code>gitlab-ctl restart</code> 。</p>
+<h2 id="修改等级"><a href="#修改等级" class="headerlink" title="修改等级"></a><strong>修改等级</strong></h2><pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby"><span class="token operator">--</span><span class="token operator">-</span> <span class="token operator">/</span>opt<span class="token operator">/</span>gitlab<span class="token operator">/</span>embedded<span class="token operator">/</span>service<span class="token operator">/</span>gitlab<span class="token operator">-</span>rails<span class="token operator">/</span>ee<span class="token operator">/</span>app<span class="token operator">/</span>models<span class="token operator">/</span>license<span class="token punctuation">.</span>rb
+<span class="token operator">++</span><span class="token operator">+</span> <span class="token operator">/</span>opt<span class="token operator">/</span>gitlab<span class="token operator">/</span>embedded<span class="token operator">/</span>service<span class="token operator">/</span>gitlab<span class="token operator">-</span>rails<span class="token operator">/</span>ee<span class="token operator">/</span>app<span class="token operator">/</span>models<span class="token operator">/</span>license<span class="token punctuation">.</span>rb
+@@ <span class="token operator">-</span><span class="token number">458</span><span class="token punctuation">,</span><span class="token number">7</span> <span class="token operator">+</span><span class="token number">458</span><span class="token punctuation">,</span><span class="token number">7</span> @@
+  <span class="token keyword">end</span>
+ 
+  <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">plan</span></span>
+<span class="token operator">-</span>    restricted_attr<span class="token punctuation">(</span><span class="token symbol">:plan</span><span class="token punctuation">)</span><span class="token punctuation">.</span>presence <span class="token operator">||</span> <span class="token constant">STARTER_PLAN</span>
+<span class="token operator">+</span>    restricted_attr<span class="token punctuation">(</span><span class="token symbol">:plan</span><span class="token punctuation">)</span><span class="token punctuation">.</span>presence <span class="token operator">||</span> <span class="token constant">ULTIMATE_PLAN</span>
+  <span class="token keyword">end</span>
+ 
+  <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">edition</span></span>
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>修改完成后使用 <code>gitlab-ctl restart</code> 重新加载配置。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a><strong>参考</strong></h2><ul>
+<li>  <a href="https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md">https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md</a></li>
+</ul>
 <link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
       <categories>
-        <category>qnap</category>
+        <category>gitlab</category>
       </categories>
       <tags>
-        <tag>QNAP</tag>
-        <tag>硬盘</tag>
-        <tag>nas</tag>
+        <tag>Gitlab</tag>
+        <tag>Git</tag>
+        <tag>Crack</tag>
       </tags>
   </entry>
   <entry>
@@ -1051,191 +1031,23 @@ $ joplin use <span class="token string">"My-Project"</span><span aria-hidden="tr
       </tags>
   </entry>
   <entry>
-    <title>宝塔linux面板重启、重置等命令整合</title>
-    <url>/vps/2021-07-31-how-to-use-baota-with-vps/</url>
-    <content><![CDATA[<h2 id="宝塔linux面板重启、重置等命令整合"><a href="#宝塔linux面板重启、重置等命令整合" class="headerlink" title="宝塔linux面板重启、重置等命令整合"></a>宝塔linux面板重启、重置等命令整合</h2><p>宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。</p>
-<p>来源于网络，原作已经不可考据，整理更新到目前最新版。</p>
-<p>现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、<br>但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦</p>
-<h2 id="Linux面板7-6-0安装命令："><a href="#Linux面板7-6-0安装命令：" class="headerlink" title="Linux面板7.6.0安装命令："></a><strong>Linux面板7.6.0安装命令：</strong></h2><h3 id="Centos安装命令："><a href="#Centos安装命令：" class="headerlink" title="Centos安装命令："></a><strong>Centos安装命令：</strong></h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y <span class="token function">wget</span> <span class="token operator">&amp;&amp;</span> <span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">sh</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p><em>复制代码</em></p>
-<p><a href="https://www.bt.cn/offline">咨询离线安装版本</a></p>
-<p><strong>试验性Centos/Ubuntu/Debian安装命令</strong> <strong>独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中</strong></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">curl</span> -sSO http://download.bt.cn/install/install_panel.sh <span class="token operator">&amp;&amp;</span> <span class="token function">bash</span> install_panel.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p><em>复制代码</em></p>
-<h3 id="Ubuntu-Deepin安装命令："><a href="#Ubuntu-Deepin安装命令：" class="headerlink" title="Ubuntu/Deepin安装命令："></a><strong>Ubuntu/Deepin安装命令：</strong></h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">sudo</span> <span class="token function">bash</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p><em>复制代码</em></p>
-<h3 id="Debian安装命令："><a href="#Debian安装命令：" class="headerlink" title="Debian安装命令："></a><strong>Debian安装命令：</strong></h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">bash</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p><em>复制代码</em></p>
-<h3 id="Fedora安装命令"><a href="#Fedora安装命令" class="headerlink" title="Fedora安装命令:"></a><strong>Fedora安装命令:</strong></h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">bash</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p><em>复制代码</em></p>
-<p>**<br><strong>Linux面板7.6.0升级命令：</strong>curl <a href="http://download.bt.cn/install/update6.sh|bash*%E5%A4%8D%E5%88%B6%E4%BB%A3%E7%A0%81">http://download.bt.cn/install/update6.sh|bash*复制代码</a>*</p>
-<p>以上节点无法使用的情况下，请使用下面的备用节点：<br>**</p>
-<h3 id="备用节点【香港】："><a href="#备用节点【香港】：" class="headerlink" title="备用节点【香港】："></a><strong>备用节点【香港】：</strong></h3><p><strong>（宝塔推荐使用CN2 双程GIA高品质，免备案的</strong><a href="https://www.zun.com/server/buy.html?lineid=1671157323431053"><strong>尊云zun.com</strong></a><strong>香港云服务器安装）</strong></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y <span class="token function">wget</span> <span class="token operator">&amp;&amp;</span> <span class="token function">wget</span> -O install.sh http://103.224.251.67:5880/install/install_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">sh</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h2 id="管理宝塔"><a href="#管理宝塔" class="headerlink" title="管理宝塔"></a>管理宝塔</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#停止</span>
-/etc/init.d/bt stop
-<span class="token comment">#启动</span>
-/etc/init.d/bt start
-<span class="token comment">#重启</span>
-/etc/init.d/bt restart
-<span class="token comment">#卸载</span>
-/etc/init.d/bt stop <span class="token operator">&amp;&amp;</span> <span class="token function">chkconfig</span> --del bt <span class="token operator">&amp;&amp;</span> <span class="token function">rm</span> -f /etc/init.d/bt <span class="token operator">&amp;&amp;</span> <span class="token function">rm</span> -rf /www/server/panel
-<span class="token comment">#查看当前面板端口</span>
-<span class="token function">cat</span> /www/server/panel/data/port.pl
-<span class="token comment">#修改面板端口，如要改成8881（centos 6  系统）</span>
-<span class="token builtin class-name">echo</span> <span class="token string">'8881'</span>  <span class="token operator">&gt;</span>  /www/server/panel/data/port.pl <span class="token operator">&amp;&amp;</span>  /etc/init.d/bt restart
-iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport <span class="token number">8881</span>  -j ACCEPT
-<span class="token function">service</span> iptables save
-<span class="token function">service</span> iptables restart
-<span class="token comment">#修改面板端口，如要改成8881（centos 7  系统）</span>
-<span class="token builtin class-name">echo</span> <span class="token string">'8881'</span>  <span class="token operator">&gt;</span>  /www/server/panel/data/port.pl <span class="token operator">&amp;&amp;</span>  /etc/init.d/bt restart
-firewall-cmd --permanent --zone<span class="token operator">=</span>public  --add-port<span class="token operator">=</span><span class="token number">8881</span>/tcp
-firewall-cmd --reload
-<span class="token comment">#强制修改MySQL管理(root)密码，如要改成123456</span>
-<span class="token builtin class-name">cd</span> /www/server/panel <span class="token operator">&amp;&amp;</span> python tools.pyc root <span class="token number">123456</span>
-<span class="token comment">#修改面板密码，如要改成123456</span>
-<span class="token builtin class-name">cd</span> /www/server/panel <span class="token operator">&amp;&amp;</span> python tools.pyc panel <span class="token number">123456</span>
-<span class="token comment">#查看宝塔日志</span>
-<span class="token function">cat</span> /tmp/panelBoot.pl
-<span class="token comment">#查看软件安装日志</span>
-<span class="token function">cat</span> /tmp/panelExec.log
-<span class="token comment">#站点配置文件位置</span>
-/www/server/panel/vhost
-<span class="token comment">#删除域名绑定面板</span>
-<span class="token function">rm</span> -f /www/server/panel/data/domain.conf
-<span class="token comment">#清理登陆限制</span>
-<span class="token function">rm</span> -f /www/server/panel/data/*.login
-<span class="token comment">#查看面板授权IP</span>
-<span class="token function">cat</span> /www/server/panel/data/limitip.conf
-<span class="token comment">#关闭访问限制</span>
-<span class="token function">rm</span> -f /www/server/panel/data/limitip.conf
-<span class="token comment">#查看许可域名</span>
-<span class="token function">cat</span> /www/server/panel/data/domain.conf
-<span class="token comment">#关闭面板SSL</span>
-<span class="token function">rm</span> -f /www/server/panel/data/ssl.pl <span class="token operator">&amp;&amp;</span> /etc/init.d/bt restart
-<span class="token comment">#查看面板错误日志</span>
-<span class="token function">cat</span> /tmp/panelBoot
-<span class="token comment">#查看数据库错误日志</span>
-<span class="token function">cat</span> /www/server/data/*.err
-<span class="token comment">#站点配置文件目录(nginx)</span>
-/www/server/panel/vhost/nginx
-<span class="token comment">#站点配置文件目录(apache)</span>
-/www/server/panel/vhost/apache
-<span class="token comment">#站点默认目录</span>
-/www/wwwroot
-<span class="token comment">#数据库备份目录</span>
-/www/backup/database
-<span class="token comment">#站点备份目录</span>
-/www/backup/site
-<span class="token comment">#站点日志</span>
-/www/wwwlogs<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="Nginx服务管理"><a href="#Nginx服务管理" class="headerlink" title="Nginx服务管理"></a>Nginx服务管理</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#nginx安装目录</span>
-/www/server/nginx
-<span class="token comment">#启动</span>
-/etc/init.d/nginx start
-<span class="token comment">#停止</span>
-/etc/init.d/nginx stop
-<span class="token comment">#重启</span>
-/etc/init.d/nginx restart
-<span class="token comment">#启载</span>
-/etc/init.d/nginx reload
-<span class="token comment">#nginx配置文件</span>
-/www/server/nginx/conf/nginx.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="Apache服务管理"><a href="#Apache服务管理" class="headerlink" title="Apache服务管理"></a>Apache服务管理</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#apache安装目录</span>
-/www/server/httpd
-<span class="token comment">#启动</span>
-/etc/init.d/httpd start
-<span class="token comment">#停止</span>
-/etc/init.d/httpd stop
-<span class="token comment">#重启</span>
-/etc/init.d/httpd restart
-<span class="token comment">#启载</span>
-/etc/init.d/httpd reload
-<span class="token comment">#apache配置文件</span>
-/www/server/apache/conf/httpd.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="MySQL服务管理"><a href="#MySQL服务管理" class="headerlink" title="MySQL服务管理"></a>MySQL服务管理</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#mysql安装目录</span>
-/www/server/mysql
-<span class="token comment">#phpmyadmin安装目录</span>
-/www/server/phpmyadmin
-<span class="token comment">#数据存储目录</span>
-/www/server/data
-<span class="token comment">#启动</span>
-/etc/init.d/mysqld start
-<span class="token comment">#停止</span>
-/etc/init.d/mysqld stop
-<span class="token comment">#重启</span>
-/etc/init.d/mysqld restart
-<span class="token comment">#启载</span>
-/etc/init.d/mysqld reload
-<span class="token comment">#mysql配置文件</span>
-/etc/my.cnf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="FTP服务管理"><a href="#FTP服务管理" class="headerlink" title="FTP服务管理"></a>FTP服务管理</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#ftp安装目录</span>
-/www/server/pure-ftpd
-<span class="token comment">#启动</span>
-/etc/init.d/pure-ftpd start
-<span class="token comment">#停止</span>
-/etc/init.d/pure-ftpd stop
-<span class="token comment">#重启</span>
-/etc/init.d/pure-ftpd restart
-<span class="token comment">#ftp配置文件</span>
-/www/server/pure-ftpd/etc/pure-ftpd.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="PHP服务管理"><a href="#PHP服务管理" class="headerlink" title="PHP服务管理"></a>PHP服务管理</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#php安装目录</span>
-/www/server/php
-<span class="token comment">#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)</span>
-/etc/init.d/php-fpm-<span class="token punctuation">{</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">}</span> start
-<span class="token comment">#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)</span>
-/etc/init.d/php-fpm-<span class="token punctuation">{</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">}</span> stop
-<span class="token comment">#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)</span>
-/etc/init.d/php-fpm-<span class="token punctuation">{</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">}</span> restart
-<span class="token comment">#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)</span>
-/etc/init.d/php-fpm-<span class="token punctuation">{</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">}</span> reload
-<span class="token comment">#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)</span>
-/www/server/php/<span class="token punctuation">{</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">}</span>/etc/php.ini<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="Redis服务管理"><a href="#Redis服务管理" class="headerlink" title="Redis服务管理"></a>Redis服务管理</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#redis安装目录</span>
-/www/server/redis
-<span class="token comment">#启动</span>
-/etc/init.d/redis start
-<span class="token comment">#停止</span>
-/etc/init.d/redis stop
-<span class="token comment">#redis配置文件</span>
-/www/server/redis/redis.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="Memcached服务管理"><a href="#Memcached服务管理" class="headerlink" title="Memcached服务管理"></a>Memcached服务管理</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#memcached安装目录</span>
-/usr/local/memcached
-<span class="token comment">#启动</span>
-/etc/init.d/memcached start
-<span class="token comment">#停止</span>
-/etc/init.d/memcached stop
-<span class="token comment">#重启</span>
-/etc/init.d/memcached restart
-<span class="token comment">#启载</span>
-/etc/init.d/memcached reload<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>如有不全、欢迎投稿。</p>
+    <title>qnap硬盘移动位置</title>
+    <url>/qnap/2021-07-25-qnap-move-hard-disk-position/</url>
+    <content><![CDATA[<p>qnap硬盘移动位置，改变硬盘位</p>
+<h2 id="需求：硬盘位4的硬盘移动到硬盘位3"><a href="#需求：硬盘位4的硬盘移动到硬盘位3" class="headerlink" title="需求：硬盘位4的硬盘移动到硬盘位3"></a>需求：硬盘位4的硬盘移动到硬盘位3</h2><h2 id="步骤1"><a href="#步骤1" class="headerlink" title="步骤1"></a>步骤1</h2><p>造作步骤： 存储和快照总管app-&gt;存储/快照-&gt;管理-&gt;操作-&gt;安全卸载磁盘区</p>
+<p>如此，硬盘4卸载下来了，如下图</p>
+<p><img src="https://cimg1.17lai.site/data/2021/07/2520210725213003.png"></p>
+<h2 id="步骤2"><a href="#步骤2" class="headerlink" title="步骤2"></a>步骤2</h2><p>再把硬盘4拔下来，插入硬盘位3。等待硬盘被识别到，一般1分钟之内。</p>
+<h2 id="步骤3"><a href="#步骤3" class="headerlink" title="步骤3"></a>步骤3</h2><p>造作步骤： 存储和快照总管app-&gt;磁盘/VJBOD-&gt;点击磁盘3-&gt;还原-&gt;链接并回复存储池</p>
+<p><img src="https://cimg1.17lai.site/data/2021/07/2520210725213820.png"></p>
 <link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
       <categories>
-        <category>vps</category>
+        <category>qnap</category>
       </categories>
       <tags>
-        <tag>Linux</tag>
-        <tag>宝塔</tag>
-        <tag>VPS</tag>
-        <tag>建站</tag>
-        <tag>Nginx</tag>
-        <tag>Apache</tag>
-        <tag>MySQL</tag>
+        <tag>QNAP</tag>
+        <tag>硬盘</tag>
+        <tag>nas</tag>
       </tags>
   </entry>
   <entry>
@@ -1508,219 +1320,6 @@ TCP window size: <span class="token number">21.0</span> KByte <span class="token
         <tag>3531a</tag>
         <tag>移植</tag>
         <tag>嵌入式</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>docker使用简明教程</title>
-    <url>/docker/2021-08-01-docker-use-brief-tutorial/</url>
-    <content><![CDATA[<p>关于docker安装，查看，镜像管理，以及一个实用Dockerfile， LAMP，PHP，LTMJ。</p>
-<ul>
-<li>关于本blog，<strong>图床</strong>一般使用<strong>github</strong>，已经配置了CDN，如果图片还是未显示请自行代理解决</li>
-</ul>
-<h2 id="一、Docker安装"><a href="#一、Docker安装" class="headerlink" title="一、Docker安装"></a>一、Docker安装</h2><ul>
-<li>在Ubuntu系统下安装：</li>
-</ul>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token function">apt-get</span> <span class="token function">install</span> docker<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<ul>
-<li>在Fedora/CentOS系统下安装：</li>
-</ul>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">yum <span class="token function">install</span> docker
-dnf <span class="token function">install</span> docker <span class="token comment"># Fedora 25+</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-
-<ul>
-<li>在SUSE系统下安装：</li>
-</ul>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token function">zypper</span> <span class="token function">install</span> docker<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h2 id="二、Docker容器"><a href="#二、Docker容器" class="headerlink" title="二、Docker容器"></a>二、Docker容器</h2><ul>
-<li>首先启动Docker</li>
-</ul>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token comment"># 启动Docker</span>
-systemctl start docker
-<span class="token comment"># 设置开机自启动，可选</span>
-systemctl <span class="token builtin class-name">enable</span> docker<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-
-<ul>
-<li>启动Docker测试容器</li>
-</ul>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker run <span class="token string">"hello-world"</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<ul>
-<li>在启动容器时，如果使用的镜像在本地不存在，会尝试从网络上获取。</li>
-<li>在一般情况下，启动Web服务的容器，使用以下命令：</li>
-</ul>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token comment"># -d：daemon，使容器在后台运行</span>
-<span class="token comment"># -p：port，指定容器的端口，这里是将容器的80端口映射到主机的8001端口</span>
-docker run -d -p <span class="token number">8001</span>:80 <span class="token string">"image_name"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<ul>
-<li>查看容器运行情况</li>
-</ul>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker <span class="token function">ps</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<ul>
-<li>Docker会为容器分配一个Container ID和一个Container Name，Name可以在运行时通过<code>-name</code>自行指定，这两个可以用来标识容器。</li>
-<li>需要停止容器时，使用以下命令：</li>
-</ul>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker stop <span class="token string">"container_name"</span>
-<span class="token comment"># 或使用ID查找</span>
-docker stop <span class="token string">"container_id"</span>
-<span class="token comment"># 重启</span>
-docker restart <span class="token string">"container_id"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="三、Docker镜像"><a href="#三、Docker镜像" class="headerlink" title="三、Docker镜像"></a>三、Docker镜像</h2><h3 id="Dokerfile编译镜像"><a href="#Dokerfile编译镜像" class="headerlink" title="Dokerfile编译镜像"></a>Dokerfile编译镜像</h3><ul>
-<li>Docker容器是运行的Docker镜像实例，一般情况下，我们需要制作自己的Docker镜像。</li>
-<li>Docker镜像的制作依赖于Dockerfile，我们稍后在讨论Dockerfile的编写，这里假定我们有一个编写好的Dockerfile。</li>
-<li>下面的命令将在当前路径查找Dockerfile并构建一个名为“image_name”的镜像。</li>
-</ul>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker build -t <span class="token string">"image_name"</span> ./<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h3 id="查看本地所有镜像"><a href="#查看本地所有镜像" class="headerlink" title="查看本地所有镜像"></a>查看本地所有镜像</h3><ul>
-<li>在构建过程中需要在网络上下载来源镜像，可能需要一段时间。</li>
-<li>如果Dockerfile中的命令都正确结束（Exit code 0），那么Docker镜像的构建也将顺利完成，我们可以通过下面的命令查看我们的所有镜像：</li>
-</ul>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker images<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h3 id="导出备份已有镜像文件"><a href="#导出备份已有镜像文件" class="headerlink" title="导出备份已有镜像文件"></a>导出备份已有镜像文件</h3><ul>
-<li>我们还可以导出我们制作好的Docker镜像，下面的命令将image_name镜像导出为image_name.tar</li>
-</ul>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker save <span class="token string">"image_name"</span> <span class="token operator">&gt;</span> image_name.tar<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h3 id="导入已有镜像备份"><a href="#导入已有镜像备份" class="headerlink" title="导入已有镜像备份"></a>导入已有镜像备份</h3><ul>
-<li>在另一台机器上，我们不需要网络就可以导入并使用该镜像：</li>
-</ul>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker load <span class="token operator">&lt;</span> image_name.tar<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h2 id="四、Dockerfile"><a href="#四、Dockerfile" class="headerlink" title="四、Dockerfile"></a>四、Dockerfile</h2><ul>
-<li>Dockerfile本质上是一组命令集合，用于自动化构建镜像，下面以几个实例来说明Dockerfile的编写方法：</li>
-</ul>
-<h3 id="实例一：LAMP（Linux-Apache-MySQL-PHP）环境配置"><a href="#实例一：LAMP（Linux-Apache-MySQL-PHP）环境配置" class="headerlink" title="实例一：LAMP（Linux+Apache+MySQL+PHP）环境配置"></a>实例一：LAMP（Linux+Apache+MySQL+PHP）环境配置</h3><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token comment"># 来源镜像，一般可以使用标准的系统或者带有各种环境的系统</span>
-<span class="token comment"># 显然这里使用的是标准的Ubuntu 14.04系统</span>
-FROM ubuntu<span class="token punctuation">:</span><span class="token number">14.04</span>
-<span class="token comment"># 镜像作者</span>
-MAINTAINER wrlu
-<span class="token comment"># 刷新日期</span>
-ENV REFRESHED_AT 2018<span class="token punctuation">-</span>08<span class="token punctuation">-</span><span class="token number">05</span>
-<span class="token comment"># 设定字符集</span>
-ENV LANG C.UTF<span class="token punctuation">-</span><span class="token number">8</span>
-<span class="token comment"># RUN命令用于执行系统命令</span>
-<span class="token comment"># 因为需要自动化安装，所以最好通过-y命令跳过确认</span>
-<span class="token comment"># 更新APT软件源</span>
-RUN apt<span class="token punctuation">-</span>get update <span class="token punctuation">-</span>y
-<span class="token comment"># 安装MySQL</span>
-RUN apt<span class="token punctuation">-</span>get <span class="token punctuation">-</span>y install mysql<span class="token punctuation">-</span>server
-<span class="token comment"># 安装Apache</span>
-RUN apt<span class="token punctuation">-</span>get <span class="token punctuation">-</span>y install apache2
-<span class="token comment"># 安装PHP5</span>
-RUN apt<span class="token punctuation">-</span>get <span class="token punctuation">-</span>y install php5 libapache2<span class="token punctuation">-</span>mod<span class="token punctuation">-</span>php5
-RUN apt<span class="token punctuation">-</span>get install <span class="token punctuation">-</span>yqq php5<span class="token punctuation">-</span>mysql php5<span class="token punctuation">-</span>curl php5<span class="token punctuation">-</span>gd php5<span class="token punctuation">-</span>intl php<span class="token punctuation">-</span>pear php5<span class="token punctuation">-</span>imagick php5<span class="token punctuation">-</span>imap php5<span class="token punctuation">-</span>mcrypt php5<span class="token punctuation">-</span>memcache php5<span class="token punctuation">-</span>ming php5<span class="token punctuation">-</span>ps php5<span class="token punctuation">-</span>pspell php5<span class="token punctuation">-</span>recode php5<span class="token punctuation">-</span>snmp php5<span class="token punctuation">-</span>sqlite php5<span class="token punctuation">-</span>tidy php5<span class="token punctuation">-</span>xmlrpc php5<span class="token punctuation">-</span>xsl
-<span class="token comment"># 删除Apache2列出目录配置</span>
-RUN sed <span class="token punctuation">-</span>i 's/Options Indexes FollowSymLinks/Options None/' /etc/apache2/apache2.conf
-<span class="token comment"># COPY命令可以复制文件，但是似乎不能递归复制文件</span>
-COPY IncludeAirline/* /var/www/html/
-COPY IncludeAirline/airlines/* /var/www/html/airlines/
-<span class="token comment"># 删除默认的主页</span>
-RUN rm /var/www/html/index.html
-<span class="token comment"># 复制启动脚本</span>
-COPY start.sh /root/start.sh
-RUN chmod +x /root/start.sh
-<span class="token comment"># 设置启动目录以及启动脚本</span>
-ENTRYPOINT cd /root; ./start.sh
-<span class="token comment"># 设置需要暴露的端口</span>
-EXPOSE 80<span class="token punctuation">,</span><span class="token number">3306</span> <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<ul>
-<li>本例中还有一个启动脚本<code>start.sh</code>，用于导入数据库，编写如下：</li>
-</ul>
-<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token comment">#!/bin/bash</span>
-<span class="token comment"># 启动后延时</span>
-sleep 1
-<span class="token comment"># 启动Apache服务器</span>
-/etc/init.d/apache2 start
-<span class="token comment"># 启动MySQL数据库</span>
-find /var/lib/mysql <span class="token punctuation">-</span>type f <span class="token punctuation">-</span>exec touch <span class="token punctuation">{</span><span class="token punctuation">}</span> ; <span class="token important">&amp;&amp;</span> service mysql start
-<span class="token comment"># 定义SQL文件路径</span>
-sqlfile=/var/www/html/includeAirline.sql
-if <span class="token punctuation">[</span> <span class="token punctuation">-</span>f $flagfile <span class="token punctuation">]</span>; then
-	<span class="token comment"># 修改MySQL的密码</span>
-    mysqladmin <span class="token punctuation">-</span>u root password "root"
-    <span class="token comment"># 登录MySQL并导入SQL文件执行</span>
-    mysql <span class="token punctuation">-</span>uroot <span class="token punctuation">-</span>proot &lt; $sqlfile
-    <span class="token comment"># 删除SQL文件</span>
-    rm <span class="token punctuation">-</span>f $sqlfile
-fi
-<span class="token comment"># 此处注意，如果命令执行完后脚本退出</span>
-<span class="token comment"># 则Docker容器也会因为没有前台应用运行而中止</span>
-<span class="token comment"># 所以这里使用一个前台命令来保活Docker容器</span>
-tail <span class="token punctuation">-</span>f /var/log/apache2/error.log<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h3 id="实例二：PHP环境配置："><a href="#实例二：PHP环境配置：" class="headerlink" title="实例二：PHP环境配置："></a>实例二：PHP环境配置：</h3><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token comment"># 来源镜像，自带Apache+PHP环境</span>
-FROM php<span class="token punctuation">:</span>7.0<span class="token punctuation">-</span>apache
-MAINTAINER tl
-ENV REFRESHED_AT 2018‐08‐03
-ENV LANG C.UTF‐8
-<span class="token comment"># ADD命令在COPY命令的基础上，具有自动解包tar的功能</span>
-ADD web_tired.tar /var/www/html/
-EXPOSE 80<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h3 id="实例三：LTMJ（Linux-Tomcat-MySQL-JSP）环境配置"><a href="#实例三：LTMJ（Linux-Tomcat-MySQL-JSP）环境配置" class="headerlink" title="实例三：LTMJ（Linux+Tomcat+MySQL+JSP）环境配置"></a>实例三：LTMJ（Linux+Tomcat+MySQL+JSP）环境配置</h3><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml">FROM ubuntu<span class="token punctuation">:</span><span class="token number">16.04</span>
-MAINTAINER wrlu
-ENV REFRESHED_AT 2018<span class="token punctuation">-</span>08<span class="token punctuation">-</span><span class="token number">05</span>
-ENV LANG C.UTF<span class="token punctuation">-</span><span class="token number">8</span>
-RUN apt<span class="token punctuation">-</span>get update <span class="token punctuation">-</span>y
-RUN apt<span class="token punctuation">-</span>get <span class="token punctuation">-</span>y install mysql<span class="token punctuation">-</span>server
-<span class="token comment"># 安装wget，因为Docker提供的镜像是最小镜像，所以用到的其他工具需要自行安装</span>
-RUN apt<span class="token punctuation">-</span>get <span class="token punctuation">-</span>y install wget
-<span class="token comment"># 安装Java 8</span>
-RUN apt<span class="token punctuation">-</span>get <span class="token punctuation">-</span>y install openjdk<span class="token punctuation">-</span>8<span class="token punctuation">-</span>jre
-<span class="token comment"># 下载Tomcat 8服务器</span>
-RUN wget http<span class="token punctuation">:</span>//mirrors.hust.edu.cn/apache/tomcat/tomcat<span class="token punctuation">-</span>8/v8.5.32/bin/apache<span class="token punctuation">-</span>tomcat<span class="token punctuation">-</span>8.5.32.tar.gz
-<span class="token comment"># 解压tar.gz</span>
-RUN tar <span class="token punctuation">-</span>xzf apache<span class="token punctuation">-</span>tomcat<span class="token punctuation">-</span>8.5.32.tar.gz <span class="token punctuation">-</span>C /root
-RUN mv /root/apache<span class="token punctuation">-</span>tomcat<span class="token punctuation">-</span>8.5.32 /root/tomcat
-<span class="token comment"># 删除默认页面</span>
-RUN rm <span class="token punctuation">-</span>rf /root/tomcat/webapps/*
-<span class="token comment"># 拷贝war文件</span>
-COPY CAAC<span class="token punctuation">-</span>SQL<span class="token punctuation">-</span>Injection.war /root/tomcat/webapps/
-COPY wafwtf.sql /root/
-COPY start.sh /root/start.sh
-RUN chmod +x /root/start.sh
-ENTRYPOINT cd /root; ./start.sh
-<span class="token comment"># Tomcat使用8080端口，不同于Apache</span>
-EXPOSE 8080<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<ul>
-<li>启动脚本如下：</li>
-</ul>
-<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token comment">#!/bin/bash</span>
-sleep 1
-find /var/lib/mysql <span class="token punctuation">-</span>type f <span class="token punctuation">-</span>exec touch <span class="token punctuation">{</span><span class="token punctuation">}</span> ; <span class="token important">&amp;&amp;</span> service mysql start
-chmod +x /root/tomcat/bin/startup.sh
-<span class="token comment"># 启动Tomcat服务器</span>
-/root/tomcat/bin/startup.sh
-sqlfile=/root/wafwtf.sql
-if <span class="token punctuation">[</span> <span class="token punctuation">-</span>f $flagfile <span class="token punctuation">]</span>; then
-    mysqladmin <span class="token punctuation">-</span>u root password "root"
-    mysql <span class="token punctuation">-</span>uroot <span class="token punctuation">-</span>proot &lt; $sqlfile
-    rm <span class="token punctuation">-</span>f $sqlfile
-fi
-<span class="token comment"># 容器保活</span>
-tail <span class="token punctuation">-</span>f /root/tomcat/conf/server.xml<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
-      <categories>
-        <category>docker</category>
-      </categories>
-      <tags>
-        <tag>Linux</tag>
-        <tag>MySQL</tag>
-        <tag>Docker</tag>
-        <tag>LAMP</tag>
-        <tag>PHP</tag>
-        <tag>Tomcat</tag>
-        <tag>JSP</tag>
-        <tag>教程</tag>
       </tags>
   </entry>
   <entry>
@@ -2495,6 +2094,407 @@ HI_DRV_FILE_Lseek
       </tags>
   </entry>
   <entry>
+    <title>宝塔linux面板重启、重置等命令整合</title>
+    <url>/vps/2021-07-31-how-to-use-baota-with-vps/</url>
+    <content><![CDATA[<h2 id="宝塔linux面板重启、重置等命令整合"><a href="#宝塔linux面板重启、重置等命令整合" class="headerlink" title="宝塔linux面板重启、重置等命令整合"></a>宝塔linux面板重启、重置等命令整合</h2><p>宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。</p>
+<p>来源于网络，原作已经不可考据，整理更新到目前最新版。</p>
+<p>现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、<br>但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦</p>
+<h2 id="Linux面板7-6-0安装命令："><a href="#Linux面板7-6-0安装命令：" class="headerlink" title="Linux面板7.6.0安装命令："></a><strong>Linux面板7.6.0安装命令：</strong></h2><h3 id="Centos安装命令："><a href="#Centos安装命令：" class="headerlink" title="Centos安装命令："></a><strong>Centos安装命令：</strong></h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y <span class="token function">wget</span> <span class="token operator">&amp;&amp;</span> <span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">sh</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p><em>复制代码</em></p>
+<p><a href="https://www.bt.cn/offline">咨询离线安装版本</a></p>
+<p><strong>试验性Centos/Ubuntu/Debian安装命令</strong> <strong>独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中</strong></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">curl</span> -sSO http://download.bt.cn/install/install_panel.sh <span class="token operator">&amp;&amp;</span> <span class="token function">bash</span> install_panel.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p><em>复制代码</em></p>
+<h3 id="Ubuntu-Deepin安装命令："><a href="#Ubuntu-Deepin安装命令：" class="headerlink" title="Ubuntu/Deepin安装命令："></a><strong>Ubuntu/Deepin安装命令：</strong></h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">sudo</span> <span class="token function">bash</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p><em>复制代码</em></p>
+<h3 id="Debian安装命令："><a href="#Debian安装命令：" class="headerlink" title="Debian安装命令："></a><strong>Debian安装命令：</strong></h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">bash</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p><em>复制代码</em></p>
+<h3 id="Fedora安装命令"><a href="#Fedora安装命令" class="headerlink" title="Fedora安装命令:"></a><strong>Fedora安装命令:</strong></h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">bash</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p><em>复制代码</em></p>
+<p>**<br><strong>Linux面板7.6.0升级命令：</strong>curl <a href="http://download.bt.cn/install/update6.sh|bash*%E5%A4%8D%E5%88%B6%E4%BB%A3%E7%A0%81">http://download.bt.cn/install/update6.sh|bash*复制代码</a>*</p>
+<p>以上节点无法使用的情况下，请使用下面的备用节点：<br>**</p>
+<h3 id="备用节点【香港】："><a href="#备用节点【香港】：" class="headerlink" title="备用节点【香港】："></a><strong>备用节点【香港】：</strong></h3><p><strong>（宝塔推荐使用CN2 双程GIA高品质，免备案的</strong><a href="https://www.zun.com/server/buy.html?lineid=1671157323431053"><strong>尊云zun.com</strong></a><strong>香港云服务器安装）</strong></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y <span class="token function">wget</span> <span class="token operator">&amp;&amp;</span> <span class="token function">wget</span> -O install.sh http://103.224.251.67:5880/install/install_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">sh</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h2 id="管理宝塔"><a href="#管理宝塔" class="headerlink" title="管理宝塔"></a>管理宝塔</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#停止</span>
+/etc/init.d/bt stop
+<span class="token comment">#启动</span>
+/etc/init.d/bt start
+<span class="token comment">#重启</span>
+/etc/init.d/bt restart
+<span class="token comment">#卸载</span>
+/etc/init.d/bt stop <span class="token operator">&amp;&amp;</span> <span class="token function">chkconfig</span> --del bt <span class="token operator">&amp;&amp;</span> <span class="token function">rm</span> -f /etc/init.d/bt <span class="token operator">&amp;&amp;</span> <span class="token function">rm</span> -rf /www/server/panel
+<span class="token comment">#查看当前面板端口</span>
+<span class="token function">cat</span> /www/server/panel/data/port.pl
+<span class="token comment">#修改面板端口，如要改成8881（centos 6  系统）</span>
+<span class="token builtin class-name">echo</span> <span class="token string">'8881'</span>  <span class="token operator">&gt;</span>  /www/server/panel/data/port.pl <span class="token operator">&amp;&amp;</span>  /etc/init.d/bt restart
+iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport <span class="token number">8881</span>  -j ACCEPT
+<span class="token function">service</span> iptables save
+<span class="token function">service</span> iptables restart
+<span class="token comment">#修改面板端口，如要改成8881（centos 7  系统）</span>
+<span class="token builtin class-name">echo</span> <span class="token string">'8881'</span>  <span class="token operator">&gt;</span>  /www/server/panel/data/port.pl <span class="token operator">&amp;&amp;</span>  /etc/init.d/bt restart
+firewall-cmd --permanent --zone<span class="token operator">=</span>public  --add-port<span class="token operator">=</span><span class="token number">8881</span>/tcp
+firewall-cmd --reload
+<span class="token comment">#强制修改MySQL管理(root)密码，如要改成123456</span>
+<span class="token builtin class-name">cd</span> /www/server/panel <span class="token operator">&amp;&amp;</span> python tools.pyc root <span class="token number">123456</span>
+<span class="token comment">#修改面板密码，如要改成123456</span>
+<span class="token builtin class-name">cd</span> /www/server/panel <span class="token operator">&amp;&amp;</span> python tools.pyc panel <span class="token number">123456</span>
+<span class="token comment">#查看宝塔日志</span>
+<span class="token function">cat</span> /tmp/panelBoot.pl
+<span class="token comment">#查看软件安装日志</span>
+<span class="token function">cat</span> /tmp/panelExec.log
+<span class="token comment">#站点配置文件位置</span>
+/www/server/panel/vhost
+<span class="token comment">#删除域名绑定面板</span>
+<span class="token function">rm</span> -f /www/server/panel/data/domain.conf
+<span class="token comment">#清理登陆限制</span>
+<span class="token function">rm</span> -f /www/server/panel/data/*.login
+<span class="token comment">#查看面板授权IP</span>
+<span class="token function">cat</span> /www/server/panel/data/limitip.conf
+<span class="token comment">#关闭访问限制</span>
+<span class="token function">rm</span> -f /www/server/panel/data/limitip.conf
+<span class="token comment">#查看许可域名</span>
+<span class="token function">cat</span> /www/server/panel/data/domain.conf
+<span class="token comment">#关闭面板SSL</span>
+<span class="token function">rm</span> -f /www/server/panel/data/ssl.pl <span class="token operator">&amp;&amp;</span> /etc/init.d/bt restart
+<span class="token comment">#查看面板错误日志</span>
+<span class="token function">cat</span> /tmp/panelBoot
+<span class="token comment">#查看数据库错误日志</span>
+<span class="token function">cat</span> /www/server/data/*.err
+<span class="token comment">#站点配置文件目录(nginx)</span>
+/www/server/panel/vhost/nginx
+<span class="token comment">#站点配置文件目录(apache)</span>
+/www/server/panel/vhost/apache
+<span class="token comment">#站点默认目录</span>
+/www/wwwroot
+<span class="token comment">#数据库备份目录</span>
+/www/backup/database
+<span class="token comment">#站点备份目录</span>
+/www/backup/site
+<span class="token comment">#站点日志</span>
+/www/wwwlogs<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="Nginx服务管理"><a href="#Nginx服务管理" class="headerlink" title="Nginx服务管理"></a>Nginx服务管理</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#nginx安装目录</span>
+/www/server/nginx
+<span class="token comment">#启动</span>
+/etc/init.d/nginx start
+<span class="token comment">#停止</span>
+/etc/init.d/nginx stop
+<span class="token comment">#重启</span>
+/etc/init.d/nginx restart
+<span class="token comment">#启载</span>
+/etc/init.d/nginx reload
+<span class="token comment">#nginx配置文件</span>
+/www/server/nginx/conf/nginx.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="Apache服务管理"><a href="#Apache服务管理" class="headerlink" title="Apache服务管理"></a>Apache服务管理</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#apache安装目录</span>
+/www/server/httpd
+<span class="token comment">#启动</span>
+/etc/init.d/httpd start
+<span class="token comment">#停止</span>
+/etc/init.d/httpd stop
+<span class="token comment">#重启</span>
+/etc/init.d/httpd restart
+<span class="token comment">#启载</span>
+/etc/init.d/httpd reload
+<span class="token comment">#apache配置文件</span>
+/www/server/apache/conf/httpd.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="MySQL服务管理"><a href="#MySQL服务管理" class="headerlink" title="MySQL服务管理"></a>MySQL服务管理</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#mysql安装目录</span>
+/www/server/mysql
+<span class="token comment">#phpmyadmin安装目录</span>
+/www/server/phpmyadmin
+<span class="token comment">#数据存储目录</span>
+/www/server/data
+<span class="token comment">#启动</span>
+/etc/init.d/mysqld start
+<span class="token comment">#停止</span>
+/etc/init.d/mysqld stop
+<span class="token comment">#重启</span>
+/etc/init.d/mysqld restart
+<span class="token comment">#启载</span>
+/etc/init.d/mysqld reload
+<span class="token comment">#mysql配置文件</span>
+/etc/my.cnf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="FTP服务管理"><a href="#FTP服务管理" class="headerlink" title="FTP服务管理"></a>FTP服务管理</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#ftp安装目录</span>
+/www/server/pure-ftpd
+<span class="token comment">#启动</span>
+/etc/init.d/pure-ftpd start
+<span class="token comment">#停止</span>
+/etc/init.d/pure-ftpd stop
+<span class="token comment">#重启</span>
+/etc/init.d/pure-ftpd restart
+<span class="token comment">#ftp配置文件</span>
+/www/server/pure-ftpd/etc/pure-ftpd.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="PHP服务管理"><a href="#PHP服务管理" class="headerlink" title="PHP服务管理"></a>PHP服务管理</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#php安装目录</span>
+/www/server/php
+<span class="token comment">#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)</span>
+/etc/init.d/php-fpm-<span class="token punctuation">{</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">}</span> start
+<span class="token comment">#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)</span>
+/etc/init.d/php-fpm-<span class="token punctuation">{</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">}</span> stop
+<span class="token comment">#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)</span>
+/etc/init.d/php-fpm-<span class="token punctuation">{</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">}</span> restart
+<span class="token comment">#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)</span>
+/etc/init.d/php-fpm-<span class="token punctuation">{</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">}</span> reload
+<span class="token comment">#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)</span>
+/www/server/php/<span class="token punctuation">{</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">}</span>/etc/php.ini<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="Redis服务管理"><a href="#Redis服务管理" class="headerlink" title="Redis服务管理"></a>Redis服务管理</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#redis安装目录</span>
+/www/server/redis
+<span class="token comment">#启动</span>
+/etc/init.d/redis start
+<span class="token comment">#停止</span>
+/etc/init.d/redis stop
+<span class="token comment">#redis配置文件</span>
+/www/server/redis/redis.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="Memcached服务管理"><a href="#Memcached服务管理" class="headerlink" title="Memcached服务管理"></a>Memcached服务管理</h2><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#memcached安装目录</span>
+/usr/local/memcached
+<span class="token comment">#启动</span>
+/etc/init.d/memcached start
+<span class="token comment">#停止</span>
+/etc/init.d/memcached stop
+<span class="token comment">#重启</span>
+/etc/init.d/memcached restart
+<span class="token comment">#启载</span>
+/etc/init.d/memcached reload<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>如有不全、欢迎投稿。</p>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
+      <categories>
+        <category>vps</category>
+      </categories>
+      <tags>
+        <tag>Linux</tag>
+        <tag>宝塔</tag>
+        <tag>VPS</tag>
+        <tag>建站</tag>
+        <tag>Nginx</tag>
+        <tag>Apache</tag>
+        <tag>MySQL</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>docker使用简明教程</title>
+    <url>/docker/2021-08-01-docker-use-brief-tutorial/</url>
+    <content><![CDATA[<p>关于docker安装，查看，镜像管理，以及一个实用Dockerfile， LAMP，PHP，LTMJ。</p>
+<ul>
+<li>关于本blog，<strong>图床</strong>一般使用<strong>github</strong>，已经配置了CDN，如果图片还是未显示请自行代理解决</li>
+</ul>
+<h2 id="一、Docker安装"><a href="#一、Docker安装" class="headerlink" title="一、Docker安装"></a>一、Docker安装</h2><ul>
+<li>在Ubuntu系统下安装：</li>
+</ul>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token function">apt-get</span> <span class="token function">install</span> docker<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<ul>
+<li>在Fedora/CentOS系统下安装：</li>
+</ul>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">yum <span class="token function">install</span> docker
+dnf <span class="token function">install</span> docker <span class="token comment"># Fedora 25+</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<ul>
+<li>在SUSE系统下安装：</li>
+</ul>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token function">zypper</span> <span class="token function">install</span> docker<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h2 id="二、Docker容器"><a href="#二、Docker容器" class="headerlink" title="二、Docker容器"></a>二、Docker容器</h2><ul>
+<li>首先启动Docker</li>
+</ul>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token comment"># 启动Docker</span>
+systemctl start docker
+<span class="token comment"># 设置开机自启动，可选</span>
+systemctl <span class="token builtin class-name">enable</span> docker<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<ul>
+<li>启动Docker测试容器</li>
+</ul>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker run <span class="token string">"hello-world"</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<ul>
+<li>在启动容器时，如果使用的镜像在本地不存在，会尝试从网络上获取。</li>
+<li>在一般情况下，启动Web服务的容器，使用以下命令：</li>
+</ul>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token comment"># -d：daemon，使容器在后台运行</span>
+<span class="token comment"># -p：port，指定容器的端口，这里是将容器的80端口映射到主机的8001端口</span>
+docker run -d -p <span class="token number">8001</span>:80 <span class="token string">"image_name"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<ul>
+<li>查看容器运行情况</li>
+</ul>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker <span class="token function">ps</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<ul>
+<li>Docker会为容器分配一个Container ID和一个Container Name，Name可以在运行时通过<code>-name</code>自行指定，这两个可以用来标识容器。</li>
+<li>需要停止容器时，使用以下命令：</li>
+</ul>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker stop <span class="token string">"container_name"</span>
+<span class="token comment"># 或使用ID查找</span>
+docker stop <span class="token string">"container_id"</span>
+<span class="token comment"># 重启</span>
+docker restart <span class="token string">"container_id"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="三、Docker镜像"><a href="#三、Docker镜像" class="headerlink" title="三、Docker镜像"></a>三、Docker镜像</h2><h3 id="Dokerfile编译镜像"><a href="#Dokerfile编译镜像" class="headerlink" title="Dokerfile编译镜像"></a>Dokerfile编译镜像</h3><ul>
+<li>Docker容器是运行的Docker镜像实例，一般情况下，我们需要制作自己的Docker镜像。</li>
+<li>Docker镜像的制作依赖于Dockerfile，我们稍后在讨论Dockerfile的编写，这里假定我们有一个编写好的Dockerfile。</li>
+<li>下面的命令将在当前路径查找Dockerfile并构建一个名为“image_name”的镜像。</li>
+</ul>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker build -t <span class="token string">"image_name"</span> ./<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h3 id="查看本地所有镜像"><a href="#查看本地所有镜像" class="headerlink" title="查看本地所有镜像"></a>查看本地所有镜像</h3><ul>
+<li>在构建过程中需要在网络上下载来源镜像，可能需要一段时间。</li>
+<li>如果Dockerfile中的命令都正确结束（Exit code 0），那么Docker镜像的构建也将顺利完成，我们可以通过下面的命令查看我们的所有镜像：</li>
+</ul>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker images<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h3 id="导出备份已有镜像文件"><a href="#导出备份已有镜像文件" class="headerlink" title="导出备份已有镜像文件"></a>导出备份已有镜像文件</h3><ul>
+<li>我们还可以导出我们制作好的Docker镜像，下面的命令将image_name镜像导出为image_name.tar</li>
+</ul>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker save <span class="token string">"image_name"</span> <span class="token operator">&gt;</span> image_name.tar<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h3 id="导入已有镜像备份"><a href="#导入已有镜像备份" class="headerlink" title="导入已有镜像备份"></a>导入已有镜像备份</h3><ul>
+<li>在另一台机器上，我们不需要网络就可以导入并使用该镜像：</li>
+</ul>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker load <span class="token operator">&lt;</span> image_name.tar<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h2 id="四、Dockerfile"><a href="#四、Dockerfile" class="headerlink" title="四、Dockerfile"></a>四、Dockerfile</h2><ul>
+<li>Dockerfile本质上是一组命令集合，用于自动化构建镜像，下面以几个实例来说明Dockerfile的编写方法：</li>
+</ul>
+<h3 id="实例一：LAMP（Linux-Apache-MySQL-PHP）环境配置"><a href="#实例一：LAMP（Linux-Apache-MySQL-PHP）环境配置" class="headerlink" title="实例一：LAMP（Linux+Apache+MySQL+PHP）环境配置"></a>实例一：LAMP（Linux+Apache+MySQL+PHP）环境配置</h3><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token comment"># 来源镜像，一般可以使用标准的系统或者带有各种环境的系统</span>
+<span class="token comment"># 显然这里使用的是标准的Ubuntu 14.04系统</span>
+FROM ubuntu<span class="token punctuation">:</span><span class="token number">14.04</span>
+<span class="token comment"># 镜像作者</span>
+MAINTAINER wrlu
+<span class="token comment"># 刷新日期</span>
+ENV REFRESHED_AT 2018<span class="token punctuation">-</span>08<span class="token punctuation">-</span><span class="token number">05</span>
+<span class="token comment"># 设定字符集</span>
+ENV LANG C.UTF<span class="token punctuation">-</span><span class="token number">8</span>
+<span class="token comment"># RUN命令用于执行系统命令</span>
+<span class="token comment"># 因为需要自动化安装，所以最好通过-y命令跳过确认</span>
+<span class="token comment"># 更新APT软件源</span>
+RUN apt<span class="token punctuation">-</span>get update <span class="token punctuation">-</span>y
+<span class="token comment"># 安装MySQL</span>
+RUN apt<span class="token punctuation">-</span>get <span class="token punctuation">-</span>y install mysql<span class="token punctuation">-</span>server
+<span class="token comment"># 安装Apache</span>
+RUN apt<span class="token punctuation">-</span>get <span class="token punctuation">-</span>y install apache2
+<span class="token comment"># 安装PHP5</span>
+RUN apt<span class="token punctuation">-</span>get <span class="token punctuation">-</span>y install php5 libapache2<span class="token punctuation">-</span>mod<span class="token punctuation">-</span>php5
+RUN apt<span class="token punctuation">-</span>get install <span class="token punctuation">-</span>yqq php5<span class="token punctuation">-</span>mysql php5<span class="token punctuation">-</span>curl php5<span class="token punctuation">-</span>gd php5<span class="token punctuation">-</span>intl php<span class="token punctuation">-</span>pear php5<span class="token punctuation">-</span>imagick php5<span class="token punctuation">-</span>imap php5<span class="token punctuation">-</span>mcrypt php5<span class="token punctuation">-</span>memcache php5<span class="token punctuation">-</span>ming php5<span class="token punctuation">-</span>ps php5<span class="token punctuation">-</span>pspell php5<span class="token punctuation">-</span>recode php5<span class="token punctuation">-</span>snmp php5<span class="token punctuation">-</span>sqlite php5<span class="token punctuation">-</span>tidy php5<span class="token punctuation">-</span>xmlrpc php5<span class="token punctuation">-</span>xsl
+<span class="token comment"># 删除Apache2列出目录配置</span>
+RUN sed <span class="token punctuation">-</span>i 's/Options Indexes FollowSymLinks/Options None/' /etc/apache2/apache2.conf
+<span class="token comment"># COPY命令可以复制文件，但是似乎不能递归复制文件</span>
+COPY IncludeAirline/* /var/www/html/
+COPY IncludeAirline/airlines/* /var/www/html/airlines/
+<span class="token comment"># 删除默认的主页</span>
+RUN rm /var/www/html/index.html
+<span class="token comment"># 复制启动脚本</span>
+COPY start.sh /root/start.sh
+RUN chmod +x /root/start.sh
+<span class="token comment"># 设置启动目录以及启动脚本</span>
+ENTRYPOINT cd /root; ./start.sh
+<span class="token comment"># 设置需要暴露的端口</span>
+EXPOSE 80<span class="token punctuation">,</span><span class="token number">3306</span> <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<ul>
+<li>本例中还有一个启动脚本<code>start.sh</code>，用于导入数据库，编写如下：</li>
+</ul>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token comment">#!/bin/bash</span>
+<span class="token comment"># 启动后延时</span>
+sleep 1
+<span class="token comment"># 启动Apache服务器</span>
+/etc/init.d/apache2 start
+<span class="token comment"># 启动MySQL数据库</span>
+find /var/lib/mysql <span class="token punctuation">-</span>type f <span class="token punctuation">-</span>exec touch <span class="token punctuation">{</span><span class="token punctuation">}</span> ; <span class="token important">&amp;&amp;</span> service mysql start
+<span class="token comment"># 定义SQL文件路径</span>
+sqlfile=/var/www/html/includeAirline.sql
+if <span class="token punctuation">[</span> <span class="token punctuation">-</span>f $flagfile <span class="token punctuation">]</span>; then
+	<span class="token comment"># 修改MySQL的密码</span>
+    mysqladmin <span class="token punctuation">-</span>u root password "root"
+    <span class="token comment"># 登录MySQL并导入SQL文件执行</span>
+    mysql <span class="token punctuation">-</span>uroot <span class="token punctuation">-</span>proot &lt; $sqlfile
+    <span class="token comment"># 删除SQL文件</span>
+    rm <span class="token punctuation">-</span>f $sqlfile
+fi
+<span class="token comment"># 此处注意，如果命令执行完后脚本退出</span>
+<span class="token comment"># 则Docker容器也会因为没有前台应用运行而中止</span>
+<span class="token comment"># 所以这里使用一个前台命令来保活Docker容器</span>
+tail <span class="token punctuation">-</span>f /var/log/apache2/error.log<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="实例二：PHP环境配置："><a href="#实例二：PHP环境配置：" class="headerlink" title="实例二：PHP环境配置："></a>实例二：PHP环境配置：</h3><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token comment"># 来源镜像，自带Apache+PHP环境</span>
+FROM php<span class="token punctuation">:</span>7.0<span class="token punctuation">-</span>apache
+MAINTAINER tl
+ENV REFRESHED_AT 2018‐08‐03
+ENV LANG C.UTF‐8
+<span class="token comment"># ADD命令在COPY命令的基础上，具有自动解包tar的功能</span>
+ADD web_tired.tar /var/www/html/
+EXPOSE 80<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="实例三：LTMJ（Linux-Tomcat-MySQL-JSP）环境配置"><a href="#实例三：LTMJ（Linux-Tomcat-MySQL-JSP）环境配置" class="headerlink" title="实例三：LTMJ（Linux+Tomcat+MySQL+JSP）环境配置"></a>实例三：LTMJ（Linux+Tomcat+MySQL+JSP）环境配置</h3><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml">FROM ubuntu<span class="token punctuation">:</span><span class="token number">16.04</span>
+MAINTAINER wrlu
+ENV REFRESHED_AT 2018<span class="token punctuation">-</span>08<span class="token punctuation">-</span><span class="token number">05</span>
+ENV LANG C.UTF<span class="token punctuation">-</span><span class="token number">8</span>
+RUN apt<span class="token punctuation">-</span>get update <span class="token punctuation">-</span>y
+RUN apt<span class="token punctuation">-</span>get <span class="token punctuation">-</span>y install mysql<span class="token punctuation">-</span>server
+<span class="token comment"># 安装wget，因为Docker提供的镜像是最小镜像，所以用到的其他工具需要自行安装</span>
+RUN apt<span class="token punctuation">-</span>get <span class="token punctuation">-</span>y install wget
+<span class="token comment"># 安装Java 8</span>
+RUN apt<span class="token punctuation">-</span>get <span class="token punctuation">-</span>y install openjdk<span class="token punctuation">-</span>8<span class="token punctuation">-</span>jre
+<span class="token comment"># 下载Tomcat 8服务器</span>
+RUN wget http<span class="token punctuation">:</span>//mirrors.hust.edu.cn/apache/tomcat/tomcat<span class="token punctuation">-</span>8/v8.5.32/bin/apache<span class="token punctuation">-</span>tomcat<span class="token punctuation">-</span>8.5.32.tar.gz
+<span class="token comment"># 解压tar.gz</span>
+RUN tar <span class="token punctuation">-</span>xzf apache<span class="token punctuation">-</span>tomcat<span class="token punctuation">-</span>8.5.32.tar.gz <span class="token punctuation">-</span>C /root
+RUN mv /root/apache<span class="token punctuation">-</span>tomcat<span class="token punctuation">-</span>8.5.32 /root/tomcat
+<span class="token comment"># 删除默认页面</span>
+RUN rm <span class="token punctuation">-</span>rf /root/tomcat/webapps/*
+<span class="token comment"># 拷贝war文件</span>
+COPY CAAC<span class="token punctuation">-</span>SQL<span class="token punctuation">-</span>Injection.war /root/tomcat/webapps/
+COPY wafwtf.sql /root/
+COPY start.sh /root/start.sh
+RUN chmod +x /root/start.sh
+ENTRYPOINT cd /root; ./start.sh
+<span class="token comment"># Tomcat使用8080端口，不同于Apache</span>
+EXPOSE 8080<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<ul>
+<li>启动脚本如下：</li>
+</ul>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token comment">#!/bin/bash</span>
+sleep 1
+find /var/lib/mysql <span class="token punctuation">-</span>type f <span class="token punctuation">-</span>exec touch <span class="token punctuation">{</span><span class="token punctuation">}</span> ; <span class="token important">&amp;&amp;</span> service mysql start
+chmod +x /root/tomcat/bin/startup.sh
+<span class="token comment"># 启动Tomcat服务器</span>
+/root/tomcat/bin/startup.sh
+sqlfile=/root/wafwtf.sql
+if <span class="token punctuation">[</span> <span class="token punctuation">-</span>f $flagfile <span class="token punctuation">]</span>; then
+    mysqladmin <span class="token punctuation">-</span>u root password "root"
+    mysql <span class="token punctuation">-</span>uroot <span class="token punctuation">-</span>proot &lt; $sqlfile
+    rm <span class="token punctuation">-</span>f $sqlfile
+fi
+<span class="token comment"># 容器保活</span>
+tail <span class="token punctuation">-</span>f /root/tomcat/conf/server.xml<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
+      <categories>
+        <category>docker</category>
+      </categories>
+      <tags>
+        <tag>Linux</tag>
+        <tag>MySQL</tag>
+        <tag>Docker</tag>
+        <tag>LAMP</tag>
+        <tag>PHP</tag>
+        <tag>Tomcat</tag>
+        <tag>JSP</tag>
+        <tag>教程</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Gitlab的安装及使用教程完全版</title>
     <url>/gitlab/2021-08-02-gitlab-installation-and-use-tutorial-complete-version/</url>
     <content><![CDATA[<h2 id="1-Gitlab概述"><a href="#1-Gitlab概述" class="headerlink" title="1. Gitlab概述"></a>1. Gitlab概述</h2><hr>
@@ -3160,195 +3160,6 @@ listen_addresses <span class="token operator">=</span> <span class="token string
         <tag>email</tag>
         <tag>https</tag>
         <tag>ssl</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>qnap IO 错误消除</title>
-    <url>/qnap/2021-08-18-io-error-correct/</url>
-    <content><![CDATA[<h2 id="处理步骤"><a href="#处理步骤" class="headerlink" title="处理步骤"></a>处理步骤</h2><h2 id="备份"><a href="#备份" class="headerlink" title="备份"></a>备份</h2><p>先备份数据，rsync比HBS3好用多了。</p>
-<h2 id="如果没有坏块"><a href="#如果没有坏块" class="headerlink" title="如果没有坏块"></a>如果没有坏块</h2><p>如果没有坏块，就在下图位置扫描坏块，扫描完，自动清除异常标志</p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1820210818152952.png"></p>
-<h2 id="如果有坏块"><a href="#如果有坏块" class="headerlink" title="如果有坏块"></a>如果有坏块</h2><h3 id="坏块修复"><a href="#坏块修复" class="headerlink" title="坏块修复"></a>坏块修复</h3><p>如果有坏块，可以使用 “DiskGenius”扫描修复</p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1820210818162038.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1820210818162057.png"></p>
-<h2 id="强制消除异常标志"><a href="#强制消除异常标志" class="headerlink" title="强制消除异常标志"></a>强制消除异常标志</h2><blockquote>
-<ol>
-<li>開啟SSH</li>
-<li>登入 console</li>
-<li><code># sed -i '/pd_err_wwn_/d' /mnt/HDA_ROOT/.conf</code></li>
-<li>重啟 NAS.</li>
-</ol>
-</blockquote>
-<h2 id="总结："><a href="#总结：" class="headerlink" title="总结："></a>总结：</h2><p>为了安全和稳定性，有坏块后，备份数据，使用DiskGenius修复坏块，（只能修复逻辑坏块，不能修复物理坏块），然后最好全盘格式化再使用。</p>
-<p>SDD可以使用低级格式化，但会全盘减少一次写寿命。尽量少用。</p>
-<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
-      <categories>
-        <category>qnap</category>
-      </categories>
-      <tags>
-        <tag>QNAP</tag>
-        <tag>nas</tag>
-        <tag>SSD</tag>
-        <tag>HDD</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>几种常用管理模型和方法</title>
-    <url>/pmbok/2021-08-18-several-common-management-models-and-methods/</url>
-    <content><![CDATA[<p>这些只是基本的工具，你需要了解。但是，和行业相关的知识更重要。就像做数学题，把一堆错综复杂的线索中归纳总结出来问题，提出解决方法，这中间需要丰富的行业知识，这个没法速成。总结完后，执行阶段，就像数学加减乘除一样，这些是基本的工具和方法。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020449.jpeg"></p>
-<h2 id="PDCA原则意义"><a href="#PDCA原则意义" class="headerlink" title="PDCA原则意义"></a><strong>PDCA原则意义</strong></h2><p>Plan：制定目标与计划；</p>
-<p>Do：任务展开，组织实施；</p>
-<p>Check：对过程中的关键点和最终结果进行检查；</p>
-<p>Action：纠正偏差，对成果进行标准化，并确定新的目标，制定下一轮计划。</p>
-<p>意义：每一项工作，都是一个pdca循环，都需要计划、实施、检查结果，并进一步进行改进，同时进入下一个循环，只有在日积月累的渐进改善中，才可能会有质的飞跃，才可能取得完善每一项工作，完善自己的人生。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020557.jpeg"></p>
-<blockquote>
-<h2 id="PDCA原则的八大步骤"><a href="#PDCA原则的八大步骤" class="headerlink" title="PDCA原则的八大步骤"></a><strong>PDCA原则的八大步骤</strong></h2></blockquote>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020456.jpeg"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020603.jpeg"></p>
-<h2 id="5W2H分析法的意义"><a href="#5W2H分析法的意义" class="headerlink" title="5W2H分析法的意义"></a><strong>5W2H分析法的意义</strong></h2><p>What：工作的内容和达成的目标；</p>
-<p>Why：做这项工作的原因；</p>
-<p>Who：参加这项工作的具体人员，以及负责人；</p>
-<p>When：在什么时间、什么时间段进行工作；</p>
-<p>Where：工作发生的地点 ；</p>
-<p>Which：哪一种方法或途径；</p>
-<p>How：用什么方法进行；</p>
-<p>How much：需要多少成本？</p>
-<p>意义：做任何工作都应该从6W2H来思考，这有助于我们的思路的条理化，杜绝盲目性。我们的汇报也应该用6W2H，能节约写报告及看报告的时间。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020503.jpeg"></p>
-<blockquote>
-<p><strong>5W2H分析法的内容</strong></p>
-</blockquote>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020610.jpeg"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020509.jpeg"></p>
-<h2 id="SMART原则的意义"><a href="#SMART原则的意义" class="headerlink" title="SMART原则的意义"></a><strong>SMART原则的意义</strong></h2><p>Specific 具体的；</p>
-<p>Measurable 可测量的；</p>
-<p>Attainable 可达到的；</p>
-<p>Relevant 相关的；</p>
-<p>Time based 时间的；</p>
-<p>意义：人们在制定工作目标或者任务目标时，考虑一下目标与计划是不是SMART化的。只有具备SMART化的计划才是具有良好可实施性的，也才能指导保证计划得以实现。</p>
-<p>有的又如此解释此原则：</p>
-<p>——S代表具体(Specific)，指绩效考核要切中特定的工作指标，不能笼统；</p>
-<p>——M代表可度量(Measurable)，指绩效指标是数量化或者行为化的，验证这些绩效指标的数据或者信息是可以获得的；</p>
-<p>——A代表可实现(Attainable)，指绩效指标在付出努力的情况下可以实现，避免设立过高或过低的目标；</p>
-<p>——R代表现实性(realistic)，指绩效指标是实实在在的，可以证明和观察；</p>
-<p>——T代表有时限(time bound)，注重完成绩效指标的特定期限。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020516.jpeg"></p>
-<blockquote>
-<p><strong>SMART原则实施要领</strong></p>
-</blockquote>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020517.jpeg"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020523.jpeg"></p>
-<h2 id="STAR法则的意义"><a href="#STAR法则的意义" class="headerlink" title="STAR法则的意义"></a><strong>STAR法则的意义</strong></h2><p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020529.jpeg"></p>
-<blockquote>
-<p><strong>STAR法则的内容</strong></p>
-</blockquote>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020621.jpeg"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020537.jpeg"></p>
-<h2 id="SWOT分析模型的意义"><a href="#SWOT分析模型的意义" class="headerlink" title="SWOT分析模型的意义"></a><strong>SWOT分析模型的意义</strong></h2><p>Strengths：优势</p>
-<p>Weaknesses：劣势</p>
-<p>Opportunities：机会</p>
-<p>Threats：威胁</p>
-<p>意义：帮您清晰地把握全局，分析自己在资源方面的优势与劣势，把握环境提供的机会，防范可能存在的风险与威胁，对我们的成功有非常重要的意义。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020628.jpeg"></p>
-<blockquote>
-<p><strong>SWOT分析模型组合</strong></p>
-</blockquote>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020706.jpeg"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020634.jpeg"></p>
-<h2 id="GROW教练模型的意义"><a href="#GROW教练模型的意义" class="headerlink" title="GROW教练模型的意义"></a><strong>GROW教练模型的意义</strong></h2><p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020544.jpeg"></p>
-<blockquote>
-<p><strong>GROW教练模型的内容</strong></p>
-</blockquote>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020641.jpeg"></p>
-<h2 id="时间管理-重要与紧急"><a href="#时间管理-重要与紧急" class="headerlink" title="时间管理-重要与紧急"></a><strong>时间管理-重要与紧急</strong></h2><p>A、重要且紧急</p>
-<p>紧急状况</p>
-<p>迫切的问题</p>
-<p>限期完成的工作</p>
-<p>你不做其他人也不能做</p>
-<p>B、重要不紧急</p>
-<p>准备工作</p>
-<p>预防措施</p>
-<p>价值观的澄清</p>
-<p>计划</p>
-<p>人际关系的建立</p>
-<p>真正的再创造</p>
-<p>增进自己的能力</p>
-<p>C、紧急不重要</p>
-<p>造成干扰的事、电话、</p>
-<p>信件、报告</p>
-<p>会议</p>
-<p>许多迫在眉捷的急事</p>
-<p>符合别人期望的事</p>
-<p>D、不重要不紧急</p>
-<p>忙碌琐碎的事</p>
-<p>广告函件</p>
-<p>电话</p>
-<p>逃避性活动</p>
-<p>等待时间</p>
-<p>优先顺序=重要性*紧迫性在进行时间安排时，应权衡各种事情的优先顺序，要学会“弹钢琴”；对工作要有前瞻能力，防患于未然，如果总是在忙于救火，那将使我们的工作永远处理被动之中。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819015812.png" alt="揭秘人生七工具：SWOT、PDCA、6W2H、SMART、WBS、时间管理、OKR"></p>
-<h2 id="任务分解法-WBS"><a href="#任务分解法-WBS" class="headerlink" title="任务分解法[WBS]"></a><strong>任务分解法[WBS]</strong></h2><p>即Work Breakdown Structure，如何进行WBS分解：目标→任务→工作→活动</p>
-<p><strong>WBS分解的原则：</strong></p>
-<p>将主体目标逐步细化分解，最底层的任务活动可直接分派到个人去完成；每个任务原则上要求分解到不能再细分为止。</p>
-<p><strong>WBS分解的方法：</strong></p>
-<p>至上而下与至下而上的充分沟通；</p>
-<p>一对一个别交流；</p>
-<p>小组讨论。</p>
-<p><strong>WBS分解的标准：</strong></p>
-<p>分解后的活动结构清晰；</p>
-<p>逻辑上形成一个大的活动；</p>
-<p>集成了所有的关键因素包含临时的里程碑和监控点；</p>
-<p>所有活动全部定义清楚。</p>
-<p>意义：学会分解任务，只有将任务分解得足够细，您才能心里有数，您才能有条不紊地工作，您才能统筹安排您的时间表。</p>
-<h2 id="OKR，目标与关键结果"><a href="#OKR，目标与关键结果" class="headerlink" title="OKR，目标与关键结果"></a><strong>OKR，目标与关键结果</strong></h2><p>OKR 实施过程中起草制定好目标和关键结果是非常重要的一环，有效的 OKR 制定需要满足 SMART 原则——明确的、可衡量的、可实现的、有相关性和有时限性。</p>
-<p>目标（O）回答的是“我们想做什么”的问题，是定性的，要求能够鼓舞人心，激发团队共鸣。</p>
-<p>关键结果（KR）回答的是“我们如何知道自己是否达成了目标要求”的问题，是定量的，设计 KR 最具挑战的部分是如何把目标中定性的描述抽象为定量的表示。</p>
-<p>最后：只有掌握了正确科学的工作方法，才可能在未来的工作中，做到事半功倍的效果，才能更加从容且有重点的开展工作。好的工作方法，是成功的一半！</p>
-<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
-      <categories>
-        <category>PMBOK</category>
-      </categories>
-      <tags>
-        <tag>管理</tag>
-        <tag>PDCA</tag>
-        <tag>5W2H</tag>
-        <tag>SMART</tag>
-        <tag>SWOT</tag>
-        <tag>GROW</tag>
-        <tag>OKR</tag>
-        <tag>WBS</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>qBittorrent 参数详细设置教程</title>
-    <url>/bt/2021-08-18-qbittorrent-parameter-reference-configuration/</url>
-    <content><![CDATA[<p>全文将以目前的最新版v4.2.1为例，进行参数设置，老版本某些功能不太一致，请知悉。特别鸣谢 原创者：Evine！</p>
-<h2 id="行为参数"><a href="#行为参数" class="headerlink" title="行为参数"></a>行为参数</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154449.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="下载参数"><a href="#下载参数" class="headerlink" title="下载参数"></a>下载参数</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154453.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="连接参数"><a href="#连接参数" class="headerlink" title="连接参数"></a>连接参数</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154528.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="速度参数"><a href="#速度参数" class="headerlink" title="速度参数"></a>速度参数</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154500.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="BT参数"><a href="#BT参数" class="headerlink" title="BT参数"></a>BT参数</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154539.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="RSS设置"><a href="#RSS设置" class="headerlink" title="RSS设置"></a>RSS设置</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154502.png" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="web参数"><a href="#web参数" class="headerlink" title="web参数"></a>web参数</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154508.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h2 id="高级参数"><a href="#高级参数" class="headerlink" title="高级参数"></a>高级参数</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154558.jpeg" alt="qBittorrent参数详细设置教程"></p>
-<h3 id="关于磁盘缓存的补充说明："><a href="#关于磁盘缓存的补充说明：" class="headerlink" title="关于磁盘缓存的补充说明："></a><strong>关于磁盘缓存的补充说明：</strong></h3><p>经常有人吐槽qB特别吃内存，个人猜测应该是磁盘缓存设置不正确导致的。磁盘缓存设置过小，磁盘缓存到期间隔过长，先下载的文件块来不及写入硬盘，新的文件块又到了，可能就会导致内存爆掉甚至磁盘I/O错误。个人建议：在进行高速下载时，适当将磁盘缓存调高，磁盘缓存到期间隔调低（下载时间隔越低写入越频繁，自己根据电脑的资源占用情况调整最适合自己的值）。实在不知道怎么调的，就干脆把磁盘缓存设置为-1（自动）好了，还不行，就把磁盘缓存到期间隔再调低一些。举一个例子，比如设置2048MiB磁盘缓存、300s磁盘缓存到期间隔时，当下载速度为50MiB/s的时候，300s的时间总共可以下载15000MiB，早就远远超过2048MiB了，不爆内存、不I/O错误才怪。所以当达到这个下载速度的时候，在磁盘缓存不变的情况下，根据简单的除法（磁盘缓存除以下载速度）可知，磁盘缓存到期间隔就应该设置到40s以下了。</p>
-<p>qB在正常运行后，其占用的内存会比你所设置的磁盘缓存多几百M。所有的参数没有标准答案，一切都得根据你机子的本身属性以及实际的使用场景（比如CPU性能、内存大小、硬盘写入速度、下载速度等）来设置，建议大家多试验。</p>
-<h3 id="关于TCP、UTP的补充说明："><a href="#关于TCP、UTP的补充说明：" class="headerlink" title="关于TCP、UTP的补充说明："></a><strong>关于TCP、UTP的补充说明：</strong></h3><p>TCP是Internet上最常用的协议，是一种面向连接的、可靠的、基于字节流的传输层通信协议。TCP的优势在于双向互动机制兼顾数据传输的完整性、可控制性和可靠性，但复杂的校验与控制机制也使其没有UDP传输效率高。</p>
-<p>UDP协议与TCP协议一样用于处理数据包，是一种无连接的协议。UDP的缺点是不提供数据包分组、组装和不能对数据包进行排序的缺点，也就是说，当报文发送之后，是无法得知其是否安全完整到达的。UDP优势在于带宽占用小、传输效率和连接成功率高，有益于内网用户（如通过UDP内网穿透UDP Hole Punching连接），但UDP与TCP协议相比也存在无反向确认机制、无流量和序列控制等弊端。</p>
-<p>uTP(Micro Transport Protocol)是一种正在标准化的开放式BT协议，主要功能是提高宽带使用效率、减少网络问题。在减缓网络延迟和拥堵的同时最大化网络吞吐量、克服多数防火墙和NAT的阻碍，增强网络穿透和传输效率，同时增益流量控制，这对BT用户和ISP都是互利的。uTP虽基于UDP协议但有所不同，uTP通过拥堵控制算法（Ledbat）可限制延时，当延时不严重时可最大限度利用带宽，并能通过uTP提供的信息用于选择TCP连接的传输率，即使在不作限速设置的情况下，也能减少网络拥堵产生，当用户端之间都启用uTP时，可见明显的传输速率提升。内网无法实现端口映射的用户启用uTP，可以改善与网外用户的连接。</p>
-<p>使用uTP进行连接的用户，其标志将包含“P”。</p>
-<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
-      <categories>
-        <category>bt</category>
-      </categories>
-      <tags>
-        <tag>QNAP</tag>
-        <tag>nas</tag>
-        <tag>PT</tag>
-        <tag>BT</tag>
-        <tag>qbittorrent</tag>
       </tags>
   </entry>
   <entry>
@@ -4157,6 +3968,195 @@ echo dllink $*|nc 127.0.0.1 4000<span aria-hidden="true" class="line-numbers-row
         <tag>ATI</tag>
         <tag>WIFI</tag>
         <tag>Hotkey</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>qnap IO 错误消除</title>
+    <url>/qnap/2021-08-18-io-error-correct/</url>
+    <content><![CDATA[<h2 id="处理步骤"><a href="#处理步骤" class="headerlink" title="处理步骤"></a>处理步骤</h2><h2 id="备份"><a href="#备份" class="headerlink" title="备份"></a>备份</h2><p>先备份数据，rsync比HBS3好用多了。</p>
+<h2 id="如果没有坏块"><a href="#如果没有坏块" class="headerlink" title="如果没有坏块"></a>如果没有坏块</h2><p>如果没有坏块，就在下图位置扫描坏块，扫描完，自动清除异常标志</p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1820210818152952.png"></p>
+<h2 id="如果有坏块"><a href="#如果有坏块" class="headerlink" title="如果有坏块"></a>如果有坏块</h2><h3 id="坏块修复"><a href="#坏块修复" class="headerlink" title="坏块修复"></a>坏块修复</h3><p>如果有坏块，可以使用 “DiskGenius”扫描修复</p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1820210818162038.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1820210818162057.png"></p>
+<h2 id="强制消除异常标志"><a href="#强制消除异常标志" class="headerlink" title="强制消除异常标志"></a>强制消除异常标志</h2><blockquote>
+<ol>
+<li>開啟SSH</li>
+<li>登入 console</li>
+<li><code># sed -i '/pd_err_wwn_/d' /mnt/HDA_ROOT/.conf</code></li>
+<li>重啟 NAS.</li>
+</ol>
+</blockquote>
+<h2 id="总结："><a href="#总结：" class="headerlink" title="总结："></a>总结：</h2><p>为了安全和稳定性，有坏块后，备份数据，使用DiskGenius修复坏块，（只能修复逻辑坏块，不能修复物理坏块），然后最好全盘格式化再使用。</p>
+<p>SDD可以使用低级格式化，但会全盘减少一次写寿命。尽量少用。</p>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
+      <categories>
+        <category>qnap</category>
+      </categories>
+      <tags>
+        <tag>QNAP</tag>
+        <tag>nas</tag>
+        <tag>SSD</tag>
+        <tag>HDD</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>几种常用管理模型和方法</title>
+    <url>/pmbok/2021-08-18-several-common-management-models-and-methods/</url>
+    <content><![CDATA[<p>这些只是基本的工具，你需要了解。但是，和行业相关的知识更重要。就像做数学题，把一堆错综复杂的线索中归纳总结出来问题，提出解决方法，这中间需要丰富的行业知识，这个没法速成。总结完后，执行阶段，就像数学加减乘除一样，这些是基本的工具和方法。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020449.jpeg"></p>
+<h2 id="PDCA原则意义"><a href="#PDCA原则意义" class="headerlink" title="PDCA原则意义"></a><strong>PDCA原则意义</strong></h2><p>Plan：制定目标与计划；</p>
+<p>Do：任务展开，组织实施；</p>
+<p>Check：对过程中的关键点和最终结果进行检查；</p>
+<p>Action：纠正偏差，对成果进行标准化，并确定新的目标，制定下一轮计划。</p>
+<p>意义：每一项工作，都是一个pdca循环，都需要计划、实施、检查结果，并进一步进行改进，同时进入下一个循环，只有在日积月累的渐进改善中，才可能会有质的飞跃，才可能取得完善每一项工作，完善自己的人生。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020557.jpeg"></p>
+<blockquote>
+<h2 id="PDCA原则的八大步骤"><a href="#PDCA原则的八大步骤" class="headerlink" title="PDCA原则的八大步骤"></a><strong>PDCA原则的八大步骤</strong></h2></blockquote>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020456.jpeg"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020603.jpeg"></p>
+<h2 id="5W2H分析法的意义"><a href="#5W2H分析法的意义" class="headerlink" title="5W2H分析法的意义"></a><strong>5W2H分析法的意义</strong></h2><p>What：工作的内容和达成的目标；</p>
+<p>Why：做这项工作的原因；</p>
+<p>Who：参加这项工作的具体人员，以及负责人；</p>
+<p>When：在什么时间、什么时间段进行工作；</p>
+<p>Where：工作发生的地点 ；</p>
+<p>Which：哪一种方法或途径；</p>
+<p>How：用什么方法进行；</p>
+<p>How much：需要多少成本？</p>
+<p>意义：做任何工作都应该从6W2H来思考，这有助于我们的思路的条理化，杜绝盲目性。我们的汇报也应该用6W2H，能节约写报告及看报告的时间。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020503.jpeg"></p>
+<blockquote>
+<p><strong>5W2H分析法的内容</strong></p>
+</blockquote>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020610.jpeg"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020509.jpeg"></p>
+<h2 id="SMART原则的意义"><a href="#SMART原则的意义" class="headerlink" title="SMART原则的意义"></a><strong>SMART原则的意义</strong></h2><p>Specific 具体的；</p>
+<p>Measurable 可测量的；</p>
+<p>Attainable 可达到的；</p>
+<p>Relevant 相关的；</p>
+<p>Time based 时间的；</p>
+<p>意义：人们在制定工作目标或者任务目标时，考虑一下目标与计划是不是SMART化的。只有具备SMART化的计划才是具有良好可实施性的，也才能指导保证计划得以实现。</p>
+<p>有的又如此解释此原则：</p>
+<p>——S代表具体(Specific)，指绩效考核要切中特定的工作指标，不能笼统；</p>
+<p>——M代表可度量(Measurable)，指绩效指标是数量化或者行为化的，验证这些绩效指标的数据或者信息是可以获得的；</p>
+<p>——A代表可实现(Attainable)，指绩效指标在付出努力的情况下可以实现，避免设立过高或过低的目标；</p>
+<p>——R代表现实性(realistic)，指绩效指标是实实在在的，可以证明和观察；</p>
+<p>——T代表有时限(time bound)，注重完成绩效指标的特定期限。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020516.jpeg"></p>
+<blockquote>
+<p><strong>SMART原则实施要领</strong></p>
+</blockquote>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020517.jpeg"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020523.jpeg"></p>
+<h2 id="STAR法则的意义"><a href="#STAR法则的意义" class="headerlink" title="STAR法则的意义"></a><strong>STAR法则的意义</strong></h2><p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020529.jpeg"></p>
+<blockquote>
+<p><strong>STAR法则的内容</strong></p>
+</blockquote>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020621.jpeg"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020537.jpeg"></p>
+<h2 id="SWOT分析模型的意义"><a href="#SWOT分析模型的意义" class="headerlink" title="SWOT分析模型的意义"></a><strong>SWOT分析模型的意义</strong></h2><p>Strengths：优势</p>
+<p>Weaknesses：劣势</p>
+<p>Opportunities：机会</p>
+<p>Threats：威胁</p>
+<p>意义：帮您清晰地把握全局，分析自己在资源方面的优势与劣势，把握环境提供的机会，防范可能存在的风险与威胁，对我们的成功有非常重要的意义。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020628.jpeg"></p>
+<blockquote>
+<p><strong>SWOT分析模型组合</strong></p>
+</blockquote>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020706.jpeg"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020634.jpeg"></p>
+<h2 id="GROW教练模型的意义"><a href="#GROW教练模型的意义" class="headerlink" title="GROW教练模型的意义"></a><strong>GROW教练模型的意义</strong></h2><p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020544.jpeg"></p>
+<blockquote>
+<p><strong>GROW教练模型的内容</strong></p>
+</blockquote>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819020641.jpeg"></p>
+<h2 id="时间管理-重要与紧急"><a href="#时间管理-重要与紧急" class="headerlink" title="时间管理-重要与紧急"></a><strong>时间管理-重要与紧急</strong></h2><p>A、重要且紧急</p>
+<p>紧急状况</p>
+<p>迫切的问题</p>
+<p>限期完成的工作</p>
+<p>你不做其他人也不能做</p>
+<p>B、重要不紧急</p>
+<p>准备工作</p>
+<p>预防措施</p>
+<p>价值观的澄清</p>
+<p>计划</p>
+<p>人际关系的建立</p>
+<p>真正的再创造</p>
+<p>增进自己的能力</p>
+<p>C、紧急不重要</p>
+<p>造成干扰的事、电话、</p>
+<p>信件、报告</p>
+<p>会议</p>
+<p>许多迫在眉捷的急事</p>
+<p>符合别人期望的事</p>
+<p>D、不重要不紧急</p>
+<p>忙碌琐碎的事</p>
+<p>广告函件</p>
+<p>电话</p>
+<p>逃避性活动</p>
+<p>等待时间</p>
+<p>优先顺序=重要性*紧迫性在进行时间安排时，应权衡各种事情的优先顺序，要学会“弹钢琴”；对工作要有前瞻能力，防患于未然，如果总是在忙于救火，那将使我们的工作永远处理被动之中。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/08/1920210819015812.png" alt="揭秘人生七工具：SWOT、PDCA、6W2H、SMART、WBS、时间管理、OKR"></p>
+<h2 id="任务分解法-WBS"><a href="#任务分解法-WBS" class="headerlink" title="任务分解法[WBS]"></a><strong>任务分解法[WBS]</strong></h2><p>即Work Breakdown Structure，如何进行WBS分解：目标→任务→工作→活动</p>
+<p><strong>WBS分解的原则：</strong></p>
+<p>将主体目标逐步细化分解，最底层的任务活动可直接分派到个人去完成；每个任务原则上要求分解到不能再细分为止。</p>
+<p><strong>WBS分解的方法：</strong></p>
+<p>至上而下与至下而上的充分沟通；</p>
+<p>一对一个别交流；</p>
+<p>小组讨论。</p>
+<p><strong>WBS分解的标准：</strong></p>
+<p>分解后的活动结构清晰；</p>
+<p>逻辑上形成一个大的活动；</p>
+<p>集成了所有的关键因素包含临时的里程碑和监控点；</p>
+<p>所有活动全部定义清楚。</p>
+<p>意义：学会分解任务，只有将任务分解得足够细，您才能心里有数，您才能有条不紊地工作，您才能统筹安排您的时间表。</p>
+<h2 id="OKR，目标与关键结果"><a href="#OKR，目标与关键结果" class="headerlink" title="OKR，目标与关键结果"></a><strong>OKR，目标与关键结果</strong></h2><p>OKR 实施过程中起草制定好目标和关键结果是非常重要的一环，有效的 OKR 制定需要满足 SMART 原则——明确的、可衡量的、可实现的、有相关性和有时限性。</p>
+<p>目标（O）回答的是“我们想做什么”的问题，是定性的，要求能够鼓舞人心，激发团队共鸣。</p>
+<p>关键结果（KR）回答的是“我们如何知道自己是否达成了目标要求”的问题，是定量的，设计 KR 最具挑战的部分是如何把目标中定性的描述抽象为定量的表示。</p>
+<p>最后：只有掌握了正确科学的工作方法，才可能在未来的工作中，做到事半功倍的效果，才能更加从容且有重点的开展工作。好的工作方法，是成功的一半！</p>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
+      <categories>
+        <category>PMBOK</category>
+      </categories>
+      <tags>
+        <tag>管理</tag>
+        <tag>PDCA</tag>
+        <tag>5W2H</tag>
+        <tag>SMART</tag>
+        <tag>SWOT</tag>
+        <tag>GROW</tag>
+        <tag>OKR</tag>
+        <tag>WBS</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>qBittorrent 参数详细设置教程</title>
+    <url>/bt/2021-08-18-qbittorrent-parameter-reference-configuration/</url>
+    <content><![CDATA[<p>全文将以目前的最新版v4.2.1为例，进行参数设置，老版本某些功能不太一致，请知悉。特别鸣谢 原创者：Evine！</p>
+<h2 id="行为参数"><a href="#行为参数" class="headerlink" title="行为参数"></a>行为参数</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154449.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="下载参数"><a href="#下载参数" class="headerlink" title="下载参数"></a>下载参数</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154453.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="连接参数"><a href="#连接参数" class="headerlink" title="连接参数"></a>连接参数</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154528.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="速度参数"><a href="#速度参数" class="headerlink" title="速度参数"></a>速度参数</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154500.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="BT参数"><a href="#BT参数" class="headerlink" title="BT参数"></a>BT参数</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154539.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="RSS设置"><a href="#RSS设置" class="headerlink" title="RSS设置"></a>RSS设置</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154502.png" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="web参数"><a href="#web参数" class="headerlink" title="web参数"></a>web参数</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154508.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h2 id="高级参数"><a href="#高级参数" class="headerlink" title="高级参数"></a>高级参数</h2><p><img src="https://cimg1.17lai.site/data/2021/08/1820210818154558.jpeg" alt="qBittorrent参数详细设置教程"></p>
+<h3 id="关于磁盘缓存的补充说明："><a href="#关于磁盘缓存的补充说明：" class="headerlink" title="关于磁盘缓存的补充说明："></a><strong>关于磁盘缓存的补充说明：</strong></h3><p>经常有人吐槽qB特别吃内存，个人猜测应该是磁盘缓存设置不正确导致的。磁盘缓存设置过小，磁盘缓存到期间隔过长，先下载的文件块来不及写入硬盘，新的文件块又到了，可能就会导致内存爆掉甚至磁盘I/O错误。个人建议：在进行高速下载时，适当将磁盘缓存调高，磁盘缓存到期间隔调低（下载时间隔越低写入越频繁，自己根据电脑的资源占用情况调整最适合自己的值）。实在不知道怎么调的，就干脆把磁盘缓存设置为-1（自动）好了，还不行，就把磁盘缓存到期间隔再调低一些。举一个例子，比如设置2048MiB磁盘缓存、300s磁盘缓存到期间隔时，当下载速度为50MiB/s的时候，300s的时间总共可以下载15000MiB，早就远远超过2048MiB了，不爆内存、不I/O错误才怪。所以当达到这个下载速度的时候，在磁盘缓存不变的情况下，根据简单的除法（磁盘缓存除以下载速度）可知，磁盘缓存到期间隔就应该设置到40s以下了。</p>
+<p>qB在正常运行后，其占用的内存会比你所设置的磁盘缓存多几百M。所有的参数没有标准答案，一切都得根据你机子的本身属性以及实际的使用场景（比如CPU性能、内存大小、硬盘写入速度、下载速度等）来设置，建议大家多试验。</p>
+<h3 id="关于TCP、UTP的补充说明："><a href="#关于TCP、UTP的补充说明：" class="headerlink" title="关于TCP、UTP的补充说明："></a><strong>关于TCP、UTP的补充说明：</strong></h3><p>TCP是Internet上最常用的协议，是一种面向连接的、可靠的、基于字节流的传输层通信协议。TCP的优势在于双向互动机制兼顾数据传输的完整性、可控制性和可靠性，但复杂的校验与控制机制也使其没有UDP传输效率高。</p>
+<p>UDP协议与TCP协议一样用于处理数据包，是一种无连接的协议。UDP的缺点是不提供数据包分组、组装和不能对数据包进行排序的缺点，也就是说，当报文发送之后，是无法得知其是否安全完整到达的。UDP优势在于带宽占用小、传输效率和连接成功率高，有益于内网用户（如通过UDP内网穿透UDP Hole Punching连接），但UDP与TCP协议相比也存在无反向确认机制、无流量和序列控制等弊端。</p>
+<p>uTP(Micro Transport Protocol)是一种正在标准化的开放式BT协议，主要功能是提高宽带使用效率、减少网络问题。在减缓网络延迟和拥堵的同时最大化网络吞吐量、克服多数防火墙和NAT的阻碍，增强网络穿透和传输效率，同时增益流量控制，这对BT用户和ISP都是互利的。uTP虽基于UDP协议但有所不同，uTP通过拥堵控制算法（Ledbat）可限制延时，当延时不严重时可最大限度利用带宽，并能通过uTP提供的信息用于选择TCP连接的传输率，即使在不作限速设置的情况下，也能减少网络拥堵产生，当用户端之间都启用uTP时，可见明显的传输速率提升。内网无法实现端口映射的用户启用uTP，可以改善与网外用户的连接。</p>
+<p>使用uTP进行连接的用户，其标志将包含“P”。</p>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
+      <categories>
+        <category>bt</category>
+      </categories>
+      <tags>
+        <tag>QNAP</tag>
+        <tag>nas</tag>
+        <tag>PT</tag>
+        <tag>BT</tag>
+        <tag>qbittorrent</tag>
       </tags>
   </entry>
   <entry>
@@ -6684,7 +6684,7 @@ valine:
 <li>我的技能</li>
 <li>我的相册</li>
 <li><code>Gitalk</code>、<code>Gitment</code>、<code>Valine</code> 和 <code>disqus</code> 评论配置</li>
-<li><a href="http://busuanzi.ibruce.info/">不蒜子统计</a>和谷歌分析（<code>Google Analytics</code>）</li>
+<li><a href="https://busuanzi.ibruce.info/">不蒜子统计</a>和谷歌分析（<code>Google Analytics</code>）</li>
 <li>默认特色图的集合。当文章没有设置特色图时，本主题会根据文章标题的 <code>hashcode</code> 值取余，来选择展示对应的特色图</li>
 </ul>
 <p>如果本主题中的诸多功能和主题色彩你不满意，可以在主题中自定义修改，很多更自由的功能和细节点的修改难以在主题的 <code>_config.yml</code> 中完成，需要修改源代码才来完成。以下列出了可能有用的地方：</p>
@@ -10974,11 +10974,11 @@ docker run -v <span class="token variable"><span class="token variable">$(</span
         <category>aboutme</category>
       </categories>
       <tags>
-        <tag>Linux</tag>
         <tag>Gitlab</tag>
+        <tag>Linux</tag>
         <tag>嵌入式</tag>
-        <tag>Docker</tag>
         <tag>MPP</tag>
+        <tag>Docker</tag>
         <tag>PT</tag>
         <tag>aboutme，blog</tag>
         <tag>物联网</tag>
