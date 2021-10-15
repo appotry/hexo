@@ -6141,13 +6141,142 @@ This is the admonition body
       </tags>
   </entry>
   <entry>
+    <title>浏览器的渲染过程</title>
+    <url>/web/2021-09-13-the-browser-rendering-process/</url>
+    <content><![CDATA[<blockquote>
+<p>通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？</p>
+</blockquote>
+<h3 id="首先，请先看一张大图"><a href="#首先，请先看一张大图" class="headerlink" title="首先，请先看一张大图"></a><strong>首先，请先看一张大图</strong></h3><p>浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：</p>
+<ul>
+<li>  构建对象模型（DOM，CSSOM）</li>
+<li>  构建渲染树（RenderTree）</li>
+<li>  布局</li>
+<li>  渲染</li>
+</ul>
+<p>在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220512.jpeg"></p>
+<h3 id="1-DOMTree的构建"><a href="#1-DOMTree的构建" class="headerlink" title="1.DOMTree的构建"></a><strong>1.DOMTree的构建</strong></h3><p>浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220515.jpeg"></p>
+<ul>
+<li>第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符  </li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220653.jpeg"></p>
+<ul>
+<li>第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是<code>开始标签</code>，还是<code>结束标签</code>，或者<code>文本标签</code>等。  </li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220522.jpeg"></p>
+<ul>
+<li>第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的<code>开始标签</code>，<code>结束标签</code>，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。<br>  Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt;</code>标签最终生成出的节点对象中会保存图片地址等信息。<br>  事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取<code>深度遍历算法</code>消耗Token来生成Node，如下图所示：<br>  图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出<code>html Token</code>,并消耗Token创建出<code>html 节点对象</code>，接着生成<code>head Token</code>并消耗Token创建出<code>head节点对象</code>……，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。  </li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220658.jpeg"></p>
+<p>这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？<br>因为在上述的解析的过程中，如果碰到了<code>script</code>或者<code>link</code>标签，就会根据<code>src</code>对应的地址去加载资源，在<code>script</code>标签没有设置<code>async/defer</code>属性时，这个加载过程是<code>下载并执行完全部的代码</code>，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出<strong>找不到该DOM元素</strong>的错误。<br>值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。</p>
+<h3 id="2-CSSOMTree的构建"><a href="#2-CSSOMTree的构建" class="headerlink" title="2.CSSOMTree的构建"></a><strong>2.CSSOMTree的构建</strong></h3><p>DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：</p>
+<p>假设浏览器收到了下面这样一段css:</p>
+<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">body</span> <span class="token punctuation">{</span><span class="token property">font-size</span><span class="token punctuation">:</span> 16px<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">p</span> <span class="token punctuation">{</span><span class="token property">font-weight</span><span class="token punctuation">:</span> bold<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">p span</span> <span class="token punctuation">{</span><span class="token property">display</span><span class="token punctuation">:</span>none<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">span</span> <span class="token punctuation">{</span><span class="token property">color</span><span class="token punctuation">:</span> red<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">img</span> <span class="token punctuation">{</span><span class="token property">float</span><span class="token punctuation">:</span> right<span class="token punctuation">;</span><span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>最终会生成如下的CSSOMTree:</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220529.jpeg"></p>
+<p>从图中可以看出，最开始<code>body</code>有一个样式规则是<code>font-size:16px</code>，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如<code>span</code>又添加了一个样式规则<code>color:red</code>。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：<strong>CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置</strong>。比如在上面的css代码基础上再添加一行代码<code>p {font-size:12px}</code>，那么之前设置的<code>16px</code>将会被覆盖成<code>12px</code>。</p>
+<p>下面是官方给的一种解释：</p>
+<blockquote>
+<p>未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。<br>所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。</p>
+</blockquote>
+<p>那么回到上面生成DOM时提到的JS问题：<strong>在标签没有设置<code>async/defer</code>属性时，js会阻塞DOM的生成</strong>。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。</p>
+<p>同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在<strong>浏览器还未完成CSSOMTree的下载和构建</strong>时去操作CSS样式，浏览器会<strong>暂停脚本的运行和DOM的构建</strong>，直至浏览器完成了CSSOM的下载和构建。也就是说，<strong>JS脚本的出现会让CSSOM的构建阻塞DOM的构建</strong>。</p>
+<blockquote>
+<p>平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？</p>
+</blockquote>
+<p>举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个<code>link</code>标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220540.jpeg"></p>
+<p>而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个<code>script</code>标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220546.jpeg"></p>
+<p>那如果我们把css放到前面，js放到最后引入时，构建时间会变成：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220705.jpeg"></p>
+<p>由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。</p>
+<p>简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：</p>
+<ul>
+<li>  当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕</li>
+<li>  JavaScript可以查询和修改DOMTree与CSSOMTree</li>
+<li>  直至CSSOM构建完毕，JavaScript才会执行</li>
+<li>  脚本在文档中的位置很重要</li>
+</ul>
+<h3 id="3-渲染树的构建"><a href="#3-渲染树的构建" class="headerlink" title="3.渲染树的构建"></a><strong>3.渲染树的构建</strong></h3><p>现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220711.jpeg"></p>
+<p>接下来我们来谈几条概念</p>
+<ul>
+<li><p>  Render 树上的每一个节点被称为：<code>RenderObject</code>。</p>
+</li>
+<li><p>  RenderObject跟 DOM 节点几乎是一一对应的，当一个<code>可见的 DOM 节点</code>被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。</p>
+</li>
+<li><p>其中，可见的DOM节点不包括：  </p>
+</li>
+<li><p>  一些不会体现在渲染输出中的节点（<code>&lt;html&gt;&lt;script&gt;&lt;link&gt;….</code>），会直接被忽略掉。</p>
+</li>
+<li><p>  通过CSS隐藏的节点。例如上图中的<code>span</code>节点，因为有一个CSS显式规则在该节点上设置了<code>display:none</code>属性，那么它在生成RenderObject时会被直接忽略掉。</p>
+</li>
+<li><p>  Render 树是衔接浏览器排版引擎和渲染引擎之间的<strong>桥梁</strong>，它是<strong>排版引擎的输出，渲染引擎的输入</strong>。</p>
+</li>
+</ul>
+<p>此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？</p>
+<h3 id="RenderObject-and-RenderLayer"><a href="#RenderObject-and-RenderLayer" class="headerlink" title="RenderObject and RenderLayer"></a><strong>RenderObject and RenderLayer</strong></h3><blockquote>
+<p>浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理<strong>Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing</strong>等属性，浏览器需要生成另外一棵树：<strong>Layer树</strong></p>
+</blockquote>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220730.jpeg"></p>
+<p>浏览器会为一些<strong>特定</strong>的<code>RenderObject</code>生成对应的<code>RenderLayer</code>，其中的规则是：</p>
+<ul>
+<li>  是否是页面的根节点 <em>It’s the root object for the page</em></li>
+<li>  是否有css的一些布局属性（relative absolute or a transform) <em>It has explicit CSS position properties (relative, absolute or a transform)</em></li>
+<li>  是否透明 <em>It is transparent</em></li>
+<li>  是否有溢出 <em>Has overflow, an alpha mask or reflection</em></li>
+<li>  是否有css滤镜 <em>Has a CSS filter</em></li>
+<li>  是否包含一个canvas元素使得节点拥有视图上下文 <em>Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context</em></li>
+<li>  是否包含一个video元素 <em>Corresponds to a video element</em></li>
+</ul>
+<p>当满足上面其中一个条件时，这个<code>RrenderObject</code>就会被浏览器选中生成对应的<code>RenderLayer</code>。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。</p>
+<p>浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个<code>RenderLayer</code>，再遍历从属于这个RenderLayer的 <code>RrenderObject</code>，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 <code>RenderLayer</code> 和 <code>RrenderObject</code> 一起就决定了网页在屏幕上最终呈现出来的内容。</p>
+<h3 id="4-布局"><a href="#4-布局" class="headerlink" title="4.布局"></a><strong>4.布局</strong></h3><p>到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。</p>
+<p>布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220553.jpeg"></p>
+<h3 id="5-渲染"><a href="#5-渲染" class="headerlink" title="5.渲染"></a><strong>5.渲染</strong></h3><p>最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220718.jpeg"></p>
+<p>至此，我们就能够在浏览器上看到漂亮的网页了</p>
+<blockquote>
+<p>谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？</p>
+</blockquote>
+<p>我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~</p>
+<h3 id="总结："><a href="#总结：" class="headerlink" title="总结："></a><strong>总结：</strong></h3><ul>
+<li>  经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。</li>
+<li>  CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。</li>
+<li>  同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用<code>async/defer属性</code>异步加载JavaScript。</li>
+<li>  重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数</li>
+</ul>
+<h3 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a><strong>参考文献：</strong></h3><p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21%23wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect</a></p>
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
+        <tag>css</tag>
+        <tag>js</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>基于Hexo的matery主题搭建博客并深度优化</title>
     <url>/hexo/2021-09-10-use-hexo-and-matery-to-make-a-perfect-blog/</url>
     <content><![CDATA[<blockquote>
 <p>All in one 一站式Hexo配置优化教程！</p>
 <p>如果你遇到了什么问题，搜索本文，你很可能有收获！ <code>CtRL + F</code></p>
 </blockquote>
-<h2 id="Docker-版-hexo-matery"><a href="#Docker-版-hexo-matery" class="headerlink" title="Docker 版 hexo + matery"></a>Docker 版 hexo + matery</h2><ul>
+<h2 id="基础入门"><a href="#基础入门" class="headerlink" title="基础入门"></a>基础入门</h2><h3 id="Docker-版-hexo-matery"><a href="#Docker-版-hexo-matery" class="headerlink" title="Docker 版 hexo + matery"></a>Docker 版 hexo + matery</h3><ul>
 <li><a href="https://hub.docker.com/r/bloodstar/hexo">docker-hub</a></li>
 <li><a href="https://github.com/appotry/docker-hexo">Github-hexo</a></li>
 </ul>
@@ -6160,16 +6289,52 @@ This is the admonition body
 <span class="token punctuation">-</span>p 4000<span class="token punctuation">:</span>4000 \
 bloodstar/hexo<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
+<h3 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h3><h4 id="指令说明"><a href="#指令说明" class="headerlink" title="指令说明"></a>指令说明</h4><ul>
+<li><p><code>hexo server</code> #启动本地服务器，用于预览主题。Hexo 会监视文件变动并自动更新，除修改站点配置文件外,无须重启服务器,直接刷新网页即可生效。</p>
+</li>
+<li><p><code>hexo server -s</code> #以静态模式启动</p>
+</li>
+<li><p><code>hexo server -p 5000</code> #更改访问端口 (默认端口为 4000，’ctrl + c’关闭 server)</p>
+</li>
+<li><p><code>hexo server -i IP地址</code> #自定义 IP</p>
+</li>
+<li><p><code>hexo clean</code> #清除缓存 ,网页正常情况下可以忽略此条命令,执行该指令后,会删掉站点根目录下的 public 文件夹</p>
+</li>
+<li><p><code>hexo g</code> #生成静态网页 (执行 $ <code>hexo g</code>后会在站点根目录下生成 public 文件夹, hexo 会将”/blog/source/“ 下面的.md 后缀的文件编译为.html 后缀的文件,存放在”/blog/public/ “ 路径下)</p>
+</li>
+<li><p><code>hexo d</code> #自动生成网站静态文件，并将本地数据部署到设定的仓库(如 github)</p>
+</li>
+<li><p><code>hexo init</code> 文件夹名称 #初始化 XX 文件夹名称</p>
+</li>
+<li><p><code>npm update hexo -g</code>#升级</p>
+</li>
+<li><p><code>npm install hexo -g</code> #安装</p>
+</li>
+<li><p><code>node-v</code> #查看 node.js 版本号</p>
+</li>
+<li><p><code>npm -v</code> #查看 npm 版本号</p>
+</li>
+<li><p><code>git --version</code> #查看 git 版本号</p>
+</li>
+<li><p><code>hexo -v</code> #查看 hexo 版本号</p>
+</li>
+</ul>
+<h4 id="简写指令"><a href="#简写指令" class="headerlink" title="简写指令"></a>简写指令</h4><pre class="line-numbers language-none"><code class="language-none">hexo n "我的第一篇文章"` 等价于 `hexo new "我的第一篇文章"` 还等价于 `hexo new post "我的第一篇文章"
+hexo p` 等价于 `hexo publish
+hexo g` 等价于 `hexo generate
+hexo s`等价于 `hexo server
+hexo d` 等价于 `hexo deploy
+hexo g -d`等价于`hexo generate --deploy<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
-
-<h2 id="安装-hexo"><a href="#安装-hexo" class="headerlink" title="安装 hexo"></a>安装 hexo</h2><p><a href="https://hexo.io/zh-cn/">Hexo</a> 是一个快速、简洁且高效的博客框架。Hexo 使用 <a href="http://daringfireball.net/projects/markdown/">Markdown</a>（或其他渲染引擎）解析文章，在几秒内，即可利用靓丽的主题生成静态网页。</p>
-<h3 id="前提"><a href="#前提" class="headerlink" title="前提"></a>前提</h3><p>安装 Hexo 相当简单，只需要先安装下列应用程序即可：</p>
+<p>注: <code>hexo clean</code> 没有 简写, <code>git --version</code> 没有简写</p>
+<h3 id="安装-hexo"><a href="#安装-hexo" class="headerlink" title="安装 hexo"></a>安装 hexo</h3><p><a href="https://hexo.io/zh-cn/">Hexo</a> 是一个快速、简洁且高效的博客框架。Hexo 使用 <a href="http://daringfireball.net/projects/markdown/">Markdown</a>（或其他渲染引擎）解析文章，在几秒内，即可利用靓丽的主题生成静态网页。</p>
+<h4 id="前提"><a href="#前提" class="headerlink" title="前提"></a>前提</h4><p>安装 Hexo 相当简单，只需要先安装下列应用程序即可：</p>
 <ul>
 <li><a href="http://nodejs.org/">Node.js</a> (Node.js 版本需不低于 8.10，建议使用 Node.js 10.0 及以上版本)</li>
 <li><a href="http://git-scm.com/">Git</a></li>
 <li><a href="https://www.npmjs.com/">nmp</a></li>
 </ul>
-<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p>所有必备的应用程序安装完成后，即可使用 npm 安装 Hexo。</p>
+<h4 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h4><p>所有必备的应用程序安装完成后，即可使用 npm 安装 Hexo。</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> <span class="token function">install</span> -g hexo-cli<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>安装以后，可以使用以下两种方式执行 Hexo：</p>
@@ -6183,7 +6348,7 @@ bloodstar/hexo<span aria-hidden="true" class="line-numbers-rows"><span></span><s
 
 <h4 id="安装CNPM"><a href="#安装CNPM" class="headerlink" title="安装CNPM"></a>安装CNPM</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> <span class="token function">install</span> -g cnpm --registry<span class="token operator">=</span>https://registry.npm.taobao.org<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
-<h3 id="升级"><a href="#升级" class="headerlink" title="升级"></a>升级</h3><p>后期需要升级的化，进入 blog 目录，先检查更新:</p>
+<h4 id="升级"><a href="#升级" class="headerlink" title="升级"></a>升级</h4><p>后期需要升级的化，进入 blog 目录，先检查更新:</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token function">npm</span> outdated
 Package                  Current  Wanted  Latest  Location
 hexo                       <span class="token number">3.9</span>.0   <span class="token number">3.9</span>.0   <span class="token number">4.2</span>.0  hexo-site
@@ -6212,13 +6377,13 @@ hexo-cli: <span class="token number">3.1</span>.0
 <span class="token builtin class-name">cd</span> <span class="token operator">&lt;</span>folder<span class="token operator">&gt;</span>
 <span class="token function">npm</span> <span class="token function">install</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 
-<h3 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h3><p>此时，通过 <code>hexo s</code> 命令即可在本地启动您的博客站点了。</p>
+<h3 id="启动网页服务"><a href="#启动网页服务" class="headerlink" title="启动网页服务"></a>启动网页服务</h3><p>此时，通过 <code>hexo s</code> 命令即可在本地启动您的博客站点了。</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ hexo s
 INFO  Start processing
 INFO  Hexo is running at http://localhost:4000 <span class="token builtin class-name">.</span> Press Ctrl+C to stop.<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 
 <p>接下来将安装主题，配置博客托管平台，实现一键发布并刷新 CDN 缓存。</p>
-<h2 id="目录结构说明"><a href="#目录结构说明" class="headerlink" title="目录结构说明"></a>目录结构说明</h2><p>在执行过<code>Hexo deploy</code>命令之后，目录结构新增了<code>.deploy_git</code>，<code>public</code>，<code>.gitignore</code>，如下：</p>
+<h3 id="目录结构说明"><a href="#目录结构说明" class="headerlink" title="目录结构说明"></a>目录结构说明</h3><p>在执行过<code>Hexo deploy</code>命令之后，目录结构新增了<code>.deploy_git</code>，<code>public</code>，<code>.gitignore</code>，如下：</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"> $ tree -L <span class="token number">2</span>
 <span class="token builtin class-name">.</span>
 ├── .deploy_git
@@ -6577,6 +6742,18 @@ INFO  Hexo is running at http://localhost:4000 <span class="token builtin class-
   <span class="token key atrule">alg</span><span class="token punctuation">:</span> crc16 <span class="token comment">#算法选项：crc16丨crc32</span>
   <span class="token key atrule">rep</span><span class="token punctuation">:</span> dec <span class="token comment">#输出进制：dec为十进制，hex为十六进制</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
+<h3 id="添加-emoji-表情支持（可选的）"><a href="#添加-emoji-表情支持（可选的）" class="headerlink" title="添加 emoji 表情支持（可选的）"></a>添加 emoji 表情支持（可选的）</h3><p>Matery主题新增了对 <code>emoji</code> 表情的支持，使用到了 <a href="https://npm.taobao.org/package/hexo-filter-github-emojis">hexo-filter-github-emojis</a> 的 Hexo 插件来支持 <code>emoji</code> 表情的生成，把对应的 <code>markdown emoji</code> 语法（<code>::</code>, 例如：<code>:smile:</code>）转变成会跳跃的 <code>emoji</code> 表情，安装命令如下</p>
+<pre class="line-numbers language-none"><code class="language-none">npm install hexo-filter-github-emojis --save<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>在 博客根目录下的 <code>_config.yml</code> 文件中，新增以下的配置项：</p>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">githubEmojis</span><span class="token punctuation">:</span>
+  <span class="token key atrule">enable</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+  <span class="token key atrule">className</span><span class="token punctuation">:</span> github<span class="token punctuation">-</span>emoji
+  <span class="token key atrule">inject</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+  <span class="token key atrule">styles</span><span class="token punctuation">:</span>
+  customEmojis<span class="token punctuation">:</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>执行 <code>hexo clean &amp;&amp; hexo g</code> 重新生成博客文件，然后就可以在文章中对应位置看到你用 <code>emoji</code> 语法写的表情了。</p>
 <h3 id="文章字数统计插件（可选的）"><a href="#文章字数统计插件（可选的）" class="headerlink" title="文章字数统计插件（可选的）"></a>文章字数统计插件（可选的）</h3><p>如果你想要在文章中显示文章字数、阅读时长信息，可以安装 <a href="https://github.com/willin/hexo-wordcount">hexo-wordcount</a>插件。</p>
 <p>安装命令如下：</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> i --save hexo-wordcount<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
@@ -6755,7 +6932,7 @@ valine:
 <pre class="line-numbers language-javascript" data-language="javascript"><code class="language-javascript"><span class="token function">$</span><span class="token punctuation">(</span><span class="token string">".bg-cover"</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">css</span><span class="token punctuation">(</span><span class="token string">"background-image"</span><span class="token punctuation">,</span> <span class="token string">"url(/medias/banner/"</span> <span class="token operator">+</span> <span class="token keyword">new</span> <span class="token class-name">Date</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getDay</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">".jpg)"</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>在 <code>/source/medias/featureimages</code> 文件夹中默认有 24 张特色图片，你可以再增加或者减少，并需要在 <code>_config.yml</code> 做同步修改。</p>
-<h2 id="文章-Front-matter-介绍"><a href="#文章-Front-matter-介绍" class="headerlink" title="文章 Front-matter 介绍"></a>文章 Front-matter 介绍</h2><h3 id="Front-matter-选项详解"><a href="#Front-matter-选项详解" class="headerlink" title="Front-matter 选项详解"></a>Front-matter 选项详解</h3><p><code>Front-matter</code> 选项中的所有内容均为<strong>非必填</strong>的。但仍然建议至少填写 <code>title</code> 和 <code>date</code> 的值。</p>
+<h3 id="文章-Front-matter-介绍"><a href="#文章-Front-matter-介绍" class="headerlink" title="文章 Front-matter 介绍"></a>文章 Front-matter 介绍</h3><h3 id="Front-matter-选项详解"><a href="#Front-matter-选项详解" class="headerlink" title="Front-matter 选项详解"></a>Front-matter 选项详解</h3><p><code>Front-matter</code> 选项中的所有内容均为<strong>非必填</strong>的。但仍然建议至少填写 <code>title</code> 和 <code>date</code> 的值。</p>
 <table>
 <thead>
 <tr>
@@ -6879,7 +7056,7 @@ valine:
   <span class="token punctuation">-</span> GitHub
 <span class="token punctuation">---</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
-<h2 id="hexo体积压缩"><a href="#hexo体积压缩" class="headerlink" title="hexo体积压缩"></a>hexo体积压缩</h2><p>减小体积，加快加载速度</p>
+<h3 id="hexo体积压缩"><a href="#hexo体积压缩" class="headerlink" title="hexo体积压缩"></a>hexo体积压缩</h3><p>减小体积，加快加载速度</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token function">npm</span> <span class="token function">install</span> gulp -g
 $ <span class="token function">npm</span> <span class="token function">install</span> gulp-minify-css gulp-uglify gulp-htmlmin gulp-htmlclean gulp --save
  
@@ -6931,7 +7108,7 @@ gulp.task('default'<span class="token punctuation">,</span> gulp.series('minify<
 <p>运行：</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">hexo clean <span class="token operator">&amp;&amp;</span> hexo g <span class="token operator">&amp;&amp;</span> gulp <span class="token operator">&amp;&amp;</span>  hexo g<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
-<h2 id="CDN-加速（强烈建议启用）"><a href="#CDN-加速（强烈建议启用）" class="headerlink" title="CDN 加速（强烈建议启用）"></a>CDN 加速（强烈建议启用）</h2><ul>
+<h2 id="各种优化"><a href="#各种优化" class="headerlink" title="各种优化"></a>各种优化</h2><h3 id="CDN-加速（强烈建议启用）"><a href="#CDN-加速（强烈建议启用）" class="headerlink" title="CDN 加速（强烈建议启用）"></a>CDN 加速（强烈建议启用）</h3><ul>
 <li><strong>为什么强烈建议启用CDN？</strong></li>
 </ul>
 <blockquote>
@@ -6964,7 +7141,7 @@ gulp.task('default'<span class="token punctuation">,</span> gulp.series('minify<
 </ul>
 <pre class="line-numbers language-http" data-language="http"><code class="language-http"><span class="token header-name keyword">https:</span>//cimg1.17lai.site/data/2021/09/1020210910231815.png<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
-<h2 id="SEO-优化"><a href="#SEO-优化" class="headerlink" title="SEO 优化"></a>SEO 优化</h2><blockquote>
+<h3 id="SEO-优化"><a href="#SEO-优化" class="headerlink" title="SEO 优化"></a>SEO 优化</h3><blockquote>
 <p>搜索引擎优化，又称为 SEO，即 Search Engine Optimization，它是一种通过分析搜索引擎的排名规律，了解各种搜索引擎怎样进行搜索、怎样抓取互联网页面、怎样确定特定关键词的搜索结果排名的技术。Google 自动收录效果还不错，百度就差得远了（<code>GitHub</code>不允许百度的<code>Spider</code>爬取<code>GitHub</code>上的内容）。</p>
 </blockquote>
 <h3 id="网域提交方式"><a href="#网域提交方式" class="headerlink" title="网域提交方式"></a>网域提交方式</h3><ol>
@@ -7062,7 +7239,7 @@ gulp.task('default'<span class="token punctuation">,</span> gulp.series('minify<
 
 <p>即可！</p>
 <p>其他主题一般都有这个功能的实现，如果没有的话，想办法在每个页面加入以上JS代码即可，原理是一样。</p>
-<h2 id="百度主动推送SEO方式"><a href="#百度主动推送SEO方式" class="headerlink" title="百度主动推送SEO方式"></a>百度主动推送SEO方式</h2><blockquote>
+<h3 id="百度主动推送SEO方式"><a href="#百度主动推送SEO方式" class="headerlink" title="百度主动推送SEO方式"></a>百度主动推送SEO方式</h3><blockquote>
 <ul>
 <li>配置文章自动推送到百度蜘蛛</li>
 </ul>
@@ -7095,9 +7272,9 @@ $ hexo d<span aria-hidden="true" class="line-numbers-rows"><span></span><span></
 <p>推送成功时,会有如下终端提示!</p>
 <p><img src="https://cimg1.17lai.site/data/2021/09/1820210918203209.png" alt="baidu_url_submitter"></p>
 <p>各种不同的推送反馈字段说明<a href="https://ziyuan.baidu.com/college/courseinfo?id=267&amp;page=2#h2_article_title12">点我</a>查看，一般来说，推送失败基本都是地址不相符造成的，我们只需对比<code>baidu_url_submit</code>在<code>public</code>中生成的<code>baidu_urls.txt</code>的地址,与自己填写在<code>host</code>字段中的地址对比看是否一样即可。</p>
-<h2 id="Github-Action-自动提交SEO方式"><a href="#Github-Action-自动提交SEO方式" class="headerlink" title="Github Action 自动提交SEO方式"></a>Github Action 自动提交SEO方式</h2><h3 id="安装插件"><a href="#安装插件" class="headerlink" title="安装插件"></a>安装插件</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> i hexo-seo-autopush --save<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h3 id="Github-Action-自动提交SEO方式"><a href="#Github-Action-自动提交SEO方式" class="headerlink" title="Github Action 自动提交SEO方式"></a>Github Action 自动提交SEO方式</h3><h4 id="安装插件"><a href="#安装插件" class="headerlink" title="安装插件"></a>安装插件</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> i hexo-seo-autopush --save<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
-<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p>在hexo 的config.yml里添加</p>
+<h4 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h4><p>在hexo 的config.yml里添加</p>
 <p>hexo-seo-autopush配置</p>
 <pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token comment"># enable: 开启/关闭 推送</span>
 <span class="token comment"># count: 每次提交最新的10篇文章</span>
@@ -7124,14 +7301,14 @@ $ hexo d<span aria-hidden="true" class="line-numbers-rows"><span></span><span></
      <span class="token key atrule">ignore_hidden</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>  <span class="token comment"># 忽略隐藏文件及文件夹(目录)</span>
    <span class="token punctuation">-</span> <span class="token key atrule">type</span><span class="token punctuation">:</span> GooglePush <span class="token comment"># 谷歌提交</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
-<h3 id="获取站长平台密钥"><a href="#获取站长平台密钥" class="headerlink" title="获取站长平台密钥"></a>获取站长平台密钥</h3><h4 id="Baidu-Key"><a href="#Baidu-Key" class="headerlink" title="Baidu Key"></a>Baidu Key</h4><ol>
+<h4 id="获取站长平台密钥"><a href="#获取站长平台密钥" class="headerlink" title="获取站长平台密钥"></a>获取站长平台密钥</h4><h5 id="Baidu-Key"><a href="#Baidu-Key" class="headerlink" title="Baidu Key"></a>Baidu Key</h5><ol>
 <li>打开百度站长平台，点击左侧的普通收录<a href="https://ziyuan.baidu.com/">https://ziyuan.baidu.com/</a><br><img src="https://cimg1.17lai.site/data/2021/09/2120210921065417.png"></li>
 </ol>
-<h4 id="Bing-Key"><a href="#Bing-Key" class="headerlink" title="Bing Key"></a>Bing Key</h4><ol>
+<h5 id="Bing-Key"><a href="#Bing-Key" class="headerlink" title="Bing Key"></a>Bing Key</h5><ol>
 <li>打开Bing站长平台，<a href="https://www.bing.com/webmasters/home">https://www.bing.com/webmasters/home</a></li>
 <li>点击右上角头像 旁边的齿轮，跟着下图操作<br><img src="https://cimg1.17lai.site/data/2021/09/2120210921065427.png"></li>
 </ol>
-<h4 id="Google-Key"><a href="#Google-Key" class="headerlink" title="Google Key"></a>Google Key</h4><blockquote>
+<h5 id="Google-Key"><a href="#Google-Key" class="headerlink" title="Google Key"></a>Google Key</h5><blockquote>
 <p><a href="https://cloud.google.com/docs/authentication/production?hl=zh-cn">Google Wiki</a>， 使用参考。</p>
 </blockquote>
 <ol>
@@ -7225,11 +7402,11 @@ $ hexo d<span aria-hidden="true" class="line-numbers-rows"><span></span><span></
       grant_type: <span class="token string">'urn:ietf:params:oauth:grant-type:jwt-bearer'</span>,
       assertion: 'eyJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJnb29nbGVpbmRleGluZ0BzdGF0ZWx5LXRyYW5zaXQtMjk3NzE1LmlhbS5nc2VydmljZWFjY291bnQuY29tIiwic2NvcGUiOiJodHRwczovL3d3d<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></li>
 </ol>
-<h2 id="本地主动提交SEO"><a href="#本地主动提交SEO" class="headerlink" title="本地主动提交SEO"></a>本地主动提交SEO</h2><blockquote>
+<h3 id="本地主动提交SEO"><a href="#本地主动提交SEO" class="headerlink" title="本地主动提交SEO"></a>本地主动提交SEO</h3><blockquote>
 <p><a href="https://github.com/abnerwei/hexo-url-submission">hexo-url-submission</a></p>
 <p><a href="https://abnerwei.com/wiki/hexo/url-submission">Wiki</a></p>
 </blockquote>
-<h3 id="安装方法"><a href="#安装方法" class="headerlink" title="安装方法"></a><strong>安装方法</strong></h3><ol>
+<h4 id="安装方法"><a href="#安装方法" class="headerlink" title="安装方法"></a><strong>安装方法</strong></h4><ol>
 <li>在终端中输入：</li>
 </ol>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> i hexo-url-submission<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
@@ -7252,20 +7429,20 @@ $ hexo d<span aria-hidden="true" class="line-numbers-rows"><span></span><span></
    <span class="token key atrule">shenma_user</span><span class="token punctuation">:</span> <span class="token string">''</span> <span class="token comment"># Username used when registering</span>
    <span class="token key atrule">sitemap</span><span class="token punctuation">:</span> <span class="token string">''</span> <span class="token comment"># Sitemap path(e.g. the url is like this https://abnerwei.com/baidusitemap.xml, you can fill in `baidusitemap.xml`)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
-<h3 id="更新方法"><a href="#更新方法" class="headerlink" title="更新方法"></a><strong>更新方法</strong></h3><p>在站点根目录执行：</p>
+<h4 id="更新方法"><a href="#更新方法" class="headerlink" title="更新方法"></a><strong>更新方法</strong></h4><p>在站点根目录执行：</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> update hexo-url-submission<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
-<h3 id="deploy"><a href="#deploy" class="headerlink" title="deploy"></a>deploy</h3><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">deploy</span><span class="token punctuation">:</span>
+<h4 id="deploy"><a href="#deploy" class="headerlink" title="deploy"></a>deploy</h4><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">deploy</span><span class="token punctuation">:</span>
   <span class="token punctuation">-</span> <span class="token key atrule">type</span><span class="token punctuation">:</span> us_baidu_deployer
   <span class="token punctuation">-</span> <span class="token key atrule">type</span><span class="token punctuation">:</span> us_bing_deployer
   <span class="token punctuation">-</span> <span class="token key atrule">type</span><span class="token punctuation">:</span> us_google_deployer
   <span class="token punctuation">-</span> <span class="token key atrule">type</span><span class="token punctuation">:</span> us_shenma_deployer<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
-<h3 id="good-job"><a href="#good-job" class="headerlink" title="good job"></a>good job</h3><p>Run:</p>
+<h4 id="good-job"><a href="#good-job" class="headerlink" title="good job"></a>good job</h4><p>Run:</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">hexo clean <span class="token operator">&amp;&amp;</span> hexo g <span class="token operator">&amp;&amp;</span> hexo d<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>enjoy it!</p>
-<h2 id="提交-robots-txt"><a href="#提交-robots-txt" class="headerlink" title="提交 robots.txt"></a>提交 robots.txt</h2><h4 id="robots-txt是干嘛的？"><a href="#robots-txt是干嘛的？" class="headerlink" title="robots.txt是干嘛的？"></a>robots.txt是干嘛的？</h4><blockquote>
+<h3 id="提交-robots-txt"><a href="#提交-robots-txt" class="headerlink" title="提交 robots.txt"></a>提交 robots.txt</h3><h4 id="robots-txt是干嘛的？"><a href="#robots-txt是干嘛的？" class="headerlink" title="robots.txt是干嘛的？"></a>robots.txt是干嘛的？</h4><blockquote>
 <p><code>robots.txt</code> 是一种存放于网站根目录下的 <code>ASCII</code> 编码的文本文件，它的作用是告诉搜索引擎此网站中哪些内容是可以被爬取的，哪些是禁止爬取的。<br><code>robots.txt</code> 要放在 <code>Hexo根目录</code> 下的 <code>source</code> 文件夹中。</p>
 </blockquote>
 <p>每个人站点目录可能不太一样，可以参考下我的 <code>robots.txt</code> 文件，内容如下：</p>
@@ -7323,7 +7500,7 @@ permalink_defaults<span class="token punctuation">:</span><span aria-hidden="tru
 permalink_defaults<span class="token punctuation">:</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></li>
 </ol>
 <p>这样站点结构就变成了：<code>域名/posts/xxx.html</code></p>
-<h2 id="优化小技巧"><a href="#优化小技巧" class="headerlink" title="优化小技巧"></a>优化小技巧</h2><h3 id="异步加载JS"><a href="#异步加载JS" class="headerlink" title="异步加载JS"></a>异步加载JS</h3><p><strong>方法</strong>：将JS文件的引入，放到HTML的body结束标签的上方</p>
+<h3 id="异步加载JS"><a href="#异步加载JS" class="headerlink" title="异步加载JS"></a>异步加载JS</h3><p><strong>方法</strong>：将JS文件的引入，放到HTML的body结束标签的上方</p>
 <p><strong>例</strong>：</p>
 <pre class="line-numbers language-html" data-language="html"><code class="language-html"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>html</span><span class="token punctuation">&gt;</span></span>
     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>head</span><span class="token punctuation">&gt;</span></span>
@@ -7372,7 +7549,7 @@ permalink_defaults<span class="token punctuation">:</span><span aria-hidden="tru
 <blockquote>
 <p>页面依赖的字体将会自动压缩好，原 .ttf 字体会备份</p>
 </blockquote>
-<h2 id="将Hexo部署到vps，实现自动发布"><a href="#将Hexo部署到vps，实现自动发布" class="headerlink" title="将Hexo部署到vps，实现自动发布"></a><a href="https://www.cnblogs.com/luoshuitianyi/p/10333928.html" title="Hexo搭建(VPS)">将Hexo部署到vps，实现自动发布</a></h2><h4 id="搭建流程"><a href="#搭建流程" class="headerlink" title="搭建流程"></a>搭建流程</h4><ol>
+<h2 id="hexo-部署"><a href="#hexo-部署" class="headerlink" title="hexo 部署"></a>hexo 部署</h2><h3 id="将Hexo部署到vps，实现自动发布"><a href="#将Hexo部署到vps，实现自动发布" class="headerlink" title="将Hexo部署到vps，实现自动发布"></a><a href="https://www.cnblogs.com/luoshuitianyi/p/10333928.html" title="Hexo搭建(VPS)">将Hexo部署到vps，实现自动发布</a></h3><h4 id="搭建流程"><a href="#搭建流程" class="headerlink" title="搭建流程"></a>搭建流程</h4><ol>
 <li> 服务器环境配置，安装Git、Nginx配置、创建git用户</li>
 <li> 本地hexo初始化</li>
 <li> 使用Git自动部署并发布博客</li>
@@ -7597,7 +7774,7 @@ ll -a /home/git/<span aria-hidden="true" class="line-numbers-rows"><span></span>
 
 
 
-<h2 id="Hexo-自动部署"><a href="#Hexo-自动部署" class="headerlink" title="Hexo 自动部署"></a>Hexo 自动部署</h2><h3 id="准备"><a href="#准备" class="headerlink" title="准备"></a>准备</h3><ol>
+<h3 id="Hexo-自动部署"><a href="#Hexo-自动部署" class="headerlink" title="Hexo 自动部署"></a>Hexo 自动部署</h3><h3 id="准备"><a href="#准备" class="headerlink" title="准备"></a>准备</h3><ol>
 <li><code>Hexo</code> 博客源码的仓库，在 <code>GitHub</code> 上。</li>
 <li><code>ssh</code> 密钥，参考文章：<a href="https://sitoi.cn/posts/43508.html">Windows 下利用 Git 生成 SSH KEY 并配置到 GitHub</a></li>
 </ol>
@@ -7737,7 +7914,7 @@ ll -a /home/git/<span aria-hidden="true" class="line-numbers-rows"><span></span>
 
 
 
-<h2 id="利用-GitLab-实现-Hexo-博客的-CI-CD"><a href="#利用-GitLab-实现-Hexo-博客的-CI-CD" class="headerlink" title="利用 GitLab 实现 Hexo 博客的 CI/CD"></a>利用 GitLab 实现 Hexo 博客的 CI/CD</h2><p> Portainer 提供了对服务在线更新的 WebHook，所以基于 GitLab 自带的 CI/CD 功能实现 Hexo 博客的持续部署，就非常轻松了。</p>
+<h3 id="利用-GitLab-实现-Hexo-博客的-CI-CD"><a href="#利用-GitLab-实现-Hexo-博客的-CI-CD" class="headerlink" title="利用 GitLab 实现 Hexo 博客的 CI/CD"></a>利用 GitLab 实现 Hexo 博客的 CI/CD</h3><p> Portainer 提供了对服务在线更新的 WebHook，所以基于 GitLab 自带的 CI/CD 功能实现 Hexo 博客的持续部署，就非常轻松了。</p>
 <p>CI/CD 其实本质上是一套流程，流程规则可以自行定义。在本文研究的主题下，流程分为三步：第一步是编译 Hexo 博客并生成静态文件；第二步是将静态文件打包成可提供 Web 服务的镜像；第三步则是通过 Portainer 的钩子触发服务更新。</p>
 <p><code>.gitlab-ci.yml</code></p>
 <pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">stages</span><span class="token punctuation">:</span>
@@ -7789,7 +7966,131 @@ COPY . /usr/share/nginx/html
 RUN chmod 777 /usr/share/nginx/html -R \
     &amp;&amp; sed -i 's/#error_page  404/error_page  404/' /etc/nginx/conf.d/default.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
-<h2 id="新增个人相册"><a href="#新增个人相册" class="headerlink" title="新增个人相册"></a>新增个人相册</h2><h3 id="新建相册目录"><a href="#新建相册目录" class="headerlink" title="新建相册目录"></a>新建相册目录</h3><p>执行下面的命令：</p>
+<h2 id="一些个人DIY"><a href="#一些个人DIY" class="headerlink" title="一些个人DIY"></a>一些个人DIY</h2><h3 id="个性美化"><a href="#个性美化" class="headerlink" title="个性美化"></a>个性美化</h3><h4 id="修改主题颜色-1"><a href="#修改主题颜色-1" class="headerlink" title="修改主题颜色"></a>修改主题颜色</h4><p>配色包括导航栏，底部栏，a标签等。原主题配色是绿色，我也不懂为什么，可我不想配置成黑白色调，就粉红一下吧。</p>
+<p>修改themes\Matery\source\css\matery.css样式<br>快捷键ctrl+F查找到#4cbf30（浅绿色）和#0f9d58（深绿色）还有首页字体颜色，修改为你喜欢的颜色</p>
+<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token comment">/* 整体背景颜色，包括导航、移动端的导航、页尾、标签页等的背景颜色. */</span> 
+<span class="token selector">.bg-color</span> <span class="token punctuation">{</span> 
+	<span class="token property">background-image</span><span class="token punctuation">:</span> <span class="token function">linear-gradient</span><span class="token punctuation">(</span>to right<span class="token punctuation">,</span> #4cbf30 0%<span class="token punctuation">,</span> #0f9d58 100%<span class="token punctuation">)</span><span class="token punctuation">;</span> 
+<span class="token punctuation">}</span> 
+<span class="token comment">/*如果想去掉banner图的颜色渐变效果，请将以下的css属性注释掉或者删除掉即可*/</span> 
+<span class="token atrule"><span class="token rule">@-webkit-keyframes</span> rainbow</span> <span class="token punctuation">{</span> 
+	<span class="token comment">/* 动态切换背景颜色. */</span> 
+<span class="token punctuation">}</span> 
+<span class="token atrule"><span class="token rule">@keyframes</span> rainbow</span> <span class="token punctuation">{</span> 
+	<span class="token comment">/* 动态切换背景颜色. */</span> 
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+
+
+<h4 id="取消首页渐变颜色动画"><a href="#取消首页渐变颜色动画" class="headerlink" title="取消首页渐变颜色动画"></a>取消首页渐变颜色动画</h4><p>在themes\Matery\source\css\matery.css，ctrl+F快捷键查找.bg-cover:after，注释掉即可。</p>
+<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token comment">/* .bg-cover:after {
+    -webkit-animation: rainbow 60s infinite;
+    animation: rainbow 60s infinite;
+} */</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h4 id="优化目录栏"><a href="#优化目录栏" class="headerlink" title="优化目录栏"></a>优化目录栏</h4><p>目录样式竟然在：<code>themes\Matery\layout\_partial\post-detail-toc.ejs</code></p>
+<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">.toc-widget</span> <span class="token punctuation">{</span>
+    <span class="token property">width</span><span class="token punctuation">:</span> 345px<span class="token punctuation">;</span>
+    <span class="token property">padding-left</span><span class="token punctuation">:</span> 20px<span class="token punctuation">;</span>
+    <span class="token property">background-color</span><span class="token punctuation">:</span> <span class="token function">rgb</span><span class="token punctuation">(</span>255<span class="token punctuation">,</span> 255<span class="token punctuation">,</span> 255<span class="token punctuation">,</span>0.7<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token property">border-radius</span><span class="token punctuation">:</span> 10px<span class="token punctuation">;</span>
+    <span class="token property">box-shadow</span><span class="token punctuation">:</span> 0 10px 35px 2px <span class="token function">rgba</span><span class="token punctuation">(</span>0<span class="token punctuation">,</span> 0<span class="token punctuation">,</span> 0<span class="token punctuation">,</span> .15<span class="token punctuation">)</span><span class="token punctuation">,</span> 0 5px 15px <span class="token function">rgba</span><span class="token punctuation">(</span>0<span class="token punctuation">,</span> 0<span class="token punctuation">,</span> 0<span class="token punctuation">,</span> .07<span class="token punctuation">)</span><span class="token punctuation">,</span> 0 2px 5px -5px <span class="token function">rgba</span><span class="token punctuation">(</span>0<span class="token punctuation">,</span> 0<span class="token punctuation">,</span> 0<span class="token punctuation">,</span> .1<span class="token punctuation">)</span> <span class="token important">!important</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h4 id="增加点击跳转评论按钮"><a href="#增加点击跳转评论按钮" class="headerlink" title="增加点击跳转评论按钮"></a>增加点击跳转评论按钮</h4><p>新建文件<code>themes\Matery\layout\_partial\back-comment.ejs</code>,粘贴如下代码</p>
+<p>我这里评论是valine，直接填写的valine的id——<code>href="#vcomments"</code>,如果是其他评论，对应修改即可。</p>
+<pre class="line-numbers language-ejs" data-language="ejs"><code class="language-ejs"><span class="token comment">&lt;!-- 直达评论 --&gt;</span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>to_comment<span class="token punctuation">"</span></span> <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>comment-scroll<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>a</span> <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>btn-floating btn-large waves-effect waves-light<span class="token punctuation">"</span></span> <span class="token attr-name">href</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>#vcomments<span class="token punctuation">"</span></span> <span class="token attr-name">title</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>直达评论<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>i</span> <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>fas fa-comments<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>i</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>a</span><span class="token punctuation">&gt;</span></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>在<code>themes\Matery\layout\_partial\valine.ejs</code>文末添加一条，引用第一步的内容；</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token operator">&lt;</span>%- partial<span class="token punctuation">(</span><span class="token string">'_partial/back-comment.ejs'</span><span class="token punctuation">)</span> %<span class="token operator">&gt;</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>则只在valine存在的页面才显示直达评论，防止首页其他地方也出现按钮。其实还可以优化为浮动出现，有一点麻烦，我这里没有设置。</p>
+<p>增加样式在themes\Matery\source\css\matery.css添加内容如下：</p>
+<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token comment">/*直达评论按钮样式*/</span>
+<span class="token selector">.comment-scroll</span> <span class="token punctuation">{</span>
+    <span class="token property">position</span><span class="token punctuation">:</span> fixed<span class="token punctuation">;</span>
+    <span class="token property">right</span><span class="token punctuation">:</span> 15px<span class="token punctuation">;</span>
+    <span class="token property">bottom</span><span class="token punctuation">:</span> 135px<span class="token punctuation">;</span>
+    <span class="token property">padding-top</span><span class="token punctuation">:</span> 15px<span class="token punctuation">;</span>
+    <span class="token property">margin-bottom</span><span class="token punctuation">:</span> 0<span class="token punctuation">;</span>
+    <span class="token property">z-index</span><span class="token punctuation">:</span> 998<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token selector">.comment-scroll .btn-floating</span> <span class="token punctuation">{</span>
+    <span class="token property">background</span><span class="token punctuation">:</span> <span class="token function">linear-gradient</span><span class="token punctuation">(</span>to bottom right<span class="token punctuation">,</span> #FF9999 0%<span class="token punctuation">,</span> #ff6666 100%<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token property">width</span><span class="token punctuation">:</span> 48px<span class="token punctuation">;</span>
+    <span class="token property">height</span><span class="token punctuation">:</span> 48px<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token selector">.comment-scroll .btn-floating i</span> <span class="token punctuation">{</span>
+    <span class="token property">line-height</span><span class="token punctuation">:</span> 48px<span class="token punctuation">;</span>
+    <span class="token property">font-size</span><span class="token punctuation">:</span> 1.8rem<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>bottom: 135px;是距离底部的高度，看看你是否需要修改。</p>
+<h4 id="修改滑动条"><a href="#修改滑动条" class="headerlink" title="修改滑动条"></a>修改滑动条</h4><pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token comment">/* 滚动条 */</span>
+<span class="token selector">::-webkit-scrollbar-thumb</span> <span class="token punctuation">{</span>
+    <span class="token property">background-color</span><span class="token punctuation">:</span> #FF2A68<span class="token punctuation">;</span>
+    <span class="token property">background-image</span><span class="token punctuation">:</span> <span class="token function">-webkit-linear-gradient</span><span class="token punctuation">(</span>45deg<span class="token punctuation">,</span><span class="token function">rgba</span><span class="token punctuation">(</span>255<span class="token punctuation">,</span>255<span class="token punctuation">,</span>255<span class="token punctuation">,</span>.4<span class="token punctuation">)</span> 25%<span class="token punctuation">,</span>transparent 25%<span class="token punctuation">,</span>transparent 50%<span class="token punctuation">,</span><span class="token function">rgba</span><span class="token punctuation">(</span>255<span class="token punctuation">,</span>255<span class="token punctuation">,</span>255<span class="token punctuation">,</span>.4<span class="token punctuation">)</span> 50%<span class="token punctuation">,</span><span class="token function">rgba</span><span class="token punctuation">(</span>255<span class="token punctuation">,</span>255<span class="token punctuation">,</span>255<span class="token punctuation">,</span>.4<span class="token punctuation">)</span> 75%<span class="token punctuation">,</span>transparent 75%<span class="token punctuation">,</span>transparent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token property">border-radius</span><span class="token punctuation">:</span> 3em<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token selector">::-webkit-scrollbar-track</span> <span class="token punctuation">{</span>
+    <span class="token property">background-color</span><span class="token punctuation">:</span> #ffcacaff<span class="token punctuation">;</span>
+    <span class="token property">border-radius</span><span class="token punctuation">:</span> 3em<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token selector">::-webkit-scrollbar</span> <span class="token punctuation">{</span>
+    <span class="token property">width</span><span class="token punctuation">:</span> 8px<span class="token punctuation">;</span>
+    <span class="token property">height</span><span class="token punctuation">:</span> 15px<span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="Tag标签外挂使用方法"><a href="#Tag标签外挂使用方法" class="headerlink" title="Tag标签外挂使用方法"></a>Tag标签外挂使用方法</h3><pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown">Tag标签外挂使用方法
+
+{%r%}
+紅色
+{%endr%}
+{%g%}
+綠色
+{%endg%}
+{%y%}
+黃色
+{%endy%}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="图片懒加载"><a href="#图片懒加载" class="headerlink" title="图片懒加载"></a>图片懒加载</h3><p>在站点根目录执行下面的命令：</p>
+<pre class="line-numbers language-none"><code class="language-none">npm install hexo-lazyload-image --save<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>之后在站点配置文件下添加下面的代码</p>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">lazyload</span><span class="token punctuation">:</span>
+  <span class="token key atrule">enable</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>  <span class="token comment"># 是否开启图片懒加载</span>
+  <span class="token key atrule">onlypost</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>  <span class="token comment"># 是否只对文章的图片做懒加载</span>
+  <span class="token key atrule">loadingImg</span><span class="token punctuation">:</span> <span class="token comment"># eg ./images/loading.gif</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>最后执行 <code>hexo clean &amp;&amp; hexo g &amp;&amp; hexo s</code> 就可以看到效果了。</p>
+<h3 id="外链跳转插件"><a href="#外链跳转插件" class="headerlink" title="外链跳转插件"></a>外链跳转插件</h3><p>使用 npm 或者 yarn 安装</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">## npm 安装</span>
+<span class="token function">npm</span> <span class="token function">install</span> hexo-external-link --save
+<span class="token comment">## yarn 安装</span>
+<span class="token function">yarn</span> <span class="token function">add</span> hexo-external-link<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>之后在博客站点根目录下添加如下配置：</p>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">hexo_external_link</span><span class="token punctuation">:</span>
+  <span class="token key atrule">enable</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+  <span class="token key atrule">enable_base64_encode</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+  <span class="token key atrule">url_param_name</span><span class="token punctuation">:</span> <span class="token string">'u'</span>
+  <span class="token key atrule">html_file_name</span><span class="token punctuation">:</span> <span class="token string">'go.html'</span>
+  <span class="token key atrule">target_blank</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+  <span class="token key atrule">link_rel</span><span class="token punctuation">:</span> <span class="token string">'external nofollow noopener noreferrer'</span>
+  <span class="token key atrule">domain</span><span class="token punctuation">:</span> <span class="token string">'your_domain'</span> <span class="token comment"># 如果开启了防盗链，填写你的域名</span>
+  <span class="token key atrule">safety_chain</span><span class="token punctuation">:</span> <span class="token boolean important">true</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="添加天气小插件"><a href="#添加天气小插件" class="headerlink" title="添加天气小插件"></a>添加天气小插件</h3><p>首先去中国天气<a href="https://cj.weather.com.cn/plugin/pc">官网：</a>，配置自己的插件，选择自定义插件—&gt;自定义样式——&gt;生成代码，然后会生成一段代码，复制粘贴到 <code>themes/matery/layout/layout.ejs</code> 即可。</p>
+<h3 id="新增个人相册"><a href="#新增个人相册" class="headerlink" title="新增个人相册"></a>新增个人相册</h3><h4 id="新建相册目录"><a href="#新建相册目录" class="headerlink" title="新建相册目录"></a>新建相册目录</h4><p>执行下面的命令：</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">hexo new page galleries<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>然后到站点根目录的 source 目录下找名称为 <strong>galleries</strong> 的目录，打开目录下的 **index.md ** 文档，在原有基础上添加一下配置：</p>
@@ -7806,7 +8107,7 @@ layout: <span class="token string">"galleries"</span><span aria-hidden="true" cl
   <span class="token key atrule">url</span><span class="token punctuation">:</span> /galleries 
   <span class="token key atrule">icon</span><span class="token punctuation">:</span> fas fa<span class="token punctuation">-</span>image<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 
-<h3 id="添加-ejs-文件和-css-文件"><a href="#添加-ejs-文件和-css-文件" class="headerlink" title="添加 ejs 文件和 css 文件"></a>添加 ejs 文件和 css 文件</h3><p>首先新建 <code>gallery.css</code>，填写的代码内容如下：</p>
+<h4 id="添加-ejs-文件和-css-文件"><a href="#添加-ejs-文件和-css-文件" class="headerlink" title="添加 ejs 文件和 css 文件"></a>添加 ejs 文件和 css 文件</h4><p>首先新建 <code>gallery.css</code>，填写的代码内容如下：</p>
 <pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">.gallery-wrapper</span><span class="token punctuation">{</span>
   <span class="token property">padding-top</span><span class="token punctuation">:</span> 30px<span class="token punctuation">;</span>
 <span class="token punctuation">}</span>
@@ -8019,7 +8320,7 @@ layout: <span class="token string">"galleries"</span><span aria-hidden="true" cl
 <p><a href="https://blog.17lai.site/libs/justifiedGallery/justifiedGallery.min.js">https://blog.17lai.site/libs/justifiedGallery/justifiedGallery.min.js</a></p>
 </li>
 </ul>
-<h3 id="添加相册-json-配置文件"><a href="#添加相册-json-配置文件" class="headerlink" title="添加相册 json 配置文件"></a>添加相册 json 配置文件</h3><p>在<code>站点</code>目录 <code>source/_data/</code> 下新建一个 <strong>galleries.json</strong> 的文件，<strong>json</strong> 代码如下：</p>
+<h4 id="添加相册-json-配置文件"><a href="#添加相册-json-配置文件" class="headerlink" title="添加相册 json 配置文件"></a>添加相册 json 配置文件</h4><p>在<code>站点</code>目录 <code>source/_data/</code> 下新建一个 <strong>galleries.json</strong> 的文件，<strong>json</strong> 代码如下：</p>
 <pre class="line-numbers language-json" data-language="json"><code class="language-json"><span class="token punctuation">[</span>
     <span class="token punctuation">{</span>
       <span class="token property">"name"</span><span class="token operator">:</span> <span class="token string">"2020"</span><span class="token punctuation">,</span>
@@ -8048,11 +8349,11 @@ layout: <span class="token string">"galleries"</span><span aria-hidden="true" cl
 <span class="token key atrule">layout</span><span class="token punctuation">:</span> <span class="token string">"gallery"</span></span>
 <span class="token punctuation">---</span></span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
-<h3 id="查看效果"><a href="#查看效果" class="headerlink" title="查看效果"></a>查看效果</h3><p>完成以上步骤，执行命令，在本地查看效果：</p>
+<h4 id="查看效果"><a href="#查看效果" class="headerlink" title="查看效果"></a>查看效果</h4><p>完成以上步骤，执行命令，在本地查看效果：</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">hexo clean <span class="token operator">&amp;&amp;</span> hexo g <span class="token operator">&amp;&amp;</span> hexo s<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
-<h3 id="我的效果"><a href="#我的效果" class="headerlink" title="我的效果"></a>我的效果</h3><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/10/1320211013084134.png"></p>
-<h2 id="新增折叠功能"><a href="#新增折叠功能" class="headerlink" title="新增折叠功能"></a>新增折叠功能</h2><blockquote>
+<h4 id="我的效果"><a href="#我的效果" class="headerlink" title="我的效果"></a>我的效果</h4><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/10/1320211013084134.png"></p>
+<h3 id="新增折叠功能"><a href="#新增折叠功能" class="headerlink" title="新增折叠功能"></a>新增折叠功能</h3><blockquote>
 <p>这里利用<code>hexo-sliding-spoiler</code>插件间接实现折叠功能，在matery主题中零修改源代码实现折叠功能。</p>
 <p>另一种修改代码实现折叠效果，参考<a href="https://www.cnblogs.com/woshimrf/p/hexo-fold-block.html">Hexo next博客添加折叠块功能添加折叠代码块</a>。</p>
 </blockquote>
@@ -8112,7 +8413,7 @@ content
 {% endspoiler %}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><img src="https://cimg1.17lai.site/data/2021/10/1220211012105432.png"></p>
-<h2 id="让Hexo博客支持通知功能"><a href="#让Hexo博客支持通知功能" class="headerlink" title="让Hexo博客支持通知功能"></a>让Hexo博客支持通知功能</h2><h3 id="安装插件-2"><a href="#安装插件-2" class="headerlink" title="安装插件"></a>安装插件</h3><p>插件的 GitHub 仓库<a href="https://github.com/glazec/hexo-web-push-notification"> hexo-web-push-notification</a></p>
+<h3 id="让Hexo博客支持通知功能"><a href="#让Hexo博客支持通知功能" class="headerlink" title="让Hexo博客支持通知功能"></a>让Hexo博客支持通知功能</h3><h4 id="安装插件-2"><a href="#安装插件-2" class="headerlink" title="安装插件"></a>安装插件</h4><p>插件的 GitHub 仓库<a href="https://github.com/glazec/hexo-web-push-notification"> hexo-web-push-notification</a></p>
 <p>在你的博客站点目录执行下面的命令：</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> i hexo-web-push-notification --save<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
@@ -8127,7 +8428,7 @@ content
   <span class="token key atrule">trackingCode</span><span class="token punctuation">:</span> <span class="token string">"AEGlpbdgvBCWXqXI6PtsUzobY7TLV9gwJU8bzMktrwfrSERg_xnLVbjpCw8x2GmFmi1ZcLTz0ni6OnX5MAwoM88"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>其中 <code>webpushrKey</code>,<code>webpushrAuthToken</code> 和 <code>trackingCode</code> 的值在官网注册得到。</p>
-<h3 id="官网注册"><a href="#官网注册" class="headerlink" title="官网注册"></a>官网注册</h3><p>点击右边的图标即可进入👉 ： <a href="https://app.webpushr.com/signup">传送门</a></p>
+<h4 id="官网注册"><a href="#官网注册" class="headerlink" title="官网注册"></a>官网注册</h4><p>点击右边的图标即可进入👉 ： <a href="https://app.webpushr.com/signup">传送门</a></p>
 <p>注册完之后，然后会让你重新登录，登录之后，然后填写相关的信息即可。</p>
 <ol>
 <li>填写图中所显示的相关网站信息，填写完之后，点击下一步</li>
@@ -8171,7 +8472,7 @@ content
 
 
 
-<h2 id="客服聊天窗口"><a href="#客服聊天窗口" class="headerlink" title="客服聊天窗口"></a>客服聊天窗口</h2><p>1、在官网注册账号</p>
+<h3 id="客服聊天窗口"><a href="#客服聊天窗口" class="headerlink" title="客服聊天窗口"></a>客服聊天窗口</h3><p>1、在官网注册账号</p>
 <p>官网地址：<a href="https://app.crisp.chat/initiate/signup/">点我去crisp官网注册</a></p>
 <p>2、注册完成后设置</p>
 <p>登录刚才注册的账户——设置——网站设置——添加网站。</p>
@@ -8182,19 +8483,19 @@ content
 
 <p>3、其他的设置也<br>登录刚才注册的账户——设置——网站设置。<br>网站信息行——设置，自己根据需要设置即可，比如显示位置，颜色，自己的头像等。</p>
 <p>整个使用非常简单的。</p>
-<h2 id="让hexo支持pwa"><a href="#让hexo支持pwa" class="headerlink" title="让hexo支持pwa"></a>让hexo支持pwa</h2><blockquote>
+<h3 id="让hexo支持pwa"><a href="#让hexo支持pwa" class="headerlink" title="让hexo支持pwa"></a>让hexo支持pwa</h3><blockquote>
 <p>pwa中文叫渐进式网页应用，pwa网站可以直接添加网址站到桌面，就相当于在系统中直接安装了一个app，打开的效果也和app差不多，加载速度也很快，部分功能可以直接离线使用。Google的Workbox标准，目前来看需要Chrome支持</p>
 <ul>
 <li>hexo-pwa 很久没更新，看到资料都是支持4.x版本hexo。 </li>
 <li>hexo-offline 亲自验证，支持最新5.x的hexo。</li>
 </ul>
 </blockquote>
-<h3 id="安装hexo-offline"><a href="#安装hexo-offline" class="headerlink" title="安装hexo-offline"></a>安装hexo-offline</h3><pre class="line-numbers language-none"><code class="language-none">npm install hexo-offline --save<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h4 id="安装hexo-offline"><a href="#安装hexo-offline" class="headerlink" title="安装hexo-offline"></a>安装hexo-offline</h4><pre class="line-numbers language-none"><code class="language-none">npm install hexo-offline --save<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>关于这个插件的详细使用方法可以看下面这里</p>
 <pre class="line-numbers language-none"><code class="language-none">https://github.com/JLHwung/hexo-offline<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
-<h3 id="配置hexo-offline"><a href="#配置hexo-offline" class="headerlink" title="配置hexo-offline"></a>配置hexo-offline</h3><p>之后我们在站点根目录_config.yml如下配置</p>
+<h4 id="配置hexo-offline"><a href="#配置hexo-offline" class="headerlink" title="配置hexo-offline"></a>配置hexo-offline</h4><p>之后我们在站点根目录_config.yml如下配置</p>
 <pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token comment"># offline config passed to sw-precache.</span>
 <span class="token key atrule">service_worker</span><span class="token punctuation">:</span>
   <span class="token key atrule">maximumFileSizeToCacheInBytes</span><span class="token punctuation">:</span> <span class="token number">5242880</span>
@@ -8233,7 +8534,7 @@ content
 
 <p><img src="https://cimg1.17lai.site/data/2021/09/1820210918220357.png"></p>
 <p>这个文件中添加上面这句话即可，最后直接重新生成站点，部署即可</p>
-<h3 id="验证和使用"><a href="#验证和使用" class="headerlink" title="验证和使用"></a>验证和使用</h3><p>需要https访问，看到这个齿轮</p>
+<h4 id="验证和使用"><a href="#验证和使用" class="headerlink" title="验证和使用"></a>验证和使用</h4><p>需要https访问，看到这个齿轮</p>
 <p><img src="https://cimg1.17lai.site/data/2021/09/1820210918222354.png" alt="F12 sources"></p>
 <p>然后在浏览器地址栏可以看到应用标志</p>
 <blockquote>
@@ -8242,44 +8543,6 @@ content
 <p><img src="https://cimg1.17lai.site/data/2021/09/1820210918231523.png" alt="地址栏"></p>
 <p>点击打开，会看到如下结果，试一下？</p>
 <p><img src="https://cimg1.17lai.site/data/2021/09/1820210918231644.png" alt="离线博客"></p>
-<h2 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h2><h3 id="指令说明"><a href="#指令说明" class="headerlink" title="指令说明"></a>指令说明</h3><ul>
-<li><p><code>hexo server</code> #启动本地服务器，用于预览主题。Hexo 会监视文件变动并自动更新，除修改站点配置文件外,无须重启服务器,直接刷新网页即可生效。</p>
-</li>
-<li><p><code>hexo server -s</code> #以静态模式启动</p>
-</li>
-<li><p><code>hexo server -p 5000</code> #更改访问端口 (默认端口为 4000，’ctrl + c’关闭 server)</p>
-</li>
-<li><p><code>hexo server -i IP地址</code> #自定义 IP</p>
-</li>
-<li><p><code>hexo clean</code> #清除缓存 ,网页正常情况下可以忽略此条命令,执行该指令后,会删掉站点根目录下的 public 文件夹</p>
-</li>
-<li><p><code>hexo g</code> #生成静态网页 (执行 $ <code>hexo g</code>后会在站点根目录下生成 public 文件夹, hexo 会将”/blog/source/“ 下面的.md 后缀的文件编译为.html 后缀的文件,存放在”/blog/public/ “ 路径下)</p>
-</li>
-<li><p><code>hexo d</code> #自动生成网站静态文件，并将本地数据部署到设定的仓库(如 github)</p>
-</li>
-<li><p><code>hexo init</code> 文件夹名称 #初始化 XX 文件夹名称</p>
-</li>
-<li><p><code>npm update hexo -g</code>#升级</p>
-</li>
-<li><p><code>npm install hexo -g</code> #安装</p>
-</li>
-<li><p><code>node-v</code> #查看 node.js 版本号</p>
-</li>
-<li><p><code>npm -v</code> #查看 npm 版本号</p>
-</li>
-<li><p><code>git --version</code> #查看 git 版本号</p>
-</li>
-<li><p><code>hexo -v</code> #查看 hexo 版本号</p>
-</li>
-</ul>
-<h3 id="简写指令"><a href="#简写指令" class="headerlink" title="简写指令"></a>简写指令</h3><pre class="line-numbers language-none"><code class="language-none">hexo n "我的第一篇文章"` 等价于 `hexo new "我的第一篇文章"` 还等价于 `hexo new post "我的第一篇文章"
-hexo p` 等价于 `hexo publish
-hexo g` 等价于 `hexo generate
-hexo s`等价于 `hexo server
-hexo d` 等价于 `hexo deploy
-hexo g -d`等价于`hexo generate --deploy<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>注: <code>hexo clean</code> 没有 简写, <code>git --version</code> 没有简写</p>
 <h2 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h2><h4 id="通过hexo-g-d部署时报Error-Spawn-failed错误"><a href="#通过hexo-g-d部署时报Error-Spawn-failed错误" class="headerlink" title="通过hexo g -d部署时报Error: Spawn failed错误:"></a>通过<code>hexo g -d</code>部署时报<code>Error: Spawn failed</code>错误:</h4><blockquote>
 <p>这是由于 git 本地记录的提交版本号与 github 上不一致导致的，通过<code>git reset --hard commitCode</code>即可解决。</p>
 </blockquote>
@@ -8549,6 +8812,7 @@ location<span class="token punctuation">.</span>href<span class="token operator"
 <li><a href="https://yafine-blog.cn/posts/3b98.html">修改 matery 原有主题相册</a></li>
 <li><a href="https://small-rose.github.io/posts/a53a9069.html">Matery主题新手常见问题</a></li>
 <li><a href="https://hunterx.xyz/hexo-gitlab-cicd-conf.html">hexo-gitlab-cicd-conf</a></li>
+<li><a href="https://jxyblog.top/article/2da64065.html">更改hexo的主题为Matery,并进行初步的优化</a></li>
 </ul>
 ]]></content>
       <categories>
@@ -8560,135 +8824,6 @@ location<span class="token punctuation">.</span>href<span class="token operator"
         <tag>matery</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>浏览器的渲染过程</title>
-    <url>/web/2021-09-13-the-browser-rendering-process/</url>
-    <content><![CDATA[<blockquote>
-<p>通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？</p>
-</blockquote>
-<h3 id="首先，请先看一张大图"><a href="#首先，请先看一张大图" class="headerlink" title="首先，请先看一张大图"></a><strong>首先，请先看一张大图</strong></h3><p>浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：</p>
-<ul>
-<li>  构建对象模型（DOM，CSSOM）</li>
-<li>  构建渲染树（RenderTree）</li>
-<li>  布局</li>
-<li>  渲染</li>
-</ul>
-<p>在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220512.jpeg"></p>
-<h3 id="1-DOMTree的构建"><a href="#1-DOMTree的构建" class="headerlink" title="1.DOMTree的构建"></a><strong>1.DOMTree的构建</strong></h3><p>浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220515.jpeg"></p>
-<ul>
-<li>第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符  </li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220653.jpeg"></p>
-<ul>
-<li>第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是<code>开始标签</code>，还是<code>结束标签</code>，或者<code>文本标签</code>等。  </li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220522.jpeg"></p>
-<ul>
-<li>第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的<code>开始标签</code>，<code>结束标签</code>，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。<br>  Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt;</code>标签最终生成出的节点对象中会保存图片地址等信息。<br>  事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取<code>深度遍历算法</code>消耗Token来生成Node，如下图所示：<br>  图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出<code>html Token</code>,并消耗Token创建出<code>html 节点对象</code>，接着生成<code>head Token</code>并消耗Token创建出<code>head节点对象</code>……，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。  </li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220658.jpeg"></p>
-<p>这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？<br>因为在上述的解析的过程中，如果碰到了<code>script</code>或者<code>link</code>标签，就会根据<code>src</code>对应的地址去加载资源，在<code>script</code>标签没有设置<code>async/defer</code>属性时，这个加载过程是<code>下载并执行完全部的代码</code>，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出<strong>找不到该DOM元素</strong>的错误。<br>值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。</p>
-<h3 id="2-CSSOMTree的构建"><a href="#2-CSSOMTree的构建" class="headerlink" title="2.CSSOMTree的构建"></a><strong>2.CSSOMTree的构建</strong></h3><p>DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：</p>
-<p>假设浏览器收到了下面这样一段css:</p>
-<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">body</span> <span class="token punctuation">{</span><span class="token property">font-size</span><span class="token punctuation">:</span> 16px<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">p</span> <span class="token punctuation">{</span><span class="token property">font-weight</span><span class="token punctuation">:</span> bold<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">p span</span> <span class="token punctuation">{</span><span class="token property">display</span><span class="token punctuation">:</span>none<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">span</span> <span class="token punctuation">{</span><span class="token property">color</span><span class="token punctuation">:</span> red<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">img</span> <span class="token punctuation">{</span><span class="token property">float</span><span class="token punctuation">:</span> right<span class="token punctuation">;</span><span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>最终会生成如下的CSSOMTree:</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220529.jpeg"></p>
-<p>从图中可以看出，最开始<code>body</code>有一个样式规则是<code>font-size:16px</code>，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如<code>span</code>又添加了一个样式规则<code>color:red</code>。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：<strong>CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置</strong>。比如在上面的css代码基础上再添加一行代码<code>p {font-size:12px}</code>，那么之前设置的<code>16px</code>将会被覆盖成<code>12px</code>。</p>
-<p>下面是官方给的一种解释：</p>
-<blockquote>
-<p>未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。<br>所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。</p>
-</blockquote>
-<p>那么回到上面生成DOM时提到的JS问题：<strong>在标签没有设置<code>async/defer</code>属性时，js会阻塞DOM的生成</strong>。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。</p>
-<p>同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在<strong>浏览器还未完成CSSOMTree的下载和构建</strong>时去操作CSS样式，浏览器会<strong>暂停脚本的运行和DOM的构建</strong>，直至浏览器完成了CSSOM的下载和构建。也就是说，<strong>JS脚本的出现会让CSSOM的构建阻塞DOM的构建</strong>。</p>
-<blockquote>
-<p>平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？</p>
-</blockquote>
-<p>举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个<code>link</code>标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220540.jpeg"></p>
-<p>而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个<code>script</code>标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220546.jpeg"></p>
-<p>那如果我们把css放到前面，js放到最后引入时，构建时间会变成：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220705.jpeg"></p>
-<p>由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。</p>
-<p>简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：</p>
-<ul>
-<li>  当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕</li>
-<li>  JavaScript可以查询和修改DOMTree与CSSOMTree</li>
-<li>  直至CSSOM构建完毕，JavaScript才会执行</li>
-<li>  脚本在文档中的位置很重要</li>
-</ul>
-<h3 id="3-渲染树的构建"><a href="#3-渲染树的构建" class="headerlink" title="3.渲染树的构建"></a><strong>3.渲染树的构建</strong></h3><p>现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220711.jpeg"></p>
-<p>接下来我们来谈几条概念</p>
-<ul>
-<li><p>  Render 树上的每一个节点被称为：<code>RenderObject</code>。</p>
-</li>
-<li><p>  RenderObject跟 DOM 节点几乎是一一对应的，当一个<code>可见的 DOM 节点</code>被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。</p>
-</li>
-<li><p>其中，可见的DOM节点不包括：  </p>
-</li>
-<li><p>  一些不会体现在渲染输出中的节点（<code>&lt;html&gt;&lt;script&gt;&lt;link&gt;….</code>），会直接被忽略掉。</p>
-</li>
-<li><p>  通过CSS隐藏的节点。例如上图中的<code>span</code>节点，因为有一个CSS显式规则在该节点上设置了<code>display:none</code>属性，那么它在生成RenderObject时会被直接忽略掉。</p>
-</li>
-<li><p>  Render 树是衔接浏览器排版引擎和渲染引擎之间的<strong>桥梁</strong>，它是<strong>排版引擎的输出，渲染引擎的输入</strong>。</p>
-</li>
-</ul>
-<p>此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？</p>
-<h3 id="RenderObject-and-RenderLayer"><a href="#RenderObject-and-RenderLayer" class="headerlink" title="RenderObject and RenderLayer"></a><strong>RenderObject and RenderLayer</strong></h3><blockquote>
-<p>浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理<strong>Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing</strong>等属性，浏览器需要生成另外一棵树：<strong>Layer树</strong></p>
-</blockquote>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220730.jpeg"></p>
-<p>浏览器会为一些<strong>特定</strong>的<code>RenderObject</code>生成对应的<code>RenderLayer</code>，其中的规则是：</p>
-<ul>
-<li>  是否是页面的根节点 <em>It’s the root object for the page</em></li>
-<li>  是否有css的一些布局属性（relative absolute or a transform) <em>It has explicit CSS position properties (relative, absolute or a transform)</em></li>
-<li>  是否透明 <em>It is transparent</em></li>
-<li>  是否有溢出 <em>Has overflow, an alpha mask or reflection</em></li>
-<li>  是否有css滤镜 <em>Has a CSS filter</em></li>
-<li>  是否包含一个canvas元素使得节点拥有视图上下文 <em>Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context</em></li>
-<li>  是否包含一个video元素 <em>Corresponds to a video element</em></li>
-</ul>
-<p>当满足上面其中一个条件时，这个<code>RrenderObject</code>就会被浏览器选中生成对应的<code>RenderLayer</code>。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。</p>
-<p>浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个<code>RenderLayer</code>，再遍历从属于这个RenderLayer的 <code>RrenderObject</code>，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 <code>RenderLayer</code> 和 <code>RrenderObject</code> 一起就决定了网页在屏幕上最终呈现出来的内容。</p>
-<h3 id="4-布局"><a href="#4-布局" class="headerlink" title="4.布局"></a><strong>4.布局</strong></h3><p>到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。</p>
-<p>布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220553.jpeg"></p>
-<h3 id="5-渲染"><a href="#5-渲染" class="headerlink" title="5.渲染"></a><strong>5.渲染</strong></h3><p>最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220718.jpeg"></p>
-<p>至此，我们就能够在浏览器上看到漂亮的网页了</p>
-<blockquote>
-<p>谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？</p>
-</blockquote>
-<p>我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~</p>
-<h3 id="总结："><a href="#总结：" class="headerlink" title="总结："></a><strong>总结：</strong></h3><ul>
-<li>  经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。</li>
-<li>  CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。</li>
-<li>  同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用<code>async/defer属性</code>异步加载JavaScript。</li>
-<li>  重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数</li>
-</ul>
-<h3 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a><strong>参考文献：</strong></h3><p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21%23wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect</a></p>
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
-        <tag>css</tag>
-        <tag>js</tag>
       </tags>
   </entry>
   <entry>
@@ -9175,6 +9310,82 @@ location<span class="token punctuation">.</span>href<span class="token operator"
       <tags>
         <tag>ai</tag>
         <tag>face</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Vim IDE Docker 以及中文指南</title>
+    <url>/ide/2021-09-15-vim-checklist/</url>
+    <content><![CDATA[<blockquote>
+<p>Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！</p>
+</blockquote>
+<h2 id="Vim-Docker"><a href="#Vim-Docker" class="headerlink" title="Vim Docker"></a><a href="https://hub.docker.com/r/bloodstar/vim">Vim Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/G6KybVM.png" alt="Vim Docker"></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker pull bloodstar/vim<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit</span><span class="token operator">=</span><span class="token string">'docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim'</span> 
+edit some.file 
+<span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit_update</span><span class="token operator">=</span><span class="token string">"docker pull bloodstar/vim:latest"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="Vim-IDE-Docker"><a href="#Vim-IDE-Docker" class="headerlink" title="Vim IDE Docker"></a><a href="https://hub.docker.com/r/bloodstar/drop-in">Vim IDE Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/RVTlBBO.png" alt="drop-in"></p>
+<h4 id="What’s-inside"><a href="#What’s-inside" class="headerlink" title="What’s inside:"></a>What’s inside:</h4><ul>
+<li><a href="http://www.alpinelinux.org/"><code>Alpine Linux</code></a></li>
+<li><a href="http://www.vim.org/"><code>Vim</code></a> + a ton of awesome plugins <em>see <a href="https://hub.docker.com/r/bloodstar/vim/"><code>bloodstar/vim:latest</code></a></em></li>
+<li>Good support of <a href="https://golang.org/"><code>Golang</code></a> development with <a href="https://hub.docker.com/r/bloodstar/go-tools/"><code>bloodstar/go-tools</code></a> container</li>
+<li><a href="https://tmux.github.io/"><code>tmux</code></a></li>
+<li><a href="https://powerline.readthedocs.io/"><code>powerline</code></a></li>
+<li><a href="https://mosh.mit.edu/"><code>Mosh</code></a></li>
+<li>OpenSSH, Bash, OMF, Python, etc.</li>
+</ul>
+<h4 id="how-to-start-the-daemon-and-all-containers"><a href="#how-to-start-the-daemon-and-all-containers" class="headerlink" title="how to start the daemon(and all containers)"></a>how to start the daemon(and all containers)</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker create -v <span class="token string">'/usr/lib/go'</span> --name go-tools <span class="token punctuation">\</span>
+<span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
+
+docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
+--volumes-from go-tools <span class="token punctuation">\</span>
+-v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
+-v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
+-d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
+--name drop-in bloodstar/drop-in<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><em><code>-v /etc/localtime:/etc/localtime:ro</code> - makes tmux display local time</em></p>
+<h4 id="how-to-connect"><a href="#how-to-connect" class="headerlink" title="how to connect:"></a>how to connect:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h4 id="or-without-host-identity-check"><a href="#or-without-host-identity-check" class="headerlink" title="or without host identity check:"></a>or without host identity check:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -o StrictHostKeyChecking=no -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h4 id="Useful-Bash-scripts"><a href="#Useful-Bash-scripts" class="headerlink" title="Useful Bash scripts"></a>Useful Bash scripts</h4><h6 id="Connect"><a href="#Connect" class="headerlink" title="Connect"></a><strong>Connect</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
+<span class="token assign-left variable">ip</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker inspect --format <span class="token string">'{{ .NetworkSettings.IPAddress }}'</span> drop-in<span class="token variable">)</span></span>
+mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@<span class="token variable">$ip</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h6 id="start-the-daemon-and-all-containers"><a href="#start-the-daemon-and-all-containers" class="headerlink" title="start the daemon(and all containers)"></a><strong>start the daemon(and all containers)</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
+<span class="token assign-left variable">dtc_id</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker <span class="token function">ps</span> -a -q --filter <span class="token string">'name=vim-go-tools'</span><span class="token variable">)</span></span>
+<span class="token keyword">if</span> <span class="token punctuation">[</span><span class="token punctuation">[</span> -z <span class="token string">"<span class="token variable">${dtc_id}</span>"</span> <span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">;</span> <span class="token keyword">then</span>
+ <span class="token builtin class-name">echo</span> <span class="token string">'vim-go-tools container not found. Creating...'</span>
+ docker create -v <span class="token string">'/usr/lib/go'</span> --name <span class="token string">'vim-go-tools'</span> <span class="token punctuation">\</span>
+   <span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
+ <span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span>
+<span class="token keyword">fi</span>
+<span class="token builtin class-name">echo</span> <span class="token string">'starting daemon...'</span>
+docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
+  --volumes-from vim-go-tools <span class="token punctuation">\</span>
+  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
+  -v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
+  -e <span class="token string">"GEMAIL=&lt;github email&gt;"</span> <span class="token punctuation">\</span>
+  -e <span class="token string">"GNAME=&lt;github name&gt;"</span> <span class="token punctuation">\</span>
+  -d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
+  --name drop-in bloodstar/drop-in
+<span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="Vim-中文快查表-lt-戳这里"><a href="#Vim-中文快查表-lt-戳这里" class="headerlink" title="Vim 中文快查表   <= 戳这里"></a><a href="https://blog.17lai.site/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/">Vim 中文快查表</a>   &lt;= 戳这里</h2><blockquote>
+<p>Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！<br>快去看看吧。</p>
+</blockquote>
+<h2 id="Vim"><a href="#Vim" class="headerlink" title="Vim"></a>Vim</h2><p><img src="https://cimg1.17lai.site/data/2021/09/1520210915150901.png" alt="vim速查"></p>
+]]></content>
+      <categories>
+        <category>ide</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>vim</tag>
+        <tag>ide</tag>
+        <tag>docker</tag>
       </tags>
   </entry>
   <entry>
@@ -10151,82 +10362,6 @@ footer</span> <span class="token punctuation">{</span>
       </tags>
   </entry>
   <entry>
-    <title>Vim IDE Docker 以及中文指南</title>
-    <url>/ide/2021-09-15-vim-checklist/</url>
-    <content><![CDATA[<blockquote>
-<p>Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！</p>
-</blockquote>
-<h2 id="Vim-Docker"><a href="#Vim-Docker" class="headerlink" title="Vim Docker"></a><a href="https://hub.docker.com/r/bloodstar/vim">Vim Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/G6KybVM.png" alt="Vim Docker"></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker pull bloodstar/vim<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit</span><span class="token operator">=</span><span class="token string">'docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim'</span> 
-edit some.file 
-<span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit_update</span><span class="token operator">=</span><span class="token string">"docker pull bloodstar/vim:latest"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="Vim-IDE-Docker"><a href="#Vim-IDE-Docker" class="headerlink" title="Vim IDE Docker"></a><a href="https://hub.docker.com/r/bloodstar/drop-in">Vim IDE Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/RVTlBBO.png" alt="drop-in"></p>
-<h4 id="What’s-inside"><a href="#What’s-inside" class="headerlink" title="What’s inside:"></a>What’s inside:</h4><ul>
-<li><a href="http://www.alpinelinux.org/"><code>Alpine Linux</code></a></li>
-<li><a href="http://www.vim.org/"><code>Vim</code></a> + a ton of awesome plugins <em>see <a href="https://hub.docker.com/r/bloodstar/vim/"><code>bloodstar/vim:latest</code></a></em></li>
-<li>Good support of <a href="https://golang.org/"><code>Golang</code></a> development with <a href="https://hub.docker.com/r/bloodstar/go-tools/"><code>bloodstar/go-tools</code></a> container</li>
-<li><a href="https://tmux.github.io/"><code>tmux</code></a></li>
-<li><a href="https://powerline.readthedocs.io/"><code>powerline</code></a></li>
-<li><a href="https://mosh.mit.edu/"><code>Mosh</code></a></li>
-<li>OpenSSH, Bash, OMF, Python, etc.</li>
-</ul>
-<h4 id="how-to-start-the-daemon-and-all-containers"><a href="#how-to-start-the-daemon-and-all-containers" class="headerlink" title="how to start the daemon(and all containers)"></a>how to start the daemon(and all containers)</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker create -v <span class="token string">'/usr/lib/go'</span> --name go-tools <span class="token punctuation">\</span>
-<span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
-
-docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
---volumes-from go-tools <span class="token punctuation">\</span>
--v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
--v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
--d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
---name drop-in bloodstar/drop-in<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p><em><code>-v /etc/localtime:/etc/localtime:ro</code> - makes tmux display local time</em></p>
-<h4 id="how-to-connect"><a href="#how-to-connect" class="headerlink" title="how to connect:"></a>how to connect:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h4 id="or-without-host-identity-check"><a href="#or-without-host-identity-check" class="headerlink" title="or without host identity check:"></a>or without host identity check:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -o StrictHostKeyChecking=no -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h4 id="Useful-Bash-scripts"><a href="#Useful-Bash-scripts" class="headerlink" title="Useful Bash scripts"></a>Useful Bash scripts</h4><h6 id="Connect"><a href="#Connect" class="headerlink" title="Connect"></a><strong>Connect</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
-<span class="token assign-left variable">ip</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker inspect --format <span class="token string">'{{ .NetworkSettings.IPAddress }}'</span> drop-in<span class="token variable">)</span></span>
-mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@<span class="token variable">$ip</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<h6 id="start-the-daemon-and-all-containers"><a href="#start-the-daemon-and-all-containers" class="headerlink" title="start the daemon(and all containers)"></a><strong>start the daemon(and all containers)</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
-<span class="token assign-left variable">dtc_id</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker <span class="token function">ps</span> -a -q --filter <span class="token string">'name=vim-go-tools'</span><span class="token variable">)</span></span>
-<span class="token keyword">if</span> <span class="token punctuation">[</span><span class="token punctuation">[</span> -z <span class="token string">"<span class="token variable">${dtc_id}</span>"</span> <span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">;</span> <span class="token keyword">then</span>
- <span class="token builtin class-name">echo</span> <span class="token string">'vim-go-tools container not found. Creating...'</span>
- docker create -v <span class="token string">'/usr/lib/go'</span> --name <span class="token string">'vim-go-tools'</span> <span class="token punctuation">\</span>
-   <span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
- <span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span>
-<span class="token keyword">fi</span>
-<span class="token builtin class-name">echo</span> <span class="token string">'starting daemon...'</span>
-docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
-  --volumes-from vim-go-tools <span class="token punctuation">\</span>
-  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
-  -v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
-  -e <span class="token string">"GEMAIL=&lt;github email&gt;"</span> <span class="token punctuation">\</span>
-  -e <span class="token string">"GNAME=&lt;github name&gt;"</span> <span class="token punctuation">\</span>
-  -d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
-  --name drop-in bloodstar/drop-in
-<span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="Vim-中文快查表-lt-戳这里"><a href="#Vim-中文快查表-lt-戳这里" class="headerlink" title="Vim 中文快查表   <= 戳这里"></a><a href="https://blog.17lai.site/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/">Vim 中文快查表</a>   &lt;= 戳这里</h2><blockquote>
-<p>Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！<br>快去看看吧。</p>
-</blockquote>
-<h2 id="Vim"><a href="#Vim" class="headerlink" title="Vim"></a>Vim</h2><p><img src="https://cimg1.17lai.site/data/2021/09/1520210915150901.png" alt="vim速查"></p>
-]]></content>
-      <categories>
-        <category>ide</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>vim</tag>
-        <tag>ide</tag>
-        <tag>docker</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/music/2021-10-03-music-analysis-for-hanhong-tianliangle/</url>
     <content><![CDATA[<blockquote>
@@ -11173,6 +11308,66 @@ docker swarm <span class="token function">join</span> --token xxx x.x.x.x:xxx --
       </tags>
   </entry>
   <entry>
+    <title>我的项目</title>
+    <url>/aboutme/myproject/</url>
+    <content><![CDATA[<h2 id="个人部分开源项目介绍"><a href="#个人部分开源项目介绍" class="headerlink" title="个人部分开源项目介绍"></a>个人部分开源项目介绍</h2><p>全部定制更新，可以到<a href="https://github.com/appotry">个人Github</a>上面看源码，<a href="https://hub.docker.com/u/bloodstar">个人Docker Hub</a>上面下载体验。</p>
+<h2 id="Docker"><a href="#Docker" class="headerlink" title="Docker"></a><strong>Docker</strong></h2><p>在个人Nas上面同时运行着<a href="https://blog.17lai.site/docker/2021-07-09-use-jeckett-sonarr-iyuu-qt-emby-building-automatic-movie-anime-process/">80多个Docker</a>，高峰期上百个。</p>
+<p>包括娱乐，PT，开发，等等各种用途。精心定制整理推荐！</p>
+<p>全部开源！请放心使用。欢迎提交PR，功能建议。</p>
+<h3 id="bloodstar-drop-in"><a href="#bloodstar-drop-in" class="headerlink" title="bloodstar/drop-in"></a><a href="https://hub.docker.com/r/bloodstar/drop-in">bloodstar/drop-in</a></h3><blockquote>
+<p>VIM IDE 开发环境。All In One Docker！</p>
+</blockquote>
+<p>VIM IDE 开发环境。</p>
+<p><img src="https://images.weserv.nl/?url=https://i.imgur.com/RVTlBBO.png" alt="VimIDE"></p>
+<h3 id="bloodstar-hexo"><a href="#bloodstar-hexo" class="headerlink" title="bloodstar/hexo"></a><a href="https://hub.docker.com/r/bloodstar/hexo">bloodstar/hexo</a></h3><blockquote>
+<p>Docker版本的Hexo，初始化自动安装常用插件和Matary主题。使你更方便的体验Hexo的魅力。</p>
+</blockquote>
+<h3 id="bloodstar-v2fly-privoxy"><a href="#bloodstar-v2fly-privoxy" class="headerlink" title="bloodstar/v2fly-privoxy"></a><a href="https://hub.docker.com/r/bloodstar/v2fly-privoxy">bloodstar/v2fly-privoxy</a></h3><blockquote>
+<p>作为开发者必备工具，不会用怎么行？赶快把它用起来吧！</p>
+</blockquote>
+<p>Docker版 v2ray 客户端,v2ray 结合 privoxy 来使用 gfwlist 规则来实现代理过滤, 并实现 socks5 代理转 http 代理。实现自动路由，去广告。</p>
+<h3 id="bloodstar-nginx-purge"><a href="#bloodstar-nginx-purge" class="headerlink" title="bloodstar/nginx-purge"></a><a href="https://hub.docker.com/r/bloodstar/nginx-purge">bloodstar/nginx-purge</a></h3><blockquote>
+<p>大名鼎鼎的Nginx深度定制版本。</p>
+</blockquote>
+<p>支持ARM64, ARMV7, AMD64 ，增加 CA 证书，防火墙，brotli, Proxy-cache-purge, htpasswd 支持 。</p>
+<h3 id="bloodstar-rclonebrowser"><a href="#bloodstar-rclonebrowser" class="headerlink" title="bloodstar/rclonebrowser"></a><a href="https://hub.docker.com/r/bloodstar/rclonebrowser">bloodstar/rclonebrowser</a></h3><blockquote>
+<p>rclonebrowser 最新版本。 </p>
+<p>A docker container including RClone Browser with GUI interface.</p>
+</blockquote>
+<p>Rclone 同步各大网盘， 实现自动备份，自动远程同步等功能。</p>
+<h2 id="Github开源项目"><a href="#Github开源项目" class="headerlink" title="Github开源项目"></a><strong>Github开源项目</strong></h2><h3 id="appotry-PTtool"><a href="#appotry-PTtool" class="headerlink" title="appotry/PTtool"></a><a href="https://github.com/appotry/PTtool">appotry/PTtool</a></h3><p>方便PT用户硬链接文件，在最大可能情况下节约空间，并保持做种。 小于1M的文件直接复制，方便emby，tmm等工具刮削修改nfo等小文件。 大于1M的文件硬链接到目的目录，可以修改文件名，但是不能修改文件内容！</p>
+<h2 id="博主的网站"><a href="#博主的网站" class="headerlink" title="博主的网站"></a>博主的网站</h2><h3 id="博主的-Hexo-blog"><a href="#博主的-Hexo-blog" class="headerlink" title="博主的 Hexo blog"></a>博主的 <a href="https://blog.17lai.site/">Hexo blog</a></h3><blockquote>
+<ul>
+<li><p>嵌入式，Linux Kernel&amp;Driver, PT, Docker, Nas等等</p>
+</li>
+<li><p><a href="https://blog.17lai.site/atom.xml">本站RSS</a>， 全文输出，欢迎订阅。</p>
+</li>
+</ul>
+</blockquote>
+<h3 id="博主的另一个Blog（Skyll-版本）"><a href="#博主的另一个Blog（Skyll-版本）" class="headerlink" title="博主的另一个Blog（Skyll 版本）"></a>博主的<a href="https://blog2.17lai.fun/">另一个Blog</a>（Skyll 版本）</h3><blockquote>
+<ul>
+<li><p>旧Blog，Skyll 版本。现在不在维护</p>
+</li>
+<li><p><a href="https://blog2.17lai.fun/feed.xml">本站RSS</a></p>
+</li>
+</ul>
+</blockquote>
+<h3 id="博主的Wordpress-blog"><a href="#博主的Wordpress-blog" class="headerlink" title="博主的Wordpress blog"></a>博主的<a href="https://wp.17lai.fun/">Wordpress blog</a></h3><blockquote>
+<p>装修中，性能，功能还不尽如意，暂未启用。PageRank优化到<strong>100分</strong>！</p>
+</blockquote>
+<h3 id="博主的主站"><a href="#博主的主站" class="headerlink" title="博主的主站"></a>博主的<a href="https://www.17lai.fun/">主站</a></h3><blockquote>
+<p>装修中，暂未启用。PageRank优化到<strong>100分</strong>！</p>
+</blockquote>
+<h2 id="开发产品"><a href="#开发产品" class="headerlink" title="开发产品"></a>开发产品</h2><p>TI方案 | 安防 | 模拟/数字摄像机(球机、枪机) | 硬盘录像机(DVR/NVR/电视墙) | 智能摄像机(车牌/人脸) | 等等。</p>
+]]></content>
+      <categories>
+        <category>aboutme</category>
+      </categories>
+      <tags>
+        <tag>aboutme</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>我的技术栈</title>
     <url>/aboutme/mytech/</url>
     <content><![CDATA[<h2 id="深度思考，专注于技术。"><a href="#深度思考，专注于技术。" class="headerlink" title="深度思考，专注于技术。"></a><strong>深度思考，专注于技术。</strong></h2><h2 id="个人技术栈"><a href="#个人技术栈" class="headerlink" title="个人技术栈"></a>个人技术栈</h2><h2 id="Linux"><a href="#Linux" class="headerlink" title="Linux"></a>Linux</h2><ul>
@@ -11271,66 +11466,6 @@ docker swarm <span class="token function">join</span> --token xxx x.x.x.x:xxx --
         <tag>PT</tag>
         <tag>aboutme，blog</tag>
         <tag>物联网</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>我的项目</title>
-    <url>/aboutme/myproject/</url>
-    <content><![CDATA[<h2 id="个人部分开源项目介绍"><a href="#个人部分开源项目介绍" class="headerlink" title="个人部分开源项目介绍"></a>个人部分开源项目介绍</h2><p>全部定制更新，可以到<a href="https://github.com/appotry">个人Github</a>上面看源码，<a href="https://hub.docker.com/u/bloodstar">个人Docker Hub</a>上面下载体验。</p>
-<h2 id="Docker"><a href="#Docker" class="headerlink" title="Docker"></a><strong>Docker</strong></h2><p>在个人Nas上面同时运行着<a href="https://blog.17lai.site/docker/2021-07-09-use-jeckett-sonarr-iyuu-qt-emby-building-automatic-movie-anime-process/">80多个Docker</a>，高峰期上百个。</p>
-<p>包括娱乐，PT，开发，等等各种用途。精心定制整理推荐！</p>
-<p>全部开源！请放心使用。欢迎提交PR，功能建议。</p>
-<h3 id="bloodstar-drop-in"><a href="#bloodstar-drop-in" class="headerlink" title="bloodstar/drop-in"></a><a href="https://hub.docker.com/r/bloodstar/drop-in">bloodstar/drop-in</a></h3><blockquote>
-<p>VIM IDE 开发环境。All In One Docker！</p>
-</blockquote>
-<p>VIM IDE 开发环境。</p>
-<p><img src="https://images.weserv.nl/?url=https://i.imgur.com/RVTlBBO.png" alt="VimIDE"></p>
-<h3 id="bloodstar-hexo"><a href="#bloodstar-hexo" class="headerlink" title="bloodstar/hexo"></a><a href="https://hub.docker.com/r/bloodstar/hexo">bloodstar/hexo</a></h3><blockquote>
-<p>Docker版本的Hexo，初始化自动安装常用插件和Matary主题。使你更方便的体验Hexo的魅力。</p>
-</blockquote>
-<h3 id="bloodstar-v2fly-privoxy"><a href="#bloodstar-v2fly-privoxy" class="headerlink" title="bloodstar/v2fly-privoxy"></a><a href="https://hub.docker.com/r/bloodstar/v2fly-privoxy">bloodstar/v2fly-privoxy</a></h3><blockquote>
-<p>作为开发者必备工具，不会用怎么行？赶快把它用起来吧！</p>
-</blockquote>
-<p>Docker版 v2ray 客户端,v2ray 结合 privoxy 来使用 gfwlist 规则来实现代理过滤, 并实现 socks5 代理转 http 代理。实现自动路由，去广告。</p>
-<h3 id="bloodstar-nginx-purge"><a href="#bloodstar-nginx-purge" class="headerlink" title="bloodstar/nginx-purge"></a><a href="https://hub.docker.com/r/bloodstar/nginx-purge">bloodstar/nginx-purge</a></h3><blockquote>
-<p>大名鼎鼎的Nginx深度定制版本。</p>
-</blockquote>
-<p>支持ARM64, ARMV7, AMD64 ，增加 CA 证书，防火墙，brotli, Proxy-cache-purge, htpasswd 支持 。</p>
-<h3 id="bloodstar-rclonebrowser"><a href="#bloodstar-rclonebrowser" class="headerlink" title="bloodstar/rclonebrowser"></a><a href="https://hub.docker.com/r/bloodstar/rclonebrowser">bloodstar/rclonebrowser</a></h3><blockquote>
-<p>rclonebrowser 最新版本。 </p>
-<p>A docker container including RClone Browser with GUI interface.</p>
-</blockquote>
-<p>Rclone 同步各大网盘， 实现自动备份，自动远程同步等功能。</p>
-<h2 id="Github开源项目"><a href="#Github开源项目" class="headerlink" title="Github开源项目"></a><strong>Github开源项目</strong></h2><h3 id="appotry-PTtool"><a href="#appotry-PTtool" class="headerlink" title="appotry/PTtool"></a><a href="https://github.com/appotry/PTtool">appotry/PTtool</a></h3><p>方便PT用户硬链接文件，在最大可能情况下节约空间，并保持做种。 小于1M的文件直接复制，方便emby，tmm等工具刮削修改nfo等小文件。 大于1M的文件硬链接到目的目录，可以修改文件名，但是不能修改文件内容！</p>
-<h2 id="博主的网站"><a href="#博主的网站" class="headerlink" title="博主的网站"></a>博主的网站</h2><h3 id="博主的-Hexo-blog"><a href="#博主的-Hexo-blog" class="headerlink" title="博主的 Hexo blog"></a>博主的 <a href="https://blog.17lai.site/">Hexo blog</a></h3><blockquote>
-<ul>
-<li><p>嵌入式，Linux Kernel&amp;Driver, PT, Docker, Nas等等</p>
-</li>
-<li><p><a href="https://blog.17lai.site/atom.xml">本站RSS</a>， 全文输出，欢迎订阅。</p>
-</li>
-</ul>
-</blockquote>
-<h3 id="博主的另一个Blog（Skyll-版本）"><a href="#博主的另一个Blog（Skyll-版本）" class="headerlink" title="博主的另一个Blog（Skyll 版本）"></a>博主的<a href="https://blog2.17lai.fun/">另一个Blog</a>（Skyll 版本）</h3><blockquote>
-<ul>
-<li><p>旧Blog，Skyll 版本。现在不在维护</p>
-</li>
-<li><p><a href="https://blog2.17lai.fun/feed.xml">本站RSS</a></p>
-</li>
-</ul>
-</blockquote>
-<h3 id="博主的Wordpress-blog"><a href="#博主的Wordpress-blog" class="headerlink" title="博主的Wordpress blog"></a>博主的<a href="https://wp.17lai.fun/">Wordpress blog</a></h3><blockquote>
-<p>装修中，性能，功能还不尽如意，暂未启用。PageRank优化到<strong>100分</strong>！</p>
-</blockquote>
-<h3 id="博主的主站"><a href="#博主的主站" class="headerlink" title="博主的主站"></a>博主的<a href="https://www.17lai.fun/">主站</a></h3><blockquote>
-<p>装修中，暂未启用。PageRank优化到<strong>100分</strong>！</p>
-</blockquote>
-<h2 id="开发产品"><a href="#开发产品" class="headerlink" title="开发产品"></a>开发产品</h2><p>TI方案 | 安防 | 模拟/数字摄像机(球机、枪机) | 硬盘录像机(DVR/NVR/电视墙) | 智能摄像机(车牌/人脸) | 等等。</p>
-]]></content>
-      <categories>
-        <category>aboutme</category>
-      </categories>
-      <tags>
-        <tag>aboutme</tag>
       </tags>
   </entry>
 </search>
