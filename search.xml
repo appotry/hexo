@@ -6141,6 +6141,135 @@ This is the admonition body
       </tags>
   </entry>
   <entry>
+    <title>浏览器的渲染过程</title>
+    <url>/web/2021-09-13-the-browser-rendering-process/</url>
+    <content><![CDATA[<blockquote>
+<p>通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？</p>
+</blockquote>
+<h3 id="首先，请先看一张大图"><a href="#首先，请先看一张大图" class="headerlink" title="首先，请先看一张大图"></a><strong>首先，请先看一张大图</strong></h3><p>浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：</p>
+<ul>
+<li>  构建对象模型（DOM，CSSOM）</li>
+<li>  构建渲染树（RenderTree）</li>
+<li>  布局</li>
+<li>  渲染</li>
+</ul>
+<p>在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220512.jpeg"></p>
+<h3 id="1-DOMTree的构建"><a href="#1-DOMTree的构建" class="headerlink" title="1.DOMTree的构建"></a><strong>1.DOMTree的构建</strong></h3><p>浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220515.jpeg"></p>
+<ul>
+<li>第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符  </li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220653.jpeg"></p>
+<ul>
+<li>第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是<code>开始标签</code>，还是<code>结束标签</code>，或者<code>文本标签</code>等。  </li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220522.jpeg"></p>
+<ul>
+<li>第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的<code>开始标签</code>，<code>结束标签</code>，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。<br>  Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt;</code>标签最终生成出的节点对象中会保存图片地址等信息。<br>  事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取<code>深度遍历算法</code>消耗Token来生成Node，如下图所示：<br>  图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出<code>html Token</code>,并消耗Token创建出<code>html 节点对象</code>，接着生成<code>head Token</code>并消耗Token创建出<code>head节点对象</code>……，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。  </li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220658.jpeg"></p>
+<p>这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？<br>因为在上述的解析的过程中，如果碰到了<code>script</code>或者<code>link</code>标签，就会根据<code>src</code>对应的地址去加载资源，在<code>script</code>标签没有设置<code>async/defer</code>属性时，这个加载过程是<code>下载并执行完全部的代码</code>，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出<strong>找不到该DOM元素</strong>的错误。<br>值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。</p>
+<h3 id="2-CSSOMTree的构建"><a href="#2-CSSOMTree的构建" class="headerlink" title="2.CSSOMTree的构建"></a><strong>2.CSSOMTree的构建</strong></h3><p>DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：</p>
+<p>假设浏览器收到了下面这样一段css:</p>
+<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">body</span> <span class="token punctuation">{</span><span class="token property">font-size</span><span class="token punctuation">:</span> 16px<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">p</span> <span class="token punctuation">{</span><span class="token property">font-weight</span><span class="token punctuation">:</span> bold<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">p span</span> <span class="token punctuation">{</span><span class="token property">display</span><span class="token punctuation">:</span>none<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">span</span> <span class="token punctuation">{</span><span class="token property">color</span><span class="token punctuation">:</span> red<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">img</span> <span class="token punctuation">{</span><span class="token property">float</span><span class="token punctuation">:</span> right<span class="token punctuation">;</span><span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>最终会生成如下的CSSOMTree:</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220529.jpeg"></p>
+<p>从图中可以看出，最开始<code>body</code>有一个样式规则是<code>font-size:16px</code>，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如<code>span</code>又添加了一个样式规则<code>color:red</code>。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：<strong>CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置</strong>。比如在上面的css代码基础上再添加一行代码<code>p {font-size:12px}</code>，那么之前设置的<code>16px</code>将会被覆盖成<code>12px</code>。</p>
+<p>下面是官方给的一种解释：</p>
+<blockquote>
+<p>未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。<br>所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。</p>
+</blockquote>
+<p>那么回到上面生成DOM时提到的JS问题：<strong>在标签没有设置<code>async/defer</code>属性时，js会阻塞DOM的生成</strong>。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。</p>
+<p>同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在<strong>浏览器还未完成CSSOMTree的下载和构建</strong>时去操作CSS样式，浏览器会<strong>暂停脚本的运行和DOM的构建</strong>，直至浏览器完成了CSSOM的下载和构建。也就是说，<strong>JS脚本的出现会让CSSOM的构建阻塞DOM的构建</strong>。</p>
+<blockquote>
+<p>平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？</p>
+</blockquote>
+<p>举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个<code>link</code>标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220540.jpeg"></p>
+<p>而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个<code>script</code>标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220546.jpeg"></p>
+<p>那如果我们把css放到前面，js放到最后引入时，构建时间会变成：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220705.jpeg"></p>
+<p>由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。</p>
+<p>简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：</p>
+<ul>
+<li>  当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕</li>
+<li>  JavaScript可以查询和修改DOMTree与CSSOMTree</li>
+<li>  直至CSSOM构建完毕，JavaScript才会执行</li>
+<li>  脚本在文档中的位置很重要</li>
+</ul>
+<h3 id="3-渲染树的构建"><a href="#3-渲染树的构建" class="headerlink" title="3.渲染树的构建"></a><strong>3.渲染树的构建</strong></h3><p>现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220711.jpeg"></p>
+<p>接下来我们来谈几条概念</p>
+<ul>
+<li><p>  Render 树上的每一个节点被称为：<code>RenderObject</code>。</p>
+</li>
+<li><p>  RenderObject跟 DOM 节点几乎是一一对应的，当一个<code>可见的 DOM 节点</code>被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。</p>
+</li>
+<li><p>其中，可见的DOM节点不包括：  </p>
+</li>
+<li><p>  一些不会体现在渲染输出中的节点（<code>&lt;html&gt;&lt;script&gt;&lt;link&gt;….</code>），会直接被忽略掉。</p>
+</li>
+<li><p>  通过CSS隐藏的节点。例如上图中的<code>span</code>节点，因为有一个CSS显式规则在该节点上设置了<code>display:none</code>属性，那么它在生成RenderObject时会被直接忽略掉。</p>
+</li>
+<li><p>  Render 树是衔接浏览器排版引擎和渲染引擎之间的<strong>桥梁</strong>，它是<strong>排版引擎的输出，渲染引擎的输入</strong>。</p>
+</li>
+</ul>
+<p>此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？</p>
+<h3 id="RenderObject-and-RenderLayer"><a href="#RenderObject-and-RenderLayer" class="headerlink" title="RenderObject and RenderLayer"></a><strong>RenderObject and RenderLayer</strong></h3><blockquote>
+<p>浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理<strong>Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing</strong>等属性，浏览器需要生成另外一棵树：<strong>Layer树</strong></p>
+</blockquote>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220730.jpeg"></p>
+<p>浏览器会为一些<strong>特定</strong>的<code>RenderObject</code>生成对应的<code>RenderLayer</code>，其中的规则是：</p>
+<ul>
+<li>  是否是页面的根节点 <em>It’s the root object for the page</em></li>
+<li>  是否有css的一些布局属性（relative absolute or a transform) <em>It has explicit CSS position properties (relative, absolute or a transform)</em></li>
+<li>  是否透明 <em>It is transparent</em></li>
+<li>  是否有溢出 <em>Has overflow, an alpha mask or reflection</em></li>
+<li>  是否有css滤镜 <em>Has a CSS filter</em></li>
+<li>  是否包含一个canvas元素使得节点拥有视图上下文 <em>Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context</em></li>
+<li>  是否包含一个video元素 <em>Corresponds to a video element</em></li>
+</ul>
+<p>当满足上面其中一个条件时，这个<code>RrenderObject</code>就会被浏览器选中生成对应的<code>RenderLayer</code>。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。</p>
+<p>浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个<code>RenderLayer</code>，再遍历从属于这个RenderLayer的 <code>RrenderObject</code>，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 <code>RenderLayer</code> 和 <code>RrenderObject</code> 一起就决定了网页在屏幕上最终呈现出来的内容。</p>
+<h3 id="4-布局"><a href="#4-布局" class="headerlink" title="4.布局"></a><strong>4.布局</strong></h3><p>到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。</p>
+<p>布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220553.jpeg"></p>
+<h3 id="5-渲染"><a href="#5-渲染" class="headerlink" title="5.渲染"></a><strong>5.渲染</strong></h3><p>最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220718.jpeg"></p>
+<p>至此，我们就能够在浏览器上看到漂亮的网页了</p>
+<blockquote>
+<p>谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？</p>
+</blockquote>
+<p>我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~</p>
+<h3 id="总结："><a href="#总结：" class="headerlink" title="总结："></a><strong>总结：</strong></h3><ul>
+<li>  经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。</li>
+<li>  CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。</li>
+<li>  同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用<code>async/defer属性</code>异步加载JavaScript。</li>
+<li>  重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数</li>
+</ul>
+<h3 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a><strong>参考文献：</strong></h3><p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21%23wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect</a></p>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
+        <tag>css</tag>
+        <tag>js</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>基于Hexo的matery主题搭建博客并深度优化</title>
     <url>/hexo/2021-09-10-use-hexo-and-matery-to-make-a-perfect-blog/</url>
     <content><![CDATA[<blockquote>
@@ -8716,135 +8845,6 @@ location<span class="token punctuation">.</span>href<span class="token operator"
       </tags>
   </entry>
   <entry>
-    <title>浏览器的渲染过程</title>
-    <url>/web/2021-09-13-the-browser-rendering-process/</url>
-    <content><![CDATA[<blockquote>
-<p>通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？</p>
-</blockquote>
-<h3 id="首先，请先看一张大图"><a href="#首先，请先看一张大图" class="headerlink" title="首先，请先看一张大图"></a><strong>首先，请先看一张大图</strong></h3><p>浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：</p>
-<ul>
-<li>  构建对象模型（DOM，CSSOM）</li>
-<li>  构建渲染树（RenderTree）</li>
-<li>  布局</li>
-<li>  渲染</li>
-</ul>
-<p>在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220512.jpeg"></p>
-<h3 id="1-DOMTree的构建"><a href="#1-DOMTree的构建" class="headerlink" title="1.DOMTree的构建"></a><strong>1.DOMTree的构建</strong></h3><p>浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220515.jpeg"></p>
-<ul>
-<li>第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符  </li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220653.jpeg"></p>
-<ul>
-<li>第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是<code>开始标签</code>，还是<code>结束标签</code>，或者<code>文本标签</code>等。  </li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220522.jpeg"></p>
-<ul>
-<li>第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的<code>开始标签</code>，<code>结束标签</code>，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。<br>  Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt;</code>标签最终生成出的节点对象中会保存图片地址等信息。<br>  事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取<code>深度遍历算法</code>消耗Token来生成Node，如下图所示：<br>  图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出<code>html Token</code>,并消耗Token创建出<code>html 节点对象</code>，接着生成<code>head Token</code>并消耗Token创建出<code>head节点对象</code>……，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。  </li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220658.jpeg"></p>
-<p>这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？<br>因为在上述的解析的过程中，如果碰到了<code>script</code>或者<code>link</code>标签，就会根据<code>src</code>对应的地址去加载资源，在<code>script</code>标签没有设置<code>async/defer</code>属性时，这个加载过程是<code>下载并执行完全部的代码</code>，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出<strong>找不到该DOM元素</strong>的错误。<br>值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。</p>
-<h3 id="2-CSSOMTree的构建"><a href="#2-CSSOMTree的构建" class="headerlink" title="2.CSSOMTree的构建"></a><strong>2.CSSOMTree的构建</strong></h3><p>DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：</p>
-<p>假设浏览器收到了下面这样一段css:</p>
-<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">body</span> <span class="token punctuation">{</span><span class="token property">font-size</span><span class="token punctuation">:</span> 16px<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">p</span> <span class="token punctuation">{</span><span class="token property">font-weight</span><span class="token punctuation">:</span> bold<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">p span</span> <span class="token punctuation">{</span><span class="token property">display</span><span class="token punctuation">:</span>none<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">span</span> <span class="token punctuation">{</span><span class="token property">color</span><span class="token punctuation">:</span> red<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">img</span> <span class="token punctuation">{</span><span class="token property">float</span><span class="token punctuation">:</span> right<span class="token punctuation">;</span><span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>最终会生成如下的CSSOMTree:</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220529.jpeg"></p>
-<p>从图中可以看出，最开始<code>body</code>有一个样式规则是<code>font-size:16px</code>，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如<code>span</code>又添加了一个样式规则<code>color:red</code>。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：<strong>CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置</strong>。比如在上面的css代码基础上再添加一行代码<code>p {font-size:12px}</code>，那么之前设置的<code>16px</code>将会被覆盖成<code>12px</code>。</p>
-<p>下面是官方给的一种解释：</p>
-<blockquote>
-<p>未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。<br>所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。</p>
-</blockquote>
-<p>那么回到上面生成DOM时提到的JS问题：<strong>在标签没有设置<code>async/defer</code>属性时，js会阻塞DOM的生成</strong>。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。</p>
-<p>同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在<strong>浏览器还未完成CSSOMTree的下载和构建</strong>时去操作CSS样式，浏览器会<strong>暂停脚本的运行和DOM的构建</strong>，直至浏览器完成了CSSOM的下载和构建。也就是说，<strong>JS脚本的出现会让CSSOM的构建阻塞DOM的构建</strong>。</p>
-<blockquote>
-<p>平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？</p>
-</blockquote>
-<p>举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个<code>link</code>标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220540.jpeg"></p>
-<p>而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个<code>script</code>标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220546.jpeg"></p>
-<p>那如果我们把css放到前面，js放到最后引入时，构建时间会变成：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220705.jpeg"></p>
-<p>由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。</p>
-<p>简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：</p>
-<ul>
-<li>  当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕</li>
-<li>  JavaScript可以查询和修改DOMTree与CSSOMTree</li>
-<li>  直至CSSOM构建完毕，JavaScript才会执行</li>
-<li>  脚本在文档中的位置很重要</li>
-</ul>
-<h3 id="3-渲染树的构建"><a href="#3-渲染树的构建" class="headerlink" title="3.渲染树的构建"></a><strong>3.渲染树的构建</strong></h3><p>现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220711.jpeg"></p>
-<p>接下来我们来谈几条概念</p>
-<ul>
-<li><p>  Render 树上的每一个节点被称为：<code>RenderObject</code>。</p>
-</li>
-<li><p>  RenderObject跟 DOM 节点几乎是一一对应的，当一个<code>可见的 DOM 节点</code>被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。</p>
-</li>
-<li><p>其中，可见的DOM节点不包括：  </p>
-</li>
-<li><p>  一些不会体现在渲染输出中的节点（<code>&lt;html&gt;&lt;script&gt;&lt;link&gt;….</code>），会直接被忽略掉。</p>
-</li>
-<li><p>  通过CSS隐藏的节点。例如上图中的<code>span</code>节点，因为有一个CSS显式规则在该节点上设置了<code>display:none</code>属性，那么它在生成RenderObject时会被直接忽略掉。</p>
-</li>
-<li><p>  Render 树是衔接浏览器排版引擎和渲染引擎之间的<strong>桥梁</strong>，它是<strong>排版引擎的输出，渲染引擎的输入</strong>。</p>
-</li>
-</ul>
-<p>此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？</p>
-<h3 id="RenderObject-and-RenderLayer"><a href="#RenderObject-and-RenderLayer" class="headerlink" title="RenderObject and RenderLayer"></a><strong>RenderObject and RenderLayer</strong></h3><blockquote>
-<p>浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理<strong>Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing</strong>等属性，浏览器需要生成另外一棵树：<strong>Layer树</strong></p>
-</blockquote>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220730.jpeg"></p>
-<p>浏览器会为一些<strong>特定</strong>的<code>RenderObject</code>生成对应的<code>RenderLayer</code>，其中的规则是：</p>
-<ul>
-<li>  是否是页面的根节点 <em>It’s the root object for the page</em></li>
-<li>  是否有css的一些布局属性（relative absolute or a transform) <em>It has explicit CSS position properties (relative, absolute or a transform)</em></li>
-<li>  是否透明 <em>It is transparent</em></li>
-<li>  是否有溢出 <em>Has overflow, an alpha mask or reflection</em></li>
-<li>  是否有css滤镜 <em>Has a CSS filter</em></li>
-<li>  是否包含一个canvas元素使得节点拥有视图上下文 <em>Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context</em></li>
-<li>  是否包含一个video元素 <em>Corresponds to a video element</em></li>
-</ul>
-<p>当满足上面其中一个条件时，这个<code>RrenderObject</code>就会被浏览器选中生成对应的<code>RenderLayer</code>。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。</p>
-<p>浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个<code>RenderLayer</code>，再遍历从属于这个RenderLayer的 <code>RrenderObject</code>，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 <code>RenderLayer</code> 和 <code>RrenderObject</code> 一起就决定了网页在屏幕上最终呈现出来的内容。</p>
-<h3 id="4-布局"><a href="#4-布局" class="headerlink" title="4.布局"></a><strong>4.布局</strong></h3><p>到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。</p>
-<p>布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220553.jpeg"></p>
-<h3 id="5-渲染"><a href="#5-渲染" class="headerlink" title="5.渲染"></a><strong>5.渲染</strong></h3><p>最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220718.jpeg"></p>
-<p>至此，我们就能够在浏览器上看到漂亮的网页了</p>
-<blockquote>
-<p>谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？</p>
-</blockquote>
-<p>我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~</p>
-<h3 id="总结："><a href="#总结：" class="headerlink" title="总结："></a><strong>总结：</strong></h3><ul>
-<li>  经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。</li>
-<li>  CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。</li>
-<li>  同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用<code>async/defer属性</code>异步加载JavaScript。</li>
-<li>  重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数</li>
-</ul>
-<h3 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a><strong>参考文献：</strong></h3><p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21%23wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect</a></p>
-<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
-        <tag>css</tag>
-        <tag>js</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>在浏览器输入 URL 回车之后发生了什么</title>
     <url>/web/2021-09-13-what-happened-when-you-click-http/</url>
     <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><hr>
@@ -10304,82 +10304,6 @@ footer</span> <span class="token punctuation">{</span>
       </tags>
   </entry>
   <entry>
-    <title>Vim IDE Docker 以及中文指南</title>
-    <url>/ide/2021-09-15-vim-checklist/</url>
-    <content><![CDATA[<blockquote>
-<p>Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！</p>
-</blockquote>
-<h2 id="Vim-Docker"><a href="#Vim-Docker" class="headerlink" title="Vim Docker"></a><a href="https://hub.docker.com/r/bloodstar/vim">Vim Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/G6KybVM.png" alt="Vim Docker"></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker pull bloodstar/vim<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit</span><span class="token operator">=</span><span class="token string">'docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim'</span> 
-edit some.file 
-<span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit_update</span><span class="token operator">=</span><span class="token string">"docker pull bloodstar/vim:latest"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="Vim-IDE-Docker"><a href="#Vim-IDE-Docker" class="headerlink" title="Vim IDE Docker"></a><a href="https://hub.docker.com/r/bloodstar/drop-in">Vim IDE Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/RVTlBBO.png" alt="drop-in"></p>
-<h4 id="What’s-inside"><a href="#What’s-inside" class="headerlink" title="What’s inside:"></a>What’s inside:</h4><ul>
-<li><a href="http://www.alpinelinux.org/"><code>Alpine Linux</code></a></li>
-<li><a href="http://www.vim.org/"><code>Vim</code></a> + a ton of awesome plugins <em>see <a href="https://hub.docker.com/r/bloodstar/vim/"><code>bloodstar/vim:latest</code></a></em></li>
-<li>Good support of <a href="https://golang.org/"><code>Golang</code></a> development with <a href="https://hub.docker.com/r/bloodstar/go-tools/"><code>bloodstar/go-tools</code></a> container</li>
-<li><a href="https://tmux.github.io/"><code>tmux</code></a></li>
-<li><a href="https://powerline.readthedocs.io/"><code>powerline</code></a></li>
-<li><a href="https://mosh.mit.edu/"><code>Mosh</code></a></li>
-<li>OpenSSH, Bash, OMF, Python, etc.</li>
-</ul>
-<h4 id="how-to-start-the-daemon-and-all-containers"><a href="#how-to-start-the-daemon-and-all-containers" class="headerlink" title="how to start the daemon(and all containers)"></a>how to start the daemon(and all containers)</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker create -v <span class="token string">'/usr/lib/go'</span> --name go-tools <span class="token punctuation">\</span>
-<span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
-
-docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
---volumes-from go-tools <span class="token punctuation">\</span>
--v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
--v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
--d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
---name drop-in bloodstar/drop-in<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p><em><code>-v /etc/localtime:/etc/localtime:ro</code> - makes tmux display local time</em></p>
-<h4 id="how-to-connect"><a href="#how-to-connect" class="headerlink" title="how to connect:"></a>how to connect:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h4 id="or-without-host-identity-check"><a href="#or-without-host-identity-check" class="headerlink" title="or without host identity check:"></a>or without host identity check:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -o StrictHostKeyChecking=no -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h4 id="Useful-Bash-scripts"><a href="#Useful-Bash-scripts" class="headerlink" title="Useful Bash scripts"></a>Useful Bash scripts</h4><h6 id="Connect"><a href="#Connect" class="headerlink" title="Connect"></a><strong>Connect</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
-<span class="token assign-left variable">ip</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker inspect --format <span class="token string">'{{ .NetworkSettings.IPAddress }}'</span> drop-in<span class="token variable">)</span></span>
-mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@<span class="token variable">$ip</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<h6 id="start-the-daemon-and-all-containers"><a href="#start-the-daemon-and-all-containers" class="headerlink" title="start the daemon(and all containers)"></a><strong>start the daemon(and all containers)</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
-<span class="token assign-left variable">dtc_id</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker <span class="token function">ps</span> -a -q --filter <span class="token string">'name=vim-go-tools'</span><span class="token variable">)</span></span>
-<span class="token keyword">if</span> <span class="token punctuation">[</span><span class="token punctuation">[</span> -z <span class="token string">"<span class="token variable">${dtc_id}</span>"</span> <span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">;</span> <span class="token keyword">then</span>
- <span class="token builtin class-name">echo</span> <span class="token string">'vim-go-tools container not found. Creating...'</span>
- docker create -v <span class="token string">'/usr/lib/go'</span> --name <span class="token string">'vim-go-tools'</span> <span class="token punctuation">\</span>
-   <span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
- <span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span>
-<span class="token keyword">fi</span>
-<span class="token builtin class-name">echo</span> <span class="token string">'starting daemon...'</span>
-docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
-  --volumes-from vim-go-tools <span class="token punctuation">\</span>
-  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
-  -v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
-  -e <span class="token string">"GEMAIL=&lt;github email&gt;"</span> <span class="token punctuation">\</span>
-  -e <span class="token string">"GNAME=&lt;github name&gt;"</span> <span class="token punctuation">\</span>
-  -d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
-  --name drop-in bloodstar/drop-in
-<span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="Vim-中文快查表-lt-戳这里"><a href="#Vim-中文快查表-lt-戳这里" class="headerlink" title="Vim 中文快查表   <= 戳这里"></a><a href="https://blog.17lai.site/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/">Vim 中文快查表</a>   &lt;= 戳这里</h2><blockquote>
-<p>Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！<br>快去看看吧。</p>
-</blockquote>
-<h2 id="Vim"><a href="#Vim" class="headerlink" title="Vim"></a>Vim</h2><p><img src="https://cimg1.17lai.site/data/2021/09/1520210915150901.png" alt="vim速查"></p>
-<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
-      <categories>
-        <category>ide</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>vim</tag>
-        <tag>ide</tag>
-        <tag>docker</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/music/2021-10-03-music-analysis-for-hanhong-tianliangle/</url>
     <content><![CDATA[<blockquote>
@@ -10536,10 +10460,10 @@ docker run -v <span class="token variable"><span class="token variable">$(</span
         <category>music</category>
       </categories>
       <tags>
-        <tag>docker</tag>
         <tag>music</tag>
         <tag>mstream</tag>
         <tag>selfhost</tag>
+        <tag>docker</tag>
       </tags>
   </entry>
   <entry>
@@ -10591,154 +10515,6 @@ docker run -v <span class="token variable"><span class="token variable">$(</span
       </tags>
   </entry>
   <entry>
-    <title>如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕</title>
-    <url>/video/2021-10-11-how-to-scrape-video-whit-tinymediamanager/</url>
-    <content><![CDATA[<blockquote>
-<p>注意使用V3版本，V4版本收费！</p>
-<p>所以升级V3版本即可，不要升级到V4版本！不要升级到V4版本！不要升级到V4版本！</p>
-</blockquote>
-<ul>
-<li>  <strong>Plex</strong>是一款很好用的个人媒体中心软件，但是因为国内网络的原因，使用默认的TMDB刮削器挂出来的效果并不好，要么就是影片信息不正确，要么就是海报不正常显示，实在让人头疼。</li>
-<li>  <strong>tinyMediaManager</strong>是一款电影信息刮削和整理的软件，正好可以和plex配合，完美的解决这一问题。tinyMediaManager在刮削影片的过程中会把影片的海报、演员表、背景图片等等都保存到影片所在文件夹，自动生成电影的nfo信息文件，并对文件和文件夹进行重新命名的操作。在plex设置刮削代理的时候，需要用一款插件可以直接读取nfo的信息，完成刮削，下面把使用方法分享给大家，</li>
-</ul>
-<h2 id="下载和安装tinyMediaManager"><a href="#下载和安装tinyMediaManager" class="headerlink" title="下载和安装tinyMediaManager"></a><strong>下载和安装tinyMediaManager</strong></h2><p><strong>官网下载地址：<a href="www.tinymediamanager.org/download/">https://www.tinymediamanager.org/download/</a></strong></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181048.jpeg"></p>
-<h3 id="tmm下载"><a href="#tmm下载" class="headerlink" title="tmm下载"></a>tmm下载</h3><p><strong>下载后直接解压文件夹</strong></p>
-<p>客户端需要java支持，先在电脑安装java</p>
-<p>客户端下载后是一个压缩包，解压之后就可以用</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181054.jpeg"></p>
-<p><strong>解压之后打开tinyMediaManager.exe</strong></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181101.png" alt="tmm目录"></p>
-<h2 id="TMM设置"><a href="#TMM设置" class="headerlink" title="TMM设置"></a>TMM设置</h2><h3 id="TMM代理设置"><a href="#TMM代理设置" class="headerlink" title="TMM代理设置"></a>TMM代理设置</h3><blockquote>
-<p>重要：很多源都需要代理才能访问。这里正确的配置才能正确的刮削！</p>
-<p>可以调整这里使用的内存，大内存可以极大加速刮削速度。</p>
-</blockquote>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011211402.png"></p>
-<h2 id="电影刮削设置"><a href="#电影刮削设置" class="headerlink" title="电影刮削设置"></a>电影刮削设置</h2><p><strong>进行相关设置。Tmm可以对电影和电视剧的刮削进行分别设置，打开设置后选择电影选项，可以选择分级标准、自动重命名等选项。</strong></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181337.png"></p>
-<p>电影信息选项</p>
-<p><strong>点击侧边栏媒体库目录，添加电影目录</strong></p>
-<p><strong>刮削器设置</strong></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181107.jpeg"></p>
-<p>选择电影刮削器</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181107.png"></p>
-<p>刮削器选项</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181114.png"></p>
-<p>nfo选项，建议选择生成两种命名放视的nfo</p>
-<p><strong>图片刮削器选择全选，图片文件名建议两边都选上，会分别生成两组命名格式不同的图片，为了保证plex能读取</strong></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181331.png"></p>
-<p>图片命名选项</p>
-<p>Tmm还可以自动下载预告片，字幕。字幕下载时可以输入opensubtitles账户</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181115.png"></p>
-<p>字幕下载选项</p>
-<p><strong>重命名规则</strong></p>
-<p>这里重点讲一下重命名规则，刮削完后可以选择对电影文件和文件夹进行重命名，可能对于pt用户重命名可能会影响资源上传，可以不进行重命名操作。</p>
-<p>一般情况下电影刮削出来的信息，title是电影的中文标题名称，originaltitle是电影的原标题名称，一般是英文名称。软件默认的设置是文件和文件夹都命名成title，也就是中文标题，但是我发现这样在后期使用的时候有弊端。英文电影在检索字幕时会用文件名来检索，而用中文名称很多情况下检索不出来，所以这里把文件的命名规则改一下，改成originaltitle，并去掉年份信息的括号，中间连接符改成点，文件名设置成${originaltitle}${- ,edition,}.${year}.${videoFormat}.${audioCodec}的格式。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181121.png"></p>
-<p>电影文件重命名选项</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181127.png"></p>
-<p>刮削完的文件夹内文件信息</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181323.png"></p>
-<p>刮削完的电影文件夹目录</p>
-<p><strong>电视节目刮削设置类似，如果挂不出来可以用the tvdb来刮削。</strong></p>
-<p><strong>tmm有时候会出现网络不稳定，刮不到的情况，可以修改host解决</strong></p>
-<p>改host 在host文件最后加一行13.224.161.90 <a href="https://link.zhihu.com/?target=http://api.themoviedb.org">http://api.themoviedb.org</a></p>
-<p><strong>退出设置，开始刮削</strong></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181317.png"></p>
-<p>更新电影源</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181128.jpeg"></p>
-<p>选中要刮削的电影自动匹配</p>
-<h3 id="电影手动刮削"><a href="#电影手动刮削" class="headerlink" title="电影手动刮削"></a>电影手动刮削</h3><p><img src="https://cimg1.17lai.site/data/2021/10/1120211011183942.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011184131.png"></p>
-<h2 id="电视剧-amp-动画手动刮削"><a href="#电视剧-amp-动画手动刮削" class="headerlink" title="电视剧&amp;动画手动刮削"></a>电视剧&amp;动画手动刮削</h2><h3 id="电视剧元数据刮削"><a href="#电视剧元数据刮削" class="headerlink" title="电视剧元数据刮削"></a>电视剧元数据刮削</h3><p><img src="https://cimg1.17lai.site/data/2021/10/1120211011184909.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011185747.png"></p>
-<h3 id="季和集元数据刮削前整理"><a href="#季和集元数据刮削前整理" class="headerlink" title="季和集元数据刮削前整理"></a>季和集元数据刮削前整理</h3><p><img src="https://cimg1.17lai.site/data/2021/10/1120211011185049.png"></p>
-<h3 id="刮削季元素"><a href="#刮削季元素" class="headerlink" title="刮削季元素"></a>刮削季元素</h3><p>整理好正确的季和集之后，才能正确的刮削季元素</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011185146.png"></p>
-<h3 id="TMM整理完效果"><a href="#TMM整理完效果" class="headerlink" title="TMM整理完效果"></a>TMM整理完效果</h3><blockquote>
-<p>这里用海贼王做展示，一个季和集都特别多的剧。</p>
-</blockquote>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011185448.png"></p>
-<h2 id="TMM目录重命名整理"><a href="#TMM目录重命名整理" class="headerlink" title="TMM目录重命名整理"></a>TMM目录重命名整理</h2><blockquote>
-<p>刮削完后，可以重命名视频文件，并进行目录整理。</p>
-</blockquote>
-<p>方法1</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181133.jpeg"></p>
-<p>方法2</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011184315.png"></p>
-<p>等所有电影的信息刮削完后，选择重命名和清理，这样就完成了刮削的操作。以后下载了新电影，直接打开tmm,更新源之后直接选择搜索未刮削过的电影完成刮削。刮削出来的信息kodi，emby等软件也都能用。</p>
-<h2 id="Plex设置"><a href="#Plex设置" class="headerlink" title="Plex设置"></a>Plex设置</h2><h3 id="plex插件的安装和设置"><a href="#plex插件的安装和设置" class="headerlink" title="plex插件的安装和设置"></a><strong>plex插件的安装和设置</strong></h3><p><strong>下载plex的插件</strong></p>
-<p>插件XBMCnfoMoviesImporter和XBMCnfoTVImporter分别是刮削电影和电视剧的插件</p>
-<p>下载地址：<a href="https://github.com/gboudreau/XBMCnfoMoviesImporter.bundle">https://github.com/gboudreau/XBMCnfoMoviesImporter.bundle</a></p>
-<p>如果不能下载的话可以联系我获取，还有几个很好用的plex插件</p>
-<p>下载完插件后就需要把插件解压到plex的插件目录：C:\Users\用户名\AppData\Local\Plex Media Server\Plug-ins</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181134.png"></p>
-<p>plex插件目录</p>
-<p>注意解压后要把文件夹名后边的master去掉。</p>
-<p><strong>plex代理设置</strong></p>
-<p>Plex的代理设置就是选择刮削电影所用的刮削器及优先级。</p>
-<p>装好插件后重启plex，进行plex的设置。在代理设置中选择XBMCnfoMoviesImporter，把它的优先级调到最高，第二个可以设置成字幕插件。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181140.jpeg"></p>
-<p><strong>设置电影资料库的刮削器代理</strong></p>
-<p>点击设置界面下方管理里边的资料库，选择电影资料夹的高级设置，设置如下</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181140.png"><img src="https://cimg1.17lai.site/data/2021/10/1120211011181146.png"></p>
-<p>plex代理设置</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181152.png"></p>
-<p><strong>刷新电影源数据资料</strong></p>
-<p>设置完成后就可以在plex主页对电影文件夹刷新元数据了。等待刷新完后就可以载入所有的电影信息了。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181152.jpeg"></p>
-<p>管理资料库-刷新电影元数据</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181153.jpeg"></p>
-<p>更新后的电影信息</p>
-<p>采用类似的设置，电视剧信息也能刮削。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181159.jpeg"></p>
-<p>电视剧更新后的信息</p>
-<h2 id="Emby设置"><a href="#Emby设置" class="headerlink" title="Emby设置"></a>Emby设置</h2><blockquote>
-<p>Emby内置刮削工具，但是速度较慢。下面设置基于外部刮削工具TMM，所以没有勾选Emby刮削源！</p>
-</blockquote>
-<p>最终效果演示</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011190035.png" alt="最终效果"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011190347.png"></p>
-<h3 id="开始设置"><a href="#开始设置" class="headerlink" title="开始设置"></a>开始设置</h3><p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181946.png"></p>
-<h3 id="新增媒体库"><a href="#新增媒体库" class="headerlink" title="新增媒体库"></a>新增媒体库</h3><p><img src="https://cimg1.17lai.site/data/2021/10/1120211011182142.png"></p>
-<h3 id="已有媒体库属性设置"><a href="#已有媒体库属性设置" class="headerlink" title="已有媒体库属性设置"></a>已有媒体库属性设置</h3><p><img src="https://cimg1.17lai.site/data/2021/10/1120211011182244.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011182350.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011183115.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011183157.png"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011183336.png"></p>
-<h3 id="Emby字幕设置"><a href="#Emby字幕设置" class="headerlink" title="Emby字幕设置"></a>Emby字幕设置</h3><p>字幕下载设置，字幕下载工具见后面的[字幕下载]章节</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011182554.png"></p>
-<h2 id="字幕下载"><a href="#字幕下载" class="headerlink" title="字幕下载"></a><strong>字幕下载</strong></h2><p>想要较好的自动下载字幕，最好用前面介绍的tmm刮削改名之后再使用下面工具。</p>
-<h3 id="subfinder-自动下载字幕"><a href="#subfinder-自动下载字幕" class="headerlink" title="subfinder 自动下载字幕"></a>subfinder 自动下载字幕</h3><ul>
-<li>Docker： <a href="https://hub.docker.com/r/superng6/subfinder">superng6/subfinder</a></li>
-</ul>
-<p>下载完成，刮削后的目录，挂载到subfinder的media目录，就会自动下载字幕。</p>
-<p>字幕下载对电影，英文剧集支持较好。对于一些tv，动画手动下载字幕会更好一些。</p>
-<p>注意：官方的配置文件有问题，时效问题。修改URL到最新即可。</p>
-<h3 id="chinesesubfinder"><a href="#chinesesubfinder" class="headerlink" title="chinesesubfinder"></a>chinesesubfinder</h3><ul>
-<li>Docker： <a href="https://hub.docker.com/r/allanpk716/chinesesubfinder">allanpk716/chinesesubfinder</a></li>
-<li>新开发的中文字幕查找工具，上面那个很久没更新了，这个刚出来。使用nfo里面刮削出来的文件名来匹配字幕。所以就原理来说，这个字幕匹配更准确。</li>
-</ul>
-<h3 id="bazarr"><a href="#bazarr" class="headerlink" title="bazarr"></a>bazarr</h3><ul>
-<li>Docker：<a href="https://hub.docker.com/r/linuxserver/bazarr">linuxserver/bazarr</a></li>
-<li>字幕下载管理，配合sonarr, radarr 使用效果更好。对于英文剧集命名规范的支持较好，比如<code>[name]S01E01</code></li>
-</ul>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
-<li><a href="https://zhuanlan.zhihu.com/p/112167546?from_voters_page=true">利用tinyMediaManager刮削影片，解决家用nas软件plex电影墙的问题</a></li>
-</ul>
-<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
-      <categories>
-        <category>video</category>
-      </categories>
-      <tags>
-        <tag>刮削</tag>
-        <tag>tmm</tag>
-        <tag>字幕</tag>
-        <tag>emby</tag>
-        <tag>plex</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>通过IPV6访问Qnap NAS中Docker的服务</title>
     <url>/nas/2021-10-12-access-the-docker-service-in-qnap-nas-through-ipv6/</url>
     <content><![CDATA[<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><p>系统：QTS 4.3.6<br>网络：IPV4 &amp; IPV6<br>Docker: 由Container Station提供</p>
@@ -10761,6 +10537,82 @@ docker run -v <span class="token variable"><span class="token variable">$(</span
         <tag>docker</tag>
         <tag>qnap</tag>
         <tag>ipv6</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Vim IDE Docker 以及中文指南</title>
+    <url>/ide/2021-09-15-vim-checklist/</url>
+    <content><![CDATA[<blockquote>
+<p>Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！</p>
+</blockquote>
+<h2 id="Vim-Docker"><a href="#Vim-Docker" class="headerlink" title="Vim Docker"></a><a href="https://hub.docker.com/r/bloodstar/vim">Vim Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/G6KybVM.png" alt="Vim Docker"></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker pull bloodstar/vim<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit</span><span class="token operator">=</span><span class="token string">'docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim'</span> 
+edit some.file 
+<span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit_update</span><span class="token operator">=</span><span class="token string">"docker pull bloodstar/vim:latest"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="Vim-IDE-Docker"><a href="#Vim-IDE-Docker" class="headerlink" title="Vim IDE Docker"></a><a href="https://hub.docker.com/r/bloodstar/drop-in">Vim IDE Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/RVTlBBO.png" alt="drop-in"></p>
+<h4 id="What’s-inside"><a href="#What’s-inside" class="headerlink" title="What’s inside:"></a>What’s inside:</h4><ul>
+<li><a href="http://www.alpinelinux.org/"><code>Alpine Linux</code></a></li>
+<li><a href="http://www.vim.org/"><code>Vim</code></a> + a ton of awesome plugins <em>see <a href="https://hub.docker.com/r/bloodstar/vim/"><code>bloodstar/vim:latest</code></a></em></li>
+<li>Good support of <a href="https://golang.org/"><code>Golang</code></a> development with <a href="https://hub.docker.com/r/bloodstar/go-tools/"><code>bloodstar/go-tools</code></a> container</li>
+<li><a href="https://tmux.github.io/"><code>tmux</code></a></li>
+<li><a href="https://powerline.readthedocs.io/"><code>powerline</code></a></li>
+<li><a href="https://mosh.mit.edu/"><code>Mosh</code></a></li>
+<li>OpenSSH, Bash, OMF, Python, etc.</li>
+</ul>
+<h4 id="how-to-start-the-daemon-and-all-containers"><a href="#how-to-start-the-daemon-and-all-containers" class="headerlink" title="how to start the daemon(and all containers)"></a>how to start the daemon(and all containers)</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker create -v <span class="token string">'/usr/lib/go'</span> --name go-tools <span class="token punctuation">\</span>
+<span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
+
+docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
+--volumes-from go-tools <span class="token punctuation">\</span>
+-v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
+-v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
+-d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
+--name drop-in bloodstar/drop-in<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><em><code>-v /etc/localtime:/etc/localtime:ro</code> - makes tmux display local time</em></p>
+<h4 id="how-to-connect"><a href="#how-to-connect" class="headerlink" title="how to connect:"></a>how to connect:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h4 id="or-without-host-identity-check"><a href="#or-without-host-identity-check" class="headerlink" title="or without host identity check:"></a>or without host identity check:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -o StrictHostKeyChecking=no -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h4 id="Useful-Bash-scripts"><a href="#Useful-Bash-scripts" class="headerlink" title="Useful Bash scripts"></a>Useful Bash scripts</h4><h6 id="Connect"><a href="#Connect" class="headerlink" title="Connect"></a><strong>Connect</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
+<span class="token assign-left variable">ip</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker inspect --format <span class="token string">'{{ .NetworkSettings.IPAddress }}'</span> drop-in<span class="token variable">)</span></span>
+mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@<span class="token variable">$ip</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h6 id="start-the-daemon-and-all-containers"><a href="#start-the-daemon-and-all-containers" class="headerlink" title="start the daemon(and all containers)"></a><strong>start the daemon(and all containers)</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
+<span class="token assign-left variable">dtc_id</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker <span class="token function">ps</span> -a -q --filter <span class="token string">'name=vim-go-tools'</span><span class="token variable">)</span></span>
+<span class="token keyword">if</span> <span class="token punctuation">[</span><span class="token punctuation">[</span> -z <span class="token string">"<span class="token variable">${dtc_id}</span>"</span> <span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">;</span> <span class="token keyword">then</span>
+ <span class="token builtin class-name">echo</span> <span class="token string">'vim-go-tools container not found. Creating...'</span>
+ docker create -v <span class="token string">'/usr/lib/go'</span> --name <span class="token string">'vim-go-tools'</span> <span class="token punctuation">\</span>
+   <span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
+ <span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span>
+<span class="token keyword">fi</span>
+<span class="token builtin class-name">echo</span> <span class="token string">'starting daemon...'</span>
+docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
+  --volumes-from vim-go-tools <span class="token punctuation">\</span>
+  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
+  -v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
+  -e <span class="token string">"GEMAIL=&lt;github email&gt;"</span> <span class="token punctuation">\</span>
+  -e <span class="token string">"GNAME=&lt;github name&gt;"</span> <span class="token punctuation">\</span>
+  -d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
+  --name drop-in bloodstar/drop-in
+<span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="Vim-中文快查表-lt-戳这里"><a href="#Vim-中文快查表-lt-戳这里" class="headerlink" title="Vim 中文快查表   <= 戳这里"></a><a href="https://blog.17lai.site/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/">Vim 中文快查表</a>   &lt;= 戳这里</h2><blockquote>
+<p>Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！<br>快去看看吧。</p>
+</blockquote>
+<h2 id="Vim"><a href="#Vim" class="headerlink" title="Vim"></a>Vim</h2><p><img src="https://cimg1.17lai.site/data/2021/09/1520210915150901.png" alt="vim速查"></p>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
+      <categories>
+        <category>ide</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>docker</tag>
+        <tag>vim</tag>
+        <tag>ide</tag>
       </tags>
   </entry>
   <entry>
@@ -11244,6 +11096,45 @@ docker swarm <span class="token function">join</span> --token xxx x.x.x.x:xxx --
       </tags>
   </entry>
   <entry>
+    <title>我的文章</title>
+    <url>/aboutme/mypost/</url>
+    <content><![CDATA[<h2 id="推荐文章"><a href="#推荐文章" class="headerlink" title="推荐文章"></a><strong>推荐文章</strong></h2><h2 id="嵌入式物联网篇"><a href="#嵌入式物联网篇" class="headerlink" title="嵌入式物联网篇"></a><strong>嵌入式物联网篇</strong></h2><h3 id="海思MPP-amp-UNF构架源代码级分析"><a href="#海思MPP-amp-UNF构架源代码级分析" class="headerlink" title="海思MPP&amp;UNF构架源代码级分析"></a><a href="https://blog.17lai.site/embeded/2021-07-30-hisilicon-mpp-unf-architecture-source-code-level-analysis/"><strong>海思MPP&amp;UNF构架源代码级分析</strong></a></h3><ul>
+<li>行业中分析海思MPP内核构架，源码分析，多年经验总结积累结果。写了好多年了，禁止转载，第一次公开发表。</li>
+</ul>
+<h3 id="3G-4G-Wifi选型需求分析及技术简介"><a href="#3G-4G-Wifi选型需求分析及技术简介" class="headerlink" title="3G,4G,Wifi选型需求分析及技术简介"></a><a href="https://blog.17lai.site/embeded/2021-07-30-3g-4g-iot-module-embedded-transplantation/"><strong>3G,4G,Wifi选型需求分析及技术简介</strong></a></h3><ul>
+<li>详细介绍了3G，4G，wifi技术类型，选型，移植，性能介绍全过程。写了好多年了，禁止转载，第一次公开发表。</li>
+</ul>
+<h3 id="Gitlab的安装及使用教程完全版"><a href="#Gitlab的安装及使用教程完全版" class="headerlink" title="Gitlab的安装及使用教程完全版"></a><a href="https://blog.17lai.site/gitlab/2021-08-02-gitlab-installation-and-use-tutorial-complete-version/"><strong>Gitlab的安装及使用教程完全版</strong></a></h3><ul>
+<li>Git 服务端 gitlab 完整配置教程。 和开发，项目管理结合。</li>
+</ul>
+<h2 id="玩转-Linux"><a href="#玩转-Linux" class="headerlink" title="玩转 Linux"></a><strong>玩转 Linux</strong></h2><h3 id="Debian-Lenny-Laptop安装记录"><a href="#Debian-Lenny-Laptop安装记录" class="headerlink" title="Debian Lenny Laptop安装记录"></a><a href="https://blog.17lai.site/linux/2021-08-18-debian-lenny-laptop-installation-records/"><strong>Debian Lenny Laptop安装记录</strong></a></h3><ul>
+<li>一步一步，详细教你。完全采用Linux来工作，学习，娱乐。 </li>
+<li>陈年文章，依然具有非常高的参考价值。10多年前在Google doc 共享过。</li>
+</ul>
+<h2 id="写作笔记篇"><a href="#写作笔记篇" class="headerlink" title="写作笔记篇"></a><strong>写作笔记篇</strong></h2><h3 id="完美笔记进化论"><a href="#完美笔记进化论" class="headerlink" title="完美笔记进化论"></a><a href="https://blog.17lai.site/note/2021-07-25-how-to-make-perfect-note/"><strong>完美笔记进化论</strong></a></h3><ul>
+<li>构建一个趋近完美的记录笔记系统。</li>
+<li>wiznote docker版作为笔记管理搜索工具，typora作为markdown编辑器，只使用markdown格式笔记，Picgo作为图上上传工具，github作为图像图床，Snippaste作为截屏工具。一起组成笔记工具链。整体免费，满足selfhost， 富文本，多平台，版本管理，目录管理，可搜索，对图像友好的苛刻要求，超越市面所有产品，wiznote 还可以对外网提供服务。</li>
+</ul>
+<h2 id="多媒体篇"><a href="#多媒体篇" class="headerlink" title="多媒体篇"></a><strong>多媒体篇</strong></h2><h3 id="使用jeckett-sonarr-iyuu-qt-emby打造全自动追剧流程"><a href="#使用jeckett-sonarr-iyuu-qt-emby打造全自动追剧流程" class="headerlink" title="使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程"></a><a href="https://blog.17lai.site/docker/2021-07-09-use-jeckett-sonarr-iyuu-qt-emby-building-automatic-movie-anime-process/"><strong>使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程</strong></a></h3><ul>
+<li>jackett 作为种子源，sonarr剧集管理，bt下载，qbittorrent主力下载，使用iyuu转移辅种，emby，jellyfin做海报墙，sunfinder自动下载字幕。基本算是完美打通全流程自动追剧。bt种子文件命名规则SxxExx的自动识别下载，国内的资源手动查找下载，自动推送到emby刮削好</li>
+</ul>
+<h2 id="Web博客篇"><a href="#Web博客篇" class="headerlink" title="Web博客篇"></a><strong>Web博客篇</strong></h2><p><a href="https://blog.17lai.site/hexo/2021-09-10-use-hexo-and-matery-to-make-a-perfect-blog/">基于Hexo的matery主题搭建博客并深度优化</a></p>
+<ul>
+<li>一文介绍了Hexo利用github page搭建博客全过程，还附带一个博主自己定制过的<code>hexo Docker</code>，使用docker 配合博文将引导你搭建一个功能完善的blog，并指导全程免费seo优化，性能极致优化过程和工具。并附带几个常见问题的解决方案在文章最后。</li>
+</ul>
+<h2 id="其它各种笔记"><a href="#其它各种笔记" class="headerlink" title="其它各种笔记"></a><strong>其它各种笔记</strong></h2><ul>
+<li><a href="https://blog.17lai.site/tags/">其它文章标签云图</a>，页面上方<a href="https://blog.17lai.site/tags/">标签</a>按钮。</li>
+<li>各种笔记工具里面积累了几千篇各种文章。慢慢整理，有时间发出来。</li>
+</ul>
+<link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
+      <categories>
+        <category>aboutme</category>
+      </categories>
+      <tags>
+        <tag>aboutme</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>友链交换</title>
     <url>/aboutme/friendlink/</url>
     <content><![CDATA[<h2 id="相关类似友链交换："><a href="#相关类似友链交换：" class="headerlink" title="相关类似友链交换："></a>相关类似友链交换：</h2><h2 id="博主的-Hexo-blog"><a href="#博主的-Hexo-blog" class="headerlink" title="博主的 Hexo blog"></a>博主的 Hexo blog</h2><blockquote>
@@ -11297,42 +11188,151 @@ docker swarm <span class="token function">join</span> --token xxx x.x.x.x:xxx --
       </tags>
   </entry>
   <entry>
-    <title>我的文章</title>
-    <url>/aboutme/mypost/</url>
-    <content><![CDATA[<h2 id="推荐文章"><a href="#推荐文章" class="headerlink" title="推荐文章"></a><strong>推荐文章</strong></h2><h2 id="嵌入式物联网篇"><a href="#嵌入式物联网篇" class="headerlink" title="嵌入式物联网篇"></a><strong>嵌入式物联网篇</strong></h2><h3 id="海思MPP-amp-UNF构架源代码级分析"><a href="#海思MPP-amp-UNF构架源代码级分析" class="headerlink" title="海思MPP&amp;UNF构架源代码级分析"></a><a href="https://blog.17lai.site/embeded/2021-07-30-hisilicon-mpp-unf-architecture-source-code-level-analysis/"><strong>海思MPP&amp;UNF构架源代码级分析</strong></a></h3><ul>
-<li>行业中分析海思MPP内核构架，源码分析，多年经验总结积累结果。写了好多年了，禁止转载，第一次公开发表。</li>
-</ul>
-<h3 id="3G-4G-Wifi选型需求分析及技术简介"><a href="#3G-4G-Wifi选型需求分析及技术简介" class="headerlink" title="3G,4G,Wifi选型需求分析及技术简介"></a><a href="https://blog.17lai.site/embeded/2021-07-30-3g-4g-iot-module-embedded-transplantation/"><strong>3G,4G,Wifi选型需求分析及技术简介</strong></a></h3><ul>
-<li>详细介绍了3G，4G，wifi技术类型，选型，移植，性能介绍全过程。写了好多年了，禁止转载，第一次公开发表。</li>
-</ul>
-<h3 id="Gitlab的安装及使用教程完全版"><a href="#Gitlab的安装及使用教程完全版" class="headerlink" title="Gitlab的安装及使用教程完全版"></a><a href="https://blog.17lai.site/gitlab/2021-08-02-gitlab-installation-and-use-tutorial-complete-version/"><strong>Gitlab的安装及使用教程完全版</strong></a></h3><ul>
-<li>Git 服务端 gitlab 完整配置教程。 和开发，项目管理结合。</li>
-</ul>
-<h2 id="玩转-Linux"><a href="#玩转-Linux" class="headerlink" title="玩转 Linux"></a><strong>玩转 Linux</strong></h2><h3 id="Debian-Lenny-Laptop安装记录"><a href="#Debian-Lenny-Laptop安装记录" class="headerlink" title="Debian Lenny Laptop安装记录"></a><a href="https://blog.17lai.site/linux/2021-08-18-debian-lenny-laptop-installation-records/"><strong>Debian Lenny Laptop安装记录</strong></a></h3><ul>
-<li>一步一步，详细教你。完全采用Linux来工作，学习，娱乐。 </li>
-<li>陈年文章，依然具有非常高的参考价值。10多年前在Google doc 共享过。</li>
-</ul>
-<h2 id="写作笔记篇"><a href="#写作笔记篇" class="headerlink" title="写作笔记篇"></a><strong>写作笔记篇</strong></h2><h3 id="完美笔记进化论"><a href="#完美笔记进化论" class="headerlink" title="完美笔记进化论"></a><a href="https://blog.17lai.site/note/2021-07-25-how-to-make-perfect-note/"><strong>完美笔记进化论</strong></a></h3><ul>
-<li>构建一个趋近完美的记录笔记系统。</li>
-<li>wiznote docker版作为笔记管理搜索工具，typora作为markdown编辑器，只使用markdown格式笔记，Picgo作为图上上传工具，github作为图像图床，Snippaste作为截屏工具。一起组成笔记工具链。整体免费，满足selfhost， 富文本，多平台，版本管理，目录管理，可搜索，对图像友好的苛刻要求，超越市面所有产品，wiznote 还可以对外网提供服务。</li>
-</ul>
-<h2 id="多媒体篇"><a href="#多媒体篇" class="headerlink" title="多媒体篇"></a><strong>多媒体篇</strong></h2><h3 id="使用jeckett-sonarr-iyuu-qt-emby打造全自动追剧流程"><a href="#使用jeckett-sonarr-iyuu-qt-emby打造全自动追剧流程" class="headerlink" title="使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程"></a><a href="https://blog.17lai.site/docker/2021-07-09-use-jeckett-sonarr-iyuu-qt-emby-building-automatic-movie-anime-process/"><strong>使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程</strong></a></h3><ul>
-<li>jackett 作为种子源，sonarr剧集管理，bt下载，qbittorrent主力下载，使用iyuu转移辅种，emby，jellyfin做海报墙，sunfinder自动下载字幕。基本算是完美打通全流程自动追剧。bt种子文件命名规则SxxExx的自动识别下载，国内的资源手动查找下载，自动推送到emby刮削好</li>
-</ul>
-<h2 id="Web博客篇"><a href="#Web博客篇" class="headerlink" title="Web博客篇"></a><strong>Web博客篇</strong></h2><p><a href="https://blog.17lai.site/hexo/2021-09-10-use-hexo-and-matery-to-make-a-perfect-blog/">基于Hexo的matery主题搭建博客并深度优化</a></p>
+    <title>如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕</title>
+    <url>/video/2021-10-11-how-to-scrape-video-whit-tinymediamanager/</url>
+    <content><![CDATA[<blockquote>
+<p>注意使用V3版本，V4版本收费！</p>
+<p>所以升级V3版本即可，不要升级到V4版本！不要升级到V4版本！不要升级到V4版本！</p>
+</blockquote>
 <ul>
-<li>一文介绍了Hexo利用github page搭建博客全过程，还附带一个博主自己定制过的<code>hexo Docker</code>，使用docker 配合博文将引导你搭建一个功能完善的blog，并指导全程免费seo优化，性能极致优化过程和工具。并附带几个常见问题的解决方案在文章最后。</li>
+<li>  <strong>Plex</strong>是一款很好用的个人媒体中心软件，但是因为国内网络的原因，使用默认的TMDB刮削器挂出来的效果并不好，要么就是影片信息不正确，要么就是海报不正常显示，实在让人头疼。</li>
+<li>  <strong>tinyMediaManager</strong>是一款电影信息刮削和整理的软件，正好可以和plex配合，完美的解决这一问题。tinyMediaManager在刮削影片的过程中会把影片的海报、演员表、背景图片等等都保存到影片所在文件夹，自动生成电影的nfo信息文件，并对文件和文件夹进行重新命名的操作。在plex设置刮削代理的时候，需要用一款插件可以直接读取nfo的信息，完成刮削，下面把使用方法分享给大家，</li>
 </ul>
-<h2 id="其它各种笔记"><a href="#其它各种笔记" class="headerlink" title="其它各种笔记"></a><strong>其它各种笔记</strong></h2><ul>
-<li><a href="https://blog.17lai.site/tags/">其它文章标签云图</a>，页面上方<a href="https://blog.17lai.site/tags/">标签</a>按钮。</li>
-<li>各种笔记工具里面积累了几千篇各种文章。慢慢整理，有时间发出来。</li>
+<h2 id="下载和安装tinyMediaManager"><a href="#下载和安装tinyMediaManager" class="headerlink" title="下载和安装tinyMediaManager"></a><strong>下载和安装tinyMediaManager</strong></h2><p><strong>官网下载地址：<a href="www.tinymediamanager.org/download/">https://www.tinymediamanager.org/download/</a></strong></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181048.jpeg"></p>
+<h3 id="tmm下载"><a href="#tmm下载" class="headerlink" title="tmm下载"></a>tmm下载</h3><p><strong>下载后直接解压文件夹</strong></p>
+<p>客户端需要java支持，先在电脑安装java</p>
+<p>客户端下载后是一个压缩包，解压之后就可以用</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181054.jpeg"></p>
+<p><strong>解压之后打开tinyMediaManager.exe</strong></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181101.png" alt="tmm目录"></p>
+<h2 id="TMM设置"><a href="#TMM设置" class="headerlink" title="TMM设置"></a>TMM设置</h2><h3 id="TMM代理设置"><a href="#TMM代理设置" class="headerlink" title="TMM代理设置"></a>TMM代理设置</h3><blockquote>
+<p>重要：很多源都需要代理才能访问。这里正确的配置才能正确的刮削！</p>
+<p>可以调整这里使用的内存，大内存可以极大加速刮削速度。</p>
+</blockquote>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011211402.png"></p>
+<h2 id="电影刮削设置"><a href="#电影刮削设置" class="headerlink" title="电影刮削设置"></a>电影刮削设置</h2><p><strong>进行相关设置。Tmm可以对电影和电视剧的刮削进行分别设置，打开设置后选择电影选项，可以选择分级标准、自动重命名等选项。</strong></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181337.png"></p>
+<p>电影信息选项</p>
+<p><strong>点击侧边栏媒体库目录，添加电影目录</strong></p>
+<p><strong>刮削器设置</strong></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181107.jpeg"></p>
+<p>选择电影刮削器</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181107.png"></p>
+<p>刮削器选项</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181114.png"></p>
+<p>nfo选项，建议选择生成两种命名放视的nfo</p>
+<p><strong>图片刮削器选择全选，图片文件名建议两边都选上，会分别生成两组命名格式不同的图片，为了保证plex能读取</strong></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181331.png"></p>
+<p>图片命名选项</p>
+<p>Tmm还可以自动下载预告片，字幕。字幕下载时可以输入opensubtitles账户</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181115.png"></p>
+<p>字幕下载选项</p>
+<p><strong>重命名规则</strong></p>
+<p>这里重点讲一下重命名规则，刮削完后可以选择对电影文件和文件夹进行重命名，可能对于pt用户重命名可能会影响资源上传，可以不进行重命名操作。</p>
+<p>一般情况下电影刮削出来的信息，title是电影的中文标题名称，originaltitle是电影的原标题名称，一般是英文名称。软件默认的设置是文件和文件夹都命名成title，也就是中文标题，但是我发现这样在后期使用的时候有弊端。英文电影在检索字幕时会用文件名来检索，而用中文名称很多情况下检索不出来，所以这里把文件的命名规则改一下，改成originaltitle，并去掉年份信息的括号，中间连接符改成点，文件名设置成${originaltitle}${- ,edition,}.${year}.${videoFormat}.${audioCodec}的格式。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181121.png"></p>
+<p>电影文件重命名选项</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181127.png"></p>
+<p>刮削完的文件夹内文件信息</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181323.png"></p>
+<p>刮削完的电影文件夹目录</p>
+<p><strong>电视节目刮削设置类似，如果挂不出来可以用the tvdb来刮削。</strong></p>
+<p><strong>tmm有时候会出现网络不稳定，刮不到的情况，可以修改host解决</strong></p>
+<p>改host 在host文件最后加一行13.224.161.90 <a href="https://link.zhihu.com/?target=http://api.themoviedb.org">http://api.themoviedb.org</a></p>
+<p><strong>退出设置，开始刮削</strong></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181317.png"></p>
+<p>更新电影源</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181128.jpeg"></p>
+<p>选中要刮削的电影自动匹配</p>
+<h3 id="电影手动刮削"><a href="#电影手动刮削" class="headerlink" title="电影手动刮削"></a>电影手动刮削</h3><p><img src="https://cimg1.17lai.site/data/2021/10/1120211011183942.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011184131.png"></p>
+<h2 id="电视剧-amp-动画手动刮削"><a href="#电视剧-amp-动画手动刮削" class="headerlink" title="电视剧&amp;动画手动刮削"></a>电视剧&amp;动画手动刮削</h2><h3 id="电视剧元数据刮削"><a href="#电视剧元数据刮削" class="headerlink" title="电视剧元数据刮削"></a>电视剧元数据刮削</h3><p><img src="https://cimg1.17lai.site/data/2021/10/1120211011184909.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011185747.png"></p>
+<h3 id="季和集元数据刮削前整理"><a href="#季和集元数据刮削前整理" class="headerlink" title="季和集元数据刮削前整理"></a>季和集元数据刮削前整理</h3><p><img src="https://cimg1.17lai.site/data/2021/10/1120211011185049.png"></p>
+<h3 id="刮削季元素"><a href="#刮削季元素" class="headerlink" title="刮削季元素"></a>刮削季元素</h3><p>整理好正确的季和集之后，才能正确的刮削季元素</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011185146.png"></p>
+<h3 id="TMM整理完效果"><a href="#TMM整理完效果" class="headerlink" title="TMM整理完效果"></a>TMM整理完效果</h3><blockquote>
+<p>这里用海贼王做展示，一个季和集都特别多的剧。</p>
+</blockquote>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011185448.png"></p>
+<h2 id="TMM目录重命名整理"><a href="#TMM目录重命名整理" class="headerlink" title="TMM目录重命名整理"></a>TMM目录重命名整理</h2><blockquote>
+<p>刮削完后，可以重命名视频文件，并进行目录整理。</p>
+</blockquote>
+<p>方法1</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181133.jpeg"></p>
+<p>方法2</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011184315.png"></p>
+<p>等所有电影的信息刮削完后，选择重命名和清理，这样就完成了刮削的操作。以后下载了新电影，直接打开tmm,更新源之后直接选择搜索未刮削过的电影完成刮削。刮削出来的信息kodi，emby等软件也都能用。</p>
+<h2 id="Plex设置"><a href="#Plex设置" class="headerlink" title="Plex设置"></a>Plex设置</h2><h3 id="plex插件的安装和设置"><a href="#plex插件的安装和设置" class="headerlink" title="plex插件的安装和设置"></a><strong>plex插件的安装和设置</strong></h3><p><strong>下载plex的插件</strong></p>
+<p>插件XBMCnfoMoviesImporter和XBMCnfoTVImporter分别是刮削电影和电视剧的插件</p>
+<p>下载地址：<a href="https://github.com/gboudreau/XBMCnfoMoviesImporter.bundle">https://github.com/gboudreau/XBMCnfoMoviesImporter.bundle</a></p>
+<p>如果不能下载的话可以联系我获取，还有几个很好用的plex插件</p>
+<p>下载完插件后就需要把插件解压到plex的插件目录：C:\Users\用户名\AppData\Local\Plex Media Server\Plug-ins</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181134.png"></p>
+<p>plex插件目录</p>
+<p>注意解压后要把文件夹名后边的master去掉。</p>
+<p><strong>plex代理设置</strong></p>
+<p>Plex的代理设置就是选择刮削电影所用的刮削器及优先级。</p>
+<p>装好插件后重启plex，进行plex的设置。在代理设置中选择XBMCnfoMoviesImporter，把它的优先级调到最高，第二个可以设置成字幕插件。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181140.jpeg"></p>
+<p><strong>设置电影资料库的刮削器代理</strong></p>
+<p>点击设置界面下方管理里边的资料库，选择电影资料夹的高级设置，设置如下</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181140.png"><img src="https://cimg1.17lai.site/data/2021/10/1120211011181146.png"></p>
+<p>plex代理设置</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181152.png"></p>
+<p><strong>刷新电影源数据资料</strong></p>
+<p>设置完成后就可以在plex主页对电影文件夹刷新元数据了。等待刷新完后就可以载入所有的电影信息了。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181152.jpeg"></p>
+<p>管理资料库-刷新电影元数据</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181153.jpeg"></p>
+<p>更新后的电影信息</p>
+<p>采用类似的设置，电视剧信息也能刮削。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181159.jpeg"></p>
+<p>电视剧更新后的信息</p>
+<h2 id="Emby设置"><a href="#Emby设置" class="headerlink" title="Emby设置"></a>Emby设置</h2><blockquote>
+<p>Emby内置刮削工具，但是速度较慢。下面设置基于外部刮削工具TMM，所以没有勾选Emby刮削源！</p>
+</blockquote>
+<p>最终效果演示</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011190035.png" alt="最终效果"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011190347.png"></p>
+<h3 id="开始设置"><a href="#开始设置" class="headerlink" title="开始设置"></a>开始设置</h3><p><img src="https://cimg1.17lai.site/data/2021/10/1120211011181946.png"></p>
+<h3 id="新增媒体库"><a href="#新增媒体库" class="headerlink" title="新增媒体库"></a>新增媒体库</h3><p><img src="https://cimg1.17lai.site/data/2021/10/1120211011182142.png"></p>
+<h3 id="已有媒体库属性设置"><a href="#已有媒体库属性设置" class="headerlink" title="已有媒体库属性设置"></a>已有媒体库属性设置</h3><p><img src="https://cimg1.17lai.site/data/2021/10/1120211011182244.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011182350.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011183115.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011183157.png"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011183336.png"></p>
+<h3 id="Emby字幕设置"><a href="#Emby字幕设置" class="headerlink" title="Emby字幕设置"></a>Emby字幕设置</h3><p>字幕下载设置，字幕下载工具见后面的[字幕下载]章节</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1120211011182554.png"></p>
+<h2 id="字幕下载"><a href="#字幕下载" class="headerlink" title="字幕下载"></a><strong>字幕下载</strong></h2><p>想要较好的自动下载字幕，最好用前面介绍的tmm刮削改名之后再使用下面工具。</p>
+<h3 id="subfinder-自动下载字幕"><a href="#subfinder-自动下载字幕" class="headerlink" title="subfinder 自动下载字幕"></a>subfinder 自动下载字幕</h3><ul>
+<li>Docker： <a href="https://hub.docker.com/r/superng6/subfinder">superng6/subfinder</a></li>
+</ul>
+<p>下载完成，刮削后的目录，挂载到subfinder的media目录，就会自动下载字幕。</p>
+<p>字幕下载对电影，英文剧集支持较好。对于一些tv，动画手动下载字幕会更好一些。</p>
+<p>注意：官方的配置文件有问题，时效问题。修改URL到最新即可。</p>
+<h3 id="chinesesubfinder"><a href="#chinesesubfinder" class="headerlink" title="chinesesubfinder"></a>chinesesubfinder</h3><ul>
+<li>Docker： <a href="https://hub.docker.com/r/allanpk716/chinesesubfinder">allanpk716/chinesesubfinder</a></li>
+<li>新开发的中文字幕查找工具，上面那个很久没更新了，这个刚出来。使用nfo里面刮削出来的文件名来匹配字幕。所以就原理来说，这个字幕匹配更准确。</li>
+</ul>
+<h3 id="bazarr"><a href="#bazarr" class="headerlink" title="bazarr"></a>bazarr</h3><ul>
+<li>Docker：<a href="https://hub.docker.com/r/linuxserver/bazarr">linuxserver/bazarr</a></li>
+<li>字幕下载管理，配合sonarr, radarr 使用效果更好。对于英文剧集命名规范的支持较好，比如<code>[name]S01E01</code></li>
+</ul>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="https://zhuanlan.zhihu.com/p/112167546?from_voters_page=true">利用tinyMediaManager刮削影片，解决家用nas软件plex电影墙的问题</a></li>
 </ul>
 <link rel="stylesheet" href="/css/spoiler.css" type="text/css"><script src="/js/spoiler.js" type="text/javascript" async></script>]]></content>
       <categories>
-        <category>aboutme</category>
+        <category>video</category>
       </categories>
       <tags>
-        <tag>aboutme</tag>
+        <tag>刮削</tag>
+        <tag>tmm</tag>
+        <tag>字幕</tag>
+        <tag>emby</tag>
+        <tag>plex</tag>
       </tags>
   </entry>
   <entry>
