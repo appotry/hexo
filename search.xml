@@ -6141,135 +6141,6 @@ This is the admonition body
       </tags>
   </entry>
   <entry>
-    <title>浏览器的渲染过程</title>
-    <url>/web/2021-09-13-the-browser-rendering-process/</url>
-    <content><![CDATA[<blockquote>
-<p>通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？</p>
-</blockquote>
-<h3 id="首先，请先看一张大图"><a href="#首先，请先看一张大图" class="headerlink" title="首先，请先看一张大图"></a><strong>首先，请先看一张大图</strong></h3><p>浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：</p>
-<ul>
-<li>  构建对象模型（DOM，CSSOM）</li>
-<li>  构建渲染树（RenderTree）</li>
-<li>  布局</li>
-<li>  渲染</li>
-</ul>
-<p>在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220512.jpeg"></p>
-<h3 id="1-DOMTree的构建"><a href="#1-DOMTree的构建" class="headerlink" title="1.DOMTree的构建"></a><strong>1.DOMTree的构建</strong></h3><p>浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220515.jpeg"></p>
-<ul>
-<li>第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符  </li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220653.jpeg"></p>
-<ul>
-<li>第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是<code>开始标签</code>，还是<code>结束标签</code>，或者<code>文本标签</code>等。  </li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220522.jpeg"></p>
-<ul>
-<li>第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的<code>开始标签</code>，<code>结束标签</code>，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。<br>  Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt;</code>标签最终生成出的节点对象中会保存图片地址等信息。<br>  事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取<code>深度遍历算法</code>消耗Token来生成Node，如下图所示：<br>  图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出<code>html Token</code>,并消耗Token创建出<code>html 节点对象</code>，接着生成<code>head Token</code>并消耗Token创建出<code>head节点对象</code>……，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。  </li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220658.jpeg"></p>
-<p>这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？<br>因为在上述的解析的过程中，如果碰到了<code>script</code>或者<code>link</code>标签，就会根据<code>src</code>对应的地址去加载资源，在<code>script</code>标签没有设置<code>async/defer</code>属性时，这个加载过程是<code>下载并执行完全部的代码</code>，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出<strong>找不到该DOM元素</strong>的错误。<br>值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。</p>
-<h3 id="2-CSSOMTree的构建"><a href="#2-CSSOMTree的构建" class="headerlink" title="2.CSSOMTree的构建"></a><strong>2.CSSOMTree的构建</strong></h3><p>DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：</p>
-<p>假设浏览器收到了下面这样一段css:</p>
-<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">body</span> <span class="token punctuation">{</span><span class="token property">font-size</span><span class="token punctuation">:</span> 16px<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">p</span> <span class="token punctuation">{</span><span class="token property">font-weight</span><span class="token punctuation">:</span> bold<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">p span</span> <span class="token punctuation">{</span><span class="token property">display</span><span class="token punctuation">:</span>none<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">span</span> <span class="token punctuation">{</span><span class="token property">color</span><span class="token punctuation">:</span> red<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">img</span> <span class="token punctuation">{</span><span class="token property">float</span><span class="token punctuation">:</span> right<span class="token punctuation">;</span><span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>最终会生成如下的CSSOMTree:</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220529.jpeg"></p>
-<p>从图中可以看出，最开始<code>body</code>有一个样式规则是<code>font-size:16px</code>，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如<code>span</code>又添加了一个样式规则<code>color:red</code>。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：<strong>CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置</strong>。比如在上面的css代码基础上再添加一行代码<code>p {font-size:12px}</code>，那么之前设置的<code>16px</code>将会被覆盖成<code>12px</code>。</p>
-<p>下面是官方给的一种解释：</p>
-<blockquote>
-<p>未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。<br>所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。</p>
-</blockquote>
-<p>那么回到上面生成DOM时提到的JS问题：<strong>在标签没有设置<code>async/defer</code>属性时，js会阻塞DOM的生成</strong>。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。</p>
-<p>同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在<strong>浏览器还未完成CSSOMTree的下载和构建</strong>时去操作CSS样式，浏览器会<strong>暂停脚本的运行和DOM的构建</strong>，直至浏览器完成了CSSOM的下载和构建。也就是说，<strong>JS脚本的出现会让CSSOM的构建阻塞DOM的构建</strong>。</p>
-<blockquote>
-<p>平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？</p>
-</blockquote>
-<p>举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个<code>link</code>标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220540.jpeg"></p>
-<p>而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个<code>script</code>标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220546.jpeg"></p>
-<p>那如果我们把css放到前面，js放到最后引入时，构建时间会变成：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220705.jpeg"></p>
-<p>由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。</p>
-<p>简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：</p>
-<ul>
-<li>  当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕</li>
-<li>  JavaScript可以查询和修改DOMTree与CSSOMTree</li>
-<li>  直至CSSOM构建完毕，JavaScript才会执行</li>
-<li>  脚本在文档中的位置很重要</li>
-</ul>
-<h3 id="3-渲染树的构建"><a href="#3-渲染树的构建" class="headerlink" title="3.渲染树的构建"></a><strong>3.渲染树的构建</strong></h3><p>现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220711.jpeg"></p>
-<p>接下来我们来谈几条概念</p>
-<ul>
-<li><p>  Render 树上的每一个节点被称为：<code>RenderObject</code>。</p>
-</li>
-<li><p>  RenderObject跟 DOM 节点几乎是一一对应的，当一个<code>可见的 DOM 节点</code>被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。</p>
-</li>
-<li><p>其中，可见的DOM节点不包括：  </p>
-</li>
-<li><p>  一些不会体现在渲染输出中的节点（<code>&lt;html&gt;&lt;script&gt;&lt;link&gt;….</code>），会直接被忽略掉。</p>
-</li>
-<li><p>  通过CSS隐藏的节点。例如上图中的<code>span</code>节点，因为有一个CSS显式规则在该节点上设置了<code>display:none</code>属性，那么它在生成RenderObject时会被直接忽略掉。</p>
-</li>
-<li><p>  Render 树是衔接浏览器排版引擎和渲染引擎之间的<strong>桥梁</strong>，它是<strong>排版引擎的输出，渲染引擎的输入</strong>。</p>
-</li>
-</ul>
-<p>此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？</p>
-<h3 id="RenderObject-and-RenderLayer"><a href="#RenderObject-and-RenderLayer" class="headerlink" title="RenderObject and RenderLayer"></a><strong>RenderObject and RenderLayer</strong></h3><blockquote>
-<p>浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理<strong>Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing</strong>等属性，浏览器需要生成另外一棵树：<strong>Layer树</strong></p>
-</blockquote>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220730.jpeg"></p>
-<p>浏览器会为一些<strong>特定</strong>的<code>RenderObject</code>生成对应的<code>RenderLayer</code>，其中的规则是：</p>
-<ul>
-<li>  是否是页面的根节点 <em>It’s the root object for the page</em></li>
-<li>  是否有css的一些布局属性（relative absolute or a transform) <em>It has explicit CSS position properties (relative, absolute or a transform)</em></li>
-<li>  是否透明 <em>It is transparent</em></li>
-<li>  是否有溢出 <em>Has overflow, an alpha mask or reflection</em></li>
-<li>  是否有css滤镜 <em>Has a CSS filter</em></li>
-<li>  是否包含一个canvas元素使得节点拥有视图上下文 <em>Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context</em></li>
-<li>  是否包含一个video元素 <em>Corresponds to a video element</em></li>
-</ul>
-<p>当满足上面其中一个条件时，这个<code>RrenderObject</code>就会被浏览器选中生成对应的<code>RenderLayer</code>。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。</p>
-<p>浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个<code>RenderLayer</code>，再遍历从属于这个RenderLayer的 <code>RrenderObject</code>，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 <code>RenderLayer</code> 和 <code>RrenderObject</code> 一起就决定了网页在屏幕上最终呈现出来的内容。</p>
-<h3 id="4-布局"><a href="#4-布局" class="headerlink" title="4.布局"></a><strong>4.布局</strong></h3><p>到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。</p>
-<p>布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220553.jpeg"></p>
-<h3 id="5-渲染"><a href="#5-渲染" class="headerlink" title="5.渲染"></a><strong>5.渲染</strong></h3><p>最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220718.jpeg"></p>
-<p>至此，我们就能够在浏览器上看到漂亮的网页了</p>
-<blockquote>
-<p>谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？</p>
-</blockquote>
-<p>我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~</p>
-<h3 id="总结："><a href="#总结：" class="headerlink" title="总结："></a><strong>总结：</strong></h3><ul>
-<li>  经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。</li>
-<li>  CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。</li>
-<li>  同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用<code>async/defer属性</code>异步加载JavaScript。</li>
-<li>  重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数</li>
-</ul>
-<h3 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a><strong>参考文献：</strong></h3><p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21%23wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect</a></p>
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
-        <tag>css</tag>
-        <tag>js</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>基于Hexo的matery主题搭建博客并深度优化</title>
     <url>/hexo/2021-09-10-use-hexo-and-matery-to-make-a-perfect-blog/</url>
     <content><![CDATA[<blockquote>
@@ -6435,7 +6306,7 @@ INFO  Hexo is running at http://localhost:4000 <span class="token builtin class-
 <li>建议修改两个 <code>per_page</code> 的分页条数值为 <code>6</code> 的倍数，如：<code>12</code>、<code>18</code> 等，这样文章列表在各个屏幕下都能较好的显示。</li>
 <li>如果是中文用户，则建议修改 <code>language</code> 的值为 <code>zh-CN</code>。</li>
 </ul>
-<h3 id="新建分类-categories-页"><a href="#新建分类-categories-页" class="headerlink" title="新建分类 categories 页"></a>新建分类 categories 页</h3><p><code>categories</code> 页是用来展示所有分类的页面，如果 <code>source</code> 目录下还没有 <code>categories/index.md</code> 文件，那么就需要新建一个，命令如下：</p>
+<h3 id="新建主题必备about、tags、404等页面"><a href="#新建主题必备about、tags、404等页面" class="headerlink" title="新建主题必备about、tags、404等页面"></a>新建主题必备about、tags、404等页面</h3><h4 id="新建分类-categories-页"><a href="#新建分类-categories-页" class="headerlink" title="新建分类 categories 页"></a>新建分类 categories 页</h4><p><code>categories</code> 页是用来展示所有分类的页面，如果 <code>source</code> 目录下还没有 <code>categories/index.md</code> 文件，那么就需要新建一个，命令如下：</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">hexo new page <span class="token string">"categories"</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>编辑你刚刚新建的页面文件 <code>/source/categories/index.md</code>，至少需要以下内容：</p>
@@ -6446,7 +6317,7 @@ INFO  Hexo is running at http://localhost:4000 <span class="token builtin class-
 <span class="token key atrule">layout</span><span class="token punctuation">:</span> <span class="token string">"categories"</span>
 <span class="token punctuation">---</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
-<h3 id="新建标签-tags-页"><a href="#新建标签-tags-页" class="headerlink" title="新建标签 tags 页"></a>新建标签 tags 页</h3><p><code>tags</code> 页是用来展示所有标签的页面，如果 <code>source</code> 目录下还没有 <code>tags/index.md</code> 文件，那么就需要新建一个，命令如下：</p>
+<h4 id="新建标签-tags-页"><a href="#新建标签-tags-页" class="headerlink" title="新建标签 tags 页"></a>新建标签 tags 页</h4><p><code>tags</code> 页是用来展示所有标签的页面，如果 <code>source</code> 目录下还没有 <code>tags/index.md</code> 文件，那么就需要新建一个，命令如下：</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">hexo new page <span class="token string">"tags"</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>编辑刚刚新建的页面文件 <code>/source/tags/index.md</code>，至少需要以下内容：</p>
@@ -6457,7 +6328,7 @@ INFO  Hexo is running at http://localhost:4000 <span class="token builtin class-
 <span class="token key atrule">layout</span><span class="token punctuation">:</span> <span class="token string">"tags"</span>
 <span class="token punctuation">---</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
-<h3 id="新建关于我-about-页"><a href="#新建关于我-about-页" class="headerlink" title="新建关于我 about 页"></a>新建关于我 about 页</h3><p><code>about</code> 页是用来展示<strong>关于我和我的博客</strong>信息的页面，如果 <code>source</code> 目录下还没有 <code>about/index.md</code> 文件，那么就需要新建一个，命令如下：</p>
+<h4 id="新建关于我-about-页"><a href="#新建关于我-about-页" class="headerlink" title="新建关于我 about 页"></a>新建关于我 about 页</h4><p><code>about</code> 页是用来展示<strong>关于我和我的博客</strong>信息的页面，如果 <code>source</code> 目录下还没有 <code>about/index.md</code> 文件，那么就需要新建一个，命令如下：</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">hexo new page <span class="token string">"about"</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>编辑刚刚新建的页面文件 <code>/source/about/index.md</code>，至少需要以下内容：</p>
@@ -6468,25 +6339,7 @@ INFO  Hexo is running at http://localhost:4000 <span class="token builtin class-
 <span class="token key atrule">layout</span><span class="token punctuation">:</span> <span class="token string">"about"</span>
 <span class="token punctuation">---</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
-<h3 id="新建文章模板修改"><a href="#新建文章模板修改" class="headerlink" title="新建文章模板修改"></a>新建文章模板修改</h3><p>首先为了新建文章方便，我们可以修改一下文章模板，建议将<code>/scaffolds/post.md</code>修改为如下代码：</p>
-<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token punctuation">---</span>
-<span class="token key atrule">title</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token punctuation">{</span> title <span class="token punctuation">}</span><span class="token punctuation">}</span>
-<span class="token key atrule">date</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token punctuation">{</span> date <span class="token punctuation">}</span><span class="token punctuation">}</span>
-<span class="token key atrule">author</span><span class="token punctuation">:</span> 
-<span class="token key atrule">img</span><span class="token punctuation">:</span> 
-<span class="token key atrule">coverImg</span><span class="token punctuation">:</span> 
-<span class="token key atrule">top</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
-<span class="token key atrule">cover</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
-<span class="token key atrule">toc</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
-<span class="token key atrule">mathjax</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
-<span class="token key atrule">password</span><span class="token punctuation">:</span>
-<span class="token key atrule">summary</span><span class="token punctuation">:</span>
-<span class="token key atrule">tags</span><span class="token punctuation">:</span>
-<span class="token key atrule">categories</span><span class="token punctuation">:</span>
-<span class="token punctuation">---</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>这样新建文章后 一些<code>Front-matter</code>参数不用你自己补充了，修改对应信息就可以了。</p>
-<h3 id="新建404页"><a href="#新建404页" class="headerlink" title="新建404页"></a>新建404页</h3><p> 新建一个404.md文件</p>
+<h4 id="新建404页"><a href="#新建404页" class="headerlink" title="新建404页"></a>新建404页</h4><p> 新建一个404.md文件</p>
 <p>  在hexo的souce文件夹下创建一个404.md，之后输入如下内容：</p>
 <pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token front-matter-block"><span class="token punctuation">---</span>
 <span class="token font-matter yaml language-yaml"><span class="token key atrule">title</span><span class="token punctuation">:</span> <span class="token number">404</span>
@@ -6497,11 +6350,11 @@ INFO  Hexo is running at http://localhost:4000 <span class="token builtin class-
 
 <p><img src="https://cimg1.17lai.site/data/2021/09/1320210913191101.png" alt="新建404.md"></p>
 <p>然后<code>hexo g</code>生成页面中就有404。只是页面较丑。</p>
-<h3 id="404页面美化"><a href="#404页面美化" class="headerlink" title="404页面美化"></a>404页面美化</h3><blockquote>
+<h4 id="404页面美化"><a href="#404页面美化" class="headerlink" title="404页面美化"></a>404页面美化</h4><blockquote>
 <p>下载404特效</p>
 <p>点击下载代码:<a href="https://www.lanrenzhijia.com/js/4285.html">点我去代码出处</a></p>
 </blockquote>
-<h4 id="移植"><a href="#移植" class="headerlink" title="移植"></a>移植</h4><h5 id="放入js文件到主题中"><a href="#放入js文件到主题中" class="headerlink" title="放入js文件到主题中"></a>放入js文件到主题中</h5><p>  将下载的压缩包解压，会发现里面有两个js文件和一个html页面，重要的就是js文件，将文件移植到主题的source文件的libs文件夹下，需要自己创建一个文件夹，我给文件夹取的名字叫做404。</p>
+<h5 id="移植"><a href="#移植" class="headerlink" title="移植"></a>移植</h5><h5 id="放入js文件到主题中"><a href="#放入js文件到主题中" class="headerlink" title="放入js文件到主题中"></a>放入js文件到主题中</h5><p>  将下载的压缩包解压，会发现里面有两个js文件和一个html页面，重要的就是js文件，将文件移植到主题的source文件的libs文件夹下，需要自己创建一个文件夹，我给文件夹取的名字叫做404。</p>
 <p><img src="https://cimg1.17lai.site/data/2021/09/1320210913191716.png"></p>
 <h5 id="导入404-js"><a href="#导入404-js" class="headerlink" title="导入404 js"></a>导入404 js</h5><p>因为该主题的js文件都是写_config.yml文件里面的，为了规范，也需要将文件的路径写到该文件夹下</p>
 <p>如下，之后导入js文件的时候就可以使用404bodymovin和404data来代替了</p>
@@ -6550,7 +6403,7 @@ INFO  Hexo is running at http://localhost:4000 <span class="token builtin class-
 <blockquote>
 <p>Tips: 不要再本地试验，本地的时候输入错误的页面不会显示404页面的。</p>
 </blockquote>
-<h3 id="新建友情连接-friends-页（可选的）"><a href="#新建友情连接-friends-页（可选的）" class="headerlink" title="新建友情连接 friends 页（可选的）"></a>新建友情连接 friends 页（可选的）</h3><p><code>friends</code> 页是用来展示<strong>友情连接</strong>信息的页面，如果 <code>source</code> 目录下还没有 <code>friends/index.md</code> 文件，那么就需要新建一个，命令如下：</p>
+<h4 id="新建友情连接-friends-页（可选的）"><a href="#新建友情连接-friends-页（可选的）" class="headerlink" title="新建友情连接 friends 页（可选的）"></a>新建友情连接 friends 页（可选的）</h4><p><code>friends</code> 页是用来展示<strong>友情连接</strong>信息的页面，如果 <code>source</code> 目录下还没有 <code>friends/index.md</code> 文件，那么就需要新建一个，命令如下：</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">hexo new page <span class="token string">"friends"</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>编辑刚刚新建的页面文件 <code>/source/friends/index.md</code>，至少需要以下内容：</p>
@@ -6588,6 +6441,24 @@ INFO  Hexo is running at http://localhost:4000 <span class="token builtin class-
 
 
 
+<h3 id="新建文章模板修改"><a href="#新建文章模板修改" class="headerlink" title="新建文章模板修改"></a>新建文章模板修改</h3><p>首先为了新建文章方便，我们可以修改一下文章模板，建议将<code>/scaffolds/post.md</code>修改为如下代码：</p>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token punctuation">---</span>
+<span class="token key atrule">title</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token punctuation">{</span> title <span class="token punctuation">}</span><span class="token punctuation">}</span>
+<span class="token key atrule">date</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token punctuation">{</span> date <span class="token punctuation">}</span><span class="token punctuation">}</span>
+<span class="token key atrule">author</span><span class="token punctuation">:</span> 
+<span class="token key atrule">img</span><span class="token punctuation">:</span> 
+<span class="token key atrule">coverImg</span><span class="token punctuation">:</span> 
+<span class="token key atrule">top</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+<span class="token key atrule">cover</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+<span class="token key atrule">toc</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+<span class="token key atrule">mathjax</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+<span class="token key atrule">password</span><span class="token punctuation">:</span>
+<span class="token key atrule">summary</span><span class="token punctuation">:</span>
+<span class="token key atrule">tags</span><span class="token punctuation">:</span>
+<span class="token key atrule">categories</span><span class="token punctuation">:</span>
+<span class="token punctuation">---</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>这样新建文章后 一些<code>Front-matter</code>参数不用你自己补充了，修改对应信息就可以了。</p>
 <h3 id="代码高亮"><a href="#代码高亮" class="headerlink" title="代码高亮"></a>代码高亮</h3><p>由于 Hexo 自带的代码高亮主题显示不好看，所以主题中使用到了 <a href="https://github.com/ele828/hexo-prism-plugin">hexo-prism-plugin</a> 的 Hexo 插件来做代码高亮，安装命令如下：</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> i -S hexo-prism-plugin<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
@@ -6809,48 +6680,6 @@ valine:
 
 <p>PS：评论者头像可以进行如下设置<br><img src="https://cimg1.17lai.site/data/2021/09/1120210911135034.png"></p>
 <p>到此，一个极简评论系统就完成啦！</p>
-<h3 id="添加博客看板娘-动漫人物挂件"><a href="#添加博客看板娘-动漫人物挂件" class="headerlink" title="添加博客看板娘    动漫人物挂件"></a>添加博客看板娘    动漫人物挂件</h3><p>方法：</p>
-<p>获取模型：</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> <span class="token function">install</span> --save hexo-helper-live2d<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p>安装喜欢的模型：</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token function">npm</span> <span class="token function">install</span> packagename<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p>将packagename换成模型名字，如我使用的模型：</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token function">npm</span> <span class="token function">install</span> live2d-widget-model-shizuku<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-
-<p>然后打开博客根目录下的 _config.yml文件，添加如下代码：</p>
-<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token comment"># Live2D</span>
-<span class="token comment">## https://github.com/EYHN/hexo-helper-live2d</span>
-<span class="token key atrule">live2d</span><span class="token punctuation">:</span>
-  <span class="token key atrule">enable</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
-  <span class="token comment"># enable: false</span>
-  <span class="token key atrule">pluginRootPath</span><span class="token punctuation">:</span> live2dw/ <span class="token comment"># Root path of plugin to be on the site (Relative)</span>
-  <span class="token key atrule">pluginJsPath</span><span class="token punctuation">:</span> lib/ <span class="token comment"># JavaScript path related to plugin's root (Relative)</span>
-  <span class="token key atrule">pluginModelPath</span><span class="token punctuation">:</span> assets/ <span class="token comment"># Relative model path related to plugin's root (Relative)</span>
-  <span class="token key atrule">scriptFrom</span><span class="token punctuation">:</span> local <span class="token comment"># Default</span>
-  <span class="token comment"># scriptFrom: jsdelivr # jsdelivr CDN</span>
-  <span class="token comment"># scriptFrom: unpkg # unpkg CDN</span>
-  <span class="token comment"># scriptFrom: https://cdn.jsdelivr.net/npm/live2d-widget@3.x/lib/L2Dwidget.min.js # Your custom url</span>
-  <span class="token key atrule">tagMode</span><span class="token punctuation">:</span> <span class="token boolean important">false</span> <span class="token comment"># Whether only to replace live2d tag instead of inject to all pages</span>
-  <span class="token key atrule">log</span><span class="token punctuation">:</span> <span class="token boolean important">false</span> <span class="token comment"># Whether to show logs in console</span>
-  <span class="token key atrule">model</span><span class="token punctuation">:</span>
-    <span class="token comment">#use: live2d-widget-model-lwet # npm-module package name</span>
-    <span class="token comment"># use: wanko # folder name in (hexo base dir)/live2d_models/</span>
-    <span class="token comment"># use: ./wives/wanko # folder path relative to hexo base dir</span>
-    <span class="token comment"># 模型：https://huaji8.top/post/live2d-plugin-2.0/</span>
-    <span class="token key atrule">use</span><span class="token punctuation">:</span> https<span class="token punctuation">:</span>//cdn.jsdelivr.net/npm/live2d<span class="token punctuation">-</span>widget<span class="token punctuation">-</span>model<span class="token punctuation">-</span>wanko@1.0.5/assets/wanko.model.json <span class="token comment"># Your custom url</span>
-  <span class="token key atrule">display</span><span class="token punctuation">:</span>
-    <span class="token key atrule">position</span><span class="token punctuation">:</span> left
-    <span class="token key atrule">width</span><span class="token punctuation">:</span> <span class="token number">300</span>
-    <span class="token key atrule">height</span><span class="token punctuation">:</span> <span class="token number">400</span>
-    <span class="token key atrule">hOffset</span><span class="token punctuation">:</span> <span class="token number">50</span>
-    <span class="token key atrule">vOffset</span><span class="token punctuation">:</span> <span class="token number">10</span>
-  <span class="token key atrule">mobile</span><span class="token punctuation">:</span>
-    <span class="token key atrule">show</span><span class="token punctuation">:</span> <span class="token boolean important">false</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>效果见本blog左下角</p>
 <h2 id="自定制修改"><a href="#自定制修改" class="headerlink" title="自定制修改"></a>自定制修改</h2><p>在本主题的 <code>_config.yml</code> 中可以修改部分自定义信息，有以下几个部分：</p>
 <ul>
 <li>菜单</li>
@@ -7966,7 +7795,7 @@ COPY . /usr/share/nginx/html
 RUN chmod 777 /usr/share/nginx/html -R \
     &amp;&amp; sed -i 's/#error_page  404/error_page  404/' /etc/nginx/conf.d/default.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
-<h2 id="一些个人DIY"><a href="#一些个人DIY" class="headerlink" title="一些个人DIY"></a>一些个人DIY</h2><h3 id="个性美化"><a href="#个性美化" class="headerlink" title="个性美化"></a>个性美化</h3><h4 id="修改主题颜色-1"><a href="#修改主题颜色-1" class="headerlink" title="修改主题颜色"></a>修改主题颜色</h4><p>配色包括导航栏，底部栏，a标签等，主题配色是绿色。</p>
+<h2 id="一堆个性定制"><a href="#一堆个性定制" class="headerlink" title="一堆个性定制"></a>一堆个性定制</h2><h3 id="个性美化"><a href="#个性美化" class="headerlink" title="个性美化"></a>个性美化</h3><h4 id="修改主题颜色-1"><a href="#修改主题颜色-1" class="headerlink" title="修改主题颜色"></a>修改主题颜色</h4><p>配色包括导航栏，底部栏，a标签等，主题配色是绿色。</p>
 <p>修改themes\Matery\source\css\matery.css样式<br>快捷键ctrl+F查找到#4cbf30（浅绿色）和#0f9d58（深绿色）还有首页字体颜色，修改为你喜欢的颜色</p>
 <pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token comment">/* 整体背景颜色，包括导航、移动端的导航、页尾、标签页等的背景颜色. */</span> 
 <span class="token selector">.bg-color</span> <span class="token punctuation">{</span> 
@@ -8050,6 +7879,48 @@ RUN chmod 777 /usr/share/nginx/html -R \
     <span class="token property">height</span><span class="token punctuation">:</span> 15px<span class="token punctuation">;</span>
 <span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
+<h3 id="添加博客看板娘-动漫人物挂件"><a href="#添加博客看板娘-动漫人物挂件" class="headerlink" title="添加博客看板娘    动漫人物挂件"></a>添加博客看板娘    动漫人物挂件</h3><p>方法：</p>
+<p>获取模型：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> <span class="token function">install</span> --save hexo-helper-live2d<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>安装喜欢的模型：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token function">npm</span> <span class="token function">install</span> packagename<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>将packagename换成模型名字，如我使用的模型：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token function">npm</span> <span class="token function">install</span> live2d-widget-model-shizuku<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+
+<p>然后打开博客根目录下的 _config.yml文件，添加如下代码：</p>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token comment"># Live2D</span>
+<span class="token comment">## https://github.com/EYHN/hexo-helper-live2d</span>
+<span class="token key atrule">live2d</span><span class="token punctuation">:</span>
+  <span class="token key atrule">enable</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+  <span class="token comment"># enable: false</span>
+  <span class="token key atrule">pluginRootPath</span><span class="token punctuation">:</span> live2dw/ <span class="token comment"># Root path of plugin to be on the site (Relative)</span>
+  <span class="token key atrule">pluginJsPath</span><span class="token punctuation">:</span> lib/ <span class="token comment"># JavaScript path related to plugin's root (Relative)</span>
+  <span class="token key atrule">pluginModelPath</span><span class="token punctuation">:</span> assets/ <span class="token comment"># Relative model path related to plugin's root (Relative)</span>
+  <span class="token key atrule">scriptFrom</span><span class="token punctuation">:</span> local <span class="token comment"># Default</span>
+  <span class="token comment"># scriptFrom: jsdelivr # jsdelivr CDN</span>
+  <span class="token comment"># scriptFrom: unpkg # unpkg CDN</span>
+  <span class="token comment"># scriptFrom: https://cdn.jsdelivr.net/npm/live2d-widget@3.x/lib/L2Dwidget.min.js # Your custom url</span>
+  <span class="token key atrule">tagMode</span><span class="token punctuation">:</span> <span class="token boolean important">false</span> <span class="token comment"># Whether only to replace live2d tag instead of inject to all pages</span>
+  <span class="token key atrule">log</span><span class="token punctuation">:</span> <span class="token boolean important">false</span> <span class="token comment"># Whether to show logs in console</span>
+  <span class="token key atrule">model</span><span class="token punctuation">:</span>
+    <span class="token comment">#use: live2d-widget-model-lwet # npm-module package name</span>
+    <span class="token comment"># use: wanko # folder name in (hexo base dir)/live2d_models/</span>
+    <span class="token comment"># use: ./wives/wanko # folder path relative to hexo base dir</span>
+    <span class="token comment"># 模型：https://huaji8.top/post/live2d-plugin-2.0/</span>
+    <span class="token key atrule">use</span><span class="token punctuation">:</span> https<span class="token punctuation">:</span>//cdn.jsdelivr.net/npm/live2d<span class="token punctuation">-</span>widget<span class="token punctuation">-</span>model<span class="token punctuation">-</span>wanko@1.0.5/assets/wanko.model.json <span class="token comment"># Your custom url</span>
+  <span class="token key atrule">display</span><span class="token punctuation">:</span>
+    <span class="token key atrule">position</span><span class="token punctuation">:</span> left
+    <span class="token key atrule">width</span><span class="token punctuation">:</span> <span class="token number">300</span>
+    <span class="token key atrule">height</span><span class="token punctuation">:</span> <span class="token number">400</span>
+    <span class="token key atrule">hOffset</span><span class="token punctuation">:</span> <span class="token number">50</span>
+    <span class="token key atrule">vOffset</span><span class="token punctuation">:</span> <span class="token number">10</span>
+  <span class="token key atrule">mobile</span><span class="token punctuation">:</span>
+    <span class="token key atrule">show</span><span class="token punctuation">:</span> <span class="token boolean important">false</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>效果见本blog左下角</p>
 <h3 id="Tag标签外挂使用方法"><a href="#Tag标签外挂使用方法" class="headerlink" title="Tag标签外挂使用方法"></a>Tag标签外挂使用方法</h3><pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown">Tag标签外挂使用方法
 
 {%r%}
@@ -8357,14 +8228,14 @@ layout: <span class="token string">"galleries"</span><span aria-hidden="true" cl
 <p>这里利用<code>hexo-sliding-spoiler</code>插件间接实现折叠功能，在matery主题中零修改源代码实现折叠功能。</p>
 <p>另一种修改代码实现折叠效果，参考<a href="https://www.cnblogs.com/woshimrf/p/hexo-fold-block.html">Hexo next博客添加折叠块功能添加折叠代码块</a>。</p>
 </blockquote>
-<h3 id="安装插件-1"><a href="#安装插件-1" class="headerlink" title="安装插件"></a>安装插件</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> <span class="token function">install</span> hexo-sliding-spoiler --save<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h4 id="安装插件-1"><a href="#安装插件-1" class="headerlink" title="安装插件"></a>安装插件</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> <span class="token function">install</span> hexo-sliding-spoiler --save<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
-<h3 id="配置插件"><a href="#配置插件" class="headerlink" title="配置插件"></a>配置插件</h3><p>根目录配置文件<code>_config.yml</code>中添加</p>
+<h4 id="配置插件"><a href="#配置插件" class="headerlink" title="配置插件"></a>配置插件</h4><p>根目录配置文件<code>_config.yml</code>中添加</p>
 <pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">plugin</span><span class="token punctuation">:</span>
 <span class="token punctuation">-</span> hexo<span class="token punctuation">-</span>sliding<span class="token punctuation">-</span>spoiler<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 
 <p>到这里已经实现折叠功能了。</p>
-<h3 id="进一步完善美化"><a href="#进一步完善美化" class="headerlink" title="进一步完善美化"></a>进一步完善美化</h3><p>修改<a href="mailto:node_modules_hexo-sliding-spoiler@1.2.1">node_modules_hexo-sliding-spoiler@1.2.1</a>@hexo-sliding-spoiler\assets\spoiler.css</p>
+<h4 id="进一步完善美化"><a href="#进一步完善美化" class="headerlink" title="进一步完善美化"></a>进一步完善美化</h4><p>修改<a href="mailto:node_modules_hexo-sliding-spoiler@1.2.1">node_modules_hexo-sliding-spoiler@1.2.1</a>@hexo-sliding-spoiler\assets\spoiler.css</p>
 <pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">.spoiler</span> <span class="token punctuation">{</span>
     <span class="token property">margin</span><span class="token punctuation">:</span> 20px 0<span class="token punctuation">;</span>
     <span class="token property">padding</span><span class="token punctuation">:</span> 15px<span class="token punctuation">;</span>
@@ -8543,7 +8414,7 @@ content
 <p><img src="https://cimg1.17lai.site/data/2021/09/1820210918231523.png" alt="地址栏"></p>
 <p>点击打开，会看到如下结果，试一下？</p>
 <p><img src="https://cimg1.17lai.site/data/2021/09/1820210918231644.png" alt="离线博客"></p>
-<h2 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h2><h4 id="通过hexo-g-d部署时报Error-Spawn-failed错误"><a href="#通过hexo-g-d部署时报Error-Spawn-failed错误" class="headerlink" title="通过hexo g -d部署时报Error: Spawn failed错误:"></a>通过<code>hexo g -d</code>部署时报<code>Error: Spawn failed</code>错误:</h4><blockquote>
+<h2 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h2><h3 id="通过hexo-g-d部署时报Error-Spawn-failed错误"><a href="#通过hexo-g-d部署时报Error-Spawn-failed错误" class="headerlink" title="通过hexo g -d部署时报Error: Spawn failed错误:"></a>通过<code>hexo g -d</code>部署时报<code>Error: Spawn failed</code>错误:</h3><blockquote>
 <p>这是由于 git 本地记录的提交版本号与 github 上不一致导致的，通过<code>git reset --hard commitCode</code>即可解决。</p>
 </blockquote>
 <ul>
@@ -8560,7 +8431,7 @@ content
 
 
 
-<h4 id="fsevents报错"><a href="#fsevents报错" class="headerlink" title="fsevents报错"></a>fsevents报错</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> ERR<span class="token operator">!</span> code EBADPLATFORM <span class="token function">npm</span> ERR<span class="token operator">!</span> notsup Unsupported platform <span class="token keyword">for</span>
+<h3 id="fsevents报错"><a href="#fsevents报错" class="headerlink" title="fsevents报错"></a>fsevents报错</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> ERR<span class="token operator">!</span> code EBADPLATFORM <span class="token function">npm</span> ERR<span class="token operator">!</span> notsup Unsupported platform <span class="token keyword">for</span>
 fsevents@2.3.2: wanted <span class="token punctuation">{</span><span class="token string">"os"</span><span class="token builtin class-name">:</span><span class="token string">"darwin"</span>,<span class="token string">"arch"</span><span class="token builtin class-name">:</span><span class="token string">"any"</span><span class="token punctuation">}</span> <span class="token punctuation">(</span>current:
 <span class="token punctuation">{</span><span class="token string">"os"</span><span class="token builtin class-name">:</span><span class="token string">"win32"</span>,<span class="token string">"arch"</span><span class="token builtin class-name">:</span><span class="token string">"x64"</span><span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token function">npm</span> ERR<span class="token operator">!</span> notsup Valid OS:    darwin <span class="token function">npm</span>
 ERR<span class="token operator">!</span> notsup Valid Arch:  any <span class="token function">npm</span> ERR<span class="token operator">!</span> notsup Actual OS:   win32 <span class="token function">npm</span>
@@ -8573,7 +8444,7 @@ ERR<span class="token operator">!</span> notsup Actual Arch: x64<span aria-hidde
 
 
 
-<h4 id="关于百度无法爬取GitHub内容解决方案"><a href="#关于百度无法爬取GitHub内容解决方案" class="headerlink" title="关于百度无法爬取GitHub内容解决方案"></a>关于百度无法爬取GitHub内容解决方案</h4><blockquote>
+<h3 id="关于百度无法爬取GitHub内容解决方案"><a href="#关于百度无法爬取GitHub内容解决方案" class="headerlink" title="关于百度无法爬取GitHub内容解决方案"></a>关于百度无法爬取GitHub内容解决方案</h3><blockquote>
 <ul>
 <li>使用coding搭建一个可以被百度爬取到的代码托管平台</li>
 <li>使用vps搭建一个hexo 镜像访问，专门针对搜索引擎。</li>
@@ -8629,7 +8500,7 @@ ERR<span class="token operator">!</span> notsup Actual Arch: x64<span aria-hidde
 </ol>
 </li>
 </ol>
-<h4 id="busuanzi不蒜子计数显示异常，一闪就没"><a href="#busuanzi不蒜子计数显示异常，一闪就没" class="headerlink" title="busuanzi不蒜子计数显示异常，一闪就没"></a>busuanzi不蒜子计数显示异常，一闪就没</h4><blockquote>
+<h3 id="busuanzi不蒜子计数显示异常，一闪就没"><a href="#busuanzi不蒜子计数显示异常，一闪就没" class="headerlink" title="busuanzi不蒜子计数显示异常，一闪就没"></a>busuanzi不蒜子计数显示异常，一闪就没</h3><blockquote>
 <ol>
 <li><p>原因可能有两种live2d看板娘和busuanzi不蒜子计数冲突</p>
 </li>
@@ -8734,7 +8605,7 @@ ERR<span class="token operator">!</span> notsup Actual Arch: x64<span aria-hidde
 <span class="token punctuation">}</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>替换的人请操作其实就是把其中的<code>b.style.display="none"</code>中<code>none</code>去掉。</p>
-<h4 id="不蒜子-busuanzi-文章计数出错问题"><a href="#不蒜子-busuanzi-文章计数出错问题" class="headerlink" title="不蒜子 (busuanzi) 文章计数出错问题"></a>不蒜子 (busuanzi) 文章计数出错问题</h4><p>出现这个原因，和 Chrome 85 版本 Referrer Policy 更改有关。什么是 Referrer，简单理解，就是请求 Web 服务器时，可以在 HTTP Request 的请求头 (header) 中加上当前页面的 URL，例如我们在浏览某个博客页面，需要加载一些图片，从服务器请求这些图片时，referrer 就是当前的博客页面 URL。从这里也可以看出，referrer 可能会暴露请求来源的某些信息或者隐私，有一定的隐私或安全风险。之前版本的 Chrome 浏览器，如果网站没有指定自己的 Referrer Policy，那么 Chrome 默认 policy 是 no-referrer-when-downgrade，在 Chrome 85 版本中，为了保护用户的隐私，默认的 Referrer Policy 则变成了 strict-origin-when-cross-origin。</p>
+<h3 id="不蒜子-busuanzi-文章计数出错问题"><a href="#不蒜子-busuanzi-文章计数出错问题" class="headerlink" title="不蒜子 (busuanzi) 文章计数出错问题"></a>不蒜子 (busuanzi) 文章计数出错问题</h3><p>出现这个原因，和 Chrome 85 版本 Referrer Policy 更改有关。什么是 Referrer，简单理解，就是请求 Web 服务器时，可以在 HTTP Request 的请求头 (header) 中加上当前页面的 URL，例如我们在浏览某个博客页面，需要加载一些图片，从服务器请求这些图片时，referrer 就是当前的博客页面 URL。从这里也可以看出，referrer 可能会暴露请求来源的某些信息或者隐私，有一定的隐私或安全风险。之前版本的 Chrome 浏览器，如果网站没有指定自己的 Referrer Policy，那么 Chrome 默认 policy 是 no-referrer-when-downgrade，在 Chrome 85 版本中，为了保护用户的隐私，默认的 Referrer Policy 则变成了 strict-origin-when-cross-origin。</p>
 <ul>
 <li>no-referrer-when-downgrade: 当两个网站的 http 协议安全等级相当，或者目的网站安全协议等级高于当前网站(HTTP –&gt; HTTP, HTTPS –&gt; HTTPS, HTTP –&gt; HTTPS)， referer 将会包含源网站的域名，路径，查询字符串；如果目的网站安全协议等级低于源网站 (HTTPS –&gt; HTTP)，将不会发送这些信息。</li>
 <li>strict-origin-when-cross-origin： 只有当做同一域名请求时 (源网址和目标网址是同一域名），才发送域名，路径和请求字符串，当两个网站安全协议相当时，发送源网站的域名(没有具体路径信息和查询字符串)，如果目标网站安全协议等级低于源网站，不发送 header 信息。</li>
@@ -8744,7 +8615,7 @@ ERR<span class="token operator">!</span> notsup Actual Arch: x64<span aria-hidde
 <p>在主题文件夹下/layout/_partial/head.ejs中添加</p>
 <pre class="line-numbers language-html" data-language="html"><code class="language-html"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>meta</span> <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>referrer<span class="token punctuation">"</span></span> <span class="token attr-name">content</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>no-referrer-when-downgrade<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
-<h4 id="多个域名映射同一个github-pages"><a href="#多个域名映射同一个github-pages" class="headerlink" title="多个域名映射同一个github pages"></a>多个域名映射同一个github pages</h4><p>可能由于某种原因，换了一个域名，之前又有一些被搜索引擎收录，但是又不想让原来的链接失效，就需要让两个域名都映射到github pages中。本文介绍几种当前可能的方法。欢迎提出更多有效方法。</p>
+<h3 id="如何多个域名映射同一个github-pages"><a href="#如何多个域名映射同一个github-pages" class="headerlink" title="如何多个域名映射同一个github pages"></a>如何多个域名映射同一个github pages</h3><p>可能由于某种原因，换了一个域名，之前又有一些被搜索引擎收录，但是又不想让原来的链接失效，就需要让两个域名都映射到github pages中。本文介绍几种当前可能的方法。欢迎提出更多有效方法。</p>
 <h5 id="直接映射有什么问题？"><a href="#直接映射有什么问题？" class="headerlink" title="直接映射有什么问题？"></a>直接映射有什么问题？</h5><p>你可能会想，两个域名都映射到github pages不就可以了？然而事实并非如此。首先当前github 的CNAME中只支持一个域名。因此CNAME文件中只能有一个域名，而如果在域名映射中将两个域名都映射到username.github.io，那么其中有一个会出现404错误。</p>
 <h5 id="前提-1"><a href="#前提-1" class="headerlink" title="前提"></a>前提</h5><p>以下方法的前提是你已经明白如何为自己的github pages添加自定义域名。</p>
 <h5 id="需要注意什么？"><a href="#需要注意什么？" class="headerlink" title="需要注意什么？"></a>需要注意什么？</h5><ul>
@@ -8824,6 +8695,135 @@ location<span class="token punctuation">.</span>href<span class="token operator"
         <tag>matery</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>浏览器的渲染过程</title>
+    <url>/web/2021-09-13-the-browser-rendering-process/</url>
+    <content><![CDATA[<blockquote>
+<p>通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？</p>
+</blockquote>
+<h3 id="首先，请先看一张大图"><a href="#首先，请先看一张大图" class="headerlink" title="首先，请先看一张大图"></a><strong>首先，请先看一张大图</strong></h3><p>浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：</p>
+<ul>
+<li>  构建对象模型（DOM，CSSOM）</li>
+<li>  构建渲染树（RenderTree）</li>
+<li>  布局</li>
+<li>  渲染</li>
+</ul>
+<p>在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220512.jpeg"></p>
+<h3 id="1-DOMTree的构建"><a href="#1-DOMTree的构建" class="headerlink" title="1.DOMTree的构建"></a><strong>1.DOMTree的构建</strong></h3><p>浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220515.jpeg"></p>
+<ul>
+<li>第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符  </li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220653.jpeg"></p>
+<ul>
+<li>第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是<code>开始标签</code>，还是<code>结束标签</code>，或者<code>文本标签</code>等。  </li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220522.jpeg"></p>
+<ul>
+<li>第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的<code>开始标签</code>，<code>结束标签</code>，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。<br>  Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt;</code>标签最终生成出的节点对象中会保存图片地址等信息。<br>  事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取<code>深度遍历算法</code>消耗Token来生成Node，如下图所示：<br>  图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出<code>html Token</code>,并消耗Token创建出<code>html 节点对象</code>，接着生成<code>head Token</code>并消耗Token创建出<code>head节点对象</code>……，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。  </li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220658.jpeg"></p>
+<p>这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？<br>因为在上述的解析的过程中，如果碰到了<code>script</code>或者<code>link</code>标签，就会根据<code>src</code>对应的地址去加载资源，在<code>script</code>标签没有设置<code>async/defer</code>属性时，这个加载过程是<code>下载并执行完全部的代码</code>，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出<strong>找不到该DOM元素</strong>的错误。<br>值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。</p>
+<h3 id="2-CSSOMTree的构建"><a href="#2-CSSOMTree的构建" class="headerlink" title="2.CSSOMTree的构建"></a><strong>2.CSSOMTree的构建</strong></h3><p>DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：</p>
+<p>假设浏览器收到了下面这样一段css:</p>
+<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">body</span> <span class="token punctuation">{</span><span class="token property">font-size</span><span class="token punctuation">:</span> 16px<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">p</span> <span class="token punctuation">{</span><span class="token property">font-weight</span><span class="token punctuation">:</span> bold<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">p span</span> <span class="token punctuation">{</span><span class="token property">display</span><span class="token punctuation">:</span>none<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">span</span> <span class="token punctuation">{</span><span class="token property">color</span><span class="token punctuation">:</span> red<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">img</span> <span class="token punctuation">{</span><span class="token property">float</span><span class="token punctuation">:</span> right<span class="token punctuation">;</span><span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>最终会生成如下的CSSOMTree:</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220529.jpeg"></p>
+<p>从图中可以看出，最开始<code>body</code>有一个样式规则是<code>font-size:16px</code>，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如<code>span</code>又添加了一个样式规则<code>color:red</code>。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：<strong>CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置</strong>。比如在上面的css代码基础上再添加一行代码<code>p {font-size:12px}</code>，那么之前设置的<code>16px</code>将会被覆盖成<code>12px</code>。</p>
+<p>下面是官方给的一种解释：</p>
+<blockquote>
+<p>未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。<br>所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。</p>
+</blockquote>
+<p>那么回到上面生成DOM时提到的JS问题：<strong>在标签没有设置<code>async/defer</code>属性时，js会阻塞DOM的生成</strong>。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。</p>
+<p>同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在<strong>浏览器还未完成CSSOMTree的下载和构建</strong>时去操作CSS样式，浏览器会<strong>暂停脚本的运行和DOM的构建</strong>，直至浏览器完成了CSSOM的下载和构建。也就是说，<strong>JS脚本的出现会让CSSOM的构建阻塞DOM的构建</strong>。</p>
+<blockquote>
+<p>平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？</p>
+</blockquote>
+<p>举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个<code>link</code>标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220540.jpeg"></p>
+<p>而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个<code>script</code>标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220546.jpeg"></p>
+<p>那如果我们把css放到前面，js放到最后引入时，构建时间会变成：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220705.jpeg"></p>
+<p>由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。</p>
+<p>简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：</p>
+<ul>
+<li>  当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕</li>
+<li>  JavaScript可以查询和修改DOMTree与CSSOMTree</li>
+<li>  直至CSSOM构建完毕，JavaScript才会执行</li>
+<li>  脚本在文档中的位置很重要</li>
+</ul>
+<h3 id="3-渲染树的构建"><a href="#3-渲染树的构建" class="headerlink" title="3.渲染树的构建"></a><strong>3.渲染树的构建</strong></h3><p>现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220711.jpeg"></p>
+<p>接下来我们来谈几条概念</p>
+<ul>
+<li><p>  Render 树上的每一个节点被称为：<code>RenderObject</code>。</p>
+</li>
+<li><p>  RenderObject跟 DOM 节点几乎是一一对应的，当一个<code>可见的 DOM 节点</code>被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。</p>
+</li>
+<li><p>其中，可见的DOM节点不包括：  </p>
+</li>
+<li><p>  一些不会体现在渲染输出中的节点（<code>&lt;html&gt;&lt;script&gt;&lt;link&gt;….</code>），会直接被忽略掉。</p>
+</li>
+<li><p>  通过CSS隐藏的节点。例如上图中的<code>span</code>节点，因为有一个CSS显式规则在该节点上设置了<code>display:none</code>属性，那么它在生成RenderObject时会被直接忽略掉。</p>
+</li>
+<li><p>  Render 树是衔接浏览器排版引擎和渲染引擎之间的<strong>桥梁</strong>，它是<strong>排版引擎的输出，渲染引擎的输入</strong>。</p>
+</li>
+</ul>
+<p>此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？</p>
+<h3 id="RenderObject-and-RenderLayer"><a href="#RenderObject-and-RenderLayer" class="headerlink" title="RenderObject and RenderLayer"></a><strong>RenderObject and RenderLayer</strong></h3><blockquote>
+<p>浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理<strong>Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing</strong>等属性，浏览器需要生成另外一棵树：<strong>Layer树</strong></p>
+</blockquote>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220730.jpeg"></p>
+<p>浏览器会为一些<strong>特定</strong>的<code>RenderObject</code>生成对应的<code>RenderLayer</code>，其中的规则是：</p>
+<ul>
+<li>  是否是页面的根节点 <em>It’s the root object for the page</em></li>
+<li>  是否有css的一些布局属性（relative absolute or a transform) <em>It has explicit CSS position properties (relative, absolute or a transform)</em></li>
+<li>  是否透明 <em>It is transparent</em></li>
+<li>  是否有溢出 <em>Has overflow, an alpha mask or reflection</em></li>
+<li>  是否有css滤镜 <em>Has a CSS filter</em></li>
+<li>  是否包含一个canvas元素使得节点拥有视图上下文 <em>Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context</em></li>
+<li>  是否包含一个video元素 <em>Corresponds to a video element</em></li>
+</ul>
+<p>当满足上面其中一个条件时，这个<code>RrenderObject</code>就会被浏览器选中生成对应的<code>RenderLayer</code>。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。</p>
+<p>浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个<code>RenderLayer</code>，再遍历从属于这个RenderLayer的 <code>RrenderObject</code>，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 <code>RenderLayer</code> 和 <code>RrenderObject</code> 一起就决定了网页在屏幕上最终呈现出来的内容。</p>
+<h3 id="4-布局"><a href="#4-布局" class="headerlink" title="4.布局"></a><strong>4.布局</strong></h3><p>到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。</p>
+<p>布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220553.jpeg"></p>
+<h3 id="5-渲染"><a href="#5-渲染" class="headerlink" title="5.渲染"></a><strong>5.渲染</strong></h3><p>最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220718.jpeg"></p>
+<p>至此，我们就能够在浏览器上看到漂亮的网页了</p>
+<blockquote>
+<p>谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？</p>
+</blockquote>
+<p>我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~</p>
+<h3 id="总结："><a href="#总结：" class="headerlink" title="总结："></a><strong>总结：</strong></h3><ul>
+<li>  经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。</li>
+<li>  CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。</li>
+<li>  同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用<code>async/defer属性</code>异步加载JavaScript。</li>
+<li>  重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数</li>
+</ul>
+<h3 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a><strong>参考文献：</strong></h3><p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21%23wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect</a></p>
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
+        <tag>css</tag>
+        <tag>js</tag>
       </tags>
   </entry>
   <entry>
