@@ -14,7 +14,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="referrer" content="no-referrer-when-downgrade">
-    <meta name="Access-Control-Allow-Origin" content="https://busuanzi.ibruce.info">
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-JNYZP4ZLDJ"></script>
@@ -1231,14 +1230,14 @@
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    21.7k
+                    23.1k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    92 分
+                    98 分
                 </div>
                 
 
@@ -3567,6 +3566,152 @@ content
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.22/medias/loading.gif" data-original="https://cimg1.17lai.site/data/2021/09/1820210918231523.png" alt="地址栏"></p>
 <p>点击打开，会看到如下结果，试一下？</p>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.22/medias/loading.gif" data-original="https://cimg1.17lai.site/data/2021/09/1820210918231644.png" alt="离线博客"></p>
+<h3 id="valine-的使用与升级到1-4"><a href="#valine-的使用与升级到1-4" class="headerlink" title="valine 的使用与升级到1.4"></a>valine 的使用与升级到1.4</h3><h4 id="一、valine启用"><a href="#一、valine启用" class="headerlink" title="一、valine启用"></a>一、valine启用</h4><h5 id="1、主要流程"><a href="#1、主要流程" class="headerlink" title="1、主要流程"></a>1、主要流程</h5><p>valine和miniValine使用基本类似。</p>
+<p>（1）去 <a target="_blank" rel="noopener" href="https://leancloud.cn/dashboard/login.html#/signup">Leancloud</a>注册。</p>
+<p>注意事项：</p>
+<p>节点选择：华东节点、华北节点、国际版。</p>
+<p>如果你的域名没有备案，建议选择国际版。 因为华东或华北节点在安装评论系统之后访问要求域名备案。</p>
+<p>（2）在“设置“，”应用 Keys”，找到你的<code>appid</code>和<code>appkey</code>，配置到主题中<code>valine</code>配置的地方，启用<code>valine</code>。</p>
+<p>（3）在“设置“，”安全中心”，”Web 安全域名”，添加自己的域名。</p>
+<p>（4）在“设置“，”安全中心”，”服务开关”，数据存储要打开。</p>
+<p>（5）在“存储“，”用量统计”，”HTTP状态码”，启用，方便后续报错查错误码。</p>
+<p>（6）重新编译部署<code>hexo clean &amp; hexo g &amp; hexo d</code></p>
+<h5 id="2、遇到问题"><a href="#2、遇到问题" class="headerlink" title="2、遇到问题"></a>2、遇到问题</h5><p>搞这个东西采坑不少，有些坑都是自己不小心造成的。我在网上查了，交流群里也咨询请教了，没有人能解决这个问题，毕竟这个坑是自己造成的。</p>
+<p>常见Code 403问题：</p>
+<pre class="line-numbers language-txt" data-language="txt"><code class="language-txt">Code 403: 访问被api域名白名单拒绝，请检查你的安全域名设置.<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>网上多数的说法是在web安全域名中添加自己的域名。可是如果添加之后还是这个问题呢？</p>
+<p>其实一般不会有这个问题，我有这个问题是我改了权限造成了。</p>
+<p>官方给的解释：</p>
+<blockquote>
+<p>应用在控制台中的相关服务选项未打开，如 Class 关闭了权限，或是 User 缺失了 session 信息等情况下，云端会统一地返回 403 错误码及不同的错误信息，代表当前请求因权限不够而被拒。例如：</p>
+<p>信息 - Forbidden to read/write by class permissions<br>含义 - 操作被禁止，因为 Class 表没有打开「读」或者「写」的权限。进入 控制台 &gt; 存储，点击相应的 Class，从右侧选择 其他 下拉菜单，进入 权限管理 来调整。</p>
+<p>信息 - The user cannot be altered by a client without the session.<br>含义 - 用户没有登录，无法修改用户信息。</p>
+</blockquote>
+<p>解决：</p>
+<p>（1）首次使用，添加一条评论，一般添加之后就会好了。</p>
+<p>（2）后续使用，403，请检查<code>comment</code>表的add_fields/create/find权限开放。</p>
+<p>（3）如果还是不行将<code>_use</code>表的add_fields/create/find权限开放。</p>
+<p>（4）如果还是不行，到“存储“，”用量统计”，”HTTP状态码”处，检查你的错误码，然后去<a target="_blank" rel="noopener" href="https://leancloud.cn/docs/error_code.html#hash1392104">LeanCloud的错误</a>找应用的错误码，排查原因吧。</p>
+<h4 id="二、valine升级"><a href="#二、valine升级" class="headerlink" title="二、valine升级"></a>二、valine升级</h4><h5 id="1、引入1-4版的js文件"><a href="#1、引入1-4版的js文件" class="headerlink" title="1、引入1.4版的js文件"></a>1、引入1.4版的js文件</h5><p>（1）修改主题配置文件</p>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">js</span><span class="token punctuation">:</span>
+  <span class="token key atrule">valine</span><span class="token punctuation">:</span> https<span class="token punctuation">:</span>//unpkg.com/valine/dist/Valine.min.js <span class="token comment">#/libs/valine/Valine.min.js </span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<p>（2）将文件放你自己的仓库</p>
+<p>下载我的 <code>Valine.min.js</code> 文件，直接替换你主题目录 <code>/source/libs/valine/</code> 下的 <code>Valine.min.js</code> 文件。</p>
+<p>注意，如果你担心替换有问题，可以先备份一下你自己的 <code>Valine.min.js</code> 文件。</p>
+<h5 id="2、增加valine的配置："><a href="#2、增加valine的配置：" class="headerlink" title="2、增加valine的配置："></a>2、增加valine的配置：</h5><p>1.4的版本有些属性调整了，主题下的<code>_config.yml</code>valine属性如下：</p>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">valine</span><span class="token punctuation">:</span>
+  <span class="token key atrule">enable</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+  <span class="token key atrule">appId</span><span class="token punctuation">:</span> iTxfqh5e9IaRfiiVOTbIWoKa<span class="token punctuation">-</span>XXXXXX
+  <span class="token key atrule">appKey</span><span class="token punctuation">:</span> C5s5xGFErD1EtXXXXXXXX
+  <span class="token key atrule">verify</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>  <span class="token comment"># 是否启用防垃圾验证</span>
+  <span class="token key atrule">notify</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>  <span class="token comment"># 是否开启邮件提醒(https://valine.js.org/notify.html)</span>
+  <span class="token key atrule">visitor</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+  <span class="token key atrule">avatar</span><span class="token punctuation">:</span> monsterid  <span class="token comment"># 头像样式(https://valine.js.org/avatar.html) </span>
+  <span class="token key atrule">pageSize</span><span class="token punctuation">:</span> <span class="token number">10</span>
+  <span class="token key atrule">placeholder</span><span class="token punctuation">:</span> <span class="token string">'ヾﾉ≧∀≦)o来啊，快活啊!'</span> <span class="token comment"># Comment Box placeholder</span>
+  <span class="token key atrule">background</span><span class="token punctuation">:</span> /medias/comment_bg.png <span class="token comment">#背景图</span>
+  <span class="token key atrule">count</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+  <span class="token key atrule">enableQQ</span><span class="token punctuation">:</span> <span class="token number">970175021</span>
+  <span class="token key atrule">recordIP</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+  <span class="token key atrule">requiredFields</span><span class="token punctuation">:</span> 
+    <span class="token punctuation">-</span> nick
+    <span class="token punctuation">-</span> mail
+  <span class="token key atrule">guest_info</span><span class="token punctuation">:</span> 
+    <span class="token punctuation">-</span> nick
+    <span class="token punctuation">-</span> mail
+    <span class="token punctuation">-</span> link
+  <span class="token key atrule">master</span><span class="token punctuation">:</span> 
+    <span class="token punctuation">-</span> 123abc508165c8eba9a77f872xxxx046  <span class="token comment"># md5加密后的博主邮箱</span>
+  <span class="token key atrule">metaPlaceholder</span><span class="token punctuation">:</span>  <span class="token comment"># 输入框的背景文字</span>
+    <span class="token key atrule">nick</span><span class="token punctuation">:</span> 昵称/QQ号(必填)
+    <span class="token key atrule">mail</span><span class="token punctuation">:</span> 邮箱(必填)
+    <span class="token key atrule">link</span><span class="token punctuation">:</span> 网址(https<span class="token punctuation">:</span>//)
+  <span class="token key atrule">lang</span><span class="token punctuation">:</span> zh<span class="token punctuation">-</span>CN
+  <span class="token key atrule">tagMeta</span><span class="token punctuation">:</span> <span class="token comment"># The String Array of Words to show Flag.[Just Only xCss Style mode]</span>
+    <span class="token punctuation">-</span> 博主
+    <span class="token punctuation">-</span> 小伙伴
+    <span class="token punctuation">-</span> 访客
+  <span class="token key atrule">friends</span><span class="token punctuation">:</span> <span class="token comment"># The MD5 String Array of friends Email to show friends Flag.[Just Only xCss Style mode]</span>
+    <span class="token punctuation">-</span> c08508165c8eba9a77f8c2853xxxx09e
+    <span class="token punctuation">-</span> 901345d4c91ddfd8db0f175bbcfff0c8
+    <span class="token punctuation">-</span> 1512958e18378c98b498d5effe3e76ff<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>复制代码注意缩进对齐，不对齐可能会报错，请自行检查对齐。</p>
+<h5 id="3、修改valine-ejs："><a href="#3、修改valine-ejs：" class="headerlink" title="3、修改valine.ejs："></a>3、修改<code>valine.ejs</code>：</h5><p>Matery 主题使用的<code>ejs</code>模板预编译，如果你使用了<code>pug</code>或者<code>swig</code>等其他的模板语言，请修改成对应语言语法即可。</p>
+<p>原始的<code>valine.ejs</code></p>
+<pre class="line-numbers language-ejs" data-language="ejs"><code class="language-ejs">new Valine({
+        el: '#vcomments',
+        appId: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>appId </span><span class="token delimiter punctuation">%&gt;</span></span>',
+        appKey: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>appKey </span><span class="token delimiter punctuation">%&gt;</span></span>',
+        notify: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>notify </span><span class="token delimiter punctuation">%&gt;</span></span>' === 'true',
+        verify: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>verify </span><span class="token delimiter punctuation">%&gt;</span></span>' === 'true',
+        visitor: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>visitor </span><span class="token delimiter punctuation">%&gt;</span></span>' === 'true',
+        avatar: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>avatar </span><span class="token delimiter punctuation">%&gt;</span></span>',
+        pageSize: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>pageSize </span><span class="token delimiter punctuation">%&gt;</span></span>',
+        lang: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%</span><span class="token language-javascript"> <span class="token keyword">if</span> <span class="token punctuation">(</span>config<span class="token punctuation">.</span>language <span class="token operator">==</span> <span class="token string">"zh-CN"</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>  </span><span class="token delimiter punctuation">%&gt;</span></span>zh-cn<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%</span><span class="token language-javascript"> <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span> </span><span class="token delimiter punctuation">%&gt;</span></span>en<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%</span><span class="token language-javascript"> <span class="token punctuation">}</span> </span><span class="token delimiter punctuation">%&gt;</span></span>',
+        placeholder: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%=</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>placeholder </span><span class="token delimiter punctuation">%&gt;</span></span>'
+    });<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>升级后的<code>valine.ejs</code></p>
+<pre class="line-numbers language-ejs" data-language="ejs"><code class="language-ejs">let metaPlaceholder = <span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript">  <span class="token constant">JSON</span><span class="token punctuation">.</span><span class="token function">stringify</span><span class="token punctuation">(</span>theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>metaPlaceholder<span class="token punctuation">)</span> </span><span class="token delimiter punctuation">%&gt;</span></span> ;
+//这里要换行
+new Valine({
+        el: '#vcomments',
+        appId: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>appId </span><span class="token delimiter punctuation">%&gt;</span></span>',
+        appKey: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>appKey </span><span class="token delimiter punctuation">%&gt;</span></span>',
+        notify: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>notify </span><span class="token delimiter punctuation">%&gt;</span></span>' === 'true',
+        verify: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>verify </span><span class="token delimiter punctuation">%&gt;</span></span>' === 'true',
+        visitor: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>visitor </span><span class="token delimiter punctuation">%&gt;</span></span>' === 'true',
+        avatar: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>avatar </span><span class="token delimiter punctuation">%&gt;</span></span>',
+        pageSize: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>pageSize </span><span class="token delimiter punctuation">%&gt;</span></span>',
+        lang: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>lang </span><span class="token delimiter punctuation">%&gt;</span></span>',
+        placeholder: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%=</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>placeholder </span><span class="token delimiter punctuation">%&gt;</span></span>',
+        meta: <span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> <span class="token string">'["'</span> <span class="token operator">+</span> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>guest_info<span class="token punctuation">.</span><span class="token function">join</span><span class="token punctuation">(</span><span class="token string">'", "'</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">'"]'</span> </span><span class="token delimiter punctuation">%&gt;</span></span>,
+        recordIP: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>recordIP </span><span class="token delimiter punctuation">%&gt;</span></span>' === 'true',
+        enableQQ: '<span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>avatar </span><span class="token delimiter punctuation">%&gt;</span></span>',
+        requiredFields: <span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> <span class="token string">'["'</span> <span class="token operator">+</span> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>master<span class="token punctuation">.</span><span class="token function">join</span><span class="token punctuation">(</span><span class="token string">'", "'</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">'"]'</span> </span><span class="token delimiter punctuation">%&gt;</span></span>,
+        master: <span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> <span class="token string">'["'</span> <span class="token operator">+</span> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>master<span class="token punctuation">.</span><span class="token function">join</span><span class="token punctuation">(</span><span class="token string">'", "'</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">'"]'</span> </span><span class="token delimiter punctuation">%&gt;</span></span>,
+        friends: <span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> <span class="token string">'["'</span> <span class="token operator">+</span> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>friends<span class="token punctuation">.</span><span class="token function">join</span><span class="token punctuation">(</span><span class="token string">'", "'</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">'"]'</span> </span><span class="token delimiter punctuation">%&gt;</span></span>,
+        tagMeta: <span class="token ejs language-ejs"><span class="token delimiter punctuation">&lt;%-</span><span class="token language-javascript"> <span class="token string">'["'</span> <span class="token operator">+</span> theme<span class="token punctuation">.</span>valine<span class="token punctuation">.</span>tagMeta<span class="token punctuation">.</span><span class="token function">join</span><span class="token punctuation">(</span><span class="token string">'", "'</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">'"]'</span> </span><span class="token delimiter punctuation">%&gt;</span></span>,
+        metaPlaceholder: metaPlaceholder,
+
+    });<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>如果需要验证昵称和邮箱可以加上以下代码：</p>
+<pre class="line-numbers language-html" data-language="html"><code class="language-html">document.body.addEventListener('click', function(e) {
+    if (e.target.classList.contains('vsubmit')) {
+        const email = document.querySelector('input[type=email]');
+        const nick = document.querySelector('input[name=nick]');
+        const reg = /^[A-Za-z0-9_-\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/;
+        if (!email.value || !nick.value || !reg.test(email.value)) {
+            const str = `<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>valert txt-center<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name">class</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>vtext<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span>请填写正确的昵称和邮箱！<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>`;
+            const vmark = document.querySelector('.vmark');
+            vmark.innerHTML = str;
+            vmark.style.display = 'block';
+
+            e.stopPropagation();
+
+            setTimeout(function() {
+                vmark.style.display = 'none';
+                vmark.innerHTML = '';
+            }, 2500);
+        }
+    }
+    }, true);<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>说明：代码非原创，JS正则验证本身也不难。</p>
+<p>好了可以部署之后自己测试一下。</p>
+<p>顺便说一下，填写昵称邮箱和网址的地方如果折行了就按我的样式改一下就好：</p>
+<p>在 <code>valine.ejs</code> 是上面对着改一下就好了：</p>
+<pre class="line-numbers language-ejs" data-language="ejs"><code class="language-ejs">.v[data-class="v"] .vwrap .vheader .vinput {
+  width: 32%;
+  border-bottom: 1px dashed #dedede;
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+
+
 <h2 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h2><h3 id="通过hexo-g-d部署时报Error-Spawn-failed错误"><a href="#通过hexo-g-d部署时报Error-Spawn-failed错误" class="headerlink" title="通过hexo g -d部署时报Error: Spawn failed错误:"></a>通过<code>hexo g -d</code>部署时报<code>Error: Spawn failed</code>错误:</h3><blockquote>
 <p>这是由于 git 本地记录的提交版本号与 github 上不一致导致的，通过<code>git reset --hard commitCode</code>即可解决。</p>
 </blockquote>
@@ -4313,6 +4458,12 @@ location<span class="token punctuation">.</span>href<span class="token operator"
         left: unset;
         visibility: visible;
     }
+
+    .v[data-class="v"] .vwrap .vheader .vinput {
+        width: 32%;
+        border-bottom: 1px dashed #dedede;
+    }
+
 </style>
 
 <div class="card valine-card" data-aos="fade-up">
@@ -4325,20 +4476,32 @@ location<span class="token punctuation">.</span>href<span class="token operator"
 </div>
 
 <script src="/libs/valine/av-min.js"></script>
-<script src="/libs/valine/Valine.min.js"></script>
+<script src="https://unpkg.com/valine/dist/Valine.min.js"></script>
 <script>
+
+    let metaPlaceholder = {"nick":"昵称/QQ号(必填)","mail":"邮箱(必填)","link":"网址(https://)"} ;
+
     new Valine({
         el: '#vcomments',
         appId: 'v2hJTCLDHLnGF4iSJkBJ8mga-MdYXbMMI',
         appKey: 'Hu4UNHLVERHkhfH6G5xqdqN3',
-        notify: 'false' === 'true',
-        verify: 'false' === 'true',
+        notify: 'true' === 'true',
+        verify: 'true' === 'true',
         visitor: 'true' === 'true',
-        avatar: 'mm',
+        avatar: 'monsterid',
         pageSize: '10',
-        lang: 'zh-cn',
-        placeholder: '雁过留声，人过留名！说点什么... \ 公开网络空间，请不要发表任何包含个人或其他人的隐私信息！\ PS:在昵称栏输入QQ号可以自动获取QQ昵称和QQ头像哦~'
+        lang: 'zh-CN',
+        placeholder: '雁过留声，人过留名！说点什么... \ 公开网络空间，请不要发表任何包含个人或其他人的隐私信息！\ PS:在昵称栏输入QQ号可以自动获取QQ昵称和QQ头像哦~',
+        meta: ["nick", "mail", "link"],
+        recordIP: 'true' === 'true',
+        enableQQ: 'monsterid',
+        requiredFields: ["034f6b6a1d9b52722c151726bcfd5ead"],
+        master: ["034f6b6a1d9b52722c151726bcfd5ead"],
+        friends: ["c08508165c8eba9a77f8c2853xxxx09e", "901345d4c91ddfd8db0f175bbcfff0c8", "1512958e18378c98b498d5effe3e76ff"],
+        tagMeta: ["博主", "小伙伴", "访客"],
+        metaPlaceholder: metaPlaceholder
     });
+
 </script>
 
 <!--酷Q推送-->
@@ -4657,7 +4820,7 @@ location<span class="token punctuation">.</span>href<span class="token operator"
             <br>
             
                 &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
-                        class="white-color">139.2k</span>
+                        class="white-color">140.6k</span>
             
             
             
@@ -4902,7 +5065,7 @@ $(function () {
     <script src="/libs/instantpage/instantpage.js" type="module"></script>
     
 
-<!-- hexo injector body_end start --><script src="https://cdn.jsdelivr.net/npm/hexo-tag-common@latest/js/index.js"></script><!-- hexo injector body_end end --><script src="https://cdn.jsdelivr.net/npm/live2d-widget@3.x/lib/L2Dwidget.min.js"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"https://cdn.jsdelivr.net/npm/live2d-widget-model-lwet@1.0.0/assets/14.json"},"display":{"position":"left","width":150,"height":300,"hOffset":35,"vOffset":5},"mobile":{"show":false}});</script><script>
+<!-- hexo injector body_end start --><script src="https://cdn.jsdelivr.net/npm/hexo-tag-common@latest/js/index.js"></script><!-- hexo injector body_end end --><script>
             window.imageLazyLoadSetting = {
                 isSPA: false,
                 preloadRatio: 1,
