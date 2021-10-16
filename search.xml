@@ -9313,6 +9313,82 @@ location<span class="token punctuation">.</span>href<span class="token operator"
       </tags>
   </entry>
   <entry>
+    <title>Vim IDE Docker 以及中文指南</title>
+    <url>/ide/2021-09-15-vim-checklist/</url>
+    <content><![CDATA[<blockquote>
+<p>Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！</p>
+</blockquote>
+<h2 id="Vim-Docker"><a href="#Vim-Docker" class="headerlink" title="Vim Docker"></a><a href="https://hub.docker.com/r/bloodstar/vim">Vim Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/G6KybVM.png" alt="Vim Docker"></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker pull bloodstar/vim<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit</span><span class="token operator">=</span><span class="token string">'docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim'</span> 
+edit some.file 
+<span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit_update</span><span class="token operator">=</span><span class="token string">"docker pull bloodstar/vim:latest"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="Vim-IDE-Docker"><a href="#Vim-IDE-Docker" class="headerlink" title="Vim IDE Docker"></a><a href="https://hub.docker.com/r/bloodstar/drop-in">Vim IDE Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/RVTlBBO.png" alt="drop-in"></p>
+<h4 id="What’s-inside"><a href="#What’s-inside" class="headerlink" title="What’s inside:"></a>What’s inside:</h4><ul>
+<li><a href="http://www.alpinelinux.org/"><code>Alpine Linux</code></a></li>
+<li><a href="http://www.vim.org/"><code>Vim</code></a> + a ton of awesome plugins <em>see <a href="https://hub.docker.com/r/bloodstar/vim/"><code>bloodstar/vim:latest</code></a></em></li>
+<li>Good support of <a href="https://golang.org/"><code>Golang</code></a> development with <a href="https://hub.docker.com/r/bloodstar/go-tools/"><code>bloodstar/go-tools</code></a> container</li>
+<li><a href="https://tmux.github.io/"><code>tmux</code></a></li>
+<li><a href="https://powerline.readthedocs.io/"><code>powerline</code></a></li>
+<li><a href="https://mosh.mit.edu/"><code>Mosh</code></a></li>
+<li>OpenSSH, Bash, OMF, Python, etc.</li>
+</ul>
+<h4 id="how-to-start-the-daemon-and-all-containers"><a href="#how-to-start-the-daemon-and-all-containers" class="headerlink" title="how to start the daemon(and all containers)"></a>how to start the daemon(and all containers)</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker create -v <span class="token string">'/usr/lib/go'</span> --name go-tools <span class="token punctuation">\</span>
+<span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
+
+docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
+--volumes-from go-tools <span class="token punctuation">\</span>
+-v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
+-v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
+-d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
+--name drop-in bloodstar/drop-in<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><em><code>-v /etc/localtime:/etc/localtime:ro</code> - makes tmux display local time</em></p>
+<h4 id="how-to-connect"><a href="#how-to-connect" class="headerlink" title="how to connect:"></a>how to connect:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h4 id="or-without-host-identity-check"><a href="#or-without-host-identity-check" class="headerlink" title="or without host identity check:"></a>or without host identity check:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -o StrictHostKeyChecking=no -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h4 id="Useful-Bash-scripts"><a href="#Useful-Bash-scripts" class="headerlink" title="Useful Bash scripts"></a>Useful Bash scripts</h4><h6 id="Connect"><a href="#Connect" class="headerlink" title="Connect"></a><strong>Connect</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
+<span class="token assign-left variable">ip</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker inspect --format <span class="token string">'{{ .NetworkSettings.IPAddress }}'</span> drop-in<span class="token variable">)</span></span>
+mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@<span class="token variable">$ip</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h6 id="start-the-daemon-and-all-containers"><a href="#start-the-daemon-and-all-containers" class="headerlink" title="start the daemon(and all containers)"></a><strong>start the daemon(and all containers)</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
+<span class="token assign-left variable">dtc_id</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker <span class="token function">ps</span> -a -q --filter <span class="token string">'name=vim-go-tools'</span><span class="token variable">)</span></span>
+<span class="token keyword">if</span> <span class="token punctuation">[</span><span class="token punctuation">[</span> -z <span class="token string">"<span class="token variable">${dtc_id}</span>"</span> <span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">;</span> <span class="token keyword">then</span>
+ <span class="token builtin class-name">echo</span> <span class="token string">'vim-go-tools container not found. Creating...'</span>
+ docker create -v <span class="token string">'/usr/lib/go'</span> --name <span class="token string">'vim-go-tools'</span> <span class="token punctuation">\</span>
+   <span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
+ <span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span>
+<span class="token keyword">fi</span>
+<span class="token builtin class-name">echo</span> <span class="token string">'starting daemon...'</span>
+docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
+  --volumes-from vim-go-tools <span class="token punctuation">\</span>
+  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
+  -v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
+  -e <span class="token string">"GEMAIL=&lt;github email&gt;"</span> <span class="token punctuation">\</span>
+  -e <span class="token string">"GNAME=&lt;github name&gt;"</span> <span class="token punctuation">\</span>
+  -d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
+  --name drop-in bloodstar/drop-in
+<span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="Vim-中文快查表-lt-戳这里"><a href="#Vim-中文快查表-lt-戳这里" class="headerlink" title="Vim 中文快查表   <= 戳这里"></a><a href="https://blog.17lai.site/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/">Vim 中文快查表</a>   &lt;= 戳这里</h2><blockquote>
+<p>Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！<br>快去看看吧。</p>
+</blockquote>
+<h2 id="Vim"><a href="#Vim" class="headerlink" title="Vim"></a>Vim</h2><p><img src="https://cimg1.17lai.site/data/2021/09/1520210915150901.png" alt="vim速查"></p>
+]]></content>
+      <categories>
+        <category>ide</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>vim</tag>
+        <tag>ide</tag>
+        <tag>docker</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>1.5 万字 CSS 基础拾遗（核心知识、常见需求）</title>
     <url>/web/2021-09-15-ccs-basec-knowledge/</url>
     <content><![CDATA[<h2 id="1-5-万字-CSS-基础拾遗（核心知识、常见需求）"><a href="#1-5-万字-CSS-基础拾遗（核心知识、常见需求）" class="headerlink" title="1.5 万字 CSS 基础拾遗（核心知识、常见需求）"></a>1.5 万字 CSS 基础拾遗（核心知识、常见需求）</h2><p>本篇文章围绕了 CSS 的核心知识点和项目中常见的需求来展开。虽然行文偏长，但偏基础，适合初级中级前端阅读，阅读的时候请适当跳过已经掌握的部分。</p>
@@ -10286,82 +10362,6 @@ footer</span> <span class="token punctuation">{</span>
       </tags>
   </entry>
   <entry>
-    <title>Vim IDE Docker 以及中文指南</title>
-    <url>/ide/2021-09-15-vim-checklist/</url>
-    <content><![CDATA[<blockquote>
-<p>Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！</p>
-</blockquote>
-<h2 id="Vim-Docker"><a href="#Vim-Docker" class="headerlink" title="Vim Docker"></a><a href="https://hub.docker.com/r/bloodstar/vim">Vim Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/G6KybVM.png" alt="Vim Docker"></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker pull bloodstar/vim<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit</span><span class="token operator">=</span><span class="token string">'docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim'</span> 
-edit some.file 
-<span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit_update</span><span class="token operator">=</span><span class="token string">"docker pull bloodstar/vim:latest"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="Vim-IDE-Docker"><a href="#Vim-IDE-Docker" class="headerlink" title="Vim IDE Docker"></a><a href="https://hub.docker.com/r/bloodstar/drop-in">Vim IDE Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/RVTlBBO.png" alt="drop-in"></p>
-<h4 id="What’s-inside"><a href="#What’s-inside" class="headerlink" title="What’s inside:"></a>What’s inside:</h4><ul>
-<li><a href="http://www.alpinelinux.org/"><code>Alpine Linux</code></a></li>
-<li><a href="http://www.vim.org/"><code>Vim</code></a> + a ton of awesome plugins <em>see <a href="https://hub.docker.com/r/bloodstar/vim/"><code>bloodstar/vim:latest</code></a></em></li>
-<li>Good support of <a href="https://golang.org/"><code>Golang</code></a> development with <a href="https://hub.docker.com/r/bloodstar/go-tools/"><code>bloodstar/go-tools</code></a> container</li>
-<li><a href="https://tmux.github.io/"><code>tmux</code></a></li>
-<li><a href="https://powerline.readthedocs.io/"><code>powerline</code></a></li>
-<li><a href="https://mosh.mit.edu/"><code>Mosh</code></a></li>
-<li>OpenSSH, Bash, OMF, Python, etc.</li>
-</ul>
-<h4 id="how-to-start-the-daemon-and-all-containers"><a href="#how-to-start-the-daemon-and-all-containers" class="headerlink" title="how to start the daemon(and all containers)"></a>how to start the daemon(and all containers)</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker create -v <span class="token string">'/usr/lib/go'</span> --name go-tools <span class="token punctuation">\</span>
-<span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
-
-docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
---volumes-from go-tools <span class="token punctuation">\</span>
--v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
--v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
--d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
---name drop-in bloodstar/drop-in<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p><em><code>-v /etc/localtime:/etc/localtime:ro</code> - makes tmux display local time</em></p>
-<h4 id="how-to-connect"><a href="#how-to-connect" class="headerlink" title="how to connect:"></a>how to connect:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h4 id="or-without-host-identity-check"><a href="#or-without-host-identity-check" class="headerlink" title="or without host identity check:"></a>or without host identity check:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -o StrictHostKeyChecking=no -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h4 id="Useful-Bash-scripts"><a href="#Useful-Bash-scripts" class="headerlink" title="Useful Bash scripts"></a>Useful Bash scripts</h4><h6 id="Connect"><a href="#Connect" class="headerlink" title="Connect"></a><strong>Connect</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
-<span class="token assign-left variable">ip</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker inspect --format <span class="token string">'{{ .NetworkSettings.IPAddress }}'</span> drop-in<span class="token variable">)</span></span>
-mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@<span class="token variable">$ip</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<h6 id="start-the-daemon-and-all-containers"><a href="#start-the-daemon-and-all-containers" class="headerlink" title="start the daemon(and all containers)"></a><strong>start the daemon(and all containers)</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
-<span class="token assign-left variable">dtc_id</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker <span class="token function">ps</span> -a -q --filter <span class="token string">'name=vim-go-tools'</span><span class="token variable">)</span></span>
-<span class="token keyword">if</span> <span class="token punctuation">[</span><span class="token punctuation">[</span> -z <span class="token string">"<span class="token variable">${dtc_id}</span>"</span> <span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">;</span> <span class="token keyword">then</span>
- <span class="token builtin class-name">echo</span> <span class="token string">'vim-go-tools container not found. Creating...'</span>
- docker create -v <span class="token string">'/usr/lib/go'</span> --name <span class="token string">'vim-go-tools'</span> <span class="token punctuation">\</span>
-   <span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
- <span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span>
-<span class="token keyword">fi</span>
-<span class="token builtin class-name">echo</span> <span class="token string">'starting daemon...'</span>
-docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
-  --volumes-from vim-go-tools <span class="token punctuation">\</span>
-  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
-  -v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
-  -e <span class="token string">"GEMAIL=&lt;github email&gt;"</span> <span class="token punctuation">\</span>
-  -e <span class="token string">"GNAME=&lt;github name&gt;"</span> <span class="token punctuation">\</span>
-  -d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
-  --name drop-in bloodstar/drop-in
-<span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="Vim-中文快查表-lt-戳这里"><a href="#Vim-中文快查表-lt-戳这里" class="headerlink" title="Vim 中文快查表   <= 戳这里"></a><a href="https://blog.17lai.site/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/">Vim 中文快查表</a>   &lt;= 戳这里</h2><blockquote>
-<p>Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！<br>快去看看吧。</p>
-</blockquote>
-<h2 id="Vim"><a href="#Vim" class="headerlink" title="Vim"></a>Vim</h2><p><img src="https://cimg1.17lai.site/data/2021/09/1520210915150901.png" alt="vim速查"></p>
-]]></content>
-      <categories>
-        <category>ide</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>vim</tag>
-        <tag>ide</tag>
-        <tag>docker</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/music/2021-10-03-music-analysis-for-hanhong-tianliangle/</url>
     <content><![CDATA[<blockquote>
@@ -10404,29 +10404,6 @@ docker run -v <span class="token variable"><span class="token variable">$(</span
       <tags>
         <tag>music</tag>
         <tag>韩红</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>解决Thinkpad笔记本喇叭破音问题！</title>
-    <url>/notebook/2021-10-05-repair-thinkpad-cracking-voice/</url>
-    <content><![CDATA[<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。</p>
-<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。</p>
-<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>如是，网购了一个新喇叭，拆机，换上，完美解决问题！</p>
-<p>喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/0520211005175831.jpg" alt="喇叭破裂施压图"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/0520211005175843.jpg" alt="喇叭破裂未施压图"></p>
-<blockquote>
-<p>这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。</p>
-<p>型号：Thinkpad T4X0S </p>
-</blockquote>
-]]></content>
-      <categories>
-        <category>notebook</category>
-      </categories>
-      <tags>
-        <tag>thinkpad</tag>
-        <tag>sound</tag>
-        <tag>speaker</tag>
       </tags>
   </entry>
   <entry>
@@ -10708,31 +10685,6 @@ docker run -v <span class="token variable"><span class="token variable">$(</span
         <tag>字幕</tag>
         <tag>emby</tag>
         <tag>plex</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>通过IPV6访问Qnap NAS中Docker的服务</title>
-    <url>/nas/2021-10-12-access-the-docker-service-in-qnap-nas-through-ipv6/</url>
-    <content><![CDATA[<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><p>系统：QTS 4.3.6<br>网络：IPV4 &amp; IPV6<br>Docker: 由Container Station提供</p>
-<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>通过ipv6地址可以打开NAS的管理页面，但是无法访问Docker对应端口的服务。</p>
-<h2 id="排查"><a href="#排查" class="headerlink" title="排查"></a>排查</h2><p>QTS中Docker使用的虚拟交换机网络没有启动IPV6，且无法在虚拟交换机设置中手动启动。<br>这样一来，Docker只监听了tcp4的端口，对于主机上tcp6的端口的访问无法映射到docker容器上。</p>
-<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>在主机上开一个tcp6的端口，将其转发到主机上与docker关联的tcp4端口。<br>即：<br>docker(tcp4)–&gt;host(tcp4)–&gt;host(tcp6)</p>
-<ul>
-<li>在qts上安装包管理器：Entware. <a href="https://github.com/Entware/Entware/wiki/Install-on-QNAP-NAS">https://github.com/Entware/Entware/wiki/Install-on-QNAP-NAS</a></li>
-<li>执行opkg update,更新</li>
-<li>安装端口转发工具，这里使用socat：opkg install socat</li>
-<li>设置转发host(tcp6)–&gt;host(tcp4):(socat TCP6-LISTEN:6880,reuseaddr,fork TCP4:127.0.0.1:7880 &amp;)</li>
-<li>大功告成</li>
-</ul>
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>nas</tag>
-        <tag>docker</tag>
-        <tag>qnap</tag>
-        <tag>ipv6</tag>
       </tags>
   </entry>
   <entry>
@@ -11466,6 +11418,54 @@ docker swarm <span class="token function">join</span> --token xxx x.x.x.x:xxx --
         <tag>PT</tag>
         <tag>aboutme，blog</tag>
         <tag>物联网</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>通过IPV6访问Qnap NAS中Docker的服务</title>
+    <url>/nas/2021-10-12-access-the-docker-service-in-qnap-nas-through-ipv6/</url>
+    <content><![CDATA[<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><p>系统：QTS 4.3.6<br>网络：IPV4 &amp; IPV6<br>Docker: 由Container Station提供</p>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>通过ipv6地址可以打开NAS的管理页面，但是无法访问Docker对应端口的服务。</p>
+<h2 id="排查"><a href="#排查" class="headerlink" title="排查"></a>排查</h2><p>QTS中Docker使用的虚拟交换机网络没有启动IPV6，且无法在虚拟交换机设置中手动启动。<br>这样一来，Docker只监听了tcp4的端口，对于主机上tcp6的端口的访问无法映射到docker容器上。</p>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>在主机上开一个tcp6的端口，将其转发到主机上与docker关联的tcp4端口。<br>即：<br>docker(tcp4)–&gt;host(tcp4)–&gt;host(tcp6)</p>
+<ul>
+<li>在qts上安装包管理器：Entware. <a href="https://github.com/Entware/Entware/wiki/Install-on-QNAP-NAS">https://github.com/Entware/Entware/wiki/Install-on-QNAP-NAS</a></li>
+<li>执行opkg update,更新</li>
+<li>安装端口转发工具，这里使用socat：opkg install socat</li>
+<li>设置转发host(tcp6)–&gt;host(tcp4):(socat TCP6-LISTEN:6880,reuseaddr,fork TCP4:127.0.0.1:7880 &amp;)</li>
+<li>大功告成</li>
+</ul>
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>nas</tag>
+        <tag>docker</tag>
+        <tag>qnap</tag>
+        <tag>ipv6</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>解决Thinkpad笔记本喇叭破音问题！</title>
+    <url>/notebook/2021-10-05-repair-thinkpad-cracking-voice/</url>
+    <content><![CDATA[<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。</p>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。</p>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>如是，网购了一个新喇叭，拆机，换上，完美解决问题！</p>
+<p>喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/0520211005175831.jpg" alt="喇叭破裂施压图"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/0520211005175843.jpg" alt="喇叭破裂未施压图"></p>
+<blockquote>
+<p>这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。</p>
+<p>型号：Thinkpad T4X0S </p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>notebook</category>
+      </categories>
+      <tags>
+        <tag>thinkpad</tag>
+        <tag>sound</tag>
+        <tag>speaker</tag>
       </tags>
   </entry>
 </search>
