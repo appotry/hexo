@@ -6141,6 +6141,135 @@ This is the admonition body
       </tags>
   </entry>
   <entry>
+    <title>浏览器的渲染过程</title>
+    <url>/web/2021-09-13-the-browser-rendering-process/</url>
+    <content><![CDATA[<blockquote>
+<p>通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？</p>
+</blockquote>
+<h3 id="首先，请先看一张大图"><a href="#首先，请先看一张大图" class="headerlink" title="首先，请先看一张大图"></a><strong>首先，请先看一张大图</strong></h3><p>浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：</p>
+<ul>
+<li>  构建对象模型（DOM，CSSOM）</li>
+<li>  构建渲染树（RenderTree）</li>
+<li>  布局</li>
+<li>  渲染</li>
+</ul>
+<p>在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220512.jpeg"></p>
+<h3 id="1-DOMTree的构建"><a href="#1-DOMTree的构建" class="headerlink" title="1.DOMTree的构建"></a><strong>1.DOMTree的构建</strong></h3><p>浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220515.jpeg"></p>
+<ul>
+<li>第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符  </li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220653.jpeg"></p>
+<ul>
+<li>第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是<code>开始标签</code>，还是<code>结束标签</code>，或者<code>文本标签</code>等。  </li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220522.jpeg"></p>
+<ul>
+<li>第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的<code>开始标签</code>，<code>结束标签</code>，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。<br>  Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt;</code>标签最终生成出的节点对象中会保存图片地址等信息。<br>  事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取<code>深度遍历算法</code>消耗Token来生成Node，如下图所示：<br>  图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出<code>html Token</code>,并消耗Token创建出<code>html 节点对象</code>，接着生成<code>head Token</code>并消耗Token创建出<code>head节点对象</code>……，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。  </li>
+</ul>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220658.jpeg"></p>
+<p>这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？<br>因为在上述的解析的过程中，如果碰到了<code>script</code>或者<code>link</code>标签，就会根据<code>src</code>对应的地址去加载资源，在<code>script</code>标签没有设置<code>async/defer</code>属性时，这个加载过程是<code>下载并执行完全部的代码</code>，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出<strong>找不到该DOM元素</strong>的错误。<br>值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。</p>
+<h3 id="2-CSSOMTree的构建"><a href="#2-CSSOMTree的构建" class="headerlink" title="2.CSSOMTree的构建"></a><strong>2.CSSOMTree的构建</strong></h3><p>DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：</p>
+<p>假设浏览器收到了下面这样一段css:</p>
+<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">body</span> <span class="token punctuation">{</span><span class="token property">font-size</span><span class="token punctuation">:</span> 16px<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">p</span> <span class="token punctuation">{</span><span class="token property">font-weight</span><span class="token punctuation">:</span> bold<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">p span</span> <span class="token punctuation">{</span><span class="token property">display</span><span class="token punctuation">:</span>none<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">span</span> <span class="token punctuation">{</span><span class="token property">color</span><span class="token punctuation">:</span> red<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">img</span> <span class="token punctuation">{</span><span class="token property">float</span><span class="token punctuation">:</span> right<span class="token punctuation">;</span><span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>最终会生成如下的CSSOMTree:</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220529.jpeg"></p>
+<p>从图中可以看出，最开始<code>body</code>有一个样式规则是<code>font-size:16px</code>，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如<code>span</code>又添加了一个样式规则<code>color:red</code>。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：<strong>CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置</strong>。比如在上面的css代码基础上再添加一行代码<code>p {font-size:12px}</code>，那么之前设置的<code>16px</code>将会被覆盖成<code>12px</code>。</p>
+<p>下面是官方给的一种解释：</p>
+<blockquote>
+<p>未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。<br>所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。</p>
+</blockquote>
+<p>那么回到上面生成DOM时提到的JS问题：<strong>在标签没有设置<code>async/defer</code>属性时，js会阻塞DOM的生成</strong>。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。</p>
+<p>同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在<strong>浏览器还未完成CSSOMTree的下载和构建</strong>时去操作CSS样式，浏览器会<strong>暂停脚本的运行和DOM的构建</strong>，直至浏览器完成了CSSOM的下载和构建。也就是说，<strong>JS脚本的出现会让CSSOM的构建阻塞DOM的构建</strong>。</p>
+<blockquote>
+<p>平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？</p>
+</blockquote>
+<p>举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个<code>link</code>标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220540.jpeg"></p>
+<p>而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个<code>script</code>标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220546.jpeg"></p>
+<p>那如果我们把css放到前面，js放到最后引入时，构建时间会变成：</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220705.jpeg"></p>
+<p>由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。</p>
+<p>简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：</p>
+<ul>
+<li>  当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕</li>
+<li>  JavaScript可以查询和修改DOMTree与CSSOMTree</li>
+<li>  直至CSSOM构建完毕，JavaScript才会执行</li>
+<li>  脚本在文档中的位置很重要</li>
+</ul>
+<h3 id="3-渲染树的构建"><a href="#3-渲染树的构建" class="headerlink" title="3.渲染树的构建"></a><strong>3.渲染树的构建</strong></h3><p>现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220711.jpeg"></p>
+<p>接下来我们来谈几条概念</p>
+<ul>
+<li><p>  Render 树上的每一个节点被称为：<code>RenderObject</code>。</p>
+</li>
+<li><p>  RenderObject跟 DOM 节点几乎是一一对应的，当一个<code>可见的 DOM 节点</code>被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。</p>
+</li>
+<li><p>其中，可见的DOM节点不包括：  </p>
+</li>
+<li><p>  一些不会体现在渲染输出中的节点（<code>&lt;html&gt;&lt;script&gt;&lt;link&gt;….</code>），会直接被忽略掉。</p>
+</li>
+<li><p>  通过CSS隐藏的节点。例如上图中的<code>span</code>节点，因为有一个CSS显式规则在该节点上设置了<code>display:none</code>属性，那么它在生成RenderObject时会被直接忽略掉。</p>
+</li>
+<li><p>  Render 树是衔接浏览器排版引擎和渲染引擎之间的<strong>桥梁</strong>，它是<strong>排版引擎的输出，渲染引擎的输入</strong>。</p>
+</li>
+</ul>
+<p>此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？</p>
+<h3 id="RenderObject-and-RenderLayer"><a href="#RenderObject-and-RenderLayer" class="headerlink" title="RenderObject and RenderLayer"></a><strong>RenderObject and RenderLayer</strong></h3><blockquote>
+<p>浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理<strong>Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing</strong>等属性，浏览器需要生成另外一棵树：<strong>Layer树</strong></p>
+</blockquote>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220730.jpeg"></p>
+<p>浏览器会为一些<strong>特定</strong>的<code>RenderObject</code>生成对应的<code>RenderLayer</code>，其中的规则是：</p>
+<ul>
+<li>  是否是页面的根节点 <em>It’s the root object for the page</em></li>
+<li>  是否有css的一些布局属性（relative absolute or a transform) <em>It has explicit CSS position properties (relative, absolute or a transform)</em></li>
+<li>  是否透明 <em>It is transparent</em></li>
+<li>  是否有溢出 <em>Has overflow, an alpha mask or reflection</em></li>
+<li>  是否有css滤镜 <em>Has a CSS filter</em></li>
+<li>  是否包含一个canvas元素使得节点拥有视图上下文 <em>Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context</em></li>
+<li>  是否包含一个video元素 <em>Corresponds to a video element</em></li>
+</ul>
+<p>当满足上面其中一个条件时，这个<code>RrenderObject</code>就会被浏览器选中生成对应的<code>RenderLayer</code>。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。</p>
+<p>浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个<code>RenderLayer</code>，再遍历从属于这个RenderLayer的 <code>RrenderObject</code>，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 <code>RenderLayer</code> 和 <code>RrenderObject</code> 一起就决定了网页在屏幕上最终呈现出来的内容。</p>
+<h3 id="4-布局"><a href="#4-布局" class="headerlink" title="4.布局"></a><strong>4.布局</strong></h3><p>到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。</p>
+<p>布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220553.jpeg"></p>
+<h3 id="5-渲染"><a href="#5-渲染" class="headerlink" title="5.渲染"></a><strong>5.渲染</strong></h3><p>最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220718.jpeg"></p>
+<p>至此，我们就能够在浏览器上看到漂亮的网页了</p>
+<blockquote>
+<p>谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？</p>
+</blockquote>
+<p>我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~</p>
+<h3 id="总结："><a href="#总结：" class="headerlink" title="总结："></a><strong>总结：</strong></h3><ul>
+<li>  经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。</li>
+<li>  CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。</li>
+<li>  同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用<code>async/defer属性</code>异步加载JavaScript。</li>
+<li>  重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数</li>
+</ul>
+<h3 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a><strong>参考文献：</strong></h3><p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21%23wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect</a></p>
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
+        <tag>css</tag>
+        <tag>js</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>基于Hexo的matery主题搭建博客并深度优化</title>
     <url>/hexo/2021-09-10-use-hexo-and-matery-to-make-a-perfect-blog/</url>
     <content><![CDATA[<blockquote>
@@ -8223,7 +8352,7 @@ layout: <span class="token string">"galleries"</span><span aria-hidden="true" cl
 <h4 id="查看效果"><a href="#查看效果" class="headerlink" title="查看效果"></a>查看效果</h4><p>完成以上步骤，执行命令，在本地查看效果：</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">hexo clean <span class="token operator">&amp;&amp;</span> hexo g <span class="token operator">&amp;&amp;</span> hexo s<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
-<h4 id="我的效果"><a href="#我的效果" class="headerlink" title="我的效果"></a>我的效果</h4><p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/10/1320211013084134.png"></p>
+<h4 id="我的效果"><a href="#我的效果" class="headerlink" title="我的效果"></a>我的效果</h4><p><img src="https://cimg1.17lai.site/data/2021/10/1320211013084134.png"></p>
 <h3 id="新增折叠功能"><a href="#新增折叠功能" class="headerlink" title="新增折叠功能"></a>新增折叠功能</h3><blockquote>
 <p>这里利用<code>hexo-sliding-spoiler</code>插件间接实现折叠功能，在matery主题中零修改源代码实现折叠功能。</p>
 <p>另一种修改代码实现折叠效果，参考<a href="https://www.cnblogs.com/woshimrf/p/hexo-fold-block.html">Hexo next博客添加折叠块功能添加折叠代码块</a>。</p>
@@ -8695,135 +8824,6 @@ location<span class="token punctuation">.</span>href<span class="token operator"
         <tag>matery</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>浏览器的渲染过程</title>
-    <url>/web/2021-09-13-the-browser-rendering-process/</url>
-    <content><![CDATA[<blockquote>
-<p>通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？</p>
-</blockquote>
-<h3 id="首先，请先看一张大图"><a href="#首先，请先看一张大图" class="headerlink" title="首先，请先看一张大图"></a><strong>首先，请先看一张大图</strong></h3><p>浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：</p>
-<ul>
-<li>  构建对象模型（DOM，CSSOM）</li>
-<li>  构建渲染树（RenderTree）</li>
-<li>  布局</li>
-<li>  渲染</li>
-</ul>
-<p>在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220512.jpeg"></p>
-<h3 id="1-DOMTree的构建"><a href="#1-DOMTree的构建" class="headerlink" title="1.DOMTree的构建"></a><strong>1.DOMTree的构建</strong></h3><p>浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220515.jpeg"></p>
-<ul>
-<li>第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符  </li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220653.jpeg"></p>
-<ul>
-<li>第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是<code>开始标签</code>，还是<code>结束标签</code>，或者<code>文本标签</code>等。  </li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220522.jpeg"></p>
-<ul>
-<li>第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的<code>开始标签</code>，<code>结束标签</code>，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。<br>  Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt;</code>标签最终生成出的节点对象中会保存图片地址等信息。<br>  事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取<code>深度遍历算法</code>消耗Token来生成Node，如下图所示：<br>  图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出<code>html Token</code>,并消耗Token创建出<code>html 节点对象</code>，接着生成<code>head Token</code>并消耗Token创建出<code>head节点对象</code>……，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。  </li>
-</ul>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220658.jpeg"></p>
-<p>这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？<br>因为在上述的解析的过程中，如果碰到了<code>script</code>或者<code>link</code>标签，就会根据<code>src</code>对应的地址去加载资源，在<code>script</code>标签没有设置<code>async/defer</code>属性时，这个加载过程是<code>下载并执行完全部的代码</code>，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出<strong>找不到该DOM元素</strong>的错误。<br>值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。</p>
-<h3 id="2-CSSOMTree的构建"><a href="#2-CSSOMTree的构建" class="headerlink" title="2.CSSOMTree的构建"></a><strong>2.CSSOMTree的构建</strong></h3><p>DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：</p>
-<p>假设浏览器收到了下面这样一段css:</p>
-<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">body</span> <span class="token punctuation">{</span><span class="token property">font-size</span><span class="token punctuation">:</span> 16px<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">p</span> <span class="token punctuation">{</span><span class="token property">font-weight</span><span class="token punctuation">:</span> bold<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">p span</span> <span class="token punctuation">{</span><span class="token property">display</span><span class="token punctuation">:</span>none<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">span</span> <span class="token punctuation">{</span><span class="token property">color</span><span class="token punctuation">:</span> red<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">img</span> <span class="token punctuation">{</span><span class="token property">float</span><span class="token punctuation">:</span> right<span class="token punctuation">;</span><span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>最终会生成如下的CSSOMTree:</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220529.jpeg"></p>
-<p>从图中可以看出，最开始<code>body</code>有一个样式规则是<code>font-size:16px</code>，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如<code>span</code>又添加了一个样式规则<code>color:red</code>。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：<strong>CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置</strong>。比如在上面的css代码基础上再添加一行代码<code>p {font-size:12px}</code>，那么之前设置的<code>16px</code>将会被覆盖成<code>12px</code>。</p>
-<p>下面是官方给的一种解释：</p>
-<blockquote>
-<p>未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。<br>所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。</p>
-</blockquote>
-<p>那么回到上面生成DOM时提到的JS问题：<strong>在标签没有设置<code>async/defer</code>属性时，js会阻塞DOM的生成</strong>。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。</p>
-<p>同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在<strong>浏览器还未完成CSSOMTree的下载和构建</strong>时去操作CSS样式，浏览器会<strong>暂停脚本的运行和DOM的构建</strong>，直至浏览器完成了CSSOM的下载和构建。也就是说，<strong>JS脚本的出现会让CSSOM的构建阻塞DOM的构建</strong>。</p>
-<blockquote>
-<p>平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？</p>
-</blockquote>
-<p>举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个<code>link</code>标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220540.jpeg"></p>
-<p>而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个<code>script</code>标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220546.jpeg"></p>
-<p>那如果我们把css放到前面，js放到最后引入时，构建时间会变成：</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220705.jpeg"></p>
-<p>由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。</p>
-<p>简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：</p>
-<ul>
-<li>  当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕</li>
-<li>  JavaScript可以查询和修改DOMTree与CSSOMTree</li>
-<li>  直至CSSOM构建完毕，JavaScript才会执行</li>
-<li>  脚本在文档中的位置很重要</li>
-</ul>
-<h3 id="3-渲染树的构建"><a href="#3-渲染树的构建" class="headerlink" title="3.渲染树的构建"></a><strong>3.渲染树的构建</strong></h3><p>现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220711.jpeg"></p>
-<p>接下来我们来谈几条概念</p>
-<ul>
-<li><p>  Render 树上的每一个节点被称为：<code>RenderObject</code>。</p>
-</li>
-<li><p>  RenderObject跟 DOM 节点几乎是一一对应的，当一个<code>可见的 DOM 节点</code>被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。</p>
-</li>
-<li><p>其中，可见的DOM节点不包括：  </p>
-</li>
-<li><p>  一些不会体现在渲染输出中的节点（<code>&lt;html&gt;&lt;script&gt;&lt;link&gt;….</code>），会直接被忽略掉。</p>
-</li>
-<li><p>  通过CSS隐藏的节点。例如上图中的<code>span</code>节点，因为有一个CSS显式规则在该节点上设置了<code>display:none</code>属性，那么它在生成RenderObject时会被直接忽略掉。</p>
-</li>
-<li><p>  Render 树是衔接浏览器排版引擎和渲染引擎之间的<strong>桥梁</strong>，它是<strong>排版引擎的输出，渲染引擎的输入</strong>。</p>
-</li>
-</ul>
-<p>此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？</p>
-<h3 id="RenderObject-and-RenderLayer"><a href="#RenderObject-and-RenderLayer" class="headerlink" title="RenderObject and RenderLayer"></a><strong>RenderObject and RenderLayer</strong></h3><blockquote>
-<p>浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理<strong>Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing</strong>等属性，浏览器需要生成另外一棵树：<strong>Layer树</strong></p>
-</blockquote>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220730.jpeg"></p>
-<p>浏览器会为一些<strong>特定</strong>的<code>RenderObject</code>生成对应的<code>RenderLayer</code>，其中的规则是：</p>
-<ul>
-<li>  是否是页面的根节点 <em>It’s the root object for the page</em></li>
-<li>  是否有css的一些布局属性（relative absolute or a transform) <em>It has explicit CSS position properties (relative, absolute or a transform)</em></li>
-<li>  是否透明 <em>It is transparent</em></li>
-<li>  是否有溢出 <em>Has overflow, an alpha mask or reflection</em></li>
-<li>  是否有css滤镜 <em>Has a CSS filter</em></li>
-<li>  是否包含一个canvas元素使得节点拥有视图上下文 <em>Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context</em></li>
-<li>  是否包含一个video元素 <em>Corresponds to a video element</em></li>
-</ul>
-<p>当满足上面其中一个条件时，这个<code>RrenderObject</code>就会被浏览器选中生成对应的<code>RenderLayer</code>。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。</p>
-<p>浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个<code>RenderLayer</code>，再遍历从属于这个RenderLayer的 <code>RrenderObject</code>，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 <code>RenderLayer</code> 和 <code>RrenderObject</code> 一起就决定了网页在屏幕上最终呈现出来的内容。</p>
-<h3 id="4-布局"><a href="#4-布局" class="headerlink" title="4.布局"></a><strong>4.布局</strong></h3><p>到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。</p>
-<p>布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220553.jpeg"></p>
-<h3 id="5-渲染"><a href="#5-渲染" class="headerlink" title="5.渲染"></a><strong>5.渲染</strong></h3><p>最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/09/1320210913220718.jpeg"></p>
-<p>至此，我们就能够在浏览器上看到漂亮的网页了</p>
-<blockquote>
-<p>谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？</p>
-</blockquote>
-<p>我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~</p>
-<h3 id="总结："><a href="#总结：" class="headerlink" title="总结："></a><strong>总结：</strong></h3><ul>
-<li>  经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。</li>
-<li>  CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。</li>
-<li>  同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用<code>async/defer属性</code>异步加载JavaScript。</li>
-<li>  重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数</li>
-</ul>
-<h3 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a><strong>参考文献：</strong></h3><p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21%23wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect</a></p>
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
-        <tag>css</tag>
-        <tag>js</tag>
       </tags>
   </entry>
   <entry>
@@ -9310,82 +9310,6 @@ location<span class="token punctuation">.</span>href<span class="token operator"
       <tags>
         <tag>ai</tag>
         <tag>face</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Vim IDE Docker 以及中文指南</title>
-    <url>/ide/2021-09-15-vim-checklist/</url>
-    <content><![CDATA[<blockquote>
-<p>Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！</p>
-</blockquote>
-<h2 id="Vim-Docker"><a href="#Vim-Docker" class="headerlink" title="Vim Docker"></a><a href="https://hub.docker.com/r/bloodstar/vim">Vim Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/G6KybVM.png" alt="Vim Docker"></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker pull bloodstar/vim<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit</span><span class="token operator">=</span><span class="token string">'docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim'</span> 
-edit some.file 
-<span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit_update</span><span class="token operator">=</span><span class="token string">"docker pull bloodstar/vim:latest"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="Vim-IDE-Docker"><a href="#Vim-IDE-Docker" class="headerlink" title="Vim IDE Docker"></a><a href="https://hub.docker.com/r/bloodstar/drop-in">Vim IDE Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/RVTlBBO.png" alt="drop-in"></p>
-<h4 id="What’s-inside"><a href="#What’s-inside" class="headerlink" title="What’s inside:"></a>What’s inside:</h4><ul>
-<li><a href="http://www.alpinelinux.org/"><code>Alpine Linux</code></a></li>
-<li><a href="http://www.vim.org/"><code>Vim</code></a> + a ton of awesome plugins <em>see <a href="https://hub.docker.com/r/bloodstar/vim/"><code>bloodstar/vim:latest</code></a></em></li>
-<li>Good support of <a href="https://golang.org/"><code>Golang</code></a> development with <a href="https://hub.docker.com/r/bloodstar/go-tools/"><code>bloodstar/go-tools</code></a> container</li>
-<li><a href="https://tmux.github.io/"><code>tmux</code></a></li>
-<li><a href="https://powerline.readthedocs.io/"><code>powerline</code></a></li>
-<li><a href="https://mosh.mit.edu/"><code>Mosh</code></a></li>
-<li>OpenSSH, Bash, OMF, Python, etc.</li>
-</ul>
-<h4 id="how-to-start-the-daemon-and-all-containers"><a href="#how-to-start-the-daemon-and-all-containers" class="headerlink" title="how to start the daemon(and all containers)"></a>how to start the daemon(and all containers)</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker create -v <span class="token string">'/usr/lib/go'</span> --name go-tools <span class="token punctuation">\</span>
-<span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
-
-docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
---volumes-from go-tools <span class="token punctuation">\</span>
--v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
--v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
--d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
---name drop-in bloodstar/drop-in<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p><em><code>-v /etc/localtime:/etc/localtime:ro</code> - makes tmux display local time</em></p>
-<h4 id="how-to-connect"><a href="#how-to-connect" class="headerlink" title="how to connect:"></a>how to connect:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h4 id="or-without-host-identity-check"><a href="#or-without-host-identity-check" class="headerlink" title="or without host identity check:"></a>or without host identity check:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -o StrictHostKeyChecking=no -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<h4 id="Useful-Bash-scripts"><a href="#Useful-Bash-scripts" class="headerlink" title="Useful Bash scripts"></a>Useful Bash scripts</h4><h6 id="Connect"><a href="#Connect" class="headerlink" title="Connect"></a><strong>Connect</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
-<span class="token assign-left variable">ip</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker inspect --format <span class="token string">'{{ .NetworkSettings.IPAddress }}'</span> drop-in<span class="token variable">)</span></span>
-mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@<span class="token variable">$ip</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-
-<h6 id="start-the-daemon-and-all-containers"><a href="#start-the-daemon-and-all-containers" class="headerlink" title="start the daemon(and all containers)"></a><strong>start the daemon(and all containers)</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
-<span class="token assign-left variable">dtc_id</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker <span class="token function">ps</span> -a -q --filter <span class="token string">'name=vim-go-tools'</span><span class="token variable">)</span></span>
-<span class="token keyword">if</span> <span class="token punctuation">[</span><span class="token punctuation">[</span> -z <span class="token string">"<span class="token variable">${dtc_id}</span>"</span> <span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">;</span> <span class="token keyword">then</span>
- <span class="token builtin class-name">echo</span> <span class="token string">'vim-go-tools container not found. Creating...'</span>
- docker create -v <span class="token string">'/usr/lib/go'</span> --name <span class="token string">'vim-go-tools'</span> <span class="token punctuation">\</span>
-   <span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
- <span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span>
-<span class="token keyword">fi</span>
-<span class="token builtin class-name">echo</span> <span class="token string">'starting daemon...'</span>
-docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
-  --volumes-from vim-go-tools <span class="token punctuation">\</span>
-  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
-  -v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
-  -e <span class="token string">"GEMAIL=&lt;github email&gt;"</span> <span class="token punctuation">\</span>
-  -e <span class="token string">"GNAME=&lt;github name&gt;"</span> <span class="token punctuation">\</span>
-  -d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
-  --name drop-in bloodstar/drop-in
-<span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h2 id="Vim-中文快查表-lt-戳这里"><a href="#Vim-中文快查表-lt-戳这里" class="headerlink" title="Vim 中文快查表   <= 戳这里"></a><a href="https://blog.17lai.site/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/">Vim 中文快查表</a>   &lt;= 戳这里</h2><blockquote>
-<p>Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！<br>快去看看吧。</p>
-</blockquote>
-<h2 id="Vim"><a href="#Vim" class="headerlink" title="Vim"></a>Vim</h2><p><img src="https://cimg1.17lai.site/data/2021/09/1520210915150901.png" alt="vim速查"></p>
-]]></content>
-      <categories>
-        <category>ide</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>vim</tag>
-        <tag>ide</tag>
-        <tag>docker</tag>
       </tags>
   </entry>
   <entry>
@@ -10362,6 +10286,82 @@ footer</span> <span class="token punctuation">{</span>
       </tags>
   </entry>
   <entry>
+    <title>Vim IDE Docker 以及中文指南</title>
+    <url>/ide/2021-09-15-vim-checklist/</url>
+    <content><![CDATA[<blockquote>
+<p>Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！</p>
+</blockquote>
+<h2 id="Vim-Docker"><a href="#Vim-Docker" class="headerlink" title="Vim Docker"></a><a href="https://hub.docker.com/r/bloodstar/vim">Vim Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/G6KybVM.png" alt="Vim Docker"></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker pull bloodstar/vim<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit</span><span class="token operator">=</span><span class="token string">'docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim'</span> 
+edit some.file 
+<span class="token builtin class-name">alias</span> <span class="token assign-left variable">edit_update</span><span class="token operator">=</span><span class="token string">"docker pull bloodstar/vim:latest"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="Vim-IDE-Docker"><a href="#Vim-IDE-Docker" class="headerlink" title="Vim IDE Docker"></a><a href="https://hub.docker.com/r/bloodstar/drop-in">Vim IDE Docker</a></h2><p><img src="https://images.weserv.nl/?url=https://i.imgur.com/RVTlBBO.png" alt="drop-in"></p>
+<h4 id="What’s-inside"><a href="#What’s-inside" class="headerlink" title="What’s inside:"></a>What’s inside:</h4><ul>
+<li><a href="http://www.alpinelinux.org/"><code>Alpine Linux</code></a></li>
+<li><a href="http://www.vim.org/"><code>Vim</code></a> + a ton of awesome plugins <em>see <a href="https://hub.docker.com/r/bloodstar/vim/"><code>bloodstar/vim:latest</code></a></em></li>
+<li>Good support of <a href="https://golang.org/"><code>Golang</code></a> development with <a href="https://hub.docker.com/r/bloodstar/go-tools/"><code>bloodstar/go-tools</code></a> container</li>
+<li><a href="https://tmux.github.io/"><code>tmux</code></a></li>
+<li><a href="https://powerline.readthedocs.io/"><code>powerline</code></a></li>
+<li><a href="https://mosh.mit.edu/"><code>Mosh</code></a></li>
+<li>OpenSSH, Bash, OMF, Python, etc.</li>
+</ul>
+<h4 id="how-to-start-the-daemon-and-all-containers"><a href="#how-to-start-the-daemon-and-all-containers" class="headerlink" title="how to start the daemon(and all containers)"></a>how to start the daemon(and all containers)</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker create -v <span class="token string">'/usr/lib/go'</span> --name go-tools <span class="token punctuation">\</span>
+<span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
+
+docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
+--volumes-from go-tools <span class="token punctuation">\</span>
+-v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
+-v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
+-d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
+--name drop-in bloodstar/drop-in<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><em><code>-v /etc/localtime:/etc/localtime:ro</code> - makes tmux display local time</em></p>
+<h4 id="how-to-connect"><a href="#how-to-connect" class="headerlink" title="how to connect:"></a>how to connect:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h4 id="or-without-host-identity-check"><a href="#or-without-host-identity-check" class="headerlink" title="or without host identity check:"></a>or without host identity check:</h4><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -o StrictHostKeyChecking=no -p 62222"</span> -- developer@$<span class="token operator">&lt;</span>ip<span class="token operator">&gt;</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h4 id="Useful-Bash-scripts"><a href="#Useful-Bash-scripts" class="headerlink" title="Useful Bash scripts"></a>Useful Bash scripts</h4><h6 id="Connect"><a href="#Connect" class="headerlink" title="Connect"></a><strong>Connect</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
+<span class="token assign-left variable">ip</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker inspect --format <span class="token string">'{{ .NetworkSettings.IPAddress }}'</span> drop-in<span class="token variable">)</span></span>
+mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -p 62222"</span> -- developer@<span class="token variable">$ip</span> tmux -u<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h6 id="start-the-daemon-and-all-containers"><a href="#start-the-daemon-and-all-containers" class="headerlink" title="start the daemon(and all containers)"></a><strong>start the daemon(and all containers)</strong></h6><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
+<span class="token assign-left variable">dtc_id</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>docker <span class="token function">ps</span> -a -q --filter <span class="token string">'name=vim-go-tools'</span><span class="token variable">)</span></span>
+<span class="token keyword">if</span> <span class="token punctuation">[</span><span class="token punctuation">[</span> -z <span class="token string">"<span class="token variable">${dtc_id}</span>"</span> <span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">;</span> <span class="token keyword">then</span>
+ <span class="token builtin class-name">echo</span> <span class="token string">'vim-go-tools container not found. Creating...'</span>
+ docker create -v <span class="token string">'/usr/lib/go'</span> --name <span class="token string">'vim-go-tools'</span> <span class="token punctuation">\</span>
+   <span class="token string">'bloodstar/go-tools'</span> <span class="token string">'/bin/true'</span>
+ <span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span>
+<span class="token keyword">fi</span>
+<span class="token builtin class-name">echo</span> <span class="token string">'starting daemon...'</span>
+docker run -v <span class="token variable"><span class="token variable">$(</span>'pwd'<span class="token variable">)</span></span>:/home/developer/workspace <span class="token punctuation">\</span>
+  --volumes-from vim-go-tools <span class="token punctuation">\</span>
+  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro <span class="token punctuation">\</span>
+  -v /etc/localtime:/etc/localtime:ro <span class="token punctuation">\</span>
+  -e <span class="token string">"GEMAIL=&lt;github email&gt;"</span> <span class="token punctuation">\</span>
+  -e <span class="token string">"GNAME=&lt;github name&gt;"</span> <span class="token punctuation">\</span>
+  -d -p <span class="token number">80</span>:80 -p <span class="token number">8080</span>:8080 -p <span class="token number">62222</span>:62222 -p <span class="token number">60001</span>:60001/udp <span class="token punctuation">\</span>
+  --name drop-in bloodstar/drop-in
+<span class="token builtin class-name">echo</span> <span class="token string">'Done!'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="Vim-中文快查表-lt-戳这里"><a href="#Vim-中文快查表-lt-戳这里" class="headerlink" title="Vim 中文快查表   <= 戳这里"></a><a href="https://blog.17lai.site/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/">Vim 中文快查表</a>   &lt;= 戳这里</h2><blockquote>
+<p>Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！<br>快去看看吧。</p>
+</blockquote>
+<h2 id="Vim"><a href="#Vim" class="headerlink" title="Vim"></a>Vim</h2><p><img src="https://cimg1.17lai.site/data/2021/09/1520210915150901.png" alt="vim速查"></p>
+]]></content>
+      <categories>
+        <category>ide</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>vim</tag>
+        <tag>ide</tag>
+        <tag>docker</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/music/2021-10-03-music-analysis-for-hanhong-tianliangle/</url>
     <content><![CDATA[<blockquote>
@@ -10404,6 +10404,29 @@ footer</span> <span class="token punctuation">{</span>
       <tags>
         <tag>music</tag>
         <tag>韩红</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>解决Thinkpad笔记本喇叭破音问题！</title>
+    <url>/notebook/2021-10-05-repair-thinkpad-cracking-voice/</url>
+    <content><![CDATA[<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。</p>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。</p>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>如是，网购了一个新喇叭，拆机，换上，完美解决问题！</p>
+<p>喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。</p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/0520211005175831.jpg" alt="喇叭破裂施压图"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/0520211005175843.jpg" alt="喇叭破裂未施压图"></p>
+<blockquote>
+<p>这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。</p>
+<p>型号：Thinkpad T4X0S </p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>notebook</category>
+      </categories>
+      <tags>
+        <tag>thinkpad</tag>
+        <tag>sound</tag>
+        <tag>speaker</tag>
       </tags>
   </entry>
   <entry>
@@ -10688,6 +10711,31 @@ footer</span> <span class="token punctuation">{</span>
       </tags>
   </entry>
   <entry>
+    <title>通过IPV6访问Qnap NAS中Docker的服务</title>
+    <url>/nas/2021-10-12-access-the-docker-service-in-qnap-nas-through-ipv6/</url>
+    <content><![CDATA[<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><p>系统：QTS 4.3.6<br>网络：IPV4 &amp; IPV6<br>Docker: 由Container Station提供</p>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>通过ipv6地址可以打开NAS的管理页面，但是无法访问Docker对应端口的服务。</p>
+<h2 id="排查"><a href="#排查" class="headerlink" title="排查"></a>排查</h2><p>QTS中Docker使用的虚拟交换机网络没有启动IPV6，且无法在虚拟交换机设置中手动启动。<br>这样一来，Docker只监听了tcp4的端口，对于主机上tcp6的端口的访问无法映射到docker容器上。</p>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>在主机上开一个tcp6的端口，将其转发到主机上与docker关联的tcp4端口。<br>即：<br>docker(tcp4)–&gt;host(tcp4)–&gt;host(tcp6)</p>
+<ul>
+<li>在qts上安装包管理器：Entware. <a href="https://github.com/Entware/Entware/wiki/Install-on-QNAP-NAS">https://github.com/Entware/Entware/wiki/Install-on-QNAP-NAS</a></li>
+<li>执行opkg update,更新</li>
+<li>安装端口转发工具，这里使用socat：opkg install socat</li>
+<li>设置转发host(tcp6)–&gt;host(tcp4):(socat TCP6-LISTEN:6880,reuseaddr,fork TCP4:127.0.0.1:7880 &amp;)</li>
+<li>大功告成</li>
+</ul>
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>nas</tag>
+        <tag>docker</tag>
+        <tag>qnap</tag>
+        <tag>ipv6</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>CMake快速入门教程</title>
     <url>/linux/2021-10-12-cmake-quick-start-tutorial/</url>
     <content><![CDATA[<h2 id="1-cmake简介"><a href="#1-cmake简介" class="headerlink" title="1.cmake简介"></a>1.cmake简介</h2><p>cmake是跨平台的makefile文件生成工具,是为了解决各个平台下面make工具不同造成的makefile文件格式不同的问题.也就是cmake是用来解决跨平台编译问题的.常见的还有autotool工具集，该工具集用于GNU软件协议的makefile文件生成，方便GNU包的编译和安装。</p>
@@ -10782,7 +10830,7 @@ footer</span> <span class="token punctuation">{</span>
 <blockquote>
 <p>Traefik 适合配合Dockers swarm 做服务， Dockers portainer 做管理，ELK集群做监控日志。</p>
 </blockquote>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/10/1420211014200800.png" alt="Traefik"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1420211014200800.png" alt="Traefik"></p>
 <p><code>traefik</code> 与 <code>nginx</code> 一样，是一款优秀的反向代理工具，或者叫 <code>Edge Router</code>。至于使用它的原因则基于以下几点</p>
 <ul>
 <li>无须重启即可更新配置</li>
@@ -10970,7 +11018,7 @@ footer</span> <span class="token punctuation">{</span>
 <p>With the container started, you now have a dashboard you can access to see the health of your containers. You can also use this dashboard to visualize the routers, services, and middlewares that Traefik has registered. You can try to access the monitoring dashboard by pointing your browser to <code>https://monitor.your_domain/dashboard/</code> (the trailing <code>/</code> is required).</p>
 <p>You will be prompted for your username and password, which are <strong>admin</strong> and the password you configured in Step 1.</p>
 <p>Once logged in, you’ll see the Traefik interface:</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/10/1420211014200207.png" alt="Empty Traefik dashboard"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1420211014200207.png" alt="Empty Traefik dashboard"></p>
 <p>You will notice that there are already some routers and services registered, but those are the ones that come with Traefik and the router configuration that you wrote for the API.</p>
 <p>You now have your Traefik proxy running, and you’ve configured it to work with Docker and monitor other containers. In the next step you will start some containers for Traefik to proxy.</p>
 <h2 id="Step-3-—-Registering-Containers-with-Traefik"><a href="#Step-3-—-Registering-Containers-with-Traefik" class="headerlink" title="Step 3 — Registering Containers with Traefik"></a>Step 3 — Registering Containers with Traefik</h2><p>With the Traefik container running, you’re ready to run applications behind it. Let’s launch the following containers behind Traefik:</p>
@@ -11119,15 +11167,15 @@ footer</span> <span class="token punctuation">{</span>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker-compose up -d<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>Now watch the Traefik admin dashboard while it populates.</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/10/1420211014200110.png" alt="Populated Traefik dashboard"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1420211014200110.png" alt="Populated Traefik dashboard"></p>
 <p>If you explore the <strong>Routers</strong> section you will find routers for <code>adminer</code> and <code>blog</code> configured with TLS:</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/10/1420211014200142.png" alt="HTTP Routers w/ TLS"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1420211014200142.png" alt="HTTP Routers w/ TLS"></p>
 <p>Navigate to <code>blog.your_domain</code>, substituting <code>your_domain</code> with your domain. You’ll be redirected to a TLS connection and you can now complete the WordPress setup:</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/10/1420211014200114.png" alt="WordPress setup screen"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1420211014200114.png" alt="WordPress setup screen"></p>
 <p>Now access Adminer by visiting <code>db-admin.your_domain</code> in your browser, again substituting <code>your_domain</code> with your domain. The <code>mysql</code> container isn’t exposed to the outside world, but the <code>adminer</code> container has access to it through the <code>internal</code> Docker network that they share using the <code>mysql</code> container name as a hostname.</p>
 <p>On the Adminer login screen, enter <code>root</code> for <strong>Username</strong>, enter <code>mysql</code> for <strong>Server</strong>, and enter the value you set for <code>MYSQL_ROOT_PASSWORD</code> for the <strong>Password</strong>. Leave <strong>Database</strong> empty. Now press <strong>Login</strong>.</p>
 <p>Once logged in, you’ll see the Adminer user interface.</p>
-<p><img src="https://images.weserv.nl/?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2021/10/1420211014200132.png" alt="Adminer connected to the MySQL database"></p>
+<p><img src="https://cimg1.17lai.site/data/2021/10/1420211014200132.png" alt="Adminer connected to the MySQL database"></p>
 <p>Both sites are now working, and you can use the dashboard at <code>monitor.your_domain</code> to keep an eye on your applications.</p>
 <h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>In this tutorial, you configured Traefik v2 to proxy requests to other applications in Docker containers.</p>
 <p>Traefik’s declarative configuration at the application container level makes it easy to configure more services, and there’s no need to restart the <code>traefik</code> container when you add new applications to proxy traffic to since Traefik notices the changes immediately through the Docker socket file it’s monitoring.</p>
@@ -11418,54 +11466,6 @@ docker swarm <span class="token function">join</span> --token xxx x.x.x.x:xxx --
         <tag>PT</tag>
         <tag>aboutme，blog</tag>
         <tag>物联网</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>通过IPV6访问Qnap NAS中Docker的服务</title>
-    <url>/nas/2021-10-12-access-the-docker-service-in-qnap-nas-through-ipv6/</url>
-    <content><![CDATA[<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><p>系统：QTS 4.3.6<br>网络：IPV4 &amp; IPV6<br>Docker: 由Container Station提供</p>
-<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>通过ipv6地址可以打开NAS的管理页面，但是无法访问Docker对应端口的服务。</p>
-<h2 id="排查"><a href="#排查" class="headerlink" title="排查"></a>排查</h2><p>QTS中Docker使用的虚拟交换机网络没有启动IPV6，且无法在虚拟交换机设置中手动启动。<br>这样一来，Docker只监听了tcp4的端口，对于主机上tcp6的端口的访问无法映射到docker容器上。</p>
-<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>在主机上开一个tcp6的端口，将其转发到主机上与docker关联的tcp4端口。<br>即：<br>docker(tcp4)–&gt;host(tcp4)–&gt;host(tcp6)</p>
-<ul>
-<li>在qts上安装包管理器：Entware. <a href="https://github.com/Entware/Entware/wiki/Install-on-QNAP-NAS">https://github.com/Entware/Entware/wiki/Install-on-QNAP-NAS</a></li>
-<li>执行opkg update,更新</li>
-<li>安装端口转发工具，这里使用socat：opkg install socat</li>
-<li>设置转发host(tcp6)–&gt;host(tcp4):(socat TCP6-LISTEN:6880,reuseaddr,fork TCP4:127.0.0.1:7880 &amp;)</li>
-<li>大功告成</li>
-</ul>
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>nas</tag>
-        <tag>docker</tag>
-        <tag>qnap</tag>
-        <tag>ipv6</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>解决Thinkpad笔记本喇叭破音问题！</title>
-    <url>/notebook/2021-10-05-repair-thinkpad-cracking-voice/</url>
-    <content><![CDATA[<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。</p>
-<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。</p>
-<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>如是，网购了一个新喇叭，拆机，换上，完美解决问题！</p>
-<p>喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。</p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/0520211005175831.jpg" alt="喇叭破裂施压图"></p>
-<p><img src="https://cimg1.17lai.site/data/2021/10/0520211005175843.jpg" alt="喇叭破裂未施压图"></p>
-<blockquote>
-<p>这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。</p>
-<p>型号：Thinkpad T4X0S </p>
-</blockquote>
-]]></content>
-      <categories>
-        <category>notebook</category>
-      </categories>
-      <tags>
-        <tag>thinkpad</tag>
-        <tag>sound</tag>
-        <tag>speaker</tag>
       </tags>
   </entry>
 </search>
