@@ -1231,7 +1231,7 @@
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
-                    2021-10-18
+                    2021-10-19
                 </div>
                 
 
@@ -1279,21 +1279,21 @@
 <li>  渲染</li>
 </ul>
 <p>在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@1.2/data/2021/09/1320210913220512.jpeg"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220512.jpeg"></p>
 <h3 id="1-DOMTree的构建"><a href="#1-DOMTree的构建" class="headerlink" title="1.DOMTree的构建"></a><strong>1.DOMTree的构建</strong></h3><p>浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@1.2/data/2021/09/1320210913220515.jpeg"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220515.jpeg"></p>
 <ul>
 <li>第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符  </li>
 </ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@1.2/data/2021/09/1320210913220653.jpeg"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220653.jpeg"></p>
 <ul>
 <li>第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是<code>开始标签</code>，还是<code>结束标签</code>，或者<code>文本标签</code>等。  </li>
 </ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@1.2/data/2021/09/1320210913220522.jpeg"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220522.jpeg"></p>
 <ul>
 <li>第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的<code>开始标签</code>，<code>结束标签</code>，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。<br>  Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt;</code>标签最终生成出的节点对象中会保存图片地址等信息。<br>  事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取<code>深度遍历算法</code>消耗Token来生成Node，如下图所示：<br>  图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出<code>html Token</code>,并消耗Token创建出<code>html 节点对象</code>，接着生成<code>head Token</code>并消耗Token创建出<code>head节点对象</code>……，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。  </li>
 </ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@1.2/data/2021/09/1320210913220658.jpeg"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220658.jpeg"></p>
 <p>这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？<br>因为在上述的解析的过程中，如果碰到了<code>script</code>或者<code>link</code>标签，就会根据<code>src</code>对应的地址去加载资源，在<code>script</code>标签没有设置<code>async/defer</code>属性时，这个加载过程是<code>下载并执行完全部的代码</code>，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出<strong>找不到该DOM元素</strong>的错误。<br>值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。</p>
 <h3 id="2-CSSOMTree的构建"><a href="#2-CSSOMTree的构建" class="headerlink" title="2.CSSOMTree的构建"></a><strong>2.CSSOMTree的构建</strong></h3><p>DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：</p>
 <p>假设浏览器收到了下面这样一段css:</p>
@@ -1304,7 +1304,7 @@
 <span class="token selector">img</span> <span class="token punctuation">{</span><span class="token property">float</span><span class="token punctuation">:</span> right<span class="token punctuation">;</span><span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>最终会生成如下的CSSOMTree:</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@1.2/data/2021/09/1320210913220529.jpeg"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220529.jpeg"></p>
 <p>从图中可以看出，最开始<code>body</code>有一个样式规则是<code>font-size:16px</code>，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如<code>span</code>又添加了一个样式规则<code>color:red</code>。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：<strong>CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置</strong>。比如在上面的css代码基础上再添加一行代码<code>p {font-size:12px}</code>，那么之前设置的<code>16px</code>将会被覆盖成<code>12px</code>。</p>
 <p>下面是官方给的一种解释：</p>
 <blockquote>
@@ -1316,11 +1316,11 @@
 <p>平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？</p>
 </blockquote>
 <p>举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个<code>link</code>标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@1.2/data/2021/09/1320210913220540.jpeg"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220540.jpeg"></p>
 <p>而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个<code>script</code>标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@1.2/data/2021/09/1320210913220546.jpeg"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220546.jpeg"></p>
 <p>那如果我们把css放到前面，js放到最后引入时，构建时间会变成：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@1.2/data/2021/09/1320210913220705.jpeg"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220705.jpeg"></p>
 <p>由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。</p>
 <p>简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：</p>
 <ul>
@@ -1330,7 +1330,7 @@
 <li>  脚本在文档中的位置很重要</li>
 </ul>
 <h3 id="3-渲染树的构建"><a href="#3-渲染树的构建" class="headerlink" title="3.渲染树的构建"></a><strong>3.渲染树的构建</strong></h3><p>现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@1.2/data/2021/09/1320210913220711.jpeg"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220711.jpeg"></p>
 <p>接下来我们来谈几条概念</p>
 <ul>
 <li><p>  Render 树上的每一个节点被称为：<code>RenderObject</code>。</p>
@@ -1350,7 +1350,7 @@
 <h3 id="RenderObject-and-RenderLayer"><a href="#RenderObject-and-RenderLayer" class="headerlink" title="RenderObject and RenderLayer"></a><strong>RenderObject and RenderLayer</strong></h3><blockquote>
 <p>浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理<strong>Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing</strong>等属性，浏览器需要生成另外一棵树：<strong>Layer树</strong></p>
 </blockquote>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@1.2/data/2021/09/1320210913220730.jpeg"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220730.jpeg"></p>
 <p>浏览器会为一些<strong>特定</strong>的<code>RenderObject</code>生成对应的<code>RenderLayer</code>，其中的规则是：</p>
 <ul>
 <li>  是否是页面的根节点 <em>It’s the root object for the page</em></li>
@@ -1365,9 +1365,9 @@
 <p>浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个<code>RenderLayer</code>，再遍历从属于这个RenderLayer的 <code>RrenderObject</code>，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 <code>RenderLayer</code> 和 <code>RrenderObject</code> 一起就决定了网页在屏幕上最终呈现出来的内容。</p>
 <h3 id="4-布局"><a href="#4-布局" class="headerlink" title="4.布局"></a><strong>4.布局</strong></h3><p>到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。</p>
 <p>布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@1.2/data/2021/09/1320210913220553.jpeg"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220553.jpeg"></p>
 <h3 id="5-渲染"><a href="#5-渲染" class="headerlink" title="5.渲染"></a><strong>5.渲染</strong></h3><p>最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@1.2/data/2021/09/1320210913220718.jpeg"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220718.jpeg"></p>
 <p>至此，我们就能够在浏览器上看到漂亮的网页了</p>
 <blockquote>
 <p>谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？</p>
