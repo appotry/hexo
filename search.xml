@@ -145,353 +145,6 @@ html可以随意使用html标签，可以使用liquid模板语言，侧重于页
       </tags>
   </entry>
   <entry>
-    <title>Gitlab的安装及使用</title>
-    <url>/posts/d08eb7b/</url>
-    <content><![CDATA[<h2 id="Gitlab概述"><a class="header-anchor" href="#Gitlab概述"></a>Gitlab概述</h2>
-<h3 id="1-1-GitLab介绍"><a class="header-anchor" href="#1-1-GitLab介绍"></a>1.1 GitLab介绍</h3>
-<p>GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。</p>
-<p>GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。</p>
-<p>它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找</p>
-<h3 id="1-2-Gitlab服务构成"><a class="header-anchor" href="#1-2-Gitlab服务构成"></a>1.2 Gitlab服务构成</h3>
-<ul>
-<li>
-<p>Nginx：静态web服务器。</p>
-</li>
-<li>
-<p>gitlab-shell：用于处理Git命令和修改authorized keys列表。</p>
-</li>
-<li>
-<p>gitlab-workhorse: 轻量级的反向代理服务器。</p>
-</li>
-<li>
-<p>logrotate：日志文件管理工具。</p>
-</li>
-<li>
-<p>postgresql：数据库。</p>
-</li>
-<li>
-<p>redis：缓存数据库。</p>
-</li>
-<li>
-<p>sidekiq：用于在后台执行队列任务（异步执行）。</p>
-</li>
-<li>
-<p>unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。</p>
-</li>
-</ul>
-<h3 id="1-3-Gitlab工作流程"><a class="header-anchor" href="#1-3-Gitlab工作流程"></a>1.3 Gitlab工作流程</h3>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222044.png" alt=""></p>
-<h3 id="1-4-GitLab-Shell"><a class="header-anchor" href="#1-4-GitLab-Shell"></a>1.4 GitLab Shell</h3>
-<p>GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表</p>
-<p>当通过SSH访问GitLab Server时，GitLab Shell会：</p>
-<ul>
-<li>限制执行预定义好的Git命令（git push，git pull，git annex）</li>
-<li>调用GitLab Rails API检查权限</li>
-<li>执行pre-receive钩子（在企业版中叫做Git钩子）</li>
-<li>执行用户请求的动作，处理GitLab的post-receive动作</li>
-<li>处理自定义的post-receive动作</li>
-</ul>
-<p>当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：</p>
-<p>如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作</p>
-<p>如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：</p>
-<ul>
-<li>调用GitLab Rails API 检查权限</li>
-<li>执行pre-receive钩子（在GitLab企业版中叫做Git钩子）</li>
-<li>执行你请求的动作</li>
-<li>处理GitLab的post-receive动作</li>
-<li>处理自定义的post-receive动作</li>
-</ul>
-<h3 id="1-5-GitLab-Workhorse"><a class="header-anchor" href="#1-5-GitLab-Workhorse"></a>1.5 GitLab Workhorse</h3>
-<p>GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。</p>
-<h2 id="Gitlab的安装部署"><a class="header-anchor" href="#Gitlab的安装部署"></a>Gitlab的安装部署</h2>
-<hr>
-<ul>
-<li>Gitlab要求服务器内存2G以上</li>
-</ul>
-<h3 id="2-1-方式一-下载gitlab-ce的rpm包"><a class="header-anchor" href="#2-1-方式一-下载gitlab-ce的rpm包"></a>2.1 方式一:下载gitlab-ce的rpm包</h3>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://packages.gitlab.com/gitlab/gitlab-ce">gitlab官方rpm包下载</a></li>
-<li><a target="_blank" rel="noopener" href="https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/">清华的源</a></li>
-</ul>
-<p>将对应版本的gitlab-ce下载到本地后，直接yum安装即可</p>
-<h4 id="要先将这个rpm包下载到本地"><a class="header-anchor" href="#要先将这个rpm包下载到本地"></a>要先将这个rpm包下载到本地</h4>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h3 id="2-2-方式二-配置yum源"><a class="header-anchor" href="#2-2-方式二-配置yum源"></a>2.2 方式二:配置yum源</h3>
-<p>在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：</p>
-<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby"><span class="token punctuation">[</span>gitlab<span class="token operator">-</span>ce<span class="token punctuation">]</span>
-name<span class="token operator">=</span>gitlab<span class="token operator">-</span>ce
-baseurl<span class="token operator">=</span>https<span class="token punctuation">:</span><span class="token operator">/</span><span class="token operator">/</span>mirrors<span class="token punctuation">.</span>tuna<span class="token punctuation">.</span>tsinghua<span class="token punctuation">.</span>edu<span class="token punctuation">.</span>cn<span class="token operator">/</span>gitlab<span class="token operator">-</span>ce<span class="token operator">/</span>yum<span class="token operator">/</span>el7<span class="token operator">/</span> <span class="token constant">Repo_gpgcheck</span><span class="token operator">=</span><span class="token number">0</span>
-<span class="token constant">Enabled</span><span class="token operator">=</span><span class="token number">1</span> <span class="token constant">Gpgkey</span><span class="token operator">=</span>https<span class="token punctuation">:</span><span class="token operator">/</span><span class="token operator">/</span>packages<span class="token punctuation">.</span>gitlab<span class="token punctuation">.</span>com<span class="token operator">/</span>gpg<span class="token punctuation">.</span>key<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-<p>然后创建cache，再直接安装gitlab-ce</p>
-<p>yum makecache  # 这一步会创建大量的数据</p>
-<h4 id="直接安装最新版"><a class="header-anchor" href="#直接安装最新版"></a>直接安装最新版</h4>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y gitlab-ce <span class="token comment"># 如果要安装指定的版本，在后面填上版本号即可</span>
-yum <span class="token function">install</span> -y  gitlab-ce-13.6.1<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<h4 id="如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证"><a class="header-anchor" href="#如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证"></a>如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证</h4>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> gitlab-ce -y --nogpgcheck<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h3 id="2-3-gitlab的配置"><a class="header-anchor" href="#2-3-gitlab的配置"></a>2.3 gitlab的配置</h3>
-<p>配置文件位置  /etc/gitlab/gitlab.rb</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">[</span>root@centos7 test<span class="token punctuation">]</span><span class="token comment"># vim /etc/gitlab/gitlab.rb</span>
-<span class="token punctuation">[</span>root@centos7 test<span class="token punctuation">]</span><span class="token comment"># grep "^[a-Z]" /etc/gitlab/gitlab.rb</span>
-external_url <span class="token string">'http://10.0.0.51'</span>  <span class="token comment"># 这里一定要加上http://</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-<h4 id="配置邮件服务"><a class="header-anchor" href="#配置邮件服务"></a>配置邮件服务</h4>
-<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
-gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_address'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp.qq.com"</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_port'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">25</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_user_name'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"hgzerowzh@qq.com"</span>  <span class="token comment"># 自己的qq邮箱账号</span>
-gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_password'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"xxx"</span>  <span class="token comment"># 开通smtp时返回的授权码</span>
-gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_domain'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"qq.com"</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_authentication'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"login"</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable_starttls_auto'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
-gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_tls'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">false</span>
-gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_from'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"hgzerowzh@qq.com"</span>  <span class="token comment"># 指定发送邮件的邮箱地址</span>
-user<span class="token punctuation">[</span><span class="token string">"git_user_email"</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"shit@qq.com"</span>   <span class="token comment"># 指定接收邮件的邮箱地址</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p><strong>修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。</strong></p>
-<pre class="line-numbers language-none"><code class="language-none">gitlab-ctl reconfigure # 重载配置文件<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h3 id="2-4-Gitlab常用命令"><a class="header-anchor" href="#2-4-Gitlab常用命令"></a>2.4 Gitlab常用命令</h3>
-<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab<span class="token operator">-</span>ctl start         <span class="token comment"># 启动所有 gitlab 组件</span>
-gitlab<span class="token operator">-</span>ctl stop          <span class="token comment"># 停止所有 gitlab 组件</span>
-gitlab<span class="token operator">-</span>ctl restart       <span class="token comment"># 重启所有 gitlab 组件</span>
-gitlab<span class="token operator">-</span>ctl status        <span class="token comment"># 查看服务状态</span>
-gitlab<span class="token operator">-</span>ctl reconfigure   <span class="token comment"># 启动服务</span>
-gitlab<span class="token operator">-</span>ctl show<span class="token operator">-</span>config   <span class="token comment"># 验证配置文件</span>
-gitlab<span class="token operator">-</span>ctl tail          <span class="token comment"># 查看日志</span>
-gitlab<span class="token operator">-</span>rake gitlab<span class="token symbol">:check</span> <span class="token constant">SANITIZE</span><span class="token operator">=</span><span class="token boolean">true</span> <span class="token operator">--</span>trace    <span class="token comment"># 检查gitlab</span>
-vim <span class="token operator">/</span>etc<span class="token operator">/</span>gitlab<span class="token operator">/</span>gitlab<span class="token punctuation">.</span>rb <span class="token comment"># 修改默认的配置文件</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="Gitlab的使用"><a class="header-anchor" href="#Gitlab的使用"></a>Gitlab的使用</h2>
-<hr>
-<ul>
-<li>Gitlab安装好后，设置密码，管理账户为root</li>
-</ul>
-<h3 id="3-1-创建Group"><a class="header-anchor" href="#3-1-创建Group"></a><strong>3.1 创建Group</strong></h3>
-<ul>
-<li>填上组名即可，这里组名为java</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222105.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211347.png" alt=""></p>
-<h3 id="3-2-创建User"><a class="header-anchor" href="#3-2-创建User"></a><strong>3.2 创建User</strong></h3>
-<ul>
-<li>创建四个User：pm、dev1、dev2、dev3</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222131.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222120.png" alt=""></p>
-<h3 id="3-3-添加User到Group中并授权"><a class="header-anchor" href="#3-3-添加User到Group中并授权"></a><strong>3.3 添加User到Group中并授权</strong></h3>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222140.png" alt=""></p>
-<h3 id="3-4-创建Project并配置SSH"><a class="header-anchor" href="#3-4-创建Project并配置SSH"></a><strong>3.4 创建Project并配置SSH</strong></h3>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222147.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222154.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222201.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222233.png" alt=""></p>
-<h3 id="3-5-在项目中添加成员"><a class="header-anchor" href="#3-5-在项目中添加成员"></a><strong>3.5 在项目中添加成员</strong></h3>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211335.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211726.png" alt=""></p>
-<h3 id="3-6-将本地文件推送到Gitlab"><a class="header-anchor" href="#3-6-将本地文件推送到Gitlab"></a>3.6 将本地文件推送到Gitlab</h3>
-<h4 id="将app01项目克隆下来"><a class="header-anchor" href="#将app01项目克隆下来"></a>将app01项目克隆下来</h4>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> clone git@10.0.0.51:java/app01.git <span class="token comment"># 初始化配置</span>
-<span class="token function">git</span> config --global user.name <span class="token string">"hgzero"</span> <span class="token function">git</span> config --global user.email <span class="token string">"hgzero@qq.com"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<h4 id="在app01目录下新建一些文件"><a class="header-anchor" href="#在app01目录下新建一些文件"></a>在app01目录下新建一些文件</h4>
-<h4 id="推送到gitlab"><a class="header-anchor" href="#推送到gitlab"></a>推送到gitlab</h4>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> <span class="token function">add</span> <span class="token builtin class-name">.</span>
-<span class="token function">git</span> commit -m <span class="token string">"first edition"</span> <span class="token function">git</span> push origin master<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211546.png" alt=""></p>
-<ol start="4">
-<li>制定开发计划</li>
-</ol>
-<hr>
-<h3 id="4-1-创建开发计划"><a class="header-anchor" href="#4-1-创建开发计划"></a><strong>4.1 创建开发计划</strong></h3>
-<ul>
-<li>项目：app01</li>
-<li>版本：v1.0</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211325.png" alt=""></p>
-<h3 id="4-2-创建里程碑Milestones"><a class="header-anchor" href="#4-2-创建里程碑Milestones"></a><strong>4.2 创建里程碑Milestones</strong></h3>
-<ul>
-<li>用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）</li>
-<li>要根据开发计划来创建Milestones</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211538.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211719.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211315.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211303.png" alt=""></p>
-<h3 id="4-3-根据开发计划创建issue"><a class="header-anchor" href="#4-3-根据开发计划创建issue"></a>4.3 根据开发计划创建issue</h3>
-<ul>
-<li>创建4个issue，分派给dev1和dev2这两个开发人员</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211529.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211304.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211711.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211520.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211514.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211252.png" alt=""></p>
-<h3 id="4-4-开发者登录账号查看分派的任务"><a class="header-anchor" href="#4-4-开发者登录账号查看分派的任务"></a>**4.4 开发者登录账号查看分派的任务 **</h3>
-<ul>
-<li>然后开发dev1登录gitlab，就能看到任务已经分配过来了</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211513.png" alt=""></p>
-<h3 id="4-5-开发流程"><a class="header-anchor" href="#4-5-开发流程"></a><strong>4.5 开发流程</strong></h3>
-<ul>
-<li>公司里的开发开始任务</li>
-</ul>
-<h4 id="1-先从仓库把项目拉下来"><a class="header-anchor" href="#1-先从仓库把项目拉下来"></a>1. 先从仓库把项目拉下来</h4>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> clone git@10.0.0.51:java/app01.git
-<span class="token builtin class-name">cd</span> app01/<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<h4 id="2-先创建一个自己的分支，然后进行开发"><a class="header-anchor" href="#2-先创建一个自己的分支，然后进行开发"></a>2.先创建一个自己的分支，然后进行开发</h4>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> checkout -b index   <span class="token comment"># 创建一个叫index的分支，并切换到这个分支</span>
-<span class="token function">git</span> status <span class="token comment"># 3. 开始开发首页</span>
-<span class="token builtin class-name">echo</span> <span class="token string">"&lt;h1>welcome to this app&lt;/h1>"</span> <span class="token operator">></span> index.html  <span class="token comment"># 假设就开发了一个index页面</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-<h2 id="4-开发完成后，把项目传到仓库"><a class="header-anchor" href="#4-开发完成后，把项目传到仓库"></a>4. 开发完成后，把项目传到仓库</h2>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> <span class="token function">add</span> <span class="token builtin class-name">.</span>
-<span class="token function">git</span> commit -m <span class="token string">"index"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<h4 id="如果写成-git-commit-m-“close-2”-，则表示merge请求允许且merge成功之后，自动删除编号为-2的issue"><a class="header-anchor" href="#如果写成-git-commit-m-“close-2”-，则表示merge请求允许且merge成功之后，自动删除编号为-2的issue"></a>如果写成 git commit -m “close #2” ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue</h4>
-<h4 id="传到index分支"><a class="header-anchor" href="#传到index分支"></a>传到index分支</h4>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> push origin index<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h3 id="4-6-合并分支"><a class="header-anchor" href="#4-6-合并分支"></a><strong>4.6 合并分支</strong></h3>
-<p><strong>1）开发dev1发送合并分支请求给pm</strong></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211242.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211503.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211701.png" alt=""></p>
-<p><strong>2）pm收到开发的Merge请求后进行处理</strong></p>
-<ul>
-<li>使用pm登录，就可以看到pm已经收到了合并请求merge request</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211231.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211502.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211647.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211221.png" alt=""></p>
-<p><strong>3）开发dev1确认任务完成</strong></p>
-<ul>
-<li>退出pm账户，登入dev1账户：</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211220.png" alt=""></p>
-<ul>
-<li>或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211454.png" alt=""></p>
-<ul>
-<li>这个时候Milestones的进度已经往前进了一些了：</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211446.png" alt=""></p>
-<h3 id="4-7-开发其他功能"><a class="header-anchor" href="#4-7-开发其他功能"></a>4.7 开发其他功能</h3>
-<ul>
-<li>然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发</li>
-</ul>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> checkout master  <span class="token comment"># 切换到master</span>
-<span class="token function">git</span> pull             <span class="token comment"># 从远端仓库拉取数据</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<p>然后再进行其他操作</p>
-<h2 id="Gitlab备份恢复"><a class="header-anchor" href="#Gitlab备份恢复"></a>Gitlab备份恢复</h2>
-<hr>
-<h3 id="5-1-备份gitlab"><a class="header-anchor" href="#5-1-备份gitlab"></a>5.1 备份gitlab</h3>
-<p><strong>1）修改配置文件</strong></p>
-<ul>
-<li><strong>/etc/gitlab/gitlab.rb</strong></li>
-</ul>
-<h4 id="备份保存的位置，这里是默认位置，可修改成指定的位置"><a class="header-anchor" href="#备份保存的位置，这里是默认位置，可修改成指定的位置"></a>备份保存的位置，这里是默认位置，可修改成指定的位置</h4>
-<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab_rails<span class="token punctuation">[</span><span class="token string">'backup_path'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"/var/opt/gitlab/backups"</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h4 id="设置备份保存的时间，超过此时间的日志将会被新覆盖"><a class="header-anchor" href="#设置备份保存的时间，超过此时间的日志将会被新覆盖"></a>设置备份保存的时间，超过此时间的日志将会被新覆盖</h4>
-<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab_rails<span class="token punctuation">[</span><span class="token string">'backup_keep_time'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">604800</span>  <span class="token comment"># 这里是默认设置，保存7天</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h4 id="特别注意：-如果自定义了备份保存位置，则要修改备份目录的权限，比如：-chown-R-git-git-data-backup-gitlab"><a class="header-anchor" href="#特别注意：-如果自定义了备份保存位置，则要修改备份目录的权限，比如：-chown-R-git-git-data-backup-gitlab"></a>特别注意： # 如果自定义了备份保存位置，则要修改备份目录的权限，比如： # chown -R git.git /data/backup/gitlab</h4>
-<ul>
-<li>配置完成后要重启以使配置生效</li>
-</ul>
-<h4 id="重读配置文件"><a class="header-anchor" href="#重读配置文件"></a>重读配置文件</h4>
-<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab<span class="token operator">-</span>ctl reconfigure <span class="token comment"># 重启gitlab</span>
-gitlab<span class="token operator">-</span>ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<p><strong>2）设置定时任务</strong></p>
-<h4 id="每天凌晨2点定时创建备份-将一下内容写入到定时任务中-crontab-e"><a class="header-anchor" href="#每天凌晨2点定时创建备份-将一下内容写入到定时任务中-crontab-e"></a>每天凌晨2点定时创建备份 # 将一下内容写入到定时任务中 crontab -e</h4>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token number">0</span> <span class="token number">2</span> * * * /usr/bin/gitlab-rake gitlab:backup:create <span class="token comment"># 备份策略建议： # 本地保留3到7天，在异地备份永久保存</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<p><strong>3）备份时间的识别</strong></p>
-<h4 id="备份后的文件类似这样的形式：1494170842-gitlab-backup-tar，可以根据前面的时间戳确认备份生成的时间"><a class="header-anchor" href="#备份后的文件类似这样的形式：1494170842-gitlab-backup-tar，可以根据前面的时间戳确认备份生成的时间"></a>备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间</h4>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">data -d  @1494170842<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h3 id="5-2-恢复gitlab"><a class="header-anchor" href="#5-2-恢复gitlab"></a>5.2 恢复gitlab</h3>
-<p><strong>1）停止数据写入服务</strong></p>
-<h4 id="停止数据写入服务"><a class="header-anchor" href="#停止数据写入服务"></a>停止数据写入服务</h4>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl stop unicorn
-gitlab-ctl stop sidekiq<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<p><strong>2）进行数据恢复并重启</strong></p>
-<h4 id="进行恢复"><a class="header-anchor" href="#进行恢复"></a>进行恢复</h4>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rake gitlab:backup:restore <span class="token assign-left variable">BACKUP</span><span class="token operator">=</span><span class="token number">1494170842</span>  <span class="token comment"># 这个时间戳就是刚刚备份的文件前面的时间戳</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h4 id="重启"><a class="header-anchor" href="#重启"></a>重启</h4>
-<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab<span class="token operator">-</span>ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h2 id="gitlab邮件通知配置"><a class="header-anchor" href="#gitlab邮件通知配置"></a>gitlab邮件通知配置</h2>
-<hr>
-<ul>
-<li>vim  /etc/gitlab/gitlab.rb</li>
-</ul>
-<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab_rails<span class="token punctuation">[</span><span class="token string">'time_zone'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'Asia/Shanghai'</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_enabled'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
-gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_from'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'example@163.com'</span> <span class="token comment"># 填写发件人的邮箱地址</span>
-gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_display_name'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'gitlab'</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
-gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_address'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp.163.com"</span>  <span class="token comment"># smtp服务器的地址,如网易的地址</span>
-gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_port'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">25</span>                 <span class="token comment"># 要注意如果使用了SSL/TLS的话,端口可能不是25</span>
-gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_user_name'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp用户名"</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_password'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp用户密码"</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_domain'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"163.com"</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_authentication'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"login"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<ol start="7">
-<li>
-<h2 id="使用SourceTree进行项目开发"><a class="header-anchor" href="#使用SourceTree进行项目开发"></a>使用SourceTree进行项目开发</h2>
-</li>
-</ol>
-<hr>
-<h3 id="7-1-项目拉取"><a class="header-anchor" href="#7-1-项目拉取"></a>7.1 项目拉取</h3>
-<ul>
-<li>先把项目克隆下来</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211633.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211438.png" alt=""></p>
-<ul>
-<li>如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211211.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211201.png" alt=""></p>
-<h3 id="7-2-创建分支进行功能开发"><a class="header-anchor" href="#7-2-创建分支进行功能开发"></a>7.2 创建分支进行功能开发</h3>
-<p><strong>1）新建立一个叫“pay”的分支</strong></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211618.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211430.png" alt=""></p>
-<p><strong>2）进行功能开发</strong></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211152.png" alt=""></p>
-<h3 id="7-3-提交项目"><a class="header-anchor" href="#7-3-提交项目"></a>7.3 提交项目</h3>
-<p><strong>1）开发pay功能完成后进行提交</strong></p>
-<ul>
-<li>可以看到SourceTree中已经有“未提交的更改”</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211422.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211144.png" alt=""></p>
-<p><strong>2）添加“用户信息”</strong></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211143.png" alt=""></p>
-<p>** 3）进行提交**</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211415.png" alt=""></p>
-<ul>
-<li>注释也可以写成  close #3    ，作用是提交完成后关闭3号issue</li>
-</ul>
-<h3 id="7-4-推送到仓库"><a class="header-anchor" href="#7-4-推送到仓库"></a><strong>7.4 推送到仓库</strong></h3>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211136.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211407.png" alt=""></p>
-<ul>
-<li>然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了</li>
-</ul>
-<h3 id="7-5-项目上线"><a class="header-anchor" href="#7-5-项目上线"></a>7.5 项目上线</h3>
-<p><strong>1）当所有工作完成之后，就可以进行上线了</strong></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211135.png" alt=""></p>
-<p><strong>2）打标签</strong></p>
-<ul>
-<li>上线先打个标签</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211127.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211124.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528225256.png" alt=""></p>
-<p>** 3）删除无用分支**</p>
-<ul>
-<li>然后删除已经合并到主干中的不必要的分支，如index、pay等</li>
-<li>最后一定要注意时间一定要同步，不然会错乱</li>
-</ul>
-<h2 id="参考"><a class="header-anchor" href="#参考"></a>参考</h2>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/hgzero/p/14088215.html">Praywu</a></li>
-</ul>
-<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
-      <categories>
-        <category>gitlab</category>
-      </categories>
-      <tags>
-        <tag>Gitlab</tag>
-        <tag>Git</tag>
-        <tag>Crack</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>PT 工具集，Linux硬链接助手</title>
     <url>/posts/bb600b4b/</url>
     <content><![CDATA[<p>由于自我需求，写了两个脚本完成PT下载和保种两全其美的硬链接 Linux shell 脚本方案。</p>
@@ -1580,6 +1233,198 @@ TCP window size: <span class="token number">21.0</span> KByte <span class="token
       </tags>
   </entry>
   <entry>
+    <title>宝塔linux面板重启、重置等命令整合</title>
+    <url>/posts/7b4e434c/</url>
+    <content><![CDATA[<h2 id="宝塔linux面板重启、重置等命令整合"><a class="header-anchor" href="#宝塔linux面板重启、重置等命令整合"></a>宝塔linux面板重启、重置等命令整合</h2>
+<p>宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。</p>
+<p>来源于网络，原作已经不可考据，整理更新到目前最新版。</p>
+<p>现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、<br>
+但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦</p>
+<h2 id="Linux面板7-6-0安装命令："><a class="header-anchor" href="#Linux面板7-6-0安装命令："></a><strong>Linux面板7.6.0安装命令：</strong></h2>
+<h3 id="Centos安装命令："><a class="header-anchor" href="#Centos安装命令："></a><strong>Centos安装命令：</strong></h3>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y <span class="token function">wget</span> <span class="token operator">&amp;&amp;</span> <span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">sh</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><em>复制代码</em></p>
+<p><a target="_blank" rel="noopener" href="https://www.bt.cn/offline">咨询离线安装版本</a></p>
+<p><strong>试验性Centos/Ubuntu/Debian安装命令</strong> <strong>独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中</strong></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">curl</span> -sSO http://download.bt.cn/install/install_panel.sh <span class="token operator">&amp;&amp;</span> <span class="token function">bash</span> install_panel.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><em>复制代码</em></p>
+<h3 id="Ubuntu-Deepin安装命令："><a class="header-anchor" href="#Ubuntu-Deepin安装命令："></a><strong>Ubuntu/Deepin安装命令：</strong></h3>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">sudo</span> <span class="token function">bash</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><em>复制代码</em></p>
+<h3 id="Debian安装命令："><a class="header-anchor" href="#Debian安装命令："></a><strong>Debian安装命令：</strong></h3>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">bash</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><em>复制代码</em></p>
+<h3 id="Fedora安装命令"><a class="header-anchor" href="#Fedora安装命令"></a><strong>Fedora安装命令:</strong></h3>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">bash</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><em>复制代码</em></p>
+<p>**<br>
+**Linux面板7.6.0升级命令：**curl <a target="_blank" rel="noopener" href="http://download.bt.cn/install/update6.sh%7Cbash">http://download.bt.cn/install/update6.sh|bash</a><em>复制代码</em></p>
+<p>以上节点无法使用的情况下，请使用下面的备用节点：<br>
+**</p>
+<h3 id="备用节点【香港】："><a class="header-anchor" href="#备用节点【香港】："></a><strong>备用节点【香港】：</strong></h3>
+<p><strong>（宝塔推荐使用CN2 双程GIA高品质，免备案的</strong><a target="_blank" rel="noopener" href="https://www.zun.com/server/buy.html?lineid=1671157323431053"><strong>尊云zun.com</strong></a><strong>香港云服务器安装）</strong></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y <span class="token function">wget</span> <span class="token operator">&amp;&amp;</span> <span class="token function">wget</span> -O install.sh http://103.224.251.67:5880/install/install_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">sh</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h2 id="管理宝塔"><a class="header-anchor" href="#管理宝塔"></a>管理宝塔</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#停止</span>
+/etc/init.d/bt stop
+<span class="token comment">#启动</span>
+/etc/init.d/bt start
+<span class="token comment">#重启</span>
+/etc/init.d/bt restart
+<span class="token comment">#卸载</span>
+/etc/init.d/bt stop <span class="token operator">&amp;&amp;</span> <span class="token function">chkconfig</span> --del bt <span class="token operator">&amp;&amp;</span> <span class="token function">rm</span> -f /etc/init.d/bt <span class="token operator">&amp;&amp;</span> <span class="token function">rm</span> -rf /www/server/panel
+<span class="token comment">#查看当前面板端口</span>
+<span class="token function">cat</span> /www/server/panel/data/port.pl
+<span class="token comment">#修改面板端口，如要改成8881（centos 6  系统）</span>
+<span class="token builtin class-name">echo</span> <span class="token string">'8881'</span>  <span class="token operator">></span>  /www/server/panel/data/port.pl <span class="token operator">&amp;&amp;</span>  /etc/init.d/bt restart
+iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport <span class="token number">8881</span>  -j ACCEPT
+<span class="token function">service</span> iptables save
+<span class="token function">service</span> iptables restart
+<span class="token comment">#修改面板端口，如要改成8881（centos 7  系统）</span>
+<span class="token builtin class-name">echo</span> <span class="token string">'8881'</span>  <span class="token operator">></span>  /www/server/panel/data/port.pl <span class="token operator">&amp;&amp;</span>  /etc/init.d/bt restart
+firewall-cmd --permanent --zone<span class="token operator">=</span>public  --add-port<span class="token operator">=</span><span class="token number">8881</span>/tcp
+firewall-cmd --reload
+<span class="token comment">#强制修改MySQL管理(root)密码，如要改成123456</span>
+<span class="token builtin class-name">cd</span> /www/server/panel <span class="token operator">&amp;&amp;</span> python tools.pyc root <span class="token number">123456</span>
+<span class="token comment">#修改面板密码，如要改成123456</span>
+<span class="token builtin class-name">cd</span> /www/server/panel <span class="token operator">&amp;&amp;</span> python tools.pyc panel <span class="token number">123456</span>
+<span class="token comment">#查看宝塔日志</span>
+<span class="token function">cat</span> /tmp/panelBoot.pl
+<span class="token comment">#查看软件安装日志</span>
+<span class="token function">cat</span> /tmp/panelExec.log
+<span class="token comment">#站点配置文件位置</span>
+/www/server/panel/vhost
+<span class="token comment">#删除域名绑定面板</span>
+<span class="token function">rm</span> -f /www/server/panel/data/domain.conf
+<span class="token comment">#清理登陆限制</span>
+<span class="token function">rm</span> -f /www/server/panel/data/*.login
+<span class="token comment">#查看面板授权IP</span>
+<span class="token function">cat</span> /www/server/panel/data/limitip.conf
+<span class="token comment">#关闭访问限制</span>
+<span class="token function">rm</span> -f /www/server/panel/data/limitip.conf
+<span class="token comment">#查看许可域名</span>
+<span class="token function">cat</span> /www/server/panel/data/domain.conf
+<span class="token comment">#关闭面板SSL</span>
+<span class="token function">rm</span> -f /www/server/panel/data/ssl.pl <span class="token operator">&amp;&amp;</span> /etc/init.d/bt restart
+<span class="token comment">#查看面板错误日志</span>
+<span class="token function">cat</span> /tmp/panelBoot
+<span class="token comment">#查看数据库错误日志</span>
+<span class="token function">cat</span> /www/server/data/*.err
+<span class="token comment">#站点配置文件目录(nginx)</span>
+/www/server/panel/vhost/nginx
+<span class="token comment">#站点配置文件目录(apache)</span>
+/www/server/panel/vhost/apache
+<span class="token comment">#站点默认目录</span>
+/www/wwwroot
+<span class="token comment">#数据库备份目录</span>
+/www/backup/database
+<span class="token comment">#站点备份目录</span>
+/www/backup/site
+<span class="token comment">#站点日志</span>
+/www/wwwlogs<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="Nginx服务管理"><a class="header-anchor" href="#Nginx服务管理"></a>Nginx服务管理</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#nginx安装目录</span>
+/www/server/nginx
+<span class="token comment">#启动</span>
+/etc/init.d/nginx start
+<span class="token comment">#停止</span>
+/etc/init.d/nginx stop
+<span class="token comment">#重启</span>
+/etc/init.d/nginx restart
+<span class="token comment">#启载</span>
+/etc/init.d/nginx reload
+<span class="token comment">#nginx配置文件</span>
+/www/server/nginx/conf/nginx.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="Apache服务管理"><a class="header-anchor" href="#Apache服务管理"></a>Apache服务管理</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#apache安装目录</span>
+/www/server/httpd
+<span class="token comment">#启动</span>
+/etc/init.d/httpd start
+<span class="token comment">#停止</span>
+/etc/init.d/httpd stop
+<span class="token comment">#重启</span>
+/etc/init.d/httpd restart
+<span class="token comment">#启载</span>
+/etc/init.d/httpd reload
+<span class="token comment">#apache配置文件</span>
+/www/server/apache/conf/httpd.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="MySQL服务管理"><a class="header-anchor" href="#MySQL服务管理"></a>MySQL服务管理</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#mysql安装目录</span>
+/www/server/mysql
+<span class="token comment">#phpmyadmin安装目录</span>
+/www/server/phpmyadmin
+<span class="token comment">#数据存储目录</span>
+/www/server/data
+<span class="token comment">#启动</span>
+/etc/init.d/mysqld start
+<span class="token comment">#停止</span>
+/etc/init.d/mysqld stop
+<span class="token comment">#重启</span>
+/etc/init.d/mysqld restart
+<span class="token comment">#启载</span>
+/etc/init.d/mysqld reload
+<span class="token comment">#mysql配置文件</span>
+/etc/my.cnf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="FTP服务管理"><a class="header-anchor" href="#FTP服务管理"></a>FTP服务管理</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#ftp安装目录</span>
+/www/server/pure-ftpd
+<span class="token comment">#启动</span>
+/etc/init.d/pure-ftpd start
+<span class="token comment">#停止</span>
+/etc/init.d/pure-ftpd stop
+<span class="token comment">#重启</span>
+/etc/init.d/pure-ftpd restart
+<span class="token comment">#ftp配置文件</span>
+/www/server/pure-ftpd/etc/pure-ftpd.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="PHP服务管理"><a class="header-anchor" href="#PHP服务管理"></a>PHP服务管理</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#php安装目录</span>
+/www/server/php
+<span class="token comment">#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)</span>
+/etc/init.d/php-fpm-<span class="token punctuation">&#123;</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">&#125;</span> start
+<span class="token comment">#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)</span>
+/etc/init.d/php-fpm-<span class="token punctuation">&#123;</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">&#125;</span> stop
+<span class="token comment">#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)</span>
+/etc/init.d/php-fpm-<span class="token punctuation">&#123;</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">&#125;</span> restart
+<span class="token comment">#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)</span>
+/etc/init.d/php-fpm-<span class="token punctuation">&#123;</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">&#125;</span> reload
+<span class="token comment">#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)</span>
+/www/server/php/<span class="token punctuation">&#123;</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">&#125;</span>/etc/php.ini<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="Redis服务管理"><a class="header-anchor" href="#Redis服务管理"></a>Redis服务管理</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#redis安装目录</span>
+/www/server/redis
+<span class="token comment">#启动</span>
+/etc/init.d/redis start
+<span class="token comment">#停止</span>
+/etc/init.d/redis stop
+<span class="token comment">#redis配置文件</span>
+/www/server/redis/redis.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="Memcached服务管理"><a class="header-anchor" href="#Memcached服务管理"></a>Memcached服务管理</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#memcached安装目录</span>
+/usr/local/memcached
+<span class="token comment">#启动</span>
+/etc/init.d/memcached start
+<span class="token comment">#停止</span>
+/etc/init.d/memcached stop
+<span class="token comment">#重启</span>
+/etc/init.d/memcached restart
+<span class="token comment">#启载</span>
+/etc/init.d/memcached reload<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>如有不全、欢迎投稿。</p>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
+      <categories>
+        <category>vps</category>
+      </categories>
+      <tags>
+        <tag>Linux</tag>
+        <tag>宝塔</tag>
+        <tag>VPS</tag>
+        <tag>建站</tag>
+        <tag>Nginx</tag>
+        <tag>Apache</tag>
+        <tag>MySQL</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>海思MPP&amp;UNF构架源代码级分析</title>
     <url>/posts/13894dce/</url>
     <content><![CDATA[<ul>
@@ -2477,198 +2322,6 @@ HI_DRV_FILE_Lseek
         <tag>MPP</tag>
         <tag>UNF</tag>
         <tag>Kernel</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>宝塔linux面板重启、重置等命令整合</title>
-    <url>/posts/7b4e434c/</url>
-    <content><![CDATA[<h2 id="宝塔linux面板重启、重置等命令整合"><a class="header-anchor" href="#宝塔linux面板重启、重置等命令整合"></a>宝塔linux面板重启、重置等命令整合</h2>
-<p>宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。</p>
-<p>来源于网络，原作已经不可考据，整理更新到目前最新版。</p>
-<p>现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、<br>
-但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦</p>
-<h2 id="Linux面板7-6-0安装命令："><a class="header-anchor" href="#Linux面板7-6-0安装命令："></a><strong>Linux面板7.6.0安装命令：</strong></h2>
-<h3 id="Centos安装命令："><a class="header-anchor" href="#Centos安装命令："></a><strong>Centos安装命令：</strong></h3>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y <span class="token function">wget</span> <span class="token operator">&amp;&amp;</span> <span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">sh</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<p><em>复制代码</em></p>
-<p><a target="_blank" rel="noopener" href="https://www.bt.cn/offline">咨询离线安装版本</a></p>
-<p><strong>试验性Centos/Ubuntu/Debian安装命令</strong> <strong>独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中</strong></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">curl</span> -sSO http://download.bt.cn/install/install_panel.sh <span class="token operator">&amp;&amp;</span> <span class="token function">bash</span> install_panel.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<p><em>复制代码</em></p>
-<h3 id="Ubuntu-Deepin安装命令："><a class="header-anchor" href="#Ubuntu-Deepin安装命令："></a><strong>Ubuntu/Deepin安装命令：</strong></h3>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">sudo</span> <span class="token function">bash</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<p><em>复制代码</em></p>
-<h3 id="Debian安装命令："><a class="header-anchor" href="#Debian安装命令："></a><strong>Debian安装命令：</strong></h3>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">bash</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<p><em>复制代码</em></p>
-<h3 id="Fedora安装命令"><a class="header-anchor" href="#Fedora安装命令"></a><strong>Fedora安装命令:</strong></h3>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">bash</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<p><em>复制代码</em></p>
-<p>**<br>
-**Linux面板7.6.0升级命令：**curl <a target="_blank" rel="noopener" href="http://download.bt.cn/install/update6.sh%7Cbash">http://download.bt.cn/install/update6.sh|bash</a><em>复制代码</em></p>
-<p>以上节点无法使用的情况下，请使用下面的备用节点：<br>
-**</p>
-<h3 id="备用节点【香港】："><a class="header-anchor" href="#备用节点【香港】："></a><strong>备用节点【香港】：</strong></h3>
-<p><strong>（宝塔推荐使用CN2 双程GIA高品质，免备案的</strong><a target="_blank" rel="noopener" href="https://www.zun.com/server/buy.html?lineid=1671157323431053"><strong>尊云zun.com</strong></a><strong>香港云服务器安装）</strong></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y <span class="token function">wget</span> <span class="token operator">&amp;&amp;</span> <span class="token function">wget</span> -O install.sh http://103.224.251.67:5880/install/install_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">sh</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h2 id="管理宝塔"><a class="header-anchor" href="#管理宝塔"></a>管理宝塔</h2>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#停止</span>
-/etc/init.d/bt stop
-<span class="token comment">#启动</span>
-/etc/init.d/bt start
-<span class="token comment">#重启</span>
-/etc/init.d/bt restart
-<span class="token comment">#卸载</span>
-/etc/init.d/bt stop <span class="token operator">&amp;&amp;</span> <span class="token function">chkconfig</span> --del bt <span class="token operator">&amp;&amp;</span> <span class="token function">rm</span> -f /etc/init.d/bt <span class="token operator">&amp;&amp;</span> <span class="token function">rm</span> -rf /www/server/panel
-<span class="token comment">#查看当前面板端口</span>
-<span class="token function">cat</span> /www/server/panel/data/port.pl
-<span class="token comment">#修改面板端口，如要改成8881（centos 6  系统）</span>
-<span class="token builtin class-name">echo</span> <span class="token string">'8881'</span>  <span class="token operator">></span>  /www/server/panel/data/port.pl <span class="token operator">&amp;&amp;</span>  /etc/init.d/bt restart
-iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport <span class="token number">8881</span>  -j ACCEPT
-<span class="token function">service</span> iptables save
-<span class="token function">service</span> iptables restart
-<span class="token comment">#修改面板端口，如要改成8881（centos 7  系统）</span>
-<span class="token builtin class-name">echo</span> <span class="token string">'8881'</span>  <span class="token operator">></span>  /www/server/panel/data/port.pl <span class="token operator">&amp;&amp;</span>  /etc/init.d/bt restart
-firewall-cmd --permanent --zone<span class="token operator">=</span>public  --add-port<span class="token operator">=</span><span class="token number">8881</span>/tcp
-firewall-cmd --reload
-<span class="token comment">#强制修改MySQL管理(root)密码，如要改成123456</span>
-<span class="token builtin class-name">cd</span> /www/server/panel <span class="token operator">&amp;&amp;</span> python tools.pyc root <span class="token number">123456</span>
-<span class="token comment">#修改面板密码，如要改成123456</span>
-<span class="token builtin class-name">cd</span> /www/server/panel <span class="token operator">&amp;&amp;</span> python tools.pyc panel <span class="token number">123456</span>
-<span class="token comment">#查看宝塔日志</span>
-<span class="token function">cat</span> /tmp/panelBoot.pl
-<span class="token comment">#查看软件安装日志</span>
-<span class="token function">cat</span> /tmp/panelExec.log
-<span class="token comment">#站点配置文件位置</span>
-/www/server/panel/vhost
-<span class="token comment">#删除域名绑定面板</span>
-<span class="token function">rm</span> -f /www/server/panel/data/domain.conf
-<span class="token comment">#清理登陆限制</span>
-<span class="token function">rm</span> -f /www/server/panel/data/*.login
-<span class="token comment">#查看面板授权IP</span>
-<span class="token function">cat</span> /www/server/panel/data/limitip.conf
-<span class="token comment">#关闭访问限制</span>
-<span class="token function">rm</span> -f /www/server/panel/data/limitip.conf
-<span class="token comment">#查看许可域名</span>
-<span class="token function">cat</span> /www/server/panel/data/domain.conf
-<span class="token comment">#关闭面板SSL</span>
-<span class="token function">rm</span> -f /www/server/panel/data/ssl.pl <span class="token operator">&amp;&amp;</span> /etc/init.d/bt restart
-<span class="token comment">#查看面板错误日志</span>
-<span class="token function">cat</span> /tmp/panelBoot
-<span class="token comment">#查看数据库错误日志</span>
-<span class="token function">cat</span> /www/server/data/*.err
-<span class="token comment">#站点配置文件目录(nginx)</span>
-/www/server/panel/vhost/nginx
-<span class="token comment">#站点配置文件目录(apache)</span>
-/www/server/panel/vhost/apache
-<span class="token comment">#站点默认目录</span>
-/www/wwwroot
-<span class="token comment">#数据库备份目录</span>
-/www/backup/database
-<span class="token comment">#站点备份目录</span>
-/www/backup/site
-<span class="token comment">#站点日志</span>
-/www/wwwlogs<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="Nginx服务管理"><a class="header-anchor" href="#Nginx服务管理"></a>Nginx服务管理</h2>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#nginx安装目录</span>
-/www/server/nginx
-<span class="token comment">#启动</span>
-/etc/init.d/nginx start
-<span class="token comment">#停止</span>
-/etc/init.d/nginx stop
-<span class="token comment">#重启</span>
-/etc/init.d/nginx restart
-<span class="token comment">#启载</span>
-/etc/init.d/nginx reload
-<span class="token comment">#nginx配置文件</span>
-/www/server/nginx/conf/nginx.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="Apache服务管理"><a class="header-anchor" href="#Apache服务管理"></a>Apache服务管理</h2>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#apache安装目录</span>
-/www/server/httpd
-<span class="token comment">#启动</span>
-/etc/init.d/httpd start
-<span class="token comment">#停止</span>
-/etc/init.d/httpd stop
-<span class="token comment">#重启</span>
-/etc/init.d/httpd restart
-<span class="token comment">#启载</span>
-/etc/init.d/httpd reload
-<span class="token comment">#apache配置文件</span>
-/www/server/apache/conf/httpd.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="MySQL服务管理"><a class="header-anchor" href="#MySQL服务管理"></a>MySQL服务管理</h2>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#mysql安装目录</span>
-/www/server/mysql
-<span class="token comment">#phpmyadmin安装目录</span>
-/www/server/phpmyadmin
-<span class="token comment">#数据存储目录</span>
-/www/server/data
-<span class="token comment">#启动</span>
-/etc/init.d/mysqld start
-<span class="token comment">#停止</span>
-/etc/init.d/mysqld stop
-<span class="token comment">#重启</span>
-/etc/init.d/mysqld restart
-<span class="token comment">#启载</span>
-/etc/init.d/mysqld reload
-<span class="token comment">#mysql配置文件</span>
-/etc/my.cnf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="FTP服务管理"><a class="header-anchor" href="#FTP服务管理"></a>FTP服务管理</h2>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#ftp安装目录</span>
-/www/server/pure-ftpd
-<span class="token comment">#启动</span>
-/etc/init.d/pure-ftpd start
-<span class="token comment">#停止</span>
-/etc/init.d/pure-ftpd stop
-<span class="token comment">#重启</span>
-/etc/init.d/pure-ftpd restart
-<span class="token comment">#ftp配置文件</span>
-/www/server/pure-ftpd/etc/pure-ftpd.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="PHP服务管理"><a class="header-anchor" href="#PHP服务管理"></a>PHP服务管理</h2>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#php安装目录</span>
-/www/server/php
-<span class="token comment">#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)</span>
-/etc/init.d/php-fpm-<span class="token punctuation">&#123;</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">&#125;</span> start
-<span class="token comment">#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)</span>
-/etc/init.d/php-fpm-<span class="token punctuation">&#123;</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">&#125;</span> stop
-<span class="token comment">#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)</span>
-/etc/init.d/php-fpm-<span class="token punctuation">&#123;</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">&#125;</span> restart
-<span class="token comment">#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)</span>
-/etc/init.d/php-fpm-<span class="token punctuation">&#123;</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">&#125;</span> reload
-<span class="token comment">#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)</span>
-/www/server/php/<span class="token punctuation">&#123;</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">&#125;</span>/etc/php.ini<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="Redis服务管理"><a class="header-anchor" href="#Redis服务管理"></a>Redis服务管理</h2>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#redis安装目录</span>
-/www/server/redis
-<span class="token comment">#启动</span>
-/etc/init.d/redis start
-<span class="token comment">#停止</span>
-/etc/init.d/redis stop
-<span class="token comment">#redis配置文件</span>
-/www/server/redis/redis.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="Memcached服务管理"><a class="header-anchor" href="#Memcached服务管理"></a>Memcached服务管理</h2>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#memcached安装目录</span>
-/usr/local/memcached
-<span class="token comment">#启动</span>
-/etc/init.d/memcached start
-<span class="token comment">#停止</span>
-/etc/init.d/memcached stop
-<span class="token comment">#重启</span>
-/etc/init.d/memcached restart
-<span class="token comment">#启载</span>
-/etc/init.d/memcached reload<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>如有不全、欢迎投稿。</p>
-<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
-      <categories>
-        <category>vps</category>
-      </categories>
-      <tags>
-        <tag>Linux</tag>
-        <tag>宝塔</tag>
-        <tag>VPS</tag>
-        <tag>建站</tag>
-        <tag>Nginx</tag>
-        <tag>Apache</tag>
-        <tag>MySQL</tag>
       </tags>
   </entry>
   <entry>
@@ -4603,6 +4256,353 @@ echo dllink $*|nc 127.0.0.1 4000<span aria-hidden="true" class="line-numbers-row
       </tags>
   </entry>
   <entry>
+    <title>Gitlab的安装及使用</title>
+    <url>/posts/d08eb7b/</url>
+    <content><![CDATA[<h2 id="Gitlab概述"><a class="header-anchor" href="#Gitlab概述"></a>Gitlab概述</h2>
+<h3 id="1-1-GitLab介绍"><a class="header-anchor" href="#1-1-GitLab介绍"></a>1.1 GitLab介绍</h3>
+<p>GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。</p>
+<p>GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。</p>
+<p>它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找</p>
+<h3 id="1-2-Gitlab服务构成"><a class="header-anchor" href="#1-2-Gitlab服务构成"></a>1.2 Gitlab服务构成</h3>
+<ul>
+<li>
+<p>Nginx：静态web服务器。</p>
+</li>
+<li>
+<p>gitlab-shell：用于处理Git命令和修改authorized keys列表。</p>
+</li>
+<li>
+<p>gitlab-workhorse: 轻量级的反向代理服务器。</p>
+</li>
+<li>
+<p>logrotate：日志文件管理工具。</p>
+</li>
+<li>
+<p>postgresql：数据库。</p>
+</li>
+<li>
+<p>redis：缓存数据库。</p>
+</li>
+<li>
+<p>sidekiq：用于在后台执行队列任务（异步执行）。</p>
+</li>
+<li>
+<p>unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。</p>
+</li>
+</ul>
+<h3 id="1-3-Gitlab工作流程"><a class="header-anchor" href="#1-3-Gitlab工作流程"></a>1.3 Gitlab工作流程</h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222044.png" alt=""></p>
+<h3 id="1-4-GitLab-Shell"><a class="header-anchor" href="#1-4-GitLab-Shell"></a>1.4 GitLab Shell</h3>
+<p>GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表</p>
+<p>当通过SSH访问GitLab Server时，GitLab Shell会：</p>
+<ul>
+<li>限制执行预定义好的Git命令（git push，git pull，git annex）</li>
+<li>调用GitLab Rails API检查权限</li>
+<li>执行pre-receive钩子（在企业版中叫做Git钩子）</li>
+<li>执行用户请求的动作，处理GitLab的post-receive动作</li>
+<li>处理自定义的post-receive动作</li>
+</ul>
+<p>当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：</p>
+<p>如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作</p>
+<p>如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：</p>
+<ul>
+<li>调用GitLab Rails API 检查权限</li>
+<li>执行pre-receive钩子（在GitLab企业版中叫做Git钩子）</li>
+<li>执行你请求的动作</li>
+<li>处理GitLab的post-receive动作</li>
+<li>处理自定义的post-receive动作</li>
+</ul>
+<h3 id="1-5-GitLab-Workhorse"><a class="header-anchor" href="#1-5-GitLab-Workhorse"></a>1.5 GitLab Workhorse</h3>
+<p>GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。</p>
+<h2 id="Gitlab的安装部署"><a class="header-anchor" href="#Gitlab的安装部署"></a>Gitlab的安装部署</h2>
+<hr>
+<ul>
+<li>Gitlab要求服务器内存2G以上</li>
+</ul>
+<h3 id="2-1-方式一-下载gitlab-ce的rpm包"><a class="header-anchor" href="#2-1-方式一-下载gitlab-ce的rpm包"></a>2.1 方式一:下载gitlab-ce的rpm包</h3>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://packages.gitlab.com/gitlab/gitlab-ce">gitlab官方rpm包下载</a></li>
+<li><a target="_blank" rel="noopener" href="https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/">清华的源</a></li>
+</ul>
+<p>将对应版本的gitlab-ce下载到本地后，直接yum安装即可</p>
+<h4 id="要先将这个rpm包下载到本地"><a class="header-anchor" href="#要先将这个rpm包下载到本地"></a>要先将这个rpm包下载到本地</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h3 id="2-2-方式二-配置yum源"><a class="header-anchor" href="#2-2-方式二-配置yum源"></a>2.2 方式二:配置yum源</h3>
+<p>在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：</p>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby"><span class="token punctuation">[</span>gitlab<span class="token operator">-</span>ce<span class="token punctuation">]</span>
+name<span class="token operator">=</span>gitlab<span class="token operator">-</span>ce
+baseurl<span class="token operator">=</span>https<span class="token punctuation">:</span><span class="token operator">/</span><span class="token operator">/</span>mirrors<span class="token punctuation">.</span>tuna<span class="token punctuation">.</span>tsinghua<span class="token punctuation">.</span>edu<span class="token punctuation">.</span>cn<span class="token operator">/</span>gitlab<span class="token operator">-</span>ce<span class="token operator">/</span>yum<span class="token operator">/</span>el7<span class="token operator">/</span> <span class="token constant">Repo_gpgcheck</span><span class="token operator">=</span><span class="token number">0</span>
+<span class="token constant">Enabled</span><span class="token operator">=</span><span class="token number">1</span> <span class="token constant">Gpgkey</span><span class="token operator">=</span>https<span class="token punctuation">:</span><span class="token operator">/</span><span class="token operator">/</span>packages<span class="token punctuation">.</span>gitlab<span class="token punctuation">.</span>com<span class="token operator">/</span>gpg<span class="token punctuation">.</span>key<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>然后创建cache，再直接安装gitlab-ce</p>
+<p>yum makecache  # 这一步会创建大量的数据</p>
+<h4 id="直接安装最新版"><a class="header-anchor" href="#直接安装最新版"></a>直接安装最新版</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y gitlab-ce <span class="token comment"># 如果要安装指定的版本，在后面填上版本号即可</span>
+yum <span class="token function">install</span> -y  gitlab-ce-13.6.1<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h4 id="如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证"><a class="header-anchor" href="#如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证"></a>如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> gitlab-ce -y --nogpgcheck<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h3 id="2-3-gitlab的配置"><a class="header-anchor" href="#2-3-gitlab的配置"></a>2.3 gitlab的配置</h3>
+<p>配置文件位置  /etc/gitlab/gitlab.rb</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">[</span>root@centos7 test<span class="token punctuation">]</span><span class="token comment"># vim /etc/gitlab/gitlab.rb</span>
+<span class="token punctuation">[</span>root@centos7 test<span class="token punctuation">]</span><span class="token comment"># grep "^[a-Z]" /etc/gitlab/gitlab.rb</span>
+external_url <span class="token string">'http://10.0.0.51'</span>  <span class="token comment"># 这里一定要加上http://</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<h4 id="配置邮件服务"><a class="header-anchor" href="#配置邮件服务"></a>配置邮件服务</h4>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_address'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp.qq.com"</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_port'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">25</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_user_name'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"hgzerowzh@qq.com"</span>  <span class="token comment"># 自己的qq邮箱账号</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_password'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"xxx"</span>  <span class="token comment"># 开通smtp时返回的授权码</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_domain'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"qq.com"</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_authentication'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"login"</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable_starttls_auto'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_tls'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">false</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_from'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"hgzerowzh@qq.com"</span>  <span class="token comment"># 指定发送邮件的邮箱地址</span>
+user<span class="token punctuation">[</span><span class="token string">"git_user_email"</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"shit@qq.com"</span>   <span class="token comment"># 指定接收邮件的邮箱地址</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p><strong>修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。</strong></p>
+<pre class="line-numbers language-none"><code class="language-none">gitlab-ctl reconfigure # 重载配置文件<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h3 id="2-4-Gitlab常用命令"><a class="header-anchor" href="#2-4-Gitlab常用命令"></a>2.4 Gitlab常用命令</h3>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab<span class="token operator">-</span>ctl start         <span class="token comment"># 启动所有 gitlab 组件</span>
+gitlab<span class="token operator">-</span>ctl stop          <span class="token comment"># 停止所有 gitlab 组件</span>
+gitlab<span class="token operator">-</span>ctl restart       <span class="token comment"># 重启所有 gitlab 组件</span>
+gitlab<span class="token operator">-</span>ctl status        <span class="token comment"># 查看服务状态</span>
+gitlab<span class="token operator">-</span>ctl reconfigure   <span class="token comment"># 启动服务</span>
+gitlab<span class="token operator">-</span>ctl show<span class="token operator">-</span>config   <span class="token comment"># 验证配置文件</span>
+gitlab<span class="token operator">-</span>ctl tail          <span class="token comment"># 查看日志</span>
+gitlab<span class="token operator">-</span>rake gitlab<span class="token symbol">:check</span> <span class="token constant">SANITIZE</span><span class="token operator">=</span><span class="token boolean">true</span> <span class="token operator">--</span>trace    <span class="token comment"># 检查gitlab</span>
+vim <span class="token operator">/</span>etc<span class="token operator">/</span>gitlab<span class="token operator">/</span>gitlab<span class="token punctuation">.</span>rb <span class="token comment"># 修改默认的配置文件</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="Gitlab的使用"><a class="header-anchor" href="#Gitlab的使用"></a>Gitlab的使用</h2>
+<hr>
+<ul>
+<li>Gitlab安装好后，设置密码，管理账户为root</li>
+</ul>
+<h3 id="3-1-创建Group"><a class="header-anchor" href="#3-1-创建Group"></a><strong>3.1 创建Group</strong></h3>
+<ul>
+<li>填上组名即可，这里组名为java</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222105.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211347.png" alt=""></p>
+<h3 id="3-2-创建User"><a class="header-anchor" href="#3-2-创建User"></a><strong>3.2 创建User</strong></h3>
+<ul>
+<li>创建四个User：pm、dev1、dev2、dev3</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222131.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222120.png" alt=""></p>
+<h3 id="3-3-添加User到Group中并授权"><a class="header-anchor" href="#3-3-添加User到Group中并授权"></a><strong>3.3 添加User到Group中并授权</strong></h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222140.png" alt=""></p>
+<h3 id="3-4-创建Project并配置SSH"><a class="header-anchor" href="#3-4-创建Project并配置SSH"></a><strong>3.4 创建Project并配置SSH</strong></h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222147.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222154.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222201.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222233.png" alt=""></p>
+<h3 id="3-5-在项目中添加成员"><a class="header-anchor" href="#3-5-在项目中添加成员"></a><strong>3.5 在项目中添加成员</strong></h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211335.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211726.png" alt=""></p>
+<h3 id="3-6-将本地文件推送到Gitlab"><a class="header-anchor" href="#3-6-将本地文件推送到Gitlab"></a>3.6 将本地文件推送到Gitlab</h3>
+<h4 id="将app01项目克隆下来"><a class="header-anchor" href="#将app01项目克隆下来"></a>将app01项目克隆下来</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> clone git@10.0.0.51:java/app01.git <span class="token comment"># 初始化配置</span>
+<span class="token function">git</span> config --global user.name <span class="token string">"hgzero"</span> <span class="token function">git</span> config --global user.email <span class="token string">"hgzero@qq.com"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h4 id="在app01目录下新建一些文件"><a class="header-anchor" href="#在app01目录下新建一些文件"></a>在app01目录下新建一些文件</h4>
+<h4 id="推送到gitlab"><a class="header-anchor" href="#推送到gitlab"></a>推送到gitlab</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> <span class="token function">add</span> <span class="token builtin class-name">.</span>
+<span class="token function">git</span> commit -m <span class="token string">"first edition"</span> <span class="token function">git</span> push origin master<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211546.png" alt=""></p>
+<ol start="4">
+<li>制定开发计划</li>
+</ol>
+<hr>
+<h3 id="4-1-创建开发计划"><a class="header-anchor" href="#4-1-创建开发计划"></a><strong>4.1 创建开发计划</strong></h3>
+<ul>
+<li>项目：app01</li>
+<li>版本：v1.0</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211325.png" alt=""></p>
+<h3 id="4-2-创建里程碑Milestones"><a class="header-anchor" href="#4-2-创建里程碑Milestones"></a><strong>4.2 创建里程碑Milestones</strong></h3>
+<ul>
+<li>用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）</li>
+<li>要根据开发计划来创建Milestones</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211538.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211719.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211315.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211303.png" alt=""></p>
+<h3 id="4-3-根据开发计划创建issue"><a class="header-anchor" href="#4-3-根据开发计划创建issue"></a>4.3 根据开发计划创建issue</h3>
+<ul>
+<li>创建4个issue，分派给dev1和dev2这两个开发人员</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211529.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211304.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211711.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211520.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211514.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211252.png" alt=""></p>
+<h3 id="4-4-开发者登录账号查看分派的任务"><a class="header-anchor" href="#4-4-开发者登录账号查看分派的任务"></a>**4.4 开发者登录账号查看分派的任务 **</h3>
+<ul>
+<li>然后开发dev1登录gitlab，就能看到任务已经分配过来了</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211513.png" alt=""></p>
+<h3 id="4-5-开发流程"><a class="header-anchor" href="#4-5-开发流程"></a><strong>4.5 开发流程</strong></h3>
+<ul>
+<li>公司里的开发开始任务</li>
+</ul>
+<h4 id="1-先从仓库把项目拉下来"><a class="header-anchor" href="#1-先从仓库把项目拉下来"></a>1. 先从仓库把项目拉下来</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> clone git@10.0.0.51:java/app01.git
+<span class="token builtin class-name">cd</span> app01/<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h4 id="2-先创建一个自己的分支，然后进行开发"><a class="header-anchor" href="#2-先创建一个自己的分支，然后进行开发"></a>2.先创建一个自己的分支，然后进行开发</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> checkout -b index   <span class="token comment"># 创建一个叫index的分支，并切换到这个分支</span>
+<span class="token function">git</span> status <span class="token comment"># 3. 开始开发首页</span>
+<span class="token builtin class-name">echo</span> <span class="token string">"&lt;h1>welcome to this app&lt;/h1>"</span> <span class="token operator">></span> index.html  <span class="token comment"># 假设就开发了一个index页面</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<h2 id="4-开发完成后，把项目传到仓库"><a class="header-anchor" href="#4-开发完成后，把项目传到仓库"></a>4. 开发完成后，把项目传到仓库</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> <span class="token function">add</span> <span class="token builtin class-name">.</span>
+<span class="token function">git</span> commit -m <span class="token string">"index"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h4 id="如果写成-git-commit-m-“close-2”-，则表示merge请求允许且merge成功之后，自动删除编号为-2的issue"><a class="header-anchor" href="#如果写成-git-commit-m-“close-2”-，则表示merge请求允许且merge成功之后，自动删除编号为-2的issue"></a>如果写成 git commit -m “close #2” ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue</h4>
+<h4 id="传到index分支"><a class="header-anchor" href="#传到index分支"></a>传到index分支</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> push origin index<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h3 id="4-6-合并分支"><a class="header-anchor" href="#4-6-合并分支"></a><strong>4.6 合并分支</strong></h3>
+<p><strong>1）开发dev1发送合并分支请求给pm</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211242.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211503.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211701.png" alt=""></p>
+<p><strong>2）pm收到开发的Merge请求后进行处理</strong></p>
+<ul>
+<li>使用pm登录，就可以看到pm已经收到了合并请求merge request</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211231.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211502.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211647.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211221.png" alt=""></p>
+<p><strong>3）开发dev1确认任务完成</strong></p>
+<ul>
+<li>退出pm账户，登入dev1账户：</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211220.png" alt=""></p>
+<ul>
+<li>或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211454.png" alt=""></p>
+<ul>
+<li>这个时候Milestones的进度已经往前进了一些了：</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211446.png" alt=""></p>
+<h3 id="4-7-开发其他功能"><a class="header-anchor" href="#4-7-开发其他功能"></a>4.7 开发其他功能</h3>
+<ul>
+<li>然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发</li>
+</ul>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> checkout master  <span class="token comment"># 切换到master</span>
+<span class="token function">git</span> pull             <span class="token comment"># 从远端仓库拉取数据</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>然后再进行其他操作</p>
+<h2 id="Gitlab备份恢复"><a class="header-anchor" href="#Gitlab备份恢复"></a>Gitlab备份恢复</h2>
+<hr>
+<h3 id="5-1-备份gitlab"><a class="header-anchor" href="#5-1-备份gitlab"></a>5.1 备份gitlab</h3>
+<p><strong>1）修改配置文件</strong></p>
+<ul>
+<li><strong>/etc/gitlab/gitlab.rb</strong></li>
+</ul>
+<h4 id="备份保存的位置，这里是默认位置，可修改成指定的位置"><a class="header-anchor" href="#备份保存的位置，这里是默认位置，可修改成指定的位置"></a>备份保存的位置，这里是默认位置，可修改成指定的位置</h4>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab_rails<span class="token punctuation">[</span><span class="token string">'backup_path'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"/var/opt/gitlab/backups"</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h4 id="设置备份保存的时间，超过此时间的日志将会被新覆盖"><a class="header-anchor" href="#设置备份保存的时间，超过此时间的日志将会被新覆盖"></a>设置备份保存的时间，超过此时间的日志将会被新覆盖</h4>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab_rails<span class="token punctuation">[</span><span class="token string">'backup_keep_time'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">604800</span>  <span class="token comment"># 这里是默认设置，保存7天</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h4 id="特别注意：-如果自定义了备份保存位置，则要修改备份目录的权限，比如：-chown-R-git-git-data-backup-gitlab"><a class="header-anchor" href="#特别注意：-如果自定义了备份保存位置，则要修改备份目录的权限，比如：-chown-R-git-git-data-backup-gitlab"></a>特别注意： # 如果自定义了备份保存位置，则要修改备份目录的权限，比如： # chown -R git.git /data/backup/gitlab</h4>
+<ul>
+<li>配置完成后要重启以使配置生效</li>
+</ul>
+<h4 id="重读配置文件"><a class="header-anchor" href="#重读配置文件"></a>重读配置文件</h4>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab<span class="token operator">-</span>ctl reconfigure <span class="token comment"># 重启gitlab</span>
+gitlab<span class="token operator">-</span>ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p><strong>2）设置定时任务</strong></p>
+<h4 id="每天凌晨2点定时创建备份-将一下内容写入到定时任务中-crontab-e"><a class="header-anchor" href="#每天凌晨2点定时创建备份-将一下内容写入到定时任务中-crontab-e"></a>每天凌晨2点定时创建备份 # 将一下内容写入到定时任务中 crontab -e</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token number">0</span> <span class="token number">2</span> * * * /usr/bin/gitlab-rake gitlab:backup:create <span class="token comment"># 备份策略建议： # 本地保留3到7天，在异地备份永久保存</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><strong>3）备份时间的识别</strong></p>
+<h4 id="备份后的文件类似这样的形式：1494170842-gitlab-backup-tar，可以根据前面的时间戳确认备份生成的时间"><a class="header-anchor" href="#备份后的文件类似这样的形式：1494170842-gitlab-backup-tar，可以根据前面的时间戳确认备份生成的时间"></a>备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">data -d  @1494170842<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h3 id="5-2-恢复gitlab"><a class="header-anchor" href="#5-2-恢复gitlab"></a>5.2 恢复gitlab</h3>
+<p><strong>1）停止数据写入服务</strong></p>
+<h4 id="停止数据写入服务"><a class="header-anchor" href="#停止数据写入服务"></a>停止数据写入服务</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl stop unicorn
+gitlab-ctl stop sidekiq<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p><strong>2）进行数据恢复并重启</strong></p>
+<h4 id="进行恢复"><a class="header-anchor" href="#进行恢复"></a>进行恢复</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rake gitlab:backup:restore <span class="token assign-left variable">BACKUP</span><span class="token operator">=</span><span class="token number">1494170842</span>  <span class="token comment"># 这个时间戳就是刚刚备份的文件前面的时间戳</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h4 id="重启"><a class="header-anchor" href="#重启"></a>重启</h4>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab<span class="token operator">-</span>ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h2 id="gitlab邮件通知配置"><a class="header-anchor" href="#gitlab邮件通知配置"></a>gitlab邮件通知配置</h2>
+<hr>
+<ul>
+<li>vim  /etc/gitlab/gitlab.rb</li>
+</ul>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab_rails<span class="token punctuation">[</span><span class="token string">'time_zone'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'Asia/Shanghai'</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_enabled'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_from'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'example@163.com'</span> <span class="token comment"># 填写发件人的邮箱地址</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_display_name'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'gitlab'</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_address'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp.163.com"</span>  <span class="token comment"># smtp服务器的地址,如网易的地址</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_port'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">25</span>                 <span class="token comment"># 要注意如果使用了SSL/TLS的话,端口可能不是25</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_user_name'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp用户名"</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_password'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp用户密码"</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_domain'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"163.com"</span> gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_authentication'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"login"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<ol start="7">
+<li>
+<h2 id="使用SourceTree进行项目开发"><a class="header-anchor" href="#使用SourceTree进行项目开发"></a>使用SourceTree进行项目开发</h2>
+</li>
+</ol>
+<hr>
+<h3 id="7-1-项目拉取"><a class="header-anchor" href="#7-1-项目拉取"></a>7.1 项目拉取</h3>
+<ul>
+<li>先把项目克隆下来</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211633.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211438.png" alt=""></p>
+<ul>
+<li>如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211211.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211201.png" alt=""></p>
+<h3 id="7-2-创建分支进行功能开发"><a class="header-anchor" href="#7-2-创建分支进行功能开发"></a>7.2 创建分支进行功能开发</h3>
+<p><strong>1）新建立一个叫“pay”的分支</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211618.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211430.png" alt=""></p>
+<p><strong>2）进行功能开发</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211152.png" alt=""></p>
+<h3 id="7-3-提交项目"><a class="header-anchor" href="#7-3-提交项目"></a>7.3 提交项目</h3>
+<p><strong>1）开发pay功能完成后进行提交</strong></p>
+<ul>
+<li>可以看到SourceTree中已经有“未提交的更改”</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211422.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211144.png" alt=""></p>
+<p><strong>2）添加“用户信息”</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211143.png" alt=""></p>
+<p>** 3）进行提交**</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211415.png" alt=""></p>
+<ul>
+<li>注释也可以写成  close #3    ，作用是提交完成后关闭3号issue</li>
+</ul>
+<h3 id="7-4-推送到仓库"><a class="header-anchor" href="#7-4-推送到仓库"></a><strong>7.4 推送到仓库</strong></h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211136.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211407.png" alt=""></p>
+<ul>
+<li>然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了</li>
+</ul>
+<h3 id="7-5-项目上线"><a class="header-anchor" href="#7-5-项目上线"></a>7.5 项目上线</h3>
+<p><strong>1）当所有工作完成之后，就可以进行上线了</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211135.png" alt=""></p>
+<p><strong>2）打标签</strong></p>
+<ul>
+<li>上线先打个标签</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211127.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211124.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528225256.png" alt=""></p>
+<p>** 3）删除无用分支**</p>
+<ul>
+<li>然后删除已经合并到主干中的不必要的分支，如index、pay等</li>
+<li>最后一定要注意时间一定要同步，不然会错乱</li>
+</ul>
+<h2 id="参考"><a class="header-anchor" href="#参考"></a>参考</h2>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/hgzero/p/14088215.html">Praywu</a></li>
+</ul>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
+      <categories>
+        <category>gitlab</category>
+      </categories>
+      <tags>
+        <tag>Gitlab</tag>
+        <tag>Git</tag>
+        <tag>Crack</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>transmission 使用及其配置</title>
     <url>/posts/8f76d9dd/</url>
     <content><![CDATA[<h2 id="安装"><a class="header-anchor" href="#安装"></a>安装</h2>
@@ -6020,6 +6020,115 @@ pie
       </tags>
   </entry>
   <entry>
+    <title>Joplin 入门指南&amp;实践方案</title>
+    <url>/posts/e6086437/</url>
+    <content><![CDATA[<p>Evernote笔记是我们常用的一个笔记服务，国内叫印象笔记，免费版本的Evernote笔记其实已经足够我们使用了，但是对于重度的笔记用户，Evernote某些功能可能需要付费升级才可以使用，而且你的笔记是存放在Evernote的服务器上。</p>
+<p>有些同学可能觉得放在Evernote服务器上的笔记会不安全，况且有些隐私性很强的笔记确实不适合放在公共的服务器上。此时，你需要一个可以保护个人隐私同时还可以与Evernote笔记功能相媲美的免费笔记服务：Joplin，它是一款免费开源的笔记软件。</p>
+<p>Joplin跨平台支持，包括PC桌面端，移动端，甚至提供了命令行版本，原生支持 markdown 格式，搜索速度快，可以通过其他第三方同步工具 (Dropbox/NextCloud/OneDrive/WebDAV/etc) 进行备份以及同步 ，支持浏览器Web clipper即网页剪贴。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135705.png" alt=""></p>
+<p>Evernote笔记该有的功能Joplin都有了，如果你不想掏钱购买Evernote付费版本，Joplin将是最佳的替代品。更多的自建服务还有：</p>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://wzfou.com/chevereto/">Chevereto免费相册程序安装与使用-免费自建图床和公共图片相册</a></li>
+<li><a target="_blank" rel="noopener" href="https://wzfou.com/tt-rss/">自建RSS阅读器Tiny Tiny RSS安装和配置自动更新,全文RSS,更换主题,手机RSS登录</a></li>
+<li><a target="_blank" rel="noopener" href="https://wzfou.com/bitwarden-rs/">放弃付费1Password改用免费开源的bitwarden_rs自建密码管理系统-安装,使用和备份</a></li>
+</ol>
+<p><strong>PS：更新记录</strong></p>
+<blockquote>
+<p>1、平时经常要校对文本，以及有大量的文件需要在电脑和移动硬盘同步，可以试试这些免费的同步对比工具：<a target="_blank" rel="noopener" href="https://wzfou.com/files-sync-softs/">八大免费的文件对比同步工具-免费文件对比分析与复制同步备份软件</a>。2021.3.24</p>
+<p>2、对于1Password这类的密码管理软件重度依赖，但是苦于囊中羞涩的话，不防自建密码管理平台：<a target="_blank" rel="noopener" href="https://wzfou.com/bitwarden-mima/">Bitwarden自建密码存储系统图文教程-开源免费的bitwarden_rs安装与使用</a>。2020.10.10</p>
+</blockquote>
+<h2 id="一、Joplin安装和使用"><a class="header-anchor" href="#一、Joplin安装和使用"></a>一、Joplin安装和使用</h2>
+<p>网站：</p>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://joplinapp.org/">https://joplinapp.org/</a></li>
+</ol>
+<p>直接到官网下载Joplin安装包，安装好了就可以启动Joplin了，以下是Joplin的软件界面，分成三栏，和我们平时熟悉的笔记软件是一样的。（点击放大）</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135716.png" alt=""></p>
+<p>这是Joplin的编辑器，支持 MarkDown，图片、数学公式、复选框等 MarkDown 语法。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135813.png" alt=""></p>
+<p>不习惯MarkDown，直接切换为可视编辑即可。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135820.png" alt=""></p>
+<p>在Joplin的设置选项中还提供了非常多的MarkDown的插件，对于MarkDown深度用户来是一个福音。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135723.png" alt=""></p>
+<h2 id="二、Joplin的特色功能"><a class="header-anchor" href="#二、Joplin的特色功能"></a>二、Joplin的特色功能</h2>
+<h3 id="2-1-笔记历史版本"><a class="header-anchor" href="#2-1-笔记历史版本"></a>2.1 笔记历史版本</h3>
+<p>Joplin提供了笔记历史版本，让你轻松地恢复任意时间的笔记版本。在“工具” &gt; “选项” &gt; “笔记历史”中启用，以及设置保留的笔记历史天数。要查看笔记的历史版本，点击编辑器上方的笔记属性图标，然后选择恢复：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135828.png" alt=""></p>
+<h3 id="2-2-E2EE安全加密"><a class="header-anchor" href="#2-2-E2EE安全加密"></a>2.2 E2EE安全加密</h3>
+<p>在同步过程中，笔记本、笔记、标签等均以纯文本文件的方式同步，如果你还觉得不安全，你可以开启端到端加密（E2EE），把文件加密后同步到云端。由于 Joplin 的去中心化，密码必须手动在每个终端设置。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135736.png" alt=""></p>
+<p>**注意：不要在多个设备上同时启用加密，否则可能会造成加密密钥问题。特别提醒：**<strong>加密之前，先将笔记导出JEX备份一份，以防万一。</strong></p>
+<h3 id="2-3-Joplin手机APP"><a class="header-anchor" href="#2-3-Joplin手机APP"></a>2.3 Joplin手机APP</h3>
+<p>Joplin可以直接在各大应用市场上下载，使用起来也很方便。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135835.png" alt=""></p>
+<h3 id="2-4-外部编辑器"><a class="header-anchor" href="#2-4-外部编辑器"></a>2.4 外部编辑器</h3>
+<p>Joplin自带的编辑已经非常强大的，如果你想要使用自己的编辑器来编辑笔记也是可以的，包括 文本编辑器（如 Notepad++）、 Markdown 编辑器（如 Typora）等。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135928.png" alt=""></p>
+<p>通过 Ctrl+E，或 Joplin 编辑器上方的图标（如下图）从外部编辑器打开笔记，从外部编辑器打开后，Joplin 将持续监控该文件，当你从外部编辑机保存后，Joplin 将自动同步最新变动。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135841.png" alt=""></p>
+<p>你可以在“工具” &gt; “选项” &gt; “通用选项”中指定编辑器的路径。</p>
+<h2 id="三、Joplin同步与备份"><a class="header-anchor" href="#三、Joplin同步与备份"></a>三、Joplin同步与备份</h2>
+<p>Joplin与其它的笔记软件很大的不同就是没有存储功能，你需要将Joplin的笔记放在自己的主机或者网盘里，幸运的是Joplin支持多种方式的云同步：Nextcloud / Dropbox / OneDrive / File system / WebDAV。</p>
+<h3 id="3-1-Joplin免费网盘同步"><a class="header-anchor" href="#3-1-Joplin免费网盘同步"></a>3.1 Joplin免费网盘同步</h3>
+<p>目前，Joplin支持Dropbox 、OneDrive 网盘同步，在同步选项中选择OneDrive，然后就会打开认证。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135739.png" alt=""></p>
+<p>同意验证。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135848.png" alt=""></p>
+<p>与 OneDrive 同步时，Joplin 会在 OneDrive 中创建一个子目录：<code>/Apps/Joplin</code>，Joplin 仅有此目录的读写权限。如下图：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135746.png" alt=""></p>
+<h3 id="3-2-Joplin使用WebDAV同步"><a class="header-anchor" href="#3-2-Joplin使用WebDAV同步"></a>3.2 Joplin使用WebDAV同步</h3>
+<p>WebDAV 可以自建，或使用支持 WebDAV 的云盘，另外 NAS（如群晖）通常也支持 WebDAV。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135855.png" alt=""></p>
+<p>**Nextcloud：**Nextcloud是一个开源的免费的自建个人云存储方案，要启用 Nextcloud 同步，你需要在 Nextcloud 中创建一个目录（比如：Joplin），在左下角的“设置”中获取 WebDAV 的 URL，在 Joplin 同步设置中，填入 WebDAV URL、用户名和密码。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135902.png" alt=""></p>
+<p>有关于Nextcloud安装与使用教程，请参考：<a target="_blank" rel="noopener" href="https://wzfou.com/nextcloud-lixian/">Oneinstack安装NextCloud以及使用Aria2离线下载和ocDownloader插件配置</a>。</p>
+<p>**坚果云：**首次同步时会因为 WebDAV 短时间内的大量请求被坚果云临时限制，坚果云提示为“Too many requests”，这个封锁会持续大约6小时。同步之前，在 Joplin 的“工具” &gt; “选项” &gt; “同步” &gt; “高级选项”中，将“最大并发连接数”改为1可以有效避免。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135753.png" alt=""></p>
+<p>关于坚果云的使用方法，请参考：<a target="_blank" rel="noopener" href="https://wzfou.com/upyun-jianguoyun/">巧用又拍云FTP和坚果云WebDAV-打造个人文件备份和数据云存储</a>。</p>
+<h2 id="四、Joplin导入与导出"><a class="header-anchor" href="#四、Joplin导入与导出"></a>四、Joplin导入与导出</h2>
+<p>Joplin可以很方便地支持从Evernote（印象笔记）导入，方法如下：</p>
+<p>从 Evernote（印象笔记）导入：</p>
+<blockquote>
+<p>打开 Evernote，右击要导出的笔记本，选择“导出笔记“，导出 .enex 格式文件。</p>
+<p>在 Joplin 中，选择“文件” &gt; “导入” &gt; “ENEX – Evernote导出文件（Markdown）”即可导入。</p>
+</blockquote>
+<p>从 Markdown 文件导入：</p>
+<blockquote>
+<p>使用 Joplin 可以轻松导入 Markdown 文件或整个目录，选择“文件” &gt; “导入” &gt; “MD – Markdown（文件/目录）”导入即可。</p>
+</blockquote>
+<p>从其他应用程序导入：</p>
+<blockquote>
+<p>通常，很多应用程序都支持导入到 Evernote 中，所以从其他应用程序导入的思路是先导入 Evernote，再导出 .enex 文件，最后导入 Joplin 中。</p>
+</blockquote>
+<p>如下图：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135909.png" alt=""></p>
+<p>如果哪天你不想使用Joplin了，也可以很方便地导出。Joplin 支持多种导出格式，导出格式均为标准格式，可以在不依赖 Joplin 的情况下查看、编辑，部分格式支持无损/有损重新导入：</p>
+<blockquote>
+<p>JEX：Joplin 的无损导出格式，包含所有的元数据如标签、更新时间等。JEX是实际上是一个tar文件，可以直接解压出 MarkDown 文件。这种格式常用于备份，<strong>可以无损重新导入</strong>。</p>
+<p>RAW：同 JEX 格式相似，只是数据会保存为目录，并且每个笔记都会导出为一个单独的文件。<strong>可以无损重新导入</strong>。</p>
+<p>JSON：导出为 JSON 格式的文件。不支持重新导入。</p>
+<p>MD：按照笔记本的分级结构导出为目录，每条笔记在对应的目录中导出为 Markdown 格式的文件，目录名和文件名与原笔记本对应，此种格式易于读取，但是导出的文件将丢失元数据。可以有损导入（丢失元数据）。</p>
+<p>HTML：导出为网页文件，将 Markdown 格式转为 html 标签，带有样式。不支持导入。</p>
+<p>PDF：将单个笔记导出为 PDF 格式的文件。不支持导入。</p>
+</blockquote>
+<p>如下图：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135801.png" alt=""></p>
+<h2 id="五、总结"><a class="header-anchor" href="#五、总结"></a>五、总结</h2>
+<p>免费开源的笔记Joplin无论在功能上还是使用体验上基本上与Evernote印象笔记无异了，在隐私保护方面做得非常好，特别适合那些想要保存个人信息笔记的用户。</p>
+<p>使用免费开源的笔记Joplin最大的问题就是找好同步的网盘或者云存储，另外强烈建议大家在对Joplin的设置进行调整时先备份一个，以免同步后删除了所有的笔记。</p>
+<p>编辑整理 From：<a target="_blank" rel="noopener" href="https://wzfou.com/joplin/">挖站否</a></p>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
+      <categories>
+        <category>note</category>
+      </categories>
+      <tags>
+        <tag>Linux</tag>
+        <tag>note</tag>
+        <tag>Joplin</tag>
+        <tag>Docker</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>为知笔记私有化Docker部署</title>
     <url>/posts/1802a8a7/</url>
     <content><![CDATA[<p>登陆NAS，打开套件中心，搜索docker，并安装。</p>
@@ -6251,115 +6360,6 @@ pm2 start app.js --name<span class="token operator">=</span><span class="token s
         <tag>linux</tag>
         <tag>Nas</tag>
         <tag>群晖</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Joplin 入门指南&amp;实践方案</title>
-    <url>/posts/e6086437/</url>
-    <content><![CDATA[<p>Evernote笔记是我们常用的一个笔记服务，国内叫印象笔记，免费版本的Evernote笔记其实已经足够我们使用了，但是对于重度的笔记用户，Evernote某些功能可能需要付费升级才可以使用，而且你的笔记是存放在Evernote的服务器上。</p>
-<p>有些同学可能觉得放在Evernote服务器上的笔记会不安全，况且有些隐私性很强的笔记确实不适合放在公共的服务器上。此时，你需要一个可以保护个人隐私同时还可以与Evernote笔记功能相媲美的免费笔记服务：Joplin，它是一款免费开源的笔记软件。</p>
-<p>Joplin跨平台支持，包括PC桌面端，移动端，甚至提供了命令行版本，原生支持 markdown 格式，搜索速度快，可以通过其他第三方同步工具 (Dropbox/NextCloud/OneDrive/WebDAV/etc) 进行备份以及同步 ，支持浏览器Web clipper即网页剪贴。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135705.png" alt=""></p>
-<p>Evernote笔记该有的功能Joplin都有了，如果你不想掏钱购买Evernote付费版本，Joplin将是最佳的替代品。更多的自建服务还有：</p>
-<ol>
-<li><a target="_blank" rel="noopener" href="https://wzfou.com/chevereto/">Chevereto免费相册程序安装与使用-免费自建图床和公共图片相册</a></li>
-<li><a target="_blank" rel="noopener" href="https://wzfou.com/tt-rss/">自建RSS阅读器Tiny Tiny RSS安装和配置自动更新,全文RSS,更换主题,手机RSS登录</a></li>
-<li><a target="_blank" rel="noopener" href="https://wzfou.com/bitwarden-rs/">放弃付费1Password改用免费开源的bitwarden_rs自建密码管理系统-安装,使用和备份</a></li>
-</ol>
-<p><strong>PS：更新记录</strong></p>
-<blockquote>
-<p>1、平时经常要校对文本，以及有大量的文件需要在电脑和移动硬盘同步，可以试试这些免费的同步对比工具：<a target="_blank" rel="noopener" href="https://wzfou.com/files-sync-softs/">八大免费的文件对比同步工具-免费文件对比分析与复制同步备份软件</a>。2021.3.24</p>
-<p>2、对于1Password这类的密码管理软件重度依赖，但是苦于囊中羞涩的话，不防自建密码管理平台：<a target="_blank" rel="noopener" href="https://wzfou.com/bitwarden-mima/">Bitwarden自建密码存储系统图文教程-开源免费的bitwarden_rs安装与使用</a>。2020.10.10</p>
-</blockquote>
-<h2 id="一、Joplin安装和使用"><a class="header-anchor" href="#一、Joplin安装和使用"></a>一、Joplin安装和使用</h2>
-<p>网站：</p>
-<ol>
-<li><a target="_blank" rel="noopener" href="https://joplinapp.org/">https://joplinapp.org/</a></li>
-</ol>
-<p>直接到官网下载Joplin安装包，安装好了就可以启动Joplin了，以下是Joplin的软件界面，分成三栏，和我们平时熟悉的笔记软件是一样的。（点击放大）</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135716.png" alt=""></p>
-<p>这是Joplin的编辑器，支持 MarkDown，图片、数学公式、复选框等 MarkDown 语法。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135813.png" alt=""></p>
-<p>不习惯MarkDown，直接切换为可视编辑即可。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135820.png" alt=""></p>
-<p>在Joplin的设置选项中还提供了非常多的MarkDown的插件，对于MarkDown深度用户来是一个福音。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135723.png" alt=""></p>
-<h2 id="二、Joplin的特色功能"><a class="header-anchor" href="#二、Joplin的特色功能"></a>二、Joplin的特色功能</h2>
-<h3 id="2-1-笔记历史版本"><a class="header-anchor" href="#2-1-笔记历史版本"></a>2.1 笔记历史版本</h3>
-<p>Joplin提供了笔记历史版本，让你轻松地恢复任意时间的笔记版本。在“工具” &gt; “选项” &gt; “笔记历史”中启用，以及设置保留的笔记历史天数。要查看笔记的历史版本，点击编辑器上方的笔记属性图标，然后选择恢复：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135828.png" alt=""></p>
-<h3 id="2-2-E2EE安全加密"><a class="header-anchor" href="#2-2-E2EE安全加密"></a>2.2 E2EE安全加密</h3>
-<p>在同步过程中，笔记本、笔记、标签等均以纯文本文件的方式同步，如果你还觉得不安全，你可以开启端到端加密（E2EE），把文件加密后同步到云端。由于 Joplin 的去中心化，密码必须手动在每个终端设置。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135736.png" alt=""></p>
-<p>**注意：不要在多个设备上同时启用加密，否则可能会造成加密密钥问题。特别提醒：**<strong>加密之前，先将笔记导出JEX备份一份，以防万一。</strong></p>
-<h3 id="2-3-Joplin手机APP"><a class="header-anchor" href="#2-3-Joplin手机APP"></a>2.3 Joplin手机APP</h3>
-<p>Joplin可以直接在各大应用市场上下载，使用起来也很方便。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135835.png" alt=""></p>
-<h3 id="2-4-外部编辑器"><a class="header-anchor" href="#2-4-外部编辑器"></a>2.4 外部编辑器</h3>
-<p>Joplin自带的编辑已经非常强大的，如果你想要使用自己的编辑器来编辑笔记也是可以的，包括 文本编辑器（如 Notepad++）、 Markdown 编辑器（如 Typora）等。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135928.png" alt=""></p>
-<p>通过 Ctrl+E，或 Joplin 编辑器上方的图标（如下图）从外部编辑器打开笔记，从外部编辑器打开后，Joplin 将持续监控该文件，当你从外部编辑机保存后，Joplin 将自动同步最新变动。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135841.png" alt=""></p>
-<p>你可以在“工具” &gt; “选项” &gt; “通用选项”中指定编辑器的路径。</p>
-<h2 id="三、Joplin同步与备份"><a class="header-anchor" href="#三、Joplin同步与备份"></a>三、Joplin同步与备份</h2>
-<p>Joplin与其它的笔记软件很大的不同就是没有存储功能，你需要将Joplin的笔记放在自己的主机或者网盘里，幸运的是Joplin支持多种方式的云同步：Nextcloud / Dropbox / OneDrive / File system / WebDAV。</p>
-<h3 id="3-1-Joplin免费网盘同步"><a class="header-anchor" href="#3-1-Joplin免费网盘同步"></a>3.1 Joplin免费网盘同步</h3>
-<p>目前，Joplin支持Dropbox 、OneDrive 网盘同步，在同步选项中选择OneDrive，然后就会打开认证。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135739.png" alt=""></p>
-<p>同意验证。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135848.png" alt=""></p>
-<p>与 OneDrive 同步时，Joplin 会在 OneDrive 中创建一个子目录：<code>/Apps/Joplin</code>，Joplin 仅有此目录的读写权限。如下图：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135746.png" alt=""></p>
-<h3 id="3-2-Joplin使用WebDAV同步"><a class="header-anchor" href="#3-2-Joplin使用WebDAV同步"></a>3.2 Joplin使用WebDAV同步</h3>
-<p>WebDAV 可以自建，或使用支持 WebDAV 的云盘，另外 NAS（如群晖）通常也支持 WebDAV。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135855.png" alt=""></p>
-<p>**Nextcloud：**Nextcloud是一个开源的免费的自建个人云存储方案，要启用 Nextcloud 同步，你需要在 Nextcloud 中创建一个目录（比如：Joplin），在左下角的“设置”中获取 WebDAV 的 URL，在 Joplin 同步设置中，填入 WebDAV URL、用户名和密码。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135902.png" alt=""></p>
-<p>有关于Nextcloud安装与使用教程，请参考：<a target="_blank" rel="noopener" href="https://wzfou.com/nextcloud-lixian/">Oneinstack安装NextCloud以及使用Aria2离线下载和ocDownloader插件配置</a>。</p>
-<p>**坚果云：**首次同步时会因为 WebDAV 短时间内的大量请求被坚果云临时限制，坚果云提示为“Too many requests”，这个封锁会持续大约6小时。同步之前，在 Joplin 的“工具” &gt; “选项” &gt; “同步” &gt; “高级选项”中，将“最大并发连接数”改为1可以有效避免。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135753.png" alt=""></p>
-<p>关于坚果云的使用方法，请参考：<a target="_blank" rel="noopener" href="https://wzfou.com/upyun-jianguoyun/">巧用又拍云FTP和坚果云WebDAV-打造个人文件备份和数据云存储</a>。</p>
-<h2 id="四、Joplin导入与导出"><a class="header-anchor" href="#四、Joplin导入与导出"></a>四、Joplin导入与导出</h2>
-<p>Joplin可以很方便地支持从Evernote（印象笔记）导入，方法如下：</p>
-<p>从 Evernote（印象笔记）导入：</p>
-<blockquote>
-<p>打开 Evernote，右击要导出的笔记本，选择“导出笔记“，导出 .enex 格式文件。</p>
-<p>在 Joplin 中，选择“文件” &gt; “导入” &gt; “ENEX – Evernote导出文件（Markdown）”即可导入。</p>
-</blockquote>
-<p>从 Markdown 文件导入：</p>
-<blockquote>
-<p>使用 Joplin 可以轻松导入 Markdown 文件或整个目录，选择“文件” &gt; “导入” &gt; “MD – Markdown（文件/目录）”导入即可。</p>
-</blockquote>
-<p>从其他应用程序导入：</p>
-<blockquote>
-<p>通常，很多应用程序都支持导入到 Evernote 中，所以从其他应用程序导入的思路是先导入 Evernote，再导出 .enex 文件，最后导入 Joplin 中。</p>
-</blockquote>
-<p>如下图：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135909.png" alt=""></p>
-<p>如果哪天你不想使用Joplin了，也可以很方便地导出。Joplin 支持多种导出格式，导出格式均为标准格式，可以在不依赖 Joplin 的情况下查看、编辑，部分格式支持无损/有损重新导入：</p>
-<blockquote>
-<p>JEX：Joplin 的无损导出格式，包含所有的元数据如标签、更新时间等。JEX是实际上是一个tar文件，可以直接解压出 MarkDown 文件。这种格式常用于备份，<strong>可以无损重新导入</strong>。</p>
-<p>RAW：同 JEX 格式相似，只是数据会保存为目录，并且每个笔记都会导出为一个单独的文件。<strong>可以无损重新导入</strong>。</p>
-<p>JSON：导出为 JSON 格式的文件。不支持重新导入。</p>
-<p>MD：按照笔记本的分级结构导出为目录，每条笔记在对应的目录中导出为 Markdown 格式的文件，目录名和文件名与原笔记本对应，此种格式易于读取，但是导出的文件将丢失元数据。可以有损导入（丢失元数据）。</p>
-<p>HTML：导出为网页文件，将 Markdown 格式转为 html 标签，带有样式。不支持导入。</p>
-<p>PDF：将单个笔记导出为 PDF 格式的文件。不支持导入。</p>
-</blockquote>
-<p>如下图：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909135801.png" alt=""></p>
-<h2 id="五、总结"><a class="header-anchor" href="#五、总结"></a>五、总结</h2>
-<p>免费开源的笔记Joplin无论在功能上还是使用体验上基本上与Evernote印象笔记无异了，在隐私保护方面做得非常好，特别适合那些想要保存个人信息笔记的用户。</p>
-<p>使用免费开源的笔记Joplin最大的问题就是找好同步的网盘或者云存储，另外强烈建议大家在对Joplin的设置进行调整时先备份一个，以免同步后删除了所有的笔记。</p>
-<p>编辑整理 From：<a target="_blank" rel="noopener" href="https://wzfou.com/joplin/">挖站否</a></p>
-<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
-      <categories>
-        <category>note</category>
-      </categories>
-      <tags>
-        <tag>Linux</tag>
-        <tag>note</tag>
-        <tag>Joplin</tag>
-        <tag>Docker</tag>
       </tags>
   </entry>
   <entry>
@@ -7217,6 +7217,48 @@ Node包含了这个节点的所有属性。例如<code>&lt;img src=&quot;xxx.png
       <tags>
         <tag>web</tag>
         <tag>http</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>自动曝光原理</title>
+    <url>/posts/509c7bd3/</url>
+    <content><![CDATA[<h2 id="自动曝光的原理"><a class="header-anchor" href="#自动曝光的原理"></a>自动曝光的原理</h2>
+<p>曝光是摄影中十分重要的一个环节，它决定了一张图片的明暗，如下图所示，第一张图片太暗，而第三种图片太亮。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1420210914131959.jpeg" alt=""></p>
+<h2 id="曝光由什么来决定"><a class="header-anchor" href="#曝光由什么来决定"></a><strong>曝光由什么来决定</strong></h2>
+<p>使用过数码相机的人都知道曝光由光圈、曝光时间、ISO三者共同决定，详细的关系就不赘述。</p>
+<h3 id="光圈：控制进光量；"><a class="header-anchor" href="#光圈：控制进光量；"></a><strong>光圈</strong>：控制进光量；</h3>
+<h3 id="曝光时间：光到达的时间长度；"><a class="header-anchor" href="#曝光时间：光到达的时间长度；"></a><strong>曝光时间</strong>：光到达的时间长度；</h3>
+<h3 id="ISO：增益；"><a class="header-anchor" href="#ISO：增益；"></a><strong>ISO</strong>：增益；</h3>
+<p>但是对于手机以及其他电子产品使用的微型摄像头，光圈大小是固定的，所以手机拍照的曝光由<strong>曝光时间</strong>和**增益(ISO)**来控制。</p>
+<h2 id="什么是自动曝光"><a class="header-anchor" href="#什么是自动曝光"></a><strong>什么是自动曝光</strong></h2>
+<p>数码相机中有一种手动模式，可手动设置光圈、曝光时间、ISO来控制曝光，该模式的使用对摄影师的要求会比较高。另外 数码相机的全自动模式、光圈优先模式、快门优先模式以及手机等电子产品的曝光都属于自动曝光。</p>
+<p>自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。</p>
+<h2 id="自动曝光的标准"><a class="header-anchor" href="#自动曝光的标准"></a><strong>自动曝光的标准</strong></h2>
+<p>在此之前需要了解物体的亮度与色彩是由物体对光线的反射率来决定的。例如纯黑色的放射率是0，纯白色的反射率是100%，处于中间的灰度的反射率是18%，这就是18%中间灰度。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1420210914132002.png" alt=""></p>
+<p>具有一定反射率的物体在最终的图像中被还原到了其相应的灰度级，这就意味着达到了正确的曝光。例如摄影师们通常在拍摄之前使用中性灰卡测试曝光是否正常。</p>
+<p>但是相机在各种场景下无法识别物体的反射率，因此采用了一个简单粗暴而又行之有效的方法，统一将图像整体平均亮度设置为中性灰的亮度。该方法基于**科学家认为自然界的平均反射率是18%**这一理论。当然，这个方法也不是走遍天下都不怕，比如拍摄雪景时需要增加曝光补偿，不然会偏暗，因为雪景的亮度远远大于中性灰度。这也就是摄影中的一句口诀的由来“白增黑减”。</p>
+<h2 id="自动曝光算法"><a class="header-anchor" href="#自动曝光算法"></a><strong>自动曝光算法</strong></h2>
+<p>上面已经讲了自动曝光的标准，也就确立了曝光目标，要达到这一目标还要自动曝光算法来实现。</p>
+<p>目前比较常见的算法有平均亮度法、权重均值法、亮度直方图等。其中最普遍的就是平均亮度法。<strong>平均亮度法</strong>就是对图像所以像素亮度求平均值，通过不断调整曝光参数最终达到目标亮度。而<strong>权重均值法</strong>是对图像不同区域设置不同权重来计算图像亮度，例如相机中的各种测光模式的选择就是改变不同区域的权重。<strong>亮度直方图法</strong>是通过为直方图中峰值分配不同权重来计算图像亮度。</p>
+<p>自动曝光实现的过程：</p>
+<p>第一步：对当前图像进行亮度统计；</p>
+<p>第二步：根据当前图像亮度确定曝光值；</p>
+<p>第三步：计算新的曝光参数，曝光时间、光圈、增益；</p>
+<p>第四步：将新的曝光参数应用到相机；</p>
+<p>第五步：重复步骤一到四，直到亮度满足要求。</p>
+<h2 id="曝光参数调整-曝光表"><a class="header-anchor" href="#曝光参数调整-曝光表"></a><strong>曝光参数调整_曝光表</strong></h2>
+<p>前面留下两个问题：“第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。” 第一个问题在前面有过解释，第二个问题也就是自动曝光实现步骤的第三步，曝光值由光圈、曝光时间、增益沟通决定，当计算出一个曝光量，曝光三要素有很多种组合方式。一般情况下有曝光曲线，每个曝光量对应一组参数。手机中曝光曲线可以通过Tuning调整。</p>
+<p>From: <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/33462189">积极的悲观主义者</a></p>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
+      <categories>
+        <category>image</category>
+      </categories>
+      <tags>
+        <tag>3a</tag>
+        <tag>ae</tag>
+        <tag>image</tag>
       </tags>
   </entry>
   <entry>
@@ -10634,48 +10676,6 @@ location<span class="token punctuation">.</span>href<span class="token operator"
       </tags>
   </entry>
   <entry>
-    <title>自动曝光原理</title>
-    <url>/posts/509c7bd3/</url>
-    <content><![CDATA[<h2 id="自动曝光的原理"><a class="header-anchor" href="#自动曝光的原理"></a>自动曝光的原理</h2>
-<p>曝光是摄影中十分重要的一个环节，它决定了一张图片的明暗，如下图所示，第一张图片太暗，而第三种图片太亮。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1420210914131959.jpeg" alt=""></p>
-<h2 id="曝光由什么来决定"><a class="header-anchor" href="#曝光由什么来决定"></a><strong>曝光由什么来决定</strong></h2>
-<p>使用过数码相机的人都知道曝光由光圈、曝光时间、ISO三者共同决定，详细的关系就不赘述。</p>
-<h3 id="光圈：控制进光量；"><a class="header-anchor" href="#光圈：控制进光量；"></a><strong>光圈</strong>：控制进光量；</h3>
-<h3 id="曝光时间：光到达的时间长度；"><a class="header-anchor" href="#曝光时间：光到达的时间长度；"></a><strong>曝光时间</strong>：光到达的时间长度；</h3>
-<h3 id="ISO：增益；"><a class="header-anchor" href="#ISO：增益；"></a><strong>ISO</strong>：增益；</h3>
-<p>但是对于手机以及其他电子产品使用的微型摄像头，光圈大小是固定的，所以手机拍照的曝光由<strong>曝光时间</strong>和**增益(ISO)**来控制。</p>
-<h2 id="什么是自动曝光"><a class="header-anchor" href="#什么是自动曝光"></a><strong>什么是自动曝光</strong></h2>
-<p>数码相机中有一种手动模式，可手动设置光圈、曝光时间、ISO来控制曝光，该模式的使用对摄影师的要求会比较高。另外 数码相机的全自动模式、光圈优先模式、快门优先模式以及手机等电子产品的曝光都属于自动曝光。</p>
-<p>自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。</p>
-<h2 id="自动曝光的标准"><a class="header-anchor" href="#自动曝光的标准"></a><strong>自动曝光的标准</strong></h2>
-<p>在此之前需要了解物体的亮度与色彩是由物体对光线的反射率来决定的。例如纯黑色的放射率是0，纯白色的反射率是100%，处于中间的灰度的反射率是18%，这就是18%中间灰度。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1420210914132002.png" alt=""></p>
-<p>具有一定反射率的物体在最终的图像中被还原到了其相应的灰度级，这就意味着达到了正确的曝光。例如摄影师们通常在拍摄之前使用中性灰卡测试曝光是否正常。</p>
-<p>但是相机在各种场景下无法识别物体的反射率，因此采用了一个简单粗暴而又行之有效的方法，统一将图像整体平均亮度设置为中性灰的亮度。该方法基于**科学家认为自然界的平均反射率是18%**这一理论。当然，这个方法也不是走遍天下都不怕，比如拍摄雪景时需要增加曝光补偿，不然会偏暗，因为雪景的亮度远远大于中性灰度。这也就是摄影中的一句口诀的由来“白增黑减”。</p>
-<h2 id="自动曝光算法"><a class="header-anchor" href="#自动曝光算法"></a><strong>自动曝光算法</strong></h2>
-<p>上面已经讲了自动曝光的标准，也就确立了曝光目标，要达到这一目标还要自动曝光算法来实现。</p>
-<p>目前比较常见的算法有平均亮度法、权重均值法、亮度直方图等。其中最普遍的就是平均亮度法。<strong>平均亮度法</strong>就是对图像所以像素亮度求平均值，通过不断调整曝光参数最终达到目标亮度。而<strong>权重均值法</strong>是对图像不同区域设置不同权重来计算图像亮度，例如相机中的各种测光模式的选择就是改变不同区域的权重。<strong>亮度直方图法</strong>是通过为直方图中峰值分配不同权重来计算图像亮度。</p>
-<p>自动曝光实现的过程：</p>
-<p>第一步：对当前图像进行亮度统计；</p>
-<p>第二步：根据当前图像亮度确定曝光值；</p>
-<p>第三步：计算新的曝光参数，曝光时间、光圈、增益；</p>
-<p>第四步：将新的曝光参数应用到相机；</p>
-<p>第五步：重复步骤一到四，直到亮度满足要求。</p>
-<h2 id="曝光参数调整-曝光表"><a class="header-anchor" href="#曝光参数调整-曝光表"></a><strong>曝光参数调整_曝光表</strong></h2>
-<p>前面留下两个问题：“第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。” 第一个问题在前面有过解释，第二个问题也就是自动曝光实现步骤的第三步，曝光值由光圈、曝光时间、增益沟通决定，当计算出一个曝光量，曝光三要素有很多种组合方式。一般情况下有曝光曲线，每个曝光量对应一组参数。手机中曝光曲线可以通过Tuning调整。</p>
-<p>From: <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/33462189">积极的悲观主义者</a></p>
-<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
-      <categories>
-        <category>image</category>
-      </categories>
-      <tags>
-        <tag>3a</tag>
-        <tag>ae</tag>
-        <tag>image</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>深度学习之视频人脸识别系列</title>
     <url>/posts/a0f3c838/</url>
     <content><![CDATA[<h2 id="系列1-简介"><a class="header-anchor" href="#系列1-简介"></a>系列1 简介</h2>
@@ -12903,6 +12903,179 @@ MusicBrainz Picard可以修改音乐的Tag标签信息，根据标签重命名�
       </tags>
   </entry>
   <entry>
+    <title>如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕</title>
+    <url>/posts/e6d40157/</url>
+    <content><![CDATA[<blockquote>
+<p>注意使用V3版本，V4版本收费！</p>
+<p>所以升级V3版本即可，不要升级到V4版本！不要升级到V4版本！不要升级到V4版本！</p>
+</blockquote>
+<ul>
+<li><strong>Plex</strong>是一款很好用的个人媒体中心软件，但是因为国内网络的原因，使用默认的TMDB刮削器挂出来的效果并不好，要么就是影片信息不正确，要么就是海报不正常显示，实在让人头疼。</li>
+<li><strong>tinyMediaManager</strong>是一款电影信息刮削和整理的软件，正好可以和plex配合，完美的解决这一问题。tinyMediaManager在刮削影片的过程中会把影片的海报、演员表、背景图片等等都保存到影片所在文件夹，自动生成电影的nfo信息文件，并对文件和文件夹进行重新命名的操作。在plex设置刮削代理的时候，需要用一款插件可以直接读取nfo的信息，完成刮削，下面把使用方法分享给大家，</li>
+</ul>
+<h2 id="下载和安装tinyMediaManager"><a class="header-anchor" href="#下载和安装tinyMediaManager"></a><strong>下载和安装tinyMediaManager</strong></h2>
+<p><strong>官网下载地址：<a href="www.tinymediamanager.org/download/">https://www.tinymediamanager.org/download/</a></strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181048.jpeg" alt=""></p>
+<h3 id="tmm下载"><a class="header-anchor" href="#tmm下载"></a>tmm下载</h3>
+<p><strong>下载后直接解压文件夹</strong></p>
+<p>客户端需要java支持，先在电脑安装java</p>
+<p>客户端下载后是一个压缩包，解压之后就可以用</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181054.jpeg" alt=""></p>
+<p><strong>解压之后打开tinyMediaManager.exe</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181101.png" alt="tmm目录"></p>
+<h2 id="TMM设置"><a class="header-anchor" href="#TMM设置"></a>TMM设置</h2>
+<h3 id="TMM代理设置"><a class="header-anchor" href="#TMM代理设置"></a>TMM代理设置</h3>
+<blockquote>
+<p>重要：很多源都需要代理才能访问。这里正确的配置才能正确的刮削！</p>
+<p>可以调整这里使用的内存，大内存可以极大加速刮削速度。</p>
+</blockquote>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011211402.png" alt=""></p>
+<h2 id="电影刮削设置"><a class="header-anchor" href="#电影刮削设置"></a>电影刮削设置</h2>
+<p><strong>进行相关设置。Tmm可以对电影和电视剧的刮削进行分别设置，打开设置后选择电影选项，可以选择分级标准、自动重命名等选项。</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181337.png" alt=""></p>
+<p>电影信息选项</p>
+<p><strong>点击侧边栏媒体库目录，添加电影目录</strong></p>
+<p><strong>刮削器设置</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181107.jpeg" alt=""></p>
+<p>选择电影刮削器</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181107.png" alt=""></p>
+<p>刮削器选项</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181114.png" alt=""></p>
+<p>nfo选项，建议选择生成两种命名放视的nfo</p>
+<p><strong>图片刮削器选择全选，图片文件名建议两边都选上，会分别生成两组命名格式不同的图片，为了保证plex能读取</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181331.png" alt=""></p>
+<p>图片命名选项</p>
+<p>Tmm还可以自动下载预告片，字幕。字幕下载时可以输入opensubtitles账户</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181115.png" alt=""></p>
+<p>字幕下载选项</p>
+<p><strong>重命名规则</strong></p>
+<p>这里重点讲一下重命名规则，刮削完后可以选择对电影文件和文件夹进行重命名，可能对于pt用户重命名可能会影响资源上传，可以不进行重命名操作。</p>
+<p>一般情况下电影刮削出来的信息，title是电影的中文标题名称，originaltitle是电影的原标题名称，一般是英文名称。软件默认的设置是文件和文件夹都命名成title，也就是中文标题，但是我发现这样在后期使用的时候有弊端。英文电影在检索字幕时会用文件名来检索，而用中文名称很多情况下检索不出来，所以这里把文件的命名规则改一下，改成originaltitle，并去掉年份信息的括号，中间连接符改成点，文件名设置成<img src="https://math.now.sh?inline=%7Boriginaltitle%7D" style="filter: opacity(90%);transform:scale(0.85);text-align:center;display:inline-block;margin: 0;"/>{- ,edition,}.<img src="https://math.now.sh?inline=%7Byear%7D." style="filter: opacity(90%);transform:scale(0.85);text-align:center;display:inline-block;margin: 0;"/>{videoFormat}.${audioCodec}的格式。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181121.png" alt=""></p>
+<p>电影文件重命名选项</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181127.png" alt=""></p>
+<p>刮削完的文件夹内文件信息</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181323.png" alt=""></p>
+<p>刮削完的电影文件夹目录</p>
+<p><strong>电视节目刮削设置类似，如果挂不出来可以用the tvdb来刮削。</strong></p>
+<p><strong>tmm有时候会出现网络不稳定，刮不到的情况，可以修改host解决</strong></p>
+<p>改host 在host文件最后加一行13.224.161.90 <a href="https://link.zhihu.com/?target=http%3A//api.themoviedb.org">http://api.themoviedb.org</a></p>
+<p><strong>退出设置，开始刮削</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181317.png" alt=""></p>
+<p>更新电影源</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181128.jpeg" alt=""></p>
+<p>选中要刮削的电影自动匹配</p>
+<h3 id="电影手动刮削"><a class="header-anchor" href="#电影手动刮削"></a>电影手动刮削</h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011183942.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011184131.png" alt=""></p>
+<h2 id="电视剧-动画手动刮削"><a class="header-anchor" href="#电视剧-动画手动刮削"></a>电视剧&amp;动画手动刮削</h2>
+<h3 id="电视剧元数据刮削"><a class="header-anchor" href="#电视剧元数据刮削"></a>电视剧元数据刮削</h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011184909.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011185747.png" alt=""></p>
+<h3 id="季和集元数据刮削前整理"><a class="header-anchor" href="#季和集元数据刮削前整理"></a>季和集元数据刮削前整理</h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011185049.png" alt=""></p>
+<h3 id="刮削季元素"><a class="header-anchor" href="#刮削季元素"></a>刮削季元素</h3>
+<p>整理好正确的季和集之后，才能正确的刮削季元素</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011185146.png" alt=""></p>
+<h3 id="TMM整理完效果"><a class="header-anchor" href="#TMM整理完效果"></a>TMM整理完效果</h3>
+<blockquote>
+<p>这里用海贼王做展示，一个季和集都特别多的剧。</p>
+</blockquote>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011185448.png" alt=""></p>
+<h2 id="TMM目录重命名整理"><a class="header-anchor" href="#TMM目录重命名整理"></a>TMM目录重命名整理</h2>
+<blockquote>
+<p>刮削完后，可以重命名视频文件，并进行目录整理。</p>
+</blockquote>
+<p>方法1</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181133.jpeg" alt=""></p>
+<p>方法2</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011184315.png" alt=""></p>
+<p>等所有电影的信息刮削完后，选择重命名和清理，这样就完成了刮削的操作。以后下载了新电影，直接打开tmm,更新源之后直接选择搜索未刮削过的电影完成刮削。刮削出来的信息kodi，emby等软件也都能用。</p>
+<h2 id="Plex设置"><a class="header-anchor" href="#Plex设置"></a>Plex设置</h2>
+<h3 id="plex插件的安装和设置"><a class="header-anchor" href="#plex插件的安装和设置"></a><strong>plex插件的安装和设置</strong></h3>
+<p><strong>下载plex的插件</strong></p>
+<p>插件XBMCnfoMoviesImporter和XBMCnfoTVImporter分别是刮削电影和电视剧的插件</p>
+<p>下载地址：<a href="https%3A//github.com/gboudreau/XBMCnfoMoviesImporter.bundle">https://github.com/gboudreau/XBMCnfoMoviesImporter.bundle</a></p>
+<p>如果不能下载的话可以联系我获取，还有几个很好用的plex插件</p>
+<p>下载完插件后就需要把插件解压到plex的插件目录：C:\Users\用户名\AppData\Local\Plex Media Server\Plug-ins</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181134.png" alt=""></p>
+<p>plex插件目录</p>
+<p>注意解压后要把文件夹名后边的master去掉。</p>
+<p><strong>plex代理设置</strong></p>
+<p>Plex的代理设置就是选择刮削电影所用的刮削器及优先级。</p>
+<p>装好插件后重启plex，进行plex的设置。在代理设置中选择XBMCnfoMoviesImporter，把它的优先级调到最高，第二个可以设置成字幕插件。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181140.jpeg" alt=""></p>
+<p><strong>设置电影资料库的刮削器代理</strong></p>
+<p>点击设置界面下方管理里边的资料库，选择电影资料夹的高级设置，设置如下</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181140.png" alt=""><br>
+<img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181146.png" alt=""></p>
+<p>plex代理设置</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181152.png" alt=""></p>
+<p><strong>刷新电影源数据资料</strong></p>
+<p>设置完成后就可以在plex主页对电影文件夹刷新元数据了。等待刷新完后就可以载入所有的电影信息了。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181152.jpeg" alt=""></p>
+<p>管理资料库-刷新电影元数据</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181153.jpeg" alt=""></p>
+<p>更新后的电影信息</p>
+<p>采用类似的设置，电视剧信息也能刮削。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181159.jpeg" alt=""></p>
+<p>电视剧更新后的信息</p>
+<h2 id="Emby设置"><a class="header-anchor" href="#Emby设置"></a>Emby设置</h2>
+<blockquote>
+<p>Emby内置刮削工具，但是速度较慢。下面设置基于外部刮削工具TMM，所以没有勾选Emby刮削源！</p>
+</blockquote>
+<p>最终效果演示</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011190035.png" alt="最终效果"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011190347.png" alt=""></p>
+<h3 id="开始设置"><a class="header-anchor" href="#开始设置"></a>开始设置</h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181946.png" alt=""></p>
+<h3 id="新增媒体库"><a class="header-anchor" href="#新增媒体库"></a>新增媒体库</h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011182142.png" alt=""></p>
+<h3 id="已有媒体库属性设置"><a class="header-anchor" href="#已有媒体库属性设置"></a>已有媒体库属性设置</h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011182244.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011182350.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011183115.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011183157.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011183336.png" alt=""></p>
+<h3 id="Emby字幕设置"><a class="header-anchor" href="#Emby字幕设置"></a>Emby字幕设置</h3>
+<p>字幕下载设置，字幕下载工具见后面的[字幕下载]章节</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011182554.png" alt=""></p>
+<h2 id="字幕下载"><a class="header-anchor" href="#字幕下载"></a><strong>字幕下载</strong></h2>
+<p>想要较好的自动下载字幕，最好用前面介绍的tmm刮削改名之后再使用下面工具。</p>
+<h3 id="subfinder-自动下载字幕"><a class="header-anchor" href="#subfinder-自动下载字幕"></a>subfinder 自动下载字幕</h3>
+<ul>
+<li>Docker： <a target="_blank" rel="noopener" href="https://hub.docker.com/r/superng6/subfinder">superng6/subfinder</a></li>
+</ul>
+<p>下载完成，刮削后的目录，挂载到subfinder的media目录，就会自动下载字幕。</p>
+<p>字幕下载对电影，英文剧集支持较好。对于一些tv，动画手动下载字幕会更好一些。</p>
+<p>注意：官方的配置文件有问题，时效问题。修改URL到最新即可。</p>
+<h3 id="chinesesubfinder"><a class="header-anchor" href="#chinesesubfinder"></a>chinesesubfinder</h3>
+<ul>
+<li>Docker： <a target="_blank" rel="noopener" href="https://hub.docker.com/r/allanpk716/chinesesubfinder">allanpk716/chinesesubfinder</a></li>
+<li>新开发的中文字幕查找工具，上面那个很久没更新了，这个刚出来。使用nfo里面刮削出来的文件名来匹配字幕。所以就原理来说，这个字幕匹配更准确。</li>
+</ul>
+<h3 id="bazarr"><a class="header-anchor" href="#bazarr"></a>bazarr</h3>
+<ul>
+<li>Docker：<a target="_blank" rel="noopener" href="https://hub.docker.com/r/linuxserver/bazarr">linuxserver/bazarr</a></li>
+<li>字幕下载管理，配合sonarr, radarr 使用效果更好。对于英文剧集命名规范的支持较好，比如<code>[name]S01E01</code></li>
+</ul>
+<h2 id="参考"><a class="header-anchor" href="#参考"></a>参考</h2>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/112167546?from_voters_page=true">利用tinyMediaManager刮削影片，解决家用nas软件plex电影墙的问题</a></li>
+</ul>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
+      <categories>
+        <category>video</category>
+      </categories>
+      <tags>
+        <tag>刮削</tag>
+        <tag>tmm</tag>
+        <tag>字幕</tag>
+        <tag>emby</tag>
+        <tag>plex</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>通过IPV6访问Qnap NAS中Docker的服务</title>
     <url>/posts/462f1e5c/</url>
     <content><![CDATA[<h2 id="环境"><a class="header-anchor" href="#环境"></a>环境</h2>
@@ -14854,179 +15027,6 @@ source ~&#x2F;.bash_profile<span aria-hidden="true" class="line-numbers-rows"><s
         <tag>vscode</tag>
         <tag>插件</tag>
         <tag>编码</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕</title>
-    <url>/posts/e6d40157/</url>
-    <content><![CDATA[<blockquote>
-<p>注意使用V3版本，V4版本收费！</p>
-<p>所以升级V3版本即可，不要升级到V4版本！不要升级到V4版本！不要升级到V4版本！</p>
-</blockquote>
-<ul>
-<li><strong>Plex</strong>是一款很好用的个人媒体中心软件，但是因为国内网络的原因，使用默认的TMDB刮削器挂出来的效果并不好，要么就是影片信息不正确，要么就是海报不正常显示，实在让人头疼。</li>
-<li><strong>tinyMediaManager</strong>是一款电影信息刮削和整理的软件，正好可以和plex配合，完美的解决这一问题。tinyMediaManager在刮削影片的过程中会把影片的海报、演员表、背景图片等等都保存到影片所在文件夹，自动生成电影的nfo信息文件，并对文件和文件夹进行重新命名的操作。在plex设置刮削代理的时候，需要用一款插件可以直接读取nfo的信息，完成刮削，下面把使用方法分享给大家，</li>
-</ul>
-<h2 id="下载和安装tinyMediaManager"><a class="header-anchor" href="#下载和安装tinyMediaManager"></a><strong>下载和安装tinyMediaManager</strong></h2>
-<p><strong>官网下载地址：<a href="www.tinymediamanager.org/download/">https://www.tinymediamanager.org/download/</a></strong></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181048.jpeg" alt=""></p>
-<h3 id="tmm下载"><a class="header-anchor" href="#tmm下载"></a>tmm下载</h3>
-<p><strong>下载后直接解压文件夹</strong></p>
-<p>客户端需要java支持，先在电脑安装java</p>
-<p>客户端下载后是一个压缩包，解压之后就可以用</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181054.jpeg" alt=""></p>
-<p><strong>解压之后打开tinyMediaManager.exe</strong></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181101.png" alt="tmm目录"></p>
-<h2 id="TMM设置"><a class="header-anchor" href="#TMM设置"></a>TMM设置</h2>
-<h3 id="TMM代理设置"><a class="header-anchor" href="#TMM代理设置"></a>TMM代理设置</h3>
-<blockquote>
-<p>重要：很多源都需要代理才能访问。这里正确的配置才能正确的刮削！</p>
-<p>可以调整这里使用的内存，大内存可以极大加速刮削速度。</p>
-</blockquote>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011211402.png" alt=""></p>
-<h2 id="电影刮削设置"><a class="header-anchor" href="#电影刮削设置"></a>电影刮削设置</h2>
-<p><strong>进行相关设置。Tmm可以对电影和电视剧的刮削进行分别设置，打开设置后选择电影选项，可以选择分级标准、自动重命名等选项。</strong></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181337.png" alt=""></p>
-<p>电影信息选项</p>
-<p><strong>点击侧边栏媒体库目录，添加电影目录</strong></p>
-<p><strong>刮削器设置</strong></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181107.jpeg" alt=""></p>
-<p>选择电影刮削器</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181107.png" alt=""></p>
-<p>刮削器选项</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181114.png" alt=""></p>
-<p>nfo选项，建议选择生成两种命名放视的nfo</p>
-<p><strong>图片刮削器选择全选，图片文件名建议两边都选上，会分别生成两组命名格式不同的图片，为了保证plex能读取</strong></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181331.png" alt=""></p>
-<p>图片命名选项</p>
-<p>Tmm还可以自动下载预告片，字幕。字幕下载时可以输入opensubtitles账户</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181115.png" alt=""></p>
-<p>字幕下载选项</p>
-<p><strong>重命名规则</strong></p>
-<p>这里重点讲一下重命名规则，刮削完后可以选择对电影文件和文件夹进行重命名，可能对于pt用户重命名可能会影响资源上传，可以不进行重命名操作。</p>
-<p>一般情况下电影刮削出来的信息，title是电影的中文标题名称，originaltitle是电影的原标题名称，一般是英文名称。软件默认的设置是文件和文件夹都命名成title，也就是中文标题，但是我发现这样在后期使用的时候有弊端。英文电影在检索字幕时会用文件名来检索，而用中文名称很多情况下检索不出来，所以这里把文件的命名规则改一下，改成originaltitle，并去掉年份信息的括号，中间连接符改成点，文件名设置成<img src="https://math.now.sh?inline=%7Boriginaltitle%7D" style="filter: opacity(90%);transform:scale(0.85);text-align:center;display:inline-block;margin: 0;"/>{- ,edition,}.<img src="https://math.now.sh?inline=%7Byear%7D." style="filter: opacity(90%);transform:scale(0.85);text-align:center;display:inline-block;margin: 0;"/>{videoFormat}.${audioCodec}的格式。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181121.png" alt=""></p>
-<p>电影文件重命名选项</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181127.png" alt=""></p>
-<p>刮削完的文件夹内文件信息</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181323.png" alt=""></p>
-<p>刮削完的电影文件夹目录</p>
-<p><strong>电视节目刮削设置类似，如果挂不出来可以用the tvdb来刮削。</strong></p>
-<p><strong>tmm有时候会出现网络不稳定，刮不到的情况，可以修改host解决</strong></p>
-<p>改host 在host文件最后加一行13.224.161.90 <a href="https://link.zhihu.com/?target=http%3A//api.themoviedb.org">http://api.themoviedb.org</a></p>
-<p><strong>退出设置，开始刮削</strong></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181317.png" alt=""></p>
-<p>更新电影源</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181128.jpeg" alt=""></p>
-<p>选中要刮削的电影自动匹配</p>
-<h3 id="电影手动刮削"><a class="header-anchor" href="#电影手动刮削"></a>电影手动刮削</h3>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011183942.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011184131.png" alt=""></p>
-<h2 id="电视剧-动画手动刮削"><a class="header-anchor" href="#电视剧-动画手动刮削"></a>电视剧&amp;动画手动刮削</h2>
-<h3 id="电视剧元数据刮削"><a class="header-anchor" href="#电视剧元数据刮削"></a>电视剧元数据刮削</h3>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011184909.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011185747.png" alt=""></p>
-<h3 id="季和集元数据刮削前整理"><a class="header-anchor" href="#季和集元数据刮削前整理"></a>季和集元数据刮削前整理</h3>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011185049.png" alt=""></p>
-<h3 id="刮削季元素"><a class="header-anchor" href="#刮削季元素"></a>刮削季元素</h3>
-<p>整理好正确的季和集之后，才能正确的刮削季元素</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011185146.png" alt=""></p>
-<h3 id="TMM整理完效果"><a class="header-anchor" href="#TMM整理完效果"></a>TMM整理完效果</h3>
-<blockquote>
-<p>这里用海贼王做展示，一个季和集都特别多的剧。</p>
-</blockquote>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011185448.png" alt=""></p>
-<h2 id="TMM目录重命名整理"><a class="header-anchor" href="#TMM目录重命名整理"></a>TMM目录重命名整理</h2>
-<blockquote>
-<p>刮削完后，可以重命名视频文件，并进行目录整理。</p>
-</blockquote>
-<p>方法1</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181133.jpeg" alt=""></p>
-<p>方法2</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011184315.png" alt=""></p>
-<p>等所有电影的信息刮削完后，选择重命名和清理，这样就完成了刮削的操作。以后下载了新电影，直接打开tmm,更新源之后直接选择搜索未刮削过的电影完成刮削。刮削出来的信息kodi，emby等软件也都能用。</p>
-<h2 id="Plex设置"><a class="header-anchor" href="#Plex设置"></a>Plex设置</h2>
-<h3 id="plex插件的安装和设置"><a class="header-anchor" href="#plex插件的安装和设置"></a><strong>plex插件的安装和设置</strong></h3>
-<p><strong>下载plex的插件</strong></p>
-<p>插件XBMCnfoMoviesImporter和XBMCnfoTVImporter分别是刮削电影和电视剧的插件</p>
-<p>下载地址：<a href="https%3A//github.com/gboudreau/XBMCnfoMoviesImporter.bundle">https://github.com/gboudreau/XBMCnfoMoviesImporter.bundle</a></p>
-<p>如果不能下载的话可以联系我获取，还有几个很好用的plex插件</p>
-<p>下载完插件后就需要把插件解压到plex的插件目录：C:\Users\用户名\AppData\Local\Plex Media Server\Plug-ins</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181134.png" alt=""></p>
-<p>plex插件目录</p>
-<p>注意解压后要把文件夹名后边的master去掉。</p>
-<p><strong>plex代理设置</strong></p>
-<p>Plex的代理设置就是选择刮削电影所用的刮削器及优先级。</p>
-<p>装好插件后重启plex，进行plex的设置。在代理设置中选择XBMCnfoMoviesImporter，把它的优先级调到最高，第二个可以设置成字幕插件。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181140.jpeg" alt=""></p>
-<p><strong>设置电影资料库的刮削器代理</strong></p>
-<p>点击设置界面下方管理里边的资料库，选择电影资料夹的高级设置，设置如下</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181140.png" alt=""><br>
-<img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181146.png" alt=""></p>
-<p>plex代理设置</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181152.png" alt=""></p>
-<p><strong>刷新电影源数据资料</strong></p>
-<p>设置完成后就可以在plex主页对电影文件夹刷新元数据了。等待刷新完后就可以载入所有的电影信息了。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181152.jpeg" alt=""></p>
-<p>管理资料库-刷新电影元数据</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181153.jpeg" alt=""></p>
-<p>更新后的电影信息</p>
-<p>采用类似的设置，电视剧信息也能刮削。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181159.jpeg" alt=""></p>
-<p>电视剧更新后的信息</p>
-<h2 id="Emby设置"><a class="header-anchor" href="#Emby设置"></a>Emby设置</h2>
-<blockquote>
-<p>Emby内置刮削工具，但是速度较慢。下面设置基于外部刮削工具TMM，所以没有勾选Emby刮削源！</p>
-</blockquote>
-<p>最终效果演示</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011190035.png" alt="最终效果"></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011190347.png" alt=""></p>
-<h3 id="开始设置"><a class="header-anchor" href="#开始设置"></a>开始设置</h3>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011181946.png" alt=""></p>
-<h3 id="新增媒体库"><a class="header-anchor" href="#新增媒体库"></a>新增媒体库</h3>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011182142.png" alt=""></p>
-<h3 id="已有媒体库属性设置"><a class="header-anchor" href="#已有媒体库属性设置"></a>已有媒体库属性设置</h3>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011182244.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011182350.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011183115.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011183157.png" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011183336.png" alt=""></p>
-<h3 id="Emby字幕设置"><a class="header-anchor" href="#Emby字幕设置"></a>Emby字幕设置</h3>
-<p>字幕下载设置，字幕下载工具见后面的[字幕下载]章节</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011182554.png" alt=""></p>
-<h2 id="字幕下载"><a class="header-anchor" href="#字幕下载"></a><strong>字幕下载</strong></h2>
-<p>想要较好的自动下载字幕，最好用前面介绍的tmm刮削改名之后再使用下面工具。</p>
-<h3 id="subfinder-自动下载字幕"><a class="header-anchor" href="#subfinder-自动下载字幕"></a>subfinder 自动下载字幕</h3>
-<ul>
-<li>Docker： <a target="_blank" rel="noopener" href="https://hub.docker.com/r/superng6/subfinder">superng6/subfinder</a></li>
-</ul>
-<p>下载完成，刮削后的目录，挂载到subfinder的media目录，就会自动下载字幕。</p>
-<p>字幕下载对电影，英文剧集支持较好。对于一些tv，动画手动下载字幕会更好一些。</p>
-<p>注意：官方的配置文件有问题，时效问题。修改URL到最新即可。</p>
-<h3 id="chinesesubfinder"><a class="header-anchor" href="#chinesesubfinder"></a>chinesesubfinder</h3>
-<ul>
-<li>Docker： <a target="_blank" rel="noopener" href="https://hub.docker.com/r/allanpk716/chinesesubfinder">allanpk716/chinesesubfinder</a></li>
-<li>新开发的中文字幕查找工具，上面那个很久没更新了，这个刚出来。使用nfo里面刮削出来的文件名来匹配字幕。所以就原理来说，这个字幕匹配更准确。</li>
-</ul>
-<h3 id="bazarr"><a class="header-anchor" href="#bazarr"></a>bazarr</h3>
-<ul>
-<li>Docker：<a target="_blank" rel="noopener" href="https://hub.docker.com/r/linuxserver/bazarr">linuxserver/bazarr</a></li>
-<li>字幕下载管理，配合sonarr, radarr 使用效果更好。对于英文剧集命名规范的支持较好，比如<code>[name]S01E01</code></li>
-</ul>
-<h2 id="参考"><a class="header-anchor" href="#参考"></a>参考</h2>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/112167546?from_voters_page=true">利用tinyMediaManager刮削影片，解决家用nas软件plex电影墙的问题</a></li>
-</ul>
-<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
-      <categories>
-        <category>video</category>
-      </categories>
-      <tags>
-        <tag>刮削</tag>
-        <tag>tmm</tag>
-        <tag>字幕</tag>
-        <tag>emby</tag>
-        <tag>plex</tag>
       </tags>
   </entry>
   <entry>
