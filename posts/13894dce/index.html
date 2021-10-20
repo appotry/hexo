@@ -1252,14 +1252,14 @@
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    7.6k
+                    7.8k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    30 分
+                    32 分
                 </div>
                 
 
@@ -1293,7 +1293,7 @@
 <p><strong>原创声明警告</strong>，文章<strong>禁止转载</strong>，禁止发布到其它任何网站，可以接受约稿。</p>
 </li>
 </ul>
-<h2 id="前言："><a class="header-anchor" href="#前言："></a>前言：</h2>
+<h2 id="前言：">0.1. 前言：</h2>
 <p>​    本文通过分析海思文档和代码，把海思SDK的MPI和UNF构架大概实现思想和构架进行了简略的分析。着重分析了内存管理，底层功能如何实现。</p>
 <p>​    前面章节简要分析了NVR芯片MPI构架及其内存管理机制，后面着重详细分析了3798M底层模块api和drv实现的细节过程及其方法流程。</p>
 <p>​    本文前面简略分析了DVR，MPI构架的大体实现机制。后面就具体分析3798M UNF构架的实现。</p>
@@ -1301,10 +1301,10 @@
 <p>1: 应用层，驱动层的实现框架，使用source insight查看代码并着重分析了avplay等几个模块。</p>
 <p>2：静态分析函数调用。使用cflow，dot工具生成调用关系图</p>
 <p>3：动态追踪运行过程。Ltrace, strace, valgrind分析函数调用，perf动态分析内核调用。</p>
-<h2 id="1-Hi35xx系列芯片MPP构架"><a class="header-anchor" href="#1-Hi35xx系列芯片MPP构架"></a>1:Hi35xx系列芯片MPP构架</h2>
-<h2 id="1-1-概述"><a class="header-anchor" href="#1-1-概述"></a>1.1 概述</h2>
+<h2 id="1-Hi35xx系列芯片MPP构架">0.2. 1:Hi35xx系列芯片MPP构架</h2>
+<h2 id="1-1-概述">0.3. 1.1 概述</h2>
 <p>海思提供的媒体处理软件平台(Media Process Platform,简称 MPP)，可支持应用软件快速开发。该平台对应用软件屏蔽了芯片相关的复杂的底层处理，并对应用软件直接提供MPI（MPP Programe Interface）接口完成相应功能。该平台支持应用软件快速开发以下功能：输入视频捕获、H.264/MJPEG/JPEG/MPEG4 编码、H264/H.265/VC1/MPEG4/MPEG2/AVS 解码、视频输出显示、视频图像前处理（包括去噪、增强、锐化、Deinterlace） 、编码码流叠加 OSD、视频侦测分析、智能分析、音频捕获及输出、音频编解码等功能。</p>
-<h2 id="1-2-整体软硬件构架"><a class="header-anchor" href="#1-2-整体软硬件构架"></a>1.2 整体软硬件构架</h2>
+<h2 id="1-2-整体软硬件构架">0.4. 1.2 整体软硬件构架</h2>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730160509.png" alt></p>
 <p>MPP 平台支持的典型的系统层次如上图所示，主要分为以下层次：</p>
 <p><strong>硬件层</strong></p>
@@ -1319,7 +1319,7 @@
 <p>包括 GMAC、SDIO、I2C、USB、SSP 等驱动。</p>
 <p><strong>应用层</strong></p>
 <p>基于海思媒体处理平台及其他驱动，由用户开发的应用软件系统。</p>
-<h2 id="1-3-海思媒体处理平台架构"><a class="header-anchor" href="#1-3-海思媒体处理平台架构"></a>1.3 海思媒体处理平台架构</h2>
+<h2 id="1-3-海思媒体处理平台架构">0.5. 1.3 海思媒体处理平台架构</h2>
 <p>海思媒体处理平台的主要内部处理流程如上图所示，主要分为视频输入（VI） 、视频处理（VPSS） 、视频编码（VENC） 、视频解码（VDEC） 、视频输出(VO)、视频侦测分析(VDA)、音频输入(AI)、音频输出(AO)、音频编码（AENC） 、音频解码（ADEC） 、区域管理（REGION）等模块。主要的处理流程介绍如下</p>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730160451.png" alt></p>
 <ul>
@@ -1355,7 +1355,7 @@ VDA 模块接收 VI 的输出图像，并进行移动侦测和遮挡侦测，最
 <p>用户从网络或外围存储设备获取的音频码流可直接送给 ADEC 模块，ADEC 支持</p>
 </li>
 </ul>
-<h2 id="1-4-MMZ与模块绑定"><a class="header-anchor" href="#1-4-MMZ与模块绑定"></a>1.4 MMZ与模块绑定</h2>
+<h2 id="1-4-MMZ与模块绑定">0.6. 1.4 MMZ与模块绑定</h2>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730160438.png" alt></p>
 <p>MPP 提供系统绑定接口（HI_MPI_SYS_Bind） ，即通过数据接收者绑定数据源来建立</p>
 <p>两者之间的关联关系（只允许数据接收者绑定数据源） 。绑定后，数据源生成的数据将</p>
@@ -1374,7 +1374,7 @@ VDA 模块接收 VI 的输出图像，并进行移动侦测和遮挡侦测，最
    448M    <span class="token operator">|</span>    MMZ   <span class="token operator">|</span>                                                
            <span class="token operator">|</span>          <span class="token operator">|</span>                                                
 -----------<span class="token operator">|</span>----------<span class="token operator">|</span>  0xA0000000   <span class="token comment"># Memory managed by MMZ block jpeg.                      </span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="1-5-HiMPP-支持的绑定关系"><a class="header-anchor" href="#1-5-HiMPP-支持的绑定关系"></a>1.5 HiMPP 支持的绑定关系</h2>
+<h2 id="1-5-HiMPP-支持的绑定关系">0.7. 1.5 HiMPP 支持的绑定关系</h2>
 <table>
 <thead>
 <tr>
@@ -1469,7 +1469,7 @@ VDA 模块接收 VI 的输出图像，并进行移动侦测和遮挡侦测，最
 </tr>
 </tbody>
 </table>
-<h2 id="1-6-函数约定说明"><a class="header-anchor" href="#1-6-函数约定说明"></a>1.6 函数约定说明</h2>
+<h2 id="1-6-函数约定说明">0.8. 1.6 函数约定说明</h2>
 <ul>
 <li>
 <p>Open/Close<br>
@@ -1503,22 +1503,22 @@ Acquire/Release 用来从某个模块获取数据。</p>
 </ul>
 <p>Get/Put和Acquire/Release推荐成对使用</p>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730155911.png" alt></p>
-<h2 id="1-7-MPP优缺点"><a class="header-anchor" href="#1-7-MPP优缺点"></a>1.7 MPP优缺点</h2>
-<h3 id="1-7-1-MPP优点"><a class="header-anchor" href="#1-7-1-MPP优点"></a>1.7.1 MPP优点</h3>
+<h2 id="1-7-MPP优缺点">0.9. 1.7 MPP优缺点</h2>
+<h3 id="1-7-1-MPP优点">0.9.1. 1.7.1 MPP优点</h3>
 <p>​    内存VB管理和模块绑定子系统，proc运行时调试信息是MPP构架节约用户时间最大的设计。</p>
 <p>​    大部分外围接口都封装好，用户调用接口直接使用，快速，方便。</p>
-<h3 id="1-7-2-MPP缺点"><a class="header-anchor" href="#1-7-2-MPP缺点"></a>1.7.2 MPP缺点</h3>
+<h3 id="1-7-2-MPP缺点">0.9.2. 1.7.2 MPP缺点</h3>
 <p>​    没有相应子系统的源代码。出了问题，有bug必须需要海思查看，解决。</p>
 <p>​    MPI接口和标准linux接口差异非常大，构架也不一样。有问题需要找海思。中间时间成本。</p>
 <p>不利于研发技术积累。</p>
-<h2 id="2-MPP和UNF对比"><a class="header-anchor" href="#2-MPP和UNF对比"></a>2:  MPP和UNF对比</h2>
+<h2 id="2-MPP和UNF对比">0.10. 2:  MPP和UNF对比</h2>
 <p>从函数命名，参数，使用方法来看。UNF和MPP分开比较早，UNF构架在上面函数约定说明基础上的MPI接口封装了一层，UNF-&gt;MPI调用，UNF开发支持更多的模块接口。MPP的模块接口比较固定，比UNF少得多，增强了MMZ内存，VB管理功能，模块绑定功能。</p>
 <p>MPP由HI_MPI_SYS_Bind来绑定两个模块，而UNF还是使用Hi_XXX_Attach来绑定两个模块。</p>
 <p>MPP内存管理MMZ，VB也比UNF更细致，强大。</p>
 <p>UNF支持更多的外设模块。如TUNER（广播电视），CIPHER（芯片内部加密），Subtitle（字幕），PDM（低功耗），SCI（智能卡），GPU等。</p>
 <p>UNF开源。在一些模块的实现中，也使用了一些开源项目，如FFmpeg，Alsa，wpa_supplicant等。</p>
-<h2 id="3-3798芯片UNF处理构架"><a class="header-anchor" href="#3-3798芯片UNF处理构架"></a>3:  3798芯片UNF处理构架</h2>
-<h2 id="3-1-应用架构"><a class="header-anchor" href="#3-1-应用架构"></a>3.1 应用架构</h2>
+<h2 id="3-3798芯片UNF处理构架">0.11. 3:  3798芯片UNF处理构架</h2>
+<h2 id="3-1-应用架构">0.12. 3.1 应用架构</h2>
 <p>海思媒体处理平台（ MSP）实现了对海思高清机顶盒解决方案处理器中媒体、图形以<br>
 及外设的屏蔽和封装，对应用软件直接提供 API（ Application Program Interface）接口<br>
 完成相应功能。典型的应用架构如下图所示</p>
@@ -1543,7 +1543,7 @@ Acquire/Release 用来从某个模块获取数据。</p>
 <p>处理器各模块的硬件抽象层。</p>
 </li>
 </ul>
-<h2 id="3-2-3798SDK-概览（功能介绍）"><a class="header-anchor" href="#3-2-3798SDK-概览（功能介绍）"></a>3.2 3798SDK 概览（功能介绍）</h2>
+<h2 id="3-2-3798SDK-概览（功能介绍）">0.13. 3.2 3798SDK 概览（功能介绍）</h2>
 <p>媒体处理平台（ MSP）中所有模块按照功能可以分为媒体处理，图形处理，外设处理 3<br>
 类：</p>
 <ul>
@@ -1561,15 +1561,15 @@ ADEC、 AENC、 VI、 AI</p>
 <p>Cipher、 OTP、 PMOC、 Frontend、 I2C、 SCI、 KEYLED、 GPIO、 IR、 WDG、 C51</p>
 </li>
 </ul>
-<h2 id="3-3-3798内存管理"><a class="header-anchor" href="#3-3-3798内存管理"></a>3.3 3798内存管理</h2>
-<h3 id="3-3-1-Mmz内存"><a class="header-anchor" href="#3-3-1-Mmz内存"></a>3.3.1 Mmz内存</h3>
+<h2 id="3-3-3798内存管理">0.14. 3.3 3798内存管理</h2>
+<h3 id="3-3-1-Mmz内存">0.14.1. 3.3.1 Mmz内存</h3>
 <p>3798的mmz内存在uboot bootargs环境变量中分配，在内核中大块连续内存使用dma_alloc_from_contiguous（drv/mmz/drv_media_mem_v2.c）来分配内存， 小块内存使用kmalloc分配，并且使用内核链表标记管理。和应用层交互使用mamp，umamp，并使用内核链表管理内存。这点和35xx DVR芯片有很大区别，DVR芯片模块内存和linux内核使用内存不再一个地方，应该是通过物理地址往虚拟地址映射来使用的。</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># cat /proc/cmdline</span>
 <span class="token assign-left variable">mem</span><span class="token operator">=</span>1G <span class="token assign-left variable">console</span><span class="token operator">=</span>ttyAMA0,115200 <span class="token assign-left variable">root</span><span class="token operator">=</span>/dev/romblock3 <span class="token assign-left variable">rootfstype</span><span class="token operator">=</span>squashfs <span class="token assign-left variable">mtdparts</span><span class="token operator">=</span>hinand:5M<span class="token punctuation">(</span>boot<span class="token punctuation">)</span>,1M<span class="token punctuation">(</span>baseparam<span class="token punctuation">)</span>,7M<span class="token punctuation">(</span>kernel<span class="token punctuation">)</span>,18M<span class="token punctuation">(</span>rootfs<span class="token punctuation">)</span>,64M<span class="token punctuation">(</span>appfs<span class="token punctuation">)</span>,16M<span class="token punctuation">(</span>qte<span class="token punctuation">)</span>,4M<span class="token punctuation">(</span>config<span class="token punctuation">)</span>,12M<span class="token punctuation">(</span>log<span class="token punctuation">)</span>,1M<span class="token punctuation">(</span>logo<span class="token punctuation">)</span> <span class="token assign-left variable">mmz</span><span class="token operator">=</span>ddr,0,0,500M<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 <p>具体就是在bootargs中配置mem=1G mmz=ddr,0,0,435M</p>
 <p>查看内存使用情况跟监控相同，通过cat /proc/media-mem</p>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730155600.png" alt></p>
-<h3 id="3-3-2-解码vid内存"><a class="header-anchor" href="#3-3-2-解码vid内存"></a>3.3.2 解码vid内存</h3>
+<h3 id="3-3-2-解码vid内存">0.14.2. 3.3.2 解码vid内存</h3>
 <p>关于码流解码过程中视频缓冲buffer u32VidBufSize配置：</p>
 <p>创建avplay时，可以指定视频es buf大小，参考如下代码</p>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c">Ret <span class="token operator">=</span> <span class="token function">HI_UNF_AVPLAY_GetDefaultConfig</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>AvplayAttr<span class="token punctuation">,</span> HI_UNF_AVPLAY_STREAM_TYPE_ES<span class="token punctuation">)</span><span class="token punctuation">;</span>
@@ -1577,13 +1577,13 @@ AvplayAttr<span class="token punctuation">.</span>stStreamAttr<span class="token
 Ret <span class="token operator">|=</span> <span class="token function">HI_UNF_AVPLAY_Create</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>AvplayAttr<span class="token punctuation">,</span> <span class="token operator">&amp;</span>hAvplay<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 <p>Es buf的作用存储码流原始es流。</p>
 <p>这个buffer的大小跟码流分辨率、码率都有关系，一般情况下，D1/720P/1080P/4K 码流的配置为 2M/3M/5M/16M 即可，特殊码流除外。</p>
-<h2 id="3-4-3798模块"><a class="header-anchor" href="#3-4-3798模块"></a>3.4 3798模块</h2>
-<h3 id="DEMUX："><a class="header-anchor" href="#DEMUX："></a>DEMUX：</h3>
+<h2 id="3-4-3798模块">0.15. 3.4 3798模块</h2>
+<h3 id="DEMUX：">0.15.1. DEMUX：</h3>
 <p>​	数据输入模块。IF，TSI，RAM。</p>
 <p>​	NVR使用的是RAM接口输入ES码流。</p>
-<h3 id="VI"><a class="header-anchor" href="#VI"></a>VI:</h3>
+<h3 id="VI">0.15.2. VI:</h3>
 <p>虚拟VI</p>
-<h3 id="VDEC"><a class="header-anchor" href="#VDEC"></a>VDEC</h3>
+<h3 id="VDEC">0.15.3. VDEC</h3>
 <p>​	解码器模块提供一组函数指针，供解码使用。目前有264，mpeg4两个。</p>
 <p>视频解码的简单流程是：<br>
 步骤 1 VDEC 从 Demux 或 ES buffer 获取 ES 数据送 Firmware 进行解码（ Firmware: StreamInput(VDEC-&gt;Firmware)）。<br>
@@ -1591,10 +1591,10 @@ Ret <span class="token operator">|=</span> <span class="token function">HI_UNF_A
 步骤 3 VDEC 从帧 buffer 中获取（ Firmware: Frame Output(Firmware-&gt;VDEC)）视频帧放入其帧队列中。<br>
 步骤 4 VPSS 在线程中从 VDEC 的帧队列中取帧做解码后处理（ Frame Output(VDEC-&gt;VPSS)）。<br>
 步骤 5 AVPLAY 向 VDEC 获取视频帧， VDEC 从 VPSS 获取视频帧返回给 AVPLAY。</p>
-<h3 id="SYNC："><a class="header-anchor" href="#SYNC："></a>SYNC：</h3>
+<h3 id="SYNC：">0.15.4. SYNC：</h3>
 <p>音视频同步工具</p>
-<h3 id="DISPLAY：显示设备"><a class="header-anchor" href="#DISPLAY：显示设备"></a>DISPLAY：显示设备</h3>
-<h3 id="WINDOW：显示通道"><a class="header-anchor" href="#WINDOW：显示通道"></a>WINDOW：显示通道</h3>
+<h3 id="DISPLAY：显示设备">0.15.5. DISPLAY：显示设备</h3>
+<h3 id="WINDOW：显示通道">0.15.6. WINDOW：显示通道</h3>
 <p>msp 目录下的“ windowXXYY”节点的中的 XX 为显示通道的编号， YY 为 window 序号。比如 window0100， bit[15:8]的 01 表示该 window 基于 DISPLAY1 创建， bit[7:0]的00 表示 window 序号为 0。有支持3D显示</p>
 <p>DISP（ Display）模块接收 WINDOW 提供的视频图像、 Frame Buffer 提供的图形画<br>
 面，进行图像叠加处理和图像色彩调节，并将叠加后图像通过多种视频输出端口输出<br>
@@ -1608,8 +1608,8 @@ Ret <span class="token operator">|=</span> <span class="token function">HI_UNF_A
 </ul>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730155307.png" alt></p>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730155256.png" alt></p>
-<h3 id="SO（-Subtitle-Output）"><a class="header-anchor" href="#SO（-Subtitle-Output）"></a>SO（ Subtitle Output）</h3>
-<h3 id="PDM"><a class="header-anchor" href="#PDM"></a>PDM</h3>
+<h3 id="SO（-Subtitle-Output）">0.15.7. SO（ Subtitle Output）</h3>
+<h3 id="PDM">0.15.8. PDM</h3>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730155248.png" alt></p>
 <p>PDM(Product Data Manager)模块用于管理与产品相关的数据，包括基本参数、开机画<br>
 面参数及数据、瞬播参数及数据的管理</p>
@@ -1625,17 +1625,17 @@ SEC 数据、 PES 数据和 TS 数据进行处理。 AVPLAY 获取音频数据�
 <p>AVPLAY 主要依赖 ADEC/VDEC/DEMUX 等模块，其向应用或中间件播放器提供基本<br>
 的播放业务相关接口。</p>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730155202.png" alt></p>
-<h2 id="3-5-3798和NVR模块使用方面区别："><a class="header-anchor" href="#3-5-3798和NVR模块使用方面区别："></a>3.5 3798和NVR模块使用方面区别：</h2>
+<h2 id="3-5-3798和NVR模块使用方面区别：">0.16. 3.5 3798和NVR模块使用方面区别：</h2>
 <p>3798模块中vpss，sync等模块是其它模块自动创建，自动绑定处理的。这点和NVR系列芯片差别很大，nvr中vi，vpss，vo都需要用户自己绑定，设置属性，而3798中vpss，vo创建，属性设置是在上层模块中自动处理的（少量设置属性上层传递下去）。</p>
 <p>​    简单来说，MPP接口只实现了基本的功能接口，没有封装或很少封装。</p>
 <p>UNF 应用层实现了很多业务接口，对底层驱动进行了多层封装，并且实现了一些常用的业务。</p>
-<h2 id="4-3798代码祥看"><a class="header-anchor" href="#4-3798代码祥看"></a>4: 3798代码祥看</h2>
-<h2 id="4-1-分析方法"><a class="header-anchor" href="#4-1-分析方法"></a>4.1 分析方法</h2>
-<h3 id="4-1-1：查看代码，静态分析应用层，驱动层实现方法"><a class="header-anchor" href="#4-1-1：查看代码，静态分析应用层，驱动层实现方法"></a>4.1.1：查看代码，静态分析应用层，驱动层实现方法</h3>
+<h2 id="4-3798代码祥看">0.17. 4: 3798代码祥看</h2>
+<h2 id="4-1-分析方法">0.18. 4.1 分析方法</h2>
+<h3 id="4-1-1：查看代码，静态分析应用层，驱动层实现方法">0.18.1. 4.1.1：查看代码，静态分析应用层，驱动层实现方法</h3>
 <p>​    使用Source insight分析kernel，msp代码。</p>
-<h3 id="4-1-2：图示静态分析函数调用关系"><a class="header-anchor" href="#4-1-2：图示静态分析函数调用关系"></a>4.1.2：图示静态分析函数调用关系</h3>
+<h3 id="4-1-2：图示静态分析函数调用关系">0.18.2. 4.1.2：图示静态分析函数调用关系</h3>
 <p>​    使用cflow， tree2dotx，和dot生成函数静态调用图。</p>
-<h3 id="4-1-3：图示动态分析函数调用关系：库函数，系统调用，内核调用"><a class="header-anchor" href="#4-1-3：图示动态分析函数调用关系：库函数，系统调用，内核调用"></a>4.1.3：图示动态分析函数调用关系：库函数，系统调用，内核调用</h3>
+<h3 id="4-1-3：图示动态分析函数调用关系：库函数，系统调用，内核调用">0.18.3. 4.1.3：图示动态分析函数调用关系：库函数，系统调用，内核调用</h3>
 <ul>
 <li>​    使用ltrace分析系统库函数</li>
 <li>​    strace分析系统调用流程</li>
@@ -1644,7 +1644,7 @@ SEC 数据、 PES 数据和 TS 数据进行处理。 AVPLAY 获取音频数据�
 </ul>
 <p>这一步实现了valgrind动态分析，其它的几个工具需要交叉编译，TODO。使用Perf可能需要换更新的linux版本。</p>
 <p>其它还有time(大概运行时间)，gconv（覆盖率统计）等分析方式。</p>
-<h2 id="4-2-基础模块：hi-media-hi-mmz-hi-common"><a class="header-anchor" href="#4-2-基础模块：hi-media-hi-mmz-hi-common"></a>4.2 基础模块：hi_media hi_mmz hi_common</h2>
+<h2 id="4-2-基础模块：hi-media-hi-mmz-hi-common">0.19. 4.2 基础模块：hi_media hi_mmz hi_common</h2>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730155123.png" alt></p>
 <p>​    可以从lsmod中很清晰的看出来hi_media hi_mmz hi_common这几个模块的基础地位。hi_media基础模块管理，hi_mmz提供内存管理，hi_common提供proc，log等基础功能，符号导出供其他海思模块使用。</p>
 <p>Common</p>
@@ -1662,7 +1662,7 @@ COMMON 模块现在主要有以下功能：
 </ul>
 </li>
 </ul>
-<h3 id="4-2-1-基本通用模块应用层接口common-api"><a class="header-anchor" href="#4-2-1-基本通用模块应用层接口common-api"></a>4.2.1 基本通用模块应用层接口common/api</h3>
+<h3 id="4-2-1-基本通用模块应用层接口common-api">0.19.1. 4.2.1 基本通用模块应用层接口common/api</h3>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c">HiSTBLinuxFS<span class="token operator">/</span>source<span class="token operator">/</span>common<span class="token operator">/</span>api
 mpi_mem<span class="token punctuation">.</span>c
 MEM_POOL_Init 应用层的内存池，重复利用。
@@ -1686,7 +1686,7 @@ mpi_userproc
  
 注：himedia 相关模块是海思自己实现的内核子系统。有自己实现的总线，驱动，设备模型结构体。也是在标准linux模型基础上封装的。
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h3 id="4-2-2-基本通用模块驱动接口common-dev"><a class="header-anchor" href="#4-2-2-基本通用模块驱动接口common-dev"></a>4.2.2 基本通用模块驱动接口common/dev</h3>
+<h3 id="4-2-2-基本通用模块驱动接口common-dev">0.19.2. 4.2.2 基本通用模块驱动接口common/dev</h3>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c">HiSTBLinuxFS<span class="token operator">/</span>source<span class="token operator">/</span>common<span class="token operator">/</span>dev
 drv_dev_ext_k<span class="token punctuation">.</span>c 重要
 HI_DRV_DEV_Init 所有模块宏定义在这里，注册模块结构体在这里
@@ -1744,7 +1744,7 @@ himedia<span class="token punctuation">.</span>c himedia_bash<span class="token 
     <span class="token punctuation">.</span>open        <span class="token operator">=</span> himedia_open<span class="token punctuation">,</span>
 <span class="token punctuation">&#125;</span><span class="token punctuation">;</span>
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h3 id="设备模型结构体"><a class="header-anchor" href="#设备模型结构体"></a>设备模型结构体</h3>
+<h3 id="设备模型结构体">0.19.3. 设备模型结构体</h3>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c"><span class="token keyword">struct</span> <span class="token class-name">himedia_devobj</span> <span class="token punctuation">&#123;</span>
     PM_BASEDEV_S pdev<span class="token punctuation">;</span>
     <span class="token keyword">char</span> name<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
@@ -1756,7 +1756,7 @@ himedia<span class="token punctuation">.</span>c himedia_bash<span class="token 
     <span class="token keyword">struct</span> <span class="token class-name">device</span>    dev<span class="token punctuation">;</span>
 <span class="token punctuation">&#125;</span>PM_BASEDEV_S<span class="token punctuation">;</span>
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h3 id="海思模块顶层总线himedia-bus"><a class="header-anchor" href="#海思模块顶层总线himedia-bus"></a>海思模块顶层总线himedia_bus</h3>
+<h3 id="海思模块顶层总线himedia-bus">0.19.4. 海思模块顶层总线himedia_bus</h3>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c"><span class="token keyword">struct</span> <span class="token class-name">device</span> himedia_bus <span class="token operator">=</span> <span class="token punctuation">&#123;</span>
          <span class="token punctuation">.</span>init_name        <span class="token operator">=</span> <span class="token string">"himediaBusDev"</span><span class="token punctuation">,</span>
          <span class="token punctuation">.</span>release    <span class="token operator">=</span> himedia_bus_release
@@ -1788,10 +1788,10 @@ himedia<span class="token punctuation">.</span>c himedia_bash<span class="token 
                             <span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">define</span> <span class="token macro-name">HIMEDIA_PM_OPS_PTR</span>     <span class="token expression"><span class="token punctuation">(</span><span class="token operator">&amp;</span>himedia_dev_pm_ops<span class="token punctuation">)</span></span></span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730154854.png" alt></p>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730154845.png" alt></p>
-<h3 id="内核到用户往用户空间写文件调试"><a class="header-anchor" href="#内核到用户往用户空间写文件调试"></a>内核到用户往用户空间写文件调试</h3>
+<h3 id="内核到用户往用户空间写文件调试">0.19.5. 内核到用户往用户空间写文件调试</h3>
 <p>drv_file_ext.c 提供内核空间创建，读写用户空间文件函数，/mnt文件存储路径。提供了内核数据导出到用户空间的方法。</p>
 <p>应该是echo * &gt; /proc/msp/** 这种调试方式的实现方式</p>
-<h3 id="内核log日志"><a class="header-anchor" href="#内核log日志"></a>内核log日志</h3>
+<h3 id="内核log日志">0.19.6. 内核log日志</h3>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c">drv_log_ioctl<span class="token punctuation">.</span>h  打印日志相关。  这里日志位置可选<span class="token number">0</span><span class="token operator">:</span>串口 <span class="token number">1</span><span class="token operator">:</span>网络 <span class="token number">2</span><span class="token operator">:</span>U盘
 <span class="token comment">/*structure of mode log level */</span>
 <span class="token comment">/*CNcomment: 模块打印级别控制信息结构 */</span>
@@ -1832,7 +1832,7 @@ drv_media_mem_v2<span class="token punctuation">.</span>c    实现了cat <span 
 drv_mem_ext<span class="token punctuation">.</span>c 实现了 KMEM_POOL_S 的管理，
  
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h3 id="内核模块管理"><a class="header-anchor" href="#内核模块管理"></a>内核模块管理</h3>
+<h3 id="内核模块管理">0.19.7. 内核模块管理</h3>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c">drv_module_ext<span class="token punctuation">.</span>c
 
 COMMON_DRV_ModInit
@@ -1859,7 +1859,7 @@ drv_media_mem<span class="token punctuation">.</span>c  使用dma_alloc_from_con
 
 HI_DRV_MMZ_Init 这里根据bootargs传递的mmz参数分配内存大小。 mmz分配时的参数：<span class="token operator">&lt;</span>mmz_name<span class="token operator">></span><span class="token punctuation">,</span><span class="token operator">&lt;</span>gfp<span class="token operator">></span><span class="token punctuation">,</span><span class="token operator">&lt;</span>phys_start_addr<span class="token operator">></span><span class="token punctuation">,</span><span class="token operator">&lt;</span>size<span class="token operator">></span><span class="token punctuation">,</span><span class="token operator">&lt;</span>alloc_type<span class="token operator">></span>"<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730154720.png" alt></p>
-<h3 id="内核Proc的实现"><a class="header-anchor" href="#内核Proc的实现"></a>内核Proc的实现</h3>
+<h3 id="内核Proc的实现">0.19.8. 内核Proc的实现</h3>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c">drv_proc_ext<span class="token punctuation">.</span>c
 HI_DRV_PROC_Init 实现cat <span class="token operator">/</span>proc<span class="token operator">/</span>hisi<span class="token operator">/</span>msp<span class="token operator">/</span>
     <span class="token function">proc_mkdir</span><span class="token punctuation">(</span><span class="token string">"graphics"</span><span class="token punctuation">,</span> g_pHisi_proc<span class="token punctuation">)</span><span class="token punctuation">;</span>
@@ -1867,16 +1867,16 @@ HI_DRV_PROC_Init 实现cat <span class="token operator">/</span>proc<span class=
     <span class="token function">proc_symlink</span><span class="token punctuation">(</span><span class="token string">"graphics"</span><span class="token punctuation">,</span> <span class="token constant">NULL</span><span class="token punctuation">,</span> <span class="token string">"hisi/graphics"</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>drv_userproc.c    proc使用红黑树管理目录路径</p>
 <p>​    创建销毁目录，路径在这里实现，具体每一个不同模块的proc文件读写在每个模块内部实现，使用函数指针。</p>
-<h3 id="4-2-3-业务模块应用层通用组件source-component"><a class="header-anchor" href="#4-2-3-业务模块应用层通用组件source-component"></a>4.2.3 业务模块应用层通用组件source/component</h3>
+<h3 id="4-2-3-业务模块应用层通用组件source-component">0.19.9. 4.2.3 业务模块应用层通用组件source/component</h3>
 <p>/home/andy/HiSTBLinuxFS/source/component  <a target="_blank" rel="external nofollow noopener noreferrer" href="http://xn--ciqz3l2zejvhba81ax77b534ada8984d6qek8t.so">这个目录里面很多目录只有.so</a> .a库，没有源代码。</p>
 <p>/source/component/hiplayer 没有源码。</p>
 <p>hi_debug.h   各种调试宏定义，不同级别调试定义</p>
 <p>HI_MALLOC   内存分配使用了内核链表管理</p>
 <p>内存在一个模块内分配，往用户空间传递物理地址，其它模块使用这个物理地址映射到虚拟地址，这样来共享内存</p>
 <p>​    海思这里大多数模块都只提供了编译后的库</p>
-<h2 id="4-3-海思专用组件"><a class="header-anchor" href="#4-3-海思专用组件"></a>4.3 海思专用组件</h2>
-<h3 id="4-3-1-海思MSP模块应用层接口source-msp-api"><a class="header-anchor" href="#4-3-1-海思MSP模块应用层接口source-msp-api"></a>4.3.1 海思MSP模块应用层接口source/msp/api</h3>
-<h4 id="Avplay分析"><a class="header-anchor" href="#Avplay分析"></a>Avplay分析</h4>
+<h2 id="4-3-海思专用组件">0.20. 4.3 海思专用组件</h2>
+<h3 id="4-3-1-海思MSP模块应用层接口source-msp-api">0.20.1. 4.3.1 海思MSP模块应用层接口source/msp/api</h3>
+<h4 id="Avplay分析">0.20.1.1. Avplay分析</h4>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c">HI_MPI_AVPLAY_Create
          AVPLAY_FrcCreate  帧率控制？    
          HI_MPI_SYNC_Create     音视频同步
@@ -1968,8 +1968,8 @@ avplay内部的线程
     <span class="token punctuation">(</span>HI_VOID<span class="token punctuation">)</span><span class="token function">pthread_join</span><span class="token punctuation">(</span>pAvplay<span class="token operator">-></span>AvplayVidDataThdInst<span class="token punctuation">,</span> HI_NULL<span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">endif</span></span>
     <span class="token punctuation">(</span>HI_VOID<span class="token punctuation">)</span><span class="token function">pthread_join</span><span class="token punctuation">(</span>pAvplay<span class="token operator">-></span>AvplayStatThdInst<span class="token punctuation">,</span> HI_NULL<span class="token punctuation">)</span><span class="token punctuation">;</span>          <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h3 id="4-3-2-海思MSP模块驱动层接口source-msp-drv"><a class="header-anchor" href="#4-3-2-海思MSP模块驱动层接口source-msp-drv"></a>4.3.2 海思MSP模块驱动层接口source/msp/drv/</h3>
-<h4 id="VENC"><a class="header-anchor" href="#VENC"></a>VENC</h4>
+<h3 id="4-3-2-海思MSP模块驱动层接口source-msp-drv">0.20.2. 4.3.2 海思MSP模块驱动层接口source/msp/drv/</h3>
+<h4 id="VENC">0.20.2.1. VENC</h4>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730161000.png" alt></p>
 <p>VENC 模块的具体工作原理如上图所示，注意图中褐色箭头，是 VENC 调用到VPSS 模块，来对帧信息做缩放处理后编码的数据流，该处理只用于外部用户送帧的模式。若在绑定情况下出现帧信息分辨率与编码分辨率不匹配， VENC 模块会通知绑定的前级模块进行缩放处理，而不会自行调用 VPSS 模块缩放。</p>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c">VENC_DRV_ModInit
@@ -1987,7 +1987,7 @@ avplay内部的线程
     g_VencRegisterData<span class="token punctuation">.</span>minor  <span class="token operator">=</span> UMAP_MIN_MINOR_VENC<span class="token punctuation">;</span>
     g_VencRegisterData<span class="token punctuation">.</span>owner  <span class="token operator">=</span> THIS_MODULE<span class="token punctuation">;</span>
     g_VencRegisterData<span class="token punctuation">.</span>drvops <span class="token operator">=</span> <span class="token operator">&amp;</span>venc_drvops<span class="token punctuation">;</span>      <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h4 id="avplay"><a class="header-anchor" href="#avplay"></a>avplay</h4>
+<h4 id="avplay">0.20.2.2. avplay</h4>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730154040.png" alt></p>
 <ul>
 <li>AVPLAY 主要由以下三部分组成：
@@ -2000,7 +2000,7 @@ avplay内部的线程
 </ul>
 <p>主要负责响应外部控制命令的执行、状态查询上报、使解码后的帧数据通过同步控制<br>
 模块输出</p>
-<h4 id="avplay初始化分析"><a class="header-anchor" href="#avplay初始化分析"></a>avplay初始化分析</h4>
+<h4 id="avplay初始化分析">0.20.2.3. avplay初始化分析</h4>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c">AVPLAY_DRV_ModInit
 ​    HI_DRV_MODULE_Register
 ​         <span class="token function">HI_DRV_MODULE_Register</span><span class="token punctuation">(</span>HI_ID_AVPLAY<span class="token punctuation">,</span> AVPLAY_NAME<span class="token punctuation">,</span> HI_NULL<span class="token punctuation">)</span><span class="token punctuation">;</span>
@@ -2031,7 +2031,7 @@ avplay内部的线程
   s_umap_devs<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>owner <span class="token operator">=</span> umapd<span class="token operator">-></span>owner<span class="token punctuation">;</span>
   s_umap_devs<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>app_ops <span class="token operator">=</span> umapd<span class="token operator">-></span>fops<span class="token punctuation">;</span>
   s_umap_devs<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>base_ops <span class="token operator">=</span> umapd<span class="token operator">-></span>drvops<span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h4 id="IOCTL实现分析-基于avplay"><a class="header-anchor" href="#IOCTL实现分析-基于avplay"></a>IOCTL实现分析 基于avplay</h4>
+<h4 id="IOCTL实现分析-基于avplay">0.20.2.4. IOCTL实现分析 基于avplay</h4>
 <p>在HI_DRV_DEV_Register<strong>中注册</strong></p>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c"><span class="token keyword">static</span> <span class="token keyword">struct</span> <span class="token class-name">file_operations</span> AVPLAY_FOPS <span class="token operator">=</span>
 <span class="token punctuation">&#123;</span>
@@ -2050,7 +2050,7 @@ AVPLAY_DRV_Ioctl
                                      <span class="token function">HI_DRV_PROC_AddModule</span><span class="token punctuation">(</span>ProcName<span class="token punctuation">,</span> HI_NULL<span class="token punctuation">,</span> HI_NULL<span class="token punctuation">)</span><span class="token punctuation">;</span>                 这里实现了proc目录的生成，下面是读写proc
                                 pProcItem<span class="token operator">-></span>read <span class="token operator">=</span> AVPLAY_ProcRead<span class="token punctuation">;</span>
                                 pProcItem<span class="token operator">-></span>write <span class="token operator">=</span> AVPLAY_ProcWrite<span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h4 id="avplay-多个实例如何找到对应实例"><a class="header-anchor" href="#avplay-多个实例如何找到对应实例"></a>avplay 多个实例如何找到对应实例</h4>
+<h4 id="avplay-多个实例如何找到对应实例">0.20.2.5. avplay 多个实例如何找到对应实例</h4>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c"><span class="token function">AVPLAY_GET_INST_AND_LOCK</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
          AVPLAY_CheckHandle
                    pAvplayUsrAddr<span class="token operator">-></span>AvplayId <span class="token operator">=</span> hAvplay <span class="token operator">&amp;</span> <span class="token number">0xff</span><span class="token punctuation">;</span>
@@ -2059,7 +2059,7 @@ AVPLAY_DRV_Ioctl
 <pre class="line-numbers language-c" data-language="c"><code class="language-c">AVPLAY_Ioctl            
          AVPLAY_CheckId              
                    pAvplayUsrAddr<span class="token operator">-></span>AvplayUsrAddr <span class="token operator">=</span> g_AvplayGlobalState<span class="token punctuation">.</span>AvplayInfo<span class="token punctuation">[</span>pAvplayUsrAddr<span class="token operator">-></span>AvplayId<span class="token punctuation">]</span><span class="token punctuation">.</span>AvplayUsrAddr<span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-<h4 id="VPSS"><a class="header-anchor" href="#VPSS"></a>VPSS</h4>
+<h4 id="VPSS">0.20.2.6. VPSS</h4>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730153749.png" alt></p>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c">    g_VpssRegisterData<span class="token punctuation">.</span>fops   <span class="token operator">=</span> <span class="token operator">&amp;</span>s_VpssFileOps<span class="token punctuation">;</span>
     g_VpssRegisterData<span class="token punctuation">.</span>minor  <span class="token operator">=</span> UMAP_MIN_MINOR_VPSS<span class="token punctuation">;</span>
@@ -2074,10 +2074,10 @@ VPSS_CTRL_Init
                    VPSS_CTRL_ThreadProc
                             VPSS_CTRL_CreateTask           创建任务
                             VPSS_CTRL_StartTask               开始任务<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h4 id="VDEC-v2"><a class="header-anchor" href="#VDEC-v2"></a>VDEC</h4>
+<h4 id="VDEC-v2">0.20.2.7. VDEC</h4>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730153702.png" alt></p>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730153709.png" alt></p>
-<h4 id="Avplay解码ES流过程"><a class="header-anchor" href="#Avplay解码ES流过程"></a>Avplay解码ES流过程</h4>
+<h4 id="Avplay解码ES流过程">0.20.2.8. Avplay解码ES流过程</h4>
 <p>步骤 1 初始化并配置相关设备，如 DISPLAY、 VO、 SOUND、 DEMUX 设备等。<br>
 步骤 2 调用 HI_UNF_AVPLAY_Init 接口初始化 AVPLAY 设备。<br>
 步骤 3 调用 HI_UNF_AVPLAY_GetDefaultConfig 接口获取缺省的 AVPLAY 配置，注意选择HI_UNF_AVPLAY_STREAM_TYPE_ES 模式。<br>
@@ -2097,7 +2097,7 @@ VPSS_CTRL_Init
 步骤 17 关闭相关设备，如 DISPLAY 设备、 VO 设备、 SOUND 设备、 DEMUX 设备和AVPLAY</p>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730164615.svg" alt="HI_MPI_AVPLAY_Create.__avplay_mpi_avplay_c"></p>
 <p>MCE实现了启动过程画面的平滑切换</p>
-<h4 id="IR"><a class="header-anchor" href="#IR"></a>IR</h4>
+<h4 id="IR">0.20.2.9. IR</h4>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730153646.png" alt></p>
 <p>驱动层</p>
 <p>负责完成红外模块的中断处理，在底半部中遍历所有协议并调用 match 函数来判定当前收到的红外帧属于哪种协议。如果没有匹配，则丢弃当前帧。完成最顶层的错误处理：如果当前帧当前时刻还不能被解析，则会等待大约 200ms 之后再次尝试，如果失败，则丢弃当前帧。</p>
@@ -2111,22 +2111,22 @@ VPSS_CTRL_Init
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730153611.png" alt></p>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730153623.png" alt></p>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730153630.png" alt></p>
-<h3 id="4-4-Sample-mosaic分析"><a class="header-anchor" href="#4-4-Sample-mosaic分析"></a>4.4 Sample_mosaic分析</h3>
-<h4 id="应用层调用"><a class="header-anchor" href="#应用层调用"></a>应用层调用</h4>
+<h3 id="4-4-Sample-mosaic分析">0.20.3. 4.4 Sample_mosaic分析</h3>
+<h4 id="应用层调用">0.20.3.1. 应用层调用</h4>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730153315.png" alt></p>
 <p>上图是部分截图，完整大的原图见目录中svg文件</p>
 <p>valgrind --tool=callgrind ./sample_mosaic 1080P.h264 h264</p>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730153400.svg" alt="samplemosaic-callgrind-all"></p>
-<h4 id="系统调用"><a class="header-anchor" href="#系统调用"></a>系统调用</h4>
+<h4 id="系统调用">0.20.3.2. 系统调用</h4>
 <p>Strace分析</p>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/3020210730153300.png" alt></p>
-<h2 id="5-小结："><a class="header-anchor" href="#5-小结："></a>5:小结：</h2>
+<h2 id="5-小结：">0.21. 5:小结：</h2>
 <p>海思MPI驱动其实就是在标准linux驱动基础之上封装了一层，增加了log，proc，内存管理（映射，链表）功能。MPI是在标准linux驱动基础上封装了DVR常用外围逻辑接口，并且统一并简化了接口操作方式，原来各个外围子系统操作方式差别很大，不同实现框架，实现方式使用方法也不一样（如VI，VO，AI/AO，VPSS，如果自己用标准linux子系统实现要复杂得多）。</p>
 <p>应用层MPI接口是在MPI驱动基础上再次封装了一层，封装了驱动的调用，配置等操作，在驱动功能的基础上进一步封装完成了一些简单的业务功能接口，方便了用户的使用。UNF就是在MPI基础上增加了业务逻辑封装，把常用的业务逻辑封装成接口，大大方便用户的应用程序开发。</p>
-<h2 id="5-1-UNF相对标准内核模块区别"><a class="header-anchor" href="#5-1-UNF相对标准内核模块区别"></a>5.1 UNF相对标准内核模块区别</h2>
-<h3 id="5-1-1-Proc读写调试。"><a class="header-anchor" href="#5-1-1-Proc读写调试。"></a>5.1.1 Proc读写调试。</h3>
+<h2 id="5-1-UNF相对标准内核模块区别">0.22. 5.1 UNF相对标准内核模块区别</h2>
+<h3 id="5-1-1-Proc读写调试。">0.22.1. 5.1.1 Proc读写调试。</h3>
 <p>实时查询运行状态，修改设置。通用的proc目录、文件创建销毁有通用接口。读写proc文件在每个内核模块中有单独实现。</p>
-<h3 id="5-1-2-内核空间往应用空间写文件"><a class="header-anchor" href="#5-1-2-内核空间往应用空间写文件"></a>5.1.2 内核空间往应用空间写文件</h3>
+<h3 id="5-1-2-内核空间往应用空间写文件">0.22.2. 5.1.2 内核空间往应用空间写文件</h3>
 <p>方便调试，Dump内核数据到用户控件方便定位Bug。</p>
 <pre class="line-numbers language-c" data-language="c"><code class="language-c">HI_DRV_FILE_Open
 filp_open
@@ -2138,22 +2138,22 @@ HI_DRV_FILE_Write
 ​    pFile<span class="token operator">-></span>f_op<span class="token operator">-></span>write
 HI_DRV_FILE_Lseek
 ​    vfs_llseek<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h3 id="5-1-3Log管理"><a class="header-anchor" href="#5-1-3Log管理"></a>5.1.3Log管理</h3>
+<h3 id="5-1-3Log管理">0.22.3. 5.1.3Log管理</h3>
 <p>日志打印分级，实时修改。如何实现的见前面章节。</p>
-<h3 id="5-1-4内存映射"><a class="header-anchor" href="#5-1-4内存映射"></a>5.1.4内存映射</h3>
+<h3 id="5-1-4内存映射">0.22.4. 5.1.4内存映射</h3>
 <p>物理地址，虚拟地址映射关系管理，小块内存使用kmalloc申请，大块内存使用dma_alloc_from_contiguous申请。</p>
 <p>使用内核链表管理。</p>
 <p>打印到proc，log模块中，实时查看运行状态，内存。</p>
 <p>方便查找，打印。</p>
 <p>在多个内核共享数据也是这样实现的。</p>
-<h2 id="5-2代码分析方法"><a class="header-anchor" href="#5-2代码分析方法"></a>5.2代码分析方法</h2>
-<h3 id="5-2-1-查看代码，静态分析应用层，驱动层实现方法"><a class="header-anchor" href="#5-2-1-查看代码，静态分析应用层，驱动层实现方法"></a>5.2.1 查看代码，静态分析应用层，驱动层实现方法</h3>
-<h3 id="5-2-2-图示静态分析函数调用关系"><a class="header-anchor" href="#5-2-2-图示静态分析函数调用关系"></a>5.2.2 图示静态分析函数调用关系.</h3>
+<h2 id="5-2代码分析方法">0.23. 5.2代码分析方法</h2>
+<h3 id="5-2-1-查看代码，静态分析应用层，驱动层实现方法">0.23.1. 5.2.1 查看代码，静态分析应用层，驱动层实现方法</h3>
+<h3 id="5-2-2-图示静态分析函数调用关系">0.23.2. 5.2.2 图示静态分析函数调用关系.</h3>
 <p>Cflow, dot</p>
-<h3 id="5-2-3-图示动态分析函数调用关系：库函数，系统调用，内核调用"><a class="header-anchor" href="#5-2-3-图示动态分析函数调用关系：库函数，系统调用，内核调用"></a>5.2.3 图示动态分析函数调用关系：库函数，系统调用，内核调用</h3>
+<h3 id="5-2-3-图示动态分析函数调用关系：库函数，系统调用，内核调用">0.23.3. 5.2.3 图示动态分析函数调用关系：库函数，系统调用，内核调用</h3>
 <p>​    Ltrace, strace, valgrind, perf</p>
 <p>具体分析方法，使用工具见前面章节。</p>
-<h2 id="参考文档："><a class="header-anchor" href="#参考文档："></a>参考文档：</h2>
+<h2 id="参考文档：">0.24. 参考文档：</h2>
 <ol>
 <li>03-HMS 开发指南.pdf</li>
 <li>HiSTBAndroidV600R001C00SPC060_cn\document\01-Development Guide</li>
@@ -3038,7 +3038,7 @@ HI_DRV_FILE_Lseek
             |&nbsp;Theme&nbsp;<a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank" rel="external nofollow noopener noreferrer">Matery</a>
             <br>
             
-                &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color">165.6k</span>
+                &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color">169.4k</span>
             
             
             
@@ -3216,11 +3216,6 @@ $(function () {
     </a>
 </div>
 
-
-    <script type="text/javascript">
-        var OriginTitile=document.title,st;
-        document.addEventListener("visibilitychange",function(){document.hidden?(document.title="看不见我🙈~看不见我🙈~",clearTimeout(st)):(document.title="(๑•̀ㅂ•́) ✧被发现了～",st=setTimeout(function(){document.title=OriginTitile},3e3))})
-    </script>
 
     <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.33/libs/materialize/materialize.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.33/libs/masonry/masonry.pkgd.min.js"></script>

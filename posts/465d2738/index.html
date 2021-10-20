@@ -1240,7 +1240,7 @@
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    3.7k
+                    3.8k
                 </div>
                 
 
@@ -1283,12 +1283,12 @@
 <li>漂亮的 <code>dashboard</code> 界面</li>
 <li><code>metrics</code> 的支持，支持对 <code>prometheus</code> 和 <code>k8s</code> 集成</li>
 </ul>
-<h3 id="Introduction"><a class="header-anchor" href="#Introduction"></a>Introduction</h3>
+<h3 id="Introduction">0.0.1. Introduction</h3>
 <p><a target="_blank" rel="external nofollow noopener noreferrer" href="https://www.docker.com/">Docker</a> can be an efficient way to run web applications in production, but you may want to run multiple applications on the same Docker host. In this situation, you’ll need to set up a reverse proxy. This is because you only want to expose ports <code>80</code> and <code>443</code> to the rest of the world.</p>
 <p><a target="_blank" rel="external nofollow noopener noreferrer" href="https://traefik.io/">Traefik</a> is a Docker-aware reverse proxy that includes a monitoring dashboard. Traefik v1 has been widely used for a while, and <a target="_blank" rel="external nofollow noopener noreferrer" href="https://www.digitalocean.com/community/tutorials/how-to-use-traefik-as-a-reverse-proxy-for-docker-containers-on-ubuntu-20-04">you can follow this earlier tutorial to install Traefik v1</a>). But in this tutorial, you’ll install and configure Traefik v2, which includes quite a few differences.</p>
 <p>The biggest difference between Traefik v1 and v2 is that <em>frontends</em> and <em>backends</em> were removed and their combined functionality spread out across <em>routers</em>, <em>middlewares</em>, and <em>services</em>. Previously a backend did the job of making modifications to requests and getting that request to whatever was supposed to handle it. Traefik v2 provides more separation of concerns by introducing middlewares that can modify requests before sending them to a service. Middlewares make it easier to specify a single modification step that might be used by a lot of different routes so that they can be reused (such as HTTP Basic Auth, which you’ll see later). A router can also use many different middlewares.</p>
 <p>In this tutorial you’ll configure Traefik v2 to route requests to two different web application containers: a <a target="_blank" rel="external nofollow noopener noreferrer" href="http://wordpress.org/">Wordpress</a> container and an <a target="_blank" rel="external nofollow noopener noreferrer" href="https://www.adminer.org/">Adminer</a> container, each talking to a <a target="_blank" rel="external nofollow noopener noreferrer" href="https://www.mysql.com/">MySQL</a> database. You’ll configure Traefik to serve everything over HTTPS using <a target="_blank" rel="external nofollow noopener noreferrer" href="https://letsencrypt.org/">Let’s Encrypt</a>.</p>
-<h2 id="Prerequisites"><a class="header-anchor" href="#Prerequisites"></a>Prerequisites</h2>
+<h2 id="Prerequisites">0.1. Prerequisites</h2>
 <p>To complete this tutorial, you will need the following:</p>
 <ul>
 <li><a target="_blank" rel="external nofollow noopener noreferrer" href="https://www.digitalocean.com/products/linux-distribution/ubuntu/">One Ubuntu 20.04 server</a> with a sudo non-root user and a firewall. You can set this up by following our <a target="_blank" rel="external nofollow noopener noreferrer" href="https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-20-04">Ubuntu 20.04 initial server setup guide</a>.</li>
@@ -1296,7 +1296,7 @@
 <li>Docker Compose installed using the instructions from <strong>Step 1</strong> of <a target="_blank" rel="external nofollow noopener noreferrer" href="https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-20-04">How to Install Docker Compose on Ubuntu 20.04</a>.</li>
 <li>A domain and three A records, <code>db-admin.your_domain</code>, <code>blog.your_domain</code> and <code>monitor.your_domain</code>. Each should point to the IP address of your server. You can learn how to point domains to DigitalOcean Droplets by reading through <a target="_blank" rel="external nofollow noopener noreferrer" href="https://www.digitalocean.com/docs/networking/dns/">DigitalOcean’s Domains and DNS documentation</a>. Throughout this tutorial, substitute your domain for <code>your_domain</code> in the configuration files and examples.</li>
 </ul>
-<h2 id="Step-1-—-Configuring-and-Running-Traefik"><a class="header-anchor" href="#Step-1-—-Configuring-and-Running-Traefik"></a>Step 1 — Configuring and Running Traefik</h2>
+<h2 id="Step-1-—-Configuring-and-Running-Traefik">0.2. Step 1 — Configuring and Running Traefik</h2>
 <p>The Traefik project has an <a target="_blank" rel="external nofollow noopener noreferrer" href="https://hub.docker.com/_/traefik">official Docker image</a>, so you will use that to run Traefik in a Docker container.</p>
 <p>But before you get your Traefik container up and running, you need to create a configuration file and set up an encrypted password so you can access the monitoring dashboard.</p>
 <p>You’ll use the <code>htpasswd</code> utility to create this encrypted password. First, install the utility, which is included in the <code>apache2-utils</code> package:</p>
@@ -1418,7 +1418,7 @@
     <span class="token key property">certResolver</span> <span class="token punctuation">=</span> <span class="token string">"lets-encrypt"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>Save the file and exit the editor.</p>
 <p>With these configurations in place, you will now start Traefik.</p>
-<h2 id="Step-2-–-Running-the-Traefik-Container"><a class="header-anchor" href="#Step-2-–-Running-the-Traefik-Container"></a>Step 2 – Running the Traefik Container</h2>
+<h2 id="Step-2-–-Running-the-Traefik-Container">0.3. Step 2 – Running the Traefik Container</h2>
 <p>In this step you will create a Docker network for the proxy to share with containers. You will then access the Traefik dashboard. The Docker network is necessary so that you can use it with applications that are run using Docker Compose.</p>
 <p>Create a new Docker network called <code>web</code>:</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">docker network create web<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
@@ -1451,7 +1451,7 @@
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1420211014200207.png" alt="Empty Traefik dashboard"></p>
 <p>You will notice that there are already some routers and services registered, but those are the ones that come with Traefik and the router configuration that you wrote for the API.</p>
 <p>You now have your Traefik proxy running, and you’ve configured it to work with Docker and monitor other containers. In the next step you will start some containers for Traefik to proxy.</p>
-<h2 id="Step-3-—-Registering-Containers-with-Traefik"><a class="header-anchor" href="#Step-3-—-Registering-Containers-with-Traefik"></a>Step 3 — Registering Containers with Traefik</h2>
+<h2 id="Step-3-—-Registering-Containers-with-Traefik">0.4. Step 3 — Registering Containers with Traefik</h2>
 <p>With the Traefik container running, you’re ready to run applications behind it. Let’s launch the following containers behind Traefik:</p>
 <ol>
 <li>A blog using the <a target="_blank" rel="external nofollow noopener noreferrer" href="https://hub.docker.com/_/wordpress/">official WordPress image</a>.</li>
@@ -1598,11 +1598,11 @@
 <p>Once logged in, you’ll see the Adminer user interface.</p>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1420211014200132.png" alt="Adminer connected to the MySQL database"></p>
 <p>Both sites are now working, and you can use the dashboard at <code>monitor.your_domain</code> to keep an eye on your applications.</p>
-<h2 id="Conclusion"><a class="header-anchor" href="#Conclusion"></a>Conclusion</h2>
+<h2 id="Conclusion">0.5. Conclusion</h2>
 <p>In this tutorial, you configured Traefik v2 to proxy requests to other applications in Docker containers.</p>
 <p>Traefik’s declarative configuration at the application container level makes it easy to configure more services, and there’s no need to restart the <code>traefik</code> container when you add new applications to proxy traffic to since Traefik notices the changes immediately through the Docker socket file it’s monitoring.</p>
 <p>To learn more about what you can do with Traefik v2, head over to <a target="_blank" rel="external nofollow noopener noreferrer" href="https://doc.traefik.io/traefik/">the official Traefik documentation</a>.</p>
-<h2 id="服务集群"><a class="header-anchor" href="#服务集群"></a>服务集群</h2>
+<h2 id="服务集群">0.6. 服务集群</h2>
 <blockquote>
 <p>k8s 太重了,虽然也有 k3s 之类的轻量级 k8s 解决方案，不过我还是选择了原生的 docker swarm。VPS 安装好 Docker 之后，不需要额外安装软件，就可以马上建立集群。</p>
 </blockquote>
@@ -1621,7 +1621,7 @@ docker swarm join-token manager
 <span class="token comment"># 加入集群</span>
 docker swarm <span class="token function">join</span> --token xxx x.x.x.x:xxx --advertise-addr<span class="token operator">=</span>x.x.x.x
 <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="参考："><a class="header-anchor" href="#参考："></a>参考：</h2>
+<h2 id="参考：">0.7. 参考：</h2>
 <ul>
 <li><a target="_blank" rel="external nofollow noopener noreferrer" href="https://www.digitalocean.com/community/tutorials/how-to-use-traefik-v2-as-a-reverse-proxy-for-docker-containers-on-ubuntu-20-04">digitalocean</a></li>
 <li><a target="_blank" rel="external nofollow noopener noreferrer" href="https://shanyue.tech/op/traefik.html">shanyue</a></li>
@@ -2476,7 +2476,7 @@ docker swarm <span class="token function">join</span> --token xxx x.x.x.x:xxx --
             |&nbsp;Theme&nbsp;<a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank" rel="external nofollow noopener noreferrer">Matery</a>
             <br>
             
-                &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color">165.6k</span>
+                &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color">169.4k</span>
             
             
             
@@ -2654,11 +2654,6 @@ $(function () {
     </a>
 </div>
 
-
-    <script type="text/javascript">
-        var OriginTitile=document.title,st;
-        document.addEventListener("visibilitychange",function(){document.hidden?(document.title="看不见我🙈~看不见我🙈~",clearTimeout(st)):(document.title="(๑•̀ㅂ•́) ✧被发现了～",st=setTimeout(function(){document.title=OriginTitile},3e3))})
-    </script>
 
     <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.33/libs/materialize/materialize.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@1.33/libs/masonry/masonry.pkgd.min.js"></script>
