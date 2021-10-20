@@ -1239,7 +1239,7 @@
                 
                 <div class="info-break-policy">
                     <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    5 分
+                    4 分
                 </div>
                 
 
@@ -1265,12 +1265,12 @@
                 <blockquote>
 <p>在PHP+MYSQL架构网站运行过程中，往往会遇到各种性能问题影响，如MySQL、PHP、CPU、磁盘IO、缓存等，其中MySQL瓶颈就是最常见也最难解决的一种影响网站性能的因素；通常，我们会使用redis、memcached等缓存软件来缓存内容，这确实是最优的解决方案之一，但这需要网站程序的支持，然而多数常用网站程序并不支持或者不能完美支持这些缓存软件，今天我们就来谈谈如何通过MySQL自身的配置调整来优化MySQL性能，以缓解MySQL瓶颈问题。</p>
 </blockquote>
-<h2 id="准备：">0.1. 准备：</h2>
+<h2 id="准备："><a class="header-anchor" href="#准备："></a><strong>准备：</strong></h2>
 <blockquote>
 <p>​    1、宝塔Linux面板 正式版 5.2.0+ (2017/09/20发布)  测试版5.2.4+</p>
 <p>​    2、MySQL 5.x</p>
 </blockquote>
-<h3 id="通常MySQL调优我们分以下几部分：">0.1.1. 通常MySQL调优我们分以下几部分：</h3>
+<h3 id="通常MySQL调优我们分以下几部分："><a class="header-anchor" href="#通常MySQL调优我们分以下几部分："></a><strong>通常MySQL调优我们分以下几部分：</strong></h3>
 <blockquote>
 <p>​    1、MySQL配置参数调优 (需要根据网站运行情况调整)</p>
 <p>​    2、数据表索引调优 (效果明显，但通常优秀的开源程序都不需要调整)</p>
@@ -1283,27 +1283,27 @@
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/2720210827205906.png" alt></p>
 <p>很明显，(图1)显示的是MySQL当前的运行状态，(图2)显示的是MySQL主要配置参数</p>
 <p>下面我们就来解读一下这两张图：</p>
-<h3 id="1、活动-峰值连接数">0.1.2. 1、活动/峰值连接数</h3>
+<h3 id="1、活动-峰值连接数"><a class="header-anchor" href="#1、活动-峰值连接数"></a><strong>1、活动/峰值连接数</strong></h3>
 <p>​      (图1)中当前活动的连接为1个，自MySQL服务启动以来，最高连接数为54；当最高连接数接近或等于(图2)中的max_connections时，应适当增加max_connections，需要注意的是，不要一下子增加过多，建议每次增加50，观察一段时间，不够再继续增加。</p>
-<h3 id="2、线程缓存命中率">0.1.3. 2、线程缓存命中率</h3>
+<h3 id="2、线程缓存命中率"><a class="header-anchor" href="#2、线程缓存命中率"></a><strong>2、线程缓存命中率</strong></h3>
 <p>​      (图1)中线程缓存命中率为99.78%，若这个值小于90%，建议适当增加(图2)中的thread_cache_size，建议每次增加8。</p>
-<h3 id="3、索引命中率">0.1.4. 3、索引命中率</h3>
+<h3 id="3、索引命中率"><a class="header-anchor" href="#3、索引命中率"></a><strong>3、索引命中率</strong></h3>
 <p>​      (图1)中索引命中率为99.50%，若这个值小于95%，建议适当增加(图2)中的key_buffer_size，建议每次增加64，需要说明的是，若您的数据库使用的是Innodb引擎，可忽略这个选项</p>
 <p><strong>4、Innodb索引命中率</strong><br>
 (图1)中Innodb索引命中率为100%，若这个值小于95%，建议适当增加(图2)中的innodb_buffer_pool_size，建议每次增加64，需要说明的是，若您的数据库没有使用Innodb引擎，可忽略这个选项</p>
-<h3 id="5、查询缓存命中率">0.1.5. 5、查询缓存命中率</h3>
+<h3 id="5、查询缓存命中率"><a class="header-anchor" href="#5、查询缓存命中率"></a><strong>5、查询缓存命中率</strong></h3>
 <p>​      MySQL查询缓存是个比较受争议的功能，个人建议当你有在使用redis、memcached等缓存软件时，在(图2)中将query_cache_size设为0可以将其关闭，当你没有使用缓存软件，有多余的内存使用，且数据库瓶颈明显存在时，可以尝试开启查询缓存，这是个非常依赖数据表结构及SQL语句优化的功能，若数据表结构和SQL语句都针对查询缓存进行过优化，它的效果还是很不错的。</p>
-<h3 id="6、创建临时表到磁盘">0.1.6. 6、创建临时表到磁盘</h3>
+<h3 id="6、创建临时表到磁盘"><a class="header-anchor" href="#6、创建临时表到磁盘"></a><strong>6、创建临时表到磁盘</strong></h3>
 <p>​      (图1)中创建临时表到磁盘的比例是0.42%，这说明大部分临时表创建到内存了，不会过多增加磁盘IO的开销，建议，当比例大于2%时适当增加(图1)中的tmp_cache_size，建议每次增加32，当比例大于60%时，放弃吧，有些开源程序并没有专门优化过SQL语句，所以在运行过程中会开启大量临时表，加多少缓存都是不够用的。</p>
-<h3 id="7、已打开的表">0.1.7. 7、已打开的表</h3>
+<h3 id="7、已打开的表"><a class="header-anchor" href="#7、已打开的表"></a><strong>7、已打开的表</strong></h3>
 <p>​      当(图1)中的已打开的表接近或等于(图2)中的table_open_cache时，可以适当增加table_open_cache，但若设置过大可能导致您的程序频繁中断MySQL连接，建议在1024以内，最大不要超过2048。</p>
-<h3 id="8、没有使用索引的量、没有使用索引的JOIN量">0.1.8. 8、没有使用索引的量、没有使用索引的JOIN量</h3>
+<h3 id="8、没有使用索引的量、没有使用索引的JOIN量"><a class="header-anchor" href="#8、没有使用索引的量、没有使用索引的JOIN量"></a><strong>8、没有使用索引的量、没有使用索引的JOIN量</strong></h3>
 <p>​      若不为0，就检查下数据表索引吧，其实只要没有疯涨，比如一天增涨几千，一般可以忽略，必竟优化索引还是程序员或DBA去干比较合适。</p>
-<h3 id="9、排序后的合并次数">0.1.9. 9、排序后的合并次数</h3>
+<h3 id="9、排序后的合并次数"><a class="header-anchor" href="#9、排序后的合并次数"></a><strong>9、排序后的合并次数</strong></h3>
 <p>​      如果这个值在缓慢增张，建议适当增加(图2)中的sort_buffer_size，建议每次增加512，但最大不要超过8192，如果这个值一直在疯涨，增加sort_buffer_size也没用，就放弃这个选项吧，这个锅还是给程序开发者背。</p>
-<h3 id="10、锁表次数">0.1.10. 10、锁表次数</h3>
+<h3 id="10、锁表次数"><a class="header-anchor" href="#10、锁表次数"></a><strong>10、锁表次数</strong></h3>
 <p>​      如果服务器CPU开销不大的情况下，疯狂锁表，建议你将所有数据表转换成innodb，记得转换前备份哦。</p>
-<h3 id="11、优化方案">0.1.11. 11、优化方案</h3>
+<h3 id="11、优化方案"><a class="header-anchor" href="#11、优化方案"></a><strong>11、优化方案</strong></h3>
 <p>​      这个是我们根据内存大小给的一个推荐优化方案，仅是建议仅用于基础参考值，还是要根据实据情况来调整每一个配置项。</p>
 <p>注意：保存参数配置后不会立即生效，记得要重启MySQL服务。</p>
 <p>写在最后：<br>
@@ -2151,7 +2151,7 @@
             |&nbsp;Theme&nbsp;<a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank" rel="external nofollow noopener noreferrer">Matery</a>
             <br>
             
-                &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color">169.9k</span>
+                &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color">166.1k</span>
             
             
             

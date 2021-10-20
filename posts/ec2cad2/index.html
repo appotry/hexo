@@ -1236,7 +1236,7 @@
                 
                 <div class="info-break-policy">
                     <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    2.8k
+                    2.7k
                 </div>
                 
 
@@ -1267,7 +1267,7 @@
         <div class="card-content article-card-content">
             <div id="articleContent">
                 <p>随着<a target="_blank" rel="external nofollow noopener noreferrer" href="https://www.ietf.org/blog/tls13/">TLS1.3</a>的发布，让该协议成为有史以来最安全、也是最复杂的TLS协议。在该协议之中，有很多的对于以往协议安全漏洞的修复，包括废弃RSA启用新的秘钥交换机制PSK等等。而<code>Encrypted SNI</code>作为一个<code>TLS1.3</code>的扩展协议用来防止传统的HTTPS流量受到ISP或者陌生网络环境的窥探以及一些网络审查。在过去，由于<code>HTTPS</code>协议之中<code>Server Name Indication - SNI</code>的使用，我们的HTTPS流量经常被窥探我们所访问站点的域名</p>
-<h3 id="那么什么是SNI？⌗">0.0.1. 那么什么是SNI？⌗</h3>
+<h3 id="那么什么是SNI？⌗"><a class="header-anchor" href="#那么什么是SNI？⌗"></a>那么什么是SNI？<a href="#%E9%82%A3%E4%B9%88%E4%BB%80%E4%B9%88%E6%98%AFsni">⌗</a></h3>
 <blockquote>
 <p>服务器名称指示（英语：Server Name Indication，简称SNI）是一个扩展的TLS计算机联网协议，在该协议下，在握手过程开始时客户端告诉它正在连接的服务器要连接的主机名称。这允许服务器在相同的IP地址和TCP端口号上呈现多个证书，并且因此允许在相同的IP地址上提供多个安全（HTTPS）网站（或其他任何基于TLS的服务），而不需要所有这些站点使用相同的证书。它与HTTP/1.1基于名称的虚拟主机的概念相同，但是用于HTTPS。所需的主机名未加密， 因此窃听者可以查看请求的网站 为了使SNI协议起作用，绝大多数访问者必须使用实现它的Web浏览器。使用未实现SNI浏览器的用户将被提供默认证书，因此很可能会收到证书警告</p>
 </blockquote>
@@ -1279,14 +1279,14 @@
 <li>TLS1.3完整握手流程</li>
 </ul>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/2820210828144904.webp" alt></p>
-<h3 id="为了弥补缺陷因应运而生的ESNI⌗">0.0.2. 为了弥补缺陷因应运而生的ESNI⌗</h3>
+<h3 id="为了弥补缺陷因应运而生的ESNI⌗"><a class="header-anchor" href="#为了弥补缺陷因应运而生的ESNI⌗"></a>为了弥补缺陷因应运而生的ESNI<a href="#%E4%B8%BA%E4%BA%86%E5%BC%A5%E8%A1%A5%E7%BC%BA%E9%99%B7%E5%9B%A0%E5%BA%94%E8%BF%90%E8%80%8C%E7%94%9F%E7%9A%84esni">⌗</a></h3>
 <p>在上述过程之中，存在的问题就是，在ClientHello环节中，TLS会在这个位置以<strong>明文</strong>的形式讲要请求的Host写在数据包之中，如果在网络路由中有任何的监听节点，那么用户所访问网站的域名将暴露无遗，这将是巨大的用户隐私泄露: <img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/2820210828144907.webp" alt></p>
 <p>所以在最新的关于<a target="_blank" rel="external nofollow noopener noreferrer" href="https://tools.ietf.org/html/draft-rescorla-tls-esni-00">ESNI的草案</a>中，<code>IETF</code>重新设计了一种加密的Client Hello机制，从而修复了这个问题: <img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/2820210828144915.webp" alt></p>
 <p><strong>不过这里问题又来了，之前服务器和客户端并没有事先交换任何数据啊，这个加密的凭证从何而来啊？？？</strong></p>
-<h3 id="依靠安全DNS的ESNI⌗">0.0.3. 依靠安全DNS的ESNI⌗</h3>
+<h3 id="依靠安全DNS的ESNI⌗"><a class="header-anchor" href="#依靠安全DNS的ESNI⌗"></a>依靠安全DNS的ESNI<a href="#%E4%BE%9D%E9%9D%A0%E5%AE%89%E5%85%A8dns%E7%9A%84esni">⌗</a></h3>
 <p>上一个问题没有难倒工程师们，他们设计了这样一个办法。首先让网站提供者在DNS提供商上公布一个记录，这个记录包含着一个<code>公钥</code>，这个公钥由网站提供者生成，其<code>私钥</code>存储在Web服务器等待着被Web程序读取。如此，当用户想通过TLS1.3协议访问这个域名的时候，首先读取这个公开的公钥，在用公钥加密其想访问的<code>域名Host</code>，装在<code>Client Hello</code>里面发送给目标服务器，目标服务器再用自己的私钥解密，从而和用户建立HTTPS链接，这样就不会暴露Host信息 这时候有人会想，如果有人某Wall想给你的DNS偷天换日，那会不会很不安全啊,请继续向下看</p>
 <p>在<code>ESNI</code>的实现草案之中，里面要求<code>安全加密的DNS</code><strong>是推荐的</strong>。大家都知道我们的DNS查询一般是<code>TCP</code>报文或者是<code>UDP</code>报文，本身它是不加密的，所以如果有人想在篡改你的DNS是相对简单的，大家可能都知道我们伟大的妨炎蔷会使用DNS污染的方式干扰一些网站的正常访问。正式由于DNS的非加密性，DNS也成为了审查信息的利器。此时加密的DNS势在必行</p>
-<h3 id="DNS-over-TLS-DoT-and-DNS-over-HTTPS-DoH-⌗">0.0.4. DNS over TLS (DoT) and DNS over HTTPS (DoH)⌗</h3>
+<h3 id="DNS-over-TLS-DoT-and-DNS-over-HTTPS-DoH-⌗"><a class="header-anchor" href="#DNS-over-TLS-DoT-and-DNS-over-HTTPS-DoH-⌗"></a>DNS over TLS (DoT) and DNS over HTTPS (DoH)<a href="#dns-over-tls-dot-and-dns-over-https-doh">⌗</a></h3>
 <p>于是出现了这两种新型的DNS查询方式</p>
 <ul>
 <li>DNS over HTTPS (DoH)</li>
@@ -1300,7 +1300,7 @@
 <blockquote>
 <p>DNS over TLS (DoT) 是通过传输层安全协议（TLS）来加密并打包域名系统（DNS）的安全协议。此协议旨在防止中间人攻击与控制DNS数据以保护用户隐私。 RFC 7858及RFC 8310定义了DNS over TLS。 截至2018年，Cloudflare、Quad9与CleanBrowsing均向大众提供支持DNS over TLS的公共DNS解析服务。2018年4月，Google宣布Android P将包含对DNS over TLS的支持。PowerDNS的DNSDist也宣布在其最新的1.3.0版本中添加了对DNS over TLS的支持。BIND用户也可以通过stunnel代理提供DNS over TLS服务。</p>
 </blockquote>
-<h3 id="手动配置⌗">0.0.5. 手动配置⌗</h3>
+<h3 id="手动配置⌗"><a class="header-anchor" href="#手动配置⌗"></a>手动配置<a href="#%E6%89%8B%E5%8A%A8%E9%85%8D%E7%BD%AE">⌗</a></h3>
 <p>Firefox所在的Mozilla宣布从<code>Firefox 62</code>版本之后开始支持<code>ESNI</code>，默认没有开启，需要用户手动配置打开，那么我们现在试验一下 这里Firefox的解决方案是使用<code>DNS over HTTPS (DoH)</code>和<code>ESNI</code></p>
 <ol>
 <li>
@@ -1326,7 +1326,7 @@
 </li>
 </ol>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/2820210828144924.webp" alt></p>
-<h3 id="验证⌗">0.0.6. 验证⌗</h3>
+<h3 id="验证⌗"><a class="header-anchor" href="#验证⌗"></a>验证<a href="#%E9%AA%8C%E8%AF%81">⌗</a></h3>
 <p>为了验证是否真的加密了<code>Client Hello</code>，我们使用<code>Wireshark</code>进行网络抓包 由于这个特性仍在试验阶段，并没有太多站点支持这个特性，<a target="_blank" rel="external nofollow noopener noreferrer" href="https://cloudflare.com/">CloudFlare</a>是第一个全站支持<code>ESNI</code>的网站，这里我们使用<a target="_blank" rel="external nofollow noopener noreferrer" href="https://blog.cloudflare.com/">blog.cloudflare.com</a>来做测试：</p>
 <ol>
 <li>首先打开<code>Wireshark</code>的抓包功能，然后开启<code>Chrome</code>浏览器打开上述网址，页面加载完后停止抓包，在得到的结果中查询协议为<code>TLS1.3</code>和报文为<code>Client Hello</code>的报文，通过观察发现域名的Host果然被以明文形式写在数据包中（参见<code>Server_Name</code>字段）：</li>
@@ -2196,7 +2196,7 @@
             |&nbsp;Theme&nbsp;<a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank" rel="external nofollow noopener noreferrer">Matery</a>
             <br>
             
-                &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color">169.9k</span>
+                &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color">166.1k</span>
             
             
             
