@@ -492,6 +492,141 @@ gitlab_rails<span class="token punctuation">[</span><span class="token string">'
       </tags>
   </entry>
   <entry>
+    <title>PT 工具集，Linux硬链接助手</title>
+    <url>/posts/bb600b4b/</url>
+    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><p>由于自我需求，写了两个脚本完成PT下载和保种两全其美的硬链接 Linux shell 脚本方案。</p>
+<div style="text-align: center">
+  <div class="github-card"
+    data-user="appotry"
+    data-repo="PTtool"
+    data-height="200"
+    data-width="400"
+    data-theme="default"
+    data-target=""
+    data-client-id=""
+    data-client-secret=""
+  ></div>
+</div>
+<script src="/github-card-lib/githubcard.js"></script>
+
+<h2 id="PTtool"><a class="header-anchor" href="#PTtool"></a>PTtool</h2>
+<p>Github: <a target="_blank" rel="noopener" href="https://github.com/appotry/PTtool">appotry/PTtool</a><br>
+Gitee: 镜像 <a target="_blank" rel="noopener" href="https://gitee.com/bloodwolf/PTtool">bloodwolf/PTtool</a></p>
+<h2 id="PT工具集合"><a class="header-anchor" href="#PT工具集合"></a>PT工具集合</h2>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/appotry/PTtool/">硬链接工具</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/appotry/flexget-nexusphp">flexget-nexusphp</a>, Flexget插件，增强对NexusPHP的过滤</li>
+<li><a target="_blank" rel="noopener" href="https://github.com/appotry/IYUUAutoReseed">IYUUAutoReseed</a> 自动辅种助手。<strong>PT三剑客</strong></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/appotry/PT-Plugin-Plus">PTPP</a> 浏览器辅种助手。<strong>PT三剑客</strong></li>
+<li><a target="_blank" rel="noopener" href="https://hub.docker.com/r/crazyq/pt_helper">pt_helper</a>, 自动刷流与签到。<strong>PT三剑客</strong></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/appotry/universal-torrent-gallery">PT站生成海报墙</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/appotry/easy-upload">一键转种脚本</a></li>
+</ul>
+<h2 id="硬链接工具"><a class="header-anchor" href="#硬链接工具"></a>硬链接工具</h2>
+<h2 id="设计目的"><a class="header-anchor" href="#设计目的"></a>设计目的</h2>
+<p>方便PT用户硬链接文件，在最大可能情况下节约空间，并保持做种。<br>
+小于1M的文件直接复制，方便emby，tmm等工具刮削修改nfo等小文件。<br>
+大于1M的文件硬链接到目的目录，可以修改文件名，但是不能修改文件内容！</p>
+<p>例如：<br>
+/share/Download/src #保存下载的PT文件<br>
+/share/Download/dst #保存你自己处理过的视频文件，把emby，tmm的目录设置到dst下面<br>
+下载脚本后chmod +x mklink.sh给与执行权限<br>
+使用mklink脚本修改如下，<a target="_blank" rel="noopener" href="http://xn--mklink-9h6j334h9rzb9lqp0cw3s.sh">然后直接运行mklink.sh</a>。就可以把src下面的文件全部硬链接到dst目录。mklink适合一次性把源文件夹链接到目的文件夹</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token assign-left variable">SRC</span><span class="token operator">=</span><span class="token string">"/share/Download/src"</span>
+<span class="token assign-left variable">DST</span><span class="token operator">=</span><span class="token string">"/share/Download/dst"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>注意：</p>
+<blockquote>
+<p>源目录，目的目录需要在一个硬盘分区里面。硬链接不能跨分区。</p>
+<p>硬链接过的文件可以使用mv来修改存储目录，不影响硬链接效果。但是cp会增加一份存储空间。所以对于已经硬链接过的文件，使用mv，不要使用cp。</p>
+</blockquote>
+<h2 id="解决的问题"><a class="header-anchor" href="#解决的问题"></a>解决的问题</h2>
+<p>tmm，emby刮削的时候，必定修改nfo文件，下载的封面等图片不同刮削站点都不同，所以小文件复制，不怕修改。大文件硬链接，占有一份空间<br>
+被硬链接过的文件，同时存在多个地方，但是都指向一个存储空间，只有所有的硬链接都删除了，这个文件才会被系统删除。<br>
+同时，所有的硬链接文件，修改其中一个，其它所有指向这个位置的硬链接文件都被修改了。</p>
+<h2 id="使用说明"><a class="header-anchor" href="#使用说明"></a>使用说明</h2>
+<p>下载资源目录/share/Download，qbittorrent资源分类下载到/share/Download/src/下面的各个子目录，例如tv, anime, tv, movie, 4k, soft等等<br>
+创建一个资源整理使用目录/share/Download/dst/目录，然后就可以把/share/Download/src和/share/Download/dst目录作为下面2个脚本的输入目录，来使用了</p>
+<p>小文件直接复制，方便tmm刮削修改nfo文件，大文件硬链接，只占有一份空间，但有2分文件，可以改名，移动目录，方便tmm整理刮削。 做种，emby使用两不误！</p>
+<h3 id="建议目录结构"><a class="header-anchor" href="#建议目录结构"></a>建议目录结构</h3>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">/share/Downlosd/src       <span class="token comment"># BT下载工具默认保存主目录</span>
+/share/Download/dst       <span class="token comment"># 硬链接目的目录，Emby，tmm，使用的目录，保存各种刮削信息。以及个人文件名修改，目录结构修改。</span>
+<span class="token comment"># 在src目录下面建立子目录movie,music,anime,tv,4k等等，在qbittorrent里面设置分类，</span>
+<span class="token comment"># 指向这里的movie,music,anime，tv等子目录。下载完后使用下面的硬链接脚本，</span>
+<span class="token comment"># 把文件硬链接到目的文件夹。tmm，emby使用目的文件夹刮削数据。</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="qbittorrent使用设置"><a class="header-anchor" href="#qbittorrent使用设置"></a>qbittorrent使用设置</h4>
+<ul>
+<li>移动种子保存位置<br>
+在qt的web界面种子上面右键，选择菜单保存位置</li>
+<li>设置分类目录<br>
+在qt的web界面种子上面右键，选择分类-&gt;新分类，先写分类名称和路径。对于多文件种子，种子添加时选择自动管理。对于单文件种子，请自行添加子文件夹，或强制创建子文件夹。</li>
+</ul>
+<h2 id="mklink-sh"><a class="header-anchor" href="#mklink-sh"></a><a target="_blank" rel="noopener" href="http://mklink.sh">mklink.sh</a></h2>
+<p>修改脚本参数源目录，目的目录,替换为你自己的目录。<br>
+脚本将把源目录所有文件硬链接到目的目录，小于1M的文件直接复制到目的目录。方便nfo等小文件刮削修改，大于1M的文件<br>
+硬链接到目的目录，以节约空间，2份文件只占有一份空间。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token assign-left variable">SRC</span><span class="token operator">=</span><span class="token string">"/share/Download/tmp/src"</span>
+<span class="token assign-left variable">DST</span><span class="token operator">=</span><span class="token string">"/share/Download/tmp/dst"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>mklink 直接针对2个文件夹做硬链接，小于1m的复制，但是没有判断是否已经硬链接过。适合全新的没有硬链接过的目录。</p>
+<h2 id="dirlink-sh"><a class="header-anchor" href="#dirlink-sh"></a><a target="_blank" rel="noopener" href="http://dirlink.sh">dirlink.sh</a></h2>
+<p>设计原理：<a target="_blank" rel="noopener" href="http://xn--islinked-z09lqdy6js7k9qcszh77bm28c7pcpywozav39f0wam3gk9g934jdmwb798e6ijf38a.lk">针对输入原路径下一级子目录判断是否有文件islinked.lk</a>，<br>
+有这个文件就跳过，没有就硬链接这个子目录到目的目录生成对应的子目录。<br>
+小于1M的文件复制，大于1M的文件硬链接。</p>
+<p>可以直接修改脚本源目录，目的目录参数，也可以从参数$!,$2输入源目录，目的目录。<br>
+此脚本和mklink.sh区别在于，将检查每个目录是否已经被硬链接过，已经连接过的将跳过去不再硬链接。<br>
+<a target="_blank" rel="noopener" href="http://xn--islinked-t39ly9eba963iwhd9vr0qh8m0aj8xfa892a0t3ditcxx9bd8n.lk">原理是在源文件夹目录下添加文件islinked.lk</a>，通过检测这个文件来判断是否硬链接过</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token assign-left variable">SRC</span><span class="token operator">=</span><span class="token string">"/share/Download/tmp/src/movie"</span>
+<span class="token assign-left variable">DST</span><span class="token operator">=</span><span class="token string">"/share/Download/tmp/dst/movie"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>注意：src目录下面的文件需要放到各个子目录下面去，例如src/anime/amine1,src/tv/tv2，这样才能保证islinked.lk工作正常<br>
+目录设置可以直接修改脚本，也可以命令行参数输入</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#dirlink.sh sourcedir dstdir</span>
+dirlink.sh /share/Download/tmp/src /share/Download/tmp/dst<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h3 id="重新建立连接，一次性删除所有islinked-lk文件"><a class="header-anchor" href="#重新建立连接，一次性删除所有islinked-lk文件"></a>重新建立连接，一次性删除所有islinked.lk文件</h3>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">find</span> /share/Download/tmp -name <span class="token string">"islinked.lk"</span> <span class="token operator">|</span> <span class="token function">xargs</span> <span class="token function">rm</span> -f<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>替换前面的路径/share/Download/tmp为你自己的路径，操作和rm相关的命令一定<strong>注意不要输入错误</strong>，删错文件代价极大！</p>
+<h3 id="一次性硬链接多个目录"><a class="header-anchor" href="#一次性硬链接多个目录"></a>一次性硬链接多个目录</h3>
+<p><a target="_blank" rel="noopener" href="http://xn--link-494f902dwno9ijr24b9pq.sh">如下所示脚本link.sh</a></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/sh</span>
+/share/Download/source/dirlink.sh /share/Download/source/anime /share/Download/dst/anime
+/share/Download/source/dirlink.sh /share/Download/source/movie /share/Download/dst/movie
+/share/Download/source/dirlink.sh /share/Download/source/tv /share/Download/dst/tv<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="修改限制2M大小以下的复制"><a class="header-anchor" href="#修改限制2M大小以下的复制"></a>修改限制2M大小以下的复制</h2>
+<p>修改脚本参数FILEGIG，原脚本是1M大小，修改为下面这样就是2M大小</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token assign-left variable">FILEGIG</span><span class="token operator">=</span>2000000c<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h2 id="autolink-sh"><a class="header-anchor" href="#autolink-sh"></a><a target="_blank" rel="noopener" href="http://autolink.sh">autolink.sh</a></h2>
+<p>qBittorrent 下载完成时自动硬链接下载完的种子，适用于新下载完成的种子文件。以前下载完成的文件建议使用<code>link.sh</code>脚本的方法。<br>
+注意：脚本会判断是否进行硬链接的分类，分类详情见脚本内容。</p>
+<ul>
+<li>修改脚本目标目录<br>
+将你的目录填在<code>your_path</code>的等号后。</li>
+<li>设置下载完成后自动运行<br>
+在qt的web界面g，点击工具-&gt;选项-&gt;下载，勾选“Torrent 完成时运行外部程序”，填入<code>/path/to/autolink.sh &quot;%N&quot; &quot;%D&quot; &quot;%L&quot;</code><br>
+注意：填入autolink.sh的绝对位置，同时autolink与dirlink须在同一目录</li>
+</ul>
+<h2 id="使用声明"><a class="header-anchor" href="#使用声明"></a>使用声明</h2>
+<p>数据无价，小心操作。<br>
+本脚本（除autolink.sh外）没有rm删除，只有mkdir和cp， 最多搞乱文件系统。但要注意不要把目的地目录设置到系统目录去了。<br>
+一切后果自负</p>
+<h2 id="感觉对你有帮助，来个star吧"><a class="header-anchor" href="#感觉对你有帮助，来个star吧"></a>感觉对你有帮助，来个star吧</h2>
+<h2 id="Contributing"><a class="header-anchor" href="#Contributing"></a>Contributing</h2>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://github.com/appotry/PTtool/fork">Fork it</a></li>
+<li>Create your feature branch (<code>git checkout -b my-new-feature</code>)</li>
+<li>Commit your changes (<code>git commit -am 'Add some feature'</code>)</li>
+<li>Push to the branch (<code>git push origin my-new-feature</code>)</li>
+<li>Create a new Pull Request</li>
+</ol>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
+      <categories>
+        <category>linux</category>
+      </categories>
+      <tags>
+        <tag>Linux</tag>
+        <tag>hardlink</tag>
+        <tag>bt</tag>
+        <tag>pt</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程</title>
     <url>/posts/9912bd5d/</url>
     <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><blockquote>
@@ -1494,12 +1629,12 @@ TCP window size: <span class="token number">21.0</span> KByte <span class="token
         <category>embeded</category>
       </categories>
       <tags>
+        <tag>Linux</tag>
         <tag>embeded</tag>
         <tag>3G</tag>
         <tag>4G</tag>
         <tag>3531a</tag>
         <tag>移植</tag>
-        <tag>Linux</tag>
         <tag>嵌入式</tag>
       </tags>
   </entry>
@@ -2393,8 +2528,8 @@ HI_DRV_FILE_Lseek
         <category>embeded</category>
       </categories>
       <tags>
-        <tag>embeded</tag>
         <tag>Linux</tag>
+        <tag>embeded</tag>
         <tag>hisilicon</tag>
         <tag>Driver</tag>
         <tag>3798M</tag>
@@ -5666,9 +5801,9 @@ PDF：将单个笔记导出为 PDF 格式的文件。不支持导入。</p>
         <category>note</category>
       </categories>
       <tags>
+        <tag>Linux</tag>
         <tag>note</tag>
         <tag>Joplin</tag>
-        <tag>Linux</tag>
         <tag>Docker</tag>
       </tags>
   </entry>
@@ -6386,9 +6521,9 @@ flow（流程图）、sequence（时序图）、mermaid（流程图、时序图�
         <category>note</category>
       </categories>
       <tags>
+        <tag>Linux</tag>
         <tag>note</tag>
         <tag>Joplin</tag>
-        <tag>Linux</tag>
         <tag>Docker</tag>
         <tag>Webdav</tag>
       </tags>
@@ -12980,12 +13115,12 @@ HTTP 502 - 网关错误</p>
 <p>博文页面内插入音乐列表</p>
 </blockquote>
 
-        <div id="aplayer-ZatAkXjW" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;">
+        <div id="aplayer-FbrDXeQO" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;">
             <pre class="aplayer-lrc-content"></pre>
         </div>
         <script>
           var ap = new APlayer({
-            element: document.getElementById("aplayer-ZatAkXjW"),
+            element: document.getElementById("aplayer-FbrDXeQO"),
             narrow: false,
             autoplay: false,
             showlrc: 3,
@@ -13001,10 +13136,10 @@ HTTP 502 - 网关错误</p>
           window.aplayers.push(ap);
         </script>
 
-        <div id="aplayer-NJHSLMQX" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
+        <div id="aplayer-qBExddwo" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
 			  <script>
 				  var options = {"narrow":false,"autoplay":true,"showlrc":3,"mode":"random","mutex":true,"theme":"#e6d0b2","preload":"auto","listmaxheight":"513px","music":[{"title":"Hotel California","author":"Camille and Kennerly","url":"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3","pic":"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp","lrc":"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc"},{"title":"年轻人要热爱祖国","author":"音阙诗听/赵方婧","url":"/assets/audio/年轻人要热爱祖国.mp3","pic":"https://sm.sm9.top/api/music?server=Tencent&type=pic&id=001gv6xI4BNGiP","lrc":"/assets/audio/年轻人要热爱祖国.lrc"},{"title":"Croatian Rhapsody","author":"Maksim","url":"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3","pic":"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg"},{"title":"The Final Bell","author":"Bill Conti","url":"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3","pic":"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg"},{"title":"Sold Out","author":"Hawk Nelson","url":"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac","pic":"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg"}]};
-				  options.element = document.getElementById("aplayer-NJHSLMQX");
+				  options.element = document.getElementById("aplayer-qBExddwo");
 				  var ap = new APlayer(options);
 			    window.aplayers || (window.aplayers = []);
 				  window.aplayers.push(ap);
@@ -16611,12 +16746,12 @@ usecase usecase
 </ul>
 <h4 id="单曲附带歌词显示"><a class="header-anchor" href="#单曲附带歌词显示"></a><em><strong>单曲附带歌词显示</strong></em></h4>
 
-        <div id="aplayer-PIRHNtqo" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;">
+        <div id="aplayer-UAdKppQW" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;">
             <pre class="aplayer-lrc-content"></pre>
         </div>
         <script>
           var ap = new APlayer({
-            element: document.getElementById("aplayer-PIRHNtqo"),
+            element: document.getElementById("aplayer-UAdKppQW"),
             narrow: false,
             autoplay: false,
             showlrc: 3,
@@ -16660,10 +16795,10 @@ usecase usecase
 &#125;
 &#123;% endaplayerlist %&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
-        <div id="aplayer-sLWZGUZY" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
+        <div id="aplayer-RJTmmuvY" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
 			  <script>
 				  var options = {"narrow":false,"autoplay":false,"showlrc":3,"mode":"random","mutex":true,"theme":"#e6d0b2","preload":"metadata","listmaxheight":"513px","music":[{"title":"Croatian Rhapsody","author":"Maksim","url":"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3","pic":"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg"},{"title":"Hotel California","author":"Camille and Kennerly","url":"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3","pic":"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp","lrc":"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc"},{"title":"The Final Bell","author":"Bill Conti","url":"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3","pic":"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg"},{"title":"Sold Out","author":"Hawk Nelson","url":"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac","pic":"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg"}]};
-				  options.element = document.getElementById("aplayer-sLWZGUZY");
+				  options.element = document.getElementById("aplayer-RJTmmuvY");
 				  var ap = new APlayer(options);
 			    window.aplayers || (window.aplayers = []);
 				  window.aplayers.push(ap);
@@ -16959,10 +17094,10 @@ usecase usecase
 <p>不在表格内的参数请使用下面 JSON 类型的参数。</p>
 <p>mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使用 JSON5，此项配置几乎与 APlayer 完全一致。</p>
 <p><strong>单曲</strong></p>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-sHgLnXbcMkaKIaGG"></div><script> var sHgLnXbcMkaKIaGG_options = JSON.parse('{\"autoplay\":false,\"loop\":\"all\",\"order\":\"list\",\"volume\":0.66,\"audio\":[{\"theme\":\"#ebd0c2\",\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); sHgLnXbcMkaKIaGG_options.container = document.getElementById("mmedia-sHgLnXbcMkaKIaGG"); const ap_sHgLnXbcMkaKIaGG = new APlayer(sHgLnXbcMkaKIaGG_options); </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-KIKKRejhtLecjkRQ"></div><script> var KIKKRejhtLecjkRQ_options = JSON.parse('{\"autoplay\":false,\"loop\":\"all\",\"order\":\"list\",\"volume\":0.66,\"audio\":[{\"theme\":\"#ebd0c2\",\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); KIKKRejhtLecjkRQ_options.container = document.getElementById("mmedia-KIKKRejhtLecjkRQ"); const ap_KIKKRejhtLecjkRQ = new APlayer(KIKKRejhtLecjkRQ_options); </script>
 <pre class="line-numbers language-none"><code class="language-none">&#123;% mmedia &quot;aplayer&quot; &quot;name:Hotel California&quot; &quot;artist:Camille and Kennerly&quot; &quot;url:https:&#x2F;&#x2F;cdn.17lai.site&#x2F;media&#x2F;music&#x2F;Hotel%20California&#x2F;01%20Hotel%20California.mp3&quot; &quot;lrc:https:&#x2F;&#x2F;cdn.17lai.site&#x2F;media&#x2F;music&#x2F;Hotel%20California&#x2F;01%20Hotel%20California.lrc&quot; &quot;cover:https:&#x2F;&#x2F;cdn.17lai.site&#x2F;media&#x2F;music&#x2F;Hotel%20California&#x2F;Hotel%20California.webp&quot; &quot;volume:0.66&quot; %&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p><strong>列表</strong></p>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-lvSReHoEHHWfKWyE"></div><script> var lvSReHoEHHWfKWyE_options = JSON.parse('{\"autoplay\":false,\"loop\":\"all\",\"order\":\"list\",\"volume\":\"0.66\",\"audio\":[{\"name\":\"Croatian Rhapsody\",\"artist\":\"Maksim\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\"},{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\"},{\"name\":\"The Final Bell\",\"artist\":\"Bill Conti\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\"},{\"name\":\"Sold Out\",\"artist\":\"Hawk Nelson\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\"}]}'); lvSReHoEHHWfKWyE_options.container = document.getElementById("mmedia-lvSReHoEHHWfKWyE"); const ap_lvSReHoEHHWfKWyE = new APlayer(lvSReHoEHHWfKWyE_options); </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-PwmaajtlRxWEwYSS"></div><script> var PwmaajtlRxWEwYSS_options = JSON.parse('{\"autoplay\":false,\"loop\":\"all\",\"order\":\"list\",\"volume\":\"0.66\",\"audio\":[{\"name\":\"Croatian Rhapsody\",\"artist\":\"Maksim\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\"},{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\"},{\"name\":\"The Final Bell\",\"artist\":\"Bill Conti\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\"},{\"name\":\"Sold Out\",\"artist\":\"Hawk Nelson\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\"}]}'); PwmaajtlRxWEwYSS_options.container = document.getElementById("mmedia-PwmaajtlRxWEwYSS"); const ap_PwmaajtlRxWEwYSS = new APlayer(PwmaajtlRxWEwYSS_options); </script>
 <p><strong>例子</strong></p>
 <pre class="line-numbers language-none"><code class="language-none">&#123;% mmedias &quot;aplayer&quot; &quot;autoplay:false&quot; %&#125;
 &#123;
@@ -17005,7 +17140,7 @@ usecase usecase
 &#125;</span>
 <span class="token tag"><span class="token ld"><span class="token punctuation">&#123;%</span> <span class="token keyword">endmmedias</span></span> <span class="token rd"><span class="token punctuation">%&#125;</span></span></span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <pre class="line-numbers language-none"><code class="language-none">&#123;% mmedia &quot;dplayer&quot; &quot;url:https:&#x2F;&#x2F;sample-videos.com&#x2F;video123&#x2F;mp4&#x2F;720&#x2F;big_buck_bunny_720p_1mb.mp4&quot; %&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<script src="https://cdn.jsdelivr.net/npm/dplayer@1/dist/DPlayer.min.js"></script><div id="mmedia-mnwMAyfrRMqiIOmW"></div><script> var mnwMAyfrRMqiIOmW_options = JSON.parse('{\"video\":{\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4\"},\"autoplay\":false,\"loop\":true,\"listMaxHeight\":true,\"volume\":0.7}'); mnwMAyfrRMqiIOmW_options.container = document.getElementById("mmedia-mnwMAyfrRMqiIOmW"); const dp_mnwMAyfrRMqiIOmW = new DPlayer(mnwMAyfrRMqiIOmW_options); </script>
+<script src="https://cdn.jsdelivr.net/npm/dplayer@1/dist/DPlayer.min.js"></script><div id="mmedia-LENXfLtWxXnBudGV"></div><script> var LENXfLtWxXnBudGV_options = JSON.parse('{\"video\":{\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4\"},\"autoplay\":false,\"loop\":true,\"listMaxHeight\":true,\"volume\":0.7}'); LENXfLtWxXnBudGV_options.container = document.getElementById("mmedia-LENXfLtWxXnBudGV"); const dp_LENXfLtWxXnBudGV = new DPlayer(LENXfLtWxXnBudGV_options); </script>
 <pre class="line-numbers language-none"><code class="language-none">&#123;% mmedias &quot;dplayer&quot; %&#125;
 &#123;
   video: 
@@ -17073,9 +17208,9 @@ usecase usecase
 </tbody>
 </table>
 <p>mmedia 插件允许在 contents 部分使用 JSON 编写配置，使用 JSON5 标准。</p>
-<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-GvKgBYNruDDDdTMH" src="https://player.bilibili.com/player.html?bvid=BV1fs411S7u7&page=1&high_quality=1&danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-GvKgBYNruDDDdTMH").style.height=document.getElementById("mmedia-GvKgBYNruDDDdTMH").scrollWidth*0.76+"px";
+<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-uUXNJUXDausjMJTO" src="https://player.bilibili.com/player.html?bvid=BV1fs411S7u7&page=1&high_quality=1&danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-uUXNJUXDausjMJTO").style.height=document.getElementById("mmedia-uUXNJUXDausjMJTO").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-GvKgBYNruDDDdTMH").style.height=document.getElementById("mmedia-GvKgBYNruDDDdTMH").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-uUXNJUXDausjMJTO").style.height=document.getElementById("mmedia-uUXNJUXDausjMJTO").scrollWidth*0.76+"px";
     }; </script>
 <pre class="line-numbers language-none"><code class="language-none">&#123;% mmedia &quot;bilibili&quot; &quot;bvid:BV1fs411S7u7&quot; %&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <h4 id="西瓜视频"><a class="header-anchor" href="#西瓜视频"></a>西瓜视频</h4>
@@ -17138,9 +17273,9 @@ usecase usecase
 </tr>
 </tbody>
 </table>
-<style>.xgplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="xgplayer"><iframe class="xgplayer" id="mmedia-zhDzmOfKTqYmjboG" src="https://www.ixigua.com/iframe/6925997698269053453?autoplay=0&startTime=undefined" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-zhDzmOfKTqYmjboG").style.height=document.getElementById("mmedia-zhDzmOfKTqYmjboG").scrollWidth*0.7+"px";
+<style>.xgplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="xgplayer"><iframe class="xgplayer" id="mmedia-pKVeYcNfPTIbhcHq" src="https://www.ixigua.com/iframe/6925997698269053453?autoplay=0&startTime=undefined" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-pKVeYcNfPTIbhcHq").style.height=document.getElementById("mmedia-pKVeYcNfPTIbhcHq").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-zhDzmOfKTqYmjboG").style.height=document.getElementById("mmedia-zhDzmOfKTqYmjboG").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-pKVeYcNfPTIbhcHq").style.height=document.getElementById("mmedia-pKVeYcNfPTIbhcHq").scrollWidth*0.7+"px";
     }; </script>
 <pre class="line-numbers language-none"><code class="language-none">&#123;% mmedia &quot;xigua&quot; &quot;xid&#x3D;6925997698269053453&quot; %&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <h4 id="ArtPlayer"><a class="header-anchor" href="#ArtPlayer"></a>ArtPlayer</h4>
@@ -17216,7 +17351,7 @@ usecase usecase
 &#125;</span>
 <span class="token tag"><span class="token ld"><span class="token punctuation">&#123;%</span> <span class="token keyword">endmmedias</span></span> <span class="token rd"><span class="token punctuation">%&#125;</span></span></span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <pre class="line-numbers language-none"><code class="language-none">&#123;% mmedia &quot;artplayer&quot; &quot;url:https:&#x2F;&#x2F;sample-videos.com&#x2F;video123&#x2F;mp4&#x2F;720&#x2F;big_buck_bunny_720p_2mb.mp4&quot; %&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<script src="https://cdn.jsdelivr.net/npm/artplayer@3/dist/artplayer.min.js"></script><div id="mmedia-kRnTshDsbvADiSmV" style="width:100%;height:650px;max-width:1200px;center"></div><script> var kRnTshDsbvADiSmV_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); kRnTshDsbvADiSmV_options.container = "#mmedia-kRnTshDsbvADiSmV"; const art_kRnTshDsbvADiSmV = new Artplayer(kRnTshDsbvADiSmV_options); </script>
+<script src="https://cdn.jsdelivr.net/npm/artplayer@3/dist/artplayer.min.js"></script><div id="mmedia-SMmDShSQwmIIGTFx" style="width:100%;height:650px;max-width:1200px;center"></div><script> var SMmDShSQwmIIGTFx_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); SMmDShSQwmIIGTFx_options.container = "#mmedia-SMmDShSQwmIIGTFx"; const art_SMmDShSQwmIIGTFx = new Artplayer(SMmDShSQwmIIGTFx_options); </script>
 <pre class="line-numbers language-none"><code class="language-none">&#123;% mmedias &quot;artplayer&quot; %&#125;
 &#123;
   url: &quot;https:&#x2F;&#x2F;sample-videos.com&#x2F;video123&#x2F;mp4&#x2F;720&#x2F;big_buck_bunny_720p_2mb.mp4&quot;
@@ -18181,141 +18316,6 @@ GitBook version: <span class="token number">3.2</span>.3<span aria-hidden="true"
         <tag>Epub</tag>
         <tag>Markdown</tag>
         <tag>Calibre</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>PT 工具集，Linux硬链接助手</title>
-    <url>/posts/bb600b4b/</url>
-    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><p>由于自我需求，写了两个脚本完成PT下载和保种两全其美的硬链接 Linux shell 脚本方案。</p>
-<div style="text-align: center">
-  <div class="github-card"
-    data-user="appotry"
-    data-repo="PTtool"
-    data-height="200"
-    data-width="400"
-    data-theme="default"
-    data-target=""
-    data-client-id=""
-    data-client-secret=""
-  ></div>
-</div>
-<script src="/github-card-lib/githubcard.js"></script>
-
-<h2 id="PTtool"><a class="header-anchor" href="#PTtool"></a>PTtool</h2>
-<p>Github: <a target="_blank" rel="noopener" href="https://github.com/appotry/PTtool">appotry/PTtool</a><br>
-Gitee: 镜像 <a target="_blank" rel="noopener" href="https://gitee.com/bloodwolf/PTtool">bloodwolf/PTtool</a></p>
-<h2 id="PT工具集合"><a class="header-anchor" href="#PT工具集合"></a>PT工具集合</h2>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://github.com/appotry/PTtool/">硬链接工具</a></li>
-<li><a target="_blank" rel="noopener" href="https://github.com/appotry/flexget-nexusphp">flexget-nexusphp</a>, Flexget插件，增强对NexusPHP的过滤</li>
-<li><a target="_blank" rel="noopener" href="https://github.com/appotry/IYUUAutoReseed">IYUUAutoReseed</a> 自动辅种助手。<strong>PT三剑客</strong></li>
-<li><a target="_blank" rel="noopener" href="https://github.com/appotry/PT-Plugin-Plus">PTPP</a> 浏览器辅种助手。<strong>PT三剑客</strong></li>
-<li><a target="_blank" rel="noopener" href="https://hub.docker.com/r/crazyq/pt_helper">pt_helper</a>, 自动刷流与签到。<strong>PT三剑客</strong></li>
-<li><a target="_blank" rel="noopener" href="https://github.com/appotry/universal-torrent-gallery">PT站生成海报墙</a></li>
-<li><a target="_blank" rel="noopener" href="https://github.com/appotry/easy-upload">一键转种脚本</a></li>
-</ul>
-<h2 id="硬链接工具"><a class="header-anchor" href="#硬链接工具"></a>硬链接工具</h2>
-<h2 id="设计目的"><a class="header-anchor" href="#设计目的"></a>设计目的</h2>
-<p>方便PT用户硬链接文件，在最大可能情况下节约空间，并保持做种。<br>
-小于1M的文件直接复制，方便emby，tmm等工具刮削修改nfo等小文件。<br>
-大于1M的文件硬链接到目的目录，可以修改文件名，但是不能修改文件内容！</p>
-<p>例如：<br>
-/share/Download/src #保存下载的PT文件<br>
-/share/Download/dst #保存你自己处理过的视频文件，把emby，tmm的目录设置到dst下面<br>
-下载脚本后chmod +x mklink.sh给与执行权限<br>
-使用mklink脚本修改如下，<a target="_blank" rel="noopener" href="http://xn--mklink-9h6j334h9rzb9lqp0cw3s.sh">然后直接运行mklink.sh</a>。就可以把src下面的文件全部硬链接到dst目录。mklink适合一次性把源文件夹链接到目的文件夹</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token assign-left variable">SRC</span><span class="token operator">=</span><span class="token string">"/share/Download/src"</span>
-<span class="token assign-left variable">DST</span><span class="token operator">=</span><span class="token string">"/share/Download/dst"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<p>注意：</p>
-<blockquote>
-<p>源目录，目的目录需要在一个硬盘分区里面。硬链接不能跨分区。</p>
-<p>硬链接过的文件可以使用mv来修改存储目录，不影响硬链接效果。但是cp会增加一份存储空间。所以对于已经硬链接过的文件，使用mv，不要使用cp。</p>
-</blockquote>
-<h2 id="解决的问题"><a class="header-anchor" href="#解决的问题"></a>解决的问题</h2>
-<p>tmm，emby刮削的时候，必定修改nfo文件，下载的封面等图片不同刮削站点都不同，所以小文件复制，不怕修改。大文件硬链接，占有一份空间<br>
-被硬链接过的文件，同时存在多个地方，但是都指向一个存储空间，只有所有的硬链接都删除了，这个文件才会被系统删除。<br>
-同时，所有的硬链接文件，修改其中一个，其它所有指向这个位置的硬链接文件都被修改了。</p>
-<h2 id="使用说明"><a class="header-anchor" href="#使用说明"></a>使用说明</h2>
-<p>下载资源目录/share/Download，qbittorrent资源分类下载到/share/Download/src/下面的各个子目录，例如tv, anime, tv, movie, 4k, soft等等<br>
-创建一个资源整理使用目录/share/Download/dst/目录，然后就可以把/share/Download/src和/share/Download/dst目录作为下面2个脚本的输入目录，来使用了</p>
-<p>小文件直接复制，方便tmm刮削修改nfo文件，大文件硬链接，只占有一份空间，但有2分文件，可以改名，移动目录，方便tmm整理刮削。 做种，emby使用两不误！</p>
-<h3 id="建议目录结构"><a class="header-anchor" href="#建议目录结构"></a>建议目录结构</h3>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">/share/Downlosd/src       <span class="token comment"># BT下载工具默认保存主目录</span>
-/share/Download/dst       <span class="token comment"># 硬链接目的目录，Emby，tmm，使用的目录，保存各种刮削信息。以及个人文件名修改，目录结构修改。</span>
-<span class="token comment"># 在src目录下面建立子目录movie,music,anime,tv,4k等等，在qbittorrent里面设置分类，</span>
-<span class="token comment"># 指向这里的movie,music,anime，tv等子目录。下载完后使用下面的硬链接脚本，</span>
-<span class="token comment"># 把文件硬链接到目的文件夹。tmm，emby使用目的文件夹刮削数据。</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h4 id="qbittorrent使用设置"><a class="header-anchor" href="#qbittorrent使用设置"></a>qbittorrent使用设置</h4>
-<ul>
-<li>移动种子保存位置<br>
-在qt的web界面种子上面右键，选择菜单保存位置</li>
-<li>设置分类目录<br>
-在qt的web界面种子上面右键，选择分类-&gt;新分类，先写分类名称和路径。对于多文件种子，种子添加时选择自动管理。对于单文件种子，请自行添加子文件夹，或强制创建子文件夹。</li>
-</ul>
-<h2 id="mklink-sh"><a class="header-anchor" href="#mklink-sh"></a><a target="_blank" rel="noopener" href="http://mklink.sh">mklink.sh</a></h2>
-<p>修改脚本参数源目录，目的目录,替换为你自己的目录。<br>
-脚本将把源目录所有文件硬链接到目的目录，小于1M的文件直接复制到目的目录。方便nfo等小文件刮削修改，大于1M的文件<br>
-硬链接到目的目录，以节约空间，2份文件只占有一份空间。</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token assign-left variable">SRC</span><span class="token operator">=</span><span class="token string">"/share/Download/tmp/src"</span>
-<span class="token assign-left variable">DST</span><span class="token operator">=</span><span class="token string">"/share/Download/tmp/dst"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<p>mklink 直接针对2个文件夹做硬链接，小于1m的复制，但是没有判断是否已经硬链接过。适合全新的没有硬链接过的目录。</p>
-<h2 id="dirlink-sh"><a class="header-anchor" href="#dirlink-sh"></a><a target="_blank" rel="noopener" href="http://dirlink.sh">dirlink.sh</a></h2>
-<p>设计原理：<a target="_blank" rel="noopener" href="http://xn--islinked-z09lqdy6js7k9qcszh77bm28c7pcpywozav39f0wam3gk9g934jdmwb798e6ijf38a.lk">针对输入原路径下一级子目录判断是否有文件islinked.lk</a>，<br>
-有这个文件就跳过，没有就硬链接这个子目录到目的目录生成对应的子目录。<br>
-小于1M的文件复制，大于1M的文件硬链接。</p>
-<p>可以直接修改脚本源目录，目的目录参数，也可以从参数$!,$2输入源目录，目的目录。<br>
-此脚本和mklink.sh区别在于，将检查每个目录是否已经被硬链接过，已经连接过的将跳过去不再硬链接。<br>
-<a target="_blank" rel="noopener" href="http://xn--islinked-t39ly9eba963iwhd9vr0qh8m0aj8xfa892a0t3ditcxx9bd8n.lk">原理是在源文件夹目录下添加文件islinked.lk</a>，通过检测这个文件来判断是否硬链接过</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token assign-left variable">SRC</span><span class="token operator">=</span><span class="token string">"/share/Download/tmp/src/movie"</span>
-<span class="token assign-left variable">DST</span><span class="token operator">=</span><span class="token string">"/share/Download/tmp/dst/movie"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<p>注意：src目录下面的文件需要放到各个子目录下面去，例如src/anime/amine1,src/tv/tv2，这样才能保证islinked.lk工作正常<br>
-目录设置可以直接修改脚本，也可以命令行参数输入</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#dirlink.sh sourcedir dstdir</span>
-dirlink.sh /share/Download/tmp/src /share/Download/tmp/dst<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<h3 id="重新建立连接，一次性删除所有islinked-lk文件"><a class="header-anchor" href="#重新建立连接，一次性删除所有islinked-lk文件"></a>重新建立连接，一次性删除所有islinked.lk文件</h3>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">find</span> /share/Download/tmp -name <span class="token string">"islinked.lk"</span> <span class="token operator">|</span> <span class="token function">xargs</span> <span class="token function">rm</span> -f<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<p>替换前面的路径/share/Download/tmp为你自己的路径，操作和rm相关的命令一定<strong>注意不要输入错误</strong>，删错文件代价极大！</p>
-<h3 id="一次性硬链接多个目录"><a class="header-anchor" href="#一次性硬链接多个目录"></a>一次性硬链接多个目录</h3>
-<p><a target="_blank" rel="noopener" href="http://xn--link-494f902dwno9ijr24b9pq.sh">如下所示脚本link.sh</a></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/sh</span>
-/share/Download/source/dirlink.sh /share/Download/source/anime /share/Download/dst/anime
-/share/Download/source/dirlink.sh /share/Download/source/movie /share/Download/dst/movie
-/share/Download/source/dirlink.sh /share/Download/source/tv /share/Download/dst/tv<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="修改限制2M大小以下的复制"><a class="header-anchor" href="#修改限制2M大小以下的复制"></a>修改限制2M大小以下的复制</h2>
-<p>修改脚本参数FILEGIG，原脚本是1M大小，修改为下面这样就是2M大小</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token assign-left variable">FILEGIG</span><span class="token operator">=</span>2000000c<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h2 id="autolink-sh"><a class="header-anchor" href="#autolink-sh"></a><a target="_blank" rel="noopener" href="http://autolink.sh">autolink.sh</a></h2>
-<p>qBittorrent 下载完成时自动硬链接下载完的种子，适用于新下载完成的种子文件。以前下载完成的文件建议使用<code>link.sh</code>脚本的方法。<br>
-注意：脚本会判断是否进行硬链接的分类，分类详情见脚本内容。</p>
-<ul>
-<li>修改脚本目标目录<br>
-将你的目录填在<code>your_path</code>的等号后。</li>
-<li>设置下载完成后自动运行<br>
-在qt的web界面g，点击工具-&gt;选项-&gt;下载，勾选“Torrent 完成时运行外部程序”，填入<code>/path/to/autolink.sh &quot;%N&quot; &quot;%D&quot; &quot;%L&quot;</code><br>
-注意：填入autolink.sh的绝对位置，同时autolink与dirlink须在同一目录</li>
-</ul>
-<h2 id="使用声明"><a class="header-anchor" href="#使用声明"></a>使用声明</h2>
-<p>数据无价，小心操作。<br>
-本脚本（除autolink.sh外）没有rm删除，只有mkdir和cp， 最多搞乱文件系统。但要注意不要把目的地目录设置到系统目录去了。<br>
-一切后果自负</p>
-<h2 id="感觉对你有帮助，来个star吧"><a class="header-anchor" href="#感觉对你有帮助，来个star吧"></a>感觉对你有帮助，来个star吧</h2>
-<h2 id="Contributing"><a class="header-anchor" href="#Contributing"></a>Contributing</h2>
-<ol>
-<li><a target="_blank" rel="noopener" href="https://github.com/appotry/PTtool/fork">Fork it</a></li>
-<li>Create your feature branch (<code>git checkout -b my-new-feature</code>)</li>
-<li>Commit your changes (<code>git commit -am 'Add some feature'</code>)</li>
-<li>Push to the branch (<code>git push origin my-new-feature</code>)</li>
-<li>Create a new Pull Request</li>
-</ol>
-<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
-      <categories>
-        <category>linux</category>
-      </categories>
-      <tags>
-        <tag>Linux</tag>
-        <tag>hardlink</tag>
-        <tag>bt</tag>
-        <tag>pt</tag>
       </tags>
   </entry>
 </search>
