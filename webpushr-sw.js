@@ -1,1 +1,1 @@
-importScripts("https://cdn.webpushr.com/sw-server.min.js");
+<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script>importScripts('https://cdn.webpushr.com/sw-server.min.js');<link rel="stylesheet" href="/css/bilicard.css" type="text/css">
