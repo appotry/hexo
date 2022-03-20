@@ -1,4 +1,1165 @@
-<!DOCTYPE HTML><html lang="zh-CN"><head><link href="https://cdn.jsdelivr.net/npm/hexo-tag-common@0.0.5/css/index.css" rel="stylesheet"><meta charset="utf-8"><meta name="keywords" content="Emby, Sonarr, Jeckett, Portainer, Watchtower, DNSMasq, DNSCrypt"><meta name="description" content="使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程。jackett 作为种子源，sonarr剧集管理，bt下载，qbittorrent主力下载，使用iyuu转移辅种，emby，jellyfin做海报墙，sunfinder自动下载字幕。结合本地DNS管理，DNS去广告，Nginx 反向代理去端口访问，形成一个完整解决方案。"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><meta name="renderer" content="webkit|ie-stand|ie-comp"><meta name="mobile-web-app-capable" content="yes"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="referrer" content="no-referrer-when-downgrade"><script async src="https://www.googletagmanager.com/gtag/js?id=G-JNYZP4ZLDJ"></script><script>function gtag(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],gtag("js",new Date),gtag("config","G-JNYZP4ZLDJ")</script><title>使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程 | 夜法之书</title><link rel="manifest" href="/manifest.json"><link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/favicon.png"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/awesome/css/all.min.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/materialize/materialize.min.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/aos/aos.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/animate/animate.min.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/lightGallery/css/lightgallery.min.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/css/matery.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/css/my.css"><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/jquery/jquery-3.6.0.min.js"></script><meta name="generator" content="Hexo 6.1.0"><style>.github-emoji{position:relative;display:inline-block;width:1.2em;min-height:1.2em;overflow:hidden;vertical-align:top;color:transparent}.github-emoji>span{position:relative;z-index:10}.github-emoji .fancybox,.github-emoji img{margin:0!important;padding:0!important;border:none!important;outline:0!important;text-decoration:none!important;user-select:none!important;cursor:auto!important}.github-emoji img{height:1.2em!important;width:1.2em!important;position:absolute!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;user-select:none!important;cursor:auto!important}.github-emoji-fallback{color:inherit}.github-emoji-fallback img{opacity:0!important}</style><link rel="alternate" href="/atom.xml" title="夜法之书" type="application/atom+xml"></head><style>body{background-image:url(https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias_webp/background.webp);background-repeat:no-repeat;background-size:100% 100%;background-attachment:fixed}</style><body><header class="navbar-fixed"><nav id="headNav" class="bg-color nav-transparent"><div id="navContainer" class="nav-wrapper container"><div class="brand-logo"> <a href="/" class="waves-effect waves-light"><img src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias/logo.png" class="logo-img" alt="LOGO"> <span class="logo-span">夜法之书</span></a></div><a href="#" data-target="mobile-nav" class="sidenav-trigger button-collapse"><i class="fas fa-bars"></i></a><ul class="right nav-menu"><li class="hide-on-med-and-down nav-item"><a href="/" class="waves-effect waves-light"><i class="fas fa-home" style="zoom:.6"></i> <span>首页</span></a></li><li class="hide-on-med-and-down nav-item"><a href="https://nav.17lai.site/" class="waves-effect waves-light"><i class="fas fa-suitcase" style="zoom:.6"></i> <span>导航</span></a></li><li class="hide-on-med-and-down nav-item"><a href="" class="waves-effect waves-light"><i class="fas fa-music" style="zoom:.6"></i> <span>多媒体</span><i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li><a href="/musics"><i class="fas fa-music" style="margin-top:-20px;zoom:.6"></i> <span>音乐</span></a></li><li><a href="/galleries"><i class="fas fa-image" style="margin-top:-20px;zoom:.6"></i> <span>相册</span></a></li><li><a href="/movies"><i class="fas fa-film" style="margin-top:-20px;zoom:.6"></i> <span>视频</span></a></li><li><a href="https://musicplayer.17lai.site/"><i class="fas fa-music" style="margin-top:-20px;zoom:.6"></i> <span>在线云音乐</span></a></li><li><a href="https://music.17lai.site/"><i class="fas fa-music" style="margin-top:-20px;zoom:.6"></i> <span>音乐播放器</span></a></li></ul></li><li class="hide-on-med-and-down nav-item"><a href="" class="waves-effect waves-light"><i class="fas fa-folder-plus" style="zoom:.6"></i> <span>文章</span><i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li><a href="/tags"><i class="fas fa-tags" style="margin-top:-20px;zoom:.6"></i> <span>标签</span></a></li><li><a href="/categories"><i class="fas fa-bookmark" style="margin-top:-20px;zoom:.6"></i> <span>分类</span></a></li><li><a href="/archives"><i class="fas fa-archive" style="margin-top:-20px;zoom:.6"></i> <span>归档</span></a></li></ul></li><li class="hide-on-med-and-down nav-item"><a href="/friends" class="waves-effect waves-light"><i class="fas fa-link" style="zoom:.6"></i> <span>友链</span></a></li><li class="hide-on-med-and-down nav-item"><a href="" class="waves-effect waves-light"><i class="fas fa-comments" style="zoom:.6"></i> <span>交流</span><i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li><a href="/contact"><i class="fas fa-comments" style="margin-top:-20px;zoom:.6"></i> <span>留言</span></a></li><li><a href="https://t.me/joinchat/Sg3__qc4LBE2VsLO"><i class="fab fa-telegram-plane" style="margin-top:-20px;zoom:.6"></i> <span>TG群</span></a></li></ul></li><li class="hide-on-med-and-down nav-item"><a href="" class="waves-effect waves-light"><i class="fas fa-code" style="zoom:.6"></i> <span>快查</span><i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li><a href="/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/"><i class="fab fa-vimeo-v" style="margin-top:-20px;zoom:.6"></i> <span>Vim快查表</span></a></li><li><a href="/cheatsheets/Visual_Studio_Code.docset/Contents/Resources/Documents/"><i class="fas fa-code" style="margin-top:-20px;zoom:.6"></i> <span>VSCode快查表</span></a></li><li><a href="/cheatsheets/Git.docset/Contents/Resources/Documents/"><i class="fab fa-git-square" style="margin-top:-20px;zoom:.6"></i> <span>Git快查表</span></a></li><li><a href="/cheatsheets/SQLite.docset/Contents/Resources/Documents/"><i class="fas fa-database" style="margin-top:-20px;zoom:.6"></i> <span>SQLite快查表</span></a></li><li><a href="/cheatsheets/tmux.docset/Contents/Resources/Documents/"><i class="fas fa-terminal" style="margin-top:-20px;zoom:.6"></i> <span>Tmux快查表</span></a></li><li><a href="/cheatsheets/Bash_Shortcuts.docset/Contents/Resources/Documents/"><i class="fas fa-terminal" style="margin-top:-20px;zoom:.6"></i> <span>Bash快查表</span></a></li><li><a href="/dash/"><i class="fas fa-laptop-code" style="margin-top:-20px;zoom:.6"></i> <span>更多快查表</span></a></li></ul></li><li class="hide-on-med-and-down nav-item"><a href="" class="waves-effect waves-light"><i class="fas fa-laptop-code" style="zoom:.6"></i> <span>项目</span><i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li><a href="https://hub.docker.com/r/bloodstar/drop-in"><i class="fab fa-docker" style="margin-top:-20px;zoom:.6"></i> <span>VimIDE</span></a></li><li><a href="https://hub.docker.com/r/bloodstar/hexo"><i class="fab fa-docker" style="margin-top:-20px;zoom:.6"></i> <span>hexo</span></a></li><li><a href="https://hub.docker.com/r/bloodstar/gitbook-builder"><i class="fab fa-docker" style="margin-top:-20px;zoom:.6"></i> <span>Gitbook</span></a></li><li><a href="https://hub.docker.com/r/bloodstar/v2fly-privoxy"><i class="fab fa-docker" style="margin-top:-20px;zoom:.6"></i> <span>v2fly</span></a></li><li><a href="https://hub.docker.com/r/bloodstar/nginx-purge"><i class="fab fa-docker" style="margin-top:-20px;zoom:.6"></i> <span>nginx</span></a></li><li><a href="https://hub.docker.com/r/bloodstar/rclonebrowser"><i class="fab fa-docker" style="margin-top:-20px;zoom:.6"></i> <span>rclone</span></a></li><li><a href="https://github.com/appotry/PTtool"><i class="fab fa-linux" style="margin-top:-20px;zoom:.6"></i> <span>PTtool</span></a></li><li><a href="https://github.com/appotry/"><i class="fab fa-github" style="margin-top:-20px;zoom:.6"></i> <span>更多项目</span></a></li></ul></li><li class="hide-on-med-and-down nav-item"><a href="" class="waves-effect waves-light"><i class="fas fa-toolbox" style="zoom:.6"></i> <span>工具</span><i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li><a href="https://linux-command.17lai.site/"><i class="fas fa-terminal" style="margin-top:-20px;zoom:.6"></i> <span>Linux命令</span></a></li><li><a href="http://encode.chahuo.com/"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>加密解密</span></a></li><li><a href="https://markmap.js.org/repl"><i class="fas fa-brain" style="margin-top:-20px;zoom:.6"></i> <span>思维导图</span></a></li><li><a href="https://fontawesome.com/v5.15/icons"><i class="fab fa-font-awesome" style="margin-top:-20px;zoom:.6"></i> <span>Awesome</span></a></li><li><a href="http://ping.chinaz.com/"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>站长工具</span></a></li><li><a href="http://tool.chinaz.com/port/"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>端口扫描</span></a></li><li><a href="https://ssh.17lai.site/"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>WebSSH</span></a></li><li><a href="https://so.17lai.site/"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>安全搜索</span></a></li><li><a href="/nav"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>网址导航</span></a></li><li><a href="https://devtool.tech/"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>Devtools</span></a></li></ul></li><li class="hide-on-med-and-down nav-item"><a href="" class="waves-effect waves-light"><i class="fas fa-id-badge" style="zoom:.6"></i> <span>关于</span><i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li><a href="/about"><i class="fas fa-user-circle" style="margin-top:-20px;zoom:.6"></i> <span>关于我</span></a></li><li><a href="/myTeck"><i class="fas fa-address-card" style="margin-top:-20px;zoom:.6"></i> <span>我的技术</span></a></li><li><a href="/myProject"><i class="fas fa-laptop-code" style="margin-top:-20px;zoom:.6"></i> <span>我的项目</span></a></li><li><a href="/myPost"><i class="fas fa-pen-nib" style="margin-top:-20px;zoom:.6"></i> <span>我的文章</span></a></li><li><a href="/needtoread"><i class="fas fa-exclamation-circle" style="margin-top:-20px;zoom:.6"></i> <span>博客须知</span></a></li></ul></li><li><a href="#searchModal" class="modal-trigger waves-effect waves-light"><i id="searchIcon" class="fas fa-search" title="搜索" style="zoom:.85"></i></a></li></ul><div id="mobile-nav" class="side-nav sidenav"><div class="mobile-head bg-color"> <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias/logo.png" class="logo-img circle responsive-img"><div class="logo-name">夜法之书</div><div class="logo-desc"> ~软件驱动世界~</div></div><ul class="menu-list mobile-menu-list"><li class="m-nav-item"><a href="/" class="waves-effect waves-light"><i class="fa-fw fas fa-home"></i> 首页</a></li><li class="m-nav-item"><a href="https://nav.17lai.site/" class="waves-effect waves-light"><i class="fa-fw fas fa-suitcase"></i> 导航</a></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-music"></i> 多媒体<span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul style=""><li><a href="/musics" style="margin-left:75px"><i class="fa fas fa-music" style="position:absolute;left:50px"></i> <span>音乐</span></a></li><li><a href="/galleries" style="margin-left:75px"><i class="fa fas fa-image" style="position:absolute;left:50px"></i> <span>相册</span></a></li><li><a href="/movies" style="margin-left:75px"><i class="fa fas fa-film" style="position:absolute;left:50px"></i> <span>视频</span></a></li><li><a href="https://musicplayer.17lai.site/" style="margin-left:75px"><i class="fa fas fa-music" style="position:absolute;left:50px"></i> <span>在线云音乐</span></a></li><li><a href="https://music.17lai.site/" style="margin-left:75px"><i class="fa fas fa-music" style="position:absolute;left:50px"></i> <span>音乐播放器</span></a></li></ul></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-folder-plus"></i> 文章<span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul style=""><li><a href="/tags" style="margin-left:75px"><i class="fa fas fa-tags" style="position:absolute;left:50px"></i> <span>标签</span></a></li><li><a href="/categories" style="margin-left:75px"><i class="fa fas fa-bookmark" style="position:absolute;left:50px"></i> <span>分类</span></a></li><li><a href="/archives" style="margin-left:75px"><i class="fa fas fa-archive" style="position:absolute;left:50px"></i> <span>归档</span></a></li></ul></li><li class="m-nav-item"><a href="/friends" class="waves-effect waves-light"><i class="fa-fw fas fa-link"></i> 友链</a></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-comments"></i> 交流<span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul style=""><li><a href="/contact" style="margin-left:75px"><i class="fa fas fa-comments" style="position:absolute;left:50px"></i> <span>留言</span></a></li><li><a href="https://t.me/joinchat/Sg3__qc4LBE2VsLO" style="margin-left:75px"><i class="fa fab fa-telegram-plane" style="position:absolute;left:50px"></i> <span>TG群</span></a></li></ul></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-code"></i> 快查<span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul style=""><li><a href="/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fab fa-vimeo-v" style="position:absolute;left:50px"></i> <span>Vim快查表</span></a></li><li><a href="/cheatsheets/Visual_Studio_Code.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fas fa-code" style="position:absolute;left:50px"></i> <span>VSCode快查表</span></a></li><li><a href="/cheatsheets/Git.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fab fa-git-square" style="position:absolute;left:50px"></i> <span>Git快查表</span></a></li><li><a href="/cheatsheets/SQLite.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fas fa-database" style="position:absolute;left:50px"></i> <span>SQLite快查表</span></a></li><li><a href="/cheatsheets/tmux.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fas fa-terminal" style="position:absolute;left:50px"></i> <span>Tmux快查表</span></a></li><li><a href="/cheatsheets/Bash_Shortcuts.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fas fa-terminal" style="position:absolute;left:50px"></i> <span>Bash快查表</span></a></li><li><a href="/dash/" style="margin-left:75px"><i class="fa fas fa-laptop-code" style="position:absolute;left:50px"></i> <span>更多快查表</span></a></li></ul></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-laptop-code"></i> 项目<span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul style=""><li><a href="https://hub.docker.com/r/bloodstar/drop-in" style="margin-left:75px"><i class="fa fab fa-docker" style="position:absolute;left:50px"></i> <span>VimIDE</span></a></li><li><a href="https://hub.docker.com/r/bloodstar/hexo" style="margin-left:75px"><i class="fa fab fa-docker" style="position:absolute;left:50px"></i> <span>hexo</span></a></li><li><a href="https://hub.docker.com/r/bloodstar/gitbook-builder" style="margin-left:75px"><i class="fa fab fa-docker" style="position:absolute;left:50px"></i> <span>Gitbook</span></a></li><li><a href="https://hub.docker.com/r/bloodstar/v2fly-privoxy" style="margin-left:75px"><i class="fa fab fa-docker" style="position:absolute;left:50px"></i> <span>v2fly</span></a></li><li><a href="https://hub.docker.com/r/bloodstar/nginx-purge" style="margin-left:75px"><i class="fa fab fa-docker" style="position:absolute;left:50px"></i> <span>nginx</span></a></li><li><a href="https://hub.docker.com/r/bloodstar/rclonebrowser" style="margin-left:75px"><i class="fa fab fa-docker" style="position:absolute;left:50px"></i> <span>rclone</span></a></li><li><a href="https://github.com/appotry/PTtool" style="margin-left:75px"><i class="fa fab fa-linux" style="position:absolute;left:50px"></i> <span>PTtool</span></a></li><li><a href="https://github.com/appotry/" style="margin-left:75px"><i class="fa fab fa-github" style="position:absolute;left:50px"></i> <span>更多项目</span></a></li></ul></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-toolbox"></i> 工具<span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul style=""><li><a href="https://linux-command.17lai.site/" style="margin-left:75px"><i class="fa fas fa-terminal" style="position:absolute;left:50px"></i> <span>Linux命令</span></a></li><li><a href="http://encode.chahuo.com/" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>加密解密</span></a></li><li><a href="https://markmap.js.org/repl" style="margin-left:75px"><i class="fa fas fa-brain" style="position:absolute;left:50px"></i> <span>思维导图</span></a></li><li><a href="https://fontawesome.com/v5.15/icons" style="margin-left:75px"><i class="fa fab fa-font-awesome" style="position:absolute;left:50px"></i> <span>Awesome</span></a></li><li><a href="http://ping.chinaz.com/" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>站长工具</span></a></li><li><a href="http://tool.chinaz.com/port/" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>端口扫描</span></a></li><li><a href="https://ssh.17lai.site/" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>WebSSH</span></a></li><li><a href="https://so.17lai.site/" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>安全搜索</span></a></li><li><a href="/nav" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>网址导航</span></a></li><li><a href="https://devtool.tech/" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>Devtools</span></a></li></ul></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-id-badge"></i> 关于<span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul style=""><li><a href="/about" style="margin-left:75px"><i class="fa fas fa-user-circle" style="position:absolute;left:50px"></i> <span>关于我</span></a></li><li><a href="/myTeck" style="margin-left:75px"><i class="fa fas fa-address-card" style="position:absolute;left:50px"></i> <span>我的技术</span></a></li><li><a href="/myProject" style="margin-left:75px"><i class="fa fas fa-laptop-code" style="position:absolute;left:50px"></i> <span>我的项目</span></a></li><li><a href="/myPost" style="margin-left:75px"><i class="fa fas fa-pen-nib" style="position:absolute;left:50px"></i> <span>我的文章</span></a></li><li><a href="/needtoread" style="margin-left:75px"><i class="fa fas fa-exclamation-circle" style="position:absolute;left:50px"></i> <span>博客须知</span></a></li></ul></li></ul></div></div></nav></header><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/cryptojs/crypto-js.min.js"></script><script>
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+
+
+<head><!-- hexo injector head_begin start --><link href="https://cdn.jsdelivr.net/npm/hexo-tag-common@0.0.5/css/index.css" rel="stylesheet"/><!-- hexo injector head_begin end -->
+    <meta charset="utf-8">
+    <meta name="keywords" content="Emby, Sonarr, Jeckett, Portainer, Watchtower, DNSMasq, DNSCrypt">
+    <meta name="description" content="使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程。jackett 作为种子源，sonarr剧集管理，bt下载，qbittorrent主力下载，使用iyuu转移辅种，emby，jellyfin做海报墙，sunfinder自动下载字幕。结合本地DNS管理，DNS去广告，Nginx 反向代理去端口访问，形成一个完整解决方案。">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="renderer" content="webkit|ie-stand|ie-comp">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JNYZP4ZLDJ"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+        dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+    gtag('config', 'G-JNYZP4ZLDJ');
+</script>
+
+
+    <title>使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程 | 夜法之书</title>
+    <!-- hexo-offline -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/favicon.png">
+
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/awesome/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/materialize/materialize.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/aos/aos.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/animate/animate.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/lightGallery/css/lightgallery.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/css/matery.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/css/my.css">
+
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/jquery/jquery-3.6.0.min.js"></script>
+
+<meta name="generator" content="Hexo 6.1.0">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="夜法之书" type="application/atom+xml">
+</head>
+
+
+
+   <style>
+    body{
+       background-image: url(https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias_webp/background.webp);
+       background-repeat:no-repeat;
+       background-size: 100% 100%;
+       background-attachment:fixed;
+    }
+</style>
+
+
+
+<body>
+    <header class="navbar-fixed">
+    <nav id="headNav" class="bg-color nav-transparent">
+        <div id="navContainer" class="nav-wrapper container">
+            <div class="brand-logo">
+                <a href="/" class="waves-effect waves-light">
+                    
+                    <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias/logo.png" class="logo-img" alt="LOGO">
+                    
+                    <span class="logo-span">夜法之书</span>
+                </a>
+            </div>
+            
+
+<a href="#" data-target="mobile-nav" class="sidenav-trigger button-collapse"><i class="fas fa-bars"></i></a>
+<ul class="right nav-menu">
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/" class="waves-effect waves-light">
+      
+      <i class="fas fa-home" style="zoom: 0.6;"></i>
+      
+      <span>首页</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="https://nav.17lai.site/" class="waves-effect waves-light">
+      
+      <i class="fas fa-suitcase" style="zoom: 0.6;"></i>
+      
+      <span>导航</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="" class="waves-effect waves-light">
+
+      
+      <i class="fas fa-music" style="zoom: 0.6;"></i>
+      
+      <span>多媒体</span>
+      <i class="fas fa-chevron-down" aria-hidden="true" style="zoom: 0.6;"></i>
+    </a>
+    <ul class="sub-nav menus_item_child ">
+      
+      <li>
+        <a href="/musics">
+          
+          <i class="fas fa-music" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>音乐</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/galleries">
+          
+          <i class="fas fa-image" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>相册</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/movies">
+          
+          <i class="fas fa-film" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>视频</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="https://musicplayer.17lai.site/">
+          
+          <i class="fas fa-music" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>在线云音乐</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="https://music.17lai.site/">
+          
+          <i class="fas fa-music" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>音乐播放器</span>
+        </a>
+      </li>
+      
+    </ul>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="" class="waves-effect waves-light">
+
+      
+      <i class="fas fa-folder-plus" style="zoom: 0.6;"></i>
+      
+      <span>文章</span>
+      <i class="fas fa-chevron-down" aria-hidden="true" style="zoom: 0.6;"></i>
+    </a>
+    <ul class="sub-nav menus_item_child ">
+      
+      <li>
+        <a href="/tags">
+          
+          <i class="fas fa-tags" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>标签</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/categories">
+          
+          <i class="fas fa-bookmark" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>分类</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/archives">
+          
+          <i class="fas fa-archive" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>归档</span>
+        </a>
+      </li>
+      
+    </ul>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="/friends" class="waves-effect waves-light">
+      
+      <i class="fas fa-link" style="zoom: 0.6;"></i>
+      
+      <span>友链</span>
+    </a>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="" class="waves-effect waves-light">
+
+      
+      <i class="fas fa-comments" style="zoom: 0.6;"></i>
+      
+      <span>交流</span>
+      <i class="fas fa-chevron-down" aria-hidden="true" style="zoom: 0.6;"></i>
+    </a>
+    <ul class="sub-nav menus_item_child ">
+      
+      <li>
+        <a href="/contact">
+          
+          <i class="fas fa-comments" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>留言</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="https://t.me/joinchat/Sg3__qc4LBE2VsLO">
+          
+          <i class="fab fa-telegram-plane" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>TG群</span>
+        </a>
+      </li>
+      
+    </ul>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="" class="waves-effect waves-light">
+
+      
+      <i class="fas fa-code" style="zoom: 0.6;"></i>
+      
+      <span>快查</span>
+      <i class="fas fa-chevron-down" aria-hidden="true" style="zoom: 0.6;"></i>
+    </a>
+    <ul class="sub-nav menus_item_child ">
+      
+      <li>
+        <a href="/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/">
+          
+          <i class="fab fa-vimeo-v" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Vim快查表</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/cheatsheets/Visual_Studio_Code.docset/Contents/Resources/Documents/">
+          
+          <i class="fas fa-code" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>VSCode快查表</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/cheatsheets/Git.docset/Contents/Resources/Documents/">
+          
+          <i class="fab fa-git-square" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Git快查表</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/cheatsheets/SQLite.docset/Contents/Resources/Documents/">
+          
+          <i class="fas fa-database" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>SQLite快查表</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/cheatsheets/tmux.docset/Contents/Resources/Documents/">
+          
+          <i class="fas fa-terminal" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Tmux快查表</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/cheatsheets/Bash_Shortcuts.docset/Contents/Resources/Documents/">
+          
+          <i class="fas fa-terminal" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Bash快查表</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/dash/">
+          
+          <i class="fas fa-laptop-code" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>更多快查表</span>
+        </a>
+      </li>
+      
+    </ul>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="" class="waves-effect waves-light">
+
+      
+      <i class="fas fa-laptop-code" style="zoom: 0.6;"></i>
+      
+      <span>项目</span>
+      <i class="fas fa-chevron-down" aria-hidden="true" style="zoom: 0.6;"></i>
+    </a>
+    <ul class="sub-nav menus_item_child ">
+      
+      <li>
+        <a href="https://hub.docker.com/r/bloodstar/drop-in">
+          
+          <i class="fab fa-docker" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>VimIDE</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="https://hub.docker.com/r/bloodstar/hexo">
+          
+          <i class="fab fa-docker" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>hexo</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="https://hub.docker.com/r/bloodstar/gitbook-builder">
+          
+          <i class="fab fa-docker" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Gitbook</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="https://hub.docker.com/r/bloodstar/v2fly-privoxy">
+          
+          <i class="fab fa-docker" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>v2fly</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="https://hub.docker.com/r/bloodstar/nginx-purge">
+          
+          <i class="fab fa-docker" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>nginx</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="https://hub.docker.com/r/bloodstar/rclonebrowser">
+          
+          <i class="fab fa-docker" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>rclone</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="https://github.com/appotry/PTtool">
+          
+          <i class="fab fa-linux" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>PTtool</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="https://github.com/appotry/">
+          
+          <i class="fab fa-github" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>更多项目</span>
+        </a>
+      </li>
+      
+    </ul>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="" class="waves-effect waves-light">
+
+      
+      <i class="fas fa-toolbox" style="zoom: 0.6;"></i>
+      
+      <span>工具</span>
+      <i class="fas fa-chevron-down" aria-hidden="true" style="zoom: 0.6;"></i>
+    </a>
+    <ul class="sub-nav menus_item_child ">
+      
+      <li>
+        <a href="https://linux-command.17lai.site/">
+          
+          <i class="fas fa-terminal" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Linux命令</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="http://encode.chahuo.com/">
+          
+          <i class="fas fa-tools" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>加密解密</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="https://markmap.js.org/repl">
+          
+          <i class="fas fa-brain" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>思维导图</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="https://fontawesome.com/v5.15/icons">
+          
+          <i class="fab fa-font-awesome" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Awesome</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="http://ping.chinaz.com/">
+          
+          <i class="fas fa-tools" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>站长工具</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="http://tool.chinaz.com/port/">
+          
+          <i class="fas fa-tools" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>端口扫描</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="https://ssh.17lai.site/">
+          
+          <i class="fas fa-tools" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>WebSSH</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="https://so.17lai.site/">
+          
+          <i class="fas fa-tools" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>安全搜索</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/nav">
+          
+          <i class="fas fa-tools" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>网址导航</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="https://devtool.tech/">
+          
+          <i class="fas fa-tools" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>Devtools</span>
+        </a>
+      </li>
+      
+    </ul>
+    
+  </li>
+  
+  <li class="hide-on-med-and-down nav-item">
+    
+    <a href="" class="waves-effect waves-light">
+
+      
+      <i class="fas fa-id-badge" style="zoom: 0.6;"></i>
+      
+      <span>关于</span>
+      <i class="fas fa-chevron-down" aria-hidden="true" style="zoom: 0.6;"></i>
+    </a>
+    <ul class="sub-nav menus_item_child ">
+      
+      <li>
+        <a href="/about">
+          
+          <i class="fas fa-user-circle" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>关于我</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/myTeck">
+          
+          <i class="fas fa-address-card" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>我的技术</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/myProject">
+          
+          <i class="fas fa-laptop-code" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>我的项目</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/myPost">
+          
+          <i class="fas fa-pen-nib" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>我的文章</span>
+        </a>
+      </li>
+      
+      <li>
+        <a href="/needtoread">
+          
+          <i class="fas fa-exclamation-circle" style="margin-top: -20px; zoom: 0.6;"></i>
+          
+          <span>博客须知</span>
+        </a>
+      </li>
+      
+    </ul>
+    
+  </li>
+  
+  <li>
+    <a href="#searchModal" class="modal-trigger waves-effect waves-light">
+      <i id="searchIcon" class="fas fa-search" title="搜索" style="zoom: 0.85;"></i>
+    </a>
+  </li>
+</ul>
+
+
+<div id="mobile-nav" class="side-nav sidenav">
+
+    <div class="mobile-head bg-color">
+        
+        <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias/logo.png" class="logo-img circle responsive-img">
+        
+        <div class="logo-name">夜法之书</div>
+        <div class="logo-desc">
+            
+            ~软件驱动世界~
+            
+        </div>
+    </div>
+
+    <ul class="menu-list mobile-menu-list">
+        
+        <li class="m-nav-item">
+	  
+		<a href="/" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-home"></i>
+			
+			首页
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="https://nav.17lai.site/" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-suitcase"></i>
+			
+			导航
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="javascript:;">
+			
+				<i class="fa-fw fas fa-music"></i>
+			
+			多媒体
+			<span class="m-icon"><i class="fas fa-chevron-right"></i></span>
+		</a>
+            <ul  style="background:  ;" >
+              
+                <li>
+
+                  <a href="/musics " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-music" style="position: absolute;left:50px" ></i>
+			      
+		          <span>音乐</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/galleries " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-image" style="position: absolute;left:50px" ></i>
+			      
+		          <span>相册</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/movies " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-film" style="position: absolute;left:50px" ></i>
+			      
+		          <span>视频</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="https://musicplayer.17lai.site/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-music" style="position: absolute;left:50px" ></i>
+			      
+		          <span>在线云音乐</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="https://music.17lai.site/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-music" style="position: absolute;left:50px" ></i>
+			      
+		          <span>音乐播放器</span>
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="javascript:;">
+			
+				<i class="fa-fw fas fa-folder-plus"></i>
+			
+			文章
+			<span class="m-icon"><i class="fas fa-chevron-right"></i></span>
+		</a>
+            <ul  style="background:  ;" >
+              
+                <li>
+
+                  <a href="/tags " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-tags" style="position: absolute;left:50px" ></i>
+			      
+		          <span>标签</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/categories " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-bookmark" style="position: absolute;left:50px" ></i>
+			      
+		          <span>分类</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/archives " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-archive" style="position: absolute;left:50px" ></i>
+			      
+		          <span>归档</span>
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="/friends" class="waves-effect waves-light">
+			
+			    <i class="fa-fw fas fa-link"></i>
+			
+			友链
+		</a>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="javascript:;">
+			
+				<i class="fa-fw fas fa-comments"></i>
+			
+			交流
+			<span class="m-icon"><i class="fas fa-chevron-right"></i></span>
+		</a>
+            <ul  style="background:  ;" >
+              
+                <li>
+
+                  <a href="/contact " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-comments" style="position: absolute;left:50px" ></i>
+			      
+		          <span>留言</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="https://t.me/joinchat/Sg3__qc4LBE2VsLO " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-telegram-plane" style="position: absolute;left:50px" ></i>
+			      
+		          <span>TG群</span>
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="javascript:;">
+			
+				<i class="fa-fw fas fa-code"></i>
+			
+			快查
+			<span class="m-icon"><i class="fas fa-chevron-right"></i></span>
+		</a>
+            <ul  style="background:  ;" >
+              
+                <li>
+
+                  <a href="/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/ " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-vimeo-v" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Vim快查表</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/cheatsheets/Visual_Studio_Code.docset/Contents/Resources/Documents/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-code" style="position: absolute;left:50px" ></i>
+			      
+		          <span>VSCode快查表</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/cheatsheets/Git.docset/Contents/Resources/Documents/ " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-git-square" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Git快查表</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/cheatsheets/SQLite.docset/Contents/Resources/Documents/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-database" style="position: absolute;left:50px" ></i>
+			      
+		          <span>SQLite快查表</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/cheatsheets/tmux.docset/Contents/Resources/Documents/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-terminal" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Tmux快查表</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/cheatsheets/Bash_Shortcuts.docset/Contents/Resources/Documents/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-terminal" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Bash快查表</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/dash/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-laptop-code" style="position: absolute;left:50px" ></i>
+			      
+		          <span>更多快查表</span>
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="javascript:;">
+			
+				<i class="fa-fw fas fa-laptop-code"></i>
+			
+			项目
+			<span class="m-icon"><i class="fas fa-chevron-right"></i></span>
+		</a>
+            <ul  style="background:  ;" >
+              
+                <li>
+
+                  <a href="https://hub.docker.com/r/bloodstar/drop-in " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-docker" style="position: absolute;left:50px" ></i>
+			      
+		          <span>VimIDE</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="https://hub.docker.com/r/bloodstar/hexo " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-docker" style="position: absolute;left:50px" ></i>
+			      
+		          <span>hexo</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="https://hub.docker.com/r/bloodstar/gitbook-builder " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-docker" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Gitbook</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="https://hub.docker.com/r/bloodstar/v2fly-privoxy " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-docker" style="position: absolute;left:50px" ></i>
+			      
+		          <span>v2fly</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="https://hub.docker.com/r/bloodstar/nginx-purge " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-docker" style="position: absolute;left:50px" ></i>
+			      
+		          <span>nginx</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="https://hub.docker.com/r/bloodstar/rclonebrowser " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-docker" style="position: absolute;left:50px" ></i>
+			      
+		          <span>rclone</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="https://github.com/appotry/PTtool " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-linux" style="position: absolute;left:50px" ></i>
+			      
+		          <span>PTtool</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="https://github.com/appotry/ " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-github" style="position: absolute;left:50px" ></i>
+			      
+		          <span>更多项目</span>
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="javascript:;">
+			
+				<i class="fa-fw fas fa-toolbox"></i>
+			
+			工具
+			<span class="m-icon"><i class="fas fa-chevron-right"></i></span>
+		</a>
+            <ul  style="background:  ;" >
+              
+                <li>
+
+                  <a href="https://linux-command.17lai.site/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-terminal" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Linux命令</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="http://encode.chahuo.com/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-tools" style="position: absolute;left:50px" ></i>
+			      
+		          <span>加密解密</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="https://markmap.js.org/repl " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-brain" style="position: absolute;left:50px" ></i>
+			      
+		          <span>思维导图</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="https://fontawesome.com/v5.15/icons " style="margin-left:75px">
+				  
+				   <i class="fa fab fa-font-awesome" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Awesome</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="http://ping.chinaz.com/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-tools" style="position: absolute;left:50px" ></i>
+			      
+		          <span>站长工具</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="http://tool.chinaz.com/port/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-tools" style="position: absolute;left:50px" ></i>
+			      
+		          <span>端口扫描</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="https://ssh.17lai.site/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-tools" style="position: absolute;left:50px" ></i>
+			      
+		          <span>WebSSH</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="https://so.17lai.site/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-tools" style="position: absolute;left:50px" ></i>
+			      
+		          <span>安全搜索</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/nav " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-tools" style="position: absolute;left:50px" ></i>
+			      
+		          <span>网址导航</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="https://devtool.tech/ " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-tools" style="position: absolute;left:50px" ></i>
+			      
+		          <span>Devtools</span>
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </li>
+        
+        <li class="m-nav-item">
+	  
+		<a href="javascript:;">
+			
+				<i class="fa-fw fas fa-id-badge"></i>
+			
+			关于
+			<span class="m-icon"><i class="fas fa-chevron-right"></i></span>
+		</a>
+            <ul  style="background:  ;" >
+              
+                <li>
+
+                  <a href="/about " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-user-circle" style="position: absolute;left:50px" ></i>
+			      
+		          <span>关于我</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/myTeck " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-address-card" style="position: absolute;left:50px" ></i>
+			      
+		          <span>我的技术</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/myProject " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-laptop-code" style="position: absolute;left:50px" ></i>
+			      
+		          <span>我的项目</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/myPost " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-pen-nib" style="position: absolute;left:50px" ></i>
+			      
+		          <span>我的文章</span>
+                  </a>
+                </li>
+              
+                <li>
+
+                  <a href="/needtoread " style="margin-left:75px">
+				  
+				   <i class="fa fas fa-exclamation-circle" style="position: absolute;left:50px" ></i>
+			      
+		          <span>博客须知</span>
+                  </a>
+                </li>
+              
+            </ul>
+          
+        </li>
+        
+        
+    </ul>
+</div>
+
+
+        </div>
+
+        
+    </nav>
+
+</header>
+
+    
+<script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/cryptojs/crypto-js.min.js"></script>
+<script>
     (function() {
         let pwd = '';
         if (pwd && pwd.length > 0) {
@@ -8,7 +1169,281 @@
             }
         }
     })();
-</script><div class="bg-cover pd-header post-cover" style="background-image:url(https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias_webp/cover/emby.webp)"><div class="container" style="right:0;left:0"><div class="row"><div class="col s12 m12 l12"><div class="brand"><h1 class="description center-align post-title">使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程</h1></div></div></div></div></div><main class="post-container content"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/tocbot/tocbot.css"><style>#articleContent h1::before,#articleContent h2::before,#articleContent h3::before,#articleContent h4::before,#articleContent h5::before,#articleContent h6::before{display:block;content:" ";height:100px;margin-top:-100px;visibility:hidden}#articleContent :focus{outline:0}.toc-fixed{position:fixed;top:64px}.toc-widget{width:345px;padding-left:20px}.toc-widget .toc-title{padding:35px 0 15px 17px;font-size:1.5rem;font-weight:700;line-height:1.5rem}.toc-widget ol{padding:0;list-style:none}#toc-content{padding-bottom:30px;overflow:auto}#toc-content ol{padding-left:10px}#toc-content ol li{padding-left:10px}#toc-content .toc-link:hover{color:#42b983;font-weight:700;text-decoration:underline}#toc-content .toc-link::before{background-color:transparent;max-height:25px;position:absolute;right:23.5vw;display:block}#toc-content .is-active-link{color:#42b983}#floating-toc-btn{position:fixed;right:15px;bottom:76px;padding-top:15px;margin-bottom:0;z-index:998}#floating-toc-btn .btn-floating{width:48px;height:48px}#floating-toc-btn .btn-floating i{line-height:48px;font-size:1.4rem}</style><div class="row"><div id="main-content" class="col s12 m12 l9"><div id="artDetail"><div class="card"><div class="card-content article-info"><div class="row tag-cate"><div class="col s7"><div class="article-tag"> <a href="/tags/Emby/"><span class="chip bg-color">Emby</span></a> <a href="/tags/Sonarr/"><span class="chip bg-color">Sonarr</span></a> <a href="/tags/Jeckett/"><span class="chip bg-color">Jeckett</span></a> <a href="/tags/Portainer/"><span class="chip bg-color">Portainer</span></a> <a href="/tags/Watchtower/"><span class="chip bg-color">Watchtower</span></a> <a href="/tags/DNSMasq/"><span class="chip bg-color">DNSMasq</span></a> <a href="/tags/DNSCrypt/"><span class="chip bg-color">DNSCrypt</span></a></div></div><div class="col s5 right-align"><div class="post-cate"><i class="fas fa-bookmark fa-fw icon-category"></i> <a href="/categories/docker/" class="post-category">docker</a></div></div></div><div class="post-info"><div class="post-date info-break-policy"><i class="far fa-calendar-minus fa-fw"></i> 发布日期:&nbsp;&nbsp; 2021-09-01</div><div class="post-date info-break-policy"><i class="far fa-calendar-check fa-fw"></i> 更新日期:&nbsp;&nbsp; 2022-03-16</div><div class="info-break-policy"><i class="far fa-file-word fa-fw"></i> 文章字数:&nbsp;&nbsp; 2.3k</div><div class="info-break-policy"><i class="far fa-clock fa-fw"></i> 阅读时长:&nbsp;&nbsp; 9 分</div><div id="busuanzi_container_page_pv" class="info-break-policy"><i class="far fa-eye fa-fw"></i> 阅读次数:&nbsp;&nbsp;<span id="busuanzi_value_page_pv"></span></div></div></div><hr class="clearfix"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/prism/prism.css"><style type="text/css">code[class*=language-],pre[class*=language-]{white-space:pre-wrap!important}</style><div class="card-content article-card-content"><div id="articleContent"><blockquote><p>使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程，打造一个完整的HTPC。</p><p><strong>持续滚动更新</strong>，欢迎收藏关注。也可以<a href="https://blog.17lai.site/atom.xml">RSS订阅</a>本博客！</p><p>jackett 作为种子源，sonarr剧集管理，bt下载，qbittorrent主力下载，使用iyuu转移辅种，emby，jellyfin做海报墙，sunfinder自动下载字幕。基本算是完美打通全流程自动追剧。bt种子文件命名规则SxxExx的自动识别下载，国内的资源手动查找下载，自动推送到emby刮削好。</p><p>结合本地DNS管理，DNS去广告，Nginx 反向代理去端口访问，形成一个完整解决方案。</p><p>硬链接工具导入到新目录，使用TMM刮削。</p><p>Tips：博主只是把个人使用经验的一部分<em><strong>无偿</strong></em>写下来，写完后发现整理流程很复杂，要求很高，博主整体软硬件成本上2W以上了。各位读者赶着看得懂的做，如果看不懂，请略过，或者Google之。</p></blockquote><h2 id="indexer-种子索引源"><strong>indexer 种子索引源</strong></h2><p>种子索引来源。</p><h3 id="jackett"><strong>jackett</strong></h3><ul><li>docker: linuxserver/jackett:latest</li><li>老牌选手，种子源非常丰富。</li></ul><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819002543.png" alt="jackett 界面"></p><h3 id="prowlarr"><strong>prowlarr</strong></h3><ul><li>indexer manager/proxy</li><li>Docker: <a target="_blank" rel="noopener" href="https://hub.docker.com/r/linuxserver/prowlarr">linuxserver/prowlarr:develop</a></li><li>新开发的，和sonarr, lidarr等结合比jackett 配置更简单。</li></ul><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819002628.png" alt="prowlarr"></p><h2 id="sonarr动画剧集管理"><strong>sonarr动画剧集管理</strong></h2><p>管理剧集名，查找剧集种子推送到下载工具</p><p>剧集管理示例图片</p><p>管理剧集目录，剧集日历，提醒你那一天哪些节目播放</p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001244.png" alt="sonarr"></p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819211051.png" alt="sonarr 日历提醒"></p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001328.png" alt="sonarr"></p><p>自动识别下载对英文剧集支持较好，对于中文资源，结合手动识别下载更佳。</p><h3 id="手动识别下载"><strong>手动识别下载</strong></h3><p>示例图片</p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001055.png" alt="sonarr"></p><p>电影使用radarr, 音乐使用lidarr，同样可以自动化过程</p><h2 id="多媒体中心">多媒体中心</h2><blockquote><p>Emby，Jellyfin, Plex都是优秀的多媒体中心。Jellyfin是开源的，基于Emby早期版本。</p></blockquote><h3 id="emby海报墙，流媒体中心"><strong>emby海报墙，流媒体中心</strong></h3><p>emby作为海报墙，元数据查看器，结合tampermonkey js脚本调用外部potplayer播放减少nas服务器压力，并且得到更好解码性能。手机端也有emby客户端。jellyfin，plex也可以</p><p>js脚本: <a target="_blank" rel="noopener" href="https://greasyfork.org/scripts/406811-embylaunchpotplayer/code/embyLaunchPotplayer.user.js">embyLaunchPotplayer</a></p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001419.png" alt="emby"></p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819000847.png" alt="emby"></p><h3 id="jellyfin-开源版本的emby"><strong>jellyfin 开源版本的emby</strong></h3><ul><li>jellyfin硬件解码</li><li>jellyfin中文字体显示方块问题</li></ul><p>上面两个问题见下面compose 配置解决方法</p><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">version</span><span class="token punctuation">:</span> <span class="token string">'3'</span>
+</script>
+
+
+
+
+<div class="bg-cover pd-header post-cover" style="background-image: url('https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias_webp/cover/emby.webp')">
+    <div class="container" style="right: 0px;left: 0px;">
+        <div class="row">
+            <div class="col s12 m12 l12">
+                <div class="brand">
+                    <h1 class="description center-align post-title">使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<main class="post-container content">
+
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/tocbot/tocbot.css">
+<style>
+    #articleContent h1::before,
+    #articleContent h2::before,
+    #articleContent h3::before,
+    #articleContent h4::before,
+    #articleContent h5::before,
+    #articleContent h6::before {
+        display: block;
+        content: " ";
+        height: 100px;
+        margin-top: -100px;
+        visibility: hidden;
+    }
+
+    #articleContent :focus {
+        outline: none;
+    }
+
+    .toc-fixed {
+        position: fixed;
+        top: 64px;
+    }
+
+    .toc-widget {
+        width: 345px;
+        padding-left: 20px;
+    }
+
+    .toc-widget .toc-title {
+        padding: 35px 0 15px 17px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        line-height: 1.5rem;
+    }
+
+    .toc-widget ol {
+        padding: 0;
+        list-style: none;
+    }
+
+    #toc-content {
+        padding-bottom: 30px;
+        overflow: auto;
+    }
+
+    #toc-content ol {
+        padding-left: 10px;
+    }
+
+    #toc-content ol li {
+        padding-left: 10px;
+    }
+
+    #toc-content .toc-link:hover {
+        color: #42b983;
+        font-weight: 700;
+        text-decoration: underline;
+    }
+
+    #toc-content .toc-link::before {
+        background-color: transparent;
+        max-height: 25px;
+
+        position: absolute;
+        right: 23.5vw;
+        display: block;
+    }
+
+    #toc-content .is-active-link {
+        color: #42b983;
+    }
+
+    #floating-toc-btn {
+        position: fixed;
+        right: 15px;
+        bottom: 76px;
+        padding-top: 15px;
+        margin-bottom: 0;
+        z-index: 998;
+    }
+
+    #floating-toc-btn .btn-floating {
+        width: 48px;
+        height: 48px;
+    }
+
+    #floating-toc-btn .btn-floating i {
+        line-height: 48px;
+        font-size: 1.4rem;
+    }
+</style>
+<div class="row">
+    <div id="main-content" class="col s12 m12 l9">
+        <!-- 文章内容详情 -->
+<div id="artDetail">
+    <div class="card">
+        <div class="card-content article-info">
+            <div class="row tag-cate">
+                <div class="col s7">
+                    
+                    <div class="article-tag">
+                        
+                            <a href="/tags/Emby/">
+                                <span class="chip bg-color">Emby</span>
+                            </a>
+                        
+                            <a href="/tags/Sonarr/">
+                                <span class="chip bg-color">Sonarr</span>
+                            </a>
+                        
+                            <a href="/tags/Jeckett/">
+                                <span class="chip bg-color">Jeckett</span>
+                            </a>
+                        
+                            <a href="/tags/Portainer/">
+                                <span class="chip bg-color">Portainer</span>
+                            </a>
+                        
+                            <a href="/tags/Watchtower/">
+                                <span class="chip bg-color">Watchtower</span>
+                            </a>
+                        
+                            <a href="/tags/DNSMasq/">
+                                <span class="chip bg-color">DNSMasq</span>
+                            </a>
+                        
+                            <a href="/tags/DNSCrypt/">
+                                <span class="chip bg-color">DNSCrypt</span>
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+                <div class="col s5 right-align">
+                    
+                    <div class="post-cate">
+                        <i class="fas fa-bookmark fa-fw icon-category"></i>
+                        
+                            <a href="/categories/docker/" class="post-category">
+                                docker
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+            </div>
+
+            <div class="post-info">
+                
+                <div class="post-date info-break-policy">
+                    <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
+                    2021-09-01
+                </div>
+                
+
+                
+                <div class="post-date info-break-policy">
+                    <i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp;
+                    2022-03-16
+                </div>
+                
+
+                
+                <div class="info-break-policy">
+                    <i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp;
+                    2.3k
+                </div>
+                
+
+                
+                <div class="info-break-policy">
+                    <i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp;
+                    9 分
+                </div>
+                
+
+                
+                    <div id="busuanzi_container_page_pv" class="info-break-policy">
+                        <i class="far fa-eye fa-fw"></i>阅读次数:&nbsp;&nbsp;
+                        <span id="busuanzi_value_page_pv"></span>
+                    </div>
+				
+            </div>
+        </div>
+        <hr class="clearfix">
+
+        
+        <!-- 是否加载使用自带的 prismjs. -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/prism/prism.css">
+        
+
+        
+        <!-- 代码块折行 -->
+        <style type="text/css">
+            code[class*="language-"], pre[class*="language-"] { white-space: pre-wrap !important; }
+        </style>
+        
+
+        <div class="card-content article-card-content">
+            <div id="articleContent">
+                <blockquote>
+<p>使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程，打造一个完整的HTPC。</p>
+<p><strong>持续滚动更新</strong>，欢迎收藏关注。也可以<a href="https://blog.17lai.site/atom.xml">RSS订阅</a>本博客！</p>
+<p>jackett 作为种子源，sonarr剧集管理，bt下载，qbittorrent主力下载，使用iyuu转移辅种，emby，jellyfin做海报墙，sunfinder自动下载字幕。基本算是完美打通全流程自动追剧。bt种子文件命名规则SxxExx的自动识别下载，国内的资源手动查找下载，自动推送到emby刮削好。</p>
+<p>结合本地DNS管理，DNS去广告，Nginx 反向代理去端口访问，形成一个完整解决方案。</p>
+<p>硬链接工具导入到新目录，使用TMM刮削。</p>
+<p>Tips：博主只是把个人使用经验的一部分<em><strong>无偿</strong></em>写下来，写完后发现整理流程很复杂，要求很高，博主整体软硬件成本上2W以上了。各位读者赶着看得懂的做，如果看不懂，请略过，或者Google之。</p>
+</blockquote>
+<h2 id="indexer-种子索引源"><strong>indexer 种子索引源</strong></h2>
+<p>种子索引来源。</p>
+<h3 id="jackett"><strong>jackett</strong></h3>
+<ul>
+<li>docker: linuxserver/jackett:latest</li>
+<li>老牌选手，种子源非常丰富。</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819002543.png" alt="jackett 界面"></p>
+<h3 id="prowlarr"><strong>prowlarr</strong></h3>
+<ul>
+<li>indexer manager/proxy</li>
+<li>Docker:  <a target="_blank" rel="noopener" href="https://hub.docker.com/r/linuxserver/prowlarr">linuxserver/prowlarr:develop</a></li>
+<li>新开发的，和sonarr, lidarr等结合比jackett 配置更简单。</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819002628.png" alt="prowlarr"></p>
+<h2 id="sonarr动画剧集管理"><strong>sonarr动画剧集管理</strong></h2>
+<p>管理剧集名，查找剧集种子推送到下载工具</p>
+<p>剧集管理示例图片</p>
+<p>管理剧集目录，剧集日历，提醒你那一天哪些节目播放</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001244.png" alt="sonarr"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819211051.png" alt="sonarr 日历提醒"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001328.png" alt="sonarr"></p>
+<p>自动识别下载对英文剧集支持较好，对于中文资源，结合手动识别下载更佳。</p>
+<h3 id="手动识别下载"><strong>手动识别下载</strong></h3>
+<p>示例图片</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001055.png" alt="sonarr"></p>
+<p>电影使用radarr, 音乐使用lidarr，同样可以自动化过程</p>
+<h2 id="多媒体中心">多媒体中心</h2>
+<blockquote>
+<p>Emby，Jellyfin, Plex都是优秀的多媒体中心。Jellyfin是开源的，基于Emby早期版本。</p>
+</blockquote>
+<h3 id="emby海报墙，流媒体中心"><strong>emby海报墙，流媒体中心</strong></h3>
+<p>emby作为海报墙，元数据查看器，结合tampermonkey js脚本调用外部potplayer播放减少nas服务器压力，并且得到更好解码性能。手机端也有emby客户端。jellyfin，plex也可以</p>
+<p>js脚本: <a target="_blank" rel="noopener" href="https://greasyfork.org/scripts/406811-embylaunchpotplayer/code/embyLaunchPotplayer.user.js">embyLaunchPotplayer</a></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001419.png" alt="emby"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819000847.png" alt="emby"></p>
+<h3 id="jellyfin-开源版本的emby"><strong>jellyfin 开源版本的emby</strong></h3>
+<ul>
+<li>jellyfin硬件解码</li>
+<li>jellyfin中文字体显示方块问题</li>
+</ul>
+<p>上面两个问题见下面compose 配置解决方法</p>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">version</span><span class="token punctuation">:</span> <span class="token string">'3'</span>
 <span class="token key atrule">services</span><span class="token punctuation">:</span>
   <span class="token key atrule">jellyfin</span><span class="token punctuation">:</span>
     <span class="token key atrule">image</span><span class="token punctuation">:</span> jellyfin/jellyfin
@@ -33,8 +1468,137 @@
       <span class="token comment"># 把windowsfonts目录下面的字体都复制到`jellyfin/fonts`目录中</span>
       <span class="token punctuation">-</span> $<span class="token punctuation">{</span>USERDIR<span class="token punctuation">}</span>/jellyfin/fonts<span class="token punctuation">:</span>/usr/share/fonts    <span class="token comment"># 给jellyfin装载更多字体，使中文显示正确，不再是方块</span>
       <span class="token punctuation">-</span> $<span class="token punctuation">{</span>USERDIR<span class="token punctuation">}</span>/nginx/resolv.conf<span class="token punctuation">:</span>/etc/resolv.conf    <span class="token comment"># 定制dns</span>
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><p>赋予emby，jellyfin访问硬件加速驱动权限</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">chmod</span> <span class="token number">755</span> /dev/dri
-<span class="token function">chmod</span> <span class="token number">666</span> /dev/dri/renderD128<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre><h2 id="TMM刮削，改名，目录整理"><strong>TMM刮削，改名，目录整理</strong></h2><blockquote><p>电影，电视剧，动画等视频为了更好的体验效果，需要刮削元数据。</p></blockquote><p>一些命名不规范，不能被emby识别的剧集使用tmm刮削改名，配合硬链接工具，可以不影响做种的前提下改名，该目录。大文件硬链接，小文件直接复制方便刮削，推荐一个自己写的硬链接bash shell脚本，PTtool在nas，linux环境使用更方便。</p><p>电影，电视剧，动画完整刮削教程，见<a href="https://blog.17lai.site/video/2021-10-11-how-to-scrape-video-whit-tinymediamanager/">如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕</a>。</p><blockquote><ul><li><p>Github: <a target="_blank" rel="noopener" href="https://github.com/appotry/PTtool">appotry/PTtool</a></p></li><li><p>Gitee: 镜像 <a target="_blank" rel="noopener" href="https://gitee.com/bloodwolf/PTtool">bloodwolf/PTtool</a></p></li><li><p><a href="https://blog.17lai.site/video/2021-10-11-how-to-scrape-video-whit-tinymediamanager/">如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕</a></p></li></ul></blockquote><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001155.png" alt="tmm"></p><p>注意：使用v3版本，不要升级到v4，v4版本收费。</p><h2 id="硬链接工具"><strong>硬链接工具</strong></h2><blockquote><ul><li><p>博主编写的脚本，自推一下，在Nas，linux环境使用的Shell 脚本。</p></li><li><p>PT hard link tools。方便PT用户硬链接文件，在最大可能情况下节约空间，并保持做种。 小于1M的文件直接复制，方便emby，tmm等工具刮削修改nfo等小文件。 大于1M的文件硬链接到目的目录，可以随意修改文件名，但是不能修改文件内容！</p></li><li><p>从此，做种，刮削改名两不误！</p></li></ul></blockquote><blockquote><ul><li><strong>Github</strong>: <a target="_blank" rel="noopener" href="https://github.com/appotry/PTtool"><strong>PTools</strong></a></li><li><strong>使用教程</strong>： <a href="https://blog.17lai.site/blogging/pt/2021-07-09-linux-pt-hard-link-tools/"><strong>Linux PT硬链接助手使用教程</strong></a></li></ul></blockquote><h2 id="BT下载工具"><strong>BT下载工具</strong></h2><blockquote><p>qBittorrent下载，种子分类整理较好，但占用资源，内存较多。Transmissoin种子整理分类远不如qBittorrent，但资源占用低，是PT做种混魔力的首选！建议qBittorrent和Transmissoin搭配使用，使用Iyuu自动在两者之间转移种子。</p></blockquote><h3 id="Transmissoin"><strong>Transmissoin</strong></h3><ul><li><a href="https://blog.17lai.site/bt/2021-08-18-transmission-parameter-reference-configuration/"><strong>transmission 使用及其配置</strong></a></li></ul><h3 id="qBittorrent">qBittorrent</h3><ul><li><a href="https://blog.17lai.site/bt/2021-08-18-qbittorrent-parameter-reference-configuration/"><strong>qBittorrent 参数详细设置教程</strong></a></li></ul><p>都分别有docker版本和套件版本。</p><p>虽然下载工具很多，但IYUU只支持这两个辅种工具，开发者的话是这两个工具的RPC调用接口稳定。</p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819005826.png" alt="Transmissoin"></p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819005858.png" alt="qBittorrent"></p><h2 id="辅种工具IYUU"><strong>辅种工具IYUU</strong></h2><p><strong>Doker版本</strong></p><ul><li><p><a target="_blank" rel="noopener" href="https://hub.docker.com/r/iyuucn/iyuuautoreseed">iyuucn/iyuuautoreseed</a></p><blockquote><p>命令行版本</p></blockquote></li><li><p><a target="_blank" rel="noopener" href="https://hub.docker.com/r/iyuucn/iyuuplus">iyuucn/iyuuplus</a></p><blockquote><p>图形界面版本，更轻松上手。</p></blockquote></li></ul><p>自动辅种，解放双手，更多魔力，更容易养多站。</p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819010407.png" alt="iyuuplus"></p><h2 id="字幕下载"><strong>字幕下载</strong></h2><p>想要较好的自动下载字幕，最好用前面介绍的tmm刮削改名之后再使用下面工具。</p><h3 id="subfinder-自动下载字幕">subfinder 自动下载字幕</h3><ul><li>Docker： <a target="_blank" rel="noopener" href="https://hub.docker.com/r/superng6/subfinder">superng6/subfinder</a></li></ul><p>下载完成，刮削后的目录，挂载到subfinder的media目录，就会自动下载字幕。</p><p>字幕下载对电影，英文剧集支持较好。对于一些tv，动画手动下载字幕会更好一些。</p><p>注意：官方的配置文件有问题，时效问题。修改URL到最新即可。</p><h3 id="chinesesubfinder">chinesesubfinder</h3><ul><li><h3 id="Docker：-allanpk716-chinesesubfinder">Docker： <a target="_blank" rel="noopener" href="https://hub.docker.com/r/allanpk716/chinesesubfinder">allanpk716/chinesesubfinder</a></h3></li><li><p>新开发的中文字幕查找工具，上面那个很久没更新了，这个刚出来。使用nfo里面刮削出来的文件名来匹配字幕。所以就原理来说，这个字幕匹配更准确。</p></li></ul><h3 id="bazarr">bazarr</h3><ul><li>Docker：<a target="_blank" rel="noopener" href="https://hub.docker.com/r/linuxserver/bazarr">linuxserver/bazarr</a></li><li>字幕下载管理，配合sonarr, radarr 使用效果更好。对于英文剧集命名规范的支持较好，比如<code>[name]S01E01</code></li></ul><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819002816.png" alt="bazarr"></p><hr><h2 id="电影管理">电影管理</h2><blockquote><p>电影，电视剧，动画等视频都是类似。</p></blockquote><h3 id="使用radarr管理电影"><strong>使用radarr管理电影</strong></h3><p>radarr示例图片<img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001114.png" alt="radarr"></p><h3 id="使用Emby观看电影">使用Emby观看电影</h3><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819000847.png" alt="emby"></p><h2 id="音乐管理">音乐管理</h2><h3 id="使用lidarr管理音乐"><strong>使用lidarr管理音乐</strong></h3><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001200.png" alt="lidarr示例图片"></p><h3 id="音乐刮削">音乐刮削</h3><blockquote><p>使用Mp3tag, MediaGo, MusicBrainZ等工具刮削</p><p>音乐刮削教程： <a href="https://blog.17lai.site/music/2021-10-11-how-to-scrape-music-idtag/">如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库</a></p></blockquote><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011175602.png" alt=""></p><h3 id="使用Mstream听音乐">使用Mstream听音乐</h3><blockquote><p>教程： <a href="https://blog.17lai.site/music/2021-10-06-private-music-service/">私人在线音乐服务器搭建与使用介绍</a></p></blockquote><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/0620211006015739.png" alt="私人音乐服务"></p><h2 id="Docker管理">Docker管理</h2><h3 id="使用docker-compose-管理docker配置文件，一键安装，升级">使用docker compose 管理docker配置文件，一键安装，升级</h3><h3 id="使用portainer管理docker"><strong>使用portainer管理docker</strong></h3><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001116.png" alt="portainer"></p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">version: <span class="token string">'3'</span>
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>赋予emby，jellyfin访问硬件加速驱动权限</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">chmod</span> <span class="token number">755</span> /dev/dri
+<span class="token function">chmod</span> <span class="token number">666</span> /dev/dri/renderD128<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h2 id="TMM刮削，改名，目录整理"><strong>TMM刮削，改名，目录整理</strong></h2>
+<blockquote>
+<p>电影，电视剧，动画等视频为了更好的体验效果，需要刮削元数据。</p>
+</blockquote>
+<p>一些命名不规范，不能被emby识别的剧集使用tmm刮削改名，配合硬链接工具，可以不影响做种的前提下改名，该目录。大文件硬链接，小文件直接复制方便刮削，推荐一个自己写的硬链接bash shell脚本，PTtool在nas，linux环境使用更方便。</p>
+<p>电影，电视剧，动画完整刮削教程，见<a href="https://blog.17lai.site/video/2021-10-11-how-to-scrape-video-whit-tinymediamanager/">如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕</a>。</p>
+<blockquote>
+<ul>
+<li>
+<p>Github: <a target="_blank" rel="noopener" href="https://github.com/appotry/PTtool">appotry/PTtool</a></p>
+</li>
+<li>
+<p>Gitee: 镜像 <a target="_blank" rel="noopener" href="https://gitee.com/bloodwolf/PTtool">bloodwolf/PTtool</a></p>
+</li>
+<li>
+<p><a href="https://blog.17lai.site/video/2021-10-11-how-to-scrape-video-whit-tinymediamanager/">如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕</a></p>
+</li>
+</ul>
+</blockquote>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001155.png" alt="tmm"></p>
+<p>注意：使用v3版本，不要升级到v4，v4版本收费。</p>
+<h2 id="硬链接工具"><strong>硬链接工具</strong></h2>
+<blockquote>
+<ul>
+<li>
+<p>博主编写的脚本，自推一下，在Nas，linux环境使用的Shell 脚本。</p>
+</li>
+<li>
+<p>PT hard link tools。方便PT用户硬链接文件，在最大可能情况下节约空间，并保持做种。 小于1M的文件直接复制，方便emby，tmm等工具刮削修改nfo等小文件。 大于1M的文件硬链接到目的目录，可以随意修改文件名，但是不能修改文件内容！</p>
+</li>
+<li>
+<p>从此，做种，刮削改名两不误！</p>
+</li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li><strong>Github</strong>: <a target="_blank" rel="noopener" href="https://github.com/appotry/PTtool"><strong>PTools</strong></a></li>
+<li><strong>使用教程</strong>： <a href="https://blog.17lai.site/blogging/pt/2021-07-09-linux-pt-hard-link-tools/"><strong>Linux PT硬链接助手使用教程</strong></a></li>
+</ul>
+</blockquote>
+<h2 id="BT下载工具"><strong>BT下载工具</strong></h2>
+<blockquote>
+<p>qBittorrent下载，种子分类整理较好，但占用资源，内存较多。Transmissoin种子整理分类远不如qBittorrent，但资源占用低，是PT做种混魔力的首选！建议qBittorrent和Transmissoin搭配使用，使用Iyuu自动在两者之间转移种子。</p>
+</blockquote>
+<h3 id="Transmissoin"><strong>Transmissoin</strong></h3>
+<ul>
+<li><a href="https://blog.17lai.site/bt/2021-08-18-transmission-parameter-reference-configuration/"><strong>transmission 使用及其配置</strong></a></li>
+</ul>
+<h3 id="qBittorrent">qBittorrent</h3>
+<ul>
+<li><a href="https://blog.17lai.site/bt/2021-08-18-qbittorrent-parameter-reference-configuration/"><strong>qBittorrent 参数详细设置教程</strong></a></li>
+</ul>
+<p>都分别有docker版本和套件版本。</p>
+<p>虽然下载工具很多，但IYUU只支持这两个辅种工具，开发者的话是这两个工具的RPC调用接口稳定。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819005826.png" alt="Transmissoin"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819005858.png" alt="qBittorrent"></p>
+<h2 id="辅种工具IYUU"><strong>辅种工具IYUU</strong></h2>
+<p><strong>Doker版本</strong></p>
+<ul>
+<li>
+<p><a target="_blank" rel="noopener" href="https://hub.docker.com/r/iyuucn/iyuuautoreseed">iyuucn/iyuuautoreseed</a></p>
+<blockquote>
+<p>命令行版本</p>
+</blockquote>
+</li>
+<li>
+<p><a target="_blank" rel="noopener" href="https://hub.docker.com/r/iyuucn/iyuuplus">iyuucn/iyuuplus</a></p>
+<blockquote>
+<p>图形界面版本，更轻松上手。</p>
+</blockquote>
+</li>
+</ul>
+<p>自动辅种，解放双手，更多魔力，更容易养多站。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819010407.png" alt="iyuuplus"></p>
+<h2 id="字幕下载"><strong>字幕下载</strong></h2>
+<p>想要较好的自动下载字幕，最好用前面介绍的tmm刮削改名之后再使用下面工具。</p>
+<h3 id="subfinder-自动下载字幕">subfinder 自动下载字幕</h3>
+<ul>
+<li>Docker： <a target="_blank" rel="noopener" href="https://hub.docker.com/r/superng6/subfinder">superng6/subfinder</a></li>
+</ul>
+<p>下载完成，刮削后的目录，挂载到subfinder的media目录，就会自动下载字幕。</p>
+<p>字幕下载对电影，英文剧集支持较好。对于一些tv，动画手动下载字幕会更好一些。</p>
+<p>注意：官方的配置文件有问题，时效问题。修改URL到最新即可。</p>
+<h3 id="chinesesubfinder">chinesesubfinder</h3>
+<ul>
+<li>
+<h3 id="Docker：-allanpk716-chinesesubfinder">Docker： <a target="_blank" rel="noopener" href="https://hub.docker.com/r/allanpk716/chinesesubfinder">allanpk716/chinesesubfinder</a></h3>
+</li>
+<li>
+<p>新开发的中文字幕查找工具，上面那个很久没更新了，这个刚出来。使用nfo里面刮削出来的文件名来匹配字幕。所以就原理来说，这个字幕匹配更准确。</p>
+</li>
+</ul>
+<h3 id="bazarr">bazarr</h3>
+<ul>
+<li>Docker：<a target="_blank" rel="noopener" href="https://hub.docker.com/r/linuxserver/bazarr">linuxserver/bazarr</a></li>
+<li>字幕下载管理，配合sonarr, radarr 使用效果更好。对于英文剧集命名规范的支持较好，比如<code>[name]S01E01</code></li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819002816.png" alt="bazarr"></p>
+<hr>
+<h2 id="电影管理">电影管理</h2>
+<blockquote>
+<p>电影，电视剧，动画等视频都是类似。</p>
+</blockquote>
+<h3 id="使用radarr管理电影"><strong>使用radarr管理电影</strong></h3>
+<p>radarr示例图片<img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001114.png" alt="radarr"></p>
+<h3 id="使用Emby观看电影">使用Emby观看电影</h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819000847.png" alt="emby"></p>
+<h2 id="音乐管理">音乐管理</h2>
+<h3 id="使用lidarr管理音乐"><strong>使用lidarr管理音乐</strong></h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001200.png" alt="lidarr示例图片"></p>
+<h3 id="音乐刮削">音乐刮削</h3>
+<blockquote>
+<p>使用Mp3tag, MediaGo, MusicBrainZ等工具刮削</p>
+<p>音乐刮削教程： <a href="https://blog.17lai.site/music/2021-10-11-how-to-scrape-music-idtag/">如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库</a></p>
+</blockquote>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1120211011175602.png" alt=""></p>
+<h3 id="使用Mstream听音乐">使用Mstream听音乐</h3>
+<blockquote>
+<p>教程： <a href="https://blog.17lai.site/music/2021-10-06-private-music-service/">私人在线音乐服务器搭建与使用介绍</a></p>
+</blockquote>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/0620211006015739.png" alt="私人音乐服务"></p>
+<h2 id="Docker管理">Docker管理</h2>
+<h3 id="使用docker-compose-管理docker配置文件，一键安装，升级">使用docker compose 管理docker配置文件，一键安装，升级</h3>
+<h3 id="使用portainer管理docker"><strong>使用portainer管理docker</strong></h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001116.png" alt="portainer"></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">version: <span class="token string">'3'</span>
 services:
   portainer-ce:
     container_name:  portainer-ce
@@ -49,7 +1613,11 @@ services:
       - <span class="token assign-left variable"><span class="token environment constant">LANG</span></span><span class="token operator">=</span>en_US.UTF-8
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /share/Container/portainer_data:/data<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><h3 id="使用watchtower自动升级docker"><strong>使用watchtower自动升级docker</strong></h3><p>使所有软件保持最新最佳状态</p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001124.png" alt="watchtower"></p><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">version</span><span class="token punctuation">:</span> <span class="token string">'3'</span>
+      - /share/Container/portainer_data:/data<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="使用watchtower自动升级docker"><strong>使用watchtower自动升级docker</strong></h3>
+<p>使所有软件保持最新最佳状态</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001124.png" alt="watchtower"></p>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">version</span><span class="token punctuation">:</span> <span class="token string">'3'</span>
 <span class="token key atrule">services</span><span class="token punctuation">:</span>
   <span class="token key atrule">watchtower</span><span class="token punctuation">:</span>
     <span class="token key atrule">container_name</span><span class="token punctuation">:</span> watchtower
@@ -61,9 +1629,27 @@ services:
       <span class="token punctuation">-</span> WATCHTOWER_CLEANUP=true
       <span class="token punctuation">-</span> WATCHTOWER_SCHEDULE=0 0 1 * * *
     <span class="token key atrule">restart</span><span class="token punctuation">:</span> always
-    <span class="token key atrule">command</span><span class="token punctuation">:</span> nginx redis<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><p>上述配置文件中<code>volumes</code>使用了绝对路径,使这个容器能访问系统<code>docker.sock</code>目录,用于方便监控容器镜像的版本以便更新.其他的一些环境变量,例如时区,清理旧镜像,定时任务都转换为<code>environment</code>,而特殊的<code>command</code>命令则定义了指定监控<code>nginx</code>和<code>redis</code>两个容器。没有command这一行，默认监控升级所有运行中的docker</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 运行一次，更新所有的容器，并清除旧的容器 </span>
-<span class="token function">docker</span> run -d --name watchtower -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower --cleanup --run-once<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#只更新nginx和redis</span>
-<span class="token function">docker</span> run -d --name watchtower -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower --cleanup --run-once nginx redis<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre><h3 id="使用muximux来管理多个docker入口"><strong>使用muximux来管理多个docker入口</strong></h3><p>主页面</p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001210.png" alt="muximux"></p><p>配置页面</p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001131.png" alt="muximux"></p><h2 id="更进阶定制本地域名访问"><strong>更进阶定制本地域名访问</strong></h2><h3 id="nginx-管理域名访问"><strong>nginx 管理域名访问</strong></h3><ul><li>Docker: <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/nginx-purge">bloodstar/nginx-purge</a></li><li>Github： <a target="_blank" rel="noopener" href="https://github.com/appotry/nginx-purge-docker">nginx</a></li><li>去掉烦人的端口后缀，实现80,443 端口复用。这个docker 是博主定制功能版。</li><li>配置SSL证书访问，密码等敏感数据从此加密传输。并可以使用http2高级特性。</li><li><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819010407.png" alt="nginx"></li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">version: <span class="token string">'3'</span>
+    <span class="token key atrule">command</span><span class="token punctuation">:</span> nginx redis<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>上述配置文件中<code>volumes</code>使用了绝对路径,使这个容器能访问系统<code>docker.sock</code>目录,用于方便监控容器镜像的版本以便更新.其他的一些环境变量,例如时区,清理旧镜像,定时任务都转换为<code>environment</code>,而特殊的<code>command</code>命令则定义了指定监控<code>nginx</code>和<code>redis</code>两个容器。没有command这一行，默认监控升级所有运行中的docker</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 运行一次，更新所有的容器，并清除旧的容器 </span>
+<span class="token function">docker</span> run -d --name watchtower -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower --cleanup --run-once<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#只更新nginx和redis</span>
+<span class="token function">docker</span> run -d --name watchtower -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower --cleanup --run-once nginx redis<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h3 id="使用muximux来管理多个docker入口"><strong>使用muximux来管理多个docker入口</strong></h3>
+<p>主页面</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001210.png" alt="muximux"></p>
+<p>配置页面</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819001131.png" alt="muximux"></p>
+<h2 id="更进阶定制本地域名访问"><strong>更进阶定制本地域名访问</strong></h2>
+<h3 id="nginx-管理域名访问"><strong>nginx 管理域名访问</strong></h3>
+<ul>
+<li>Docker: <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/nginx-purge">bloodstar/nginx-purge</a></li>
+<li>Github： <a target="_blank" rel="noopener" href="https://github.com/appotry/nginx-purge-docker">nginx</a></li>
+<li>去掉烦人的端口后缀，实现80,443 端口复用。这个docker 是博主定制功能版。</li>
+<li>配置SSL证书访问，密码等敏感数据从此加密传输。并可以使用http2高级特性。</li>
+<li><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819010407.png" alt="nginx"></li>
+</ul>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">version: <span class="token string">'3'</span>
 services:
   nginxweb:
     image: bloodstar/nginx-purge
@@ -77,7 +1663,90 @@ services:
       <span class="token comment"># 映射主机目录</span>
       - <span class="token variable">${USERDIR}</span>/nginx/conf.d:/etc/nginx/conf.d:ro
       - <span class="token variable">${USERDIR}</span>/nginxproxy/certs:/etc/nginx/certs:ro
-      - <span class="token variable">${USERDIR}</span>/nginx/nginx.conf:/etc/nginx/nginx.conf:ro<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><p>这里推荐博主制作的nginx docker镜像： <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/nginx-purge">bloodstar/nginx-purge</a></p><blockquote><p>支持ARM64, ARMV7, AMD64 ，增加 CA 证书，防火墙，brotli, Proxy-cache-purge, htpasswd 支持</p></blockquote><h3 id="DNS-域名管理"><strong>DNS 域名管理</strong></h3><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819003924.png" alt="DNS"></p><ul><li><p>和nginx 配合使用。 简单的可以直接修改<code>/etc/hosts</code>。</p></li><li><p>DNSCrypt Proxy： 作为DNS前端访问DOH的DNS</p></li><li><p>DNSMasq： 作为DNS后端，连接到DNSCrypt Proxy，并配置本地域名。还可以添加DNS去广告功能，浏览器插件去广告非常消耗CPU和内存，但是在DNS前端去广告，资源消耗低，并一次性解决所有的访问终端（pc，手机，平板）广告问题。</p><blockquote><p>配置一个去广告，本地域名管理工具。</p></blockquote></li></ul><h2 id="Xteve-看IPTV"><strong>Xteve 看IPTV</strong></h2><p>Docker: <a target="_blank" rel="noopener" href="https://hub.docker.com/r/dnsforge/xteve">dnsforge/xteve</a></p><p>结合Emby， jellyfin直接看iptv。</p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819010804.png" alt="Xteve"></p><h2 id="注意事项">注意事项</h2><ul><li><p>tmm，jackett，sonarr最好配置代理。否则，刮削，图片墙可能工作不正常。</p></li><li><p>docker最好配置镜像加速，提高安装docker速度</p></li><li><p>一些docker初始化安装，运行、更新时需要访问github，最好配置代理。推荐博主定制Docker <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/v2fly-privoxy">bloodstar/v2fly-privoxy</a></p></li></ul><link rel="stylesheet" href="/css/bilicard.css" type="text/css"></div><hr><div class="reprint" id="reprint-statement"><div class="reprint__author"> <span class="reprint-meta" style="font-weight:700"><i class="fas fa-user">文章作者:</i></span> <span class="reprint-info"><a href="https://blog.17lai.site" rel="external nofollow noreferrer">夜法之书</a></span></div><div class="reprint__type"> <span class="reprint-meta" style="font-weight:700"><i class="fas fa-link">文章链接:</i></span> <span class="reprint-info"><a href="https://blog.17lai.site/posts/9912bd5d/">https://blog.17lai.site/posts/9912bd5d/</a></span></div><div class="reprint__notice"> <span class="reprint-meta" style="font-weight:700"><i class="fas fa-copyright">版权声明:</i></span> <span class="reprint-info">本博客所有文章除特別声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow noreferrer" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://blog.17lai.site" target="_blank">夜法之书</a> !</span></div></div><script async defer="defer">
+      - <span class="token variable">${USERDIR}</span>/nginx/nginx.conf:/etc/nginx/nginx.conf:ro<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这里推荐博主制作的nginx docker镜像： <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/nginx-purge">bloodstar/nginx-purge</a></p>
+<blockquote>
+<p>支持ARM64, ARMV7, AMD64 ，增加 CA 证书，防火墙，brotli, Proxy-cache-purge, htpasswd 支持</p>
+</blockquote>
+<h3 id="DNS-域名管理"><strong>DNS 域名管理</strong></h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819003924.png" alt="DNS"></p>
+<ul>
+<li>
+<p>和nginx 配合使用。 简单的可以直接修改<code>/etc/hosts</code>。</p>
+</li>
+<li>
+<p>DNSCrypt Proxy： 作为DNS前端访问DOH的DNS</p>
+</li>
+<li>
+<p>DNSMasq： 作为DNS后端，连接到DNSCrypt Proxy，并配置本地域名。还可以添加DNS去广告功能，浏览器插件去广告非常消耗CPU和内存，但是在DNS前端去广告，资源消耗低，并一次性解决所有的访问终端（pc，手机，平板）广告问题。</p>
+<blockquote>
+<p>配置一个去广告，本地域名管理工具。</p>
+</blockquote>
+</li>
+</ul>
+<h2 id="Xteve-看IPTV"><strong>Xteve 看IPTV</strong></h2>
+<p>Docker: <a target="_blank" rel="noopener" href="https://hub.docker.com/r/dnsforge/xteve">dnsforge/xteve</a></p>
+<p>结合Emby， jellyfin直接看iptv。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/1920210819010804.png" alt="Xteve"></p>
+<h2 id="注意事项">注意事项</h2>
+<ul>
+<li>
+<p>tmm，jackett，sonarr最好配置代理。否则，刮削，图片墙可能工作不正常。</p>
+</li>
+<li>
+<p>docker最好配置镜像加速，提高安装docker速度</p>
+</li>
+<li>
+<p>一些docker初始化安装，运行、更新时需要访问github，最好配置代理。推荐博主定制Docker <a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/v2fly-privoxy">bloodstar/v2fly-privoxy</a></p>
+</li>
+</ul>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">
+                
+            </div>
+            <hr/>
+
+            
+
+    <div class="reprint" id="reprint-statement">
+        
+            <div class="reprint__author">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-user">
+                        文章作者:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    <a href="https://blog.17lai.site" rel="external nofollow noreferrer">夜法之书</a>
+                </span>
+            </div>
+            <div class="reprint__type">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-link">
+                        文章链接:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    <a href="https://blog.17lai.site/posts/9912bd5d/">https://blog.17lai.site/posts/9912bd5d/</a>
+                </span>
+            </div>
+            <div class="reprint__notice">
+                <span class="reprint-meta" style="font-weight: bold;">
+                    <i class="fas fa-copyright">
+                        版权声明:
+                    </i>
+                </span>
+                <span class="reprint-info">
+                    本博客所有文章除特別声明外，均采用
+                    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow noreferrer" target="_blank">CC BY-NC-SA 4.0</a>
+                    许可协议。转载请注明来源
+                    <a href="https://blog.17lai.site" target="_blank">夜法之书</a>
+                    !
+                </span>
+            </div>
+        
+    </div>
+
+    <script async defer>
       document.addEventListener("copy", function (e) {
         let toastHTML = '<span>复制成功，请遵循本文的转载规则</span><button class="btn-flat toast-action" onclick="navToReprintStatement()" style="font-size: smaller">查看</a>';
         M.toast({html: toastHTML})
@@ -86,7 +1755,497 @@ services:
       function navToReprintStatement() {
         $("html, body").animate({scrollTop: $("#reprint-statement").offset().top - 80}, 800);
       }
-    </script><div class="tag_share" style="display:block"><div class="post-meta__tag-list" style="display:inline-block"><div class="article-tag"> <a href="/tags/Emby/"><span class="chip bg-color">Emby</span></a> <a href="/tags/Sonarr/"><span class="chip bg-color">Sonarr</span></a> <a href="/tags/Jeckett/"><span class="chip bg-color">Jeckett</span></a> <a href="/tags/Portainer/"><span class="chip bg-color">Portainer</span></a> <a href="/tags/Watchtower/"><span class="chip bg-color">Watchtower</span></a> <a href="/tags/DNSMasq/"><span class="chip bg-color">DNSMasq</span></a> <a href="/tags/DNSCrypt/"><span class="chip bg-color">DNSCrypt</span></a></div></div><div class="post_share" style="zoom:80%;width:fit-content;display:inline-block;float:right;margin:-.15rem 0"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/share/css/share.min.css"><div id="article-share"><div class="social-share" data-sites="twitter,facebook,google,qq,qzone,wechat,weibo,douban,linkedin" data-wechat-qrcode-helper="<p>微信扫一扫即可分享！</p>"></div><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/share/js/social-share.min.js"></script></div></div></div><style>#reward{margin:40px 0;text-align:center}#reward .reward-link{font-size:1.4rem;line-height:38px}#reward .btn-floating:hover{box-shadow:0 6px 12px rgba(0,0,0,.2),0 5px 15px rgba(0,0,0,.2)}#rewardModal{width:320px;height:350px}#rewardModal .reward-title{margin:15px auto;padding-bottom:5px}#rewardModal .modal-content{padding:10px}#rewardModal .close{position:absolute;right:15px;top:15px;color:rgba(0,0,0,.5);font-size:1.3rem;line-height:20px;cursor:pointer}#rewardModal .close:hover{color:#ef5350;transform:scale(1.3);-moz-transform:scale(1.3);-webkit-transform:scale(1.3);-o-transform:scale(1.3)}#rewardModal .reward-tabs{margin:0 auto;width:210px}.reward-tabs .tabs{height:38px;margin:10px auto;padding-left:0}.reward-content ul{padding-left:0!important}.reward-tabs .tabs .tab{height:38px;line-height:38px}.reward-tabs .tab a{color:#fff;background-color:#ccc}.reward-tabs .tab a:hover{background-color:#ccc;color:#fff}.reward-tabs .wechat-tab .active{color:#fff!important;background-color:#22ab38!important}.reward-tabs .alipay-tab .active{color:#fff!important;background-color:#019fe8!important}.reward-tabs .reward-img{width:210px;height:210px}</style><div id="reward"> <a href="#rewardModal" class="reward-link modal-trigger btn-floating btn-medium waves-effect waves-light red">赏</a><div id="rewardModal" class="modal"><div class="modal-content"><a class="close modal-close"><i class="fas fa-times"></i></a><h4 class="reward-title">码字辛苦，打赏作者！</h4><div class="reward-content"><div class="reward-tabs"><ul class="tabs row"><li class="tab col s6 alipay-tab waves-effect waves-light"><a href="#alipay">支付宝</a></li><li class="tab col s6 wechat-tab waves-effect waves-light"><a href="#wechat">微 信</a></li></ul><div id="alipay"> <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias_webp/reward/alipay.webp" class="reward-img" alt="支付宝打赏二维码"></div><div id="wechat"> <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias_webp/reward/wechat.webp" class="reward-img" alt="微信打赏二维码"></div></div></div></div></div></div><script>$(function(){$(".tabs").tabs()})</script></div></div><style>.fa-chrome:before{color:#f14f05}.fa-windows:before{color:#3f8cd9}.fa-macos:before{color:#000}.fa-edge:before{color:#1a2bdc}.fa-safari:before{color:#26a69a}.fa-qq:before{content:"\f1d6"}.fa-android:before{content:"\f17b";color:#0c9850}.fa-wechat:before,.fa-weixin:before{content:"\f1d7"}.fa-firefox:before{color:#f53a3a}.valine-card{margin:1.5rem auto}.valine-card .card-content{padding:20px 20px 5px 20px}.v[data-class="v"] .vwrap .vheader .vinput{width:32%;border-bottom:1px dashed #dedede}#vcomments textarea{box-sizing:border-box;background:url(/medias_webp/hongmiaosi.webp) 100% 100% no-repeat;background-size:contain;background-position:right;background-color:rgba(255,255,255,0);resize:vertical;caret-color:red;white-space:pre-line}#vcomments p{margin:2px 2px 10px;font-size:1.05rem;line-height:1.78rem}#vcomments blockquote p{text-indent:.2rem}#vcomments a{padding:0 2px;color:#4cbf30;font-weight:500;text-decoration:none}#vcomments img{max-width:100%;height:auto;cursor:pointer}#vcomments ol li{list-style-type:decimal}#vcomments ol,ul{display:block;padding-left:2em;word-spacing:.05rem}#vcomments ul li,ol li{display:list-item;line-height:1.8rem;font-size:1rem}#vcomments ul li{list-style-type:disc}#vcomments ul ul li{list-style-type:circle}#vcomments table,td,th{padding:12px 13px;border:1px solid #dfe2e5}#vcomments table,td,th{border:0}table tr:nth-child(2n),thead{background-color:#fafafa}#vcomments table th{background-color:#f2f2f2;min-width:80px}#vcomments table td{min-width:80px}#vcomments h1{font-size:1.85rem;font-weight:700;line-height:2.2rem}#vcomments h2{font-size:1.65rem;font-weight:700;line-height:1.9rem}#vcomments h3{font-size:1.45rem;font-weight:700;line-height:1.7rem}#vcomments h4{font-size:1.25rem;font-weight:700;line-height:1.5rem}#vcomments h5{font-size:1.1rem;font-weight:700;line-height:1.4rem}#vcomments h6{font-size:1rem;line-height:1.3rem}#vcomments p{font-size:1rem;line-height:1.5rem}#vcomments hr{margin:12px 0;border:0;border-top:1px solid #ccc}#vcomments blockquote{margin:15px 0;border-left:5px solid #42b983;padding:1rem .8rem .3rem .8rem;color:#666;background-color:rgba(66,185,131,.1)}#vcomments pre{font-family:monospace,monospace;padding:1.2em;margin:.5em 0;background:#272822;overflow:auto;border-radius:.3em;tab-size:4}#vcomments code{font-family:monospace,monospace;padding:1px 3px;font-size:.92rem;color:#e96900;background-color:#f8f8f8;border-radius:2px}#vcomments pre code{font-family:monospace,monospace;padding:0;color:#e8eaf6;background-color:#272822}#vcomments pre[class*=language-]{padding:1.2em;margin:.5em 0}#vcomments code[class*=language-],pre[class*=language-]{color:#e8eaf6}#vcomments [type=checkbox]:not(:checked),[type=checkbox]:checked{position:inherit;margin-left:-1.3rem;margin-right:.4rem;margin-top:-1px;vertical-align:middle;left:unset;visibility:visible}#vcomments b,strong{font-weight:700}#vcomments dfn{font-style:italic}#vcomments small{font-size:85%}#vcomments cite{font-style:normal}#vcomments mark{background-color:#fcf8e3;padding:.2em}#vcomments table,td,th{padding:12px 13px;border:1px solid #dfe2e5}table tr:nth-child(2n),thead{background-color:#fafafa}#vcomments table th{background-color:#f2f2f2;min-width:80px}#vcomments table td{min-width:80px}#vcomments [type=checkbox]:not(:checked),[type=checkbox]:checked{position:inherit;margin-left:-1.3rem;margin-right:.4rem;margin-top:-1px;vertical-align:middle;left:unset;visibility:visible}</style><div class="card valine-card" data-aos="fade-up"><div class="comment_headling" style="font-size:20px;font-weight:700;position:relative;padding-left:20px;top:15px;padding-bottom:5px"><i class="fas fa-comments fa-fw" aria-hidden="true"></i> <span>评论</span></div><div id="vcomments" class="card-content" style="display:grid"></div></div><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/valine/av-min.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/valine/Valine.min.js"></script><script>
+    </script>
+
+
+
+            <div class="tag_share" style="display: block;">
+                <div class="post-meta__tag-list" style="display: inline-block;">
+                    
+                        <div class="article-tag">
+                            
+                                <a href="/tags/Emby/">
+                                    <span class="chip bg-color">Emby</span>
+                                </a>
+                            
+                                <a href="/tags/Sonarr/">
+                                    <span class="chip bg-color">Sonarr</span>
+                                </a>
+                            
+                                <a href="/tags/Jeckett/">
+                                    <span class="chip bg-color">Jeckett</span>
+                                </a>
+                            
+                                <a href="/tags/Portainer/">
+                                    <span class="chip bg-color">Portainer</span>
+                                </a>
+                            
+                                <a href="/tags/Watchtower/">
+                                    <span class="chip bg-color">Watchtower</span>
+                                </a>
+                            
+                                <a href="/tags/DNSMasq/">
+                                    <span class="chip bg-color">DNSMasq</span>
+                                </a>
+                            
+                                <a href="/tags/DNSCrypt/">
+                                    <span class="chip bg-color">DNSCrypt</span>
+                                </a>
+                            
+                        </div>
+                    
+                </div>
+                <div class="post_share" style="zoom: 80%; width: fit-content; display: inline-block; float: right; margin: -0.15rem 0;">
+                    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/share/css/share.min.css">
+<div id="article-share">
+
+    
+    <div class="social-share" data-sites="twitter,facebook,google,qq,qzone,wechat,weibo,douban,linkedin" data-wechat-qrcode-helper="<p>微信扫一扫即可分享！</p>"></div>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/share/js/social-share.min.js"></script>
+    
+
+    
+
+</div>
+
+                </div>
+            </div>
+            
+                <style>
+    #reward {
+        margin: 40px 0;
+        text-align: center;
+    }
+
+    #reward .reward-link {
+        font-size: 1.4rem;
+        line-height: 38px;
+    }
+
+    #reward .btn-floating:hover {
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    #rewardModal {
+        width: 320px;
+        height: 350px;
+    }
+
+    #rewardModal .reward-title {
+        margin: 15px auto;
+        padding-bottom: 5px;
+    }
+
+    #rewardModal .modal-content {
+        padding: 10px;
+    }
+
+    #rewardModal .close {
+        position: absolute;
+        right: 15px;
+        top: 15px;
+        color: rgba(0, 0, 0, 0.5);
+        font-size: 1.3rem;
+        line-height: 20px;
+        cursor: pointer;
+    }
+
+    #rewardModal .close:hover {
+        color: #ef5350;
+        transform: scale(1.3);
+        -moz-transform:scale(1.3);
+        -webkit-transform:scale(1.3);
+        -o-transform:scale(1.3);
+    }
+
+    #rewardModal .reward-tabs {
+        margin: 0 auto;
+        width: 210px;
+    }
+
+    .reward-tabs .tabs {
+        height: 38px;
+        margin: 10px auto;
+        padding-left: 0;
+    }
+
+    .reward-content ul {
+        padding-left: 0 !important;
+    }
+
+    .reward-tabs .tabs .tab {
+        height: 38px;
+        line-height: 38px;
+    }
+
+    .reward-tabs .tab a {
+        color: #fff;
+        background-color: #ccc;
+    }
+
+    .reward-tabs .tab a:hover {
+        background-color: #ccc;
+        color: #fff;
+    }
+
+    .reward-tabs .wechat-tab .active {
+        color: #fff !important;
+        background-color: #22AB38 !important;
+    }
+
+    .reward-tabs .alipay-tab .active {
+        color: #fff !important;
+        background-color: #019FE8 !important;
+    }
+
+    .reward-tabs .reward-img {
+        width: 210px;
+        height: 210px;
+    }
+</style>
+
+<div id="reward">
+    <a href="#rewardModal" class="reward-link modal-trigger btn-floating btn-medium waves-effect waves-light red">赏</a>
+
+    <!-- Modal Structure -->
+    <div id="rewardModal" class="modal">
+        <div class="modal-content">
+            <a class="close modal-close"><i class="fas fa-times"></i></a>
+            <h4 class="reward-title">码字辛苦，打赏作者！</h4>
+            <div class="reward-content">
+                <div class="reward-tabs">
+                    <ul class="tabs row">
+                        <li class="tab col s6 alipay-tab waves-effect waves-light"><a href="#alipay">支付宝</a></li>
+                        <li class="tab col s6 wechat-tab waves-effect waves-light"><a href="#wechat">微 信</a></li>
+                    </ul>
+                    <div id="alipay">
+                        <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias_webp/reward/alipay.webp" class="reward-img" alt="支付宝打赏二维码">
+                    </div>
+                    <div id="wechat">
+                        <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias_webp/reward/wechat.webp" class="reward-img" alt="微信打赏二维码">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        $('.tabs').tabs();
+    });
+</script>
+
+            
+        </div>
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+        <style>
+    .fa-chrome:before {
+        color: #f14f05
+    }
+    
+    .fa-windows:before {
+        color: #3f8cd9
+    }
+    
+    .fa-macos:before {
+        color: #000
+    }
+    
+    .fa-edge:before {
+        color: #1a2bdc
+    }
+    
+    .fa-safari:before {
+        color: #26a69a
+    }
+    
+    .fa-qq:before {
+        content: "\f1d6"
+    }
+    
+    .fa-android:before {
+        content: "\f17b";
+        color: #0c9850
+    }
+    
+    .fa-wechat:before,
+    .fa-weixin:before {
+        content: "\f1d7"
+    }
+    
+    .fa-firefox:before {
+        color: #f53a3a
+    }
+    
+    .valine-card {
+        margin: 1.5rem auto;
+    }
+
+    .valine-card .card-content {
+        padding: 20px 20px 5px 20px;
+    }
+
+    .v[data-class="v"] .vwrap .vheader .vinput {
+        width: 32%;
+        border-bottom: 1px dashed #dedede;
+    }
+
+    #vcomments textarea {
+        box-sizing: border-box;
+        background: url("/medias_webp/hongmiaosi.webp") 100% 100% no-repeat;
+        background-size: contain;
+        background-position: right;
+        background-color: rgba(255, 255, 255, 0);
+        resize: vertical;
+        caret-color: red;
+        white-space: pre-line
+    }
+
+    #vcomments p {
+        margin: 2px 2px 10px;
+        font-size: 1.05rem;
+        line-height: 1.78rem;
+    }
+
+    #vcomments blockquote p {
+        text-indent: 0.2rem;
+    }
+
+    #vcomments a {
+        padding: 0 2px;
+        color: #4cbf30;
+        font-weight: 500;
+        text-decoration: none;
+    }
+
+    #vcomments img {
+        max-width: 100%;
+        height: auto;
+        cursor: pointer;
+    }
+
+    #vcomments ol li {
+        list-style-type: decimal;
+    }
+
+    #vcomments ol,
+    ul {
+        display: block;
+        padding-left: 2em;
+        word-spacing: 0.05rem;
+    }
+
+    #vcomments ul li,
+    ol li {
+        display: list-item;
+        line-height: 1.8rem;
+        font-size: 1rem;
+    }
+
+    #vcomments ul li {
+        list-style-type: disc;
+    }
+
+    #vcomments ul ul li {
+        list-style-type: circle;
+    }
+
+    #vcomments table, th, td {
+        padding: 12px 13px;
+        border: 1px solid #dfe2e5;
+    }
+
+    #vcomments table, th, td {
+        border: 0;
+    }
+
+    table tr:nth-child(2n), thead {
+        background-color: #fafafa;
+    }
+
+    #vcomments table th {
+        background-color: #f2f2f2;
+        min-width: 80px;
+    }
+
+    #vcomments table td {
+        min-width: 80px;
+    }
+
+    #vcomments h1 {
+        font-size: 1.85rem;
+        font-weight: bold;
+        line-height: 2.2rem;
+    }
+
+    #vcomments h2 {
+        font-size: 1.65rem;
+        font-weight: bold;
+        line-height: 1.9rem;
+    }
+
+    #vcomments h3 {
+        font-size: 1.45rem;
+        font-weight: bold;
+        line-height: 1.7rem;
+    }
+
+    #vcomments h4 {
+        font-size: 1.25rem;
+        font-weight: bold;
+        line-height: 1.5rem;
+    }
+
+    #vcomments h5 {
+        font-size: 1.1rem;
+        font-weight: bold;
+        line-height: 1.4rem;
+    }
+
+    #vcomments h6 {
+        font-size: 1rem;
+        line-height: 1.3rem;
+    }
+
+    #vcomments p {
+        font-size: 1rem;
+        line-height: 1.5rem;
+    }
+
+    #vcomments hr {
+        margin: 12px 0;
+        border: 0;
+        border-top: 1px solid #ccc;
+    }
+
+    #vcomments blockquote {
+        margin: 15px 0;
+        border-left: 5px solid #42b983;
+        padding: 1rem 0.8rem 0.3rem 0.8rem;
+        color: #666;
+        background-color: rgba(66, 185, 131, .1);
+    }
+
+    #vcomments pre {
+        font-family: monospace, monospace;
+        padding: 1.2em;
+        margin: .5em 0;
+        background: #272822;
+        overflow: auto;
+        border-radius: 0.3em;
+        tab-size: 4;
+    }
+
+    #vcomments code {
+        font-family: monospace, monospace;
+        padding: 1px 3px;
+        font-size: 0.92rem;
+        color: #e96900;
+        background-color: #f8f8f8;
+        border-radius: 2px;
+    }
+
+    #vcomments pre code {
+        font-family: monospace, monospace;
+        padding: 0;
+        color: #e8eaf6;
+        background-color: #272822;
+    }
+
+    #vcomments pre[class*="language-"] {
+        padding: 1.2em;
+        margin: .5em 0;
+    }
+
+    #vcomments code[class*="language-"],
+    pre[class*="language-"] {
+        color: #e8eaf6;
+    }
+
+    #vcomments [type="checkbox"]:not(:checked), [type="checkbox"]:checked {
+        position: inherit;
+        margin-left: -1.3rem;
+        margin-right: 0.4rem;
+        margin-top: -1px;
+        vertical-align: middle;
+        left: unset;
+        visibility: visible;
+    }
+
+    #vcomments b,
+    strong {
+        font-weight: bold;
+    }
+
+    #vcomments dfn {
+        font-style: italic;
+    }
+
+    #vcomments small {
+        font-size: 85%;
+    }
+
+    #vcomments cite {
+        font-style: normal;
+    }
+
+    #vcomments mark {
+        background-color: #fcf8e3;
+        padding: .2em;
+    }
+
+    #vcomments table, th, td {
+        padding: 12px 13px;
+        border: 1px solid #dfe2e5;
+    }
+
+    table tr:nth-child(2n), thead {
+        background-color: #fafafa;
+    }
+
+    #vcomments table th {
+        background-color: #f2f2f2;
+        min-width: 80px;
+    }
+
+    #vcomments table td {
+        min-width: 80px;
+    }
+
+    #vcomments [type="checkbox"]:not(:checked), [type="checkbox"]:checked {
+        position: inherit;
+        margin-left: -1.3rem;
+        margin-right: 0.4rem;
+        margin-top: -1px;
+        vertical-align: middle;
+        left: unset;
+        visibility: visible;
+    }
+</style>
+
+<div class="card valine-card" data-aos="fade-up">
+    <div class="comment_headling" style="font-size: 20px; font-weight: 700; position: relative; padding-left: 20px; top: 15px; padding-bottom: 5px;">
+        <i class="fas fa-comments fa-fw" aria-hidden="true"></i>
+        <span>评论</span>
+    </div>
+    <div id="vcomments" class="card-content" style="display: grid">
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/valine/av-min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/valine/Valine.min.js"></script>
+<script>
     let metaPlaceholder = {"nick":"昵称/QQ号(必填)","mail":"邮箱(必填)","link":"网址(https://)"} ;
     new Valine({
         el: '#vcomments', 
@@ -108,7 +2267,229 @@ services:
         tagMeta: ["博主", "小伙伴", "访客"], 
         metaPlaceholder: metaPlaceholder,
     });
-</script><div id="to_comment" class="comment-scroll"><a class="btn-floating btn-large waves-effect waves-light" href="#vcomments" title="直达评论"><i class="fas fa-comments"></i></a></div><article id="prenext-posts" class="prev-next articles"><div class="row article-row"><div class="article col s12 m6" data-aos="fade-up"><div class="article-badge left-badge text-color"><i class="fas fa-chevron-left"></i> &nbsp;上一篇</div><div class="card"><a href="/posts/ec2cad2/"><div class="card-image"> <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias_webp/cover/tls1.3.webp" class="responsive-img" alt="ESNI和加密DNS - 保护信息隐私的最后一块拼图"> <span class="card-title">ESNI和加密DNS - 保护信息隐私的最后一块拼图</span></div></a><div class="card-content article-content"><div class="summary block-with-text"> 随着[TLS1.3](https://www.ietf.org/blog/tls13/)的发布，让该协议成为有史以来最安全、也是最复杂的TLS协议。在该协议之中，有很多的对于以往协议安全漏洞的修复，包括废弃RSA启用新的秘钥交换机制PSK等等。而`Encrypted SNI`作为一个`TLS1.3`的扩展协议用来防止传统的HTTPS流量受到ISP或者陌生网络环境的窥探以及一些网络审查。</div><div class="publish-info"><span class="publish-date"><i class="far fa-clock fa-fw icon-date"></i> 2021-09-06</span><span class="publish-author"><i class="fas fa-bookmark fa-fw icon-category"></i> <a href="/categories/web/" class="post-category">web</a></span></div></div><div class="card-action article-tags"> <a href="/tags/SSL/"><span class="chip bg-color">SSL</span></a> <a href="/tags/TLS/"><span class="chip bg-color">TLS</span></a> <a href="/tags/%E9%9A%90%E7%A7%81/"><span class="chip bg-color">隐私</span></a> <a href="/tags/%E5%AE%89%E5%85%A8/"><span class="chip bg-color">安全</span></a></div></div></div><div class="article col s12 m6" data-aos="fade-up"><div class="article-badge right-badge text-color"> 下一篇&nbsp;<i class="fas fa-chevron-right"></i></div><div class="card"><a href="/posts/77da2f80/"><div class="card-image"> <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias_webp/cover/qnap.webp" class="responsive-img" alt="QNAP 修改应用启动顺序"> <span class="card-title">QNAP 修改应用启动顺序</span></div></a><div class="card-content article-content"><div class="summary block-with-text"></div><div class="publish-info"><span class="publish-date"><i class="far fa-clock fa-fw icon-date"></i> 2021-09-01</span><span class="publish-author"><i class="fas fa-bookmark fa-fw icon-category"></i> <a href="/categories/qnap/" class="post-category">qnap</a></span></div></div><div class="card-action article-tags"> <a href="/tags/QNAP/"><span class="chip bg-color">QNAP</span></a> <a href="/tags/nas/"><span class="chip bg-color">nas</span></a> <a href="/tags/%E5%90%AF%E5%8A%A8/"><span class="chip bg-color">启动</span></a></div></div></div></div></article></div><script>$("#articleContent").on("copy",function(e){if(void 0!==window.getSelection){var n=window.getSelection();if(!((""+n).length<Number.parseInt("100"))){var t=document.getElementsByTagName("body")[0],o=document.createElement("div");o.style.position="absolute",o.style.left="-99999px",t.appendChild(o),o.appendChild(n.getRangeAt(0).cloneContents()),"PRE"!==n.getRangeAt(0).commonAncestorContainer.nodeName&&"CODE"!==n.getRangeAt(0).commonAncestorContainer.nodeName||(o.innerHTML="<pre>"+o.innerHTML+"</pre>");var i=document.location.href;o.innerHTML+='<br />来源: 夜法之书<br />文章作者: 夜法之书<br />文章链接: <a href="'+i+'">'+i+"</a><br />本文章著作权归作者所有，任何形式的转载都请注明出处。",n.selectAllChildren(o),window.setTimeout(function(){t.removeChild(o)},200)}}})</script><script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/codeBlock/codeBlockFuction.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/codeBlock/codeLang.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/codeBlock/codeCopy.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/codeBlock/codeShrink.js"></script></div><div id="toc-aside" class="expanded col l3 hide-on-med-and-down"><div class="toc-widget card" style="background-color:#fff"><div class="toc-title"><i class="far fa-list-alt"></i>&nbsp;&nbsp;目录</div><div id="toc-content"></div></div></div></div><div id="floating-toc-btn" class="hide-on-med-and-down"><a class="btn-floating btn-large bg-color"><i class="fas fa-list-ul"></i></a></div><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/tocbot/tocbot.min.js"></script><script>
+</script>
+
+<!--酷Q推送-->
+
+
+<!-- 直达评论 -->
+<div id="to_comment" class="comment-scroll">
+    <a class="btn-floating btn-large waves-effect waves-light" href="#vcomments" title="直达评论">
+      <i class="fas fa-comments"></i>
+    </a>
+  </div>
+  
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+<article id="prenext-posts" class="prev-next articles">
+    <div class="row article-row">
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge left-badge text-color">
+                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
+            <div class="card">
+                <a href="/posts/ec2cad2/">
+                    <div class="card-image">
+                        
+                        <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias_webp/cover/tls1.3.webp" class="responsive-img" alt="ESNI和加密DNS - 保护信息隐私的最后一块拼图">
+                        
+                        <span class="card-title">ESNI和加密DNS - 保护信息隐私的最后一块拼图</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary block-with-text">
+                        
+                            随着[TLS1.3](https://www.ietf.org/blog/tls13/)的发布，让该协议成为有史以来最安全、也是最复杂的TLS协议。在该协议之中，有很多的对于以往协议安全漏洞的修复，包括废弃RSA启用新的秘钥交换机制PSK等等。而`Encrypted SNI`作为一个`TLS1.3`的扩展协议用来防止传统的HTTPS流量受到ISP或者陌生网络环境的窥探以及一些网络审查。
+                        
+                    </div>
+                    <div class="publish-info">
+                        <span class="publish-date">
+                            <i class="far fa-clock fa-fw icon-date"></i>2021-09-06
+                        </span>
+                        <span class="publish-author">
+                            
+                            <i class="fas fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/web/" class="post-category">
+                                    web
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/SSL/">
+                        <span class="chip bg-color">SSL</span>
+                    </a>
+                    
+                    <a href="/tags/TLS/">
+                        <span class="chip bg-color">TLS</span>
+                    </a>
+                    
+                    <a href="/tags/%E9%9A%90%E7%A7%81/">
+                        <span class="chip bg-color">隐私</span>
+                    </a>
+                    
+                    <a href="/tags/%E5%AE%89%E5%85%A8/">
+                        <span class="chip bg-color">安全</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge right-badge text-color">
+                下一篇&nbsp;<i class="fas fa-chevron-right"></i>
+            </div>
+            <div class="card">
+                <a href="/posts/77da2f80/">
+                    <div class="card-image">
+                        
+                        <img src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias_webp/cover/qnap.webp" class="responsive-img" alt="QNAP 修改应用启动顺序">
+                        
+                        <span class="card-title">QNAP 修改应用启动顺序</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary block-with-text">
+                        
+                            
+                        
+                    </div>
+                    <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2021-09-01
+                            </span>
+                        <span class="publish-author">
+                            
+                            <i class="fas fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/qnap/" class="post-category">
+                                    qnap
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/QNAP/">
+                        <span class="chip bg-color">QNAP</span>
+                    </a>
+                    
+                    <a href="/tags/nas/">
+                        <span class="chip bg-color">nas</span>
+                    </a>
+                    
+                    <a href="/tags/%E5%90%AF%E5%8A%A8/">
+                        <span class="chip bg-color">启动</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+    </div>
+</article>
+
+</div>
+
+
+<script>
+    $('#articleContent').on('copy', function (e) {
+        // IE8 or earlier browser is 'undefined'
+        if (typeof window.getSelection === 'undefined') return;
+
+        var selection = window.getSelection();
+        // if the selection is short let's not annoy our users.
+        if (('' + selection).length < Number.parseInt('100')) {
+            return;
+        }
+
+        // create a div outside of the visible area and fill it with the selected text.
+        var bodyElement = document.getElementsByTagName('body')[0];
+        var newdiv = document.createElement('div');
+        newdiv.style.position = 'absolute';
+        newdiv.style.left = '-99999px';
+        bodyElement.appendChild(newdiv);
+        newdiv.appendChild(selection.getRangeAt(0).cloneContents());
+
+        // we need a <pre> tag workaround.
+        // otherwise the text inside "pre" loses all the line breaks!
+        if (selection.getRangeAt(0).commonAncestorContainer.nodeName === 'PRE' || selection.getRangeAt(0).commonAncestorContainer.nodeName === 'CODE') {
+            newdiv.innerHTML = "<pre>" + newdiv.innerHTML + "</pre>";
+        }
+
+        var url = document.location.href;
+        newdiv.innerHTML += '<br />'
+            + '来源: 夜法之书<br />'
+            + '文章作者: 夜法之书<br />'
+            + '文章链接: <a href="' + url + '">' + url + '</a><br />'
+            + '本文章著作权归作者所有，任何形式的转载都请注明出处。';
+
+        selection.selectAllChildren(newdiv);
+        window.setTimeout(function () {bodyElement.removeChild(newdiv);}, 200);
+    });
+</script>
+
+
+<!-- 代码块功能依赖 -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/codeBlock/codeBlockFuction.js"></script>
+
+<!-- 代码语言 -->
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/codeBlock/codeLang.js"></script>
+
+
+<!-- 代码块复制 -->
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/codeBlock/codeCopy.js"></script>
+
+
+<!-- 代码块收缩 -->
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/codeBlock/codeShrink.js"></script>
+
+
+    </div>
+    <div id="toc-aside" class="expanded col l3 hide-on-med-and-down">
+        <div class="toc-widget card" style="background-color: white;">
+            <div class="toc-title"><i class="far fa-list-alt"></i>&nbsp;&nbsp;目录</div>
+            <div id="toc-content"></div>
+        </div>
+    </div>
+</div>
+
+<!-- TOC 悬浮按钮. -->
+
+<div id="floating-toc-btn" class="hide-on-med-and-down">
+    <a class="btn-floating btn-large bg-color">
+        <i class="fas fa-list-ul"></i>
+    </a>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/tocbot/tocbot.min.js"></script>
+<script>
     $(function () {
         tocbot.init({
             tocSelector: '#toc-content',
@@ -168,4 +2549,338 @@ services:
         });
         
     });
-</script></main><footer class="page-footer bg-color"><div class="container row center-align" style="margin-bottom:0!important"><div class="col s12 m8 l8 copy-right"> Copyright&nbsp;&copy; <span id="year">2020-2022</span> <a href="/about" target="_blank">夜法之书</a> |&nbsp;Powered by&nbsp;<a href="https://hexo.io/" target="_blank">Hexo</a> |&nbsp;Theme&nbsp;<a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank">Matery</a><br> &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color">200.7k</span> <span id="busuanzi_container_site_pv">&nbsp;|&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;<span id="busuanzi_value_site_pv" class="white-color"></span></span> <span id="busuanzi_container_site_uv">&nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;<span id="busuanzi_value_site_uv" class="white-color"></span></span><br><br></div><div class="col s12 m4 l4 social-link social-statis"><a href="https://github.com/appotry" class="tooltipped" target="_blank" data-tooltip="访问我的GitHub" data-position="top" data-delay="50"><i class="fab fa-github"></i></a><a href="https://hub.docker.com/u/bloodstar" class="tooltipped" target="_blank" data-tooltip="访问我的DockerHub" data-position="top" data-delay="50"><i class="fab fa-docker"></i></a><a href="mailto:andycrusoe@gmail.com" class="tooltipped" target="_blank" data-tooltip="邮件联系我" data-position="top" data-delay="50"><i class="fas fa-envelope-open"></i></a><a href="https://twitter.com/firedingden" class="tooltipped" target="_blank" data-tooltip="关注我的Twitter: https://twitter.com/firedingden" data-position="top" data-delay="50"><i class="fab fa-twitter"></i></a><a href="/atom.xml" class="tooltipped" target="_blank" data-tooltip="RSS 订阅" data-position="top" data-delay="50"><i class="fas fa-rss"></i></a></div></div></footer><div class="progress-bar"></div><div id="searchModal" class="modal"><div class="modal-content"><div class="search-header"><span class="title"><i class="fas fa-search"></i> &nbsp;&nbsp;搜索</span> <input type="search" id="searchInput" name="s" placeholder="请输入搜索的关键字" class="search-input"></div><div id="searchResult"></div></div></div><script type="text/javascript">$(function(){!function(t,a,s){"use strict";$.ajax({url:t,dataType:"xml",success:function(t){var e=$("entry",t).map(function(){return{title:$("title",this).text(),content:$("content",this).text(),url:$("url",this).text()}}).get(),r=document.getElementById(a),n=document.getElementById(s);r.addEventListener("input",function(){var f='<ul class="search-result-list">',m=this.value.trim().toLowerCase().split(/[\s\-]+/);n.innerHTML="",this.value.trim().length<=0||(e.forEach(function(t){var r=!0,n=t.title.trim().toLowerCase(),a=t.content.trim().replace(/<[^>]+>/g,"").toLowerCase(),e=t.url;e=0===e.indexOf("/")?t.url:"/"+e;var s=-1,i=-1,l=-1;if(""!==n&&""!==a&&m.forEach(function(t,e){s=n.indexOf(t),i=a.indexOf(t),s<0&&i<0?r=!1:(i<0&&(i=0),0===e&&(l=i))}),r){f+="<li><a href='"+e+"' class='search-result-title'>"+n+"</a>";var c=t.content.trim().replace(/<[^>]+>/g,"");if(0<=l){var u=l-20,o=l+80;u<0&&(u=0),0===u&&(o=100),o>c.length&&(o=c.length);var h=c.substr(u,o);m.forEach(function(t){var e=new RegExp(t,"gi");h=h.replace(e,'<em class="search-keyword">'+t+"</em>")}),f+='<p class="search-result">'+h+"...</p>"}f+="</li>"}}),f+="</ul>",n.innerHTML=f)})}})}("/search.xml","searchInput","searchResult")})</script><div id="backTop" class="top-scroll"><a class="btn-floating btn-large waves-effect waves-light" href="#!"><i class="fas fa-arrow-up"></i></a></div><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/materialize/materialize.min.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/masonry/masonry.pkgd.min.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/aos/aos.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/scrollprogress/scrollProgress.min.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/lightGallery/js/lightgallery-all.min.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/js/matery.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/mermaid/mermaid.min.js"></script><script>window.mermaid&&mermaid.initialize({theme:"forest"})</script><script type="text/javascript">var windowWidth=$(window).width();768<windowWidth&&document.write('<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/others/sakura.js"><\/script>')</script><script src="https://ssl.captcha.qq.com/TCaptcha.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/others/TencentCaptcha.js"></script> <button id="TencentCaptcha" data-appid="2057160203" data-cbfn="callback" type="button" hidden></button><script>var _hmt=_hmt||[];!function(){var e=document.createElement("script");e.src="https://hm.baidu.com/hm.js?22cc5bdea6e529c1349d44b7306b3b8c";var t=document.getElementsByTagName("script")[0];t.parentNode.insertBefore(e,t)}()</script><script>!function(){var t=document.createElement("script"),e=window.location.protocol.split(":")[0];t.src="https"===e?"https://zz.bdstatic.com/linksubmit/push.js":"http://push.zhanzhang.baidu.com/push.js";var s=document.getElementsByTagName("script")[0];s.parentNode.insertBefore(t,s)}()</script><canvas class="fireworks" style="position:fixed;left:0;top:0;z-index:1;pointer-events:none"></canvas><script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/anime/anime.min.js" async="async"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/others/fireworks.js" async="async"></script><script async src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/others/busuanzi.pure.mini.js"></script><script src="//code.tidio.co/ki6lsd8zq8isma7plzmwzuxgpnaihind.js"></script><script>$(document).ready(function(){setInterval(function(){var t=$("#tidio-chat iframe");"block"==t.css("display")&&977<$(window).width()?(document.getElementById("tidio-chat-iframe").style.bottom=0<("none"==$("div#backTop.top-scroll").css("display")&&977<$(window).width())?"-10px":0<($("div.toc-title").length&&977<$(window).width())?"230px":"232px",document.getElementById("tidio-chat-iframe").style.right="-6px",document.getElementById("tidio-chat-iframe").style.height=520<=parseInt(t.css("height"))?"520px":t.css("height"),document.getElementById("tidio-chat-iframe").style.zIndex="997"):"block"==t.css("display")&&601<$(window).width()&&$(window).width()<992?(document.getElementById("tidio-chat-iframe").style.bottom=0<("none"==$("div#backTop.top-scroll").css("display")&&601<$(window).width()<992)?"0px":"52px",document.getElementById("tidio-chat-iframe").style.right="-6px",document.getElementById("tidio-chat-iframe").style.zIndex="997"):"block"==t.css("display")&&$(window).width()<601&&parseInt(t.css("height"))<230&&(document.getElementById("tidio-chat-iframe").style.bottom=0<("none"==$("div#backTop.top-scroll").css("display")&&$(window).width()<601)?"-10px":"52px",document.getElementById("tidio-chat-iframe").style.zIndex="997");"block"==t.css("display")&&$(window).width()<601&&230<=parseInt(t.css("height"))&&(document.getElementById("tidio-chat-iframe").style.zIndex="998")},50)})</script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/instantpage/instantpage.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/hexo-tag-common@0.0.5/js/index.js"></script><script src="https://cdn.jsdelivr.net/npm/live2d-widget@3.x/lib/L2Dwidget.min.js"></script><script>L2Dwidget.init({pluginRootPath:"live2dw/",pluginJsPath:"lib/",pluginModelPath:"assets/",tagMode:!1,log:!1,model:{jsonPath:"https://cdn.jsdelivr.net/npm/live2d-widget-model-lwet@1.0.0/assets/14.json"},display:{position:"left",width:150,height:300,hOffset:35,vOffset:5},mobile:{show:!1}})</script><script>!function(e,s,p,r){if(void 0===e.webpushr){e.webpushr=e.webpushr||function(){(e.webpushr.q=e.webpushr.q||[]).push(arguments)};var n,w=s.getElementsByTagName(p)[0];(n=s.createElement(p)).id="webpushr-jssdk",n.async=1,n.src="https://cdn.webpushr.com/app.min.js",w.parentNode.appendChild(n)}}(window,document,"script"),webpushr("setup",{key:"BDHamjevXR9yPJrttxl80MjCYEwm3CKzwsi3rwMXxq4Lnbzhr2fNQARqXJVhfBn_ucmy9QHixa3qps8eEFXBwmw"})</script></body></html>
+</script>
+
+    
+
+</main>
+
+
+
+
+    <footer class="page-footer bg-color">
+    
+
+    <div class="container row center-align"
+         style="margin-bottom: 0px !important;">
+        <div class="col s12 m8 l8 copy-right">
+            Copyright&nbsp;&copy;
+            
+                <span id="year">2020-2022</span>
+            
+            <a href="/about" target="_blank">夜法之书</a>
+            |&nbsp;Powered by&nbsp;<a href="https://hexo.io/" target="_blank">Hexo</a>
+            |&nbsp;Theme&nbsp;<a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank">Matery</a>
+            <br>
+            
+                &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span
+                        class="white-color">200.7k</span>
+            
+            
+            
+                
+            
+            
+                <span id="busuanzi_container_site_pv">
+                &nbsp;|&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;
+                    <span id="busuanzi_value_site_pv" class="white-color"></span>
+            </span>
+            
+            
+                <span id="busuanzi_container_site_uv">
+                &nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;
+                    <span id="busuanzi_value_site_uv" class="white-color"></span>
+            </span>
+            
+            <br>
+
+            <!-- 运行天数提醒. -->
+            
+            <br>
+            
+        </div>
+        <div class="col s12 m4 l4 social-link social-statis">
+    <a href="https://github.com/appotry" class="tooltipped" target="_blank" data-tooltip="访问我的GitHub" data-position="top" data-delay="50">
+        <i class="fab fa-github"></i>
+    </a>
+
+
+
+    <a href="https://hub.docker.com/u/bloodstar" class="tooltipped" target="_blank" data-tooltip="访问我的DockerHub" data-position="top" data-delay="50">
+        <i class="fab fa-docker"></i>
+    </a>
+
+
+
+    <a href="mailto:andycrusoe@gmail.com" class="tooltipped" target="_blank" data-tooltip="邮件联系我" data-position="top" data-delay="50">
+        <i class="fas fa-envelope-open"></i>
+    </a>
+
+
+
+
+
+    <a href="https://twitter.com/firedingden" class="tooltipped" target="_blank" data-tooltip="关注我的Twitter: https://twitter.com/firedingden" data-position="top" data-delay="50">
+        <i class="fab fa-twitter"></i>
+    </a>
+
+
+
+
+
+
+
+
+
+    <a href="/atom.xml" class="tooltipped" target="_blank" data-tooltip="RSS 订阅" data-position="top" data-delay="50">
+        <i class="fas fa-rss"></i>
+    </a>
+
+
+
+</div>
+    </div>
+</footer>
+
+<div class="progress-bar"></div>
+
+    <!-- 搜索遮罩框 -->
+<div id="searchModal" class="modal">
+    <div class="modal-content">
+        <div class="search-header">
+            <span class="title"><i class="fas fa-search"></i>&nbsp;&nbsp;搜索</span>
+            <input type="search" id="searchInput" name="s" placeholder="请输入搜索的关键字"
+                   class="search-input">
+        </div>
+        <div id="searchResult"></div>
+    </div>
+</div>
+
+<script type="text/javascript">
+$(function () {
+    var searchFunc = function (path, search_id, content_id) {
+        'use strict';
+        $.ajax({
+            url: path,
+            dataType: "xml",
+            success: function (xmlResponse) {
+                // get the contents from search data
+                var datas = $("entry", xmlResponse).map(function () {
+                    return {
+                        title: $("title", this).text(),
+                        content: $("content", this).text(),
+                        url: $("url", this).text()
+                    };
+                }).get();
+                var $input = document.getElementById(search_id);
+                var $resultContent = document.getElementById(content_id);
+                $input.addEventListener('input', function () {
+                    var str = '<ul class=\"search-result-list\">';
+                    var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+                    $resultContent.innerHTML = "";
+                    if (this.value.trim().length <= 0) {
+                        return;
+                    }
+                    // perform local searching
+                    datas.forEach(function (data) {
+                        var isMatch = true;
+                        var data_title = data.title.trim().toLowerCase();
+                        var data_content = data.content.trim().replace(/<[^>]+>/g, "").toLowerCase();
+                        var data_url = data.url;
+                        data_url = data_url.indexOf('/') === 0 ? data.url : '/' + data_url;
+                        var index_title = -1;
+                        var index_content = -1;
+                        var first_occur = -1;
+                        // only match artiles with not empty titles and contents
+                        if (data_title !== '' && data_content !== '') {
+                            keywords.forEach(function (keyword, i) {
+                                index_title = data_title.indexOf(keyword);
+                                index_content = data_content.indexOf(keyword);
+                                if (index_title < 0 && index_content < 0) {
+                                    isMatch = false;
+                                } else {
+                                    if (index_content < 0) {
+                                        index_content = 0;
+                                    }
+                                    if (i === 0) {
+                                        first_occur = index_content;
+                                    }
+                                }
+                            });
+                        }
+                        // show search results
+                        if (isMatch) {
+                            str += "<li><a href='" + data_url + "' class='search-result-title'>" + data_title + "</a>";
+                            var content = data.content.trim().replace(/<[^>]+>/g, "");
+                            if (first_occur >= 0) {
+                                // cut out 100 characters
+                                var start = first_occur - 20;
+                                var end = first_occur + 80;
+                                if (start < 0) {
+                                    start = 0;
+                                }
+                                if (start === 0) {
+                                    end = 100;
+                                }
+                                if (end > content.length) {
+                                    end = content.length;
+                                }
+                                var match_content = content.substr(start, end);
+                                // highlight all keywords
+                                keywords.forEach(function (keyword) {
+                                    var regS = new RegExp(keyword, "gi");
+                                    match_content = match_content.replace(regS, "<em class=\"search-keyword\">" + keyword + "</em>");
+                                });
+
+                                str += "<p class=\"search-result\">" + match_content + "...</p>"
+                            }
+                            str += "</li>";
+                        }
+                    });
+                    str += "</ul>";
+                    $resultContent.innerHTML = str;
+                });
+            }
+        });
+    };
+
+    searchFunc('/search.xml', 'searchInput', 'searchResult');
+});
+</script>
+
+    <!-- 回到顶部按钮 -->
+<div id="backTop" class="top-scroll">
+    <a class="btn-floating btn-large waves-effect waves-light" href="#!">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+</div>
+
+
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/materialize/materialize.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/masonry/masonry.pkgd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/aos/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/scrollprogress/scrollProgress.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/lightGallery/js/lightgallery-all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/js/matery.js"></script>
+
+    
+        <!-- <script src='https://unpkg.com/mermaid@latest/dist/mermaid.min.js'></script> -->
+        <script src='https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/mermaid/mermaid.min.js'></script>
+        <script>
+          if (window.mermaid) {
+            mermaid.initialize({theme: 'forest'});
+          }
+        </script>
+    
+
+    
+        
+        <script type="text/javascript">
+            // 只在桌面版网页启用特效
+            var windowWidth = $(window).width();
+            if (windowWidth > 768) {
+                document.write('<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/others/sakura.js"><\/script>');
+            }
+        </script>
+    
+
+    <!-- 雪花特效 -->
+    
+
+    <!-- 鼠标星星特效 -->
+    
+
+     
+        <script src="https://ssl.captcha.qq.com/TCaptcha.js"></script>
+        <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/others/TencentCaptcha.js"></script>
+        <button id="TencentCaptcha" data-appid="2057160203" data-cbfn="callback" type="button" hidden></button>
+    
+
+    <!-- Baidu Analytics -->
+
+<script>
+    var _hmt = _hmt || [];
+    (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?22cc5bdea6e529c1349d44b7306b3b8c";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+    })();
+</script>
+
+    <!-- Baidu Push -->
+
+<script>
+    (function () {
+        var bp = document.createElement('script');
+        var curProtocol = window.location.protocol.split(':')[0];
+        if (curProtocol === 'https') {
+            bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';
+        } else {
+            bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+        }
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(bp, s);
+    })();
+</script>
+
+    
+
+    
+        <canvas class="fireworks" style="position: fixed;left: 0;top: 0;z-index: 1; pointer-events: none;" ></canvas> 
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/anime/anime.min.js" async="async"></script>
+        <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/others/fireworks.js" async="async"></script>
+    
+
+    
+    <script async src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/others/busuanzi.pure.mini.js"></script>
+    
+
+    
+        <script src="//code.tidio.co/ki6lsd8zq8isma7plzmwzuxgpnaihind.js"></script>
+        <script>
+            $(document).ready(function () {
+                setInterval(change_Tidio, 50);
+                function change_Tidio() {
+                    var tidio=$("#tidio-chat iframe");
+                    if(tidio.css("display")=="block"&& $(window).width()>977 ){
+                        document.getElementById("tidio-chat-iframe").style.bottom= ($("div#backTop.top-scroll").css("display")=="none" &&$(window).width()>977)>0? "-10px" : ($("div.toc-title").length&&$(window).width()>977)>0?"230px":"232px";
+                        document.getElementById("tidio-chat-iframe").style.right="-6px";
+                        document.getElementById("tidio-chat-iframe").style.height=parseInt(tidio.css("height"))>=520?"520px":tidio.css("height");
+                        document.getElementById("tidio-chat-iframe").style.zIndex="997";
+                    }
+                    else if(tidio.css("display")=="block"&&$(window).width()>601 &&$(window).width()<992 ){
+                        document.getElementById("tidio-chat-iframe").style.bottom= ($("div#backTop.top-scroll").css("display")=="none" && 601< $(window).width()<992)>0? "0px":"52px" ;
+                        document.getElementById("tidio-chat-iframe").style.right="-6px";
+                        document.getElementById("tidio-chat-iframe").style.zIndex="997";
+                    }
+                    else if(tidio.css("display")=="block"&&$(window).width()<601 && parseInt(tidio.css("height"))<230){
+                        document.getElementById("tidio-chat-iframe").style.bottom= ($("div#backTop.top-scroll").css("display")=="none" && $(window).width()<601)>0? "-10px":"52px" ;
+                        document.getElementById("tidio-chat-iframe").style.zIndex="997";
+                    }
+                    if( tidio.css("display")=="block"&&$(window).width()<601 && parseInt(tidio.css("height"))>=230){
+                        document.getElementById("tidio-chat-iframe").style.zIndex="998";
+                    }
+                }
+            });
+        </script>
+    
+
+    
+
+    <!--腾讯兔小巢-->
+    
+    
+
+    
+
+    
+
+    
+    <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/instantpage/instantpage.js" type="module"></script>
+    
+
+<!-- hexo injector body_end start --><script src="https://cdn.jsdelivr.net/npm/hexo-tag-common@0.0.5/js/index.js"></script><!-- hexo injector body_end end --><script src="https://cdn.jsdelivr.net/npm/live2d-widget@3.x/lib/L2Dwidget.min.js"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"log":false,"model":{"jsonPath":"https://cdn.jsdelivr.net/npm/live2d-widget-model-lwet@1.0.0/assets/14.json"},"display":{"position":"left","width":150,"height":300,"hOffset":35,"vOffset":5},"mobile":{"show":false}});</script><script>(function (w, d, s, id) {
+            if (typeof (w.webpushr) !== 'undefined') return; w.webpushr = w.webpushr || function () { (w.webpushr.q = w.webpushr.q || []).push(arguments) }; var js, fjs = d.getElementsByTagName(s)[0]; js = d.createElement(s); js.id = id; js.async = 1; js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window, document, 'script', 'webpushr-jssdk'));webpushr('setup', { 'key': 'BDHamjevXR9yPJrttxl80MjCYEwm3CKzwsi3rwMXxq4Lnbzhr2fNQARqXJVhfBn_ucmy9QHixa3qps8eEFXBwmw' });</script></body>
+
+</html>
