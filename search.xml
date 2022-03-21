@@ -6779,155 +6779,6 @@ This is the admonition body
       </tags>
   </entry>
   <entry>
-    <title>浏览器的渲染过程</title>
-    <url>/posts/69a052c9/</url>
-    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><blockquote>
-<p>通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？</p>
-</blockquote>
-<h3 id="首先，请先看一张大图"><strong>首先，请先看一张大图</strong></h3>
-<p>浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：</p>
-<ul>
-<li>构建对象模型（DOM，CSSOM）</li>
-<li>构建渲染树（RenderTree）</li>
-<li>布局</li>
-<li>渲染</li>
-</ul>
-<p>在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220512.jpeg" alt=""></p>
-<h3 id="1-DOMTree的构建"><strong>1.DOMTree的构建</strong></h3>
-<p>浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220515.jpeg" alt=""></p>
-<ul>
-<li>第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220653.jpeg" alt=""></p>
-<ul>
-<li>第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是<code>开始标签</code>，还是<code>结束标签</code>，或者<code>文本标签</code>等。</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220522.jpeg" alt=""></p>
-<ul>
-<li>第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的<code>开始标签</code>，<code>结束标签</code>，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。<br>
-Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt;</code>标签最终生成出的节点对象中会保存图片地址等信息。<br>
-事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取<code>深度遍历算法</code>消耗Token来生成Node，如下图所示：<br>
-图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出<code>html Token</code>,并消耗Token创建出<code>html 节点对象</code>，接着生成<code>head Token</code>并消耗Token创建出<code>head节点对象</code>......，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。</li>
-</ul>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220658.jpeg" alt=""></p>
-<p>这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？<br>
-因为在上述的解析的过程中，如果碰到了<code>script</code>或者<code>link</code>标签，就会根据<code>src</code>对应的地址去加载资源，在<code>script</code>标签没有设置<code>async/defer</code>属性时，这个加载过程是<code>下载并执行完全部的代码</code>，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出<strong>找不到该DOM元素</strong>的错误。<br>
-值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。</p>
-<h3 id="2-CSSOMTree的构建"><strong>2.CSSOMTree的构建</strong></h3>
-<p>DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：</p>
-<p>假设浏览器收到了下面这样一段css:</p>
-<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">body</span> <span class="token punctuation">{</span><span class="token property">font-size</span><span class="token punctuation">:</span> 16px<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">p</span> <span class="token punctuation">{</span><span class="token property">font-weight</span><span class="token punctuation">:</span> bold<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">p span</span> <span class="token punctuation">{</span><span class="token property">display</span><span class="token punctuation">:</span>none<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">span</span> <span class="token punctuation">{</span><span class="token property">color</span><span class="token punctuation">:</span> red<span class="token punctuation">;</span><span class="token punctuation">}</span>
-<span class="token selector">img</span> <span class="token punctuation">{</span><span class="token property">float</span><span class="token punctuation">:</span> right<span class="token punctuation">;</span><span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>最终会生成如下的CSSOMTree:</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220529.jpeg" alt=""></p>
-<p>从图中可以看出，最开始<code>body</code>有一个样式规则是<code>font-size:16px</code>，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如<code>span</code>又添加了一个样式规则<code>color:red</code>。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：<strong>CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置</strong>。比如在上面的css代码基础上再添加一行代码<code>p {font-size:12px}</code>，那么之前设置的<code>16px</code>将会被覆盖成<code>12px</code>。</p>
-<p>下面是官方给的一种解释：</p>
-<blockquote>
-<p>未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。<br>
-所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。</p>
-</blockquote>
-<p>那么回到上面生成DOM时提到的JS问题：<strong>在标签没有设置<code>async/defer</code>属性时，js会阻塞DOM的生成</strong>。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。</p>
-<p>同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在<strong>浏览器还未完成CSSOMTree的下载和构建</strong>时去操作CSS样式，浏览器会<strong>暂停脚本的运行和DOM的构建</strong>，直至浏览器完成了CSSOM的下载和构建。也就是说，<strong>JS脚本的出现会让CSSOM的构建阻塞DOM的构建</strong>。</p>
-<blockquote>
-<p>平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？</p>
-</blockquote>
-<p>举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个<code>link</code>标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220540.jpeg" alt=""></p>
-<p>而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个<code>script</code>标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220546.jpeg" alt=""></p>
-<p>那如果我们把css放到前面，js放到最后引入时，构建时间会变成：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220705.jpeg" alt=""></p>
-<p>由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。</p>
-<p>简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：</p>
-<ul>
-<li>当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕</li>
-<li>JavaScript可以查询和修改DOMTree与CSSOMTree</li>
-<li>直至CSSOM构建完毕，JavaScript才会执行</li>
-<li>脚本在文档中的位置很重要</li>
-</ul>
-<h3 id="3-渲染树的构建"><strong>3.渲染树的构建</strong></h3>
-<p>现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220711.jpeg" alt=""></p>
-<p>接下来我们来谈几条概念</p>
-<ul>
-<li>
-<p>Render 树上的每一个节点被称为：<code>RenderObject</code>。</p>
-</li>
-<li>
-<p>RenderObject跟 DOM 节点几乎是一一对应的，当一个<code>可见的 DOM 节点</code>被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。</p>
-</li>
-<li>
-<p>其中，可见的DOM节点不包括：</p>
-</li>
-<li>
-<p>一些不会体现在渲染输出中的节点（<code>&lt;html&gt;&lt;script&gt;&lt;link&gt;….</code>），会直接被忽略掉。</p>
-</li>
-<li>
-<p>通过CSS隐藏的节点。例如上图中的<code>span</code>节点，因为有一个CSS显式规则在该节点上设置了<code>display:none</code>属性，那么它在生成RenderObject时会被直接忽略掉。</p>
-</li>
-<li>
-<p>Render 树是衔接浏览器排版引擎和渲染引擎之间的<strong>桥梁</strong>，它是<strong>排版引擎的输出，渲染引擎的输入</strong>。</p>
-</li>
-</ul>
-<p>此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？</p>
-<h3 id="RenderObject-and-RenderLayer"><strong>RenderObject and RenderLayer</strong></h3>
-<blockquote>
-<p>浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理<strong>Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing</strong>等属性，浏览器需要生成另外一棵树：<strong>Layer树</strong></p>
-</blockquote>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220730.jpeg" alt=""></p>
-<p>浏览器会为一些<strong>特定</strong>的<code>RenderObject</code>生成对应的<code>RenderLayer</code>，其中的规则是：</p>
-<ul>
-<li>是否是页面的根节点 <em>It’s the root object for the page</em></li>
-<li>是否有css的一些布局属性（relative absolute or a transform) <em>It has explicit CSS position properties (relative, absolute or a transform)</em></li>
-<li>是否透明 <em>It is transparent</em></li>
-<li>是否有溢出 <em>Has overflow, an alpha mask or reflection</em></li>
-<li>是否有css滤镜 <em>Has a CSS filter</em></li>
-<li>是否包含一个canvas元素使得节点拥有视图上下文 <em>Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context</em></li>
-<li>是否包含一个video元素 <em>Corresponds to a video element</em></li>
-</ul>
-<p>当满足上面其中一个条件时，这个<code>RrenderObject</code>就会被浏览器选中生成对应的<code>RenderLayer</code>。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。</p>
-<p>浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个<code>RenderLayer</code>，再遍历从属于这个RenderLayer的 <code>RrenderObject</code>，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 <code>RenderLayer</code> 和 <code>RrenderObject</code> 一起就决定了网页在屏幕上最终呈现出来的内容。</p>
-<h3 id="4-布局"><strong>4.布局</strong></h3>
-<p>到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。</p>
-<p>布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220553.jpeg" alt=""></p>
-<h3 id="5-渲染"><strong>5.渲染</strong></h3>
-<p>最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220718.jpeg" alt=""></p>
-<p>至此，我们就能够在浏览器上看到漂亮的网页了</p>
-<blockquote>
-<p>谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？</p>
-</blockquote>
-<p>我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~</p>
-<h3 id="总结：-2"><strong>总结：</strong></h3>
-<ul>
-<li>经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。</li>
-<li>CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。</li>
-<li>同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用<code>async/defer属性</code>异步加载JavaScript。</li>
-<li>重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数</li>
-</ul>
-<h3 id="参考文献："><strong>参考文献：</strong></h3>
-<p><a href="https://link.zhihu.com/?target=https%3A//developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model%3Fhl%3Dzh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https%3A//developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction%3Fhl%3Dzh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https%3A//developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css%3Fhl%3Dzh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn</a></p>
-<p><a href="https://link.zhihu.com/?target=https%3A//mp.weixin.qq.com/s%3F__biz%3DMzA5NzkwNDk3MQ%3D%3D%26mid%3D2650588806%26idx%3D1%26sn%3D408a54e7c8102fd6944c9a40b119015a%26scene%3D21%23wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect</a></p>
-<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
-        <tag>css</tag>
-        <tag>js</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>[三万字教程]基于Hexo的matery主题搭建博客并深度优一站式完全教程</title>
     <url>/posts/40300608/</url>
     <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><blockquote>
@@ -10586,6 +10437,155 @@ location<span class="token punctuation">.</span>href<span class="token operator"
       </tags>
   </entry>
   <entry>
+    <title>浏览器的渲染过程</title>
+    <url>/posts/69a052c9/</url>
+    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><blockquote>
+<p>通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？</p>
+</blockquote>
+<h3 id="首先，请先看一张大图"><strong>首先，请先看一张大图</strong></h3>
+<p>浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：</p>
+<ul>
+<li>构建对象模型（DOM，CSSOM）</li>
+<li>构建渲染树（RenderTree）</li>
+<li>布局</li>
+<li>渲染</li>
+</ul>
+<p>在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220512.jpeg" alt=""></p>
+<h3 id="1-DOMTree的构建"><strong>1.DOMTree的构建</strong></h3>
+<p>浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220515.jpeg" alt=""></p>
+<ul>
+<li>第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220653.jpeg" alt=""></p>
+<ul>
+<li>第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是<code>开始标签</code>，还是<code>结束标签</code>，或者<code>文本标签</code>等。</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220522.jpeg" alt=""></p>
+<ul>
+<li>第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的<code>开始标签</code>，<code>结束标签</code>，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。<br>
+Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt;</code>标签最终生成出的节点对象中会保存图片地址等信息。<br>
+事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取<code>深度遍历算法</code>消耗Token来生成Node，如下图所示：<br>
+图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出<code>html Token</code>,并消耗Token创建出<code>html 节点对象</code>，接着生成<code>head Token</code>并消耗Token创建出<code>head节点对象</code>......，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220658.jpeg" alt=""></p>
+<p>这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？<br>
+因为在上述的解析的过程中，如果碰到了<code>script</code>或者<code>link</code>标签，就会根据<code>src</code>对应的地址去加载资源，在<code>script</code>标签没有设置<code>async/defer</code>属性时，这个加载过程是<code>下载并执行完全部的代码</code>，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出<strong>找不到该DOM元素</strong>的错误。<br>
+值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。</p>
+<h3 id="2-CSSOMTree的构建"><strong>2.CSSOMTree的构建</strong></h3>
+<p>DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：</p>
+<p>假设浏览器收到了下面这样一段css:</p>
+<pre class="line-numbers language-css" data-language="css"><code class="language-css"><span class="token selector">body</span> <span class="token punctuation">{</span><span class="token property">font-size</span><span class="token punctuation">:</span> 16px<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">p</span> <span class="token punctuation">{</span><span class="token property">font-weight</span><span class="token punctuation">:</span> bold<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">p span</span> <span class="token punctuation">{</span><span class="token property">display</span><span class="token punctuation">:</span>none<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">span</span> <span class="token punctuation">{</span><span class="token property">color</span><span class="token punctuation">:</span> red<span class="token punctuation">;</span><span class="token punctuation">}</span>
+<span class="token selector">img</span> <span class="token punctuation">{</span><span class="token property">float</span><span class="token punctuation">:</span> right<span class="token punctuation">;</span><span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>最终会生成如下的CSSOMTree:</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220529.jpeg" alt=""></p>
+<p>从图中可以看出，最开始<code>body</code>有一个样式规则是<code>font-size:16px</code>，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如<code>span</code>又添加了一个样式规则<code>color:red</code>。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：<strong>CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置</strong>。比如在上面的css代码基础上再添加一行代码<code>p {font-size:12px}</code>，那么之前设置的<code>16px</code>将会被覆盖成<code>12px</code>。</p>
+<p>下面是官方给的一种解释：</p>
+<blockquote>
+<p>未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。<br>
+所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。</p>
+</blockquote>
+<p>那么回到上面生成DOM时提到的JS问题：<strong>在标签没有设置<code>async/defer</code>属性时，js会阻塞DOM的生成</strong>。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。</p>
+<p>同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在<strong>浏览器还未完成CSSOMTree的下载和构建</strong>时去操作CSS样式，浏览器会<strong>暂停脚本的运行和DOM的构建</strong>，直至浏览器完成了CSSOM的下载和构建。也就是说，<strong>JS脚本的出现会让CSSOM的构建阻塞DOM的构建</strong>。</p>
+<blockquote>
+<p>平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？</p>
+</blockquote>
+<p>举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个<code>link</code>标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220540.jpeg" alt=""></p>
+<p>而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个<code>script</code>标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220546.jpeg" alt=""></p>
+<p>那如果我们把css放到前面，js放到最后引入时，构建时间会变成：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220705.jpeg" alt=""></p>
+<p>由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。</p>
+<p>简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：</p>
+<ul>
+<li>当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕</li>
+<li>JavaScript可以查询和修改DOMTree与CSSOMTree</li>
+<li>直至CSSOM构建完毕，JavaScript才会执行</li>
+<li>脚本在文档中的位置很重要</li>
+</ul>
+<h3 id="3-渲染树的构建"><strong>3.渲染树的构建</strong></h3>
+<p>现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220711.jpeg" alt=""></p>
+<p>接下来我们来谈几条概念</p>
+<ul>
+<li>
+<p>Render 树上的每一个节点被称为：<code>RenderObject</code>。</p>
+</li>
+<li>
+<p>RenderObject跟 DOM 节点几乎是一一对应的，当一个<code>可见的 DOM 节点</code>被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。</p>
+</li>
+<li>
+<p>其中，可见的DOM节点不包括：</p>
+</li>
+<li>
+<p>一些不会体现在渲染输出中的节点（<code>&lt;html&gt;&lt;script&gt;&lt;link&gt;….</code>），会直接被忽略掉。</p>
+</li>
+<li>
+<p>通过CSS隐藏的节点。例如上图中的<code>span</code>节点，因为有一个CSS显式规则在该节点上设置了<code>display:none</code>属性，那么它在生成RenderObject时会被直接忽略掉。</p>
+</li>
+<li>
+<p>Render 树是衔接浏览器排版引擎和渲染引擎之间的<strong>桥梁</strong>，它是<strong>排版引擎的输出，渲染引擎的输入</strong>。</p>
+</li>
+</ul>
+<p>此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？</p>
+<h3 id="RenderObject-and-RenderLayer"><strong>RenderObject and RenderLayer</strong></h3>
+<blockquote>
+<p>浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理<strong>Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing</strong>等属性，浏览器需要生成另外一棵树：<strong>Layer树</strong></p>
+</blockquote>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220730.jpeg" alt=""></p>
+<p>浏览器会为一些<strong>特定</strong>的<code>RenderObject</code>生成对应的<code>RenderLayer</code>，其中的规则是：</p>
+<ul>
+<li>是否是页面的根节点 <em>It’s the root object for the page</em></li>
+<li>是否有css的一些布局属性（relative absolute or a transform) <em>It has explicit CSS position properties (relative, absolute or a transform)</em></li>
+<li>是否透明 <em>It is transparent</em></li>
+<li>是否有溢出 <em>Has overflow, an alpha mask or reflection</em></li>
+<li>是否有css滤镜 <em>Has a CSS filter</em></li>
+<li>是否包含一个canvas元素使得节点拥有视图上下文 <em>Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context</em></li>
+<li>是否包含一个video元素 <em>Corresponds to a video element</em></li>
+</ul>
+<p>当满足上面其中一个条件时，这个<code>RrenderObject</code>就会被浏览器选中生成对应的<code>RenderLayer</code>。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。</p>
+<p>浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个<code>RenderLayer</code>，再遍历从属于这个RenderLayer的 <code>RrenderObject</code>，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 <code>RenderLayer</code> 和 <code>RrenderObject</code> 一起就决定了网页在屏幕上最终呈现出来的内容。</p>
+<h3 id="4-布局"><strong>4.布局</strong></h3>
+<p>到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。</p>
+<p>布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220553.jpeg" alt=""></p>
+<h3 id="5-渲染"><strong>5.渲染</strong></h3>
+<p>最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913220718.jpeg" alt=""></p>
+<p>至此，我们就能够在浏览器上看到漂亮的网页了</p>
+<blockquote>
+<p>谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？</p>
+</blockquote>
+<p>我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~</p>
+<h3 id="总结：-2"><strong>总结：</strong></h3>
+<ul>
+<li>经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。</li>
+<li>CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。</li>
+<li>同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用<code>async/defer属性</code>异步加载JavaScript。</li>
+<li>重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数</li>
+</ul>
+<h3 id="参考文献："><strong>参考文献：</strong></h3>
+<p><a href="https://link.zhihu.com/?target=https%3A//developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model%3Fhl%3Dzh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https%3A//developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction%3Fhl%3Dzh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https%3A//developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css%3Fhl%3Dzh-cn">https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn</a></p>
+<p><a href="https://link.zhihu.com/?target=https%3A//mp.weixin.qq.com/s%3F__biz%3DMzA5NzkwNDk3MQ%3D%3D%26mid%3D2650588806%26idx%3D1%26sn%3D408a54e7c8102fd6944c9a40b119015a%26scene%3D21%23wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect</a></p>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
+        <tag>css</tag>
+        <tag>js</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>在浏览器输入 URL 回车之后发生了什么</title>
     <url>/posts/656a0abb/</url>
     <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h2 id="前言">前言</h2>
@@ -12704,193 +12704,6 @@ mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -
       </tags>
   </entry>
   <entry>
-    <title>从文学的角度，分析韩红的《天亮了》</title>
-    <url>/posts/cb623532/</url>
-    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h2 id="现场MV">现场MV</h2>
-<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-qlOFEAINEIUMMgsV" src="https://player.bilibili.com/player.html?bvid=BV1B7411p7aD&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-qlOFEAINEIUMMgsV").style.height=document.getElementById("mmedia-qlOFEAINEIUMMgsV").scrollWidth*0.76+"px";
-    window.onresize = function(){
-      document.getElementById("mmedia-qlOFEAINEIUMMgsV").style.height=document.getElementById("mmedia-qlOFEAINEIUMMgsV").scrollWidth*0.76+"px";
-    }; </script>
-<blockquote>
-<p>精品分析： 原作：石晶兰 <a target="_blank" rel="noopener" href="https://tieba.baidu.com/p/5313070309?red_tag=2537504175">短文吧</a></p>
-<p>再做个传送门： <a target="_blank" rel="noopener" href="https://www.baidu.com/s?ie=UTF-8&amp;wd=%E9%9F%A9%E7%BA%A2%20%E5%A4%A9%E4%BA%AE%E4%BA%86">天亮了</a>，听歌时，关灯，准备纸巾。</p>
-</blockquote>
-<h2 id="先分析结构。">先分析结构。</h2>
-<p>看歌词。</p>
-<p>那是一个秋天，风儿那么缠绵，<br>
-让我想起他们那双无助的眼。<br>
-就在那美丽风景相伴的地方，<br>
-我听到一声巨响震彻山谷。<br>
-就是那个秋天，再看不到爸爸的脸。<br>
-他用他的双肩，托起我重生的起点。<br>
-黑暗中泪水沾满了双眼，<br>
-不要离开不要伤害。</p>
-<p>共八行，等于两个四行。<br>
-两个四行一一对应，前三行，旋律基本是相同的。只有最后一行，为了与后面衔接，所以不同。<br>
-两个四行的布置，等于是一种重复。<br>
-这样的重要，在文学结构上，常见于起承。<br>
-但歌，相当于诗。囿于篇幅，在结构上，通常会有所缺失。起承两者，一般缺失的，都是起。那样的做法，也就是直接叙事，存在让受众猝不及防的弊病。<br>
-然后，《天亮了》并不是。<br>
-“那是一个秋天，风儿那么缠绵”和“就是那个秋天”分明是起。<br>
-所以，《天亮了》并没有进行文学结构上的省略。<br>
-“那是一个秋天，风儿那么缠绵”是起，接紧着的三行歌词，自然就是承了。<br>
-那么，第五行“就是那个秋天”怎么又来一个起呢？<br>
-自然是因为篇幅太短，叙事不够（前面承得不够），所以，还需要再承一下。<br>
-不能够不要第五行的起，直接往下写吗？<br>
-真要说的话，其实也能。不过，再加四行承，真的就能把事情说清楚吗？<br>
-显然，韩红想要表达的东西很多，她认为，不能。<br>
-仅靠精练语言，明显是不够的，还需要换角度陈述。<br>
-第五行的再起，实际上，就是为后面的换角度承，打基础的。<br>
-这种写法，也是有先例的。请看邓丽君《相见在明天》歌词：<br>
-记得我俩初相见，<br>
-风吹花儿飞满天。<br>
-你说我的笑容像花朵，<br>
-比那花儿更娇艳。<br>
-我还记得那一天，<br>
-送你送到小河边。<br>
-手牵着手呀心里有千言，<br>
-相对却无言。<br>
-跟《天亮了》一样，《相见在明天》也是两个四行，也是起承起承。<br>
-并且，两起两承，还跟诗词的押韵一样，其重复，不仅有加深印象的作用，更有共鸣回旋的作用，正是唐陈子昂所说的“音情顿挫”的顿挫，极大的提升了作品的美感，让受众的接受度大大提高，</p>
-<h2 id="继续看《天亮了》歌词：">继续看《天亮了》歌词：</h2>
-<p>我看到爸爸妈妈就这么走远，<br>
-留下我在这陌生的人世间。<br>
-不知道未来还会有什么风险。<br>
-我想要紧紧抓住他的手。<br>
-妈妈告诉我希望还会有。<br>
-看到太阳出来妈妈笑了。<br>
-天亮了。</p>
-<p>六行都是转。具体在这里，自然不是转折，而是高那个潮。</p>
-<p>此处值得一说的是合，只有三个字“天亮了”。<br>
-这三个字，正好也是这首歌的歌名。<br>
-但是这三个字表达的，到底是什么意思、什么情感呢？</p>
-<p>题都城南庄/唐/崔护<br>
-去年今日此门中，人面桃花相映红。<br>
-人面不知何处去，桃花依旧笑春风。</p>
-<p>不难看出，最后一句“桃花依旧笑春风”跟前面三句的叙述，是接不上的。<br>
-去年这儿，有人面有桃花。今年这儿人面没有了，接下来说的通常是：还真是让人怀念啊。<br>
-俗吗？的确俗。并且，还不仅仅是俗，还存在因为什么而怀念那个姑娘的严重问题。<br>
-动机不纯的话，写出来就会玷污那个姑娘。动机纯粹，只是单纯的对美好事物的欣赏，写出来的话，又有自夸之嫌。<br>
-还真是不好写啊。<br>
-不好写，干脆就不写，另起一笔：“桃花依旧笑春风”。究竟表达的是什么样的滋味，让受众自己去想。</p>
-<p>《天亮了》末尾的合“天亮了”，就是“桃花依旧笑春风”这种表现手法。太多的感情，千言万语，加总在一起，实在难以挽上疙瘩。于是，就另起一行，来了句看似关系不大的“天亮了”，让一切，尽在无言中。<br>
-不同的受众，会有不同的感受。因而这种让受众自己去想的结尾，总是余味无穷。</p>
-<p>文学结构分析，就到这儿。第二段的结构跟第一段相同，就不讲了。</p>
-<h2 id="下面进行逐句评讲。">下面进行逐句评讲。</h2>
-<p>“那是一个秋天，风儿那么缠绵，”没毛病。“那是”开头，虽然不出彩，但是很自然，容易被人接受，接着往下听。<br>
-“让我想起他们那双无助的眼。”这里，“他们”是两个人；“那双”眼睛虽然是复数，但落实到人，却是单数。因此，这是一个小错误。<br>
-很显然，用相同性质的词语直接替换是不行的，譬如“四只”。四，数量较多，会分散受众的注意力，让受众去思考为什么是四。因而，如果硬要改的话，只能用其它性质的词语去替换，譬如“彷徨”。<br>
-但“彷徨无助”，又稍显生僻，会影响听者的接受速度，形成不怎么大的接受障碍。而如果也用“无”的话，无什么呢？无神？听上去，岂不是比“彷徨无助”更不容易分辨。<br>
-所以，实在要改，就只能把“他们”二字挪到这儿。<br>
-那样一来，“让我想起”就要掺进两个水字了，譬如“风儿让我想起”。<br>
-是不是太水了？<br>
-于是，我最终感觉，还是不改为好。<br>
-小错误嘛，存在也无妨。这就像文豪写书法一样，多一点少一点，多一笔少一笑，根本不算错误，关键是，那个字不能被错认为是别的字。<br>
-“那双无助的眼”也一样，虽然存在小错误，但由于不影响表达内容，听者一听，就知道是怎么回事。由于没有影响信息传递，所以不改也是行的。</p>
-<p>“就在那美丽风景相伴的地方，我听到一声巨响震彻山谷。”这两小句，没有基础毛病。<br>
-值得注意的是，这两小句，存在一个对比：一个美丽的地方，一件悲惨的事。颇有一种把美好的事情撕烂了给读者看的悲剧色彩。</p>
-<p>“就是那个秋天，再看不到爸爸的脸。”<br>
-为什么提到爸爸没提到妈妈？爸爸妈妈，可以一起提，也可以先后提。这里，实际上是先后提。先提爸爸，后面会提到妈妈。<br>
-先提爸爸，又比先提妈妈要好。这是因为，时至今日，最不令人怀疑的，是父女情。虽然背景事件中，那是个儿子，但韩红是女的，唱出来的声音又带有明显的女性特征。女声，提到爸爸，无形中，就相当于女儿提到爸爸。其中的感情，就往父女情的方向靠近了那么一点，让听者一下就能接受，丝毫没有怀疑。<br>
-“他用他的双肩，托起我重生的起点。”<br>
-背景事件的具体经过，可能生还的当事人都已经记不清楚了。这一句，属于带有归纳性、比拟性的描述。因而不需要因为“用”“双肩托起”，去询问是不是父亲从洪水中救起了儿子那样的细节。<br>
-“黑暗中泪水沾满了双眼，”<br>
-“黑暗中”很妙。只描述了环境，没有指明时间。那其实表达的是，若干个“黑暗中”。包括当时，也包括事后。并且，“黑暗”有天然的，也有人为的。天然的，譬如天黑加停电；人为的，譬如钻进被窝里。这些，都被包括了进去。<br>
-“不要离开、不要伤害。”这句，就有些难度了。<br>
-“不要离开”好理解。可以是儿子对父母的呼唤。但“不要伤害”呢？<br>
-“不要伤害”，到底是谁对谁发出的呐喊，后面再讲。</p>
-<p>“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。不知道未来还会有什么风险。”<br>
-三小句，基础上没毛病。直接看上去，字面意思表达能力似乎稍弱。真是不是，后面再说。<br>
-“我想要紧紧抓住他的手”中的“他”，指父亲，也可以指母亲。<br>
-“妈妈告诉我希望还会有。看到太阳出来妈妈笑了。”这是绝望中的回忆。这一家人，以前也是经受过苦难的。在曾经难熬的岁月中，妈妈曾经多次鼓励过儿子。鼓励的时候，有直述“告诉我希望还会有”，也有以身作则“看到太阳出来，妈妈笑了”。</p>
-<p>“天亮了。”尽在不言中，就不再讲了。</p>
-<p>“这是一个夜晚天上宿星点点，我在梦里看见我的妈妈。”<br>
-继“那是”之后，此处出现了“这是”。表示已经是事后，灾难之后。<br>
-“一个人在世上要学会坚强”，很明显，这不是儿子对父母能够说出的话。<br>
-结合前一小句“我在梦里看见我的妈妈”，可以发现，这是妈妈对儿子说的话。并且还是死去之后的妈妈对儿子所说的话。<br>
-“我在梦里看见我的妈妈。一个人在世上要学会坚强”紧接着的两句，主语变了。前一句是“我”，后一句是“妈妈”。同时，又因为死去的人继续说话这一违反科学常理的设定，使得后一句主语“妈妈”变得有些难以理解。<br>
-其实，受众的心，也是强大的。多听两遍，也还是能够理解的。<br>
-这两句主语的变化，从玄学的角度看，简单。但从文学的角度看，跳跃就非常大了。</p>
-<p>唐/李白有句：“千里江陵一日还”。“千里江陵”说的是千里之外的江陵。站在什么地方能够说出此话，自然是白帝城。“还”，指回来，站在什么地方能够说“还”，当然只能是江陵。就这么一句，视角就从白帝城跳到了江陵。<br>
-《天亮了》中，这两句紧挨着的歌词的主语跳跃，其实跟“千里江陵一日还”的视角跳跃，是相似的类型。</p>
-<p>“你不要离开不要伤害”上一段出现过，就不讲了。</p>
-<p>“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。”<br>
-比较上一段，区别的，是第三小句。此处的第三小句，从陈述中跳脱出来了，相当于插入了一个事后的心愿。</p>
-<p>“我想要紧紧抓住他的手。妈妈告诉我希望还会有，看到太阳出来、天亮了。”<br>
-比较上一段，区别的仍然是第三小句。“妈妈笑了”变成“天亮了”。但此处的“天亮了”，跟前面不一样，并不是起承转合的合，不是收尾，而就是一个简单的陈述，其实质，就相当于“妈妈笑了”。</p>
-<p>“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。<br>
-“我想要紧紧抓住他的手。妈妈告诉我希望还会有。看到太阳出来，他们笑了。”<br>
-重复，强调，加倍。略有不同的，就是“妈妈笑了”变成“他们笑了”。由“妈妈”变成“他们”，实际上也在告诉受众，马上就要收尾了。<br>
-以什么收尾，收到哪里呢？依然还是“天亮了”，尽在不言中，让受众自己去想，</p>
-<p>不知道是哪年哪天了，无意中，我就这么偶然听到了这首歌。<br>
-一听，就感受很好听。<br>
-一听，就听出来了，里面讲述了一场事故。因为有“我听到一声巨响震彻山谷”、“再看不到爸爸的脸”。<br>
-另外，还听出了事故中，父母对孩子的救助。因为有“他用他的双肩托起我重生的起点”。<br>
-很明显，事故是悲惨的，事故中的父母是可歌可泣的，事故之后的儿子或女儿（从歌词中听不出孩子的性别）是可怜的。<br>
-但是，就这么算了么？<br>
-这么好听的歌，最后一句“天亮了”到底表述的是怎样的感情？<br>
-没弄清楚，怎么能算完。</p>
-<p>生活中，有各种各样的事故。最常见的，恐怕应该是车祸。<br>
-车祸事故，几乎每天都能够在地方新闻上看到。<br>
-看到车祸事故的新闻，心中有什么感受？<br>
-悲伤么？自然没有。<br>
-一般来说，亲人，才会悲伤。陌生人，通常只是略带同情、怜悯。<br>
-此处说的是，同样的事，因为自身角度的不同，感受大不相同。<br>
-那么，《天亮了》应该站在什么样的角度去欣赏呢？</p>
-<p>最容易想到的角度，有两个。<br>
-一是生还的儿子或女儿。但是，站在这个角度欣赏，“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间，不知道未来还会有什么风险。”真的弱爆了。<br>
-另一个角度，则是富有同情心的旁观善良人士。这个角度的存在，是因为韩红。因为，就这么看过去，韩红，对于此次事故，似乎就是富有同情心的旁观善良人士。<br>
-但这个角度还是不行。“黑暗中泪水沾满了双眼”，没什么感觉。<br>
-于是乎，就剩下了不常见的角度——死去父母的角度！<br>
-我试着想象了这样的角度，再听《天亮了》，眼泪一下子就出来了。<br>
-我是在这之后，才搜索得知了《天亮了》的创作背景。</p>
-<p>是的，韩红，把自己当作那个孩子的父母，并且还把自己当作了孩子死去的父母。《天亮了》这首歌，表达的是死者对生者的寄托！<br>
-重新再看歌词。“黑暗中泪水沾满了双眼”，所指的，就不仅仅是事后孩子多次在被窝里痛哭，并且还指死去的父母在地狱中带泪含悲。<br>
-“不要离开”，只是孩子对父母的呼唤么？已然不是。以父母为参照物，生存的孩子，又何尝不是一种离开。<br>
-当然不是说想要孩子一起死，否则就不会用双肩托起重生的起点了。<br>
-“不要伤害”的答案，此时就出来了。那就是死去的父母发出的呐喊。呐喊的对象是天地——老天爷，不要伤害我们的孩子！<br>
-“一个人在世上要学会坚强”不再是父母对自己的叮嘱，而是自己，对自己幸存的子女的叮嘱。<br>
-于是乎，最后一句合中的“天亮了”，就表达了深深的无奈。<br>
-天亮了，通常指清晨，代表的是希望。但是，对于死者来说，天亮了，就代表魂魄状态的死者必须离开。<br>
-这是自然规律，死者必须离开。不想离开，也必须离开。因为——天亮了。<br>
-难怪韩红唱这三个字的时候，泣不成声。</p>
-<p>题外话又冒出来了。<br>
-我曾经进行过无数次评论。有那么一个人，曾经对于我的少部分评论非常不服。那就是，关于李白的诗的评论。<br>
-他认为，一件事物，可以从好坏两方面去说。他认为，李白的诗，就像打油诗，水平并不高。只是因为我的评论，才变得水平绝高了。<br>
-具体的说法就是，我先假定李诗水平绝高，然后往去往绝高的方向分析。<br>
-我的确也是这样做的。<br>
-但是，别人的诗，也可以假定为水平绝高啊，难道说真的就能分析出水平绝高来吗？<br>
-譬如杜甫的“三顾频烦天下计”。“顾频烦”三字的“页”旁，看不见吗？不擅书法，才会视而不见，所以杜甫不擅书法。是“频烦天下计”么？明明就只烦了一次。次数相对较多的，反而是“顾”，顾了三次。于是这句应该读成“三顾频、烦天下计”。这水平还怎么绝高呢？<br>
-相似的例子还有很多。无论是谁的作品，都能事先假定为水平绝高。但只有李白的诗，才会真的分析出水平绝高的答案出来。<br>
-所以，李诗的水平，是真的绝高。</p>
-<p>这番题外话，表达的是，前面关于《天亮了》的评论，或许韩红自己并没那么想，或者韩红没想那么多，或许《天亮了》就仅仅是韩红的偶然之得。<br>
-我要说的是，《天亮了》既然已经成为作品，那么它就脱离了作者韩红，变成了一种独立的存在。不能因为韩红的文学水平不够高，而去否认《天亮了》的文学成就。<br>
-我的确是抱着欣赏的态度，先假定《天亮了》文学水平很高，然后真往极高文学水平的方向去分析的。但是很幸运，我得出了《天亮了》文学水平果然很高的结论。<br>
-换首别的歌，行吗？<br>
-谁说行，谁上。</p>
-<p>最后，我还要说的是，文学水平，所指的，并不仅仅是文字方面的能力。<br>
-在打基础的时候，在斟酌字词句，在训练表达力、说服力的阶段，的确单指文字方面。<br>
-但是，在跨入感染力阶段之后，就不是了。<br>
-更多的，是提高心性。<br>
-心性高了，视角就不同了，感受也随之不同了，不管是写出来的作品，还是唱出来的歌，那都是不同的。<br>
-很多人说邓丽君的演唱水平并不高，那是不对的。应该说，邓丽君的演唱水平，其实很多人都达到过。个别的，譬如韩红，偶尔还超越过。<br>
-但是，为什么邓丽君流传下来的歌曲就那么多呢？其他歌者流传下来的歌就那么少呢？<br>
-就是因为心性。<br>
-心性与感染力关系，最容易明白的例子，就是翻唱。<br>
-《何日君在来》、《船歌》在邓丽君翻唱之前，并不好听，结果邓丽君一唱，就化腐朽为神奇了。<br>
-恰好，韩红也有过化腐朽为神奇的表现，譬如《妹妹找哥泪花流》、《天之大》（可搜）。<br>
-心性如此之高的韩红，偶得《天亮了》极高文学水准的作品，就是正常的了。</p>
-<p>（全文完）</p>
-<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
-      <categories>
-        <category>music</category>
-      </categories>
-      <tags>
-        <tag>music</tag>
-        <tag>韩红</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>解决Thinkpad笔记本喇叭破音问题！</title>
     <url>/posts/c945eae1/</url>
     <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h2 id="问题">问题</h2>
@@ -13246,6 +13059,193 @@ MusicBrainz Picard可以修改音乐的Tag标签信息，根据标签重命名�
         <tag>字幕</tag>
         <tag>emby</tag>
         <tag>plex</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>从文学的角度，分析韩红的《天亮了》</title>
+    <url>/posts/cb623532/</url>
+    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h2 id="现场MV">现场MV</h2>
+<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-URSgPmmetaLPGuPZ" src="https://player.bilibili.com/player.html?bvid=BV1B7411p7aD&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-URSgPmmetaLPGuPZ").style.height=document.getElementById("mmedia-URSgPmmetaLPGuPZ").scrollWidth*0.76+"px";
+    window.onresize = function(){
+      document.getElementById("mmedia-URSgPmmetaLPGuPZ").style.height=document.getElementById("mmedia-URSgPmmetaLPGuPZ").scrollWidth*0.76+"px";
+    }; </script>
+<blockquote>
+<p>精品分析： 原作：石晶兰 <a target="_blank" rel="noopener" href="https://tieba.baidu.com/p/5313070309?red_tag=2537504175">短文吧</a></p>
+<p>再做个传送门： <a target="_blank" rel="noopener" href="https://www.baidu.com/s?ie=UTF-8&amp;wd=%E9%9F%A9%E7%BA%A2%20%E5%A4%A9%E4%BA%AE%E4%BA%86">天亮了</a>，听歌时，关灯，准备纸巾。</p>
+</blockquote>
+<h2 id="先分析结构。">先分析结构。</h2>
+<p>看歌词。</p>
+<p>那是一个秋天，风儿那么缠绵，<br>
+让我想起他们那双无助的眼。<br>
+就在那美丽风景相伴的地方，<br>
+我听到一声巨响震彻山谷。<br>
+就是那个秋天，再看不到爸爸的脸。<br>
+他用他的双肩，托起我重生的起点。<br>
+黑暗中泪水沾满了双眼，<br>
+不要离开不要伤害。</p>
+<p>共八行，等于两个四行。<br>
+两个四行一一对应，前三行，旋律基本是相同的。只有最后一行，为了与后面衔接，所以不同。<br>
+两个四行的布置，等于是一种重复。<br>
+这样的重要，在文学结构上，常见于起承。<br>
+但歌，相当于诗。囿于篇幅，在结构上，通常会有所缺失。起承两者，一般缺失的，都是起。那样的做法，也就是直接叙事，存在让受众猝不及防的弊病。<br>
+然后，《天亮了》并不是。<br>
+“那是一个秋天，风儿那么缠绵”和“就是那个秋天”分明是起。<br>
+所以，《天亮了》并没有进行文学结构上的省略。<br>
+“那是一个秋天，风儿那么缠绵”是起，接紧着的三行歌词，自然就是承了。<br>
+那么，第五行“就是那个秋天”怎么又来一个起呢？<br>
+自然是因为篇幅太短，叙事不够（前面承得不够），所以，还需要再承一下。<br>
+不能够不要第五行的起，直接往下写吗？<br>
+真要说的话，其实也能。不过，再加四行承，真的就能把事情说清楚吗？<br>
+显然，韩红想要表达的东西很多，她认为，不能。<br>
+仅靠精练语言，明显是不够的，还需要换角度陈述。<br>
+第五行的再起，实际上，就是为后面的换角度承，打基础的。<br>
+这种写法，也是有先例的。请看邓丽君《相见在明天》歌词：<br>
+记得我俩初相见，<br>
+风吹花儿飞满天。<br>
+你说我的笑容像花朵，<br>
+比那花儿更娇艳。<br>
+我还记得那一天，<br>
+送你送到小河边。<br>
+手牵着手呀心里有千言，<br>
+相对却无言。<br>
+跟《天亮了》一样，《相见在明天》也是两个四行，也是起承起承。<br>
+并且，两起两承，还跟诗词的押韵一样，其重复，不仅有加深印象的作用，更有共鸣回旋的作用，正是唐陈子昂所说的“音情顿挫”的顿挫，极大的提升了作品的美感，让受众的接受度大大提高，</p>
+<h2 id="继续看《天亮了》歌词：">继续看《天亮了》歌词：</h2>
+<p>我看到爸爸妈妈就这么走远，<br>
+留下我在这陌生的人世间。<br>
+不知道未来还会有什么风险。<br>
+我想要紧紧抓住他的手。<br>
+妈妈告诉我希望还会有。<br>
+看到太阳出来妈妈笑了。<br>
+天亮了。</p>
+<p>六行都是转。具体在这里，自然不是转折，而是高那个潮。</p>
+<p>此处值得一说的是合，只有三个字“天亮了”。<br>
+这三个字，正好也是这首歌的歌名。<br>
+但是这三个字表达的，到底是什么意思、什么情感呢？</p>
+<p>题都城南庄/唐/崔护<br>
+去年今日此门中，人面桃花相映红。<br>
+人面不知何处去，桃花依旧笑春风。</p>
+<p>不难看出，最后一句“桃花依旧笑春风”跟前面三句的叙述，是接不上的。<br>
+去年这儿，有人面有桃花。今年这儿人面没有了，接下来说的通常是：还真是让人怀念啊。<br>
+俗吗？的确俗。并且，还不仅仅是俗，还存在因为什么而怀念那个姑娘的严重问题。<br>
+动机不纯的话，写出来就会玷污那个姑娘。动机纯粹，只是单纯的对美好事物的欣赏，写出来的话，又有自夸之嫌。<br>
+还真是不好写啊。<br>
+不好写，干脆就不写，另起一笔：“桃花依旧笑春风”。究竟表达的是什么样的滋味，让受众自己去想。</p>
+<p>《天亮了》末尾的合“天亮了”，就是“桃花依旧笑春风”这种表现手法。太多的感情，千言万语，加总在一起，实在难以挽上疙瘩。于是，就另起一行，来了句看似关系不大的“天亮了”，让一切，尽在无言中。<br>
+不同的受众，会有不同的感受。因而这种让受众自己去想的结尾，总是余味无穷。</p>
+<p>文学结构分析，就到这儿。第二段的结构跟第一段相同，就不讲了。</p>
+<h2 id="下面进行逐句评讲。">下面进行逐句评讲。</h2>
+<p>“那是一个秋天，风儿那么缠绵，”没毛病。“那是”开头，虽然不出彩，但是很自然，容易被人接受，接着往下听。<br>
+“让我想起他们那双无助的眼。”这里，“他们”是两个人；“那双”眼睛虽然是复数，但落实到人，却是单数。因此，这是一个小错误。<br>
+很显然，用相同性质的词语直接替换是不行的，譬如“四只”。四，数量较多，会分散受众的注意力，让受众去思考为什么是四。因而，如果硬要改的话，只能用其它性质的词语去替换，譬如“彷徨”。<br>
+但“彷徨无助”，又稍显生僻，会影响听者的接受速度，形成不怎么大的接受障碍。而如果也用“无”的话，无什么呢？无神？听上去，岂不是比“彷徨无助”更不容易分辨。<br>
+所以，实在要改，就只能把“他们”二字挪到这儿。<br>
+那样一来，“让我想起”就要掺进两个水字了，譬如“风儿让我想起”。<br>
+是不是太水了？<br>
+于是，我最终感觉，还是不改为好。<br>
+小错误嘛，存在也无妨。这就像文豪写书法一样，多一点少一点，多一笔少一笑，根本不算错误，关键是，那个字不能被错认为是别的字。<br>
+“那双无助的眼”也一样，虽然存在小错误，但由于不影响表达内容，听者一听，就知道是怎么回事。由于没有影响信息传递，所以不改也是行的。</p>
+<p>“就在那美丽风景相伴的地方，我听到一声巨响震彻山谷。”这两小句，没有基础毛病。<br>
+值得注意的是，这两小句，存在一个对比：一个美丽的地方，一件悲惨的事。颇有一种把美好的事情撕烂了给读者看的悲剧色彩。</p>
+<p>“就是那个秋天，再看不到爸爸的脸。”<br>
+为什么提到爸爸没提到妈妈？爸爸妈妈，可以一起提，也可以先后提。这里，实际上是先后提。先提爸爸，后面会提到妈妈。<br>
+先提爸爸，又比先提妈妈要好。这是因为，时至今日，最不令人怀疑的，是父女情。虽然背景事件中，那是个儿子，但韩红是女的，唱出来的声音又带有明显的女性特征。女声，提到爸爸，无形中，就相当于女儿提到爸爸。其中的感情，就往父女情的方向靠近了那么一点，让听者一下就能接受，丝毫没有怀疑。<br>
+“他用他的双肩，托起我重生的起点。”<br>
+背景事件的具体经过，可能生还的当事人都已经记不清楚了。这一句，属于带有归纳性、比拟性的描述。因而不需要因为“用”“双肩托起”，去询问是不是父亲从洪水中救起了儿子那样的细节。<br>
+“黑暗中泪水沾满了双眼，”<br>
+“黑暗中”很妙。只描述了环境，没有指明时间。那其实表达的是，若干个“黑暗中”。包括当时，也包括事后。并且，“黑暗”有天然的，也有人为的。天然的，譬如天黑加停电；人为的，譬如钻进被窝里。这些，都被包括了进去。<br>
+“不要离开、不要伤害。”这句，就有些难度了。<br>
+“不要离开”好理解。可以是儿子对父母的呼唤。但“不要伤害”呢？<br>
+“不要伤害”，到底是谁对谁发出的呐喊，后面再讲。</p>
+<p>“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。不知道未来还会有什么风险。”<br>
+三小句，基础上没毛病。直接看上去，字面意思表达能力似乎稍弱。真是不是，后面再说。<br>
+“我想要紧紧抓住他的手”中的“他”，指父亲，也可以指母亲。<br>
+“妈妈告诉我希望还会有。看到太阳出来妈妈笑了。”这是绝望中的回忆。这一家人，以前也是经受过苦难的。在曾经难熬的岁月中，妈妈曾经多次鼓励过儿子。鼓励的时候，有直述“告诉我希望还会有”，也有以身作则“看到太阳出来，妈妈笑了”。</p>
+<p>“天亮了。”尽在不言中，就不再讲了。</p>
+<p>“这是一个夜晚天上宿星点点，我在梦里看见我的妈妈。”<br>
+继“那是”之后，此处出现了“这是”。表示已经是事后，灾难之后。<br>
+“一个人在世上要学会坚强”，很明显，这不是儿子对父母能够说出的话。<br>
+结合前一小句“我在梦里看见我的妈妈”，可以发现，这是妈妈对儿子说的话。并且还是死去之后的妈妈对儿子所说的话。<br>
+“我在梦里看见我的妈妈。一个人在世上要学会坚强”紧接着的两句，主语变了。前一句是“我”，后一句是“妈妈”。同时，又因为死去的人继续说话这一违反科学常理的设定，使得后一句主语“妈妈”变得有些难以理解。<br>
+其实，受众的心，也是强大的。多听两遍，也还是能够理解的。<br>
+这两句主语的变化，从玄学的角度看，简单。但从文学的角度看，跳跃就非常大了。</p>
+<p>唐/李白有句：“千里江陵一日还”。“千里江陵”说的是千里之外的江陵。站在什么地方能够说出此话，自然是白帝城。“还”，指回来，站在什么地方能够说“还”，当然只能是江陵。就这么一句，视角就从白帝城跳到了江陵。<br>
+《天亮了》中，这两句紧挨着的歌词的主语跳跃，其实跟“千里江陵一日还”的视角跳跃，是相似的类型。</p>
+<p>“你不要离开不要伤害”上一段出现过，就不讲了。</p>
+<p>“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。”<br>
+比较上一段，区别的，是第三小句。此处的第三小句，从陈述中跳脱出来了，相当于插入了一个事后的心愿。</p>
+<p>“我想要紧紧抓住他的手。妈妈告诉我希望还会有，看到太阳出来、天亮了。”<br>
+比较上一段，区别的仍然是第三小句。“妈妈笑了”变成“天亮了”。但此处的“天亮了”，跟前面不一样，并不是起承转合的合，不是收尾，而就是一个简单的陈述，其实质，就相当于“妈妈笑了”。</p>
+<p>“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。<br>
+“我想要紧紧抓住他的手。妈妈告诉我希望还会有。看到太阳出来，他们笑了。”<br>
+重复，强调，加倍。略有不同的，就是“妈妈笑了”变成“他们笑了”。由“妈妈”变成“他们”，实际上也在告诉受众，马上就要收尾了。<br>
+以什么收尾，收到哪里呢？依然还是“天亮了”，尽在不言中，让受众自己去想，</p>
+<p>不知道是哪年哪天了，无意中，我就这么偶然听到了这首歌。<br>
+一听，就感受很好听。<br>
+一听，就听出来了，里面讲述了一场事故。因为有“我听到一声巨响震彻山谷”、“再看不到爸爸的脸”。<br>
+另外，还听出了事故中，父母对孩子的救助。因为有“他用他的双肩托起我重生的起点”。<br>
+很明显，事故是悲惨的，事故中的父母是可歌可泣的，事故之后的儿子或女儿（从歌词中听不出孩子的性别）是可怜的。<br>
+但是，就这么算了么？<br>
+这么好听的歌，最后一句“天亮了”到底表述的是怎样的感情？<br>
+没弄清楚，怎么能算完。</p>
+<p>生活中，有各种各样的事故。最常见的，恐怕应该是车祸。<br>
+车祸事故，几乎每天都能够在地方新闻上看到。<br>
+看到车祸事故的新闻，心中有什么感受？<br>
+悲伤么？自然没有。<br>
+一般来说，亲人，才会悲伤。陌生人，通常只是略带同情、怜悯。<br>
+此处说的是，同样的事，因为自身角度的不同，感受大不相同。<br>
+那么，《天亮了》应该站在什么样的角度去欣赏呢？</p>
+<p>最容易想到的角度，有两个。<br>
+一是生还的儿子或女儿。但是，站在这个角度欣赏，“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间，不知道未来还会有什么风险。”真的弱爆了。<br>
+另一个角度，则是富有同情心的旁观善良人士。这个角度的存在，是因为韩红。因为，就这么看过去，韩红，对于此次事故，似乎就是富有同情心的旁观善良人士。<br>
+但这个角度还是不行。“黑暗中泪水沾满了双眼”，没什么感觉。<br>
+于是乎，就剩下了不常见的角度——死去父母的角度！<br>
+我试着想象了这样的角度，再听《天亮了》，眼泪一下子就出来了。<br>
+我是在这之后，才搜索得知了《天亮了》的创作背景。</p>
+<p>是的，韩红，把自己当作那个孩子的父母，并且还把自己当作了孩子死去的父母。《天亮了》这首歌，表达的是死者对生者的寄托！<br>
+重新再看歌词。“黑暗中泪水沾满了双眼”，所指的，就不仅仅是事后孩子多次在被窝里痛哭，并且还指死去的父母在地狱中带泪含悲。<br>
+“不要离开”，只是孩子对父母的呼唤么？已然不是。以父母为参照物，生存的孩子，又何尝不是一种离开。<br>
+当然不是说想要孩子一起死，否则就不会用双肩托起重生的起点了。<br>
+“不要伤害”的答案，此时就出来了。那就是死去的父母发出的呐喊。呐喊的对象是天地——老天爷，不要伤害我们的孩子！<br>
+“一个人在世上要学会坚强”不再是父母对自己的叮嘱，而是自己，对自己幸存的子女的叮嘱。<br>
+于是乎，最后一句合中的“天亮了”，就表达了深深的无奈。<br>
+天亮了，通常指清晨，代表的是希望。但是，对于死者来说，天亮了，就代表魂魄状态的死者必须离开。<br>
+这是自然规律，死者必须离开。不想离开，也必须离开。因为——天亮了。<br>
+难怪韩红唱这三个字的时候，泣不成声。</p>
+<p>题外话又冒出来了。<br>
+我曾经进行过无数次评论。有那么一个人，曾经对于我的少部分评论非常不服。那就是，关于李白的诗的评论。<br>
+他认为，一件事物，可以从好坏两方面去说。他认为，李白的诗，就像打油诗，水平并不高。只是因为我的评论，才变得水平绝高了。<br>
+具体的说法就是，我先假定李诗水平绝高，然后往去往绝高的方向分析。<br>
+我的确也是这样做的。<br>
+但是，别人的诗，也可以假定为水平绝高啊，难道说真的就能分析出水平绝高来吗？<br>
+譬如杜甫的“三顾频烦天下计”。“顾频烦”三字的“页”旁，看不见吗？不擅书法，才会视而不见，所以杜甫不擅书法。是“频烦天下计”么？明明就只烦了一次。次数相对较多的，反而是“顾”，顾了三次。于是这句应该读成“三顾频、烦天下计”。这水平还怎么绝高呢？<br>
+相似的例子还有很多。无论是谁的作品，都能事先假定为水平绝高。但只有李白的诗，才会真的分析出水平绝高的答案出来。<br>
+所以，李诗的水平，是真的绝高。</p>
+<p>这番题外话，表达的是，前面关于《天亮了》的评论，或许韩红自己并没那么想，或者韩红没想那么多，或许《天亮了》就仅仅是韩红的偶然之得。<br>
+我要说的是，《天亮了》既然已经成为作品，那么它就脱离了作者韩红，变成了一种独立的存在。不能因为韩红的文学水平不够高，而去否认《天亮了》的文学成就。<br>
+我的确是抱着欣赏的态度，先假定《天亮了》文学水平很高，然后真往极高文学水平的方向去分析的。但是很幸运，我得出了《天亮了》文学水平果然很高的结论。<br>
+换首别的歌，行吗？<br>
+谁说行，谁上。</p>
+<p>最后，我还要说的是，文学水平，所指的，并不仅仅是文字方面的能力。<br>
+在打基础的时候，在斟酌字词句，在训练表达力、说服力的阶段，的确单指文字方面。<br>
+但是，在跨入感染力阶段之后，就不是了。<br>
+更多的，是提高心性。<br>
+心性高了，视角就不同了，感受也随之不同了，不管是写出来的作品，还是唱出来的歌，那都是不同的。<br>
+很多人说邓丽君的演唱水平并不高，那是不对的。应该说，邓丽君的演唱水平，其实很多人都达到过。个别的，譬如韩红，偶尔还超越过。<br>
+但是，为什么邓丽君流传下来的歌曲就那么多呢？其他歌者流传下来的歌就那么少呢？<br>
+就是因为心性。<br>
+心性与感染力关系，最容易明白的例子，就是翻唱。<br>
+《何日君在来》、《船歌》在邓丽君翻唱之前，并不好听，结果邓丽君一唱，就化腐朽为神奇了。<br>
+恰好，韩红也有过化腐朽为神奇的表现，譬如《妹妹找哥泪花流》、《天之大》（可搜）。<br>
+心性如此之高的韩红，偶得《天亮了》极高文学水准的作品，就是正常的了。</p>
+<p>（全文完）</p>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
+      <categories>
+        <category>music</category>
+      </categories>
+      <tags>
+        <tag>music</tag>
+        <tag>韩红</tag>
       </tags>
   </entry>
   <entry>
@@ -16510,12 +16510,12 @@ usecase usecase
 <li><code>lrc:xxx</code>: （可选）歌词文件 URL #### <em><strong>单曲附带歌词显示</strong></em></li>
 </ul>
 
-        <div id="aplayer-DNtxCjbe" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;">
+        <div id="aplayer-FJRVMfoL" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;">
             <pre class="aplayer-lrc-content"></pre>
         </div>
         <script>
           var ap = new APlayer({
-            element: document.getElementById("aplayer-DNtxCjbe"),
+            element: document.getElementById("aplayer-FJRVMfoL"),
             narrow: false,
             autoplay: false,
             showlrc: 3,
@@ -16563,10 +16563,10 @@ usecase usecase
 {% endaplayerlist %}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 
-        <div id="aplayer-aMzFKDoS" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
+        <div id="aplayer-vZZqATJf" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
 			  <script>
 				  var options = {"narrow":false,"autoplay":true,"showlrc":3,"mode":"random","mutex":true,"theme":"#e6d0b2","preload":"metadata","listmaxheight":"513px","music":[{"title":"Hotel California","author":"Camille and Kennerly","url":"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3","pic":"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp","lrc":"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc"},{"title":"Sold Out","author":"Diamonds","url":"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac","pic":"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg"}]};
-				  options.element = document.getElementById("aplayer-aMzFKDoS");
+				  options.element = document.getElementById("aplayer-vZZqATJf");
 				  var ap = new APlayer(options);
 			    window.aplayers || (window.aplayers = []);
 				  window.aplayers.push(ap);
@@ -16817,11 +16817,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-iWuRjxkbBDGMJDNy"></div><script> var iWuRjxkbBDGMJDNy_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); iWuRjxkbBDGMJDNy_options.container = document.getElementById("mmedia-iWuRjxkbBDGMJDNy"); const ap_iWuRjxkbBDGMJDNy = new APlayer(iWuRjxkbBDGMJDNy_options); </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-xjbuFOEfJYcNlHgH"></div><script> var xjbuFOEfJYcNlHgH_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); xjbuFOEfJYcNlHgH_options.container = document.getElementById("mmedia-xjbuFOEfJYcNlHgH"); const ap_xjbuFOEfJYcNlHgH = new APlayer(xjbuFOEfJYcNlHgH_options); </script>
 
 - **列表**
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-SUvnrOwYmTJNoIVc"></div><script> var SUvnrOwYmTJNoIVc_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); SUvnrOwYmTJNoIVc_options.container = document.getElementById("mmedia-SUvnrOwYmTJNoIVc"); const ap_SUvnrOwYmTJNoIVc = new APlayer(SUvnrOwYmTJNoIVc_options); </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-pyRsqzxmknQmFJGj"></div><script> var pyRsqzxmknQmFJGj_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); pyRsqzxmknQmFJGj_options.container = document.getElementById("mmedia-pyRsqzxmknQmFJGj"); const ap_pyRsqzxmknQmFJGj = new APlayer(pyRsqzxmknQmFJGj_options); </script>
 <p><strong>例子</strong></p>
 <pre class="line-numbers language-none"><code class="language-none">{% mmedias "aplayer" "autoplay:false" %}
 {
@@ -16864,7 +16864,7 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 }
 <span class="token twig language-twig"><span class="token delimiter punctuation">{%</span> <span class="token tag-name keyword">endmmedias</span> <span class="token delimiter punctuation">%}</span></span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <pre class="line-numbers language-none"><code class="language-none">{% mmedia "dplayer" "url:https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4" %}<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<script src="https://cdn.jsdelivr.net/npm/dplayer@1/dist/DPlayer.min.js"></script><div id="mmedia-THSqMUEwPcBrqJmr"></div><script> var THSqMUEwPcBrqJmr_options = JSON.parse('{\"video\":{\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4\"}}'); THSqMUEwPcBrqJmr_options.container = document.getElementById("mmedia-THSqMUEwPcBrqJmr"); const dp_THSqMUEwPcBrqJmr = new DPlayer(THSqMUEwPcBrqJmr_options); </script>
+<script src="https://cdn.jsdelivr.net/npm/dplayer@1/dist/DPlayer.min.js"></script><div id="mmedia-fXKGFFZanGBuGIdy"></div><script> var fXKGFFZanGBuGIdy_options = JSON.parse('{\"video\":{\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4\"}}'); fXKGFFZanGBuGIdy_options.container = document.getElementById("mmedia-fXKGFFZanGBuGIdy"); const dp_fXKGFFZanGBuGIdy = new DPlayer(fXKGFFZanGBuGIdy_options); </script>
 
 <pre class="line-numbers language-none"><code class="language-none">{% mmedias "dplayer" %}
 {
@@ -16893,9 +16893,9 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 mmedia 插件允许在 contents 部分使用 JSON 编写配置，使用 JSON5 标准。
 
-<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-YXiWGZMeHaQclUET" src="https://player.bilibili.com/player.html?bvid=BV1fs411S7u7&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-YXiWGZMeHaQclUET").style.height=document.getElementById("mmedia-YXiWGZMeHaQclUET").scrollWidth*0.76+"px";
+<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-dXscLVDZgCTiaLCd" src="https://player.bilibili.com/player.html?bvid=BV1fs411S7u7&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-dXscLVDZgCTiaLCd").style.height=document.getElementById("mmedia-dXscLVDZgCTiaLCd").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-YXiWGZMeHaQclUET").style.height=document.getElementById("mmedia-YXiWGZMeHaQclUET").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-dXscLVDZgCTiaLCd").style.height=document.getElementById("mmedia-dXscLVDZgCTiaLCd").scrollWidth*0.76+"px";
     }; </script>
 
 <pre class="line-numbers language-none"><code class="language-none">{% mmedia "bilibili" "bvid:BV1fs411S7u7" %}<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
@@ -16920,9 +16920,9 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，使用 JSON5 �
 | max_width       | 850px                                              | css 属性                                                |
 | margin          | auto                                               | css 属性                                                |
 
-<style>.xgplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="xgplayer"><iframe class="xgplayer" id="mmedia-ZBVffjMgVXKjumnc" src="https://www.ixigua.com/iframe/6925997698269053453?autoplay=0&amp;startTime=undefined" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-ZBVffjMgVXKjumnc").style.height=document.getElementById("mmedia-ZBVffjMgVXKjumnc").scrollWidth*0.7+"px";
+<style>.xgplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="xgplayer"><iframe class="xgplayer" id="mmedia-yDuBmEnsjVYyYJzS" src="https://www.ixigua.com/iframe/6925997698269053453?autoplay=0&amp;startTime=undefined" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-yDuBmEnsjVYyYJzS").style.height=document.getElementById("mmedia-yDuBmEnsjVYyYJzS").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-ZBVffjMgVXKjumnc").style.height=document.getElementById("mmedia-ZBVffjMgVXKjumnc").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-yDuBmEnsjVYyYJzS").style.height=document.getElementById("mmedia-yDuBmEnsjVYyYJzS").scrollWidth*0.7+"px";
     }; </script>
 
 <pre class="line-numbers language-none"><code class="language-none">{% mmedia "xigua" "xid=6925997698269053453" %}<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
@@ -16966,7 +16966,7 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，使用 JSON5 �
 
 <pre class="line-numbers language-none"><code class="language-none">{% mmedia "artplayer" "url:https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4" %}<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
-<script src="https://cdn.jsdelivr.net/npm/artplayer@3/dist/artplayer.js"></script><div id="mmedia-eZVoViSbzWnrcGYq" style="width:100%;height:650px;max-width:1200px;center"></div><script> var eZVoViSbzWnrcGYq_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); eZVoViSbzWnrcGYq_options.container = "#mmedia-eZVoViSbzWnrcGYq"; const art_eZVoViSbzWnrcGYq = new Artplayer(eZVoViSbzWnrcGYq_options); </script>
+<script src="https://cdn.jsdelivr.net/npm/artplayer@3/dist/artplayer.js"></script><div id="mmedia-eRAXqhXCBJEMgkfE" style="width:100%;height:650px;max-width:1200px;center"></div><script> var eRAXqhXCBJEMgkfE_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); eRAXqhXCBJEMgkfE_options.container = "#mmedia-eRAXqhXCBJEMgkfE"; const art_eRAXqhXCBJEMgkfE = new Artplayer(eRAXqhXCBJEMgkfE_options); </script>
 <pre class="line-numbers language-none"><code class="language-none">{% mmedias "artplayer" %}
 {
   url: "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4"
@@ -17928,11 +17928,11 @@ GitBook version: <span class="token number">3.2</span>.3<span aria-hidden="true"
 <blockquote>
 <p>博文页面内插入音乐列表</p>
 </blockquote>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-rcpbnIGrxmhEfEVC"></div><script> var rcpbnIGrxmhEfEVC_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); rcpbnIGrxmhEfEVC_options.container = document.getElementById("mmedia-rcpbnIGrxmhEfEVC"); const ap_rcpbnIGrxmhEfEVC = new APlayer(rcpbnIGrxmhEfEVC_options); </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-noYwHQlvkAocGaDh"></div><script> var noYwHQlvkAocGaDh_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); noYwHQlvkAocGaDh_options.container = document.getElementById("mmedia-noYwHQlvkAocGaDh"); const ap_noYwHQlvkAocGaDh = new APlayer(noYwHQlvkAocGaDh_options); </script>
 
 
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-jFNUPjdsGmzpPrMp"></div><script> var jFNUPjdsGmzpPrMp_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); jFNUPjdsGmzpPrMp_options.container = document.getElementById("mmedia-jFNUPjdsGmzpPrMp"); const ap_jFNUPjdsGmzpPrMp = new APlayer(jFNUPjdsGmzpPrMp_options); </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-ktdqDLZkDcrPWJks"></div><script> var ktdqDLZkDcrPWJks_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); ktdqDLZkDcrPWJks_options.container = document.getElementById("mmedia-ktdqDLZkDcrPWJks"); const ap_ktdqDLZkDcrPWJks = new APlayer(ktdqDLZkDcrPWJks_options); </script>
 <h2 id="单独Aplayer音乐页面">单独Aplayer音乐页面</h2>
 <blockquote>
 <p><strong>直接戳这里 -&gt;</strong> <a href="https://blog.17lai.site/musics/">Musics</a></p>
@@ -18013,9 +18013,9 @@ GitBook version: <span class="token number">3.2</span>.3<span aria-hidden="true"
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h2 id="现场MV-2">现场MV</h2>
-<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-flvjWeoqaBOQiqqi" src="https://player.bilibili.com/player.html?bvid=BV1b64y1d7pw&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-flvjWeoqaBOQiqqi").style.height=document.getElementById("mmedia-flvjWeoqaBOQiqqi").scrollWidth*0.76+"px";
+<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-ENJarxKLXCcexNSC" src="https://player.bilibili.com/player.html?bvid=BV1b64y1d7pw&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-ENJarxKLXCcexNSC").style.height=document.getElementById("mmedia-ENJarxKLXCcexNSC").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-flvjWeoqaBOQiqqi").style.height=document.getElementById("mmedia-flvjWeoqaBOQiqqi").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-ENJarxKLXCcexNSC").style.height=document.getElementById("mmedia-ENJarxKLXCcexNSC").scrollWidth*0.76+"px";
     }; </script>
 <h2 id="背景介绍">背景介绍</h2>
 <p>《曾经我也想过一了百了》是日本歌手中岛美嘉演唱的歌曲，由秋田弘填词和谱曲、出羽良彰编曲，于2013年8月28日发行，收录在中岛美嘉个人专辑《TOUGH 为爱勇敢》中。该歌曲勾勒出向死而生、努力活着的人，让人感到温暖和希望，让因为压力迷茫无助而有轻生想法的人，开始积极拥抱生活。 《曾经我也想过一了百了》由日本摇滚乐队amazarashi的主唱秋田弘创作，创作理念为“为了描写浓烈的希望，必须先描写深层的黑暗”。2010年，迎来出道十周年的中岛美嘉宣布自己因耳咽管开放症暂停一切音乐活动。在疾病的影响下，歌唱对她而言变得无比艰难。2011年，她携单曲《Dear》复出，但复出后始终经历着状态的起伏和媒体的质疑。 中岛美嘉起先向amazarashi提出合作请求，希望乐队能为自己创作一首节奏明快的歌曲，但随后秋田弘向她播放了乐队一首未发行的样本歌曲，并认为该曲很适合由她来演唱。收到该曲时，中岛美嘉起先感到十分惊讶，但听到最后泪流不止，感到自己的心变得柔和，便立即要求演唱该曲。录制过程中，中岛美嘉将自己的心声融入到了该曲中，希望能将力量传达给低迷苦闷的听众。</p>
@@ -18073,10 +18073,10 @@ GitBook version: <span class="token number">3.2</span>.3<span aria-hidden="true"
 [05:13.65]世界に少し期待するよ<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <h2 id="中文翻唱">中文翻唱</h2>
 
-        <div id="aplayer-DLdsEiAW" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
+        <div id="aplayer-DqZGDKeL" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
 			  <script>
 				  var options = {"narrow":false,"autoplay":false,"showlrc":3,"mode":"random","mutex":true,"theme":"#e6d0b2","preload":"metadata","listmaxheight":"513px","music":[{"title":"曾经我也想过一了百了","author":"一么","url":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3","pic":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg","lrc":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc"},{"title":"僕が死のうと思ったのは","author":"中岛美嘉","url":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3","pic":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg","lrc":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc"}]};
-				  options.element = document.getElementById("aplayer-DLdsEiAW");
+				  options.element = document.getElementById("aplayer-DqZGDKeL");
 				  var ap = new APlayer(options);
 			    window.aplayers || (window.aplayers = []);
 				  window.aplayers.push(ap);
@@ -18163,6 +18163,311 @@ GitBook version: <span class="token number">3.2</span>.3<span aria-hidden="true"
       <tags>
         <tag>music</tag>
         <tag>中岛美嘉</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>node 项目从构建到使用 jenkins + docker + nginx + mysql + redis 自动化部署</title>
+    <url>/posts/68d3867d/</url>
+    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h1>概述</h1>
+<p>这都2019年末了，你还不会 docker吗？ 你 low 爆了，我们作为一枚前端，不能说是要精通使用 docker 完成各种事情，但我觉得必须要学会使用 docker 干下面几件事：</p>
+<ol>
+<li>部署前端应用</li>
+<li>部署nginx</li>
+<li>使用docker-compose部署</li>
+<li>在容器之间建立联系</li>
+</ol>
+<p>Docker 可理解为跑在宿主机上的非常精简、小巧、高度浓缩的虚拟机。 它可以将容器里的进程安稳的在宿主机上运行，之前我也有写过一些关于docker的文章，在这我就不做过多的介绍了，如有需要请自行查看我之前的文章即可，接下来我们通过项目来了解并使用 docker</p>
+<h1>Egg.js ？</h1>
+<p>在这里我使用 <code>egg.js</code> 来为大家实操一下项目的部署流程。有人会问 <code>egg.js</code> 是什么？ 我只能回答这是一款专业级的 <code>node</code> 框架。作为一个有梦想的前端，我们有必要去学习一种后端语言，而作为前端 <code>node</code> 的学习成本相对来说比较低的。 <code>egg.js</code> 这个框架在 node 现有框架中也是比较优秀的，如有需要，大家可以自行学习，我们今天的学习主要还是项目的部署流程，在这我就不给大家做过多的介绍。如有需要，请查阅 <a href="https://link.juejin.cn?target=https%3A%2F%2Feggjs.org%2Fzh-cn%2Fintro%2Findex.html" title="https://eggjs.org/zh-cn/intro/index.html">官方文档</a></p>
+<h1>开始前的准备</h1>
+<blockquote>
+<p>docker 与 docker-compose 的安装我就不给大家介绍了。在之前的文章中是有的，也比较详细，作为一位开发人员，我认为这点事情难不倒大家</p>
+</blockquote>
+<h2 id="初始化项目">初始化项目</h2>
+<pre class="line-numbers language-none"><code class="language-none">$ mkdir egg-example &amp;&amp; cd egg-example
+$ npm init egg --type=simple
+$ npm i
+复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="创建需要的文件">创建需要的文件</h2>
+<p>我们需要在项目根目录创建我们所需要的文件</p>
+<pre class="line-numbers language-none"><code class="language-none">$ touch Dockerfile
+$ touch docker-compose.yml
+$ setup.sh
+复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="目录结构-2">目录结构</h2>
+<pre class="line-numbers language-none"><code class="language-none">egg-project
+├── package.json
+├── setup.sh (新建)
+├── Dockerfile (新建)
+├── docker-compose.yml (新建)
+├── app
+|   ├── router.js
+│   ├── controller
+│   |   └── home.js
+│   ├── service (可选)
+│   |   └── user.js
+│   ├── middleware (可选)
+│   |   └── response_time.js
+│   ├── schedule (可选)
+│   |   └── my_task.js
+
+...
+
+复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="常用指令">常用指令</h2>
+<p>在开始之前我们要学习下常用的一些指令，看下方：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110127.webp" alt=""></p>
+<h1>了解流程</h1>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110133.webp" alt=""></p>
+<h1>安装 jenkins</h1>
+<p>在安装jenkins我选择了使用docker-compose<br>
+docker-compose 是一个用来把 docker 自动化的东西<br>
+有了 docker-compose 你可以把所有繁复的 docker 操作全都一条命令，自动化的完成。</p>
+<h2 id="首先我们需要在服务器上创建一个目录机构-具体结构个人自行创建">首先我们需要在服务器上创建一个目录机构 (具体结构个人自行创建)</h2>
+<pre class="line-numbers language-none"><code class="language-none">/home/jenkins
+     - docker-compose.yml
+     - jenkins-home
+复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="接下来我们来编写-docker-compose-yml-安装jenkins">接下来我们来编写 docker-compose.yml 安装jenkins</h2>
+<pre class="line-numbers language-none"><code class="language-none">version: '3'                                    # 指定 docker-compose.yml 文件的写法格式
+services:                                       # 多个容器集合
+  docker_jenkins: 
+    user: root                                  # 为了避免一些权限问题 在这我使用了root
+    restart: always                             # 重启方式
+    image: jenkins/jenkins:lts                  # 指定服务所使用的镜像 在这里我选择了 LTS (长期支持)
+    container_name: jenkins                     # 容器名称
+    ports:                                      # 对外暴露的端口定义
+      - '8080:8080'
+      - '50000:50000'
+    volumes:                                    # 卷挂载路径
+      - /home/jenkins/jenkins_home/:/var/jenkins_home   # 这是我们一开始创建的目录挂载到容器内的jenkins_home目录
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker                 # 这是为了我们可以在容器内使用docker命令
+      - /usr/local/bin/docker-compose:/usr/local/bin/docker-compose     # 同样的这是为了使用docker-compose命令
+复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>我们需要进入到 jenkins 目录下执行：</p>
+<pre class="line-numbers language-none"><code class="language-none">$ docker-compose up -d
+复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h2 id="配置-2">配置</h2>
+<p>不出意外你现在可以打开你的服务器地址 <a href="https://link.juejin.cn?target=http%3A%2F%2Fxxxxxxx" title="http://xxxxxxx">http://xxxxxxx</a>:端口号 就能看到这个界面：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110139.webp" alt=""></p>
+<p>打开你所创建的jenkins目录进入到jenkins-home<br>
+/home/jenkins/jenkins-home</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110148.webp" alt=""></p>
+<p>进入 secrets 目录</p>
+<pre class="line-numbers language-none"><code class="language-none">$ cat initialAdminPassword
+复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110209.webp" alt=""></p>
+<p>然后把里面的文本复制出来填到管理员密码中</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110327.webp" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110215.webp" alt=""></p>
+<p>接下来需要安装两个插件</p>
+<pre class="line-numbers language-none"><code class="language-none">NodeJS Plugin
+Publish Over SSH
+复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110334.webp" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110221.webp" alt=""></p>
+<p>然后我们滑到最下方</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110228.webp" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110341.webp" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110347.webp" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110235.webp" alt=""></p>
+<h1>开始我们的操作</h1>
+<h2 id="Dockerfile">Dockerfile</h2>
+<p>我们在开始阶段的时候学过一些常用指令，大家应该一眼就可以看得懂这些命令。 加油！！</p>
+<pre class="line-numbers language-none"><code class="language-none">FROM node:10.0-alpine             # 镜像版本
+
+# 设置时区
+RUN apk --update add tzdata \
+    &amp;&amp; cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    &amp;&amp; echo "Asia/Shanghai" &gt; /etc/timezone \
+    &amp;&amp; apk del tzdata
+
+# 创建app目录
+RUN mkdir -p /usr/src/node-app/egg-santak
+
+# 设置工作目录
+WORKDIR /usr/src/node-app/egg-santak
+
+# 拷贝package.json文件到工作目录
+# !!重要：package.json需要单独添加。
+# Docker在构建镜像的时候，是一层一层构建的，仅当这一层有变化时，重新构建对应的层。
+# 如果package.json和源代码一起添加到镜像，则每次修改源码都需要重新安装npm模块，这样木有必要。
+# 所以，正确的顺序是: 添加package.json；安装npm模块；添加源代码。
+COPY package.json /usr/src/node-app/egg-santak/package.json
+
+# 安装npm依赖(使用淘宝的镜像源)
+# 如果使用的境外服务器，无需使用淘宝的镜像源，即改为`RUN npm i`。
+RUN npm i --registry=https://registry.npm.taobao.org
+
+# 拷贝所有源代码到工作目录
+COPY . /usr/src/node-app/egg-santak
+
+# 暴露容器端口
+EXPOSE 7001
+
+# 启动node应用
+CMD npm start
+复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="在服务器中创建我们所需要挂载的数据卷">在服务器中创建我们所需要挂载的数据卷</h2>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110241.webp" alt=""></p>
+<pre class="line-numbers language-none"><code class="language-none"># nginx
+$ mkdir -p nginx/conf.d nginx/logs
+
+# mysql
+$ mkdir mysql
+
+# redis
+$ mkdir redis
+复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>然后进入 <code>nginx/conf.d</code> 文件夹中 创建一个后缀为 <code>conf</code> 的文件</p>
+<pre class="line-numbers language-none"><code class="language-none">$ cd nginx/conf.d
+$ touch default.conf
+$ vim default.conf
+复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>写入以下内容：</p>
+<pre class="line-numbers language-none"><code class="language-none">server {
+  listen 80;
+  listen [::]:80;
+  server_tokens off;
+
+  root /var/www/html;
+  index index.html index.htm;
+
+  # 修改为自己的域名
+  server_name api.lovelp.xin;
+
+  # 访问 / 路径时执行反向代理
+  location / {
+    # 这里 nodejs 是 node 容器名
+    proxy_pass http://nodejs:7001;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header Host $host;
+    # 后端的Web服务器可以通过 X-Forwarded-For 获取用户真实 IP
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    # 允许客户端请求的最大单文件字节数
+    client_max_body_size 15M;
+    # 缓冲区代理缓冲用户端请求的最大字节数
+    client_body_buffer_size 128k;
+  }
+}
+复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="docker-compose-yml">docker-compose.yml</h2>
+<pre class="line-numbers language-none"><code class="language-none">version: '3'
+
+services:
+  santak_redis:
+    image: redis:3                  # 指定服务镜像
+    container_name: santak_redis    # 容器名称
+    restart: always                 # 重启方式
+    hostname: redis
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass 123456  --appendonly yes
+    volumes:                        # 挂载数据卷
+      - /root/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:                          # 映射端口
+      - "6379:6379"     
+    networks:                       # 加入指定网络
+      - app-network
+
+  santak_nginx:
+    image: nginx:stable-alpine      # 指定服务镜像
+    container_name: santak_nginx    # 容器名称
+    restart: always                 # 重启方式
+    ports:                          # 映射端口
+      - "80:80"
+    volumes:                        # 挂载数据卷
+      - /etc/localtime:/etc/localtime
+      - /root/nginx/conf.d:/etc/nginx/conf.d
+      - /root/nginx/logs:/var/log/nginx
+    depends_on:                     # 启动顺序
+      - nodejs
+    networks:                       # 加入指定网络
+      - app-network
+
+  santak_mysql:
+    image: mysql:5.7
+    container_name: santak_mysql
+    restart: always
+    ports:                          # 映射端口
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=lovelp           # 创建lovelp用户
+      - MYSQL_PASSWORD=mm123321     # 设置lovelp用户的密码
+      - MYSQL_DATABASE=santak       # 创建初始数据库
+      - TZ=Asia/Shanghai            # 设置时区
+    volumes:                        # 挂载数据卷
+      - /root/mysql:/var/lib/mysql  # 为了数据持久化
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks:                       # 加入指定网络
+      - app-network 
+
+  nodejs:
+    build:                          # 这里指的是我们刚刚撸的 Dockerfile 文件
+      context: .                    
+      dockerfile: Dockerfile
+    image: nodejs                   # 镜像名称
+    container_name: nodejs          # 容器名称
+    restart: always                 # 重启方式
+    depends_on:                     # 启动顺序
+      - santak_redis
+      - santak_mysql
+    links:                          # 容器连接
+      - santak_redis:santak_redis
+      - santak_mysql:santak_mysql
+    networks:                       # 加入指定网络
+      - app-network
+
+volumes:
+  certbot-etc:
+  certbot-var:
+
+networks:  # 实现通信
+  app-network:
+    driver: bridge
+复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="在项目中的使用">在项目中的使用</h2>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110359.webp" alt=""></p>
+<h2 id="setup-sh">setup.sh</h2>
+<pre class="line-numbers language-none"><code class="language-none">#!/usr/bin/env bash
+#image_version=`date +%Y%m%d%H%M`;
+
+# 关闭容器
+docker-compose stop || true;
+# 删除容器
+docker-compose down || true;
+# 构建镜像
+docker-compose build;
+# 启动并后台运行
+docker-compose up -d;
+# 查看日志
+docker logs nodejs;
+# 对空间进行自动清理
+docker system prune -a -f
+
+复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h1>jenkins 创建项目</h1>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110247.webp" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110248.webp" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110254.webp" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110409.webp" alt=""></p>
+<p>最后我们就可以愉快的 <code>Build Now</code> 了</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110415.webp" alt=""></p>
+<p>在这里我选择的是手动构建。其实jenkins有很多可配置项，比如自动化构建啥的，兴趣使然，大家自行摸索，谢谢大家</p>
+<h2 id="整理转载">整理转载:</h2>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://juejin.cn/post/6844904006184091662">掘金</a></li>
+</ul>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>docker</tag>
+        <tag>CI/CD</tag>
+        <tag>node</tag>
+        <tag>jenkins</tag>
       </tags>
   </entry>
   <entry>
@@ -19167,311 +19472,6 @@ hello to data1 volume from ubuntu16.04<span aria-hidden="true" class="line-numbe
         <tag>linux</tag>
         <tag>docker</tag>
         <tag>shell</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>node 项目从构建到使用 jenkins + docker + nginx + mysql + redis 自动化部署</title>
-    <url>/posts/68d3867d/</url>
-    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h1>概述</h1>
-<p>这都2019年末了，你还不会 docker吗？ 你 low 爆了，我们作为一枚前端，不能说是要精通使用 docker 完成各种事情，但我觉得必须要学会使用 docker 干下面几件事：</p>
-<ol>
-<li>部署前端应用</li>
-<li>部署nginx</li>
-<li>使用docker-compose部署</li>
-<li>在容器之间建立联系</li>
-</ol>
-<p>Docker 可理解为跑在宿主机上的非常精简、小巧、高度浓缩的虚拟机。 它可以将容器里的进程安稳的在宿主机上运行，之前我也有写过一些关于docker的文章，在这我就不做过多的介绍了，如有需要请自行查看我之前的文章即可，接下来我们通过项目来了解并使用 docker</p>
-<h1>Egg.js ？</h1>
-<p>在这里我使用 <code>egg.js</code> 来为大家实操一下项目的部署流程。有人会问 <code>egg.js</code> 是什么？ 我只能回答这是一款专业级的 <code>node</code> 框架。作为一个有梦想的前端，我们有必要去学习一种后端语言，而作为前端 <code>node</code> 的学习成本相对来说比较低的。 <code>egg.js</code> 这个框架在 node 现有框架中也是比较优秀的，如有需要，大家可以自行学习，我们今天的学习主要还是项目的部署流程，在这我就不给大家做过多的介绍。如有需要，请查阅 <a href="https://link.juejin.cn?target=https%3A%2F%2Feggjs.org%2Fzh-cn%2Fintro%2Findex.html" title="https://eggjs.org/zh-cn/intro/index.html">官方文档</a></p>
-<h1>开始前的准备</h1>
-<blockquote>
-<p>docker 与 docker-compose 的安装我就不给大家介绍了。在之前的文章中是有的，也比较详细，作为一位开发人员，我认为这点事情难不倒大家</p>
-</blockquote>
-<h2 id="初始化项目">初始化项目</h2>
-<pre class="line-numbers language-none"><code class="language-none">$ mkdir egg-example &amp;&amp; cd egg-example
-$ npm init egg --type=simple
-$ npm i
-复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="创建需要的文件">创建需要的文件</h2>
-<p>我们需要在项目根目录创建我们所需要的文件</p>
-<pre class="line-numbers language-none"><code class="language-none">$ touch Dockerfile
-$ touch docker-compose.yml
-$ setup.sh
-复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="目录结构-2">目录结构</h2>
-<pre class="line-numbers language-none"><code class="language-none">egg-project
-├── package.json
-├── setup.sh (新建)
-├── Dockerfile (新建)
-├── docker-compose.yml (新建)
-├── app
-|   ├── router.js
-│   ├── controller
-│   |   └── home.js
-│   ├── service (可选)
-│   |   └── user.js
-│   ├── middleware (可选)
-│   |   └── response_time.js
-│   ├── schedule (可选)
-│   |   └── my_task.js
-
-...
-
-复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="常用指令">常用指令</h2>
-<p>在开始之前我们要学习下常用的一些指令，看下方：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110127.webp" alt=""></p>
-<h1>了解流程</h1>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110133.webp" alt=""></p>
-<h1>安装 jenkins</h1>
-<p>在安装jenkins我选择了使用docker-compose<br>
-docker-compose 是一个用来把 docker 自动化的东西<br>
-有了 docker-compose 你可以把所有繁复的 docker 操作全都一条命令，自动化的完成。</p>
-<h2 id="首先我们需要在服务器上创建一个目录机构-具体结构个人自行创建">首先我们需要在服务器上创建一个目录机构 (具体结构个人自行创建)</h2>
-<pre class="line-numbers language-none"><code class="language-none">/home/jenkins
-     - docker-compose.yml
-     - jenkins-home
-复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="接下来我们来编写-docker-compose-yml-安装jenkins">接下来我们来编写 docker-compose.yml 安装jenkins</h2>
-<pre class="line-numbers language-none"><code class="language-none">version: '3'                                    # 指定 docker-compose.yml 文件的写法格式
-services:                                       # 多个容器集合
-  docker_jenkins: 
-    user: root                                  # 为了避免一些权限问题 在这我使用了root
-    restart: always                             # 重启方式
-    image: jenkins/jenkins:lts                  # 指定服务所使用的镜像 在这里我选择了 LTS (长期支持)
-    container_name: jenkins                     # 容器名称
-    ports:                                      # 对外暴露的端口定义
-      - '8080:8080'
-      - '50000:50000'
-    volumes:                                    # 卷挂载路径
-      - /home/jenkins/jenkins_home/:/var/jenkins_home   # 这是我们一开始创建的目录挂载到容器内的jenkins_home目录
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker                 # 这是为了我们可以在容器内使用docker命令
-      - /usr/local/bin/docker-compose:/usr/local/bin/docker-compose     # 同样的这是为了使用docker-compose命令
-复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>我们需要进入到 jenkins 目录下执行：</p>
-<pre class="line-numbers language-none"><code class="language-none">$ docker-compose up -d
-复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<h2 id="配置-2">配置</h2>
-<p>不出意外你现在可以打开你的服务器地址 <a href="https://link.juejin.cn?target=http%3A%2F%2Fxxxxxxx" title="http://xxxxxxx">http://xxxxxxx</a>:端口号 就能看到这个界面：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110139.webp" alt=""></p>
-<p>打开你所创建的jenkins目录进入到jenkins-home<br>
-/home/jenkins/jenkins-home</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110148.webp" alt=""></p>
-<p>进入 secrets 目录</p>
-<pre class="line-numbers language-none"><code class="language-none">$ cat initialAdminPassword
-复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110209.webp" alt=""></p>
-<p>然后把里面的文本复制出来填到管理员密码中</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110327.webp" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110215.webp" alt=""></p>
-<p>接下来需要安装两个插件</p>
-<pre class="line-numbers language-none"><code class="language-none">NodeJS Plugin
-Publish Over SSH
-复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110334.webp" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110221.webp" alt=""></p>
-<p>然后我们滑到最下方</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110228.webp" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110341.webp" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110347.webp" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110235.webp" alt=""></p>
-<h1>开始我们的操作</h1>
-<h2 id="Dockerfile">Dockerfile</h2>
-<p>我们在开始阶段的时候学过一些常用指令，大家应该一眼就可以看得懂这些命令。 加油！！</p>
-<pre class="line-numbers language-none"><code class="language-none">FROM node:10.0-alpine             # 镜像版本
-
-# 设置时区
-RUN apk --update add tzdata \
-    &amp;&amp; cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
-    &amp;&amp; echo "Asia/Shanghai" &gt; /etc/timezone \
-    &amp;&amp; apk del tzdata
-
-# 创建app目录
-RUN mkdir -p /usr/src/node-app/egg-santak
-
-# 设置工作目录
-WORKDIR /usr/src/node-app/egg-santak
-
-# 拷贝package.json文件到工作目录
-# !!重要：package.json需要单独添加。
-# Docker在构建镜像的时候，是一层一层构建的，仅当这一层有变化时，重新构建对应的层。
-# 如果package.json和源代码一起添加到镜像，则每次修改源码都需要重新安装npm模块，这样木有必要。
-# 所以，正确的顺序是: 添加package.json；安装npm模块；添加源代码。
-COPY package.json /usr/src/node-app/egg-santak/package.json
-
-# 安装npm依赖(使用淘宝的镜像源)
-# 如果使用的境外服务器，无需使用淘宝的镜像源，即改为`RUN npm i`。
-RUN npm i --registry=https://registry.npm.taobao.org
-
-# 拷贝所有源代码到工作目录
-COPY . /usr/src/node-app/egg-santak
-
-# 暴露容器端口
-EXPOSE 7001
-
-# 启动node应用
-CMD npm start
-复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="在服务器中创建我们所需要挂载的数据卷">在服务器中创建我们所需要挂载的数据卷</h2>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110241.webp" alt=""></p>
-<pre class="line-numbers language-none"><code class="language-none"># nginx
-$ mkdir -p nginx/conf.d nginx/logs
-
-# mysql
-$ mkdir mysql
-
-# redis
-$ mkdir redis
-复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>然后进入 <code>nginx/conf.d</code> 文件夹中 创建一个后缀为 <code>conf</code> 的文件</p>
-<pre class="line-numbers language-none"><code class="language-none">$ cd nginx/conf.d
-$ touch default.conf
-$ vim default.conf
-复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-<p>写入以下内容：</p>
-<pre class="line-numbers language-none"><code class="language-none">server {
-  listen 80;
-  listen [::]:80;
-  server_tokens off;
-
-  root /var/www/html;
-  index index.html index.htm;
-
-  # 修改为自己的域名
-  server_name api.lovelp.xin;
-
-  # 访问 / 路径时执行反向代理
-  location / {
-    # 这里 nodejs 是 node 容器名
-    proxy_pass http://nodejs:7001;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header Host $host;
-    # 后端的Web服务器可以通过 X-Forwarded-For 获取用户真实 IP
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    # 允许客户端请求的最大单文件字节数
-    client_max_body_size 15M;
-    # 缓冲区代理缓冲用户端请求的最大字节数
-    client_body_buffer_size 128k;
-  }
-}
-复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="docker-compose-yml">docker-compose.yml</h2>
-<pre class="line-numbers language-none"><code class="language-none">version: '3'
-
-services:
-  santak_redis:
-    image: redis:3                  # 指定服务镜像
-    container_name: santak_redis    # 容器名称
-    restart: always                 # 重启方式
-    hostname: redis
-    command: redis-server /usr/local/etc/redis/redis.conf --requirepass 123456  --appendonly yes
-    volumes:                        # 挂载数据卷
-      - /root/redis/redis.conf:/usr/local/etc/redis/redis.conf
-    ports:                          # 映射端口
-      - "6379:6379"     
-    networks:                       # 加入指定网络
-      - app-network
-
-  santak_nginx:
-    image: nginx:stable-alpine      # 指定服务镜像
-    container_name: santak_nginx    # 容器名称
-    restart: always                 # 重启方式
-    ports:                          # 映射端口
-      - "80:80"
-    volumes:                        # 挂载数据卷
-      - /etc/localtime:/etc/localtime
-      - /root/nginx/conf.d:/etc/nginx/conf.d
-      - /root/nginx/logs:/var/log/nginx
-    depends_on:                     # 启动顺序
-      - nodejs
-    networks:                       # 加入指定网络
-      - app-network
-
-  santak_mysql:
-    image: mysql:5.7
-    container_name: santak_mysql
-    restart: always
-    ports:                          # 映射端口
-      - "3306:3306"
-    environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_USER=lovelp           # 创建lovelp用户
-      - MYSQL_PASSWORD=mm123321     # 设置lovelp用户的密码
-      - MYSQL_DATABASE=santak       # 创建初始数据库
-      - TZ=Asia/Shanghai            # 设置时区
-    volumes:                        # 挂载数据卷
-      - /root/mysql:/var/lib/mysql  # 为了数据持久化
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-    networks:                       # 加入指定网络
-      - app-network 
-
-  nodejs:
-    build:                          # 这里指的是我们刚刚撸的 Dockerfile 文件
-      context: .                    
-      dockerfile: Dockerfile
-    image: nodejs                   # 镜像名称
-    container_name: nodejs          # 容器名称
-    restart: always                 # 重启方式
-    depends_on:                     # 启动顺序
-      - santak_redis
-      - santak_mysql
-    links:                          # 容器连接
-      - santak_redis:santak_redis
-      - santak_mysql:santak_mysql
-    networks:                       # 加入指定网络
-      - app-network
-
-volumes:
-  certbot-etc:
-  certbot-var:
-
-networks:  # 实现通信
-  app-network:
-    driver: bridge
-复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="在项目中的使用">在项目中的使用</h2>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110359.webp" alt=""></p>
-<h2 id="setup-sh">setup.sh</h2>
-<pre class="line-numbers language-none"><code class="language-none">#!/usr/bin/env bash
-#image_version=`date +%Y%m%d%H%M`;
-
-# 关闭容器
-docker-compose stop || true;
-# 删除容器
-docker-compose down || true;
-# 构建镜像
-docker-compose build;
-# 启动并后台运行
-docker-compose up -d;
-# 查看日志
-docker logs nodejs;
-# 对空间进行自动清理
-docker system prune -a -f
-
-复制代码<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h1>jenkins 创建项目</h1>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110247.webp" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110248.webp" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110254.webp" alt=""></p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110409.webp" alt=""></p>
-<p>最后我们就可以愉快的 <code>Build Now</code> 了</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110415.webp" alt=""></p>
-<p>在这里我选择的是手动构建。其实jenkins有很多可配置项，比如自动化构建啥的，兴趣使然，大家自行摸索，谢谢大家</p>
-<h2 id="整理转载">整理转载:</h2>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://juejin.cn/post/6844904006184091662">掘金</a></li>
-</ul>
-<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>docker</tag>
-        <tag>CI/CD</tag>
-        <tag>node</tag>
-        <tag>jenkins</tag>
       </tags>
   </entry>
   <entry>
