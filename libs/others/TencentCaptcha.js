@@ -10,11 +10,16 @@ if(res.ret === 2){
 
 var t2 = window.setInterval(function() {//重复运行的定时器，每一秒执行一次函数
 if (onIsOff == true){
-        act = document.activeElement.id;//获取当前焦点的id
-        if(act=="veditor")//判断评论输入框是否获得焦点
-        {
-        document.getElementById("TencentCaptcha").click();//触发id为TencentCaptcha的按钮
-        onIsOff = false;//触发过程中暂时关闭定时器
-        }
+      act = document.activeElement.id;//获取当前焦点的id
+      
+      if(act=="veditor")// valine 判断评论输入框是否获得焦点
+      {
+         document.getElementById("TencentCaptcha").click();//触发id为TencentCaptcha的按钮
+         onIsOff = false;//触发过程中暂时关闭定时器
+      } else if(act=="waline-edit")//waline-edit判断评论输入框是否获得焦点
+      {
+         document.getElementById("TencentCaptcha").click();//触发id为TencentCaptcha的按钮
+         onIsOff = false;//触发过程中暂时关闭定时器
+      }
 }
 },1000);
