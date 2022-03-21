@@ -1,4 +1,4 @@
-// 使用2022-03-21T12:47:29.753Z模板，稍后我们将使用hexo的事件机制，替换成ISO时间，作为每次构建的唯一标识符
+// 使用2022-03-21T13:03:49.776Z模板，稍后我们将使用hexo的事件机制，替换成ISO时间，作为每次构建的唯一标识符
 var cacheName = 'tellyouwhat-cache-{uniqueIdentifier}';
 // 在这个数组里面写入您主页加载需要的资源文件
 var filesToCache = [
@@ -19,16 +19,6 @@ var filesToCache = [
   '/medias_webp/icons/android-chrome-192x192.png',
   '/medias_webp/icons/android-chrome-512x512.png',
   '/manifest.json',
-  // '/css/fonts/cascadia-webfont.woff',
-  // '/css/fonts/cascadia-webfont.woff2',
-  // '/css/fonts/S6u_w4BMUTPHjxsI5wq_FQftx9897sxZ.woff2',
-  // '/css/fonts/S6u_w4BMUTPHjxsI5wq_Gwftx9897g.woff2',
-  // '/css/fonts/S6u_w4BMUTPHjxsI9w2_FQftx9897sxZ.woff2',
-  // '/css/fonts/S6u_w4BMUTPHjxsI9w2_Gwftx9897g.woff2',
-  // '/css/fonts/S6u8w4BMUTPHjxsAUi-qNiXg7eU0.woff2',
-  // '/css/fonts/S6u8w4BMUTPHjxsAXC-qNiXg7Q.woff2',
-  // '/css/fonts/TK3gWkYFABsmjsLaGw8EneptKZ2s.woff2',
-  // '/css/fonts/TK3gWkYFABsmjsLaGw8KneptKZ2s7zg.woff2',
 ];
 
 self.addEventListener('install', e => {
