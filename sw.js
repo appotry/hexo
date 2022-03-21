@@ -1,4 +1,4 @@
-// 使用2022-03-21T12:12:17.645Z模板，稍后我们将使用hexo的事件机制，替换成ISO时间，作为每次构建的唯一标识符
+// 使用2022-03-21T12:26:38.992Z模板，稍后我们将使用hexo的事件机制，替换成ISO时间，作为每次构建的唯一标识符
 var cacheName = 'tellyouwhat-cache-{uniqueIdentifier}';
 // 在这个数组里面写入您主页加载需要的资源文件
 var filesToCache = [
@@ -14,6 +14,8 @@ var filesToCache = [
   '/css/my-gitalk.css',
   '/page/2/',
   '/favicon.png',
+  '/medias_webp/hongmiaosi.webp',
+  '/medias_webp/background.webp',
   '/medias_webp/icons/android-chrome-192x192.png',
   '/medias_webp/icons/android-chrome-512x512.png',
   '/manifest.json',
