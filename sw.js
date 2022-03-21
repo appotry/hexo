@@ -1,12 +1,7 @@
 // 使用{uniqueIdentifier}模板，稍后我们将使用hexo的事件机制，替换成ISO时间，作为每次构建的唯一标识符
-var cacheName = '17lai-cache-20220321233955';
+var cacheName = '17lai-cache-20220322000844';
 // 在这个数组里面写入您主页加载需要的资源文件
 var filesToCache = [
-  '/',
-  '/categories/',
-  '/tags/',
-  '/archives/',
-  '/about/',
   '/js/matery.js',
   '/js/search.js',
   '/css/matery.css',
@@ -14,7 +9,6 @@ var filesToCache = [
   '/css/my-gitalk.css',
   '/favicon.png',
   '/medias_webp/hongmiaosi.webp',
-  '/medias_webp/background.webp',
   '/medias_webp/icons/android-chrome-192x192.png',
   '/medias_webp/icons/android-chrome-512x512.png',
   '/manifest.json',
