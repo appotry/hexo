@@ -1312,12 +1312,12 @@
                                 <span class="chip bg-color">Docker</span>
                             </a>
                         
-                            <a href="/tags/%E6%95%99%E7%A8%8B/">
-                                <span class="chip bg-color">教程</span>
-                            </a>
-                        
                             <a href="/tags/Rigistry/">
                                 <span class="chip bg-color">Rigistry</span>
+                            </a>
+                        
+                            <a href="/tags/%E6%95%99%E7%A8%8B/">
+                                <span class="chip bg-color">教程</span>
                             </a>
                         
                             <a href="/tags/email/">
@@ -1379,6 +1379,11 @@
                 
 
                 
+                    <div id="busuanzi_container_page_pv" class="info-break-policy">
+                        <i class="far fa-eye fa-fw"></i>阅读次数:&nbsp;&nbsp;
+                        <span id="busuanzi_value_page_pv"></span>
+                    </div>
+				
             </div>
         </div>
         <hr class="clearfix">
@@ -1920,29 +1925,29 @@ gitlab_rails<span class="token punctuation">[</span><span class="token string">'
 <p>gitlab对内存资源的消耗比较厉害<br>
 其中尤以 sidekiq队列 及 unicorn服务 两个组件对内存消耗最多<br>
 可以再容器启动时对相关参数进行微调：</p>
-<pre class="line-numbers language-yml" data-language="yml"><code class="language-yml">unicorn<span class="token punctuation">[</span><span class="token string">'worker_processes'</span><span class="token punctuation">]</span> = 1
-unicorn<span class="token punctuation">[</span><span class="token string">'worker_memory_limit_min'</span><span class="token punctuation">]</span> = "300 * 1 &lt;&lt; 20"
-unicorn<span class="token punctuation">[</span><span class="token string">'worker_memory_limit_max'</span><span class="token punctuation">]</span> = "400 * 1 &lt;&lt; 20"
-unicorn<span class="token punctuation">[</span><span class="token string">'worker_timeout'</span><span class="token punctuation">]</span> = 15
-sidekiq<span class="token punctuation">[</span><span class="token string">'concurrency'</span><span class="token punctuation">]</span> = 10
-sidekiq_cluster<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
-sidekiq_cluster<span class="token punctuation">[</span><span class="token string">'ha'</span><span class="token punctuation">]</span> = false
-redis<span class="token punctuation">[</span><span class="token string">'maxclients'</span><span class="token punctuation">]</span> = "100"
-nginx<span class="token punctuation">[</span><span class="token string">'worker_processes'</span><span class="token punctuation">]</span> = 2
-nginx<span class="token punctuation">[</span><span class="token string">'worker_connections'</span><span class="token punctuation">]</span> = 512
-nginx<span class="token punctuation">[</span><span class="token string">'keepalive_timeout'</span><span class="token punctuation">]</span> = 300
-nginx<span class="token punctuation">[</span><span class="token string">'cache_max_size'</span><span class="token punctuation">]</span> = '200m'
-mattermost<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
-mattermost_nginx<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
-gitlab_pages<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
-pages_nginx<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
-postgresql<span class="token punctuation">[</span><span class="token string">'shared_buffers'</span><span class="token punctuation">]</span> = "256MB"
-postgresql<span class="token punctuation">[</span><span class="token string">'max_connections'</span><span class="token punctuation">]</span> = 30
-postgresql<span class="token punctuation">[</span><span class="token string">'work_mem'</span><span class="token punctuation">]</span> = "8MB"
-postgresql<span class="token punctuation">[</span><span class="token string">'maintenance_work_mem'</span><span class="token punctuation">]</span> = "16MB"
-postgresql<span class="token punctuation">[</span><span class="token string">'effective_cache_size'</span><span class="token punctuation">]</span> = "1MB"
-postgresql<span class="token punctuation">[</span><span class="token string">'checkpoint_timeout'</span><span class="token punctuation">]</span> = "5min"
-postgresql<span class="token punctuation">[</span><span class="token string">'checkpoint_warning'</span><span class="token punctuation">]</span> = "30s"
+<pre class="line-numbers language-yml" data-language="yml"><code class="language-yml">unicorn['worker_processes'] = 1
+unicorn['worker_memory_limit_min'] = "300 * 1 &lt;&lt; 20"
+unicorn['worker_memory_limit_max'] = "400 * 1 &lt;&lt; 20"
+unicorn['worker_timeout'] = 15
+sidekiq['concurrency'] = 10
+sidekiq_cluster['enable'] = false
+sidekiq_cluster['ha'] = false
+redis['maxclients'] = "100"
+nginx['worker_processes'] = 2
+nginx['worker_connections'] = 512
+nginx['keepalive_timeout'] = 300
+nginx['cache_max_size'] = '200m'
+mattermost['enable'] = false
+mattermost_nginx['enable'] = false
+gitlab_pages['enable'] = false
+pages_nginx['enable'] = false
+postgresql['shared_buffers'] = "256MB"
+postgresql['max_connections'] = 30
+postgresql['work_mem'] = "8MB"
+postgresql['maintenance_work_mem'] = "16MB"
+postgresql['effective_cache_size'] = "1MB"
+postgresql['checkpoint_timeout'] = "5min"
+postgresql['checkpoint_warning'] = "30s"
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>配置调整后需要重载一下</p>
 <pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token function">docker</span> <span class="token builtin class-name">exec</span> gitlab gitlab-ctl reconfigure
@@ -2149,12 +2154,12 @@ listen_addresses <span class="token operator">=</span> <span class="token string
                                     <span class="chip bg-color">Docker</span>
                                 </a>
                             
-                                <a href="/tags/%E6%95%99%E7%A8%8B/">
-                                    <span class="chip bg-color">教程</span>
-                                </a>
-                            
                                 <a href="/tags/Rigistry/">
                                     <span class="chip bg-color">Rigistry</span>
+                                </a>
+                            
+                                <a href="/tags/%E6%95%99%E7%A8%8B/">
+                                    <span class="chip bg-color">教程</span>
                                 </a>
                             
                                 <a href="/tags/email/">
@@ -2784,6 +2789,10 @@ listen_addresses <span class="token operator">=</span> <span class="token string
                         <span class="chip bg-color">Docker</span>
                     </a>
                     
+                    <a href="/tags/%E6%95%99%E7%A8%8B/">
+                        <span class="chip bg-color">教程</span>
+                    </a>
+                    
                     <a href="/tags/LAMP/">
                         <span class="chip bg-color">LAMP</span>
                     </a>
@@ -2798,10 +2807,6 @@ listen_addresses <span class="token operator">=</span> <span class="token string
                     
                     <a href="/tags/JSP/">
                         <span class="chip bg-color">JSP</span>
-                    </a>
-                    
-                    <a href="/tags/%E6%95%99%E7%A8%8B/">
-                        <span class="chip bg-color">教程</span>
                     </a>
                     
                 </div>
@@ -2979,6 +2984,8 @@ listen_addresses <span class="token operator">=</span> <span class="token string
             
             
             
+                
+            
             
                 <span id="busuanzi_container_site_pv">
                 &nbsp;|&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;
@@ -2998,7 +3005,7 @@ listen_addresses <span class="token operator">=</span> <span class="token string
             <br>
             
         </div>
-        <div class="col s12 m4 l4 social-link ">
+        <div class="col s12 m4 l4 social-link social-statis">
     <a href="https://github.com/appotry" class="tooltipped" target="_blank" data-tooltip="访问我的GitHub" data-position="top" data-delay="50">
         <i class="fab fa-github"></i>
     </a>
@@ -3207,6 +3214,8 @@ $(function () {
         <script src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/others/fireworks.js" async="async"></script>
     
 
+    
+    <script async src="https://cdn.jsdelivr.net/gh/appotry/hexo@latest/libs/others/busuanzi.pure.mini.js"></script>
     
 
     
