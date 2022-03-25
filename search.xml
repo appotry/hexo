@@ -5295,373 +5295,255 @@ $ <span class="token function">sudo</span> gitlab-runner start<span aria-hidden=
       </tags>
   </entry>
   <entry>
-    <title>Mariadb/Mysql命令行常用命令</title>
-    <url>/posts/f0b0af52/</url>
-    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h2 id="一、初始化等">一、初始化等</h2>
-<h3 id="1、登陆数据库方法"><strong>1、登陆数据库方法</strong></h3>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">mysql <span class="token operator">-</span>u用户名 <span class="token operator">-</span>p用户密码<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h3 id="2、修改root及用户密码">2、修改root及用户密码</h3>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token keyword">use</span> mysql<span class="token punctuation">;</span>
-<span class="token keyword">update</span> <span class="token keyword">user</span> <span class="token keyword">set</span> password<span class="token operator">=</span>password<span class="token punctuation">(</span><span class="token string">'11111111'</span><span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token keyword">user</span><span class="token operator">=</span><span class="token string">'root'</span> <span class="token operator">and</span> host<span class="token operator">=</span><span class="token string">'localhost'</span><span class="token punctuation">;</span>
-flush <span class="token keyword">privileges</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">MariaDB <span class="token punctuation">[</span>mysql<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">update</span> <span class="token keyword">user</span> <span class="token keyword">set</span> password<span class="token operator">=</span>password<span class="token punctuation">(</span><span class="token string">'11111111'</span><span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token keyword">user</span><span class="token operator">=</span><span class="token string">'root'</span> <span class="token operator">and</span> host<span class="token operator">=</span><span class="token string">'localhost'</span><span class="token punctuation">;</span>
-Query OK<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">row</span> affected <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
-<span class="token keyword">Rows</span> <span class="token keyword">matched</span>: <span class="token number">1</span>  Changed: <span class="token number">1</span>  <span class="token keyword">Warnings</span>: <span class="token number">0</span>
+    <title>【Gitbook】GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</title>
+    <url>/posts/7fe86002/</url>
+    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><p>随着工作时间越来越久，项目越做越多，很多时候，手里面的技术文档都是零散的技术点。最近一直在着手把项目的技术开发文档(Technical Document)系统地整理一下。正好看到了非常棒的 GitBook 工具，又顺带研究了如何借助 Gitlab 的 CI/CD 功能实现自动部署。<br>
+正好开个简短的教程，介绍一下 <code>GitBook</code> + <code>GitLab</code>怎样来撰写并发布文档。<br>
+第一部分先来介绍一下 GitBook。</p>
+<h1>系统环境</h1>
+<p>惯例列出来我们的环境以及用到的工具。</p>
+<ul>
+<li>MacOS 10.12</li>
+<li>Node.js (版本 &gt; 4.0.0)</li>
+<li>Atom/MWebLite</li>
+</ul>
+<p>其实 Gitbook 有官方的编辑器，但是似乎对中文的支持不是很好，而且会有 bug，虽然最新版本做了优化，Mardown 格式的文字有些会自动显示成最终样式，而我个人还是比较喜欢原生的 markdown，所以我个人就没有用官方的编辑器。<br>
+如果读者注册了 gitbook，并且打算文章都发布到 gitbook 官网上的话，还是建议可以使用官方的编辑器。因为我的目标是发布到公司内网的 gitlab 上，所以这里就用 atom 或者 MWebLite 来编写文档。<br>
+其实这篇文章过后，大家对 Gitbook 的工作机制就很清楚了，完全可以自由地创作了。</p>
+<h1>基本使用</h1>
+<h2 id="安装-2">安装</h2>
+<p>安装过程非常简单</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> <span class="token function">install</span> gitbook-cli -g<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h2 id="新建book">新建book</h2>
+<p>安装成功后，我们就可以开始用gitbook 的命令来进行各种操作了。如果熟悉<code>hexo</code>的同学会发现，其实大同小异，只不过一个用来写blog，一个用来写 book。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token function">mkdir</span> myBook
+$ <span class="token builtin class-name">cd</span> myBook
+$ gitbook init<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p>初始化后，我们能在<code>myBook</code>目录下看到两个 markdown 文f件。这两个文件就是我们写一本书唯二必须要用的文件了。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0720210907191936.png" alt=""></p>
+<h2 id="预览book">预览book</h2>
+<p>先不做任何变动，模拟一下我们发布之后的页面的成品吧。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ gitbook serve<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0720210907191946.png" alt=""></p>
+<p>我们打开浏览器，在浏览器中输入<code>0.0.0.0:4000</code>就可以在本地预览了。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0720210907191948.png" alt=""></p>
+<p>可以看到，左侧是我们的菜单栏，自带一个搜索栏，右侧就是我们的 book 的内容了，右上角有默认的诸如 twitter,facebook 等分享快捷方式。基本上和其他人用 gitbook 写出来的页面是一样的。</p>
+<blockquote>
+<p>注：</p>
+<ol>
+<li>gitbook 新版本提供了本地预览功能的热更新，也就是说本地预览的页面会随着我们写书的内容变化而自动更新，这着实是一个很使用的功能。</li>
+<li>在命令行ctrl+c可以关闭本地服务器，即预览页面。</li>
+</ol>
+</blockquote>
+<p>我们可以尝试修改一下书的内容，看一下页面的变化。打开<code>README.md</code>文件，修改成如下内容：</p>
+<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Introduction</span>
  
-MariaDB <span class="token punctuation">[</span>mysql<span class="token punctuation">]</span><span class="token operator">&gt;</span> flush <span class="token keyword">privileges</span><span class="token punctuation">;</span>
-Query OK<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">rows</span> affected <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
+Hello World!<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p>再回头看一眼我们的预览页面，是不是自动变成了下面的样子。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0720210907192001.png" alt=""></p>
+<p>关于 gitbook 自建的 README.md 文件我就不做过多的介绍了，都是一些 Markdown 的基本语法，相信使用 gitbook 的各位一定是对 markdown 语法非常熟悉的了。</p>
+<h2 id="目录-2">目录</h2>
+<p>现在我们把注意力放到 gitbook 为我们创建的第二个文件<code>SUMMARY.md</code>上，这个文件决定了我们的目录结构。 一个比较简单的目录结构如下：</p>
+<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Summary</span>
  
-MariaDB <span class="token punctuation">[</span>mysql<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">exit</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h3 id="3、创建用户"><strong>3、创建用户</strong></h3>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token keyword">insert</span> <span class="token keyword">into</span> mysql<span class="token punctuation">.</span><span class="token keyword">user</span><span class="token punctuation">(</span>host<span class="token punctuation">,</span><span class="token keyword">user</span><span class="token punctuation">,</span>password<span class="token punctuation">)</span><span class="token keyword">values</span><span class="token punctuation">(</span><span class="token string">"localhost"</span><span class="token punctuation">,</span><span class="token string">"test"</span><span class="token punctuation">,</span>password<span class="token punctuation">(</span><span class="token string">"password"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-flush <span class="token keyword">privileges</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<h3 id="4、删除用户">4、删除用户</h3>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token keyword">DELETE</span> <span class="token keyword">FROM</span> <span class="token keyword">user</span> <span class="token keyword">WHERE</span> <span class="token keyword">User</span><span class="token operator">=</span><span class="token string">"test"</span> <span class="token operator">and</span> Host<span class="token operator">=</span><span class="token string">"localhost"</span><span class="token punctuation">;</span>
-flush <span class="token keyword">privileges</span><span class="token punctuation">;</span>　　<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-<h3 id="5、删除用户的数据库">5、删除用户的数据库</h3>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token keyword">drop</span> <span class="token keyword">database</span> test1<span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h3 id="6、交互模式初始化">6、交互模式初始化</h3>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">mysql_secure_installation<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h2 id="二、-常用操作">二、 常用操作</h2>
-<h3 id="1、显示数据库列表"><strong>1、显示数据库列表</strong></h3>
-<p><code>show databases;</code>:查看所有的数据库</p>
-<h3 id="2、创建数据库">2、创建数据库</h3>
-<p><code>create database zxg;</code>：创建名尾zxg的数据库</p>
-<h3 id="3、进入数据库">3、进入数据库</h3>
-<p><code>use zxg;</code>:进入zxg的数据库</p>
-<h3 id="4、显示库中的数据表">4、显示库中的数据表</h3>
-<p><code>show tables;</code>：查看数据库里有多少张表</p>
-<h3 id="5、创建数据表">5、创建数据表</h3>
-<p><code>create table t1 (id varchar(20),name varchar(20));</code>:创建名为t1表，并创建两两个字段，id、name，varchar表示设置数据长度，用字符来定义长度单位，其</p>
-<h3 id="6、插入数据">6、插入数据</h3>
-<p><code>insert into t1 values（"1"，"zxg"）;</code>:向表中插入数据</p>
-<h3 id="7、查看数据表">7、查看数据表</h3>
-<p><code>select * from t1;</code> ：查看t1表数据内容</p>
-<h3 id="8、多条件查询">8、多条件查询</h3>
-<p><code>select * from t1 where id=1 and age = 'zxg ' ;</code>: id、age 多个条件查询</p>
-<h3 id="9、查看字段内容">9、查看字段内容</h3>
-<p><code>desc t1;</code>:查看t1 表字段内容</p>
-<h3 id="10、修改字段长度">10、修改字段长度</h3>
-<p><code>alter table t1 modify column name varchar(20);</code>:修改name字段的长度</p>
-<h3 id="11、修改该字段内容">11、修改该字段内容</h3>
-<p><code>update t1 set name='zxg.net' where id=1;</code>：修改name字段的内容</p>
-<h3 id="12、权限刷新"><strong>12、权限刷新</strong></h3>
-<p><code>flush privileges;</code> :刷新权限</p>
-<h3 id="13、清空表单">13、清空表单</h3>
-<p>delete from t1;` :清空表内容</p>
-<h3 id="14、删除数据表">14、删除数据表</h3>
-<p>`drop table t1:删除表</p>
-<h3 id="15、删除数据库">15、删除数据库</h3>
-<p><code>drop database zxg;</code>：删除zxg数据库</p>
-<h3 id="16、查看数据库字符集">16、查看数据库字符集</h3>
-<p><code>show variables like '%char%';</code>:查看数据库字符集</p>
-<h3 id="17、查看存储引擎">17、查看存储引擎</h3>
-<p><code>show engines;</code>:查看MySQL存储引擎。</p>
-<h3 id="18、查看默认存储引擎">18、查看默认存储引擎</h3>
-<p><code>show variables like '%storage_engine%';</code>:查看MySQL默认的存储引擎</p>
-<h3 id="19、修改存储引擎">19、修改存储引擎</h3>
-<p><code>alter table t1 engine=innodb;</code>:修改MySQL t1表存储引擎</p>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token punctuation">[</span>root<span class="token variable">@web2</span> <span class="token operator">~</span><span class="token punctuation">]</span><span class="token comment"># mysql</span>
-Welcome <span class="token keyword">to</span> the MariaDB monitor<span class="token punctuation">.</span>  Commands <span class="token keyword">end</span> <span class="token keyword">with</span> <span class="token punctuation">;</span> <span class="token operator">or</span> \g<span class="token punctuation">.</span>
-Your MariaDB connection id <span class="token operator">is</span> <span class="token number">2</span>
-Server version: <span class="token number">5.5</span><span class="token number">.60</span><span class="token operator">-</span>MariaDB MariaDB Server
+<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">前言</span>](<span class="token url">README.md</span>)</span>
+<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">第一章</span>](<span class="token url">xx.md</span>)</span>
+<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">第二章</span>](<span class="token url">xx.md</span>)</span>
+<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">第三章</span>](<span class="token url">xx.md</span>)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p><code>xx.md</code>就是我们每个章节独立的 markdown 文件，所以用 gitbook 写一本书真的非常方便，一个目录文件，和若干个你的书的内容就好了。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0720210907192009.png" alt=""></p>
+<h3 id="目录分层">目录分层</h3>
+<p>简单的目录有一个小的问题就是我们目录都只有一级，如果想要分层，比如第一章有1，2，3个小节，该怎么办呢？ 这里有两种方式：</p>
+<h4 id="标题区分">标题区分</h4>
+<p>我们把<code>SUMMARY.md</code>文件修改成如下内容</p>
+<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Summary</span>
  
-Copyright <span class="token punctuation">(</span>c<span class="token punctuation">)</span> <span class="token number">2000</span><span class="token punctuation">,</span> <span class="token number">2018</span><span class="token punctuation">,</span> Oracle<span class="token punctuation">,</span> MariaDB Corporation Ab <span class="token operator">and</span> others<span class="token punctuation">.</span>
+<span class="token title important"><span class="token punctuation">##</span> 前言</span>
+<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">前言</span>](<span class="token url">README.md</span>)</span>
  
-<span class="token keyword">Type</span> <span class="token string">'help;'</span> <span class="token operator">or</span> <span class="token string">'\h'</span> <span class="token keyword">for</span> help<span class="token punctuation">.</span> <span class="token keyword">Type</span> <span class="token string">'\c'</span> <span class="token keyword">to</span> clear the <span class="token keyword">current</span> input statement<span class="token punctuation">.</span>
+<span class="token title important"><span class="token punctuation">##</span> 第一章</span>
+<span class="token list punctuation">*</span> [1.1小节]()
+<span class="token list punctuation">*</span> [1.2小节]()
  
-MariaDB <span class="token punctuation">[</span><span class="token punctuation">(</span>none<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">show</span> <span class="token keyword">databases</span><span class="token punctuation">;</span>
-<span class="token operator">+</span><span class="token comment">--------------------+</span>
-<span class="token operator">|</span> <span class="token keyword">Database</span>           <span class="token operator">|</span>
-<span class="token operator">+</span><span class="token comment">--------------------+</span>
-<span class="token operator">|</span> information_schema <span class="token operator">|</span>
-<span class="token operator">|</span> mysql              <span class="token operator">|</span>
-<span class="token operator">|</span> performance_schema <span class="token operator">|</span>
-<span class="token operator">|</span> test               <span class="token operator">|</span>
-<span class="token operator">+</span><span class="token comment">--------------------+</span>
-<span class="token number">4</span> <span class="token keyword">rows</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+<span class="token title important"><span class="token punctuation">##</span> 第二章</span>
+<span class="token list punctuation">*</span> [2.1小节]()
+<span class="token list punctuation">*</span> [2.2小节]()
  
-MariaDB <span class="token punctuation">[</span><span class="token punctuation">(</span>none<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token operator">&gt;</span>  <span class="token keyword">create</span> <span class="token keyword">database</span> zxg<span class="token punctuation">;</span>                 
-Query OK<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">row</span> affected <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+<span class="token title important"><span class="token punctuation">##</span> 第三章</span>
+<span class="token list punctuation">*</span> [3.1小节]()
+<span class="token list punctuation">*</span> [3.2小节]()<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>最终的样式如下：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0720210907192025.png" alt=""></p>
+<h4 id="缩进区分">缩进区分</h4>
+<p>我们还可以用缩进的方式对目录进行级别的区分</p>
+<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Summary</span>
  
-MariaDB <span class="token punctuation">[</span><span class="token punctuation">(</span>none<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">use</span> zxg<span class="token punctuation">;</span>
-<span class="token keyword">Database</span> changed
-MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">show</span> <span class="token keyword">tables</span><span class="token punctuation">;</span>
-Empty <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
- 
-MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">create</span> <span class="token keyword">table</span> t1<span class="token punctuation">(</span>id <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">,</span>name <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-Query OK<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">rows</span> affected <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
- 
-MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">show</span> <span class="token keyword">tables</span><span class="token punctuation">;</span>
-<span class="token operator">+</span><span class="token comment">---------------+</span>
-<span class="token operator">|</span> Tables_in_zxg <span class="token operator">|</span>
-<span class="token operator">+</span><span class="token comment">---------------+</span>
-<span class="token operator">|</span> t1            <span class="token operator">|</span>
-<span class="token operator">+</span><span class="token comment">---------------+</span>
-<span class="token number">1</span> <span class="token keyword">row</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
- 
-MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">insert</span> <span class="token keyword">into</span> t1 <span class="token keyword">values</span> <span class="token punctuation">(</span><span class="token string">"1"</span><span class="token punctuation">,</span><span class="token string">"zxg"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-Query OK<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">row</span> affected <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
- 
-MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">select</span> <span class="token operator">*</span><span class="token keyword">from</span> t1<span class="token punctuation">;</span>
-<span class="token operator">+</span><span class="token comment">------+------+</span>
-<span class="token operator">|</span> id <span class="token operator">|</span> name <span class="token operator">|</span>
-<span class="token operator">+</span><span class="token comment">------+------+</span>
-<span class="token operator">|</span> <span class="token number">1</span> <span class="token operator">|</span> zxg <span class="token operator">|</span>
-<span class="token operator">+</span><span class="token comment">------+------+</span>
-<span class="token number">1</span> <span class="token keyword">row</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
- 
-MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">select</span> <span class="token operator">*</span><span class="token keyword">from</span> t1 <span class="token keyword">where</span> id<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">;</span>
-<span class="token operator">+</span><span class="token comment">------+------+</span>
-<span class="token operator">|</span> id <span class="token operator">|</span> name <span class="token operator">|</span>
-<span class="token operator">+</span><span class="token comment">------+------+</span>
-<span class="token operator">|</span> <span class="token number">1</span> <span class="token operator">|</span> zxg <span class="token operator">|</span>
-<span class="token operator">+</span><span class="token comment">------+------+</span>
-<span class="token number">1</span> <span class="token keyword">row</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
- 
-MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">select</span> <span class="token operator">*</span><span class="token keyword">from</span> t1 <span class="token keyword">where</span> id<span class="token operator">=</span><span class="token number">1</span> <span class="token operator">and</span> name<span class="token operator">=</span><span class="token string">'zxg'</span><span class="token punctuation">;</span>
-<span class="token operator">+</span><span class="token comment">------+------+</span>
-<span class="token operator">|</span> id <span class="token operator">|</span> name <span class="token operator">|</span>
-<span class="token operator">+</span><span class="token comment">------+------+</span>
-<span class="token operator">|</span> <span class="token number">1</span> <span class="token operator">|</span> zxg <span class="token operator">|</span>
-<span class="token operator">+</span><span class="token comment">------+------+</span>
-<span class="token number">1</span> <span class="token keyword">row</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
- 
-MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">desc</span> t1<span class="token punctuation">;</span>
-<span class="token operator">+</span><span class="token comment">-------+-------------+------+-----+---------+-------+</span>
-<span class="token operator">|</span> Field <span class="token operator">|</span> <span class="token keyword">Type</span> <span class="token operator">|</span> <span class="token boolean">Null</span> <span class="token operator">|</span> <span class="token keyword">Key</span> <span class="token operator">|</span> <span class="token keyword">Default</span> <span class="token operator">|</span> Extra <span class="token operator">|</span>
-<span class="token operator">+</span><span class="token comment">-------+-------------+------+-----+---------+-------+</span>
-<span class="token operator">|</span> id <span class="token operator">|</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">|</span> YES <span class="token operator">|</span> <span class="token operator">|</span> <span class="token boolean">NULL</span> <span class="token operator">|</span> <span class="token operator">|</span>
-<span class="token operator">|</span> name <span class="token operator">|</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">|</span> YES <span class="token operator">|</span> <span class="token operator">|</span> <span class="token boolean">NULL</span> <span class="token operator">|</span> <span class="token operator">|</span>
-<span class="token operator">+</span><span class="token comment">-------+-------------+------+-----+---------+-------+</span>
-<span class="token number">2</span> <span class="token keyword">rows</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
- 
-MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">alter</span> <span class="token keyword">table</span> t1 <span class="token keyword">modify</span> <span class="token keyword">column</span> name <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-Query OK<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">rows</span> affected <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
-Records: <span class="token number">0</span> Duplicates: <span class="token number">0</span> <span class="token keyword">Warnings</span>: <span class="token number">0</span>
- 
-MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">update</span> t1 <span class="token keyword">set</span> name<span class="token operator">=</span><span class="token string">'zxg.net'</span> <span class="token keyword">where</span> id<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">;</span>
-Query OK<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">row</span> affected <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
-<span class="token keyword">Rows</span> <span class="token keyword">matched</span>: <span class="token number">1</span> Changed: <span class="token number">1</span> <span class="token keyword">Warnings</span>: <span class="token number">0</span>
-MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span>
- <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="三、mysql-数据库字符集设置">三、mysql 数据库字符集设置</h2>
-<p>mysql数据库存储数据时，默认编码为latinl，存储中文字符时，在调用时会显示为乱码，为了解决该乱码问题，需修改该mysql默认字符集为UTE-8</p>
-<p>装mariadb的是时候看已经默认为ute-8</p>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">MariaDB <span class="token punctuation">[</span><span class="token punctuation">(</span>none<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">show</span> variables <span class="token operator">like</span> <span class="token string">'%char%'</span><span class="token punctuation">;</span>
-<span class="token operator">+</span><span class="token comment">--------------------------+----------------------------+</span>
-<span class="token operator">|</span> Variable_name            <span class="token operator">|</span> <span class="token keyword">Value</span>                      <span class="token operator">|</span>
-<span class="token operator">+</span><span class="token comment">--------------------------+----------------------------+</span>
-<span class="token operator">|</span> character_set_client     <span class="token operator">|</span> utf8                       <span class="token operator">|</span>
-<span class="token operator">|</span> character_set_connection <span class="token operator">|</span> utf8                       <span class="token operator">|</span>
-<span class="token operator">|</span> character_set_database   <span class="token operator">|</span> latin1                     <span class="token operator">|</span>
-<span class="token operator">|</span> character_set_filesystem <span class="token operator">|</span> <span class="token keyword">binary</span>                     <span class="token operator">|</span>
-<span class="token operator">|</span> character_set_results    <span class="token operator">|</span> utf8                       <span class="token operator">|</span>
-<span class="token operator">|</span> character_set_server     <span class="token operator">|</span> latin1                     <span class="token operator">|</span>
-<span class="token operator">|</span> character_set_system     <span class="token operator">|</span> utf8                       <span class="token operator">|</span>
-<span class="token operator">|</span> character_sets_dir       <span class="token operator">|</span> <span class="token operator">/</span>usr<span class="token operator">/</span><span class="token keyword">share</span><span class="token operator">/</span>mysql<span class="token operator">/</span>charsets<span class="token operator">/</span> <span class="token operator">|</span>
-<span class="token operator">+</span><span class="token comment">--------------------------+----------------------------+</span>
-<span class="token number">8</span> <span class="token keyword">rows</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>如不是，可以设置</p>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token keyword">SET</span> character_set_client <span class="token operator">=</span> utf8<span class="token punctuation">;</span>
-<span class="token keyword">SET</span> character_set_results <span class="token operator">=</span> utf8<span class="token punctuation">;</span>
-<span class="token keyword">SET</span> character_set_connection <span class="token operator">=</span> utf8<span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-<h2 id="四、mysql-数据库密码管理">四、mysql 数据库密码管理</h2>
-<p>设置密码访问，密码破解、密码权限、修改密码；</p>
-<h3 id="1、创建用户及授权">1、创建用户及授权</h3>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token keyword">grant</span> <span class="token keyword">all</span> <span class="token keyword">on</span> zxg<span class="token punctuation">.</span><span class="token operator">*</span> <span class="token keyword">to</span> test<span class="token variable">@localhost</span> identified <span class="token keyword">by</span> <span class="token string">'pas'</span><span class="token punctuation">;</span>
-<span class="token keyword">grant</span> <span class="token keyword">select</span><span class="token punctuation">,</span><span class="token keyword">insert</span><span class="token punctuation">,</span><span class="token keyword">update</span><span class="token punctuation">,</span><span class="token keyword">delete</span> <span class="token keyword">on</span> <span class="token operator">*</span><span class="token punctuation">.</span><span class="token operator">*</span><span class="token keyword">to</span> test<span class="token variable">@"%"</span> identified <span class="token keyword">by</span> <span class="token string">'pas'</span><span class="token punctuation">;</span>
-<span class="token keyword">grant</span> <span class="token keyword">all</span> <span class="token keyword">on</span> zxg<span class="token punctuation">.</span><span class="token operator">*</span> <span class="token keyword">to</span> test<span class="token variable">@`192.168.216.53`</span> identified <span class="token keyword">by</span> <span class="token string">'pas'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-<h3 id="2、破解密码方法">2、破解密码方法</h3>
-<p>停止服务---》跳过权限方式启动---》单开一个窗口登陆---》登陆修改密码即可</p>
-<p>1）systemctl stop mariadb</p>
-<p>2）mysqld_safe --skip-grant-tables &amp;</p>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token punctuation">[</span>root<span class="token variable">@web2</span> <span class="token operator">~</span><span class="token punctuation">]</span><span class="token comment"># mysqld_safe --skip-grant-tables &amp;</span>
-<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token number">47542</span>
-<span class="token punctuation">[</span>root<span class="token variable">@web2</span> <span class="token operator">~</span><span class="token punctuation">]</span><span class="token comment"># 190520 15:45:22 mysqld_safe Logging to '/var/log/mariadb/mariadb.log'.</span>
-<span class="token number">190520</span> <span class="token number">15</span>:<span class="token number">45</span>:<span class="token number">22</span> mysqld_safe <span class="token keyword">Starting</span> mysqld daemon <span class="token keyword">with</span> <span class="token keyword">databases</span> <span class="token keyword">from</span> <span class="token operator">/</span>var<span class="token operator">/</span>lib<span class="token operator">/</span>mysql<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token punctuation">[</span>root<span class="token variable">@web2</span> <span class="token operator">~</span><span class="token punctuation">]</span><span class="token comment"># mysql</span>
-Welcome <span class="token keyword">to</span> the MariaDB monitor<span class="token punctuation">.</span>  Commands <span class="token keyword">end</span> <span class="token keyword">with</span> <span class="token punctuation">;</span> <span class="token operator">or</span> \g<span class="token punctuation">.</span>
-Your MariaDB connection id <span class="token operator">is</span> <span class="token number">1</span>
-Server version: <span class="token number">5.5</span><span class="token number">.60</span><span class="token operator">-</span>MariaDB MariaDB Server
- 
-Copyright <span class="token punctuation">(</span>c<span class="token punctuation">)</span> <span class="token number">2000</span><span class="token punctuation">,</span> <span class="token number">2018</span><span class="token punctuation">,</span> Oracle<span class="token punctuation">,</span> MariaDB Corporation Ab <span class="token operator">and</span> others<span class="token punctuation">.</span>
- 
-<span class="token keyword">Type</span> <span class="token string">'help;'</span> <span class="token operator">or</span> <span class="token string">'\h'</span> <span class="token keyword">for</span> help<span class="token punctuation">.</span> <span class="token keyword">Type</span> <span class="token string">'\c'</span> <span class="token keyword">to</span> clear the <span class="token keyword">current</span> input statement<span class="token punctuation">.</span>
- 
-MariaDB <span class="token punctuation">[</span><span class="token punctuation">(</span>none<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">use</span> mysql<span class="token punctuation">;</span>
-Reading <span class="token keyword">table</span> information <span class="token keyword">for</span> completion <span class="token keyword">of</span> <span class="token keyword">table</span> <span class="token operator">and</span> <span class="token keyword">column</span> names
-You can turn <span class="token keyword">off</span> this feature <span class="token keyword">to</span> get a quicker startup <span class="token keyword">with</span> <span class="token operator">-</span>A
- 
-<span class="token keyword">Database</span> changed
-MariaDB <span class="token punctuation">[</span>mysql<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">update</span> <span class="token keyword">user</span> <span class="token keyword">set</span> password<span class="token operator">=</span>password<span class="token punctuation">(</span><span class="token string">'11111111'</span><span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token keyword">user</span><span class="token operator">=</span><span class="token string">'root'</span> <span class="token punctuation">;</span>
-Query OK<span class="token punctuation">,</span> <span class="token number">3</span> <span class="token keyword">rows</span> affected <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
-<span class="token keyword">Rows</span> <span class="token keyword">matched</span>: <span class="token number">4</span>  Changed: <span class="token number">3</span>  <span class="token keyword">Warnings</span>: <span class="token number">0</span>
- 
-MariaDB <span class="token punctuation">[</span>mysql<span class="token punctuation">]</span><span class="token operator">&gt;</span> flush <span class="token keyword">privileges</span><span class="token punctuation">;</span>
-Query OK<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">rows</span> affected <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
- 
-MariaDB <span class="token punctuation">[</span>mysql<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">exit</span>
-Bye
-<span class="token punctuation">[</span>root<span class="token variable">@web2</span> <span class="token operator">~</span><span class="token punctuation">]</span><span class="token comment">#</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>然后退出”跳过权限方式“ ctrl+c ，正常启动mysql就可以了</p>
-<h2 id="五、mysql-配置文件详解">五、mysql 配置文件详解</h2>
-<h3 id="1、参数说明">1、参数说明</h3>
-<pre class="line-numbers language-ini" data-language="ini"><code class="language-ini"><span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">mysqld</span><span class="token punctuation">]</span></span>                                                              #服务端配置
-<span class="token key attr-name">port</span>        <span class="token punctuation">=</span> <span class="token value attr-value">3306                                                    #监听端口</span>
-<span class="token key attr-name">socket</span>      <span class="token punctuation">=</span> <span class="token value attr-value">/tmp/mysql.sock                                         #通信设置</span>
-<span class="token key attr-name">user</span>    <span class="token punctuation">=</span> <span class="token value attr-value">mariadb                                                     #使用mariadb用户启动</span>
-<span class="token key attr-name">basedir</span> <span class="token punctuation">=</span> <span class="token value attr-value">/usr/local/mariadb                                          #安装路径</span>
-<span class="token key attr-name">datadir</span> <span class="token punctuation">=</span> <span class="token value attr-value">/data/mysql                                                 #数据目录</span>
-<span class="token key attr-name">log_error</span> <span class="token punctuation">=</span> <span class="token value attr-value">/data/mysql/mariadb.err                             　　　 #错误日志</span>
-<span class="token key attr-name">pid-file</span> <span class="token punctuation">=</span> <span class="token value attr-value">/data/mysql/mariadb.pid                             　　　　#pid进程文件</span>
-skip-external-locking                                                 #避免mysql的外部锁定，减少出错几率提高稳定性
-<span class="token key attr-name">key_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">64M                                                 #缓存存储引擎参数，这个参数可以设置为64M</span>
-<span class="token key attr-name">max_allowed_packet</span> <span class="token punctuation">=</span> <span class="token value attr-value">1M                                               #允许最大接收数据包的大小，防止服务器发送过大的数据包，可以设置为16MB或者更大，但设置太大也可能有危险</span>
-<span class="token key attr-name">table_open_cache</span> <span class="token punctuation">=</span> <span class="token value attr-value">256                                                #mysql每打开一个表，都会读入一些数据到table_open_cache缓存中，当MYSQL在这个缓存中找不到相应的信息时，才会去磁盘读取，默认值64，假设系统有200个并发连接，则需将此参数设置为200*N（N为每个连接所需的文件描述符数目）；当设置为很大时，如果系统处理不了那么多文件描述符，那么就会出现客户端失效，连接不上</span>
-<span class="token key attr-name">sort_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">1M                                                 #在表进行order by和group by 排序操作时，由于排序的字段没有索引，会出现Using filesort，为了提高性能，可用此参数增加每个线程分配的缓存区大小，默认时256k，这个参数不要设置过大，一般128~256k，另外一般出现using filesort的时候，要通过增加索引来解决</span>
-<span class="token key attr-name">net_buffer_length</span> <span class="token punctuation">=</span> <span class="token value attr-value">8K                                                #包消息缓冲区初始化net_buffer_length字节，但需要时可以增长到max_allowed_packet字节</span>
-<span class="token key attr-name">read_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">1M                                                 #该参数用于表的顺序扫描，表示每个线程分配的缓冲区大小，比如在进行全表扫描时，mysql会按照数据的存储顺序一次读取数据块，每次读取的数据块首先会暂存在read_buffer_size中，当buffer空间被写满或者全部数据读取结束后，在将buffer中的数据返回给上层调用者，以提高效率默认128k，也不要设置过大</span>
-<span class="token key attr-name">read_rnd_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">512K                                           #该参数用于表的随机读取，表示每个线程分配的缓冲区大小，比如，按照一个非索引字段做order by排序操作时，就会利用这个缓冲区来暂存读取的数据，默认时256k，也不要设置过大</span>
-<span class="token key attr-name">myisam_sort_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">16M                                         #当myisam表执行repair table或创建索引时，用以缓冲排序索引，设置太小可能会遇到"myisam_sort_buffer_size is to small"</span>
-<span class="token key attr-name">thread_cache_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">32                                                #线程池，线程缓冲。用来缓冲空闲的线程，以至于不被销毁，如果线程缓冲在的空闲线程，需要重新建立新连接，则会优先调用线程池中的缓冲，很快就能相应连接请求，每建立一个连接，都需要一个线程与之匹配。</span>
-<span class="token key attr-name">query_cache_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">32M                                                #缓存select语句和结果集大小的参数。查询缓存会存储一个select查询的文本与被传送到客户端的相应结果。如果之后接收到一个相同的查询，服务器会从查询缓存中检索结果，而不是再次分析和执行这个同样的查询。如果你的环境中写操作很少，读操作频繁，那么打开query_cache_type=1，会对性能有明显提升。如果写操作频繁，则应该关闭它（query_cache_type=0）。</span>
-<span class="token key attr-name">tmp_table_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">64M                                                  #临时HEAP数据表的最大长度(默认设置是32M); 超过这个长度的临时数据表将被转换为MyISAM数据表并存入一个临时文件。</span>
-                                                                      <span class="token comment">#</span>
-<span class="token key attr-name">explicit_defaults_for_timestamp</span> <span class="token punctuation">=</span> <span class="token value attr-value">true                     　　　　　　 #是否显示默认时间戳</span>
-<span class="token comment">#skip-networking                                                      #</span>
-<span class="token key attr-name">max_connections</span> <span class="token punctuation">=</span> <span class="token value attr-value">500                                                 #该参数用来设置最大连接数，告诉你当前你的服务器允许多少并发连接。默认为100，一般设置为512-1000即可。请记住，太多的连接会导致内存的使用量过高并且会锁住你的 MySQL 服务器。一般小网站需要 100-200 的连接数，而较大可能需要 500-800 甚至更多。这里的值很大程度上取决于你 MySQL/MariaDB 的使用情况。</span>
-<span class="token key attr-name">max_connect_errors</span> <span class="token punctuation">=</span> <span class="token value attr-value">100                                              #如果有时网络抽风，或者应用配置错误，或者其他原因导致客户端短时间内不断的尝试连接，客户端可能会被列入黑名单，然后将无法连接，直到再次刷新主机缓存。这个选项默认值太小了，可以考虑设的足够大（如果你的服务器配置够强大的话）。</span>
-<span class="token key attr-name">open_files_limit</span> <span class="token punctuation">=</span> <span class="token value attr-value">65535                                              #mysql打开最大文件数</span>
-                                                                      <span class="token comment">#</span>
-<span class="token key attr-name">log-bin</span><span class="token punctuation">=</span><span class="token value attr-value">mysql-bin                                                     #这些路径相对于datadir</span>
-<span class="token key attr-name">binlog_format</span><span class="token punctuation">=</span><span class="token value attr-value">mixed                                                   #日志格式</span>
-<span class="token key attr-name">server-id</span>   <span class="token punctuation">=</span> <span class="token value attr-value">1                                                       #给服务器分配一个独一无二的ID编号; n的取值范围是1~2的32次方启用二进制日志功能。在复制数据同步的时候会用到，Helloweba后面会有文章介绍。</span>
-<span class="token key attr-name">expire_logs_days</span> <span class="token punctuation">=</span> <span class="token value attr-value">10                                                 #启用二进制日志后，保留日志的天数。服务器会自动清理指定天数前的日志文件，如果不设置则会导致服务器空间耗尽。一般设置为7～14天。</span>
-                                                                       <span class="token comment">#</span>
-<span class="token key attr-name">default_storage_engine</span> <span class="token punctuation">=</span> <span class="token value attr-value">InnoDB                                     　#新数据表的默认存储引擎(默认设置是MyISAM)。这项设置还可以通过–default-table-type选项来设置。</span>
-<span class="token key attr-name">innodb_file_per_table</span> <span class="token punctuation">=</span> <span class="token value attr-value">1                                             #提供了更灵活的方式，它把每个数据库的信息保存在一个 .ibd 数据文件中。每个 .idb 文件代表它自己的表空间。通过这样的方式可以更快地完成类似 “TRUNCATE” 的数据库操作，当删除或截断一个数据库表时，你也可以回收未使用的空间。这样配置的另一个好处是你可以将某些数据库表放在一个单独的存储设备。这可以大大提升你磁盘的 I/O 负载。</span>
-<span class="token key attr-name">innodb_data_home_dir</span> <span class="token punctuation">=</span> <span class="token value attr-value">/data/mysql                             　　　　#InnoDB主目录，所有与InnoDB数据表有关的目录或文件路径都相对于这个路径。在默认的情况下，这个主目录就是MySQL的数据目录。</span>
-<span class="token key attr-name">innodb_data_file_path</span> <span class="token punctuation">=</span> <span class="token value attr-value">ibdata1:10M:autoextend     　　　　　　　　　　　#用来容纳InnoDB为数据表的表空间: 可能涉及一个以上的文件; 每一个表空间文件的最大长度都必须以字节(B)、兆字节(MB)或千兆字节(GB)为单位给出; 表空间文件的名字必须以分号隔开; 最后一个表空间文件还可以带一个autoextend属性和一个最大长度(max:n)。</span>
-<span class="token key attr-name">innodb_log_group_home_dir</span> <span class="token punctuation">=</span> <span class="token value attr-value">/data/mysql                     　　　　　　#用来存放InnoDB日志文件的目录路径(如ib_logfile0、ib_logfile1等)。在默认的情况下，InnoDB驱动程序将使用 MySQL数据目录作为自己保存日志文件的位置。</span>
-<span class="token key attr-name">innodb_buffer_pool_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">256M                                     　　#这个参数是InnoDB存储引擎的核心参数，默认为128KB，这个参数要设置为物理内存的60%～70%。</span>
-<span class="token key attr-name">innodb_log_file_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">64M                                            #事务日志文件写操作缓存区的最大长度(默认设置是1MB)。</span>
-<span class="token key attr-name">innodb_log_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">8M                                           #事务日志所使用的缓存区。InnoDB在写事务日志的时候，为了提高性能，先将信息写入Innodb Log Buffer中，当满足innodb_flush_log_trx_commit参数所设置的相应条件（或者日志缓冲区写满）时，再将日志写到文件（或者同步到磁盘）中。可以通过innodb_log_buffer_size参数设置其可以使用的最大内存空间。默认是8MB，一般为16～64MB即可。</span>
-<span class="token key attr-name">innodb_flush_log_at_trx_commit</span> <span class="token punctuation">=</span> <span class="token value attr-value">1                             　　　　#这个选项决定着什么时候把日志信息写入日志文件以及什么时候把这些文件物理地写(术语称为”同步”)到硬盘上。设置值0的意思是每隔一秒写一次日 志并进行 同步，这可以减少硬盘写操作次数，但可能造成数据丢失; 设置值1(设置设置)的意思是在每执行完一条COMMIT命令就写一次日志并进行同步，这可以防止数据丢失，但硬盘写操作可能会很频繁; 设置值2是一般折衷的办法，即每执行完一条COMMIT命令写一次日志，每隔一秒进行一次同步。</span>
-<span class="token key attr-name">innodb_lock_wait_timeout</span> <span class="token punctuation">=</span> <span class="token value attr-value">50                                         #如果某个事务在等待n秒(s)后还没有获得所需要的资源，就使用ROLLBACK命令放弃这个事务。这项设置对于发现和处理未能被InnoDB数据表驱动 程序识别出来的死锁条件有着重要的意义。这个选项的默认设置是50s。</span>
-                                                                      <span class="token comment">#</span>
-<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">mysqldump</span><span class="token punctuation">]</span></span>                                                           #
-quick                                                                 #
-<span class="token key attr-name">max_allowed_packet</span> <span class="token punctuation">=</span> <span class="token value attr-value">16M                                              #</span>          
-                                                                      <span class="token comment">#</span>
-<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">mysql</span><span class="token punctuation">]</span></span>                                                               #
-no-auto-rehash                                                        #
-                                                                      <span class="token comment">#</span>
-<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">myisamchk</span><span class="token punctuation">]</span></span>                                                           #
-<span class="token key attr-name">key_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">64M                                                 #</span>  
-<span class="token key attr-name">sort_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">1M                                                 #</span>  
-<span class="token key attr-name">read_buffer</span> <span class="token punctuation">=</span> <span class="token value attr-value">2M                                                      #</span>
-<span class="token key attr-name">write_buffer</span> <span class="token punctuation">=</span> <span class="token value attr-value">2M                                                     #</span>
-                                                                      <span class="token comment">#</span>
-<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">mysqlhotcopy</span><span class="token punctuation">]</span></span>                                                        #
-interactive-timeout                                                   #<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h3 id="2、mysql数据库索引案例（百万量级）">2、mysql数据库索引案例（百万量级）</h3>
-<p>[client]</p>
-<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">port    <span class="token operator">=</span><span class="token number">3306</span>                                  
-socket    <span class="token operator">=</span><span class="token operator">/</span>tmp<span class="token operator">/</span>mysql<span class="token punctuation">.</span>sock                     
- 
- 
- 
-<span class="token punctuation">[</span>mysqld<span class="token punctuation">]</span>                                                                             
-port        <span class="token operator">=</span> <span class="token number">3306</span>                                                         
-socket      <span class="token operator">=</span> <span class="token operator">/</span>tmp<span class="token operator">/</span>mysql<span class="token punctuation">.</span>sock                                   
-<span class="token keyword">user</span>    <span class="token operator">=</span> mysql  
-server_id　　<span class="token operator">=</span> <span class="token number">10</span>
-datadir　　<span class="token operator">=</span> <span class="token operator">/</span><span class="token keyword">data</span><span class="token operator">/</span>mysql<span class="token operator">/</span>
-old_passwords　　<span class="token operator">=</span> <span class="token number">1</span>
-lower_case_table_names　　<span class="token operator">=</span> <span class="token number">1</span>
-<span class="token keyword">character</span><span class="token operator">-</span><span class="token keyword">set</span><span class="token operator">-</span>server　　<span class="token operator">=</span> utf8
-<span class="token keyword">default</span><span class="token operator">-</span>storage<span class="token operator">-</span><span class="token keyword">engine</span>　　<span class="token operator">=</span> MYISAM
-log<span class="token operator">-</span>bin　　<span class="token operator">=</span> bin<span class="token punctuation">.</span>log
-log<span class="token operator">-</span>error　　<span class="token operator">=</span> error<span class="token punctuation">.</span>log
-pid<span class="token operator">-</span><span class="token keyword">file</span>　　<span class="token operator">=</span> mysql<span class="token punctuation">.</span>pid
-long_query_time　　<span class="token operator">=</span> <span class="token number">2</span>
-slow_query_time　　<span class="token operator">=</span> <span class="token number">2</span>
-slow_query_log　
-slow_query_log_file　　<span class="token operator">=</span> slow<span class="token punctuation">.</span>log
-binlog_cache_size　　<span class="token operator">=</span> <span class="token number">4</span>MB
-binlog_format　　<span class="token operator">=</span> mixed
-max_binlog_cache_size　　<span class="token operator">=</span> <span class="token number">16</span>MB
-max_binlog_size　　<span class="token operator">=</span> <span class="token number">1</span>GB
-expire_logs_days　　<span class="token operator">=</span> <span class="token number">30</span>
-ft_min_word_len　　<span class="token operator">=</span> <span class="token number">4</span>
-back_log　　<span class="token operator">=</span> <span class="token number">512</span>
-max_allowed_packet　　<span class="token operator">=</span> <span class="token number">64</span>MB
-max_connections　　<span class="token operator">=</span> <span class="token number">4096</span>
-max_connect_errors　　<span class="token operator">=</span> <span class="token number">100</span>
-join_buffer_size　　<span class="token operator">=</span> <span class="token number">2</span>MB
-read_buffer_size　　<span class="token operator">=</span> <span class="token number">2</span>MB
-read_rnd_buffer_size　　<span class="token operator">=</span> <span class="token number">2</span>MB
-sort_buffer_size　　　　<span class="token operator">=</span> <span class="token number">2</span>MB
-query_cache_size　　<span class="token operator">=</span> <span class="token number">2</span>MB
-table_open_cache　　<span class="token operator">=</span> <span class="token number">10000</span>
-thread_cache_size　　<span class="token operator">=</span> <span class="token number">256</span>
-max_heap_table_size　　<span class="token operator">=</span> <span class="token number">64</span>MB
-tmp_table_size　　<span class="token operator">=</span> <span class="token number">64</span>MB
-thread_stack　　<span class="token operator">=</span> <span class="token number">192</span>KB
-thread_concurrency　　<span class="token operator">=</span> <span class="token number">24</span>
-<span class="token keyword">local</span><span class="token operator">-</span><span class="token keyword">infile</span>　　<span class="token operator">=</span> <span class="token number">0</span>
-skip<span class="token operator">-</span><span class="token keyword">show</span><span class="token operator">-</span><span class="token keyword">database</span>
-skip<span class="token operator">-</span>name<span class="token operator">-</span>resolve
-skip<span class="token operator">-</span>external<span class="token operator">-</span>locking
-connect_timeout　　<span class="token operator">=</span> <span class="token number">600</span>
-interactive_timeout　　<span class="token operator">=</span> <span class="token number">600</span>
-wait_timeout　　<span class="token operator">=</span> <span class="token number">600</span>
-<span class="token comment">#MyISAM</span>
-key_buffer_size　　<span class="token operator">=</span> <span class="token number">512</span>MB
-bulk_insert_buffer_size　　<span class="token operator">=</span> <span class="token number">64</span>MB
-mysiam_sort_buffer_size　　<span class="token operator">=</span> <span class="token number">64</span>MB
-mysiam_max_sort_file_size　　<span class="token operator">=</span> <span class="token number">1</span>GB
-mysiam_repair_threads　　<span class="token operator">=</span> <span class="token number">1</span>
-concurrent_insert　　<span class="token operator">=</span> <span class="token number">2</span>
-myisam_recover
-<span class="token comment">#INNODB</span>
-innodb_buffer_pool_size　　<span class="token operator">=</span> <span class="token number">64</span>G
-innodb_additional_mem_pool_size　　<span class="token operator">=</span> <span class="token number">32</span>MB
-innodb_data_file_path　　<span class="token operator">=</span>　ibdata1:<span class="token number">1</span>G<span class="token punctuation">;</span>ibdata2:<span class="token number">1</span>G:autoextend
-innodb_read_io_threads　　<span class="token operator">=</span> <span class="token number">8</span>
-innodb_write_io_threads 　　<span class="token operator">=</span> <span class="token number">8</span>
-innodb_file_per_table　　<span class="token operator">=</span> <span class="token number">1</span>
-innodb_flush_log_at_thx_commit　　<span class="token operator">=</span> <span class="token number">2</span>
-innodb_lock_wait_timeout　　<span class="token operator">=</span> <span class="token number">120</span>
-innodb_log_buffer_size　　<span class="token operator">=</span> <span class="token number">8</span>MB
-innodb_log_file_size　　<span class="token operator">=</span> <span class="token number">256</span>MB
-innodb_log_files_in_group　　<span class="token operator">=</span> <span class="token number">3</span>
-innodb_max_dirty_pages_pct　　<span class="token operator">=</span> <span class="token number">90</span>
-innodb_thread_concurrency　　<span class="token operator">=</span> <span class="token number">16</span>
-innodb_open_files　　<span class="token operator">=</span> <span class="token number">10000</span>
-<span class="token comment">#innodb_force_recovery　　= 4</span>
-<span class="token comment">#replication slave</span>
-<span class="token keyword">read</span><span class="token operator">-</span>only
-<span class="token comment">#skip-salve-start</span>
-relay<span class="token operator">-</span>log　　<span class="token operator">=</span> relay<span class="token punctuation">.</span>log
-log<span class="token operator">-</span>slave<span class="token operator">-</span>updates<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>本文参考：</p>
-<p><a target="_blank" rel="noopener" href="https://www.centos.bz/2018/02/mariadb-mysql%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6my-cnf%E8%A7%A3%E8%AF%BB/">mariadb-mysql配置文件my-cnf解读</a></p>
-<p><a target="_blank" rel="noopener" href="http://c.biancheng.net/mysql/">MySQL教程</a></p>
-<p>《曝光：Linux企业运维实战》</p>
-<p>夜法之书 整理编辑 <strong>From:</strong> <a target="_blank" rel="noopener" href="https://www.cnblogs.com/zhangxingeng/p/10882845.html">zhangxingeng</a></p>
+<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">前言</span>](<span class="token url">README.md</span>)</span>
+<span class="token list punctuation">*</span> [第一章]()
+    <span class="token list punctuation">*</span> [1.1小节]()
+    <span class="token list punctuation">*</span> [1.2小节]()
+<span class="token list punctuation">*</span> [第二章]()
+    <span class="token list punctuation">*</span> [2.1小节]()
+    <span class="token list punctuation">*</span> [2.2小节]()
+<span class="token list punctuation">*</span> [第三章]()
+    <span class="token list punctuation">*</span> [3.1小节]()
+    <span class="token list punctuation">*</span> [3.2小节]()<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>最终的样式如下：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0720210907192039.png" alt=""></p>
+<p>大家可以根据自己的喜好选择不同的样式，也可以把这两者结合起来一起用，as you wish.</p>
+<h2 id="打包发布">打包发布</h2>
+<p>通过预览模式，我们可以随时掌握书籍的更新内容。当你完成了部分章节或者全书的编写后，我们需要把写好的内容打包并发布。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ gitbook build<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>执行完上面的命令后，我们会发现在根目录下出现了<code>_build</code>文件夹，里面的文件就是我们需要发布的内容，你可以把所有的内容放到你的网站目录下，或者 gitlab/github 的 page页面，就实现了 gitbook 的线上发布了~</p>
+<h1>进阶技巧</h1>
+<p>看完上面的章节，你已经可以独立完成一本书的编写和发布，接下来的章节，我们提供一些进阶的技巧，你可以安装一些插件、更直观地规划你的目录结构等等。</p>
+<h2 id="插件">插件</h2>
+<p>和众多开源的软件一样，gitbook 也有一些插件，这些插件可以让你的书更加完美。这里我仅附上我个人觉得比较有用的几个插件，更多的插件，可以访问<a target="_blank" rel="noopener" href="https://plugins.gitbook.com/">社区</a>来获取。<br>
+插件的引入和修改都是在配置文件中完成的，那我们可以在根目录下创建<code>book.json</code>文件来修改当前书的一些配置，因为是 json 格式的，所以诸如书的标题、作者、内容等都可以在配置文件中完成，我们重点来说插件。</p>
+<pre class="line-numbers language-json" data-language="json"><code class="language-json"><span class="token punctuation">{</span>
+     <span class="token property">"plugins"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+          <span class="token string">"-lunr"</span><span class="token punctuation">,</span>
+          <span class="token string">"-search"</span><span class="token punctuation">,</span>
+          <span class="token string">"search-plus"</span><span class="token punctuation">,</span>
+          <span class="token string">"splitter"</span><span class="token punctuation">,</span>
+          <span class="token string">"copy-code-button"</span><span class="token punctuation">,</span>
+          <span class="token string">"expandable-chapters-small"</span>
+     <span class="token punctuation">]</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>以上是我的<code>book.json</code>配置文件，只有一个关于插件的配置项，其实总共就4个</p>
+<ul>
+<li>search-plus 让搜索支持中文，注意需要先把默认的两个插件<code>lunr</code>和<code>serach</code>禁用掉，禁用的方式就是在前面加上<code>-</code>号</li>
+<li>spliter 菜单栏宽度可调节</li>
+<li>copy-code-button 代码可以一键 copy</li>
+<li>expandable-chapters-small 菜单栏可以折叠</li>
+</ul>
+<blockquote>
+<p>注：<br>
+如果引入了新的插件，需要通过<code>gitbook install</code> 命令来安装新的插件，否则在打包发布的时候会提示错误。</p>
+</blockquote>
+<h2 id="目录结构-2">目录结构</h2>
+<p>一个基本的目录结构是这样的</p>
+<pre class="line-numbers language-ini" data-language="ini"><code class="language-ini">.
+├── _book/
+├── book.json
+├── README.md
+├── SUMMARY.md
+├── xx1.md
+├── xx2.md
+├── xx3.md
+├── xx4.md
+├── ...<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>不过为了我们自己方便，个人建议的目录结构如下</p>
+<pre class="line-numbers language-ini" data-language="ini"><code class="language-ini">.
+├── _book/
+├── node_modules/
+├── .gitlab-ci.yml
+├── book.json
+├── SUMMARY.md
+├── content/
+|   ├── chapter1/
+|       ├── README.md
+|       └── something.md
+|   ├── chapter2/
+|       ├── README.md
+|       └── something.md
+├── res/
+|   ├── 1.png
+|   └── 2.jpg
+|   └── 3.jpeg
+|   └── ...<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>说明：</p>
+<ul>
+<li><code>_book</code> 目录是我们打包后要发布的文件目录</li>
+<li><code>node_modules</code> 目录是我们安装插件后默认生成的目录</li>
+<li><code>.gitlab-ci.yml</code>这个是 gitlab 要用的 ci 配置文件，下一章节我们马上就会用到</li>
+<li><code>book.json</code> 是我们的配置文件</li>
+<li><code>content</code>目录是我们的书的内容，所有章节都可以分类继续整理，方便自己查看</li>
+<li><code>res</code>目录是我们要用到的一些图片资源文件夹，除了用到床图，我们可以把其他本地图片资源也包含进来</li>
+</ul>
+<h1>参考&amp;致谢</h1>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://gitbook.zhangjikai.com/">Gitbook 简要介绍</a></li>
+<li><a target="_blank" rel="noopener" href="https://yangjh.oschina.io/gitbook/">GitBook 学习笔记</a></li>
+</ul>
+<p>From: <a target="_blank" rel="noopener" href="http://lipeng1667.github.io/2019/01/15/how-to-write-techdoc-with-gitbook/">lipeng1667</a></p>
+<h2 id="系列教程-6"><strong>系列教程</strong></h2>
+<p><strong>Gitbook使用系列</strong></p>
+<ul>
+<li>
+<p><a href="https://blog.17lai.site/posts/7fe86002/">GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</a></p>
+</li>
+<li>
+<p><a href="https://blog.17lai.site/posts/7790e989/">GitBook+GitLab撰写发布技术文档-Part2:GitLab篇</a></p>
+</li>
+<li>
+<p><a href="https://blog.17lai.site/posts/d6bad1e5/">自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</a></p>
+</li>
+</ul>
+<p><strong>笔记系列</strong></p>
+<ul>
+<li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
+</ul>
+<blockquote>
+<p>经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。</p>
+<ul>
+<li>pigo图床搭建与配置</li>
+<li>Joplin教程</li>
+<li>Snipaste截图工具</li>
+<li>Typora 作为Markdown编辑器最强</li>
+</ul>
+</blockquote>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://blog.17lai.fun/posts/e6086437/">Joplin入门指南&amp;实践方案</a></li>
+</ul>
+<blockquote>
+<ul>
+<li>Joplin和使用</li>
+<li>Joplin同步与备份</li>
+<li>Joplin导入与导出</li>
+</ul>
+</blockquote>
+<ul>
+<li><a href="https://blog.17lai.site/posts/92d347d6/">Joplin 插件以及其Markdown语法。All in One!</a></li>
+</ul>
+<blockquote>
+<ul>
+<li>Joplin简明教程</li>
+<li>markdown语法简明教程</li>
+</ul>
+</blockquote>
+<ul>
+<li><a href="https://blog.17lai.site/posts/e3ee7f8b/">Joplin 插件使用推荐</a></li>
+</ul>
+<blockquote>
+<ul>
+<li>教你用各种插件打造一个强大的笔记工具。</li>
+</ul>
+</blockquote>
+<ul>
+<li><a href="https://blog.17lai.site/posts/1802a8a7/">为知笔记私有化Docker部署</a></li>
+</ul>
+<blockquote>
+<ul>
+<li>如何部署自己私有的为知笔记。</li>
+<li>其实博主更推荐私有部署joplin</li>
+</ul>
+</blockquote>
+<p><strong>Gitlab 使用系列</strong></p>
+<ul>
+<li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
+<li><a href="https://blog.17lai.site/posts/29a820b3/">破解Gitlab EE</a></li>
+<li><a href="https://blog.17lai.site/posts/d08eb7b/">Gitlab的安装及使用</a></li>
+<li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
+</ul>
 <link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
       <categories>
-        <category>mysql</category>
+        <category>gitbook</category>
       </categories>
       <tags>
-        <tag>Linux</tag>
-        <tag>Docker</tag>
-        <tag>MySql</tag>
-        <tag>Mariadb</tag>
-        <tag>技巧</tag>
+        <tag>Git</tag>
+        <tag>linux</tag>
+        <tag>GitBook</tag>
       </tags>
   </entry>
   <entry>
@@ -6029,7 +5911,7 @@ pie
 <ul>
 <li><a target="_blank" rel="noopener" href="https://lightzhan.xyz/index.php/category/software-installation-and-use/joplin/">lightzhan.xyz</a></li>
 </ul>
-<h2 id="系列教程-14"><strong>系列教程</strong></h2>
+<h2 id="系列教程-10"><strong>系列教程</strong></h2>
 <p><strong>笔记系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
@@ -6363,7 +6245,7 @@ pm2 start app.js --name<span class="token operator">=</span><span class="token s
 </li>
 </ol>
 <p>编辑整理 From： <a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/JQBUqdq1YNsGqolQ0jjfNg">大大木头 [为知社区]</a></p>
-<h2 id="系列教程-9"><strong>系列教程</strong></h2>
+<h2 id="系列教程-11"><strong>系列教程</strong></h2>
 <p><strong>笔记系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
@@ -6576,7 +6458,7 @@ pm2 start app.js --name<span class="token operator">=</span><span class="token s
 <p>免费开源的笔记Joplin无论在功能上还是使用体验上基本上与Evernote印象笔记无异了，在隐私保护方面做得非常好，特别适合那些想要保存个人信息笔记的用户。</p>
 <p>使用免费开源的笔记Joplin最大的问题就是找好同步的网盘或者云存储，另外强烈建议大家在对Joplin的设置进行调整时先备份一个，以免同步后删除了所有的笔记。</p>
 <p>编辑整理 From：<a target="_blank" rel="noopener" href="https://wzfou.com/joplin/">挖站否</a></p>
-<h2 id="系列教程-10"><strong>系列教程</strong></h2>
+<h2 id="系列教程-9"><strong>系列教程</strong></h2>
 <p><strong>笔记系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
@@ -6987,7 +6869,7 @@ This is the admonition body
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1020210910225117.png" alt=""></p>
 <p>其他插件：</p>
 <p><a target="_blank" rel="noopener" href="https://github.com/joplin/plugins/blob/master/README.md#plugins">官方插件下载地址及其介绍</a></p>
-<h2 id="系列教程-11"><strong>系列教程</strong></h2>
+<h2 id="系列教程-12"><strong>系列教程</strong></h2>
 <p><strong>笔记系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
@@ -7097,258 +6979,6 @@ This is the admonition body
         <tag>note</tag>
         <tag>Joplin</tag>
         <tag>MarkDown</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>【Gitbook】GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</title>
-    <url>/posts/7fe86002/</url>
-    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><p>随着工作时间越来越久，项目越做越多，很多时候，手里面的技术文档都是零散的技术点。最近一直在着手把项目的技术开发文档(Technical Document)系统地整理一下。正好看到了非常棒的 GitBook 工具，又顺带研究了如何借助 Gitlab 的 CI/CD 功能实现自动部署。<br>
-正好开个简短的教程，介绍一下 <code>GitBook</code> + <code>GitLab</code>怎样来撰写并发布文档。<br>
-第一部分先来介绍一下 GitBook。</p>
-<h1>系统环境</h1>
-<p>惯例列出来我们的环境以及用到的工具。</p>
-<ul>
-<li>MacOS 10.12</li>
-<li>Node.js (版本 &gt; 4.0.0)</li>
-<li>Atom/MWebLite</li>
-</ul>
-<p>其实 Gitbook 有官方的编辑器，但是似乎对中文的支持不是很好，而且会有 bug，虽然最新版本做了优化，Mardown 格式的文字有些会自动显示成最终样式，而我个人还是比较喜欢原生的 markdown，所以我个人就没有用官方的编辑器。<br>
-如果读者注册了 gitbook，并且打算文章都发布到 gitbook 官网上的话，还是建议可以使用官方的编辑器。因为我的目标是发布到公司内网的 gitlab 上，所以这里就用 atom 或者 MWebLite 来编写文档。<br>
-其实这篇文章过后，大家对 Gitbook 的工作机制就很清楚了，完全可以自由地创作了。</p>
-<h1>基本使用</h1>
-<h2 id="安装-2">安装</h2>
-<p>安装过程非常简单</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> <span class="token function">install</span> gitbook-cli -g<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<h2 id="新建book">新建book</h2>
-<p>安装成功后，我们就可以开始用gitbook 的命令来进行各种操作了。如果熟悉<code>hexo</code>的同学会发现，其实大同小异，只不过一个用来写blog，一个用来写 book。</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token function">mkdir</span> myBook
-$ <span class="token builtin class-name">cd</span> myBook
-$ gitbook init<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-<p>初始化后，我们能在<code>myBook</code>目录下看到两个 markdown 文f件。这两个文件就是我们写一本书唯二必须要用的文件了。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0720210907191936.png" alt=""></p>
-<h2 id="预览book">预览book</h2>
-<p>先不做任何变动，模拟一下我们发布之后的页面的成品吧。</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ gitbook serve<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0720210907191946.png" alt=""></p>
-<p>我们打开浏览器，在浏览器中输入<code>0.0.0.0:4000</code>就可以在本地预览了。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0720210907191948.png" alt=""></p>
-<p>可以看到，左侧是我们的菜单栏，自带一个搜索栏，右侧就是我们的 book 的内容了，右上角有默认的诸如 twitter,facebook 等分享快捷方式。基本上和其他人用 gitbook 写出来的页面是一样的。</p>
-<blockquote>
-<p>注：</p>
-<ol>
-<li>gitbook 新版本提供了本地预览功能的热更新，也就是说本地预览的页面会随着我们写书的内容变化而自动更新，这着实是一个很使用的功能。</li>
-<li>在命令行ctrl+c可以关闭本地服务器，即预览页面。</li>
-</ol>
-</blockquote>
-<p>我们可以尝试修改一下书的内容，看一下页面的变化。打开<code>README.md</code>文件，修改成如下内容：</p>
-<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Introduction</span>
- 
-Hello World!<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-<p>再回头看一眼我们的预览页面，是不是自动变成了下面的样子。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0720210907192001.png" alt=""></p>
-<p>关于 gitbook 自建的 README.md 文件我就不做过多的介绍了，都是一些 Markdown 的基本语法，相信使用 gitbook 的各位一定是对 markdown 语法非常熟悉的了。</p>
-<h2 id="目录-2">目录</h2>
-<p>现在我们把注意力放到 gitbook 为我们创建的第二个文件<code>SUMMARY.md</code>上，这个文件决定了我们的目录结构。 一个比较简单的目录结构如下：</p>
-<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Summary</span>
- 
-<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">前言</span>](<span class="token url">README.md</span>)</span>
-<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">第一章</span>](<span class="token url">xx.md</span>)</span>
-<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">第二章</span>](<span class="token url">xx.md</span>)</span>
-<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">第三章</span>](<span class="token url">xx.md</span>)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p><code>xx.md</code>就是我们每个章节独立的 markdown 文件，所以用 gitbook 写一本书真的非常方便，一个目录文件，和若干个你的书的内容就好了。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0720210907192009.png" alt=""></p>
-<h3 id="目录分层">目录分层</h3>
-<p>简单的目录有一个小的问题就是我们目录都只有一级，如果想要分层，比如第一章有1，2，3个小节，该怎么办呢？ 这里有两种方式：</p>
-<h4 id="标题区分">标题区分</h4>
-<p>我们把<code>SUMMARY.md</code>文件修改成如下内容</p>
-<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Summary</span>
- 
-<span class="token title important"><span class="token punctuation">##</span> 前言</span>
-<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">前言</span>](<span class="token url">README.md</span>)</span>
- 
-<span class="token title important"><span class="token punctuation">##</span> 第一章</span>
-<span class="token list punctuation">*</span> [1.1小节]()
-<span class="token list punctuation">*</span> [1.2小节]()
- 
-<span class="token title important"><span class="token punctuation">##</span> 第二章</span>
-<span class="token list punctuation">*</span> [2.1小节]()
-<span class="token list punctuation">*</span> [2.2小节]()
- 
-<span class="token title important"><span class="token punctuation">##</span> 第三章</span>
-<span class="token list punctuation">*</span> [3.1小节]()
-<span class="token list punctuation">*</span> [3.2小节]()<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>最终的样式如下：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0720210907192025.png" alt=""></p>
-<h4 id="缩进区分">缩进区分</h4>
-<p>我们还可以用缩进的方式对目录进行级别的区分</p>
-<pre class="line-numbers language-markdown" data-language="markdown"><code class="language-markdown"><span class="token title important"><span class="token punctuation">#</span> Summary</span>
- 
-<span class="token list punctuation">*</span> <span class="token url">[<span class="token content">前言</span>](<span class="token url">README.md</span>)</span>
-<span class="token list punctuation">*</span> [第一章]()
-    <span class="token list punctuation">*</span> [1.1小节]()
-    <span class="token list punctuation">*</span> [1.2小节]()
-<span class="token list punctuation">*</span> [第二章]()
-    <span class="token list punctuation">*</span> [2.1小节]()
-    <span class="token list punctuation">*</span> [2.2小节]()
-<span class="token list punctuation">*</span> [第三章]()
-    <span class="token list punctuation">*</span> [3.1小节]()
-    <span class="token list punctuation">*</span> [3.2小节]()<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>最终的样式如下：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0720210907192039.png" alt=""></p>
-<p>大家可以根据自己的喜好选择不同的样式，也可以把这两者结合起来一起用，as you wish.</p>
-<h2 id="打包发布">打包发布</h2>
-<p>通过预览模式，我们可以随时掌握书籍的更新内容。当你完成了部分章节或者全书的编写后，我们需要把写好的内容打包并发布。</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ gitbook build<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<p>执行完上面的命令后，我们会发现在根目录下出现了<code>_build</code>文件夹，里面的文件就是我们需要发布的内容，你可以把所有的内容放到你的网站目录下，或者 gitlab/github 的 page页面，就实现了 gitbook 的线上发布了~</p>
-<h1>进阶技巧</h1>
-<p>看完上面的章节，你已经可以独立完成一本书的编写和发布，接下来的章节，我们提供一些进阶的技巧，你可以安装一些插件、更直观地规划你的目录结构等等。</p>
-<h2 id="插件">插件</h2>
-<p>和众多开源的软件一样，gitbook 也有一些插件，这些插件可以让你的书更加完美。这里我仅附上我个人觉得比较有用的几个插件，更多的插件，可以访问<a target="_blank" rel="noopener" href="https://plugins.gitbook.com/">社区</a>来获取。<br>
-插件的引入和修改都是在配置文件中完成的，那我们可以在根目录下创建<code>book.json</code>文件来修改当前书的一些配置，因为是 json 格式的，所以诸如书的标题、作者、内容等都可以在配置文件中完成，我们重点来说插件。</p>
-<pre class="line-numbers language-json" data-language="json"><code class="language-json"><span class="token punctuation">{</span>
-     <span class="token property">"plugins"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
-          <span class="token string">"-lunr"</span><span class="token punctuation">,</span>
-          <span class="token string">"-search"</span><span class="token punctuation">,</span>
-          <span class="token string">"search-plus"</span><span class="token punctuation">,</span>
-          <span class="token string">"splitter"</span><span class="token punctuation">,</span>
-          <span class="token string">"copy-code-button"</span><span class="token punctuation">,</span>
-          <span class="token string">"expandable-chapters-small"</span>
-     <span class="token punctuation">]</span>
-<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>以上是我的<code>book.json</code>配置文件，只有一个关于插件的配置项，其实总共就4个</p>
-<ul>
-<li>search-plus 让搜索支持中文，注意需要先把默认的两个插件<code>lunr</code>和<code>serach</code>禁用掉，禁用的方式就是在前面加上<code>-</code>号</li>
-<li>spliter 菜单栏宽度可调节</li>
-<li>copy-code-button 代码可以一键 copy</li>
-<li>expandable-chapters-small 菜单栏可以折叠</li>
-</ul>
-<blockquote>
-<p>注：<br>
-如果引入了新的插件，需要通过<code>gitbook install</code> 命令来安装新的插件，否则在打包发布的时候会提示错误。</p>
-</blockquote>
-<h2 id="目录结构-2">目录结构</h2>
-<p>一个基本的目录结构是这样的</p>
-<pre class="line-numbers language-ini" data-language="ini"><code class="language-ini">.
-├── _book/
-├── book.json
-├── README.md
-├── SUMMARY.md
-├── xx1.md
-├── xx2.md
-├── xx3.md
-├── xx4.md
-├── ...<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>不过为了我们自己方便，个人建议的目录结构如下</p>
-<pre class="line-numbers language-ini" data-language="ini"><code class="language-ini">.
-├── _book/
-├── node_modules/
-├── .gitlab-ci.yml
-├── book.json
-├── SUMMARY.md
-├── content/
-|   ├── chapter1/
-|       ├── README.md
-|       └── something.md
-|   ├── chapter2/
-|       ├── README.md
-|       └── something.md
-├── res/
-|   ├── 1.png
-|   └── 2.jpg
-|   └── 3.jpeg
-|   └── ...<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>说明：</p>
-<ul>
-<li><code>_book</code> 目录是我们打包后要发布的文件目录</li>
-<li><code>node_modules</code> 目录是我们安装插件后默认生成的目录</li>
-<li><code>.gitlab-ci.yml</code>这个是 gitlab 要用的 ci 配置文件，下一章节我们马上就会用到</li>
-<li><code>book.json</code> 是我们的配置文件</li>
-<li><code>content</code>目录是我们的书的内容，所有章节都可以分类继续整理，方便自己查看</li>
-<li><code>res</code>目录是我们要用到的一些图片资源文件夹，除了用到床图，我们可以把其他本地图片资源也包含进来</li>
-</ul>
-<h1>参考&amp;致谢</h1>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://gitbook.zhangjikai.com/">Gitbook 简要介绍</a></li>
-<li><a target="_blank" rel="noopener" href="https://yangjh.oschina.io/gitbook/">GitBook 学习笔记</a></li>
-</ul>
-<p>From: <a target="_blank" rel="noopener" href="http://lipeng1667.github.io/2019/01/15/how-to-write-techdoc-with-gitbook/">lipeng1667</a></p>
-<h2 id="系列教程-6"><strong>系列教程</strong></h2>
-<p><strong>Gitbook使用系列</strong></p>
-<ul>
-<li>
-<p><a href="https://blog.17lai.site/posts/7fe86002/">GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</a></p>
-</li>
-<li>
-<p><a href="https://blog.17lai.site/posts/7790e989/">GitBook+GitLab撰写发布技术文档-Part2:GitLab篇</a></p>
-</li>
-<li>
-<p><a href="https://blog.17lai.site/posts/d6bad1e5/">自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</a></p>
-</li>
-</ul>
-<p><strong>笔记系列</strong></p>
-<ul>
-<li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
-</ul>
-<blockquote>
-<p>经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。</p>
-<ul>
-<li>pigo图床搭建与配置</li>
-<li>Joplin教程</li>
-<li>Snipaste截图工具</li>
-<li>Typora 作为Markdown编辑器最强</li>
-</ul>
-</blockquote>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://blog.17lai.fun/posts/e6086437/">Joplin入门指南&amp;实践方案</a></li>
-</ul>
-<blockquote>
-<ul>
-<li>Joplin和使用</li>
-<li>Joplin同步与备份</li>
-<li>Joplin导入与导出</li>
-</ul>
-</blockquote>
-<ul>
-<li><a href="https://blog.17lai.site/posts/92d347d6/">Joplin 插件以及其Markdown语法。All in One!</a></li>
-</ul>
-<blockquote>
-<ul>
-<li>Joplin简明教程</li>
-<li>markdown语法简明教程</li>
-</ul>
-</blockquote>
-<ul>
-<li><a href="https://blog.17lai.site/posts/e3ee7f8b/">Joplin 插件使用推荐</a></li>
-</ul>
-<blockquote>
-<ul>
-<li>教你用各种插件打造一个强大的笔记工具。</li>
-</ul>
-</blockquote>
-<ul>
-<li><a href="https://blog.17lai.site/posts/1802a8a7/">为知笔记私有化Docker部署</a></li>
-</ul>
-<blockquote>
-<ul>
-<li>如何部署自己私有的为知笔记。</li>
-<li>其实博主更推荐私有部署joplin</li>
-</ul>
-</blockquote>
-<p><strong>Gitlab 使用系列</strong></p>
-<ul>
-<li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
-<li><a href="https://blog.17lai.site/posts/29a820b3/">破解Gitlab EE</a></li>
-<li><a href="https://blog.17lai.site/posts/d08eb7b/">Gitlab的安装及使用</a></li>
-<li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
-</ul>
-<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
-      <categories>
-        <category>gitbook</category>
-      </categories>
-      <tags>
-        <tag>Git</tag>
-        <tag>linux</tag>
-        <tag>GitBook</tag>
       </tags>
   </entry>
   <entry>
@@ -11551,7 +11181,7 @@ location<span class="token punctuation">.</span>href<span class="token operator"
 <li><a target="_blank" rel="noopener" href="https://www.islu.cn/posts/21369.html#">Matery主题添加暗色模式</a> <a target="_blank" rel="noopener" href="https://dreamruins.gitee.io/tutorials/1121281946.html">黑夜模式</a> <a target="_blank" rel="noopener" href="https://github.com/ialoe/hexo-themes-matery-pro">开源代码hexo-themes-matery-pro</a></li>
 <li><a target="_blank" rel="noopener" href="https://www.islu.cn/posts/2687.html">加载动画(吃豆豆)</a> <a href="%5BMatery%E4%B8%BB%E9%A2%98%E8%87%AA%E5%AE%9A%E4%B9%89(%E5%85%AD)%E9%A1%B5%E9%9D%A2%E5%8A%A0%E8%BD%BD%E5%8A%A8%E7%94%BB%5D(https://dreamruins.gitee.io/tutorials/1793947201.html)">加载动画旋转方块</a></li>
 </ul>
-<h2 id="系列教程-12"><strong>系列教程</strong></h2>
+<h2 id="系列教程-13"><strong>系列教程</strong></h2>
 <p><strong>hexo系列</strong></p>
 <ul>
 <li>hexo 独立博客搭建 <a href="https://blog.17lai.site/posts/40300608/">[三万字教程]基于Hexo的matery主题搭建博客并深度优化</a></li>
@@ -12102,6 +11732,376 @@ Node包含了这个节点的所有属性。例如<code>&lt;img src="xxx.png" &gt
       <tags>
         <tag>web</tag>
         <tag>http</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Mariadb/Mysql命令行常用命令</title>
+    <url>/posts/f0b0af52/</url>
+    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h2 id="一、初始化等">一、初始化等</h2>
+<h3 id="1、登陆数据库方法"><strong>1、登陆数据库方法</strong></h3>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">mysql <span class="token operator">-</span>u用户名 <span class="token operator">-</span>p用户密码<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h3 id="2、修改root及用户密码">2、修改root及用户密码</h3>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token keyword">use</span> mysql<span class="token punctuation">;</span>
+<span class="token keyword">update</span> <span class="token keyword">user</span> <span class="token keyword">set</span> password<span class="token operator">=</span>password<span class="token punctuation">(</span><span class="token string">'11111111'</span><span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token keyword">user</span><span class="token operator">=</span><span class="token string">'root'</span> <span class="token operator">and</span> host<span class="token operator">=</span><span class="token string">'localhost'</span><span class="token punctuation">;</span>
+flush <span class="token keyword">privileges</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">MariaDB <span class="token punctuation">[</span>mysql<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">update</span> <span class="token keyword">user</span> <span class="token keyword">set</span> password<span class="token operator">=</span>password<span class="token punctuation">(</span><span class="token string">'11111111'</span><span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token keyword">user</span><span class="token operator">=</span><span class="token string">'root'</span> <span class="token operator">and</span> host<span class="token operator">=</span><span class="token string">'localhost'</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">row</span> affected <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
+<span class="token keyword">Rows</span> <span class="token keyword">matched</span>: <span class="token number">1</span>  Changed: <span class="token number">1</span>  <span class="token keyword">Warnings</span>: <span class="token number">0</span>
+ 
+MariaDB <span class="token punctuation">[</span>mysql<span class="token punctuation">]</span><span class="token operator">&gt;</span> flush <span class="token keyword">privileges</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">rows</span> affected <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
+ 
+MariaDB <span class="token punctuation">[</span>mysql<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">exit</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="3、创建用户"><strong>3、创建用户</strong></h3>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token keyword">insert</span> <span class="token keyword">into</span> mysql<span class="token punctuation">.</span><span class="token keyword">user</span><span class="token punctuation">(</span>host<span class="token punctuation">,</span><span class="token keyword">user</span><span class="token punctuation">,</span>password<span class="token punctuation">)</span><span class="token keyword">values</span><span class="token punctuation">(</span><span class="token string">"localhost"</span><span class="token punctuation">,</span><span class="token string">"test"</span><span class="token punctuation">,</span>password<span class="token punctuation">(</span><span class="token string">"password"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+flush <span class="token keyword">privileges</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h3 id="4、删除用户">4、删除用户</h3>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token keyword">DELETE</span> <span class="token keyword">FROM</span> <span class="token keyword">user</span> <span class="token keyword">WHERE</span> <span class="token keyword">User</span><span class="token operator">=</span><span class="token string">"test"</span> <span class="token operator">and</span> Host<span class="token operator">=</span><span class="token string">"localhost"</span><span class="token punctuation">;</span>
+flush <span class="token keyword">privileges</span><span class="token punctuation">;</span>　　<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h3 id="5、删除用户的数据库">5、删除用户的数据库</h3>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token keyword">drop</span> <span class="token keyword">database</span> test1<span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h3 id="6、交互模式初始化">6、交互模式初始化</h3>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">mysql_secure_installation<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h2 id="二、-常用操作">二、 常用操作</h2>
+<h3 id="1、显示数据库列表"><strong>1、显示数据库列表</strong></h3>
+<p><code>show databases;</code>:查看所有的数据库</p>
+<h3 id="2、创建数据库">2、创建数据库</h3>
+<p><code>create database zxg;</code>：创建名尾zxg的数据库</p>
+<h3 id="3、进入数据库">3、进入数据库</h3>
+<p><code>use zxg;</code>:进入zxg的数据库</p>
+<h3 id="4、显示库中的数据表">4、显示库中的数据表</h3>
+<p><code>show tables;</code>：查看数据库里有多少张表</p>
+<h3 id="5、创建数据表">5、创建数据表</h3>
+<p><code>create table t1 (id varchar(20),name varchar(20));</code>:创建名为t1表，并创建两两个字段，id、name，varchar表示设置数据长度，用字符来定义长度单位，其</p>
+<h3 id="6、插入数据">6、插入数据</h3>
+<p><code>insert into t1 values（"1"，"zxg"）;</code>:向表中插入数据</p>
+<h3 id="7、查看数据表">7、查看数据表</h3>
+<p><code>select * from t1;</code> ：查看t1表数据内容</p>
+<h3 id="8、多条件查询">8、多条件查询</h3>
+<p><code>select * from t1 where id=1 and age = 'zxg ' ;</code>: id、age 多个条件查询</p>
+<h3 id="9、查看字段内容">9、查看字段内容</h3>
+<p><code>desc t1;</code>:查看t1 表字段内容</p>
+<h3 id="10、修改字段长度">10、修改字段长度</h3>
+<p><code>alter table t1 modify column name varchar(20);</code>:修改name字段的长度</p>
+<h3 id="11、修改该字段内容">11、修改该字段内容</h3>
+<p><code>update t1 set name='zxg.net' where id=1;</code>：修改name字段的内容</p>
+<h3 id="12、权限刷新"><strong>12、权限刷新</strong></h3>
+<p><code>flush privileges;</code> :刷新权限</p>
+<h3 id="13、清空表单">13、清空表单</h3>
+<p>delete from t1;` :清空表内容</p>
+<h3 id="14、删除数据表">14、删除数据表</h3>
+<p>`drop table t1:删除表</p>
+<h3 id="15、删除数据库">15、删除数据库</h3>
+<p><code>drop database zxg;</code>：删除zxg数据库</p>
+<h3 id="16、查看数据库字符集">16、查看数据库字符集</h3>
+<p><code>show variables like '%char%';</code>:查看数据库字符集</p>
+<h3 id="17、查看存储引擎">17、查看存储引擎</h3>
+<p><code>show engines;</code>:查看MySQL存储引擎。</p>
+<h3 id="18、查看默认存储引擎">18、查看默认存储引擎</h3>
+<p><code>show variables like '%storage_engine%';</code>:查看MySQL默认的存储引擎</p>
+<h3 id="19、修改存储引擎">19、修改存储引擎</h3>
+<p><code>alter table t1 engine=innodb;</code>:修改MySQL t1表存储引擎</p>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token punctuation">[</span>root<span class="token variable">@web2</span> <span class="token operator">~</span><span class="token punctuation">]</span><span class="token comment"># mysql</span>
+Welcome <span class="token keyword">to</span> the MariaDB monitor<span class="token punctuation">.</span>  Commands <span class="token keyword">end</span> <span class="token keyword">with</span> <span class="token punctuation">;</span> <span class="token operator">or</span> \g<span class="token punctuation">.</span>
+Your MariaDB connection id <span class="token operator">is</span> <span class="token number">2</span>
+Server version: <span class="token number">5.5</span><span class="token number">.60</span><span class="token operator">-</span>MariaDB MariaDB Server
+ 
+Copyright <span class="token punctuation">(</span>c<span class="token punctuation">)</span> <span class="token number">2000</span><span class="token punctuation">,</span> <span class="token number">2018</span><span class="token punctuation">,</span> Oracle<span class="token punctuation">,</span> MariaDB Corporation Ab <span class="token operator">and</span> others<span class="token punctuation">.</span>
+ 
+<span class="token keyword">Type</span> <span class="token string">'help;'</span> <span class="token operator">or</span> <span class="token string">'\h'</span> <span class="token keyword">for</span> help<span class="token punctuation">.</span> <span class="token keyword">Type</span> <span class="token string">'\c'</span> <span class="token keyword">to</span> clear the <span class="token keyword">current</span> input statement<span class="token punctuation">.</span>
+ 
+MariaDB <span class="token punctuation">[</span><span class="token punctuation">(</span>none<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">show</span> <span class="token keyword">databases</span><span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">--------------------+</span>
+<span class="token operator">|</span> <span class="token keyword">Database</span>           <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">--------------------+</span>
+<span class="token operator">|</span> information_schema <span class="token operator">|</span>
+<span class="token operator">|</span> mysql              <span class="token operator">|</span>
+<span class="token operator">|</span> performance_schema <span class="token operator">|</span>
+<span class="token operator">|</span> test               <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">--------------------+</span>
+<span class="token number">4</span> <span class="token keyword">rows</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+ 
+MariaDB <span class="token punctuation">[</span><span class="token punctuation">(</span>none<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token operator">&gt;</span>  <span class="token keyword">create</span> <span class="token keyword">database</span> zxg<span class="token punctuation">;</span>                 
+Query OK<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">row</span> affected <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+ 
+MariaDB <span class="token punctuation">[</span><span class="token punctuation">(</span>none<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">use</span> zxg<span class="token punctuation">;</span>
+<span class="token keyword">Database</span> changed
+MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">show</span> <span class="token keyword">tables</span><span class="token punctuation">;</span>
+Empty <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+ 
+MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">create</span> <span class="token keyword">table</span> t1<span class="token punctuation">(</span>id <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">,</span>name <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">rows</span> affected <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+ 
+MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">show</span> <span class="token keyword">tables</span><span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------------+</span>
+<span class="token operator">|</span> Tables_in_zxg <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------------+</span>
+<span class="token operator">|</span> t1            <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------------+</span>
+<span class="token number">1</span> <span class="token keyword">row</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+ 
+MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">insert</span> <span class="token keyword">into</span> t1 <span class="token keyword">values</span> <span class="token punctuation">(</span><span class="token string">"1"</span><span class="token punctuation">,</span><span class="token string">"zxg"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">row</span> affected <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
+ 
+MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">select</span> <span class="token operator">*</span><span class="token keyword">from</span> t1<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">------+------+</span>
+<span class="token operator">|</span> id <span class="token operator">|</span> name <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">------+------+</span>
+<span class="token operator">|</span> <span class="token number">1</span> <span class="token operator">|</span> zxg <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">------+------+</span>
+<span class="token number">1</span> <span class="token keyword">row</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+ 
+MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">select</span> <span class="token operator">*</span><span class="token keyword">from</span> t1 <span class="token keyword">where</span> id<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">------+------+</span>
+<span class="token operator">|</span> id <span class="token operator">|</span> name <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">------+------+</span>
+<span class="token operator">|</span> <span class="token number">1</span> <span class="token operator">|</span> zxg <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">------+------+</span>
+<span class="token number">1</span> <span class="token keyword">row</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+ 
+MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">select</span> <span class="token operator">*</span><span class="token keyword">from</span> t1 <span class="token keyword">where</span> id<span class="token operator">=</span><span class="token number">1</span> <span class="token operator">and</span> name<span class="token operator">=</span><span class="token string">'zxg'</span><span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">------+------+</span>
+<span class="token operator">|</span> id <span class="token operator">|</span> name <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">------+------+</span>
+<span class="token operator">|</span> <span class="token number">1</span> <span class="token operator">|</span> zxg <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">------+------+</span>
+<span class="token number">1</span> <span class="token keyword">row</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
+ 
+MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">desc</span> t1<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">-------+-------------+------+-----+---------+-------+</span>
+<span class="token operator">|</span> Field <span class="token operator">|</span> <span class="token keyword">Type</span> <span class="token operator">|</span> <span class="token boolean">Null</span> <span class="token operator">|</span> <span class="token keyword">Key</span> <span class="token operator">|</span> <span class="token keyword">Default</span> <span class="token operator">|</span> Extra <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">-------+-------------+------+-----+---------+-------+</span>
+<span class="token operator">|</span> id <span class="token operator">|</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">|</span> YES <span class="token operator">|</span> <span class="token operator">|</span> <span class="token boolean">NULL</span> <span class="token operator">|</span> <span class="token operator">|</span>
+<span class="token operator">|</span> name <span class="token operator">|</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">|</span> YES <span class="token operator">|</span> <span class="token operator">|</span> <span class="token boolean">NULL</span> <span class="token operator">|</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">-------+-------------+------+-----+---------+-------+</span>
+<span class="token number">2</span> <span class="token keyword">rows</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+ 
+MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">alter</span> <span class="token keyword">table</span> t1 <span class="token keyword">modify</span> <span class="token keyword">column</span> name <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">rows</span> affected <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+Records: <span class="token number">0</span> Duplicates: <span class="token number">0</span> <span class="token keyword">Warnings</span>: <span class="token number">0</span>
+ 
+MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">update</span> t1 <span class="token keyword">set</span> name<span class="token operator">=</span><span class="token string">'zxg.net'</span> <span class="token keyword">where</span> id<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">row</span> affected <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+<span class="token keyword">Rows</span> <span class="token keyword">matched</span>: <span class="token number">1</span> Changed: <span class="token number">1</span> <span class="token keyword">Warnings</span>: <span class="token number">0</span>
+MariaDB <span class="token punctuation">[</span>zxg<span class="token punctuation">]</span><span class="token operator">&gt;</span>
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="三、mysql-数据库字符集设置">三、mysql 数据库字符集设置</h2>
+<p>mysql数据库存储数据时，默认编码为latinl，存储中文字符时，在调用时会显示为乱码，为了解决该乱码问题，需修改该mysql默认字符集为UTE-8</p>
+<p>装mariadb的是时候看已经默认为ute-8</p>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">MariaDB <span class="token punctuation">[</span><span class="token punctuation">(</span>none<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">show</span> variables <span class="token operator">like</span> <span class="token string">'%char%'</span><span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">--------------------------+----------------------------+</span>
+<span class="token operator">|</span> Variable_name            <span class="token operator">|</span> <span class="token keyword">Value</span>                      <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">--------------------------+----------------------------+</span>
+<span class="token operator">|</span> character_set_client     <span class="token operator">|</span> utf8                       <span class="token operator">|</span>
+<span class="token operator">|</span> character_set_connection <span class="token operator">|</span> utf8                       <span class="token operator">|</span>
+<span class="token operator">|</span> character_set_database   <span class="token operator">|</span> latin1                     <span class="token operator">|</span>
+<span class="token operator">|</span> character_set_filesystem <span class="token operator">|</span> <span class="token keyword">binary</span>                     <span class="token operator">|</span>
+<span class="token operator">|</span> character_set_results    <span class="token operator">|</span> utf8                       <span class="token operator">|</span>
+<span class="token operator">|</span> character_set_server     <span class="token operator">|</span> latin1                     <span class="token operator">|</span>
+<span class="token operator">|</span> character_set_system     <span class="token operator">|</span> utf8                       <span class="token operator">|</span>
+<span class="token operator">|</span> character_sets_dir       <span class="token operator">|</span> <span class="token operator">/</span>usr<span class="token operator">/</span><span class="token keyword">share</span><span class="token operator">/</span>mysql<span class="token operator">/</span>charsets<span class="token operator">/</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">--------------------------+----------------------------+</span>
+<span class="token number">8</span> <span class="token keyword">rows</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>如不是，可以设置</p>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token keyword">SET</span> character_set_client <span class="token operator">=</span> utf8<span class="token punctuation">;</span>
+<span class="token keyword">SET</span> character_set_results <span class="token operator">=</span> utf8<span class="token punctuation">;</span>
+<span class="token keyword">SET</span> character_set_connection <span class="token operator">=</span> utf8<span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<h2 id="四、mysql-数据库密码管理">四、mysql 数据库密码管理</h2>
+<p>设置密码访问，密码破解、密码权限、修改密码；</p>
+<h3 id="1、创建用户及授权">1、创建用户及授权</h3>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token keyword">grant</span> <span class="token keyword">all</span> <span class="token keyword">on</span> zxg<span class="token punctuation">.</span><span class="token operator">*</span> <span class="token keyword">to</span> test<span class="token variable">@localhost</span> identified <span class="token keyword">by</span> <span class="token string">'pas'</span><span class="token punctuation">;</span>
+<span class="token keyword">grant</span> <span class="token keyword">select</span><span class="token punctuation">,</span><span class="token keyword">insert</span><span class="token punctuation">,</span><span class="token keyword">update</span><span class="token punctuation">,</span><span class="token keyword">delete</span> <span class="token keyword">on</span> <span class="token operator">*</span><span class="token punctuation">.</span><span class="token operator">*</span><span class="token keyword">to</span> test<span class="token variable">@"%"</span> identified <span class="token keyword">by</span> <span class="token string">'pas'</span><span class="token punctuation">;</span>
+<span class="token keyword">grant</span> <span class="token keyword">all</span> <span class="token keyword">on</span> zxg<span class="token punctuation">.</span><span class="token operator">*</span> <span class="token keyword">to</span> test<span class="token variable">@`192.168.216.53`</span> identified <span class="token keyword">by</span> <span class="token string">'pas'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<h3 id="2、破解密码方法">2、破解密码方法</h3>
+<p>停止服务---》跳过权限方式启动---》单开一个窗口登陆---》登陆修改密码即可</p>
+<p>1）systemctl stop mariadb</p>
+<p>2）mysqld_safe --skip-grant-tables &amp;</p>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token punctuation">[</span>root<span class="token variable">@web2</span> <span class="token operator">~</span><span class="token punctuation">]</span><span class="token comment"># mysqld_safe --skip-grant-tables &amp;</span>
+<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token number">47542</span>
+<span class="token punctuation">[</span>root<span class="token variable">@web2</span> <span class="token operator">~</span><span class="token punctuation">]</span><span class="token comment"># 190520 15:45:22 mysqld_safe Logging to '/var/log/mariadb/mariadb.log'.</span>
+<span class="token number">190520</span> <span class="token number">15</span>:<span class="token number">45</span>:<span class="token number">22</span> mysqld_safe <span class="token keyword">Starting</span> mysqld daemon <span class="token keyword">with</span> <span class="token keyword">databases</span> <span class="token keyword">from</span> <span class="token operator">/</span>var<span class="token operator">/</span>lib<span class="token operator">/</span>mysql<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql"><span class="token punctuation">[</span>root<span class="token variable">@web2</span> <span class="token operator">~</span><span class="token punctuation">]</span><span class="token comment"># mysql</span>
+Welcome <span class="token keyword">to</span> the MariaDB monitor<span class="token punctuation">.</span>  Commands <span class="token keyword">end</span> <span class="token keyword">with</span> <span class="token punctuation">;</span> <span class="token operator">or</span> \g<span class="token punctuation">.</span>
+Your MariaDB connection id <span class="token operator">is</span> <span class="token number">1</span>
+Server version: <span class="token number">5.5</span><span class="token number">.60</span><span class="token operator">-</span>MariaDB MariaDB Server
+ 
+Copyright <span class="token punctuation">(</span>c<span class="token punctuation">)</span> <span class="token number">2000</span><span class="token punctuation">,</span> <span class="token number">2018</span><span class="token punctuation">,</span> Oracle<span class="token punctuation">,</span> MariaDB Corporation Ab <span class="token operator">and</span> others<span class="token punctuation">.</span>
+ 
+<span class="token keyword">Type</span> <span class="token string">'help;'</span> <span class="token operator">or</span> <span class="token string">'\h'</span> <span class="token keyword">for</span> help<span class="token punctuation">.</span> <span class="token keyword">Type</span> <span class="token string">'\c'</span> <span class="token keyword">to</span> clear the <span class="token keyword">current</span> input statement<span class="token punctuation">.</span>
+ 
+MariaDB <span class="token punctuation">[</span><span class="token punctuation">(</span>none<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">use</span> mysql<span class="token punctuation">;</span>
+Reading <span class="token keyword">table</span> information <span class="token keyword">for</span> completion <span class="token keyword">of</span> <span class="token keyword">table</span> <span class="token operator">and</span> <span class="token keyword">column</span> names
+You can turn <span class="token keyword">off</span> this feature <span class="token keyword">to</span> get a quicker startup <span class="token keyword">with</span> <span class="token operator">-</span>A
+ 
+<span class="token keyword">Database</span> changed
+MariaDB <span class="token punctuation">[</span>mysql<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">update</span> <span class="token keyword">user</span> <span class="token keyword">set</span> password<span class="token operator">=</span>password<span class="token punctuation">(</span><span class="token string">'11111111'</span><span class="token punctuation">)</span> <span class="token keyword">where</span> <span class="token keyword">user</span><span class="token operator">=</span><span class="token string">'root'</span> <span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">3</span> <span class="token keyword">rows</span> affected <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
+<span class="token keyword">Rows</span> <span class="token keyword">matched</span>: <span class="token number">4</span>  Changed: <span class="token number">3</span>  <span class="token keyword">Warnings</span>: <span class="token number">0</span>
+ 
+MariaDB <span class="token punctuation">[</span>mysql<span class="token punctuation">]</span><span class="token operator">&gt;</span> flush <span class="token keyword">privileges</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">rows</span> affected <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+ 
+MariaDB <span class="token punctuation">[</span>mysql<span class="token punctuation">]</span><span class="token operator">&gt;</span> <span class="token keyword">exit</span>
+Bye
+<span class="token punctuation">[</span>root<span class="token variable">@web2</span> <span class="token operator">~</span><span class="token punctuation">]</span><span class="token comment">#</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>然后退出”跳过权限方式“ ctrl+c ，正常启动mysql就可以了</p>
+<h2 id="五、mysql-配置文件详解">五、mysql 配置文件详解</h2>
+<h3 id="1、参数说明">1、参数说明</h3>
+<pre class="line-numbers language-ini" data-language="ini"><code class="language-ini"><span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">mysqld</span><span class="token punctuation">]</span></span>                                                              #服务端配置
+<span class="token key attr-name">port</span>        <span class="token punctuation">=</span> <span class="token value attr-value">3306                                                    #监听端口</span>
+<span class="token key attr-name">socket</span>      <span class="token punctuation">=</span> <span class="token value attr-value">/tmp/mysql.sock                                         #通信设置</span>
+<span class="token key attr-name">user</span>    <span class="token punctuation">=</span> <span class="token value attr-value">mariadb                                                     #使用mariadb用户启动</span>
+<span class="token key attr-name">basedir</span> <span class="token punctuation">=</span> <span class="token value attr-value">/usr/local/mariadb                                          #安装路径</span>
+<span class="token key attr-name">datadir</span> <span class="token punctuation">=</span> <span class="token value attr-value">/data/mysql                                                 #数据目录</span>
+<span class="token key attr-name">log_error</span> <span class="token punctuation">=</span> <span class="token value attr-value">/data/mysql/mariadb.err                             　　　 #错误日志</span>
+<span class="token key attr-name">pid-file</span> <span class="token punctuation">=</span> <span class="token value attr-value">/data/mysql/mariadb.pid                             　　　　#pid进程文件</span>
+skip-external-locking                                                 #避免mysql的外部锁定，减少出错几率提高稳定性
+<span class="token key attr-name">key_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">64M                                                 #缓存存储引擎参数，这个参数可以设置为64M</span>
+<span class="token key attr-name">max_allowed_packet</span> <span class="token punctuation">=</span> <span class="token value attr-value">1M                                               #允许最大接收数据包的大小，防止服务器发送过大的数据包，可以设置为16MB或者更大，但设置太大也可能有危险</span>
+<span class="token key attr-name">table_open_cache</span> <span class="token punctuation">=</span> <span class="token value attr-value">256                                                #mysql每打开一个表，都会读入一些数据到table_open_cache缓存中，当MYSQL在这个缓存中找不到相应的信息时，才会去磁盘读取，默认值64，假设系统有200个并发连接，则需将此参数设置为200*N（N为每个连接所需的文件描述符数目）；当设置为很大时，如果系统处理不了那么多文件描述符，那么就会出现客户端失效，连接不上</span>
+<span class="token key attr-name">sort_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">1M                                                 #在表进行order by和group by 排序操作时，由于排序的字段没有索引，会出现Using filesort，为了提高性能，可用此参数增加每个线程分配的缓存区大小，默认时256k，这个参数不要设置过大，一般128~256k，另外一般出现using filesort的时候，要通过增加索引来解决</span>
+<span class="token key attr-name">net_buffer_length</span> <span class="token punctuation">=</span> <span class="token value attr-value">8K                                                #包消息缓冲区初始化net_buffer_length字节，但需要时可以增长到max_allowed_packet字节</span>
+<span class="token key attr-name">read_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">1M                                                 #该参数用于表的顺序扫描，表示每个线程分配的缓冲区大小，比如在进行全表扫描时，mysql会按照数据的存储顺序一次读取数据块，每次读取的数据块首先会暂存在read_buffer_size中，当buffer空间被写满或者全部数据读取结束后，在将buffer中的数据返回给上层调用者，以提高效率默认128k，也不要设置过大</span>
+<span class="token key attr-name">read_rnd_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">512K                                           #该参数用于表的随机读取，表示每个线程分配的缓冲区大小，比如，按照一个非索引字段做order by排序操作时，就会利用这个缓冲区来暂存读取的数据，默认时256k，也不要设置过大</span>
+<span class="token key attr-name">myisam_sort_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">16M                                         #当myisam表执行repair table或创建索引时，用以缓冲排序索引，设置太小可能会遇到"myisam_sort_buffer_size is to small"</span>
+<span class="token key attr-name">thread_cache_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">32                                                #线程池，线程缓冲。用来缓冲空闲的线程，以至于不被销毁，如果线程缓冲在的空闲线程，需要重新建立新连接，则会优先调用线程池中的缓冲，很快就能相应连接请求，每建立一个连接，都需要一个线程与之匹配。</span>
+<span class="token key attr-name">query_cache_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">32M                                                #缓存select语句和结果集大小的参数。查询缓存会存储一个select查询的文本与被传送到客户端的相应结果。如果之后接收到一个相同的查询，服务器会从查询缓存中检索结果，而不是再次分析和执行这个同样的查询。如果你的环境中写操作很少，读操作频繁，那么打开query_cache_type=1，会对性能有明显提升。如果写操作频繁，则应该关闭它（query_cache_type=0）。</span>
+<span class="token key attr-name">tmp_table_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">64M                                                  #临时HEAP数据表的最大长度(默认设置是32M); 超过这个长度的临时数据表将被转换为MyISAM数据表并存入一个临时文件。</span>
+                                                                      <span class="token comment">#</span>
+<span class="token key attr-name">explicit_defaults_for_timestamp</span> <span class="token punctuation">=</span> <span class="token value attr-value">true                     　　　　　　 #是否显示默认时间戳</span>
+<span class="token comment">#skip-networking                                                      #</span>
+<span class="token key attr-name">max_connections</span> <span class="token punctuation">=</span> <span class="token value attr-value">500                                                 #该参数用来设置最大连接数，告诉你当前你的服务器允许多少并发连接。默认为100，一般设置为512-1000即可。请记住，太多的连接会导致内存的使用量过高并且会锁住你的 MySQL 服务器。一般小网站需要 100-200 的连接数，而较大可能需要 500-800 甚至更多。这里的值很大程度上取决于你 MySQL/MariaDB 的使用情况。</span>
+<span class="token key attr-name">max_connect_errors</span> <span class="token punctuation">=</span> <span class="token value attr-value">100                                              #如果有时网络抽风，或者应用配置错误，或者其他原因导致客户端短时间内不断的尝试连接，客户端可能会被列入黑名单，然后将无法连接，直到再次刷新主机缓存。这个选项默认值太小了，可以考虑设的足够大（如果你的服务器配置够强大的话）。</span>
+<span class="token key attr-name">open_files_limit</span> <span class="token punctuation">=</span> <span class="token value attr-value">65535                                              #mysql打开最大文件数</span>
+                                                                      <span class="token comment">#</span>
+<span class="token key attr-name">log-bin</span><span class="token punctuation">=</span><span class="token value attr-value">mysql-bin                                                     #这些路径相对于datadir</span>
+<span class="token key attr-name">binlog_format</span><span class="token punctuation">=</span><span class="token value attr-value">mixed                                                   #日志格式</span>
+<span class="token key attr-name">server-id</span>   <span class="token punctuation">=</span> <span class="token value attr-value">1                                                       #给服务器分配一个独一无二的ID编号; n的取值范围是1~2的32次方启用二进制日志功能。在复制数据同步的时候会用到，Helloweba后面会有文章介绍。</span>
+<span class="token key attr-name">expire_logs_days</span> <span class="token punctuation">=</span> <span class="token value attr-value">10                                                 #启用二进制日志后，保留日志的天数。服务器会自动清理指定天数前的日志文件，如果不设置则会导致服务器空间耗尽。一般设置为7～14天。</span>
+                                                                       <span class="token comment">#</span>
+<span class="token key attr-name">default_storage_engine</span> <span class="token punctuation">=</span> <span class="token value attr-value">InnoDB                                     　#新数据表的默认存储引擎(默认设置是MyISAM)。这项设置还可以通过–default-table-type选项来设置。</span>
+<span class="token key attr-name">innodb_file_per_table</span> <span class="token punctuation">=</span> <span class="token value attr-value">1                                             #提供了更灵活的方式，它把每个数据库的信息保存在一个 .ibd 数据文件中。每个 .idb 文件代表它自己的表空间。通过这样的方式可以更快地完成类似 “TRUNCATE” 的数据库操作，当删除或截断一个数据库表时，你也可以回收未使用的空间。这样配置的另一个好处是你可以将某些数据库表放在一个单独的存储设备。这可以大大提升你磁盘的 I/O 负载。</span>
+<span class="token key attr-name">innodb_data_home_dir</span> <span class="token punctuation">=</span> <span class="token value attr-value">/data/mysql                             　　　　#InnoDB主目录，所有与InnoDB数据表有关的目录或文件路径都相对于这个路径。在默认的情况下，这个主目录就是MySQL的数据目录。</span>
+<span class="token key attr-name">innodb_data_file_path</span> <span class="token punctuation">=</span> <span class="token value attr-value">ibdata1:10M:autoextend     　　　　　　　　　　　#用来容纳InnoDB为数据表的表空间: 可能涉及一个以上的文件; 每一个表空间文件的最大长度都必须以字节(B)、兆字节(MB)或千兆字节(GB)为单位给出; 表空间文件的名字必须以分号隔开; 最后一个表空间文件还可以带一个autoextend属性和一个最大长度(max:n)。</span>
+<span class="token key attr-name">innodb_log_group_home_dir</span> <span class="token punctuation">=</span> <span class="token value attr-value">/data/mysql                     　　　　　　#用来存放InnoDB日志文件的目录路径(如ib_logfile0、ib_logfile1等)。在默认的情况下，InnoDB驱动程序将使用 MySQL数据目录作为自己保存日志文件的位置。</span>
+<span class="token key attr-name">innodb_buffer_pool_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">256M                                     　　#这个参数是InnoDB存储引擎的核心参数，默认为128KB，这个参数要设置为物理内存的60%～70%。</span>
+<span class="token key attr-name">innodb_log_file_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">64M                                            #事务日志文件写操作缓存区的最大长度(默认设置是1MB)。</span>
+<span class="token key attr-name">innodb_log_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">8M                                           #事务日志所使用的缓存区。InnoDB在写事务日志的时候，为了提高性能，先将信息写入Innodb Log Buffer中，当满足innodb_flush_log_trx_commit参数所设置的相应条件（或者日志缓冲区写满）时，再将日志写到文件（或者同步到磁盘）中。可以通过innodb_log_buffer_size参数设置其可以使用的最大内存空间。默认是8MB，一般为16～64MB即可。</span>
+<span class="token key attr-name">innodb_flush_log_at_trx_commit</span> <span class="token punctuation">=</span> <span class="token value attr-value">1                             　　　　#这个选项决定着什么时候把日志信息写入日志文件以及什么时候把这些文件物理地写(术语称为”同步”)到硬盘上。设置值0的意思是每隔一秒写一次日 志并进行 同步，这可以减少硬盘写操作次数，但可能造成数据丢失; 设置值1(设置设置)的意思是在每执行完一条COMMIT命令就写一次日志并进行同步，这可以防止数据丢失，但硬盘写操作可能会很频繁; 设置值2是一般折衷的办法，即每执行完一条COMMIT命令写一次日志，每隔一秒进行一次同步。</span>
+<span class="token key attr-name">innodb_lock_wait_timeout</span> <span class="token punctuation">=</span> <span class="token value attr-value">50                                         #如果某个事务在等待n秒(s)后还没有获得所需要的资源，就使用ROLLBACK命令放弃这个事务。这项设置对于发现和处理未能被InnoDB数据表驱动 程序识别出来的死锁条件有着重要的意义。这个选项的默认设置是50s。</span>
+                                                                      <span class="token comment">#</span>
+<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">mysqldump</span><span class="token punctuation">]</span></span>                                                           #
+quick                                                                 #
+<span class="token key attr-name">max_allowed_packet</span> <span class="token punctuation">=</span> <span class="token value attr-value">16M                                              #</span>          
+                                                                      <span class="token comment">#</span>
+<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">mysql</span><span class="token punctuation">]</span></span>                                                               #
+no-auto-rehash                                                        #
+                                                                      <span class="token comment">#</span>
+<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">myisamchk</span><span class="token punctuation">]</span></span>                                                           #
+<span class="token key attr-name">key_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">64M                                                 #</span>  
+<span class="token key attr-name">sort_buffer_size</span> <span class="token punctuation">=</span> <span class="token value attr-value">1M                                                 #</span>  
+<span class="token key attr-name">read_buffer</span> <span class="token punctuation">=</span> <span class="token value attr-value">2M                                                      #</span>
+<span class="token key attr-name">write_buffer</span> <span class="token punctuation">=</span> <span class="token value attr-value">2M                                                     #</span>
+                                                                      <span class="token comment">#</span>
+<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">mysqlhotcopy</span><span class="token punctuation">]</span></span>                                                        #
+interactive-timeout                                                   #<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="2、mysql数据库索引案例（百万量级）">2、mysql数据库索引案例（百万量级）</h3>
+<p>[client]</p>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">port    <span class="token operator">=</span><span class="token number">3306</span>                                  
+socket    <span class="token operator">=</span><span class="token operator">/</span>tmp<span class="token operator">/</span>mysql<span class="token punctuation">.</span>sock                     
+ 
+ 
+ 
+<span class="token punctuation">[</span>mysqld<span class="token punctuation">]</span>                                                                             
+port        <span class="token operator">=</span> <span class="token number">3306</span>                                                         
+socket      <span class="token operator">=</span> <span class="token operator">/</span>tmp<span class="token operator">/</span>mysql<span class="token punctuation">.</span>sock                                   
+<span class="token keyword">user</span>    <span class="token operator">=</span> mysql  
+server_id　　<span class="token operator">=</span> <span class="token number">10</span>
+datadir　　<span class="token operator">=</span> <span class="token operator">/</span><span class="token keyword">data</span><span class="token operator">/</span>mysql<span class="token operator">/</span>
+old_passwords　　<span class="token operator">=</span> <span class="token number">1</span>
+lower_case_table_names　　<span class="token operator">=</span> <span class="token number">1</span>
+<span class="token keyword">character</span><span class="token operator">-</span><span class="token keyword">set</span><span class="token operator">-</span>server　　<span class="token operator">=</span> utf8
+<span class="token keyword">default</span><span class="token operator">-</span>storage<span class="token operator">-</span><span class="token keyword">engine</span>　　<span class="token operator">=</span> MYISAM
+log<span class="token operator">-</span>bin　　<span class="token operator">=</span> bin<span class="token punctuation">.</span>log
+log<span class="token operator">-</span>error　　<span class="token operator">=</span> error<span class="token punctuation">.</span>log
+pid<span class="token operator">-</span><span class="token keyword">file</span>　　<span class="token operator">=</span> mysql<span class="token punctuation">.</span>pid
+long_query_time　　<span class="token operator">=</span> <span class="token number">2</span>
+slow_query_time　　<span class="token operator">=</span> <span class="token number">2</span>
+slow_query_log　
+slow_query_log_file　　<span class="token operator">=</span> slow<span class="token punctuation">.</span>log
+binlog_cache_size　　<span class="token operator">=</span> <span class="token number">4</span>MB
+binlog_format　　<span class="token operator">=</span> mixed
+max_binlog_cache_size　　<span class="token operator">=</span> <span class="token number">16</span>MB
+max_binlog_size　　<span class="token operator">=</span> <span class="token number">1</span>GB
+expire_logs_days　　<span class="token operator">=</span> <span class="token number">30</span>
+ft_min_word_len　　<span class="token operator">=</span> <span class="token number">4</span>
+back_log　　<span class="token operator">=</span> <span class="token number">512</span>
+max_allowed_packet　　<span class="token operator">=</span> <span class="token number">64</span>MB
+max_connections　　<span class="token operator">=</span> <span class="token number">4096</span>
+max_connect_errors　　<span class="token operator">=</span> <span class="token number">100</span>
+join_buffer_size　　<span class="token operator">=</span> <span class="token number">2</span>MB
+read_buffer_size　　<span class="token operator">=</span> <span class="token number">2</span>MB
+read_rnd_buffer_size　　<span class="token operator">=</span> <span class="token number">2</span>MB
+sort_buffer_size　　　　<span class="token operator">=</span> <span class="token number">2</span>MB
+query_cache_size　　<span class="token operator">=</span> <span class="token number">2</span>MB
+table_open_cache　　<span class="token operator">=</span> <span class="token number">10000</span>
+thread_cache_size　　<span class="token operator">=</span> <span class="token number">256</span>
+max_heap_table_size　　<span class="token operator">=</span> <span class="token number">64</span>MB
+tmp_table_size　　<span class="token operator">=</span> <span class="token number">64</span>MB
+thread_stack　　<span class="token operator">=</span> <span class="token number">192</span>KB
+thread_concurrency　　<span class="token operator">=</span> <span class="token number">24</span>
+<span class="token keyword">local</span><span class="token operator">-</span><span class="token keyword">infile</span>　　<span class="token operator">=</span> <span class="token number">0</span>
+skip<span class="token operator">-</span><span class="token keyword">show</span><span class="token operator">-</span><span class="token keyword">database</span>
+skip<span class="token operator">-</span>name<span class="token operator">-</span>resolve
+skip<span class="token operator">-</span>external<span class="token operator">-</span>locking
+connect_timeout　　<span class="token operator">=</span> <span class="token number">600</span>
+interactive_timeout　　<span class="token operator">=</span> <span class="token number">600</span>
+wait_timeout　　<span class="token operator">=</span> <span class="token number">600</span>
+<span class="token comment">#MyISAM</span>
+key_buffer_size　　<span class="token operator">=</span> <span class="token number">512</span>MB
+bulk_insert_buffer_size　　<span class="token operator">=</span> <span class="token number">64</span>MB
+mysiam_sort_buffer_size　　<span class="token operator">=</span> <span class="token number">64</span>MB
+mysiam_max_sort_file_size　　<span class="token operator">=</span> <span class="token number">1</span>GB
+mysiam_repair_threads　　<span class="token operator">=</span> <span class="token number">1</span>
+concurrent_insert　　<span class="token operator">=</span> <span class="token number">2</span>
+myisam_recover
+<span class="token comment">#INNODB</span>
+innodb_buffer_pool_size　　<span class="token operator">=</span> <span class="token number">64</span>G
+innodb_additional_mem_pool_size　　<span class="token operator">=</span> <span class="token number">32</span>MB
+innodb_data_file_path　　<span class="token operator">=</span>　ibdata1:<span class="token number">1</span>G<span class="token punctuation">;</span>ibdata2:<span class="token number">1</span>G:autoextend
+innodb_read_io_threads　　<span class="token operator">=</span> <span class="token number">8</span>
+innodb_write_io_threads 　　<span class="token operator">=</span> <span class="token number">8</span>
+innodb_file_per_table　　<span class="token operator">=</span> <span class="token number">1</span>
+innodb_flush_log_at_thx_commit　　<span class="token operator">=</span> <span class="token number">2</span>
+innodb_lock_wait_timeout　　<span class="token operator">=</span> <span class="token number">120</span>
+innodb_log_buffer_size　　<span class="token operator">=</span> <span class="token number">8</span>MB
+innodb_log_file_size　　<span class="token operator">=</span> <span class="token number">256</span>MB
+innodb_log_files_in_group　　<span class="token operator">=</span> <span class="token number">3</span>
+innodb_max_dirty_pages_pct　　<span class="token operator">=</span> <span class="token number">90</span>
+innodb_thread_concurrency　　<span class="token operator">=</span> <span class="token number">16</span>
+innodb_open_files　　<span class="token operator">=</span> <span class="token number">10000</span>
+<span class="token comment">#innodb_force_recovery　　= 4</span>
+<span class="token comment">#replication slave</span>
+<span class="token keyword">read</span><span class="token operator">-</span>only
+<span class="token comment">#skip-salve-start</span>
+relay<span class="token operator">-</span>log　　<span class="token operator">=</span> relay<span class="token punctuation">.</span>log
+log<span class="token operator">-</span>slave<span class="token operator">-</span>updates<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>本文参考：</p>
+<p><a target="_blank" rel="noopener" href="https://www.centos.bz/2018/02/mariadb-mysql%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6my-cnf%E8%A7%A3%E8%AF%BB/">mariadb-mysql配置文件my-cnf解读</a></p>
+<p><a target="_blank" rel="noopener" href="http://c.biancheng.net/mysql/">MySQL教程</a></p>
+<p>《曝光：Linux企业运维实战》</p>
+<p>夜法之书 整理编辑 <strong>From:</strong> <a target="_blank" rel="noopener" href="https://www.cnblogs.com/zhangxingeng/p/10882845.html">zhangxingeng</a></p>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
+      <categories>
+        <category>mysql</category>
+      </categories>
+      <tags>
+        <tag>Linux</tag>
+        <tag>Docker</tag>
+        <tag>MySql</tag>
+        <tag>Mariadb</tag>
+        <tag>技巧</tag>
       </tags>
   </entry>
   <entry>
@@ -13936,9 +13936,9 @@ mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h2 id="现场MV">现场MV</h2>
-<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-EGxrVNweSAVUfdVY" src="https://player.bilibili.com/player.html?bvid=BV1B7411p7aD&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-EGxrVNweSAVUfdVY").style.height=document.getElementById("mmedia-EGxrVNweSAVUfdVY").scrollWidth*0.76+"px";
+<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-XcnbwECxfjWDRygx" src="https://player.bilibili.com/player.html?bvid=BV1B7411p7aD&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-XcnbwECxfjWDRygx").style.height=document.getElementById("mmedia-XcnbwECxfjWDRygx").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-EGxrVNweSAVUfdVY").style.height=document.getElementById("mmedia-EGxrVNweSAVUfdVY").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-XcnbwECxfjWDRygx").style.height=document.getElementById("mmedia-XcnbwECxfjWDRygx").scrollWidth*0.76+"px";
     }; </script>
 <blockquote>
 <p>精品分析： 原作：石晶兰 <a target="_blank" rel="noopener" href="https://tieba.baidu.com/p/5313070309?red_tag=2537504175">短文吧</a></p>
@@ -17739,12 +17739,12 @@ usecase usecase
 <li><code>lrc:xxx</code>: （可选）歌词文件 URL #### <em><strong>单曲附带歌词显示</strong></em></li>
 </ul>
 
-        <div id="aplayer-vHQeRAvl" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;">
+        <div id="aplayer-iVrvHvLc" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;">
             <pre class="aplayer-lrc-content"></pre>
         </div>
         <script>
           var ap = new APlayer({
-            element: document.getElementById("aplayer-vHQeRAvl"),
+            element: document.getElementById("aplayer-iVrvHvLc"),
             narrow: false,
             autoplay: false,
             showlrc: 3,
@@ -17792,10 +17792,10 @@ usecase usecase
 {% endaplayerlist %}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 
-        <div id="aplayer-WUpMnhBL" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
+        <div id="aplayer-oQzwExWq" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
 			  <script>
 				  var options = {"narrow":false,"autoplay":true,"showlrc":3,"mode":"random","mutex":true,"theme":"#e6d0b2","preload":"metadata","listmaxheight":"513px","music":[{"title":"Hotel California","author":"Camille and Kennerly","url":"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3","pic":"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp","lrc":"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc"},{"title":"Sold Out","author":"Diamonds","url":"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac","pic":"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg"}]};
-				  options.element = document.getElementById("aplayer-WUpMnhBL");
+				  options.element = document.getElementById("aplayer-oQzwExWq");
 				  var ap = new APlayer(options);
 			    window.aplayers || (window.aplayers = []);
 				  window.aplayers.push(ap);
@@ -18046,11 +18046,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-AWkUVMCfvalXCfpr"></div><script> var AWkUVMCfvalXCfpr_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); AWkUVMCfvalXCfpr_options.container = document.getElementById("mmedia-AWkUVMCfvalXCfpr"); const ap_AWkUVMCfvalXCfpr = new APlayer(AWkUVMCfvalXCfpr_options); </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-SgUPUVKNUQKcTbBB"></div><script> var SgUPUVKNUQKcTbBB_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); SgUPUVKNUQKcTbBB_options.container = document.getElementById("mmedia-SgUPUVKNUQKcTbBB"); const ap_SgUPUVKNUQKcTbBB = new APlayer(SgUPUVKNUQKcTbBB_options); </script>
 
 - **列表**
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-gLhFZqCDadFrhGFc"></div><script> var gLhFZqCDadFrhGFc_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); gLhFZqCDadFrhGFc_options.container = document.getElementById("mmedia-gLhFZqCDadFrhGFc"); const ap_gLhFZqCDadFrhGFc = new APlayer(gLhFZqCDadFrhGFc_options); </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-vMEoOLlhaMUefhRh"></div><script> var vMEoOLlhaMUefhRh_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); vMEoOLlhaMUefhRh_options.container = document.getElementById("mmedia-vMEoOLlhaMUefhRh"); const ap_vMEoOLlhaMUefhRh = new APlayer(vMEoOLlhaMUefhRh_options); </script>
 <p><strong>例子</strong></p>
 <pre class="line-numbers language-none"><code class="language-none">{% mmedias "aplayer" "autoplay:false" %}
 {
@@ -18093,7 +18093,7 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 }
 <span class="token twig language-twig"><span class="token delimiter punctuation">{%</span> <span class="token tag-name keyword">endmmedias</span> <span class="token delimiter punctuation">%}</span></span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <pre class="line-numbers language-none"><code class="language-none">{% mmedia "dplayer" "url:https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4" %}<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<script src="https://cdn.jsdelivr.net/npm/dplayer@1/dist/DPlayer.min.js"></script><div id="mmedia-OMifqtyWUOYZeQwR"></div><script> var OMifqtyWUOYZeQwR_options = JSON.parse('{\"video\":{\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4\"}}'); OMifqtyWUOYZeQwR_options.container = document.getElementById("mmedia-OMifqtyWUOYZeQwR"); const dp_OMifqtyWUOYZeQwR = new DPlayer(OMifqtyWUOYZeQwR_options); </script>
+<script src="https://cdn.jsdelivr.net/npm/dplayer@1/dist/DPlayer.min.js"></script><div id="mmedia-KOlrnWXxSRhNVDcM"></div><script> var KOlrnWXxSRhNVDcM_options = JSON.parse('{\"video\":{\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4\"}}'); KOlrnWXxSRhNVDcM_options.container = document.getElementById("mmedia-KOlrnWXxSRhNVDcM"); const dp_KOlrnWXxSRhNVDcM = new DPlayer(KOlrnWXxSRhNVDcM_options); </script>
 
 <pre class="line-numbers language-none"><code class="language-none">{% mmedias "dplayer" %}
 {
@@ -18122,9 +18122,9 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 mmedia 插件允许在 contents 部分使用 JSON 编写配置，使用 JSON5 标准。
 
-<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-zQOpVlfxSDYVFjZk" src="https://player.bilibili.com/player.html?bvid=BV1fs411S7u7&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-zQOpVlfxSDYVFjZk").style.height=document.getElementById("mmedia-zQOpVlfxSDYVFjZk").scrollWidth*0.76+"px";
+<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-DZvfmoPHfpvGgRku" src="https://player.bilibili.com/player.html?bvid=BV1fs411S7u7&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-DZvfmoPHfpvGgRku").style.height=document.getElementById("mmedia-DZvfmoPHfpvGgRku").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-zQOpVlfxSDYVFjZk").style.height=document.getElementById("mmedia-zQOpVlfxSDYVFjZk").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-DZvfmoPHfpvGgRku").style.height=document.getElementById("mmedia-DZvfmoPHfpvGgRku").scrollWidth*0.76+"px";
     }; </script>
 
 <pre class="line-numbers language-none"><code class="language-none">{% mmedia "bilibili" "bvid:BV1fs411S7u7" %}<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
@@ -18149,9 +18149,9 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，使用 JSON5 �
 | max_width       | 850px                                              | css 属性                                                |
 | margin          | auto                                               | css 属性                                                |
 
-<style>.xgplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="xgplayer"><iframe class="xgplayer" id="mmedia-mfFZVMlQBKrGkeWE" src="https://www.ixigua.com/iframe/6925997698269053453?autoplay=0&amp;startTime=undefined" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-mfFZVMlQBKrGkeWE").style.height=document.getElementById("mmedia-mfFZVMlQBKrGkeWE").scrollWidth*0.7+"px";
+<style>.xgplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="xgplayer"><iframe class="xgplayer" id="mmedia-zxQfyKhmxmwYvKea" src="https://www.ixigua.com/iframe/6925997698269053453?autoplay=0&amp;startTime=undefined" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-zxQfyKhmxmwYvKea").style.height=document.getElementById("mmedia-zxQfyKhmxmwYvKea").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-mfFZVMlQBKrGkeWE").style.height=document.getElementById("mmedia-mfFZVMlQBKrGkeWE").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-zxQfyKhmxmwYvKea").style.height=document.getElementById("mmedia-zxQfyKhmxmwYvKea").scrollWidth*0.7+"px";
     }; </script>
 
 <pre class="line-numbers language-none"><code class="language-none">{% mmedia "xigua" "xid=6925997698269053453" %}<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
@@ -18195,7 +18195,7 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，使用 JSON5 �
 
 <pre class="line-numbers language-none"><code class="language-none">{% mmedia "artplayer" "url:https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4" %}<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
-<script src="https://cdn.jsdelivr.net/npm/artplayer@3/dist/artplayer.js"></script><div id="mmedia-OgwYSpDTYdmMzJnt" style="width:100%;height:650px;max-width:1200px;center"></div><script> var OgwYSpDTYdmMzJnt_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); OgwYSpDTYdmMzJnt_options.container = "#mmedia-OgwYSpDTYdmMzJnt"; const art_OgwYSpDTYdmMzJnt = new Artplayer(OgwYSpDTYdmMzJnt_options); </script>
+<script src="https://cdn.jsdelivr.net/npm/artplayer@3/dist/artplayer.js"></script><div id="mmedia-QFHLfNsPFzliRsbg" style="width:100%;height:650px;max-width:1200px;center"></div><script> var QFHLfNsPFzliRsbg_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); QFHLfNsPFzliRsbg_options.container = "#mmedia-QFHLfNsPFzliRsbg"; const art_QFHLfNsPFzliRsbg = new Artplayer(QFHLfNsPFzliRsbg_options); </script>
 <pre class="line-numbers language-none"><code class="language-none">{% mmedias "artplayer" %}
 {
   url: "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4"
@@ -19317,11 +19317,11 @@ GitBook version: <span class="token number">3.2</span>.3<span aria-hidden="true"
 <blockquote>
 <p>博文页面内插入音乐列表</p>
 </blockquote>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-fRbYyMHMymsLeljp"></div><script> var fRbYyMHMymsLeljp_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); fRbYyMHMymsLeljp_options.container = document.getElementById("mmedia-fRbYyMHMymsLeljp"); const ap_fRbYyMHMymsLeljp = new APlayer(fRbYyMHMymsLeljp_options); </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-difethCpIUNFVJDr"></div><script> var difethCpIUNFVJDr_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); difethCpIUNFVJDr_options.container = document.getElementById("mmedia-difethCpIUNFVJDr"); const ap_difethCpIUNFVJDr = new APlayer(difethCpIUNFVJDr_options); </script>
 
 
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-HQcIvlcDdCPLXdRz"></div><script> var HQcIvlcDdCPLXdRz_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); HQcIvlcDdCPLXdRz_options.container = document.getElementById("mmedia-HQcIvlcDdCPLXdRz"); const ap_HQcIvlcDdCPLXdRz = new APlayer(HQcIvlcDdCPLXdRz_options); </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-CxQSATWYcIZPWURK"></div><script> var CxQSATWYcIZPWURK_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); CxQSATWYcIZPWURK_options.container = document.getElementById("mmedia-CxQSATWYcIZPWURK"); const ap_CxQSATWYcIZPWURK = new APlayer(CxQSATWYcIZPWURK_options); </script>
 <h2 id="单独Aplayer音乐页面">单独Aplayer音乐页面</h2>
 <blockquote>
 <p><strong>直接戳这里 -&gt;</strong> <a href="https://blog.17lai.site/musics/">Musics</a></p>
@@ -19396,6 +19396,162 @@ GitBook version: <span class="token number">3.2</span>.3<span aria-hidden="true"
         <tag>music</tag>
         <tag>mstream</tag>
         <tag>selfhost</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>音乐推荐-曾经我也想过一了百了</title>
+    <url>/posts/8b7d3a9a/</url>
+    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h2 id="现场MV-2">现场MV</h2>
+<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-evzqyXpdkGMCcRPG" src="https://player.bilibili.com/player.html?bvid=BV1b64y1d7pw&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-evzqyXpdkGMCcRPG").style.height=document.getElementById("mmedia-evzqyXpdkGMCcRPG").scrollWidth*0.76+"px";
+    window.onresize = function(){
+      document.getElementById("mmedia-evzqyXpdkGMCcRPG").style.height=document.getElementById("mmedia-evzqyXpdkGMCcRPG").scrollWidth*0.76+"px";
+    }; </script>
+<h2 id="背景介绍">背景介绍</h2>
+<p>《曾经我也想过一了百了》是日本歌手中岛美嘉演唱的歌曲，由秋田弘填词和谱曲、出羽良彰编曲，于2013年8月28日发行，收录在中岛美嘉个人专辑《TOUGH 为爱勇敢》中。该歌曲勾勒出向死而生、努力活着的人，让人感到温暖和希望，让因为压力迷茫无助而有轻生想法的人，开始积极拥抱生活。 《曾经我也想过一了百了》由日本摇滚乐队amazarashi的主唱秋田弘创作，创作理念为“为了描写浓烈的希望，必须先描写深层的黑暗”。2010年，迎来出道十周年的中岛美嘉宣布自己因耳咽管开放症暂停一切音乐活动。在疾病的影响下，歌唱对她而言变得无比艰难。2011年，她携单曲《Dear》复出，但复出后始终经历着状态的起伏和媒体的质疑。 中岛美嘉起先向amazarashi提出合作请求，希望乐队能为自己创作一首节奏明快的歌曲，但随后秋田弘向她播放了乐队一首未发行的样本歌曲，并认为该曲很适合由她来演唱。收到该曲时，中岛美嘉起先感到十分惊讶，但听到最后泪流不止，感到自己的心变得柔和，便立即要求演唱该曲。录制过程中，中岛美嘉将自己的心声融入到了该曲中，希望能将力量传达给低迷苦闷的听众。</p>
+<pre class="line-numbers language-lrc" data-language="lrc"><code class="language-lrc">[00:00.10]僕が死のうと思ったのは (曾经我也想过一了百了) - 中島美嘉 (なかしま みか)
+[00:00.20]词：秋田ひろむ
+[00:00.30]曲：秋田ひろむ
+[00:00.40]编曲：出羽良彰
+[00:27.95]僕が死のうと思ったのは
+[00:33.83]ウミネコが桟橋で鳴いたから
+[00:39.20]波の随意に浮かんで消える
+[00:45.33]過去も啄ばんで飛んでいけ
+[00:50.70]僕が死のうと思ったのは
+[00:56.52]誕生日に杏の花が咲いたから
+[01:02.22]その木漏れ日でうたた寝したら
+[01:08.09]虫の死骸と土になれるかな
+[01:14.09]薄荷飴 漁港の灯台
+[01:17.05]錆びたアーチ橋 捨てた自転車
+[01:19.74]木造の駅のストーブの前で
+[01:22.74]どこにも旅立てない心
+[01:25.61]今日はまるで昨日みたいだ
+[01:28.30]明日を変えるなら今日を変えなきゃ
+[01:31.56]分かってる 分かってる けれど
+[01:39.71]僕が死のうと思ったのは
+[01:44.89]心が空っぽになったから
+[01:50.71]満たされないと泣いているのは
+[01:56.39]きっと満たされたいと願うから
+[02:25.49]僕が死のうと思ったのは
+[02:30.69]靴紐が解けたから
+[02:36.57]結びなおすのは苦手なんだよ
+[02:42.25]人との繋がりもまた然り
+[02:47.90]僕が死のうと思ったのは
+[02:53.65]少年が僕を見つめていたから
+[02:59.30]ベッドの上で土下座してるよ
+[03:05.12]あの日の僕にごめんなさいと
+[03:11.43]パソコンの薄明かり
+[03:14.05]上階の部屋の生活音
+[03:16.80]インターフォンのチャイムの音
+[03:19.80]耳を塞ぐ鳥かごの少年
+[03:22.87]見えない敵と戦ってる
+[03:25.43]六畳一間のドンキホーテ
+[03:28.30]ゴールはどうせ醜いものさ
+[03:36.74]僕が死のうと思ったのは
+[03:42.05]冷たい人と言われたから
+[03:47.94]愛されたいと泣いているのは
+[03:53.63]人の温もりを知ってしまったから
+[04:22.79]僕が死のうと思ったのは
+[04:27.91]あなたが綺麗に笑うから
+[04:33.49]死ぬことばかり考えてしまうのは
+[04:39.62]きっと生きる事に真面目すぎるから
+[04:45.43]僕が死のうと思ったのは
+[04:50.70]まだあなたに出会ってなかったから
+[04:56.51]あなたのような人が生まれた
+[05:02.09]世界を少し好きになったよ
+[05:07.96]あなたのような人が生きてる
+[05:13.65]世界に少し期待するよ<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="中文翻唱">中文翻唱</h2>
+
+        <div id="aplayer-iTTomGTV" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
+			  <script>
+				  var options = {"narrow":false,"autoplay":false,"showlrc":3,"mode":"random","mutex":true,"theme":"#e6d0b2","preload":"metadata","listmaxheight":"513px","music":[{"title":"曾经我也想过一了百了","author":"一么","url":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3","pic":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg","lrc":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc"},{"title":"僕が死のうと思ったのは","author":"中岛美嘉","url":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3","pic":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg","lrc":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc"}]};
+				  options.element = document.getElementById("aplayer-iTTomGTV");
+				  var ap = new APlayer(options);
+			    window.aplayers || (window.aplayers = []);
+				  window.aplayers.push(ap);
+			  </script>
+<pre class="line-numbers language-none"><code class="language-none">[00:02.09]作曲 : 秋田 ひろむ
+[00:02.64]曾经我也想过一了百了
+[00:03.21]原唱：中岛美嘉
+[00:04.46] 
+[00:29.85]曾经我 也想过 一了百了
+[00:34.79]因为看见蜷缩的猫
+[00:37.40]在码头望着远方
+[00:40.40]海浪拍打在岸上
+[00:43.44]一阵又一阵侵踏
+[00:46.22]希望那些过往都消失
+[00:49.38]不再回望
+[00:52.43]曾经我 也想过
+[00:54.82]一了百了
+[00:57.46]是因为生日的那天
+[01:00.10]杏花 又开放
+[01:03.75]阳光灿烂树荫下
+[01:06.41]落花已沉睡安详
+[01:09.84]是否我也 能化作尘土
+[01:12.16]不再流浪
+[01:15.76]仍放抽屉里过期的糖
+[01:18.28]迷路的单车被留在回家路上
+[01:21.27]还有海边抛弃的避风港
+[01:23.88]全都提醒 我和他们一样
+[01:26.75]昨天和今天的画面不断浮现
+[01:29.74]明天 渴望能不能有
+[01:31.54]新的改变
+[01:32.90]不能沮丧 我知道啊
+[01:35.55]可是啊
+[01:40.88]曾经我 也想过 一了百了
+[01:46.24]身边一切都像在问我
+[01:49.19]过得好不好
+[01:52.28]泪不能停止的流
+[01:55.05]流进心底的荒漠
+[01:58.28]这颗心中的模样
+[02:00.17]早空如一具躯壳
+[02:26.84]曾经我 也想过 一了百了
+[02:32.71]因为我的存在
+[02:34.23]总让别人失望
+[02:37.98]不曾拥有就不怕
+[02:40.80]关于人与人的伤
+[02:44.18]这么简单的道理
+[02:45.96]我也只会搞砸
+[02:49.80]曾经我 也想过 一了百了
+[02:55.49]是因为墙上
+[02:56.52]那张骄傲的自画像
+[03:00.96]无力反驳地跪下
+[03:03.66]只说的出一句话
+[03:06.99]生而为人的我
+[03:08.61]真的对不起呀
+[03:12.75]房间里闪烁着荧幕微光
+[03:15.56]伴随着屋外夜色的声音嘈杂
+[03:18.43]电话那头传来窒息的话
+[03:21.28]刺痛在笼中
+[03:22.44]备受折磨的时间啊
+[03:24.25]黑暗中我装备
+[03:25.58]唐吉轲德的毅力
+[03:26.89]对抗看不见的敌人
+[03:28.38]摧毁我的决心
+[03:29.85]不要害怕我知道啊可是啊
+[03:38.04]曾经我也想过一了百了
+[03:44.29]为何人们都说我无可救药
+[03:49.69]不强求能明白我
+[03:52.60]不奢望时间倒流
+[03:55.70]因为很久很久以前我曾爱过
+[04:00.86]曾经我 也想过 一了百了
+[04:06.89]是因为我该那样
+[04:08.43]灿烂那样美好
+[04:12.49]一味消极着过去
+[04:14.95]离去的念头缠绕
+[04:17.29]闭上眼能感受到
+[04:20.04]更好的明天来到
+[04:24.35]茫茫人海中的你
+[04:27.01]泪光中微笑的你
+[04:30.26]在我耳边温柔唱起这首歌曲<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>PS: 数据丢失了一回，折腾了很长时间才重新补回来。</p>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
+      <categories>
+        <category>music</category>
+      </categories>
+      <tags>
+        <tag>music</tag>
+        <tag>中岛美嘉</tag>
       </tags>
   </entry>
   <entry>
@@ -20933,162 +21089,6 @@ hello to data1 volume from ubuntu16.04<span aria-hidden="true" class="line-numbe
         <tag>isp</tag>
         <tag>awb</tag>
         <tag>mywork</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>音乐推荐-曾经我也想过一了百了</title>
-    <url>/posts/8b7d3a9a/</url>
-    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h2 id="现场MV-2">现场MV</h2>
-<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-mCjJAkuObBSAAnvO" src="https://player.bilibili.com/player.html?bvid=BV1b64y1d7pw&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-mCjJAkuObBSAAnvO").style.height=document.getElementById("mmedia-mCjJAkuObBSAAnvO").scrollWidth*0.76+"px";
-    window.onresize = function(){
-      document.getElementById("mmedia-mCjJAkuObBSAAnvO").style.height=document.getElementById("mmedia-mCjJAkuObBSAAnvO").scrollWidth*0.76+"px";
-    }; </script>
-<h2 id="背景介绍">背景介绍</h2>
-<p>《曾经我也想过一了百了》是日本歌手中岛美嘉演唱的歌曲，由秋田弘填词和谱曲、出羽良彰编曲，于2013年8月28日发行，收录在中岛美嘉个人专辑《TOUGH 为爱勇敢》中。该歌曲勾勒出向死而生、努力活着的人，让人感到温暖和希望，让因为压力迷茫无助而有轻生想法的人，开始积极拥抱生活。 《曾经我也想过一了百了》由日本摇滚乐队amazarashi的主唱秋田弘创作，创作理念为“为了描写浓烈的希望，必须先描写深层的黑暗”。2010年，迎来出道十周年的中岛美嘉宣布自己因耳咽管开放症暂停一切音乐活动。在疾病的影响下，歌唱对她而言变得无比艰难。2011年，她携单曲《Dear》复出，但复出后始终经历着状态的起伏和媒体的质疑。 中岛美嘉起先向amazarashi提出合作请求，希望乐队能为自己创作一首节奏明快的歌曲，但随后秋田弘向她播放了乐队一首未发行的样本歌曲，并认为该曲很适合由她来演唱。收到该曲时，中岛美嘉起先感到十分惊讶，但听到最后泪流不止，感到自己的心变得柔和，便立即要求演唱该曲。录制过程中，中岛美嘉将自己的心声融入到了该曲中，希望能将力量传达给低迷苦闷的听众。</p>
-<pre class="line-numbers language-lrc" data-language="lrc"><code class="language-lrc">[00:00.10]僕が死のうと思ったのは (曾经我也想过一了百了) - 中島美嘉 (なかしま みか)
-[00:00.20]词：秋田ひろむ
-[00:00.30]曲：秋田ひろむ
-[00:00.40]编曲：出羽良彰
-[00:27.95]僕が死のうと思ったのは
-[00:33.83]ウミネコが桟橋で鳴いたから
-[00:39.20]波の随意に浮かんで消える
-[00:45.33]過去も啄ばんで飛んでいけ
-[00:50.70]僕が死のうと思ったのは
-[00:56.52]誕生日に杏の花が咲いたから
-[01:02.22]その木漏れ日でうたた寝したら
-[01:08.09]虫の死骸と土になれるかな
-[01:14.09]薄荷飴 漁港の灯台
-[01:17.05]錆びたアーチ橋 捨てた自転車
-[01:19.74]木造の駅のストーブの前で
-[01:22.74]どこにも旅立てない心
-[01:25.61]今日はまるで昨日みたいだ
-[01:28.30]明日を変えるなら今日を変えなきゃ
-[01:31.56]分かってる 分かってる けれど
-[01:39.71]僕が死のうと思ったのは
-[01:44.89]心が空っぽになったから
-[01:50.71]満たされないと泣いているのは
-[01:56.39]きっと満たされたいと願うから
-[02:25.49]僕が死のうと思ったのは
-[02:30.69]靴紐が解けたから
-[02:36.57]結びなおすのは苦手なんだよ
-[02:42.25]人との繋がりもまた然り
-[02:47.90]僕が死のうと思ったのは
-[02:53.65]少年が僕を見つめていたから
-[02:59.30]ベッドの上で土下座してるよ
-[03:05.12]あの日の僕にごめんなさいと
-[03:11.43]パソコンの薄明かり
-[03:14.05]上階の部屋の生活音
-[03:16.80]インターフォンのチャイムの音
-[03:19.80]耳を塞ぐ鳥かごの少年
-[03:22.87]見えない敵と戦ってる
-[03:25.43]六畳一間のドンキホーテ
-[03:28.30]ゴールはどうせ醜いものさ
-[03:36.74]僕が死のうと思ったのは
-[03:42.05]冷たい人と言われたから
-[03:47.94]愛されたいと泣いているのは
-[03:53.63]人の温もりを知ってしまったから
-[04:22.79]僕が死のうと思ったのは
-[04:27.91]あなたが綺麗に笑うから
-[04:33.49]死ぬことばかり考えてしまうのは
-[04:39.62]きっと生きる事に真面目すぎるから
-[04:45.43]僕が死のうと思ったのは
-[04:50.70]まだあなたに出会ってなかったから
-[04:56.51]あなたのような人が生まれた
-[05:02.09]世界を少し好きになったよ
-[05:07.96]あなたのような人が生きてる
-[05:13.65]世界に少し期待するよ<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="中文翻唱">中文翻唱</h2>
-
-        <div id="aplayer-VuYDjDfR" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
-			  <script>
-				  var options = {"narrow":false,"autoplay":false,"showlrc":3,"mode":"random","mutex":true,"theme":"#e6d0b2","preload":"metadata","listmaxheight":"513px","music":[{"title":"曾经我也想过一了百了","author":"一么","url":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3","pic":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg","lrc":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc"},{"title":"僕が死のうと思ったのは","author":"中岛美嘉","url":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3","pic":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg","lrc":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc"}]};
-				  options.element = document.getElementById("aplayer-VuYDjDfR");
-				  var ap = new APlayer(options);
-			    window.aplayers || (window.aplayers = []);
-				  window.aplayers.push(ap);
-			  </script>
-<pre class="line-numbers language-none"><code class="language-none">[00:02.09]作曲 : 秋田 ひろむ
-[00:02.64]曾经我也想过一了百了
-[00:03.21]原唱：中岛美嘉
-[00:04.46] 
-[00:29.85]曾经我 也想过 一了百了
-[00:34.79]因为看见蜷缩的猫
-[00:37.40]在码头望着远方
-[00:40.40]海浪拍打在岸上
-[00:43.44]一阵又一阵侵踏
-[00:46.22]希望那些过往都消失
-[00:49.38]不再回望
-[00:52.43]曾经我 也想过
-[00:54.82]一了百了
-[00:57.46]是因为生日的那天
-[01:00.10]杏花 又开放
-[01:03.75]阳光灿烂树荫下
-[01:06.41]落花已沉睡安详
-[01:09.84]是否我也 能化作尘土
-[01:12.16]不再流浪
-[01:15.76]仍放抽屉里过期的糖
-[01:18.28]迷路的单车被留在回家路上
-[01:21.27]还有海边抛弃的避风港
-[01:23.88]全都提醒 我和他们一样
-[01:26.75]昨天和今天的画面不断浮现
-[01:29.74]明天 渴望能不能有
-[01:31.54]新的改变
-[01:32.90]不能沮丧 我知道啊
-[01:35.55]可是啊
-[01:40.88]曾经我 也想过 一了百了
-[01:46.24]身边一切都像在问我
-[01:49.19]过得好不好
-[01:52.28]泪不能停止的流
-[01:55.05]流进心底的荒漠
-[01:58.28]这颗心中的模样
-[02:00.17]早空如一具躯壳
-[02:26.84]曾经我 也想过 一了百了
-[02:32.71]因为我的存在
-[02:34.23]总让别人失望
-[02:37.98]不曾拥有就不怕
-[02:40.80]关于人与人的伤
-[02:44.18]这么简单的道理
-[02:45.96]我也只会搞砸
-[02:49.80]曾经我 也想过 一了百了
-[02:55.49]是因为墙上
-[02:56.52]那张骄傲的自画像
-[03:00.96]无力反驳地跪下
-[03:03.66]只说的出一句话
-[03:06.99]生而为人的我
-[03:08.61]真的对不起呀
-[03:12.75]房间里闪烁着荧幕微光
-[03:15.56]伴随着屋外夜色的声音嘈杂
-[03:18.43]电话那头传来窒息的话
-[03:21.28]刺痛在笼中
-[03:22.44]备受折磨的时间啊
-[03:24.25]黑暗中我装备
-[03:25.58]唐吉轲德的毅力
-[03:26.89]对抗看不见的敌人
-[03:28.38]摧毁我的决心
-[03:29.85]不要害怕我知道啊可是啊
-[03:38.04]曾经我也想过一了百了
-[03:44.29]为何人们都说我无可救药
-[03:49.69]不强求能明白我
-[03:52.60]不奢望时间倒流
-[03:55.70]因为很久很久以前我曾爱过
-[04:00.86]曾经我 也想过 一了百了
-[04:06.89]是因为我该那样
-[04:08.43]灿烂那样美好
-[04:12.49]一味消极着过去
-[04:14.95]离去的念头缠绕
-[04:17.29]闭上眼能感受到
-[04:20.04]更好的明天来到
-[04:24.35]茫茫人海中的你
-[04:27.01]泪光中微笑的你
-[04:30.26]在我耳边温柔唱起这首歌曲<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>PS: 数据丢失了一回，折腾了很长时间才重新补回来。</p>
-<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
-      <categories>
-        <category>music</category>
-      </categories>
-      <tags>
-        <tag>music</tag>
-        <tag>中岛美嘉</tag>
       </tags>
   </entry>
 </search>
