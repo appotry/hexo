@@ -145,9 +145,368 @@ html可以随意使用html标签，可以使用liquid模板语言，侧重于页
       </tags>
   </entry>
   <entry>
-    <title></title>
-    <url>/posts/0/</url>
-    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script>]]></content>
+    <title>Gitlab的安装及使用</title>
+    <url>/posts/d08eb7b/</url>
+    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h2 id="Gitlab概述">Gitlab概述</h2>
+<h3 id="1-1-GitLab介绍-2">1.1 GitLab介绍</h3>
+<p>GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。</p>
+<p>GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。</p>
+<p>它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找</p>
+<h3 id="1-2-Gitlab服务构成-2">1.2 Gitlab服务构成</h3>
+<ul>
+<li>
+<p>Nginx：静态web服务器。</p>
+</li>
+<li>
+<p>gitlab-shell：用于处理Git命令和修改authorized keys列表。</p>
+</li>
+<li>
+<p>gitlab-workhorse: 轻量级的反向代理服务器。</p>
+</li>
+<li>
+<p>logrotate：日志文件管理工具。</p>
+</li>
+<li>
+<p>postgresql：数据库。</p>
+</li>
+<li>
+<p>redis：缓存数据库。</p>
+</li>
+<li>
+<p>sidekiq：用于在后台执行队列任务（异步执行）。</p>
+</li>
+<li>
+<p>unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。</p>
+</li>
+</ul>
+<h3 id="1-3-Gitlab工作流程-2">1.3 Gitlab工作流程</h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222044.png" alt=""></p>
+<h3 id="1-4-GitLab-Shell-2">1.4 GitLab Shell</h3>
+<p>GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表</p>
+<p>当通过SSH访问GitLab Server时，GitLab Shell会：</p>
+<ul>
+<li>限制执行预定义好的Git命令（git push，git pull，git annex）</li>
+<li>调用GitLab Rails API检查权限</li>
+<li>执行pre-receive钩子（在企业版中叫做Git钩子）</li>
+<li>执行用户请求的动作，处理GitLab的post-receive动作</li>
+<li>处理自定义的post-receive动作</li>
+</ul>
+<p>当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：</p>
+<p>如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作</p>
+<p>如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：</p>
+<ul>
+<li>调用GitLab Rails API 检查权限</li>
+<li>执行pre-receive钩子（在GitLab企业版中叫做Git钩子）</li>
+<li>执行你请求的动作</li>
+<li>处理GitLab的post-receive动作</li>
+<li>处理自定义的post-receive动作</li>
+</ul>
+<h3 id="1-5-GitLab-Workhorse-2">1.5 GitLab Workhorse</h3>
+<p>GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。</p>
+<h2 id="Gitlab的安装部署">Gitlab的安装部署</h2>
+<hr>
+<ul>
+<li>Gitlab要求服务器内存2G以上</li>
+</ul>
+<h3 id="2-1-方式一-下载gitlab-ce的rpm包-2">2.1 方式一:下载gitlab-ce的rpm包</h3>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://packages.gitlab.com/gitlab/gitlab-ce">gitlab官方rpm包下载</a></li>
+<li><a target="_blank" rel="noopener" href="https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/">清华的源</a></li>
+</ul>
+<p>将对应版本的gitlab-ce下载到本地后，直接yum安装即可</p>
+<h4 id="要先将这个rpm包下载到本地">要先将这个rpm包下载到本地</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h3 id="2-2-方式二-配置yum源-2">2.2 方式二:配置yum源</h3>
+<p>在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：</p>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby"><span class="token punctuation">[</span>gitlab<span class="token operator">-</span>ce<span class="token punctuation">]</span>
+name<span class="token operator">=</span>gitlab<span class="token operator">-</span>ce
+baseurl<span class="token operator">=</span>https<span class="token operator">:</span><span class="token operator">/</span><span class="token operator">/</span>mirrors<span class="token punctuation">.</span>tuna<span class="token punctuation">.</span>tsinghua<span class="token punctuation">.</span>edu<span class="token punctuation">.</span>cn<span class="token operator">/</span>gitlab<span class="token operator">-</span>ce<span class="token operator">/</span>yum<span class="token operator">/</span>el7<span class="token operator">/</span> Repo_gpgcheck<span class="token operator">=</span><span class="token number">0</span>
+Enabled<span class="token operator">=</span><span class="token number">1</span> Gpgkey<span class="token operator">=</span>https<span class="token operator">:</span><span class="token operator">/</span><span class="token operator">/</span>packages<span class="token punctuation">.</span>gitlab<span class="token punctuation">.</span>com<span class="token operator">/</span>gpg<span class="token punctuation">.</span>key<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>然后创建cache，再直接安装gitlab-ce</p>
+<p>yum makecache  # 这一步会创建大量的数据</p>
+<h4 id="直接安装最新版">直接安装最新版</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y gitlab-ce <span class="token comment"># 如果要安装指定的版本，在后面填上版本号即可</span>
+yum <span class="token function">install</span> -y  gitlab-ce-13.6.1<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h4 id="如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证">如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> gitlab-ce -y --nogpgcheck<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h3 id="2-3-gitlab的配置-2">2.3 gitlab的配置</h3>
+<p>配置文件位置  /etc/gitlab/gitlab.rb</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">[</span>root@centos7 test<span class="token punctuation">]</span><span class="token comment"># vim /etc/gitlab/gitlab.rb</span>
+<span class="token punctuation">[</span>root@centos7 test<span class="token punctuation">]</span><span class="token comment"># grep "^[a-Z]" /etc/gitlab/gitlab.rb</span>
+external_url <span class="token string">'http://10.0.0.51'</span>  <span class="token comment"># 这里一定要加上http://</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<h4 id="配置邮件服务">配置邮件服务</h4>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_enable'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_address'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">"smtp.qq.com"</span></span> gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_port'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">25</span> gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_user_name'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">"hgzerowzh@qq.com"</span></span>  <span class="token comment"># 自己的qq邮箱账号</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_password'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">"xxx"</span></span>  <span class="token comment"># 开通smtp时返回的授权码</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_domain'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">"qq.com"</span></span> gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_authentication'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">"login"</span></span> gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_enable_starttls_auto'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_tls'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">false</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'gitlab_email_from'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">"hgzerowzh@qq.com"</span></span>  <span class="token comment"># 指定发送邮件的邮箱地址</span>
+user<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">"git_user_email"</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">"shit@qq.com"</span></span>   <span class="token comment"># 指定接收邮件的邮箱地址</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p><strong>修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。</strong></p>
+<pre class="line-numbers language-none"><code class="language-none">gitlab-ctl reconfigure # 重载配置文件<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h3 id="2-4-Gitlab常用命令-2">2.4 Gitlab常用命令</h3>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab<span class="token operator">-</span>ctl start         <span class="token comment"># 启动所有 gitlab 组件</span>
+gitlab<span class="token operator">-</span>ctl stop          <span class="token comment"># 停止所有 gitlab 组件</span>
+gitlab<span class="token operator">-</span>ctl restart       <span class="token comment"># 重启所有 gitlab 组件</span>
+gitlab<span class="token operator">-</span>ctl status        <span class="token comment"># 查看服务状态</span>
+gitlab<span class="token operator">-</span>ctl reconfigure   <span class="token comment"># 启动服务</span>
+gitlab<span class="token operator">-</span>ctl show<span class="token operator">-</span>config   <span class="token comment"># 验证配置文件</span>
+gitlab<span class="token operator">-</span>ctl tail          <span class="token comment"># 查看日志</span>
+gitlab<span class="token operator">-</span>rake gitlab<span class="token symbol">:check</span> <span class="token constant">SANITIZE</span><span class="token operator">=</span><span class="token boolean">true</span> <span class="token operator">-</span><span class="token operator">-</span>trace    <span class="token comment"># 检查gitlab</span>
+vim <span class="token operator">/</span>etc<span class="token operator">/</span>gitlab<span class="token operator">/</span>gitlab<span class="token punctuation">.</span>rb <span class="token comment"># 修改默认的配置文件</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="Gitlab的使用">Gitlab的使用</h2>
+<hr>
+<ul>
+<li>Gitlab安装好后，设置密码，管理账户为root</li>
+</ul>
+<h3 id="3-1-创建Group-2"><strong>3.1 创建Group</strong></h3>
+<ul>
+<li>填上组名即可，这里组名为java</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222105.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211347.png" alt=""></p>
+<h3 id="3-2-创建User-2"><strong>3.2 创建User</strong></h3>
+<ul>
+<li>创建四个User：pm、dev1、dev2、dev3</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222131.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222120.png" alt=""></p>
+<h3 id="3-3-添加User到Group中并授权-2"><strong>3.3 添加User到Group中并授权</strong></h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222140.png" alt=""></p>
+<h3 id="3-4-创建Project并配置SSH-2"><strong>3.4 创建Project并配置SSH</strong></h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222147.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222154.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222201.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222233.png" alt=""></p>
+<h3 id="3-5-在项目中添加成员-2"><strong>3.5 在项目中添加成员</strong></h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211335.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211726.png" alt=""></p>
+<h3 id="3-6-将本地文件推送到Gitlab-2">3.6 将本地文件推送到Gitlab</h3>
+<h4 id="将app01项目克隆下来">将app01项目克隆下来</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> clone git@10.0.0.51:java/app01.git <span class="token comment"># 初始化配置</span>
+<span class="token function">git</span> config --global user.name <span class="token string">"hgzero"</span> <span class="token function">git</span> config --global user.email <span class="token string">"hgzero@qq.com"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h4 id="在app01目录下新建一些文件">在app01目录下新建一些文件</h4>
+<h4 id="推送到gitlab">推送到gitlab</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> <span class="token function">add</span> <span class="token builtin class-name">.</span>
+<span class="token function">git</span> commit -m <span class="token string">"first edition"</span> <span class="token function">git</span> push origin master<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211546.png" alt=""></p>
+<ol start="4">
+<li>制定开发计划</li>
+</ol>
+<hr>
+<h3 id="4-1-创建开发计划-2"><strong>4.1 创建开发计划</strong></h3>
+<ul>
+<li>项目：app01</li>
+<li>版本：v1.0</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211325.png" alt=""></p>
+<h3 id="4-2-创建里程碑Milestones-2"><strong>4.2 创建里程碑Milestones</strong></h3>
+<ul>
+<li>用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）</li>
+<li>要根据开发计划来创建Milestones</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211538.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211719.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211315.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211303.png" alt=""></p>
+<h3 id="4-3-根据开发计划创建issue-2">4.3 根据开发计划创建issue</h3>
+<ul>
+<li>创建4个issue，分派给dev1和dev2这两个开发人员</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211529.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211304.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211711.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211520.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211514.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211252.png" alt=""></p>
+<h3 id="4-4-开发者登录账号查看分派的任务-2">**4.4 开发者登录账号查看分派的任务 **</h3>
+<ul>
+<li>然后开发dev1登录gitlab，就能看到任务已经分配过来了</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211513.png" alt=""></p>
+<h3 id="4-5-开发流程-2"><strong>4.5 开发流程</strong></h3>
+<ul>
+<li>公司里的开发开始任务</li>
+</ul>
+<h4 id="1-先从仓库把项目拉下来">1. 先从仓库把项目拉下来</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> clone git@10.0.0.51:java/app01.git
+<span class="token builtin class-name">cd</span> app01/<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h4 id="2-先创建一个自己的分支，然后进行开发">2.先创建一个自己的分支，然后进行开发</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> checkout -b index   <span class="token comment"># 创建一个叫index的分支，并切换到这个分支</span>
+<span class="token function">git</span> status <span class="token comment"># 3. 开始开发首页</span>
+<span class="token builtin class-name">echo</span> <span class="token string">"&lt;h1&gt;welcome to this app&lt;/h1&gt;"</span> <span class="token operator">&gt;</span> index.html  <span class="token comment"># 假设就开发了一个index页面</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<h2 id="4-开发完成后，把项目传到仓库">4. 开发完成后，把项目传到仓库</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> <span class="token function">add</span> <span class="token builtin class-name">.</span>
+<span class="token function">git</span> commit -m <span class="token string">"index"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h4 id="如果写成-git-commit-m-close-2-，则表示merge请求允许且merge成功之后，自动删除编号为-2的issue">如果写成 git commit -m "close #2" ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue</h4>
+<h4 id="传到index分支">传到index分支</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> push origin index<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h3 id="4-6-合并分支-2"><strong>4.6 合并分支</strong></h3>
+<p><strong>1）开发dev1发送合并分支请求给pm</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211242.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211503.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211701.png" alt=""></p>
+<p><strong>2）pm收到开发的Merge请求后进行处理</strong></p>
+<ul>
+<li>使用pm登录，就可以看到pm已经收到了合并请求merge request</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211231.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211502.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211647.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211221.png" alt=""></p>
+<p><strong>3）开发dev1确认任务完成</strong></p>
+<ul>
+<li>退出pm账户，登入dev1账户：</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211220.png" alt=""></p>
+<ul>
+<li>或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211454.png" alt=""></p>
+<ul>
+<li>这个时候Milestones的进度已经往前进了一些了：</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211446.png" alt=""></p>
+<h3 id="4-7-开发其他功能-2">4.7 开发其他功能</h3>
+<ul>
+<li>然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发</li>
+</ul>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> checkout master  <span class="token comment"># 切换到master</span>
+<span class="token function">git</span> pull             <span class="token comment"># 从远端仓库拉取数据</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>然后再进行其他操作</p>
+<h2 id="Gitlab备份恢复">Gitlab备份恢复</h2>
+<hr>
+<h3 id="5-1-备份gitlab-2">5.1 备份gitlab</h3>
+<p><strong>1）修改配置文件</strong></p>
+<ul>
+<li><strong>/etc/gitlab/gitlab.rb</strong></li>
+</ul>
+<h4 id="备份保存的位置，这里是默认位置，可修改成指定的位置">备份保存的位置，这里是默认位置，可修改成指定的位置</h4>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'backup_path'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">"/var/opt/gitlab/backups"</span></span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h4 id="设置备份保存的时间，超过此时间的日志将会被新覆盖">设置备份保存的时间，超过此时间的日志将会被新覆盖</h4>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'backup_keep_time'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">604800</span>  <span class="token comment"># 这里是默认设置，保存7天</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h4 id="特别注意：-如果自定义了备份保存位置，则要修改备份目录的权限，比如：-chown-R-git-git-data-backup-gitlab">特别注意： # 如果自定义了备份保存位置，则要修改备份目录的权限，比如： # chown -R git.git /data/backup/gitlab</h4>
+<ul>
+<li>配置完成后要重启以使配置生效</li>
+</ul>
+<h4 id="重读配置文件">重读配置文件</h4>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab<span class="token operator">-</span>ctl reconfigure <span class="token comment"># 重启gitlab</span>
+gitlab<span class="token operator">-</span>ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p><strong>2）设置定时任务</strong></p>
+<h4 id="每天凌晨2点定时创建备份-将一下内容写入到定时任务中-crontab-e">每天凌晨2点定时创建备份 # 将一下内容写入到定时任务中 crontab -e</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token number">0</span> <span class="token number">2</span> * * * /usr/bin/gitlab-rake gitlab:backup:create <span class="token comment"># 备份策略建议： # 本地保留3到7天，在异地备份永久保存</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><strong>3）备份时间的识别</strong></p>
+<h4 id="备份后的文件类似这样的形式：1494170842-gitlab-backup-tar，可以根据前面的时间戳确认备份生成的时间">备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">data -d  @1494170842<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h3 id="5-2-恢复gitlab-2">5.2 恢复gitlab</h3>
+<p><strong>1）停止数据写入服务</strong></p>
+<h4 id="停止数据写入服务">停止数据写入服务</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl stop unicorn
+gitlab-ctl stop sidekiq<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p><strong>2）进行数据恢复并重启</strong></p>
+<h4 id="进行恢复">进行恢复</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rake gitlab:backup:restore <span class="token assign-left variable">BACKUP</span><span class="token operator">=</span><span class="token number">1494170842</span>  <span class="token comment"># 这个时间戳就是刚刚备份的文件前面的时间戳</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h4 id="重启">重启</h4>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab<span class="token operator">-</span>ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h2 id="gitlab邮件通知配置">gitlab邮件通知配置</h2>
+<hr>
+<ul>
+<li>vim  /etc/gitlab/gitlab.rb</li>
+</ul>
+<pre class="line-numbers language-ruby" data-language="ruby"><code class="language-ruby">gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'time_zone'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">'Asia/Shanghai'</span></span> gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'gitlab_email_enabled'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'gitlab_email_from'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">'example@163.com'</span></span> <span class="token comment"># 填写发件人的邮箱地址</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'gitlab_email_display_name'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">'gitlab'</span></span> gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_enable'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_address'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">"smtp.163.com"</span></span>  <span class="token comment"># smtp服务器的地址,如网易的地址</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_port'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">25</span>                 <span class="token comment"># 要注意如果使用了SSL/TLS的话,端口可能不是25</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_user_name'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">"smtp用户名"</span></span> gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_password'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">"smtp用户密码"</span></span> gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_domain'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">"163.com"</span></span> gitlab_rails<span class="token punctuation">[</span><span class="token string-literal"><span class="token string">'smtp_authentication'</span></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string-literal"><span class="token string">"login"</span></span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<ol start="7">
+<li>
+<h2 id="使用SourceTree进行项目开发">使用SourceTree进行项目开发</h2>
+</li>
+</ol>
+<hr>
+<h3 id="7-1-项目拉取-2">7.1 项目拉取</h3>
+<ul>
+<li>先把项目克隆下来</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211633.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211438.png" alt=""></p>
+<ul>
+<li>如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211211.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211201.png" alt=""></p>
+<h3 id="7-2-创建分支进行功能开发-2">7.2 创建分支进行功能开发</h3>
+<p><strong>1）新建立一个叫“pay”的分支</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211618.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211430.png" alt=""></p>
+<p><strong>2）进行功能开发</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211152.png" alt=""></p>
+<h3 id="7-3-提交项目-2">7.3 提交项目</h3>
+<p><strong>1）开发pay功能完成后进行提交</strong></p>
+<ul>
+<li>可以看到SourceTree中已经有“未提交的更改”</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211422.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211144.png" alt=""></p>
+<p><strong>2）添加“用户信息”</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211143.png" alt=""></p>
+<p>** 3）进行提交**</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211415.png" alt=""></p>
+<ul>
+<li>注释也可以写成  close #3    ，作用是提交完成后关闭3号issue</li>
+</ul>
+<h3 id="7-4-推送到仓库-2"><strong>7.4 推送到仓库</strong></h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211136.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211407.png" alt=""></p>
+<ul>
+<li>然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了</li>
+</ul>
+<h3 id="7-5-项目上线-2">7.5 项目上线</h3>
+<p><strong>1）当所有工作完成之后，就可以进行上线了</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211135.png" alt=""></p>
+<p><strong>2）打标签</strong></p>
+<ul>
+<li>上线先打个标签</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211127.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1320210913211124.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528225256.png" alt=""></p>
+<p>** 3）删除无用分支**</p>
+<ul>
+<li>然后删除已经合并到主干中的不必要的分支，如index、pay等</li>
+<li>最后一定要注意时间一定要同步，不然会错乱</li>
+</ul>
+<h2 id="参考-2">参考</h2>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/hgzero/p/14088215.html">Praywu</a></li>
+</ul>
+<h2 id="Gitlab-使用系列">Gitlab 使用系列</h2>
+<blockquote>
+<ul>
+<li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
+<li><a href="https://blog.17lai.site/posts/29a820b3/">破解Gitlab EE</a></li>
+<li><a href="https://blog.17lai.site/posts/d08eb7b/">Gitlab的安装及使用</a></li>
+<li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
+</ul>
+</blockquote>
+<h2 id="系列教程"><strong>系列教程</strong></h2>
+<p><strong>Gitlab 使用系列</strong></p>
+<ul>
+<li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
+<li><a href="https://blog.17lai.site/posts/29a820b3/">破解Gitlab EE</a></li>
+<li><a href="https://blog.17lai.site/posts/d08eb7b/">Gitlab的安装及使用</a></li>
+<li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
+</ul>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
+      <categories>
+        <category>gitlab</category>
+      </categories>
+      <tags>
+        <tag>Gitlab</tag>
+        <tag>Git</tag>
+        <tag>Crack</tag>
+      </tags>
   </entry>
   <entry>
     <title>PT 工具集，Linux硬链接助手</title>
@@ -389,7 +748,7 @@ puts <span class="token string-literal"><span class="token string">"This instanc
   <span class="token keyword">def</span> <span class="token method-definition"><span class="token function">edition</span></span>
  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>修改完成后使用 <code>gitlab-ctl restart</code> 重新加载配置。</p>
-<h2 id="Gitlab-使用系列">Gitlab 使用系列</h2>
+<h2 id="Gitlab-使用系列-2">Gitlab 使用系列</h2>
 <blockquote>
 <ul>
 <li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
@@ -398,20 +757,18 @@ puts <span class="token string-literal"><span class="token string">"This instanc
 <li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
 </ul>
 </blockquote>
-<h2 id="参考-2"><strong>参考</strong></h2>
+<h2 id="参考-3"><strong>参考</strong></h2>
 <ul>
 <li><a target="_blank" rel="noopener" href="https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md">https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md</a></li>
 </ul>
-<h2 id="系列教程"><strong>系列教程</strong></h2>
-<h3 id="Gitlab-使用系列-2">Gitlab 使用系列</h3>
-<blockquote>
+<h2 id="系列教程-2"><strong>系列教程</strong></h2>
+<p><strong>Gitlab 使用系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
 <li><a href="https://blog.17lai.site/posts/29a820b3/">破解Gitlab EE</a></li>
 <li><a href="https://blog.17lai.site/posts/d08eb7b/">Gitlab的安装及使用</a></li>
 <li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
 </ul>
-</blockquote>
 <link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
       <categories>
         <category>gitlab</category>
@@ -564,8 +921,8 @@ $ joplin use <span class="token string">"My-Project"</span><span aria-hidden="tr
 <h2 id="Snipaste截图工具">Snipaste截图工具</h2>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/07/2520210725224605.png" alt=""></p>
 <p><a target="_blank" rel="noopener" href="https://www.snipaste.com/download.html">Snipaste官方下载地址</a></p>
-<h2 id="系列教程-10"><strong>系列教程</strong></h2>
-<h3 id="笔记系列-8"><strong>笔记系列</strong></h3>
+<h2 id="系列教程-8"><strong>系列教程</strong></h2>
+<p><strong>笔记系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
 </ul>
@@ -614,7 +971,7 @@ $ joplin use <span class="token string">"My-Project"</span><span aria-hidden="tr
 <li>其实博主更推荐私有部署joplin</li>
 </ul>
 </blockquote>
-<h3 id="Gitbook使用系列-7"><strong>Gitbook使用系列</strong></h3>
+<p><strong>Gitbook使用系列</strong></p>
 <ul>
 <li>
 <p><a href="https://blog.17lai.site/posts/7fe86002/">GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</a></p>
@@ -626,20 +983,16 @@ $ joplin use <span class="token string">"My-Project"</span><span aria-hidden="tr
 <p><a href="https://blog.17lai.site/posts/d6bad1e5/">自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</a></p>
 </li>
 </ul>
-<h3 id="Gitlab-使用系列-10">Gitlab 使用系列</h3>
-<blockquote>
+<p><strong>Gitlab 使用系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
 <li><a href="https://blog.17lai.site/posts/29a820b3/">破解Gitlab EE</a></li>
 <li><a href="https://blog.17lai.site/posts/d08eb7b/">Gitlab的安装及使用</a></li>
 <li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
 </ul>
-</blockquote>
-<h3 id="hexo系列-5"><strong>hexo系列</strong></h3>
+<p><strong>hexo系列</strong></p>
 <ul>
-<li>
-<h4 id="hexo-独立博客搭建-三万字教程-基于Hexo的matery主题搭建博客并深度优化-5">hexo 独立博客搭建 <a href="https://blog.17lai.site/posts/40300608/">[三万字教程]基于Hexo的matery主题搭建博客并深度优化</a></h4>
-</li>
+<li>hexo 独立博客搭建 <a href="https://blog.17lai.site/posts/40300608/">[三万字教程]基于Hexo的matery主题搭建博客并深度优化</a></li>
 </ul>
 <blockquote>
 <ul>
@@ -1939,9 +2292,195 @@ HI_DRV_FILE_Lseek
       </tags>
   </entry>
   <entry>
-    <title></title>
-    <url>/posts/0/</url>
-    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script>]]></content>
+    <title>宝塔linux面板重启、重置等命令整合</title>
+    <url>/posts/7b4e434c/</url>
+    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h2 id="宝塔linux面板重启、重置等命令整合">宝塔linux面板重启、重置等命令整合</h2>
+<p>宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。</p>
+<p>来源于网络，原作已经不可考据，整理更新到目前最新版。</p>
+<p>现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、<br>
+但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦</p>
+<h2 id="Linux面板7-6-0安装命令："><strong>Linux面板7.6.0安装命令：</strong></h2>
+<h3 id="Centos安装命令："><strong>Centos安装命令：</strong></h3>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y <span class="token function">wget</span> <span class="token operator">&amp;&amp;</span> <span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">sh</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><em>复制代码</em></p>
+<p><a target="_blank" rel="noopener" href="https://www.bt.cn/offline">咨询离线安装版本</a></p>
+<p><strong>试验性Centos/Ubuntu/Debian安装命令</strong> <strong>独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中</strong></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">curl</span> -sSO http://download.bt.cn/install/install_panel.sh <span class="token operator">&amp;&amp;</span> <span class="token function">bash</span> install_panel.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><em>复制代码</em></p>
+<h3 id="Ubuntu-Deepin安装命令："><strong>Ubuntu/Deepin安装命令：</strong></h3>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">sudo</span> <span class="token function">bash</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><em>复制代码</em></p>
+<h3 id="Debian安装命令："><strong>Debian安装命令：</strong></h3>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">bash</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><em>复制代码</em></p>
+<h3 id="Fedora安装命令"><strong>Fedora安装命令:</strong></h3>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -O install.sh http://download.bt.cn/install/install_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">bash</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><em>复制代码</em></p>
+<p>**<br>
+**Linux面板7.6.0升级命令：**curl http://download.bt.cn/install/update6.sh|bash<em>复制代码</em></p>
+<p>以上节点无法使用的情况下，请使用下面的备用节点：<br>
+**</p>
+<h3 id="备用节点【香港】："><strong>备用节点【香港】：</strong></h3>
+<p><strong>（宝塔推荐使用CN2 双程GIA高品质，免备案的</strong><a target="_blank" rel="noopener" href="https://www.zun.com/server/buy.html?lineid=1671157323431053"><strong>尊云zun.com</strong></a><strong>香港云服务器安装）</strong></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> -y <span class="token function">wget</span> <span class="token operator">&amp;&amp;</span> <span class="token function">wget</span> -O install.sh http://103.224.251.67:5880/install/install_6.0.sh <span class="token operator">&amp;&amp;</span> <span class="token function">sh</span> install.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h2 id="管理宝塔">管理宝塔</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#停止</span>
+/etc/init.d/bt stop
+<span class="token comment">#启动</span>
+/etc/init.d/bt start
+<span class="token comment">#重启</span>
+/etc/init.d/bt restart
+<span class="token comment">#卸载</span>
+/etc/init.d/bt stop <span class="token operator">&amp;&amp;</span> <span class="token function">chkconfig</span> --del bt <span class="token operator">&amp;&amp;</span> <span class="token function">rm</span> -f /etc/init.d/bt <span class="token operator">&amp;&amp;</span> <span class="token function">rm</span> -rf /www/server/panel
+<span class="token comment">#查看当前面板端口</span>
+<span class="token function">cat</span> /www/server/panel/data/port.pl
+<span class="token comment">#修改面板端口，如要改成8881（centos 6  系统）</span>
+<span class="token builtin class-name">echo</span> <span class="token string">'8881'</span>  <span class="token operator">&gt;</span>  /www/server/panel/data/port.pl <span class="token operator">&amp;&amp;</span>  /etc/init.d/bt restart
+iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport <span class="token number">8881</span>  -j ACCEPT
+<span class="token function">service</span> iptables save
+<span class="token function">service</span> iptables restart
+<span class="token comment">#修改面板端口，如要改成8881（centos 7  系统）</span>
+<span class="token builtin class-name">echo</span> <span class="token string">'8881'</span>  <span class="token operator">&gt;</span>  /www/server/panel/data/port.pl <span class="token operator">&amp;&amp;</span>  /etc/init.d/bt restart
+firewall-cmd --permanent --zone<span class="token operator">=</span>public  --add-port<span class="token operator">=</span><span class="token number">8881</span>/tcp
+firewall-cmd --reload
+<span class="token comment">#强制修改MySQL管理(root)密码，如要改成123456</span>
+<span class="token builtin class-name">cd</span> /www/server/panel <span class="token operator">&amp;&amp;</span> python tools.pyc root <span class="token number">123456</span>
+<span class="token comment">#修改面板密码，如要改成123456</span>
+<span class="token builtin class-name">cd</span> /www/server/panel <span class="token operator">&amp;&amp;</span> python tools.pyc panel <span class="token number">123456</span>
+<span class="token comment">#查看宝塔日志</span>
+<span class="token function">cat</span> /tmp/panelBoot.pl
+<span class="token comment">#查看软件安装日志</span>
+<span class="token function">cat</span> /tmp/panelExec.log
+<span class="token comment">#站点配置文件位置</span>
+/www/server/panel/vhost
+<span class="token comment">#删除域名绑定面板</span>
+<span class="token function">rm</span> -f /www/server/panel/data/domain.conf
+<span class="token comment">#清理登陆限制</span>
+<span class="token function">rm</span> -f /www/server/panel/data/*.login
+<span class="token comment">#查看面板授权IP</span>
+<span class="token function">cat</span> /www/server/panel/data/limitip.conf
+<span class="token comment">#关闭访问限制</span>
+<span class="token function">rm</span> -f /www/server/panel/data/limitip.conf
+<span class="token comment">#查看许可域名</span>
+<span class="token function">cat</span> /www/server/panel/data/domain.conf
+<span class="token comment">#关闭面板SSL</span>
+<span class="token function">rm</span> -f /www/server/panel/data/ssl.pl <span class="token operator">&amp;&amp;</span> /etc/init.d/bt restart
+<span class="token comment">#查看面板错误日志</span>
+<span class="token function">cat</span> /tmp/panelBoot
+<span class="token comment">#查看数据库错误日志</span>
+<span class="token function">cat</span> /www/server/data/*.err
+<span class="token comment">#站点配置文件目录(nginx)</span>
+/www/server/panel/vhost/nginx
+<span class="token comment">#站点配置文件目录(apache)</span>
+/www/server/panel/vhost/apache
+<span class="token comment">#站点默认目录</span>
+/www/wwwroot
+<span class="token comment">#数据库备份目录</span>
+/www/backup/database
+<span class="token comment">#站点备份目录</span>
+/www/backup/site
+<span class="token comment">#站点日志</span>
+/www/wwwlogs<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="Nginx服务管理">Nginx服务管理</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#nginx安装目录</span>
+/www/server/nginx
+<span class="token comment">#启动</span>
+/etc/init.d/nginx start
+<span class="token comment">#停止</span>
+/etc/init.d/nginx stop
+<span class="token comment">#重启</span>
+/etc/init.d/nginx restart
+<span class="token comment">#启载</span>
+/etc/init.d/nginx reload
+<span class="token comment">#nginx配置文件</span>
+/www/server/nginx/conf/nginx.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="Apache服务管理">Apache服务管理</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#apache安装目录</span>
+/www/server/httpd
+<span class="token comment">#启动</span>
+/etc/init.d/httpd start
+<span class="token comment">#停止</span>
+/etc/init.d/httpd stop
+<span class="token comment">#重启</span>
+/etc/init.d/httpd restart
+<span class="token comment">#启载</span>
+/etc/init.d/httpd reload
+<span class="token comment">#apache配置文件</span>
+/www/server/apache/conf/httpd.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="MySQL服务管理">MySQL服务管理</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#mysql安装目录</span>
+/www/server/mysql
+<span class="token comment">#phpmyadmin安装目录</span>
+/www/server/phpmyadmin
+<span class="token comment">#数据存储目录</span>
+/www/server/data
+<span class="token comment">#启动</span>
+/etc/init.d/mysqld start
+<span class="token comment">#停止</span>
+/etc/init.d/mysqld stop
+<span class="token comment">#重启</span>
+/etc/init.d/mysqld restart
+<span class="token comment">#启载</span>
+/etc/init.d/mysqld reload
+<span class="token comment">#mysql配置文件</span>
+/etc/my.cnf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="FTP服务管理">FTP服务管理</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#ftp安装目录</span>
+/www/server/pure-ftpd
+<span class="token comment">#启动</span>
+/etc/init.d/pure-ftpd start
+<span class="token comment">#停止</span>
+/etc/init.d/pure-ftpd stop
+<span class="token comment">#重启</span>
+/etc/init.d/pure-ftpd restart
+<span class="token comment">#ftp配置文件</span>
+/www/server/pure-ftpd/etc/pure-ftpd.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="PHP服务管理">PHP服务管理</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#php安装目录</span>
+/www/server/php
+<span class="token comment">#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)</span>
+/etc/init.d/php-fpm-<span class="token punctuation">{</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">}</span> start
+<span class="token comment">#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)</span>
+/etc/init.d/php-fpm-<span class="token punctuation">{</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">}</span> stop
+<span class="token comment">#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)</span>
+/etc/init.d/php-fpm-<span class="token punctuation">{</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">}</span> restart
+<span class="token comment">#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)</span>
+/etc/init.d/php-fpm-<span class="token punctuation">{</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">}</span> reload
+<span class="token comment">#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)</span>
+/www/server/php/<span class="token punctuation">{</span><span class="token number">52</span><span class="token operator">|</span><span class="token number">53</span><span class="token operator">|</span><span class="token number">54</span><span class="token operator">|</span><span class="token number">55</span><span class="token operator">|</span><span class="token number">56</span><span class="token operator">|</span><span class="token number">70</span><span class="token operator">|</span><span class="token number">71</span><span class="token punctuation">}</span>/etc/php.ini<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="Redis服务管理">Redis服务管理</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#redis安装目录</span>
+/www/server/redis
+<span class="token comment">#启动</span>
+/etc/init.d/redis start
+<span class="token comment">#停止</span>
+/etc/init.d/redis stop
+<span class="token comment">#redis配置文件</span>
+/www/server/redis/redis.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="Memcached服务管理">Memcached服务管理</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">#memcached安装目录</span>
+/usr/local/memcached
+<span class="token comment">#启动</span>
+/etc/init.d/memcached start
+<span class="token comment">#停止</span>
+/etc/init.d/memcached stop
+<span class="token comment">#重启</span>
+/etc/init.d/memcached restart
+<span class="token comment">#启载</span>
+/etc/init.d/memcached reload<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
+      <categories>
+        <category>vps</category>
+      </categories>
+      <tags>
+        <tag>Linux</tag>
+        <tag>宝塔</tag>
+        <tag>VPS</tag>
+        <tag>建站</tag>
+        <tag>Nginx</tag>
+        <tag>Apache</tag>
+        <tag>MySQL</tag>
+      </tags>
   </entry>
   <entry>
     <title>docker使用简明教程</title>
@@ -2141,19 +2680,708 @@ tail <span class="token punctuation">-</span>f /root/tomcat/conf/server.xml<span
       </categories>
       <tags>
         <tag>Linux</tag>
+        <tag>MySQL</tag>
         <tag>Docker</tag>
         <tag>LAMP</tag>
         <tag>PHP</tag>
-        <tag>MySQL</tag>
         <tag>Tomcat</tag>
         <tag>JSP</tag>
         <tag>教程</tag>
       </tags>
   </entry>
   <entry>
-    <title></title>
-    <url>/posts/0/</url>
-    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script>]]></content>
+    <title>Gitlab的安装及使用教程完全版</title>
+    <url>/posts/acc13b70/</url>
+    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h2 id="1-Gitlab概述">1. Gitlab概述</h2>
+<hr>
+<h3 id="1-1-GitLab介绍">1.1 GitLab介绍</h3>
+<p>GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。</p>
+<p>GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。</p>
+<p>它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找</p>
+<h3 id="1-2-Gitlab服务构成">1.2 Gitlab服务构成</h3>
+<p>Nginx：静态web服务器。</p>
+<p>gitlab-shell：用于处理Git命令和修改authorized keys列表。</p>
+<p>gitlab-workhorse: 轻量级的反向代理服务器。</p>
+<p>logrotate：日志文件管理工具。</p>
+<p>postgresql：数据库。</p>
+<p>redis：缓存数据库。</p>
+<p>sidekiq：用于在后台执行队列任务（异步执行）。</p>
+<p>unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。</p>
+<h3 id="1-3-Gitlab工作流程">1.3 Gitlab工作流程</h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222044.png" alt=""></p>
+<h3 id="1-4-GitLab-Shell">1.4 GitLab Shell</h3>
+<p>GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表</p>
+<p>当通过SSH访问GitLab Server时，GitLab Shell会：</p>
+<ul>
+<li>限制执行预定义好的Git命令（git push，git pull，git annex）</li>
+<li>调用GitLab Rails API检查权限</li>
+<li>执行pre-receive钩子（在企业版中叫做Git钩子）</li>
+<li>执行用户请求的动作，处理GitLab的post-receive动作</li>
+<li>处理自定义的post-receive动作</li>
+</ul>
+<p>当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：</p>
+<p>如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作</p>
+<p>如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：</p>
+<ul>
+<li>调用GitLab Rails API 检查权限</li>
+<li>执行pre-receive钩子（在GitLab企业版中叫做Git钩子）</li>
+<li>执行你请求的动作</li>
+<li>处理GitLab的post-receive动作</li>
+<li>处理自定义的post-receive动作</li>
+</ul>
+<h3 id="1-5-GitLab-Workhorse">1.5 GitLab Workhorse</h3>
+<p>GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。</p>
+<h2 id="2-Gitlab的安装部署">2. Gitlab的安装部署</h2>
+<ul>
+<li>Gitlab要求服务器内存2G以上</li>
+</ul>
+<h3 id="2-1-方式一-下载gitlab-ce的rpm包">2.1 方式一:下载gitlab-ce的rpm包</h3>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://packages.gitlab.com/gitlab/gitlab-ce">gitlab官方rpm包下载</a></li>
+<li><a target="_blank" rel="noopener" href="https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/">清华的源</a></li>
+</ul>
+<p>将对应版本的gitlab-ce下载到本地后，直接yum安装即可</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 要先将这个rpm包下载到本地</span>
+yum <span class="token function">install</span> -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h3 id="2-2-方式二-配置yum源">2.2 方式二:配置yum源</h3>
+<p>在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">[</span>gitlab-ce<span class="token punctuation">]</span>
+<span class="token assign-left variable">name</span><span class="token operator">=</span>gitlab-ce
+<span class="token assign-left variable">baseurl</span><span class="token operator">=</span>https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/
+<span class="token assign-left variable">Repo_gpgcheck</span><span class="token operator">=</span><span class="token number">0</span>
+<span class="token assign-left variable">Enabled</span><span class="token operator">=</span><span class="token number">1</span>
+<span class="token assign-left variable">Gpgkey</span><span class="token operator">=</span>https://packages.gitlab.com/gpg.key<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>然后创建cache，再直接安装gitlab-ce</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum makecache  <span class="token comment"># 这一步会创建大量的数据</span>
+ 
+<span class="token comment"># 直接安装最新版</span>
+yum <span class="token function">install</span> -y gitlab-ce
+ 
+<span class="token comment"># 如果要安装指定的版本，在后面填上版本号即可</span>
+yum <span class="token function">install</span> -y  gitlab-ce-13.6.1
+ 
+<span class="token comment"># 如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证</span>
+yum <span class="token function">install</span> gitlab-ce -y --nogpgcheck<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="2-2-1-单服务启动模式"><strong>2.2.1. 单服务启动模式</strong></h3>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">docker</span> run -d --name gitlab --hostname gitlab.example.com <span class="token punctuation">\</span>
+-e <span class="token assign-left variable">GITLAB_OMNIBUS_CONFIG</span><span class="token operator">=</span><span class="token string">"
+    external_url 'https://gitlab.example.com'
+    gitlab_rails['gitlab_shell_ssh_port'] = 22
+    nginx['redirect_http_to_https'] = true
+    nginx['ssl_dhparam'] = '/etc/gitlab/ssl/dhparam.pem'
+    nginx['ssl_certificate'] = '/etc/gitlab/ssl/domain.crt'
+    nginx['ssl_certificate_key'] = '/etc/gitlab/ssl/domain.key'
+    nginx['custom_gitlab_server_config'] = 'location ^~ /.well-known {<span class="token entity" title="\n">\n</span> alias /var/opt/gitlab/letsencrypt/.well-known;<span class="token entity" title="\n">\n</span>}<span class="token entity" title="\n">\n</span>'
+    high_availability['mountpoint'] = ['/etc/gitlab', '/var/log/gitlab' '/var/opt/gitlab'  # 严格限定gitlab服务启动前，指定文件系统挂完毕
+"</span> <span class="token punctuation">\</span>
+-p <span class="token number">22</span>:22 -p <span class="token number">80</span>:80 -p <span class="token number">443</span>:443 <span class="token punctuation">\</span>
+-v /srv/gitlab/config:/etc/gitlab <span class="token punctuation">\</span>
+-v /srv/gitlab/logs:/var/log/gitlab <span class="token punctuation">\</span>
+-v /srv/gitlab/data:/var/opt/gitlab <span class="token punctuation">\</span>
+-v /etc/certs:/etc/gitlab/ssl <span class="token punctuation">\</span>
+--restart<span class="token operator">=</span>always gitlab/gitlab-ce:latest
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="2-2-1-Compose服务编排模式-推荐方式"><strong>2.2.1. Compose服务编排模式(推荐方式)</strong></h3>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">docker</span> pull gitlab/gitlab-ce:latest
+ 
+<span class="token comment">############################ 多行命令开始 ##########################</span>
+<span class="token function">cat</span> <span class="token operator">&gt;</span> docker-compose.yaml <span class="token operator">&lt;&lt;</span><span class="token string">EOF
+version: '2'
+ 
+services:
+ 
+  Gitlab:
+    image: 'gitlab/gitlab-ce:latest'
+    container_name: 'gitlab'
+    hostname: 'gitlab.example.com'
+    restart: always
+    ports:
+      - '22:22'
+      - '80:80'
+      - '443:443'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        # Add any other gitlab.rb configuration here, each on its own line
+        external_url 'https://gitlab.example.com'
+        gitlab_rails['gitlab_shell_ssh_port'] = 22
+        nginx['redirect_http_to_https'] = true
+        nginx['ssl_dhparam'] = "/etc/gitlab/ssl/dhparam.pem"
+        nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
+        nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
+        nginx['custom_gitlab_server_config'] = "location ^~ /.well-known {<span class="token entity" title="\n">\n</span> alias /var/opt/gitlab/letsencrypt/.well-known;<span class="token entity" title="\n">\n</span>}<span class="token entity" title="\n">\n</span>"
+        high_availability['mountpoint'] = ["/etc/gitlab", "/var/log/gitlab", "/var/opt/gitlab"]  # 严格限定gitlab服务启动前，指定文件系统挂完毕
+    volumes:
+      - /srv/gitlab/config:/etc/gitlab
+      - /srv/gitlab/logs:/var/log/gitlab
+      - /srv/gitlab/data:/var/opt/gitlab
+      - /etc/certs:/etc/gitlab/ssl
+EOF</span>
+<span class="token comment">############################ 多行命令结束 ##########################</span>
+ 
+<span class="token comment"># 启动服务</span>
+<span class="token function">docker-compose</span> -f docker-compose.yaml up -d
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="2-3-gitlab的配置">2.3 gitlab的配置</h3>
+<p>配置文件位置  /etc/gitlab/gitlab.rb</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">[</span>root@centos7 test<span class="token punctuation">]</span><span class="token comment"># vim /etc/gitlab/gitlab.rb</span>
+ 
+<span class="token punctuation">[</span>root@centos7 test<span class="token punctuation">]</span><span class="token comment"># grep "^[a-Z]" /etc/gitlab/gitlab.rb</span>
+ 
+external_url <span class="token string">'http://10.0.0.51'</span>  <span class="token comment"># 这里一定要加上http://</span>
+ 
+<span class="token comment"># 配置邮件服务</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_address'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp.qq.com"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_port'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">25</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_user_name'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"hgzerowzh@qq.com"</span>  <span class="token comment"># 自己的qq邮箱账号</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_password'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"xxx"</span>  <span class="token comment"># 开通smtp时返回的授权码</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_domain'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"qq.com"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_authentication'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"login"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable_starttls_auto'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_tls'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">false</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_from'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"hgzerowzh@qq.com"</span>  <span class="token comment"># 指定发送邮件的邮箱地址</span>
+user<span class="token punctuation">[</span><span class="token string">"git_user_email"</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"shit@qq.com"</span>   <span class="token comment"># 指定接收邮件的邮箱地址</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p><strong>修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。</strong></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl reconfigure <span class="token comment"># 重载配置文件</span>
+gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<h4 id="测试邮件服务器">测试邮件服务器</h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rails console
+Notify.test_email<span class="token punctuation">(</span><span class="token string">'rollinghell@foxmail.com'</span>,<span class="token string">'testbiaoti'</span>,<span class="token string">'testzhegnwen1'</span><span class="token punctuation">)</span>.deliver_now<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">[</span>root@test102 ~<span class="token punctuation">]</span><span class="token comment"># gitlab-rails console</span>
+--------------------------------------------------------------------------------
+ GitLab:       <span class="token number">12.5</span>.0 <span class="token punctuation">(</span>1f0ab8978ef<span class="token punctuation">)</span>
+GitLab Shell: <span class="token number">10.2</span>.0
+ PostgreSQL:   <span class="token number">10.9</span>
+--------------------------------------------------------------------------------
+Loading production environment <span class="token punctuation">(</span>Rails <span class="token number">5.2</span>.3<span class="token punctuation">)</span>
+irb<span class="token punctuation">(</span>main<span class="token punctuation">)</span>:001:<span class="token operator"><span class="token file-descriptor important">0</span>&gt;</span> Notify.test_email<span class="token punctuation">(</span><span class="token string">'andycrusoe@gmail.com'</span>,<span class="token string">'test'</span>,<span class="token string">'test'</span><span class="token punctuation">)</span>.deliver_now
+Notify<span class="token comment">#test_email: processed outbound mail in 1.4ms</span>
+Sent mail to anliven@126.com <span class="token punctuation">(</span><span class="token number">73</span>.0ms<span class="token punctuation">)</span>
+Date: Wed, <span class="token number">27</span> Nov <span class="token number">2019</span> <span class="token number">15</span>:12:58 +0800
+From: GitLab <span class="token operator">&lt;</span>gitlab@192.168.16.10<span class="token operator"><span class="token file-descriptor important">2</span>&gt;</span>
+Reply-To: GitLab <span class="token operator">&lt;</span>noreply@192.168.16.10<span class="token operator"><span class="token file-descriptor important">2</span>&gt;</span>
+To: anliven@126.com
+Message-ID: <span class="token operator">&lt;</span>5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail<span class="token operator">&gt;</span>
+Subject: <span class="token builtin class-name">test</span>
+Mime-Version: <span class="token number">1.0</span>
+Content-Type: text/html<span class="token punctuation">;</span>
+<span class="token assign-left variable">charset</span><span class="token operator">=</span>UTF-8
+Content-Transfer-Encoding: 7bit
+Auto-Submitted: auto-generated
+X-Auto-Response-Suppress: All
+<span class="token operator">&lt;</span><span class="token operator">!</span>DOCTYPE html PUBLIC <span class="token string">"-//W3C//DTD HTML 4.0 Transitional//EN"</span> <span class="token string">"http://www.w3.org/TR/REC-html40/loose.dtd"</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>html<span class="token operator">&gt;</span><span class="token operator">&lt;</span>body<span class="token operator">&gt;</span><span class="token operator">&lt;</span>p<span class="token operator">&gt;</span>test<span class="token operator">&lt;</span>/p<span class="token operator">&gt;</span><span class="token operator">&lt;</span>/body<span class="token operator">&gt;</span><span class="token operator">&lt;</span>/html<span class="token operator">&gt;</span>
+<span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token comment">#&lt;Mail::Message:70141649239780, Multipart: false, Headers: &lt;Date: Wed, 27 Nov 2019 15:12:58 +0800&gt;, &lt;From: GitLab &lt;gitlab@192.168.16.102&gt;&gt;, &lt;Reply-To: GitLab &lt;noreply@192.168.16.102&gt;&gt;, &lt;To: anliven@126.com&gt;, &lt;Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;&gt;, &lt;Subject: test&gt;, &lt;Mime-Version: 1.0&gt;, &lt;Content-Type: text/html; charset=UTF-8&gt;, &lt;Content-Transfer-Encoding: 7bit&gt;, &lt;Auto-Submitted: auto-generated&gt;, &lt;X-Auto-Response-Suppress: All&gt;&gt;</span>
+irb<span class="token punctuation">(</span>main<span class="token punctuation">)</span>:002:<span class="token operator"><span class="token file-descriptor important">0</span>&gt;</span>
+irb<span class="token punctuation">(</span>main<span class="token punctuation">)</span>:003:<span class="token operator"><span class="token file-descriptor important">0</span>&gt;</span> <span class="token builtin class-name">exit</span>
+<span class="token punctuation">[</span>root@test102 ~<span class="token punctuation">]</span><span class="token comment">#</span>
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="配置gitlab代理">配置gitlab代理</h4>
+<p>https://docs.gitlab.com/omnibus/settings/environment-variables.html</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitaly<span class="token punctuation">[</span><span class="token string">'env'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+    <span class="token string">"http_proxy"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"http://USERNAME:PASSWORD@example.com:8080"</span>,
+    <span class="token string">"https_proxy"</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token string">"http://USERNAME:PASSWORD@example.com:8080"</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="2-4-Gitlab常用命令">2.4 Gitlab常用命令</h3>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl start         <span class="token comment"># 启动所有 gitlab 组件</span>
+gitlab-ctl stop          <span class="token comment"># 停止所有 gitlab 组件</span>
+gitlab-ctl restart       <span class="token comment"># 重启所有 gitlab 组件</span>
+gitlab-ctl status        <span class="token comment"># 查看服务状态</span>
+ 
+gitlab-ctl reconfigure   <span class="token comment"># 启动服务</span>
+gitlab-ctl show-config   <span class="token comment"># 验证配置文件</span>
+ 
+gitlab-ctl <span class="token function">tail</span>          <span class="token comment"># 查看日志</span>
+ 
+gitlab-rake gitlab:check <span class="token assign-left variable">SANITIZE</span><span class="token operator">=</span>true --trace    <span class="token comment"># 检查gitlab</span>
+ 
+<span class="token function">vim</span> /etc/gitlab/gitlab.rb <span class="token comment"># 修改默认的配置文件</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="2-5-gitlab-ctl常用命令介绍">2.5 gitlab-ctl常用命令介绍</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">check-config</td>
+<td>检查在gitlab中是否有任何配置。在指定版本中删除的rb</td>
+</tr>
+<tr>
+<td style="text-align:right">deploy-page</td>
+<td>安装部署页面</td>
+</tr>
+<tr>
+<td style="text-align:right">diff-config</td>
+<td>将用户配置与包可用配置进行比较</td>
+</tr>
+<tr>
+<td style="text-align:right">remove-accounts</td>
+<td>删除所有用户和组</td>
+</tr>
+<tr>
+<td style="text-align:right">upgrade</td>
+<td>升级</td>
+</tr>
+<tr>
+<td style="text-align:right">service-list</td>
+<td>查看所有服务</td>
+</tr>
+<tr>
+<td style="text-align:right">once</td>
+<td>如果GitLab服务停止了就启动服务，如果已启动就不做任何操作</td>
+</tr>
+<tr>
+<td style="text-align:right">restart</td>
+<td>重启GitLab服务</td>
+</tr>
+<tr>
+<td style="text-align:right">start</td>
+<td>如果GitLab服务停止了就启动服务，如果已启动就重启服务</td>
+</tr>
+<tr>
+<td style="text-align:right">stop</td>
+<td>停止GitLab服务</td>
+</tr>
+<tr>
+<td style="text-align:right">status</td>
+<td>查看GitLab服务状态</td>
+</tr>
+<tr>
+<td style="text-align:right">reconfigure</td>
+<td>重新配置GitLab并启动</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-Gitlab的使用">3. Gitlab的使用</h2>
+<ul>
+<li>Gitlab安装好后，设置密码，管理账户为root</li>
+</ul>
+<h3 id="3-1-创建Group"><strong>3.1 创建Group</strong></h3>
+<ul>
+<li>填上组名即可，这里组名为java</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222105.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164637.png" alt=""></p>
+<h3 id="3-2-创建User"><strong>3.2 创建User</strong></h3>
+<ul>
+<li>创建四个User：pm、dev1、dev2、dev3</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222131.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222120.png" alt=""></p>
+<h3 id="3-3-添加User到Group中并授权"><strong>3.3 添加User到Group中并授权</strong></h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222140.png" alt=""></p>
+<h3 id="3-4-创建Project并配置SSH"><strong>3.4 创建Project并配置SSH</strong></h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222147.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222154.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222201.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528222233.png" alt=""></p>
+<h3 id="3-5-在项目中添加成员"><strong>3.5 在项目中添加成员</strong></h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164730.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164804.png" alt=""></p>
+<h3 id="3-6-将本地文件推送到Gitlab">3.6 将本地文件推送到Gitlab</h3>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 将app01项目克隆下来</span>
+<span class="token function">git</span> clone git@10.0.0.51:java/app01.git
+ 
+<span class="token comment"># 初始化配置</span>
+<span class="token function">git</span> config --global user.name <span class="token string">"hgzero"</span>
+<span class="token function">git</span> config --global user.email <span class="token string">"hgzero@qq.com"</span>
+ 
+<span class="token comment"># 在app01目录下新建一些文件</span>
+ 
+<span class="token comment"># 推送到gitlab</span>
+<span class="token function">git</span> <span class="token function">add</span> <span class="token builtin class-name">.</span>
+<span class="token function">git</span> commit -m <span class="token string">"first edition"</span>
+<span class="token function">git</span> push origin master<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164823.png" alt=""></p>
+<h2 id="4-制定开发计划">4. 制定开发计划</h2>
+<h3 id="4-1-创建开发计划"><strong>4.1 创建开发计划</strong></h3>
+<ul>
+<li>项目：app01</li>
+<li>版本：v1.0</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802173643.png" alt=""></p>
+<h3 id="4-2-创建里程碑Milestones"><strong>4.2 创建里程碑Milestones</strong></h3>
+<ul>
+<li>用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）</li>
+<li>要根据开发计划来创建Milestones</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164839.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164935.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164956.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802165053.png" alt=""></p>
+<h3 id="4-3-根据开发计划创建issue">4.3 根据开发计划创建issue</h3>
+<ul>
+<li>创建4个issue，分派给dev1和dev2这两个开发人员</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802165109.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802165138.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802165158.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802165215.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802165238.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802165257.png" alt=""></p>
+<h3 id="4-4-开发者登录账号查看分派的任务">**4.4 开发者登录账号查看分派的任务 **</h3>
+<ul>
+<li>然后开发dev1登录gitlab，就能看到任务已经分配过来了</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802165316.png" alt=""></p>
+<h3 id="4-5-开发流程"><strong>4.5 开发流程</strong></h3>
+<ul>
+<li>公司里的开发开始任务</li>
+</ul>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token comment"># 1. 先从仓库把项目拉下来</span>
+<span class="token function">git</span> clone git@10.0.0.51:java/app01.git
+<span class="token builtin class-name">cd</span> app01/
+ 
+<span class="token comment"># 2.先创建一个自己的分支，然后进行开发</span>
+<span class="token function">git</span> checkout -b index   <span class="token comment"># 创建一个叫index的分支，并切换到这个分支</span>
+<span class="token function">git</span> status
+ 
+<span class="token comment"># 3. 开始开发首页</span>
+<span class="token builtin class-name">echo</span> <span class="token string">"&lt;h1&gt;welcome to this app&lt;/h1&gt;"</span> <span class="token operator">&gt;</span> index.html  <span class="token comment"># 假设就开发了一个index页面</span>
+ 
+<span class="token comment"># 4. 开发完成后，把项目传到仓库</span>
+<span class="token function">git</span> <span class="token function">add</span> <span class="token builtin class-name">.</span>
+<span class="token function">git</span> commit -m <span class="token string">"index"</span>
+<span class="token comment"># 如果写成 git commit -m "close #2" ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue</span>
+ 
+<span class="token comment"># 传到index分支</span>
+<span class="token function">git</span> push origin index<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="4-6-合并分支"><strong>4.6 合并分支</strong></h3>
+<p><strong>1）开发dev1发送合并分支请求给pm</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802165333.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802165341.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802165350.png" alt=""></p>
+<p><strong>2）pm收到开发的Merge请求后进行处理</strong></p>
+<ul>
+<li>使用pm登录，就可以看到pm已经收到了合并请求merge request</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802165452.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802165505.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802165423.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164313.png" alt=""></p>
+<p><strong>3）开发dev1确认任务完成</strong></p>
+<ul>
+<li>退出pm账户，登入dev1账户：</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164301.png" alt=""></p>
+<ul>
+<li>或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164248.png" alt=""></p>
+<ul>
+<li>这个时候Milestones的进度已经往前进了一些了：</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164237.png" alt=""></p>
+<h3 id="4-7-开发其他功能">4.7 开发其他功能</h3>
+<ul>
+<li>然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发</li>
+</ul>
+<p>git checkout master  # 切换到master<br>
+git pull             # 从远端仓库拉取数据<br>
+# 然后再进行其他操作</p>
+<h2 id="5-Gitlab备份恢复">5. Gitlab备份恢复</h2>
+<h3 id="5-1-备份gitlab">5.1 备份gitlab</h3>
+<p><strong>1）修改配置文件</strong></p>
+<ul>
+<li><strong>/etc/gitlab/gitlab.rb</strong></li>
+</ul>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 备份保存的位置，这里是默认位置，可修改成指定的位置</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'backup_path'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"/var/opt/gitlab/backups"</span>
+ 
+<span class="token comment"># 设置备份保存的时间，超过此时间的日志将会被新覆盖</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'backup_keep_time'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">604800</span>  <span class="token comment"># 这里是默认设置，保存7天</span>
+ 
+<span class="token comment"># 特别注意：</span>
+<span class="token comment">#     如果自定义了备份保存位置，则要修改备份目录的权限，比如：</span>
+<span class="token comment">#     chown -R git.git /data/backup/gitlab</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<ul>
+<li>配置完成后要重启以使配置生效</li>
+</ul>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 重读配置文件</span>
+gitlab-ctl reconfigure
+ 
+<span class="token comment"># 重启gitlab</span>
+gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p><strong>2）设置定时任务</strong></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 每天凌晨2点定时创建备份</span>
+<span class="token comment"># 将一下内容写入到定时任务中 crontab -e</span>
+<span class="token number">0</span> <span class="token number">2</span> * * * /usr/bin/gitlab-rake gitlab:backup:create
+ 
+<span class="token comment"># 备份策略建议：</span>
+<span class="token comment">#     本地保留3到7天，在异地备份永久保存</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p><strong>3）备份时间的识别</strong></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间</span>
+ 
+data  -d  @1494170842<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<h3 id="5-2-恢复gitlab">5.2 恢复gitlab</h3>
+<h4 id="1）停止停止相关数据连接-数据写入服务"><strong>1）停止停止相关数据连接,数据写入服务</strong></h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 停止数据写入服务</span>
+gitlab-ctl stop puma
+gitlab-ctl stop sidekiq<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<h4 id="2）进行数据恢复并重启"><strong>2）进行数据恢复并重启</strong></h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 进行恢复</span>
+gitlab-rake gitlab:backup:restore <span class="token assign-left variable">BACKUP</span><span class="token operator">=</span>1627839447_2021_08_01_14.1.1-ee  <span class="token comment"># 这个时间戳就是刚刚备份的文件前面的时间戳</span>
+ 
+<span class="token comment"># 重启</span>
+gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="6-gitlab邮件通知配置">6. gitlab邮件通知配置</h2>
+<ul>
+<li>vim  /etc/gitlab/gitlab.rb</li>
+</ul>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab_rails<span class="token punctuation">[</span><span class="token string">'time_zone'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'Asia/Shanghai'</span>
+ 
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_enabled'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_from'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'example@163.com'</span> <span class="token comment"># 填写发件人的邮箱地址</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_display_name'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">'gitlab'</span>
+ 
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_address'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp.163.com"</span>  <span class="token comment"># smtp服务器的地址,如网易的地址</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_port'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">25</span>                 <span class="token comment"># 要注意如果使用了SSL/TLS的话,端口可能不是25</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_user_name'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp用户名"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_password'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp用户密码"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_domain'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"163.com"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_authentication'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"login"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p><strong>启用邮件功能</strong><br>
+Gitlab 的 Compose 配置 <code>GITLAB_OMNIBUS_CONFIG</code> 节点下增加如下几行：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">########## 邮件服务配置 ##########</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_address'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"smtp.exmail.qq.com"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_port'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token number">465</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_tls'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_user_name'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"账号"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_password'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"密码"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_authentication'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"login"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'smtp_enable_starttls_auto'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">true</span> 
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_email_from'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"发件人邮箱"</span>
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="7-使用SourceTree进行项目开发">7. 使用SourceTree进行项目开发</h2>
+<hr>
+<h3 id="7-1-项目拉取">7.1 项目拉取</h3>
+<ul>
+<li>先把项目克隆下来</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164210.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164157.png" alt=""></p>
+<ul>
+<li>如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164146.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164132.png" alt=""></p>
+<h3 id="7-2-创建分支进行功能开发">7.2 创建分支进行功能开发</h3>
+<p><strong>1）新建立一个叫“pay”的分支</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164122.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164113.png" alt=""></p>
+<p><strong>2）进行功能开发</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164103.png" alt=""></p>
+<h3 id="7-3-提交项目">7.3 提交项目</h3>
+<p><strong>1）开发pay功能完成后进行提交</strong></p>
+<ul>
+<li>可以看到SourceTree中已经有“未提交的更改”</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164054.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164042.png" alt=""></p>
+<p><strong>2）添加“用户信息”</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164029.png" alt=""></p>
+<p>** 3）进行提交**</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164014.png" alt=""></p>
+<ul>
+<li>注释也可以写成  close #3    ，作用是提交完成后关闭3号issue</li>
+</ul>
+<h3 id="7-4-推送到仓库"><strong>7.4 推送到仓库</strong></h3>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802164002.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802163947.png" alt=""></p>
+<ul>
+<li>然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了</li>
+</ul>
+<h3 id="7-5-项目上线">7.5 项目上线</h3>
+<p><strong>1）当所有工作完成之后，就可以进行上线了</strong></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802163932.png" alt=""></p>
+<p><strong>2）打标签</strong></p>
+<ul>
+<li>上线先打个标签</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802163916.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802163907.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/05/2820210528225256.png" alt=""></p>
+<p>** 3）删除无用分支**</p>
+<ul>
+<li>然后删除已经合并到主干中的不必要的分支，如index、pay等</li>
+<li>最后一定要注意时间一定要同步，不然会错乱</li>
+</ul>
+<h2 id="8-Gitlab调优"><strong>8. Gitlab调优</strong></h2>
+<p>gitlab对内存资源的消耗比较厉害<br>
+其中尤以 sidekiq队列 及 unicorn服务 两个组件对内存消耗最多<br>
+可以再容器启动时对相关参数进行微调：</p>
+<pre class="line-numbers language-yml" data-language="yml"><code class="language-yml">unicorn<span class="token punctuation">[</span><span class="token string">'worker_processes'</span><span class="token punctuation">]</span> = 1
+unicorn<span class="token punctuation">[</span><span class="token string">'worker_memory_limit_min'</span><span class="token punctuation">]</span> = "300 * 1 &lt;&lt; 20"
+unicorn<span class="token punctuation">[</span><span class="token string">'worker_memory_limit_max'</span><span class="token punctuation">]</span> = "400 * 1 &lt;&lt; 20"
+unicorn<span class="token punctuation">[</span><span class="token string">'worker_timeout'</span><span class="token punctuation">]</span> = 15
+sidekiq<span class="token punctuation">[</span><span class="token string">'concurrency'</span><span class="token punctuation">]</span> = 10
+sidekiq_cluster<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
+sidekiq_cluster<span class="token punctuation">[</span><span class="token string">'ha'</span><span class="token punctuation">]</span> = false
+redis<span class="token punctuation">[</span><span class="token string">'maxclients'</span><span class="token punctuation">]</span> = "100"
+nginx<span class="token punctuation">[</span><span class="token string">'worker_processes'</span><span class="token punctuation">]</span> = 2
+nginx<span class="token punctuation">[</span><span class="token string">'worker_connections'</span><span class="token punctuation">]</span> = 512
+nginx<span class="token punctuation">[</span><span class="token string">'keepalive_timeout'</span><span class="token punctuation">]</span> = 300
+nginx<span class="token punctuation">[</span><span class="token string">'cache_max_size'</span><span class="token punctuation">]</span> = '200m'
+mattermost<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
+mattermost_nginx<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
+gitlab_pages<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
+pages_nginx<span class="token punctuation">[</span><span class="token string">'enable'</span><span class="token punctuation">]</span> = false
+postgresql<span class="token punctuation">[</span><span class="token string">'shared_buffers'</span><span class="token punctuation">]</span> = "256MB"
+postgresql<span class="token punctuation">[</span><span class="token string">'max_connections'</span><span class="token punctuation">]</span> = 30
+postgresql<span class="token punctuation">[</span><span class="token string">'work_mem'</span><span class="token punctuation">]</span> = "8MB"
+postgresql<span class="token punctuation">[</span><span class="token string">'maintenance_work_mem'</span><span class="token punctuation">]</span> = "16MB"
+postgresql<span class="token punctuation">[</span><span class="token string">'effective_cache_size'</span><span class="token punctuation">]</span> = "1MB"
+postgresql<span class="token punctuation">[</span><span class="token string">'checkpoint_timeout'</span><span class="token punctuation">]</span> = "5min"
+postgresql<span class="token punctuation">[</span><span class="token string">'checkpoint_warning'</span><span class="token punctuation">]</span> = "30s"
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>配置调整后需要重载一下</p>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token function">docker</span> <span class="token builtin class-name">exec</span> gitlab gitlab-ctl reconfigure
+<span class="token function">docker-compose</span> down
+<span class="token function">docker-compose</span> up -d
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<hr>
+<h2 id="9-Gitlab-启用-ContainerRegistry">9. Gitlab 启用 ContainerRegistry</h2>
+<ul>
+<li><code>ContainerRegistry</code>是<code>Gitlab</code>内置的<code>Docker Registry</code>集成组件</li>
+<li>集成后每个项目可获得私有的 <code>Docker</code> 镜像存储空间</li>
+<li><code>ContainerRegistry</code> 可以复用 <code>Gitlab</code> 域名 或者 独立域名</li>
+<li>这里配置为复用域名（此时<code>ContainerRegistry</code> 将复用 <code>Gitlab</code> 的 <code>TLS</code> 证书）</li>
+</ul>
+<ol>
+<li><code>docker-compose.yaml</code>中Gitlab服务的 <code>GITLAB_OMNIBUS_CONFIG</code> 节点下增加如下配置：</li>
+</ol>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">registry_external_url <span class="token string">"https://gitlab.example.com:4567"</span>  <span class="token comment"># ContainerRegistry的外部访问地址</span>
+registry_nginx<span class="token punctuation">[</span><span class="token string">'ssl_certificate'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"/etc/gitlab/ssl/domain.crt"</span>
+registry_nginx<span class="token punctuation">[</span><span class="token string">'ssl_certificate_key'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"/etc/gitlab/ssl/domain.key"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'registry_host'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"gitlab.example.com"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'registry_port'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"4567"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'registry_api_url'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token string">"http://localhost:5000"</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_default_projects_features_builds'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">false</span>
+gitlab_rails<span class="token punctuation">[</span><span class="token string">'gitlab_default_projects_features_container_registry'</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token boolean">false</span>
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<ol start="2">
+<li>端口开放增加 <code>- 4567:4567</code></li>
+<li>服务重启 <code>docker-compose restart Gitlab</code></li>
+</ol>
+<p><code>ContainerRegistry</code> 集成后可以通过 <code>Gitlab</code> 账户登录： <code>docker login gitlab.example.com:4567</code></p>
+<hr>
+<h2 id="日常维护命令">日常维护命令</h2>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># Gitlab维护</span>
+<span class="token function">docker</span> <span class="token builtin class-name">exec</span> gitlab gitlab-ctl status  <span class="token comment"># gitlab各组件服务状态</span>
+<span class="token function">docker</span> <span class="token builtin class-name">exec</span> gitlab gitlab-ctl start/restart/stop <span class="token punctuation">[</span>组件名<span class="token punctuation">]</span>  <span class="token comment"># gitlab所有组件的统一控制（其中Unicorn组件重启完成前GitLab会报502）</span>
+<span class="token function">docker</span> <span class="token builtin class-name">exec</span> gitlab gitlab-ctl <span class="token function">tail</span> <span class="token punctuation">[</span>/var/log/gitlab下的某子目录<span class="token punctuation">]</span>  <span class="token comment"># 实时查看日志</span>
+ 
+<span class="token function">docker</span> <span class="token builtin class-name">exec</span> gitlab update-permissions  <span class="token comment"># 修复gitlab版本升级后出现的权限问题</span>
+<span class="token function">docker</span> <span class="token builtin class-name">exec</span> gitlab gitlab-ctl reconfigure  <span class="token comment"># 重载配置</span>
+<span class="token function">docker</span> <span class="token builtin class-name">exec</span> -t gitlab gitlab-rake gitlab:backup:create  <span class="token comment"># 创建备份</span>
+ 
+<span class="token comment"># ContainerRegistry维护</span>
+<span class="token function">docker</span> <span class="token builtin class-name">exec</span> gitlab gitlab-ctl registry-garbage-collect  <span class="token comment"># 垃圾回收，清理废弃layer（registry停机）</span>
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<hr>
+<h3 id="Import-Repository-Repo-By-Url">Import Repository(Repo By Url)</h3>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 账号密码若存在特殊字符则需要url编码</span>
+https://username:password@host:port/group/project.git
+ <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<h2 id="10-GitLab重置用户名密码"><strong>10. GitLab重置用户名密码</strong></h2>
+<p>打开终端，访问：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rails console<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>输入：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">user <span class="token operator">=</span> User.where<span class="token punctuation">(</span>id: <span class="token number">1</span><span class="token punctuation">)</span>.first
+user.password<span class="token operator">=</span><span class="token string">'123456'</span>
+user.password_confirmation <span class="token operator">=</span> <span class="token string">'123456'</span>
+user.save<span class="token operator">!</span> <span class="token comment">#注意加上 “！”</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>然后退出命令行即可。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">quit<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"> gitlab-rails console production 命令 开始初始化密码
+<span class="token comment"># 在irb(main):001:0&gt; 后面通过 u=User.where(id:1).first 来查找与切换账号（User.all 可以查看所有用户）</span>
+<span class="token comment"># 通过u.password='12345678'设置密码为12345678(这里的密码看自己喜欢)：</span>
+<span class="token comment"># 通过u.password_confirmation='12345678' 再次确认密码</span>
+<span class="token comment"># 通过 u.save!进行保存</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="11-HTTPS-SSL-支持"><strong>11. HTTPS SSL 支持</strong></h2>
+<ul>
+<li>
+<p>nginx反向代理方式</p>
+<ul>
+<li>注意docker 内部没有ca支持， 需要手动添加</li>
+</ul>
+</li>
+<li>
+<p>域名提供商提供的免费证书</p>
+<ul>
+<li>这种证书直接用，如果是自签名证书，需要添加自己的ca root证书到服务器</li>
+</ul>
+</li>
+</ul>
+<h2 id="12-Gitlab恢复数据出现must-be-owner-of解决方法">12. Gitlab恢复数据出现must be owner of解决方法</h2>
+<p>按正常Gitlab备份数据gitlab-rake gitlab:backup:create</p>
+<pre class="line-numbers language-sql" data-language="sql"><code class="language-sql">ERROR: must be owner <span class="token keyword">of</span> extension plpgsql
+ERROR: must be owner <span class="token keyword">of</span> <span class="token keyword">schema</span> <span class="token keyword">public</span>
+ERROR: <span class="token keyword">schema</span> “<span class="token keyword">public</span>” already <span class="token keyword">exists</span>
+ERROR: must be owner <span class="token keyword">of</span> <span class="token keyword">schema</span> <span class="token keyword">public</span>
+ERROR: must be owner <span class="token keyword">of</span> extension plpgsql
+WARNING: <span class="token keyword">no</span> <span class="token keyword">privileges</span> could be revoked <span class="token keyword">for</span> “<span class="token keyword">public</span>”
+WARNING: <span class="token keyword">no</span> <span class="token keyword">privileges</span> could be revoked <span class="token keyword">for</span> “<span class="token keyword">public</span>”
+WARNING: <span class="token keyword">no</span> <span class="token keyword">privileges</span> were granted <span class="token keyword">for</span> “<span class="token keyword">public</span>”
+WARNING: <span class="token keyword">no</span> <span class="token keyword">privileges</span> were granted <span class="token keyword">for</span> “<span class="token keyword">public</span>”<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>解决方法：</p>
+<h4 id="1-修改postgresql配置">**1. 修改postgresql配置 **</h4>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token builtin class-name">cd</span> /var/opt/gitlab/postgresql/data
+$ <span class="token function">vi</span> /var/opt/gitlab/postgresql/data/postgresql.conf
+listen_addresses <span class="token operator">=</span> <span class="token string">'*'</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p>找到listen_addresses = ” 改为listen_addresses = ‘*’</p>
+<p>修改 /var/opt/gitlab/postgresql/data/pg_hba.conf<br>
+在这个文件最后面加入</p>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">$ <span class="token function">vi</span> /var/opt/gitlab/postgresql/data/pg_hba.conf
+<span class="token builtin class-name">local</span>   all         all                               trust
+<span class="token function">host</span>    all         all                               <span class="token number">127.0</span>.0.1/32 trust
+<span class="token function">host</span>    all         all                               ::1/128 trust    <span class="token comment">#ipv6 可以不配置</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<h4 id="2-重启gitlab生效"><strong>2. 重启gitlab生效</strong></h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h4 id="3-修改gitlab账号为超级用户"><strong>3. 修改gitlab账号为超级用户</strong></h4>
+<p>进入postgresql命令行</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /opt/gitlab/embedded/bin
+<span class="token function">su</span> gitlab-psql
+./psql -h <span class="token number">127.0</span>.0.1 gitlabhq_production<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p>查看账户权限</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">\</span>du<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>执行修改gitlab用户为超级权限</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">ALTER <span class="token environment constant">USER</span> gitlab WITH SUPERUSER<span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>退出</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token punctuation">\</span>q<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/08/0220210802135016.png" alt=""></p>
+<h5 id="4-从1462989681编号备份中恢复">4. 从1462989681编号备份中恢复</h5>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-rake gitlab:backup:restore <span class="token assign-left variable">BACKUP</span><span class="token operator">=</span><span class="token number">1462989681</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>这样Gitlab恢复数据就不会再报must be owner of extension plpgsql错误。</p>
+<h4 id="4-重启gitlab"><strong>4. 重启gitlab</strong></h4>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gitlab-ctl restart<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>本文作者：夜法之书       写作不易，转载请注明来源地址！</p>
+<h2 id="参考链接：">参考链接：</h2>
+<ol>
+<li>https://www.cnblogs.com/hgzero/p/14088215.html</li>
+<li>http://www.51blogs.net/2017/11/10/1110113243.html</li>
+<li>https://my.oschina.net/u/2400083/blog/808097</li>
+</ol>
+<hr>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
+      <categories>
+        <category>gitlab</category>
+      </categories>
+      <tags>
+        <tag>Gitlab</tag>
+        <tag>Git</tag>
+        <tag>Docker</tag>
+        <tag>教程</tag>
+        <tag>Rigistry</tag>
+        <tag>email</tag>
+        <tag>https</tag>
+        <tag>ssl</tag>
+      </tags>
   </entry>
   <entry>
     <title>Debian Lenny Laptop安装记录</title>
@@ -3987,8 +5215,8 @@ $ <span class="token function">sudo</span> gitlab-runner start<span aria-hidden=
 <li><a target="_blank" rel="noopener" href="https://docs.gitlab.com/runner/install/linux-manually.html">Install GitLab Runner manually on GNU/Linux(https://docs.gitlab.com/runner/install/linux-manually.html)</a></li>
 </ul>
 <p>From: <a target="_blank" rel="noopener" href="http://lipeng1667.github.io/2019/01/15/public-doc-with-gitlab-ci-writing-with-gitbook/">lipeng1667</a></p>
-<h2 id="系列教程-5"><strong>系列教程</strong></h2>
-<h3 id="Gitbook使用系列-2"><strong>Gitbook使用系列</strong></h3>
+<h2 id="系列教程-7"><strong>系列教程</strong></h2>
+<p><strong>Gitbook使用系列</strong></p>
 <ul>
 <li>
 <p><a href="https://blog.17lai.site/posts/7fe86002/">GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</a></p>
@@ -4000,7 +5228,7 @@ $ <span class="token function">sudo</span> gitlab-runner start<span aria-hidden=
 <p><a href="https://blog.17lai.site/posts/d6bad1e5/">自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</a></p>
 </li>
 </ul>
-<h3 id="笔记系列-3"><strong>笔记系列</strong></h3>
+<p><strong>笔记系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
 </ul>
@@ -4049,15 +5277,13 @@ $ <span class="token function">sudo</span> gitlab-runner start<span aria-hidden=
 <li>其实博主更推荐私有部署joplin</li>
 </ul>
 </blockquote>
-<h3 id="Gitlab-使用系列-5">Gitlab 使用系列</h3>
-<blockquote>
+<p><strong>Gitlab 使用系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
 <li><a href="https://blog.17lai.site/posts/29a820b3/">破解Gitlab EE</a></li>
 <li><a href="https://blog.17lai.site/posts/d08eb7b/">Gitlab的安装及使用</a></li>
 <li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
 </ul>
-</blockquote>
 <link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
       <categories>
         <category>gitbook</category>
@@ -4241,8 +5467,8 @@ Hello World!<span aria-hidden="true" class="line-numbers-rows"><span></span><spa
 <li><a target="_blank" rel="noopener" href="https://yangjh.oschina.io/gitbook/">GitBook 学习笔记</a></li>
 </ul>
 <p>From: <a target="_blank" rel="noopener" href="http://lipeng1667.github.io/2019/01/15/how-to-write-techdoc-with-gitbook/">lipeng1667</a></p>
-<h2 id="系列教程-4"><strong>系列教程</strong></h2>
-<h3 id="Gitbook使用系列"><strong>Gitbook使用系列</strong></h3>
+<h2 id="系列教程-5"><strong>系列教程</strong></h2>
+<p><strong>Gitbook使用系列</strong></p>
 <ul>
 <li>
 <p><a href="https://blog.17lai.site/posts/7fe86002/">GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</a></p>
@@ -4254,7 +5480,7 @@ Hello World!<span aria-hidden="true" class="line-numbers-rows"><span></span><spa
 <p><a href="https://blog.17lai.site/posts/d6bad1e5/">自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</a></p>
 </li>
 </ul>
-<h3 id="笔记系列-2"><strong>笔记系列</strong></h3>
+<p><strong>笔记系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
 </ul>
@@ -4303,15 +5529,13 @@ Hello World!<span aria-hidden="true" class="line-numbers-rows"><span></span><spa
 <li>其实博主更推荐私有部署joplin</li>
 </ul>
 </blockquote>
-<h3 id="Gitlab-使用系列-4">Gitlab 使用系列</h3>
-<blockquote>
+<p><strong>Gitlab 使用系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
 <li><a href="https://blog.17lai.site/posts/29a820b3/">破解Gitlab EE</a></li>
 <li><a href="https://blog.17lai.site/posts/d08eb7b/">Gitlab的安装及使用</a></li>
 <li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
 </ul>
-</blockquote>
 <link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
       <categories>
         <category>gitbook</category>
@@ -4693,9 +5917,482 @@ log<span class="token operator">-</span>slave<span class="token operator">-</spa
       </tags>
   </entry>
   <entry>
-    <title></title>
-    <url>/posts/0/</url>
-    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script>]]></content>
+    <title>Joplin 插件以及其Markdown语法。All in One!</title>
+    <url>/posts/92d347d6/</url>
+    <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><p>Joplin是一个以Markdown为主要语法的笔记程序，发展到今天增加了许多插件，这些插件也大大增强了它的功能，今天我们就讲讲Joplin的各个插件的作用和使用方法。</p>
+<p>首先我们打开Joplin，依次点击<strong>工具-&gt;选项</strong>设置页面，然后点击<strong>Markdown</strong>选项卡，我们就可以看到如下界面</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1020210910083827.png" alt="Joplin插件选择配置界面"></p>
+<p>下面我们一个一个讲解一下每个插件的大概作用和用法，某些插件的详细使用方法可能需要我独立写一篇文章来介绍，这里我就先抛砖引玉大致介绍一下。</p>
+<h2 id="启动软中断插件">启动软中断插件</h2>
+<p>Joplin默认使用的是硬中断方式，那么什么是软中断什么是硬中断呢？如果你刚开始使用Markdown撰写自己的笔记你可能会非常的不习惯，因为标准的Markdown语法里面换行需要两个回车符号，但是像word之类的编辑器都是一个回车，普通人会感觉很不习惯，所以Joplin默认采用了硬中断方式，这样你可以使用一个回车符实现换行。但是当我们启用软中断插件之后，我们就需要两个回车符来实现换行（准确说应该是分段），使用两个空格加一个回车来实现换行，前者的间距会比后者的大。启用软中断其实对于普通人来说不是很好用，很难适应，所以我不建议大家开启该插件！</p>
+<h2 id="启用typographer支持">启用typographer支持</h2>
+<p>这个插件的作用是用来申明我们的版权的，因为有时候我们可能需要将我们的笔记分享给别人，但是想要声明文章是我们写的，我们就可以启用该插件来声明我们的著作权，而且该插件会给我们渲染成指定的版权声明格式，讲讲怎么用：</p>
+<p>我们启用插件之后，在我们想要声明著作权的地方键入：</p>
+<pre class="line-numbers language-none"><code class="language-none">(c)著作权所有人<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>然后Joplin就会给我们渲染为：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909174240.png" alt="typographer插件语法渲染结果"></p>
+<p>是不是很熟悉，很多网页的底部都会有这个声明！</p>
+<h2 id="启用数学表达式">启用数学表达式</h2>
+<p>这个是Markdown自带语法，Joplin使用插件来实现的，其实就是大家在<a target="_blank" rel="noopener" href="http://lightzhan.xyz/index.php/2020/02/28/markdowntutorial/">Markdown语法</a>里面看到的行内公式使用<img src="https://math.now.sh?inline=%E2%80%A6" style="filter: opacity(90%);transform:scale(0.85);text-align:center;display:inline-block;margin: 0;">，行间公式使用$$…$$。需要说明的是Joplin使用的是Katex来解析数学符号，它的语法和Latex的数学公式写法差不多，我到现在还没有碰到很大的不同的地方！</p>
+<h2 id="启用高亮-Mark-句法">启用高亮<code>==Mark==</code>句法</h2>
+<p>这个其实就是一个语句高亮插件，中间的语句会被高亮显示，有助于我们对重要的内容进行强调，自己一试就一目了然了。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909174304.png" alt="Joplin Mark插件示例"></p>
+<h2 id="启用脚注">启用脚注</h2>
+<p>脚注的功能就是对文中的某一个特定的术语等进行解释补充说明，有点像是论文的参考文献，下面是一个简单的示例，相信大家一看就懂</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909174326.png" alt="Joplin 启用脚注插件示例图"></p>
+<p>根据图片你可能明白了脚注的使用方法：在我们想要使用脚注的地方使用[^唯一标识符]注明，然后在文章的最后使用响应的标识符进行说明即可，比如例子中的</p>
+<pre class="line-numbers language-none"><code class="language-none">[^lightzhan]:知乎搜索light zhan即可找到我了<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><strong>注意那个冒号一定要是英文冒号，中文冒号可能无法被成功解析</strong>。</p>
+<h2 id="启用目录扩展">启用目录扩展</h2>
+<p>启用该扩展，我们就可以使用相应的语法在某个位置插入我们文章的目录，具体的语法为</p>
+<pre class="line-numbers language-none"><code class="language-none">[toc]<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>注意着是一个固定的符号，不需要改变什么，只需要在我们想要插入目录的地方放上**[toc]**即可，例如</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909174350.png" alt="Joplin toc目录生成插件示例图"></p>
+<p>上图最重要的就是坐上脚的[toc]指令，该指令自动生成了右边的整个目录！</p>
+<h2 id="启用下标-sub-和上标-sup-句法">启用下标<code>~sub~</code>和上标<code>^sup^</code>句法</h2>
+<p>一看到<sub>sub</sub>如果不小心就会认为这个是删除线，大错特错了，一定要明白两者的区别，删除线是左右都是两个波浪线，而这个只有一个波浪线，一定要搞清楚这个。下面我们看看这个插件的作用和用法。</p>
+<p>这两个插件的作用其实很简单，就是下标和上标，看例子应该就明白的</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909174420.png" alt=""></p>
+<h2 id="启用术语表插件">启用术语表插件</h2>
+<p>对于这个插件得先知道什么是术语表。所谓的术语表其实可以理解为一个定义的列表，很多专业的书籍的前面都会有术语表，因为它需要给出书中所用术语的定义和解释。还不懂？我们在Joplin中启用该插件，然后新建一个笔记，输入如下文字：</p>
+<pre class="line-numbers language-none"><code class="language-none">Qdown
+
+:   Qdown是由lightzhan开发的全功能软件下载程序，这里是程序的介绍页哦:http://lightzhan.xyz/index.php/qdown/ 
+
+LightZhan
+
+:   计算机爱好一名，爱折腾哎生活，*欢迎知乎关注lightzhan哦*
+
+        可以嵌入一些代码
+
+    定义第三段 <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这些文字会被解析显示为：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909174558.png" alt="Joplin术语表插件示例"></p>
+<p>对比一下发现了什么没有？术语表的每一项由两个部分组成，第一部分是术语，第二部分是该术语的解释，多个术语及其解释组合在一起就组成了表，这就是术语表！需要特别注意的是术语表的书写格式是固定的，如果你想要快速上手，建议你拷贝上面我提供的示例进行修改，修改两下你就懂格式到底是怎么回事了！</p>
+<h2 id="启用缩写句法">启用缩写句法</h2>
+<p>这个插件很有意思，也很有用。你是否记得有些程序的按钮，当你把鼠标放上去的时候它会显示按钮的作用。不记得了？不存在，我们也使用例子来说明。下面我们启用缩写句法插件，然后新建笔记，在笔记里面输入：</p>
+<pre class="line-numbers language-none"><code class="language-none">*[Qdown]: 由lightzhan开发
+*[LightZhan]:  欢迎知乎关注我哦
+Qdown 是由 LightZhan 开发的一款全协议下载器.<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p>该文本会被Joplin显示为</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909174619.png" alt="Markdown Joplin 缩写表插件示例图"></p>
+<p>这可能并不能完全显示出该插件的作用，因为截图的原因截不到，当我们把鼠标放在Qdown上面的时候，鼠标所在的位置处会弹出“由lightzhan”开发的提示。不理解的可以拷贝上面的代码到Joplin感受一下，记得要开启该插件哦！需要注意的是该句中对应的<strong>缩写词前后都要有空格</strong>，负责你可能看不到上面的效果。</p>
+<h2 id="启用Markdown-emoji">启用Markdown emoji</h2>
+<p>该插件是用于在我们的笔记中插入表情的，这是一个简单的示例截图</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909174639.png" alt="Joplin表情插件示例"></p>
+<p>详细的表情和表情的代码，可以参考<a target="_blank" rel="noopener" href="https://github.com/zhouie/markdown-emoji">这里</a>。</p>
+<h2 id="启用-insert-句法">启用<code>++insert++</code>句法</h2>
+<p>这个插件很好理解，一试便知道作用和用法了</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909174656.png" alt="Joplin insert插件示例"></p>
+<p>说了那么多，就是在对应的文字下面显示一个下划线！</p>
+<p>Markdown是非常好用的笔记书写规范，记着，Markdown不是某一个软件，而是一个通用的笔记书写规范，通过使用该规范进行写作，解析器会按照规定的样式将其渲染显示出来，说得直白点就是用于文字排版的。</p>
+<h2 id="Markdown的排版语法">Markdown的排版语法</h2>
+<p>这里的讲解如果有不懂的可以参见下一节的示例：</p>
+<ol>
+<li>标题。markdown的标题使用“#”符号开头，一级标题一个”#”，二级标题两个“#”（也就是“##”），以此类推三级标题四级标题…….，不同级的标题会被渲染为不同的大小和样式（根据各个软件和相应的主题而定）；</li>
+<li>粗体。markdown的粗体字使用两个“**”包裹即可，比如 “<strong>你好</strong>”解析后变为“你好”；</li>
+<li>斜体。markdown的斜体使用“*”或者“_”包裹，比如“<em>你好</em>”解析显示为“你好”；</li>
+<li>引用。markdown的引用使用“&gt;”开头，大部分软件要求“&gt;”要和引用内容之间有一个空格；</li>
+<li>代码。对于程序员来说可能想要在文中插入代码，markdown是支持插入代码的，行间代码使用一个"`"符号包裹，注意这个符号是键盘左上角Esc下面的那个键，不是我们所谓的英文上一撇；</li>
+<li>数学公式。markdown的数学解析一般使用latex语法，行内公式使用一个<code>$</code>包裹即可，行间公式使用两个<code>$</code>包裹；</li>
+<li>markdown的列表分为有序列表和无序列表。有序列表就是有序号，无序列表就是 无序号，有序列表就是在数字后面一个点，然后空一格写正文，比如：<code>1. xxxxxxx</code>，第二点需要新起一行<code>2. xxxxxx</code>。无序列表是使用“*”或者“-”开始，后面跟一个空格写上正文。</li>
+<li>markdown的勾选框。markdown的勾选框使用<code>- [ ]</code>，注意字符之间都是有空格的。比如：第一行<code>- [ ] A</code>,第二行<code>- [ ] B</code>。这样对应的渲染结果就是勾选框和对应的选项。注意字符之间的空格！</li>
+<li>表格。markdown的表格非常易于理解，请看下面的示例。</li>
+</ol>
+<h2 id="示例代码和渲染结果">示例代码和渲染结果</h2>
+<p>下面的示例左边是书写文字，右边是渲染结果，<strong>注意书写文字里面的标识符和内容之间的空格</strong>：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909175337.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909175353.png" alt=""></p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909175417.png" alt=""></p>
+<p>需要说明的是上面的粗体显示为了橘红色的字体，这是我自己设置的格式，这个等大家熟悉了后可以使用CSS设计自己喜欢的样式。下面是表格的渲染结果 （其中左边的源代码不用那样对齐 ，横线的个数一处最少3个就行 ，右边是解析后的显示结果） ：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909175444.png" alt=""></p>
+<p>额~，左边左下角那个是鼠标光标，不是文字内容哈。需要说明的是不同的软件的不同的主题可能显示的结果会不一样，但是书写的语法是不变的。</p>
+<h2 id="启用-multimarkdown-表格扩展">启用 multimarkdown 表格扩展</h2>
+<p>这个插件说高深也不高深，看名字应该就能知道这是一个增强Markdown表格功能的插件，大家记得Markdown的表格是怎么使用的吗？如果忘记的话赶紧看看<a target="_blank" rel="noopener" href="http://lightzhan.xyz/index.php/2020/02/28/markdowntutorial/">这篇文章</a>回顾一下，不然下面的内容可能体会不会那么深！</p>
+<p>好啦，我这里假设读者知道markdown的表格是怎么用的，然后我们开始讲解multimarkdown扩展。Markdown自带的表格功能是非常有限的，如果你使用过的话就会发现它能做出来的表格一定是规整的，行和列一定是划分均匀整齐的，但是有时候我们需要的表格可能是这样的：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909175608.png" alt=""></p>
+<p>这种表格使用Markdown的表格是不可能做出来的，因为分组的效果和占用两个格子的效果是做不出来的，但是如果你启用了MultiMarkdown插件，你就可以使用下面的代码渲染出来：</p>
+<pre class="line-numbers language-none"><code class="language-none">|             |          分组                 ||
+第一个表头     | 第二个表头     | 第三个表头      |
+ ------------ | :-----------: | -----------:   |
+内容          |          占用两个格子           ||
+内容          |   **内容**     |         内容    |
+新的一部分     |     更多       |         更多    |
+更多          | 带有一个跳过的 '\|'              ||
+[LightZhan制作]<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>你可以把上面的代码拷贝进Joplin编辑器研究一番就能理解MultiMardown表格扩展的用法了，下面我详细讲解一下。</p>
+<p>MultiMarkdown的表格扩展支持下面的功能：</p>
+<ul>
+<li>使得元素占据多个列（上面的示例中有）</li>
+<li>使得元素占据多个行</li>
+<li>在表格上面或者下面对表头进行分组（上面的例子中有）</li>
+<li>在表格的上面或者下面标注表格标题（上面的例子中有）</li>
+<li>在表格中包含分块元素（列表、代码、段落等等）</li>
+<li>表格不需要表头</li>
+</ul>
+<p>上面标注了“上面的例子中有”的我这里就不在讲了，因为代码一研究或者修改修改就知道咋回事的，下面我们主要讲讲上面的例子中没有涉及到的。</p>
+<p><strong>1.使得表格占据多行</strong>。这个其实很好用，但是有两种情况。第一种情况是一个项目占据两格。这种情况要占据多行的话，在我们对应列的起始行写上内容，然后接下来要合并的行直接写“^^”。不明白不存在，我们来一个例子：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909175656.png" alt="MultiMarkdown表格扩展内容占据多行示例图"></p>
+<p>上面对应的代码是什么呢？看下面：</p>
+<pre class="line-numbers language-none"><code class="language-none">作者		| 信息			  | 信息		 |
+----:		| --------------:         | ---------:	         |
+LightZhan	| ligthzhan.xyz 				||
+^^		| 更多Joplin教程           | Qdown下载器	         |
+[LightZhan制作，允许规范转载]<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>把上面的代码拷贝进编辑器改改试试，很容易明白里面的玄机的！</p>
+<p>第二种情况是我们添加块，看下面一点。</p>
+<p>2.**在表格中添加块元素。**这个不用多说，直接在表格的格子里面用Markdown语法写作，渲染成对应的Markdown格式！比如加粗、斜体、代码块等等。下面来一个简单的例子，需要注意的是下面的例子当中我们的内容有几行！</p>
+<pre class="line-numbers language-none"><code class="language-none">|   Markdown   | 渲染结果       |
+|--------------|---------------|
+|    *斜体*    | *斜体*         | \
+|              |               |
+|    - 项目1   | - 项目1        | \
+|    - 项目2   | - 项目2        |
+|    ```python | ```python       \
+|    .1 + .2   | .1 + .2         \
+|    ```       | ```           |
+[LightZhan制作，允许规范转载]<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>注意代码后面的”\”，这个符号是指定换行的，如果项目占据多行一定要写上。上面的代码复制黏贴进编辑器可以看到下面的渲染结果</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909175924.png" alt="Joplin多行和内容块的示例图"></p>
+<p>**3.表格不需要表头。**这个也很简单，直接不写表头即可。拷贝下面的代码进编辑器</p>
+<pre class="line-numbers language-none"><code class="language-none">----:		| --------------: | ---------:	 |
+LightZhan	| lightzhan.xyz 	        ||
+^^		| 更多Joplin教程  | Qdown下载器	 |
+[LightZhan制作，允许规范转载]<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>然后你就可以看到惊喜</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909180209.png" alt="Joplin表格扩展没有表头的表格示例图"></p>
+<h2 id="启用Fountain语法支持">启用Fountain语法支持</h2>
+<p>这个插件的目标人群非常少，Fountain语法是用来写电影剧本的，而且要是要细讲的话估计又是一篇文章，因为使用的人非常少，所以我这里就不讲这个了。</p>
+<h2 id="Mermaid插件的作用">Mermaid插件的作用</h2>
+<p>Mermaid是一个用于画流程图、时序图、类图、状态图、甘特图、饼图的Markdown扩展，其中状态图是最新8.4版本的新功能。如果你不知道这些图是干什么的，不存在，下面的教程里面我会每个都给出例子。</p>
+<h2 id="在Joplin里面使用Mermaid">在Joplin里面使用Mermaid</h2>
+<p>在Joplin里面如果想要使用Mermaid，那么你需要使用代码块，并且代码的类型填写mermaid，详细的格式如下：</p>
+<pre class="line-numbers language-none"><code class="language-none">```mermaid
+graph TD
+    Start --&gt; Stop
+```<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>在渲染区我们就能得到如下的结果</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909180438.png" alt="Mermid绘图渲染示例"></p>
+<h2 id="Mermaid流程图">Mermaid流程图</h2>
+<p>下面我们讲解在Mermaid里面画流程图。上一节的示例便是流程图，我们把上一节的代码拿出来分析一下。首先我们看代码的第一行：graph TD，这一行代码有两个作用，graph表示我们图的类型，graph表示流程图，而第二个TD表示图的方向，可能的方向有如下几个</p>
+<ul>
+<li>TB：自顶向下</li>
+<li>BT：自底向上</li>
+<li>RL：从右到左</li>
+<li>LR：从左到右</li>
+<li>TD：和TB一样</li>
+</ul>
+<p>上面我们的例子使用的是TD，如果你对其它的方向不明白，可以把代码拷贝到编辑器里面修改方向参数就可以理解各个方向的意义了。</p>
+<p>上面的代码非常基础，因为如果要实现比较复杂的流程图，我们就需要使用一些比较高级的语法，比如定义节点。所谓的节点，你可以简单的理解为上面图片中的方框，但是如果我们要使用其它形状的节点怎么办呢？在上面的例子中我使用了默认的节点定义方法，也就是直接使用文本,这种方式定义节点的话id和显示文本是一样的，而且形状是固定的矩形。如果要定义不同的节点形状，或者使得id和显示文本不一样，可以使用下面的语法</p>
+<ul>
+<li>定义矩形形状的节点：id[text]</li>
+<li>定义圆角矩形的节点：id(text)</li>
+<li>定义椭圆形的节点：id([text])</li>
+<li>定义圆柱形的节点：id[(text)]</li>
+<li>定义圆形的节点：id((text))</li>
+<li>定义非对称图形的节点：id&gt;text]</li>
+<li>定义菱形的节点：id{text}</li>
+<li>定义六角形的节点：id</li>
+<li>定义平行四边形的节点(两个方向)：id[/text/]或者[\text]</li>
+<li>定义梯形的节点(两个方向)：id[/text] 或者 di[\text/]</li>
+</ul>
+<p>注意上面的id和text是需要我们自己定义替换的，如果同一个id有多个text，取最后一次的定义值！</p>
+<p>有了节点我们还需要将节点连接起来，也就是我们要使用线条或者箭头来进行节点的连接，Mermaid支持下面的方式：</p>
+<ul>
+<li>实线箭头：A–&gt;B</li>
+<li>实线无箭头：A–B</li>
+<li>无箭头实线上带文本：A–text–B</li>
+<li>实线箭头带文本：A–&gt;|text|B 或者 A–text–&gt;B</li>
+<li>虚线箭头：A-.-&gt;B</li>
+<li>虚线箭头带文本：A-.text.-&gt;B</li>
+<li>粗线箭头：A==&gt;B</li>
+<li>粗线箭头带箭头：A<mark>text</mark>&gt;B</li>
+</ul>
+<p>最好的办法就是把上面的代码拷贝进编辑器看看，一看你应该就能理解各个图形的形状！</p>
+<p>上面我们讲解了节点和连线，下面我们说说图形的绘制。上面我使用的例子非常基础，下面来一个复杂点的例子供大家修改和研究</p>
+<pre class="line-numbers language-none"><code class="language-none">```mermaid
+graph TD
+    light[LightZhan]
+    url[lightzhan.xyz]
+    QdownUrl[访问LightZhan博客Qdown页面]
+    Qdown((Qdown))
+    function[功能]
+    Qdown--&gt;|作者|light 
+    light--个人主页--&gt;url
+    Qdown--&gt;function
+    Qdown--&gt;QdownUrl
+    function1[极速下载]
+    function2[磁链/BT下载]
+    function3[迅雷下载]
+    function5[下载体验]
+    function4[Http/Https/FTP/SFTP]
+    function-.功能1.-&gt;function1
+    function-.功能2.-&gt;function2
+    function-.功能3.-&gt;function3
+    function-.功能4.-&gt;function4
+    function-.更多功能.-&gt;function5
+    annocement[本文首发于lightzhan.xyz,允许规范转载]
+
+```<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>上面代码的渲染结果如下：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909181150.png" alt="Mermaid流程图示例代码渲染结果"></p>
+<p>如果不清楚，可以把上面的代码拷贝到编辑器进行修改和摸索！</p>
+<h2 id="Mermaid时序图">Mermaid时序图</h2>
+<p>时序图是用于展示过程的方式和顺序的。举例来说，两个人之间的对话:</p>
+<p>A先问B：Qdown是啥？B回答：Qdown是全功能的下载软件！A又问：哪里可以下载呀？B回答： http://lightzhan.xyz/index.php/qdown/ 。我们使用mermaid绘制时序图来展示上面的对话过程：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909181418.png" alt="mermaid时序图示例图"></p>
+<p>这样是不是看上去清晰了很多了呢？希望通过这个例子能让你深切地感受到时序图是干什么用的！好了，放上上面的时序图的代码供大家研究：</p>
+<pre class="line-numbers language-none"><code class="language-none">```mermaid
+sequenceDiagram
+A-&gt;&gt;B:Qdown是啥？
+B--&gt;&gt;A:Qdown是全功能的下载软件！
+A-&gt;&gt;B:哪里可以下载呀？
+B--&gt;&gt;A:http://lightzhan.xyz/index.php/qdown/
+```<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>让我们来简单分析一下上面的代码。你可能注意到了第一行的sequenceDiagram，这个就是告诉mermaid我们在这里绘制时序图，然后下面有箭头，在时序图里面，mermaid支持下面类型的箭头和线段：</p>
+<ul>
+<li>实线并且没有箭头：A-&gt;B:text</li>
+<li>虚线没有箭头：A–&gt;B:text</li>
+<li>实线带箭头：A-&gt;&gt;B:text</li>
+<li>虚线带箭头：A–&gt;&gt;B:text</li>
+<li>实线并且在终点带一个x：A-xB:text</li>
+<li>虚线并且在终点带一个x：A–xB:text</li>
+</ul>
+<p>上面的text就是要显示在箭头或线段上的文本，在mermaid的时序图里面被称为消息，线段或箭头类型如果有不清楚的可以拷贝到编辑器里面看看，一目了然！</p>
+<p>还记得上面我们在流程图里面的节点吗？在时序图里面不是定义节点，而是定义参与者，也就是上面的A和B。上面的代码中我们定义参与者的方式采用的是默认方式，也就是不显示定义，有时候我们的参与者的名字太长的话可以使用显示定义来定义别名：</p>
+<pre class="line-numbers language-none"><code class="language-none">participant John
+participant Alice
+participant A as Alice
+participant J as John<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>上面代码的第一二行仅仅是显式定义我们的参与者，第三四行给我们的参与者定义别名，定义了别名后我们在下面的使用中就可以直接使用A代替Alice，使用J代替John了，这样输入会方便很多！</p>
+<p>好了，时序图差不多就讲到这里，接下来的一些高级用法大部分我们都用不到，或者要使用的话不如使用专业的绘图软件使用插图的方式导入。</p>
+<h2 id="使用Mermaid绘制类图">使用Mermaid绘制类图</h2>
+<h3 id="类的定义">类的定义</h3>
+<p>在讲解如何绘制类图之前我们先了解一下什么是类图！如果你是计算机专业或者会计算机编程的话应该就懂面向对象编程，对象是类的实例，而这里要绘制的类图就和面向对象编程里面的类相关。</p>
+<p>对于编程人员来说，函数具有参数和返回值，属性具有变量类型，我们举一个例子来说一下：</p>
+<pre class="line-numbers language-none"><code class="language-none">class BankAccount{
+  +String owner
+  +BigDecimal balance
+  +deposit(amount) bool
+  +withdrawl(amount)
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>上面的代码的渲染结果为：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909182000.png" alt="BankAccount类图"></p>
+<p>上面的代码是我直接从官方借鉴的，可以直观地看出对于银行账户（BankAccount），一共有两个属性和两个方法，属性都是具有对应的变量类型，而对于函数具有参数（amount），并且deposit函数还具有bool类型的返回值。你或许看到了前面的+号，这个是对应变量或属性的可见性，分别有：</p>
+<ul>
+<li>+ public</li>
+<li>– private</li>
+<li># protected</li>
+<li><code>~</code> Package/Internal</li>
+</ul>
+<p>如果我们想要定义的函数是抽象函数咋办呢？在括号的后面添加*即可：</p>
+<pre class="line-numbers language-none"><code class="language-none">someAbstractMethod()*<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>在渲染过后抽象函数会使用斜体进行显示，这里就不截图展示了。对于静态函数，将后面的*换为$即可，在显示时静态函数会具有下划线。</p>
+<h3 id="类之间的关系">类之间的关系</h3>
+<p>在编程中我们常常会用到的关系：</p>
+<table>
+<thead>
+<tr>
+<th>&lt;|–</th>
+<th>继承（Inheritance）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>*–</td>
+<td>组成（Composition）</td>
+</tr>
+<tr>
+<td>o–</td>
+<td>聚集（Aggregation）</td>
+</tr>
+<tr>
+<td>–&gt;</td>
+<td>关联（Association）</td>
+</tr>
+<tr>
+<td>—</td>
+<td>实线（Link (Solid)）</td>
+</tr>
+<tr>
+<td>…&gt;</td>
+<td>依赖（Dependency）</td>
+</tr>
+<tr>
+<td>…|&gt;</td>
+<td>实现（Realization）</td>
+</tr>
+<tr>
+<td>…</td>
+<td>虚线（Link (Dashed)）</td>
+</tr>
+</tbody>
+</table>
+<p>下面我们举一个例子：“狗”继承自“动物”类别</p>
+<pre class="line-numbers language-none"><code class="language-none">```mermaid
+classDiagram
+    class 动物{
+        特点1：能动
+        特点2：能叫
+    }
+    class 狗{
+        特点1：4条腿
+        特点2：会汪汪叫
+        特点3：可爱至极
+        汪汪叫(陌生人)
+    }
+    动物 &lt;|-- 狗
+```<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>渲染结果为：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909182019.png" alt="继承关系展示"></p>
+<p>结合代码和展示结果应该很好理解，这就是一个狗继承自动物的简单例子，我们还可以对关系结果打标签：</p>
+<pre class="line-numbers language-none"><code class="language-none">```mermaid
+classDiagram
+    class 动物{
+        特点1：能动
+        特点2：能叫
+    }
+    class 狗{
+        特点1：4条腿
+        特点2：会汪汪叫
+        特点3：可爱至极
+        汪汪叫(陌生人)
+    }
+    动物 &lt;|-- 狗:属于（继承）
+```<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>我们在关系指示后面加上冒号，然后后面加上关系说明，这样在渲染结果当中我们就可以看到箭头上出现了我们需要的标签说明：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909182129.png" alt="给关系加上说明标签"></p>
+<p>好了，使用mermaid绘制类图就讲到这里，还有一些用法不是很常用，我就不讲了。</p>
+<h2 id="使用mermaid绘制饼图">使用mermaid绘制饼图</h2>
+<p>绘制饼图的需求比较多，很多数据展示需要我们绘制饼图，幸运的是mermaid给我们提供了绘制饼图的功能，使用方法极其简单：</p>
+<pre class="line-numbers language-none"><code class="language-none">```mermaid
+pie
+    title LightZhan创作，允许规范转载（http://lightzhan.xyz）
+    "Joplin" : 42.96
+    "Qdown" : 50.05
+    " 黑科技" : 10.01
+    "其它" :  5
+
+```<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>在上面的代码中，pie关键字指定我们要绘制饼图，然后tiltile指定我们的标题，后面是数据分布，注意，mermaid会将我们输入的数据进行计算，上面的数据加起来并不是100，所以我们看到在下面的渲染结果中数据对应不上。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/0920210909182237.png" alt=""></p>
+<p>Joplin插件非常丰富，你能找到各种各样的功能，这里推荐一些插件使用，见下面这篇文章， <a href="https://blog.17lai.site/note/2021-09-10-the-joplin-plugin-recommend/">Joplin插件推荐</a>。</p>
+<h2 id="参考：-4">参考：</h2>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://lightzhan.xyz/index.php/category/software-installation-and-use/joplin/">lightzhan.xyz</a></li>
+</ul>
+<h2 id="系列教程-10"><strong>系列教程</strong></h2>
+<p><strong>笔记系列</strong></p>
+<ul>
+<li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
+</ul>
+<blockquote>
+<p>经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。</p>
+<ul>
+<li>pigo图床搭建与配置</li>
+<li>Joplin教程</li>
+<li>Snipaste截图工具</li>
+<li>Typora 作为Markdown编辑器最强</li>
+</ul>
+</blockquote>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://blog.17lai.fun/posts/e6086437/">Joplin入门指南&amp;实践方案</a></li>
+</ul>
+<blockquote>
+<ul>
+<li>Joplin和使用</li>
+<li>Joplin同步与备份</li>
+<li>Joplin导入与导出</li>
+</ul>
+</blockquote>
+<ul>
+<li><a href="https://blog.17lai.site/posts/92d347d6/">Joplin 插件以及其Markdown语法。All in One!</a></li>
+</ul>
+<blockquote>
+<ul>
+<li>Joplin简明教程</li>
+<li>markdown语法简明教程</li>
+</ul>
+</blockquote>
+<ul>
+<li><a href="https://blog.17lai.site/posts/e3ee7f8b/">Joplin 插件使用推荐</a></li>
+</ul>
+<blockquote>
+<ul>
+<li>教你用各种插件打造一个强大的笔记工具。</li>
+</ul>
+</blockquote>
+<ul>
+<li><a href="https://blog.17lai.site/posts/1802a8a7/">为知笔记私有化Docker部署</a></li>
+</ul>
+<blockquote>
+<ul>
+<li>如何部署自己私有的为知笔记。</li>
+<li>其实博主更推荐私有部署joplin</li>
+</ul>
+</blockquote>
+<p><strong>Gitbook使用系列</strong></p>
+<ul>
+<li>
+<p><a href="https://blog.17lai.site/posts/7fe86002/">GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</a></p>
+</li>
+<li>
+<p><a href="https://blog.17lai.site/posts/7790e989/">GitBook+GitLab撰写发布技术文档-Part2:GitLab篇</a></p>
+</li>
+<li>
+<p><a href="https://blog.17lai.site/posts/d6bad1e5/">自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</a></p>
+</li>
+</ul>
+<p><strong>Gitlab 使用系列</strong></p>
+<ul>
+<li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
+<li><a href="https://blog.17lai.site/posts/29a820b3/">破解Gitlab EE</a></li>
+<li><a href="https://blog.17lai.site/posts/d08eb7b/">Gitlab的安装及使用</a></li>
+<li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
+</ul>
+<p><strong>hexo系列</strong></p>
+<ul>
+<li>hexo 独立博客搭建 <a href="https://blog.17lai.site/posts/40300608/">[三万字教程]基于Hexo的matery主题搭建博客并深度优化</a></li>
+</ul>
+<blockquote>
+<ul>
+<li>docker 环境</li>
+<li>hexo使用入门</li>
+<li>hexo基础配置</li>
+<li>自定义修改</li>
+<li>hexo部署</li>
+<li>个性定义</li>
+<li>性能优化</li>
+<li>常见问题</li>
+</ul>
+</blockquote>
+<ul>
+<li><a href="https://blog.17lai.site/posts/cf0f47fd/">Hexo Markdown以及各种插件功能测试</a></li>
+</ul>
+<blockquote>
+<ul>
+<li>markdown 各种其它语法插件</li>
+<li>latex公式支持</li>
+<li>mermaid图表</li>
+<li>plant uml图表</li>
+<li>URL卡片</li>
+<li>bilibili卡片</li>
+<li>github卡片</li>
+<li>豆瓣卡片</li>
+<li>插入音乐和视频</li>
+<li>插入脑图</li>
+</ul>
+</blockquote>
+<link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
+      <categories>
+        <category>note</category>
+      </categories>
+      <tags>
+        <tag>note</tag>
+        <tag>Joplin</tag>
+        <tag>MarkDown</tag>
+        <tag>Mermaid</tag>
+      </tags>
   </entry>
   <entry>
     <title>为知笔记私有化Docker部署</title>
@@ -4918,8 +6615,8 @@ pm2 start app.js --name<span class="token operator">=</span><span class="token s
 </li>
 </ol>
 <p>编辑整理 From： <a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/JQBUqdq1YNsGqolQ0jjfNg">大大木头 [为知社区]</a></p>
-<h2 id="系列教程-7"><strong>系列教程</strong></h2>
-<h3 id="笔记系列-5"><strong>笔记系列</strong></h3>
+<h2 id="系列教程-13"><strong>系列教程</strong></h2>
+<p><strong>笔记系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
 </ul>
@@ -4968,7 +6665,7 @@ pm2 start app.js --name<span class="token operator">=</span><span class="token s
 <li>其实博主更推荐私有部署joplin</li>
 </ul>
 </blockquote>
-<h3 id="Gitbook使用系列-4"><strong>Gitbook使用系列</strong></h3>
+<p><strong>Gitbook使用系列</strong></p>
 <ul>
 <li>
 <p><a href="https://blog.17lai.site/posts/7fe86002/">GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</a></p>
@@ -4980,20 +6677,16 @@ pm2 start app.js --name<span class="token operator">=</span><span class="token s
 <p><a href="https://blog.17lai.site/posts/d6bad1e5/">自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</a></p>
 </li>
 </ul>
-<h3 id="Gitlab-使用系列-7">Gitlab 使用系列</h3>
-<blockquote>
+<p><strong>Gitlab 使用系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
 <li><a href="https://blog.17lai.site/posts/29a820b3/">破解Gitlab EE</a></li>
 <li><a href="https://blog.17lai.site/posts/d08eb7b/">Gitlab的安装及使用</a></li>
 <li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
 </ul>
-</blockquote>
-<h3 id="hexo系列-2"><strong>hexo系列</strong></h3>
+<p><strong>hexo系列</strong></p>
 <ul>
-<li>
-<h4 id="hexo-独立博客搭建-三万字教程-基于Hexo的matery主题搭建博客并深度优化-2">hexo 独立博客搭建 <a href="https://blog.17lai.site/posts/40300608/">[三万字教程]基于Hexo的matery主题搭建博客并深度优化</a></h4>
-</li>
+<li>hexo 独立博客搭建 <a href="https://blog.17lai.site/posts/40300608/">[三万字教程]基于Hexo的matery主题搭建博客并深度优化</a></li>
 </ul>
 <blockquote>
 <ul>
@@ -5135,8 +6828,8 @@ pm2 start app.js --name<span class="token operator">=</span><span class="token s
 <p>免费开源的笔记Joplin无论在功能上还是使用体验上基本上与Evernote印象笔记无异了，在隐私保护方面做得非常好，特别适合那些想要保存个人信息笔记的用户。</p>
 <p>使用免费开源的笔记Joplin最大的问题就是找好同步的网盘或者云存储，另外强烈建议大家在对Joplin的设置进行调整时先备份一个，以免同步后删除了所有的笔记。</p>
 <p>编辑整理 From：<a target="_blank" rel="noopener" href="https://wzfou.com/joplin/">挖站否</a></p>
-<h2 id="系列教程-8"><strong>系列教程</strong></h2>
-<h3 id="笔记系列-6"><strong>笔记系列</strong></h3>
+<h2 id="系列教程-9"><strong>系列教程</strong></h2>
+<p><strong>笔记系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
 </ul>
@@ -5185,7 +6878,7 @@ pm2 start app.js --name<span class="token operator">=</span><span class="token s
 <li>其实博主更推荐私有部署joplin</li>
 </ul>
 </blockquote>
-<h3 id="Gitbook使用系列-5"><strong>Gitbook使用系列</strong></h3>
+<p><strong>Gitbook使用系列</strong></p>
 <ul>
 <li>
 <p><a href="https://blog.17lai.site/posts/7fe86002/">GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</a></p>
@@ -5197,20 +6890,16 @@ pm2 start app.js --name<span class="token operator">=</span><span class="token s
 <p><a href="https://blog.17lai.site/posts/d6bad1e5/">自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</a></p>
 </li>
 </ul>
-<h3 id="Gitlab-使用系列-8">Gitlab 使用系列</h3>
-<blockquote>
+<p><strong>Gitlab 使用系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
 <li><a href="https://blog.17lai.site/posts/29a820b3/">破解Gitlab EE</a></li>
 <li><a href="https://blog.17lai.site/posts/d08eb7b/">Gitlab的安装及使用</a></li>
 <li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
 </ul>
-</blockquote>
-<h3 id="hexo系列-3"><strong>hexo系列</strong></h3>
+<p><strong>hexo系列</strong></p>
 <ul>
-<li>
-<h4 id="hexo-独立博客搭建-三万字教程-基于Hexo的matery主题搭建博客并深度优化-3">hexo 独立博客搭建 <a href="https://blog.17lai.site/posts/40300608/">[三万字教程]基于Hexo的matery主题搭建博客并深度优化</a></h4>
-</li>
+<li>hexo 独立博客搭建 <a href="https://blog.17lai.site/posts/40300608/">[三万字教程]基于Hexo的matery主题搭建博客并深度优化</a></li>
 </ul>
 <blockquote>
 <ul>
@@ -5550,8 +7239,8 @@ This is the admonition body
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1020210910225117.png" alt=""></p>
 <p>其他插件：</p>
 <p><a target="_blank" rel="noopener" href="https://github.com/joplin/plugins/blob/master/README.md#plugins">官方插件下载地址及其介绍</a></p>
-<h2 id="系列教程-9"><strong>系列教程</strong></h2>
-<h3 id="笔记系列-7"><strong>笔记系列</strong></h3>
+<h2 id="系列教程-12"><strong>系列教程</strong></h2>
+<p><strong>笔记系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
 </ul>
@@ -5600,7 +7289,7 @@ This is the admonition body
 <li>其实博主更推荐私有部署joplin</li>
 </ul>
 </blockquote>
-<h3 id="Gitbook使用系列-6"><strong>Gitbook使用系列</strong></h3>
+<p><strong>Gitbook使用系列</strong></p>
 <ul>
 <li>
 <p><a href="https://blog.17lai.site/posts/7fe86002/">GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</a></p>
@@ -5612,20 +7301,16 @@ This is the admonition body
 <p><a href="https://blog.17lai.site/posts/d6bad1e5/">自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</a></p>
 </li>
 </ul>
-<h3 id="Gitlab-使用系列-9">Gitlab 使用系列</h3>
-<blockquote>
+<p><strong>Gitlab 使用系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
 <li><a href="https://blog.17lai.site/posts/29a820b3/">破解Gitlab EE</a></li>
 <li><a href="https://blog.17lai.site/posts/d08eb7b/">Gitlab的安装及使用</a></li>
 <li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
 </ul>
-</blockquote>
-<h3 id="hexo系列-4"><strong>hexo系列</strong></h3>
+<p><strong>hexo系列</strong></p>
 <ul>
-<li>
-<h4 id="hexo-独立博客搭建-三万字教程-基于Hexo的matery主题搭建博客并深度优化-4">hexo 独立博客搭建 <a href="https://blog.17lai.site/posts/40300608/">[三万字教程]基于Hexo的matery主题搭建博客并深度优化</a></h4>
-</li>
+<li>hexo 独立博客搭建 <a href="https://blog.17lai.site/posts/40300608/">[三万字教程]基于Hexo的matery主题搭建博客并深度优化</a></li>
 </ul>
 <blockquote>
 <ul>
@@ -5675,7 +7360,7 @@ This is the admonition body
 <li>如果你遇到了什么问题，搜索本文，你很可能有收获！ <code>CtRL + F</code></li>
 <li>光临博主的博客 <a href="https://blog.17lai.site/">夜法之书</a></li>
 <li>本文就教你搭建一个美观实用的博客系统，步骤极尽详细！</li>
-<li>本文中提到的大量特性，已经被博主提交到<a target="_blank" rel="noopener" href="https://github.com/blinkfox/hexo-theme-matery">matery</a>主题develop分支，提交记录见<a target="_blank" rel="noopener" href="https://github.com/blinkfox/hexo-theme-matery/commits?author=appotry">Commit</a>。所以下面很多特性以及不用自己修改了，可以直接使用。</li>
+<li>本文中提到的大量特性，已经被博主提交到<a target="_blank" rel="noopener" href="https://github.com/blinkfox/hexo-theme-matery">matery</a>主题develop分支，提交记录见<a target="_blank" rel="noopener" href="https://github.com/blinkfox/hexo-theme-matery/commits?author=appotry">Commit</a>。所以下面很多特性已经不用自己修改了，可以直接使用。</li>
 </ul>
 </blockquote>
 <p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/11/0520211105195951.jpg" alt="为什么写博客"></p>
@@ -5689,7 +7374,7 @@ This is the admonition body
 <li><a target="_blank" rel="noopener" href="https://github.com/appotry/docker-hexo">Github-hexo</a></li>
 </ul>
 <p>使用推荐Docker来搭配本文，阅读使用，将更省事，方便，快捷。hexo环境一键搞定！</p>
-<h4 id="Docker一键安装">Docker一键安装</h4>
+<p>Docker一键安装</p>
 <pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml">docker create <span class="token punctuation">-</span><span class="token punctuation">-</span>name=hexo \
 <span class="token punctuation">-</span>e HEXO_SERVER_PORT=4000 \
 <span class="token punctuation">-</span>e GIT_USER="17lai" \
@@ -5697,7 +7382,7 @@ This is the admonition body
 <span class="token punctuation">-</span>v /mnt/blog.17lai.site<span class="token punctuation">:</span>/app \
 <span class="token punctuation">-</span>p 4000<span class="token punctuation">:</span>4000 \
 bloodstar/hexo<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h4 id="ssh-key-部署">ssh key 部署</h4>
+<h3 id="ssh-key-部署">ssh key 部署</h3>
 <p><strong>Docker会自动随机生成ssh key</strong> 在 /app/.ssh 目录下面。自动部署请把ssh key添加到github 等平台。</p>
 <p><a target="_blank" rel="noopener" href="https://docs.github.com/cn/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account">Github详细教程</a></p>
 <blockquote>
@@ -5708,14 +7393,85 @@ bloodstar/hexo<span aria-hidden="true" class="line-numbers-rows"><span></span><s
 <li>单击New <strong>SSH</strong> key（新<strong>SSH</strong> 密钥）或Add <strong>SSH</strong> key（添加<strong>SSH</strong> 密钥）。</li>
 </ol>
 </blockquote>
-<h4 id="进入docker">进入docker</h4>
+<h3 id="进入docker">进入docker</h3>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">docker</span> <span class="token builtin class-name">exec</span> -it hexo <span class="token function">bash</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>然后就可以正常运行hexo的各种命令了，是不是非常简单？ 快来试试吧。</p>
-<h4 id="用户自动运行脚本">用户自动运行脚本</h4>
+<h3 id="用户自动运行脚本">用户自动运行脚本</h3>
 <blockquote>
 <p>用户可以在这里添加自动配置，自动安装插件，等各种启动docker运行的命令。</p>
 </blockquote>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">vi</span> /app/useRun.sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h3 id="反向代理-Hexo-Docker">反向代理 Hexo Docker</h3>
+<blockquote>
+<p>一些测试可能需要ssl支持，那么用nginx来反向代理一下，就可以在本地愉快的测试ssl加密功能了。</p>
+</blockquote>
+<p>Nginx也使用docker来运行，<code>blog.17lai.fun</code>为本地域名，修改本地hosts dns信息来访问。</p>
+<p>docker compose 配置</p>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">nginxweb</span><span class="token punctuation">:</span>
+  <span class="token key atrule">image</span><span class="token punctuation">:</span> bloodstar/nginx<span class="token punctuation">-</span>purge
+  <span class="token key atrule">container_name</span><span class="token punctuation">:</span> <span class="token string">"nginxweb"</span>
+  <span class="token key atrule">hostname</span><span class="token punctuation">:</span> nginxweb
+  <span class="token key atrule">ports</span><span class="token punctuation">:</span>
+    <span class="token punctuation">-</span> <span class="token string">"80:80"</span>
+    <span class="token punctuation">-</span> <span class="token string">"443:443"</span>
+  <span class="token key atrule">restart</span><span class="token punctuation">:</span> always
+  <span class="token key atrule">volumes</span><span class="token punctuation">:</span>
+    <span class="token comment"># ying she zhu ji wang zhan mu lu</span>
+    <span class="token punctuation">-</span> $<span class="token punctuation">{</span>USERDIR<span class="token punctuation">}</span>/nginx/conf.d<span class="token punctuation">:</span>/etc/nginx/conf.d<span class="token punctuation">:</span>ro
+    <span class="token punctuation">-</span> $<span class="token punctuation">{</span>USERDIR<span class="token punctuation">}</span>/nginxproxy/certs<span class="token punctuation">:</span>/etc/nginx/certs<span class="token punctuation">:</span>ro
+    <span class="token punctuation">-</span> $<span class="token punctuation">{</span>USERDIR<span class="token punctuation">}</span>/nginx/nginx.conf<span class="token punctuation">:</span>/etc/nginx/nginx.conf<span class="token punctuation">:</span>ro<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p><a target="_blank" rel="noopener" href="https://hub.docker.com/r/bloodstar/nginx-purge"><strong>bloodstar/nginx-purge</strong></a></p>
+<div style="text-align: center">
+  <div class="github-card" data-user="appotry" data-repo="nginx-purge-docker" data-height="200" data-width="400" data-theme="default" data-target="" data-client-id="" data-client-secret=""></div>
+</div>
+<script src="/github-card-lib/githubcard.js"></script>
+
+<p>nginx配置文件 <code>blog.conf</code> ，配置文件放到<code>${USERDIR}/nginx/conf.d</code>目录中</p>
+<pre class="line-numbers language-nginx" data-language="nginx"><code class="language-nginx"><span class="token directive"><span class="token keyword">upstream</span> blog</span> <span class="token punctuation">{</span>
+    <span class="token directive"><span class="token keyword">server</span> hexo:4000</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token directive"><span class="token keyword">server</span></span> <span class="token punctuation">{</span>
+    <span class="token directive"><span class="token keyword">listen</span> <span class="token number">80</span></span><span class="token punctuation">;</span>
+    <span class="token directive"><span class="token keyword">listen</span> <span class="token number">443</span> ssl http2</span><span class="token punctuation">;</span>
+    <span class="token directive"><span class="token keyword">server_name</span>  blog.17lai.fun</span><span class="token punctuation">;</span>
+
+    <span class="token directive"><span class="token keyword">ssl_certificate</span> /etc/nginx/certs/17lai.pem</span><span class="token punctuation">;</span>
+    <span class="token directive"><span class="token keyword">ssl_certificate_key</span> /etc/nginx/certs/17lai.key</span><span class="token punctuation">;</span>
+
+    <span class="token directive"><span class="token keyword">ssl_session_cache</span> shared:aria2SSL:10m</span><span class="token punctuation">;</span>
+    <span class="token directive"><span class="token keyword">ssl_session_timeout</span>  <span class="token number">30m</span></span><span class="token punctuation">;</span>
+    <span class="token comment">#ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE:ECDH:AES:HIGH:!NULL:!aNULL:!MD5:!ADH:!RC4;</span>
+    <span class="token directive"><span class="token keyword">ssl_ciphers</span> EECDH+CHACHA20:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5</span><span class="token punctuation">;</span>
+    <span class="token directive"><span class="token keyword">ssl_protocols</span> TLSv1 TLSv1.1 TLSv1.2</span><span class="token punctuation">;</span>
+    <span class="token directive"><span class="token keyword">ssl_prefer_server_ciphers</span> <span class="token boolean">on</span></span><span class="token punctuation">;</span>
+    
+    <span class="token directive"><span class="token keyword">access_log</span> /var/log/nginx/blog.17lai.fun_access.log combined</span><span class="token punctuation">;</span>
+    <span class="token directive"><span class="token keyword">error_log</span>  /var/log/nginx/blog.17lai.fun_error.log</span><span class="token punctuation">;</span>
+    
+    <span class="token directive"><span class="token keyword">keepalive_requests</span> <span class="token number">10000</span></span><span class="token punctuation">;</span>
+    
+    <span class="token directive"><span class="token keyword">location</span> /</span> <span class="token punctuation">{</span>
+        <span class="token comment">#proxy_redirect off;</span>
+        <span class="token directive"><span class="token keyword">proxy_pass</span> http://blog</span><span class="token punctuation">;</span>
+
+        <span class="token directive"><span class="token keyword">proxy_buffering</span> <span class="token boolean">off</span></span><span class="token punctuation">;</span>
+        
+        <span class="token directive"><span class="token keyword">add_header</span> X-Cache-Status <span class="token variable">$upstream_cache_status</span></span><span class="token punctuation">;</span>
+        <span class="token directive"><span class="token keyword">proxy_set_header</span> Host <span class="token variable">$http_host</span></span><span class="token punctuation">;</span>
+
+        <span class="token directive"><span class="token keyword">proxy_set_header</span> X-Forwarded-Proto <span class="token variable">$scheme</span></span><span class="token punctuation">;</span>
+
+        <span class="token directive"><span class="token keyword">proxy_set_header</span> X-Real-IP <span class="token variable">$remote_addr</span></span><span class="token punctuation">;</span>
+        <span class="token directive"><span class="token keyword">proxy_set_header</span>  X-Forwarded-Ssl     <span class="token boolean">on</span></span><span class="token punctuation">;</span>
+        <span class="token directive"><span class="token keyword">proxy_set_header</span>  X-Forwarded-For     <span class="token variable">$proxy_add_x_forwarded_for</span></span><span class="token punctuation">;</span>      
+        <span class="token directive"><span class="token keyword">proxy_set_header</span>  X-Frame-Options     SAMEORIGIN</span><span class="token punctuation">;</span>
+        
+        <span class="token directive"><span class="token keyword">proxy_set_header</span> Upgrade <span class="token variable">$http_upgrade</span></span><span class="token punctuation">;</span>
+        <span class="token directive"><span class="token keyword">proxy_set_header</span> Connection <span class="token string">"upgrade"</span></span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> 
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <h2 id="Hexo入门篇">Hexo入门篇</h2>
 <h3 id="Hexo-通用简明教程">Hexo 通用简明教程</h3>
 <p><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn/">Hexo</a> 是一个快速、简洁且高效的博客框架。Hexo 使用 <a target="_blank" rel="noopener" href="http://daringfireball.net/projects/markdown/">Markdown</a>（或其他渲染引擎）解析文章，在几秒内，即可利用靓丽的主题生成静态网页。</p>
@@ -9497,6 +11253,10 @@ hexo<span class="token punctuation">.</span><span class="token function">on</spa
 <li>如果发现提交最新的提交时间/标识不一致，通过以下命令即可解决:</li>
 </ul>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span> reset --hard f085038efdf79546c09641d37b2a2429c1ae8e60 <span class="token comment">#github上最新的提交标识</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<h3 id="hexo-docker-本地访问内容没有更新">hexo docker 本地访问内容没有更新</h3>
+<p>可能是node内部PM2模块的缓存机制导致的。pm2模块重启一下就可以了。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">pm2 restart /hexo_run.js<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/2520220325143634.png" alt="image-20220325143625352"></p>
 <h3 id="fsevents报错">fsevents报错</h3>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">npm</span> ERR<span class="token operator">!</span> code EBADPLATFORM <span class="token function">npm</span> ERR<span class="token operator">!</span> notsup Unsupported platform <span class="token keyword">for</span>
 fsevents@2.3.2: wanted <span class="token punctuation">{</span><span class="token string">"os"</span><span class="token builtin class-name">:</span><span class="token string">"darwin"</span>,<span class="token string">"arch"</span><span class="token builtin class-name">:</span><span class="token string">"any"</span><span class="token punctuation">}</span> <span class="token punctuation">(</span>current:
@@ -9784,12 +11544,10 @@ location<span class="token punctuation">.</span>href<span class="token operator"
 <li><a target="_blank" rel="noopener" href="https://www.islu.cn/posts/21369.html#">Matery主题添加暗色模式</a> <a target="_blank" rel="noopener" href="https://dreamruins.gitee.io/tutorials/1121281946.html">黑夜模式</a> <a target="_blank" rel="noopener" href="https://github.com/ialoe/hexo-themes-matery-pro">开源代码hexo-themes-matery-pro</a></li>
 <li><a target="_blank" rel="noopener" href="https://www.islu.cn/posts/2687.html">加载动画(吃豆豆)</a> <a href="%5BMatery%E4%B8%BB%E9%A2%98%E8%87%AA%E5%AE%9A%E4%B9%89(%E5%85%AD)%E9%A1%B5%E9%9D%A2%E5%8A%A0%E8%BD%BD%E5%8A%A8%E7%94%BB%5D(https://dreamruins.gitee.io/tutorials/1793947201.html)">加载动画旋转方块</a></li>
 </ul>
-<h2 id="系列教程-12"><strong>系列教程</strong></h2>
-<h3 id="hexo系列-7"><strong>hexo系列</strong></h3>
+<h2 id="系列教程-11"><strong>系列教程</strong></h2>
+<p><strong>hexo系列</strong></p>
 <ul>
-<li>
-<h4 id="hexo-独立博客搭建-三万字教程-基于Hexo的matery主题搭建博客并深度优化-7">hexo 独立博客搭建 <a href="https://blog.17lai.site/posts/40300608/">[三万字教程]基于Hexo的matery主题搭建博客并深度优化</a></h4>
-</li>
+<li>hexo 独立博客搭建 <a href="https://blog.17lai.site/posts/40300608/">[三万字教程]基于Hexo的matery主题搭建博客并深度优化</a></li>
 </ul>
 <blockquote>
 <ul>
@@ -9820,7 +11578,7 @@ location<span class="token punctuation">.</span>href<span class="token operator"
 <li>插入脑图</li>
 </ul>
 </blockquote>
-<h3 id="笔记系列-10"><strong>笔记系列</strong></h3>
+<p><strong>笔记系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
 </ul>
@@ -9869,7 +11627,7 @@ location<span class="token punctuation">.</span>href<span class="token operator"
 <li>其实博主更推荐私有部署joplin</li>
 </ul>
 </blockquote>
-<h3 id="Gitbook使用系列-9"><strong>Gitbook使用系列</strong></h3>
+<p><strong>Gitbook使用系列</strong></p>
 <ul>
 <li>
 <p><a href="https://blog.17lai.site/posts/7fe86002/">GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</a></p>
@@ -9881,15 +11639,13 @@ location<span class="token punctuation">.</span>href<span class="token operator"
 <p><a href="https://blog.17lai.site/posts/d6bad1e5/">自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</a></p>
 </li>
 </ul>
-<h3 id="Gitlab-使用系列-12">Gitlab 使用系列</h3>
-<blockquote>
+<p><strong>Gitlab 使用系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
 <li><a href="https://blog.17lai.site/posts/29a820b3/">破解Gitlab EE</a></li>
 <li><a href="https://blog.17lai.site/posts/d08eb7b/">Gitlab的安装及使用</a></li>
 <li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
 </ul>
-</blockquote>
 <link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
       <categories>
         <category>hexo</category>
@@ -12173,9 +13929,9 @@ mosh --ssh<span class="token operator">=</span><span class="token string">"ssh -
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h2 id="现场MV">现场MV</h2>
-<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-FFyANKYfHgMxWOuX" src="https://player.bilibili.com/player.html?bvid=BV1B7411p7aD&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-FFyANKYfHgMxWOuX").style.height=document.getElementById("mmedia-FFyANKYfHgMxWOuX").scrollWidth*0.76+"px";
+<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-IyLvWqSMLnBjZifo" src="https://player.bilibili.com/player.html?bvid=BV1B7411p7aD&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-IyLvWqSMLnBjZifo").style.height=document.getElementById("mmedia-IyLvWqSMLnBjZifo").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-FFyANKYfHgMxWOuX").style.height=document.getElementById("mmedia-FFyANKYfHgMxWOuX").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-IyLvWqSMLnBjZifo").style.height=document.getElementById("mmedia-IyLvWqSMLnBjZifo").scrollWidth*0.76+"px";
     }; </script>
 <blockquote>
 <p>精品分析： 原作：石晶兰 <a target="_blank" rel="noopener" href="https://tieba.baidu.com/p/5313070309?red_tag=2537504175">短文吧</a></p>
@@ -15976,12 +17732,12 @@ usecase usecase
 <li><code>lrc:xxx</code>: （可选）歌词文件 URL #### <em><strong>单曲附带歌词显示</strong></em></li>
 </ul>
 
-        <div id="aplayer-AlpsRpaP" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;">
+        <div id="aplayer-wawucchT" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;">
             <pre class="aplayer-lrc-content"></pre>
         </div>
         <script>
           var ap = new APlayer({
-            element: document.getElementById("aplayer-AlpsRpaP"),
+            element: document.getElementById("aplayer-wawucchT"),
             narrow: false,
             autoplay: false,
             showlrc: 3,
@@ -16029,10 +17785,10 @@ usecase usecase
 {% endaplayerlist %}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 
-        <div id="aplayer-byryCyWE" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
+        <div id="aplayer-FZqeEeWA" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
 			  <script>
 				  var options = {"narrow":false,"autoplay":true,"showlrc":3,"mode":"random","mutex":true,"theme":"#e6d0b2","preload":"metadata","listmaxheight":"513px","music":[{"title":"Hotel California","author":"Camille and Kennerly","url":"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3","pic":"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp","lrc":"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc"},{"title":"Sold Out","author":"Diamonds","url":"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac","pic":"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg"}]};
-				  options.element = document.getElementById("aplayer-byryCyWE");
+				  options.element = document.getElementById("aplayer-FZqeEeWA");
 				  var ap = new APlayer(options);
 			    window.aplayers || (window.aplayers = []);
 				  window.aplayers.push(ap);
@@ -16283,11 +18039,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-IFQDHlVfWRqqcDOQ"></div><script> var IFQDHlVfWRqqcDOQ_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); IFQDHlVfWRqqcDOQ_options.container = document.getElementById("mmedia-IFQDHlVfWRqqcDOQ"); const ap_IFQDHlVfWRqqcDOQ = new APlayer(IFQDHlVfWRqqcDOQ_options); </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-ilxahulJgWOZBTVb"></div><script> var ilxahulJgWOZBTVb_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); ilxahulJgWOZBTVb_options.container = document.getElementById("mmedia-ilxahulJgWOZBTVb"); const ap_ilxahulJgWOZBTVb = new APlayer(ilxahulJgWOZBTVb_options); </script>
 
 - **列表**
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-zahdfvsrFlKhAOxr"></div><script> var zahdfvsrFlKhAOxr_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); zahdfvsrFlKhAOxr_options.container = document.getElementById("mmedia-zahdfvsrFlKhAOxr"); const ap_zahdfvsrFlKhAOxr = new APlayer(zahdfvsrFlKhAOxr_options); </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-vWmidMLpTWZsPifi"></div><script> var vWmidMLpTWZsPifi_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); vWmidMLpTWZsPifi_options.container = document.getElementById("mmedia-vWmidMLpTWZsPifi"); const ap_vWmidMLpTWZsPifi = new APlayer(vWmidMLpTWZsPifi_options); </script>
 <p><strong>例子</strong></p>
 <pre class="line-numbers language-none"><code class="language-none">{% mmedias "aplayer" "autoplay:false" %}
 {
@@ -16330,7 +18086,7 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 }
 <span class="token twig language-twig"><span class="token delimiter punctuation">{%</span> <span class="token tag-name keyword">endmmedias</span> <span class="token delimiter punctuation">%}</span></span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <pre class="line-numbers language-none"><code class="language-none">{% mmedia "dplayer" "url:https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4" %}<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<script src="https://cdn.jsdelivr.net/npm/dplayer@1/dist/DPlayer.min.js"></script><div id="mmedia-mYOoRjqstuOnSMVT"></div><script> var mYOoRjqstuOnSMVT_options = JSON.parse('{\"video\":{\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4\"}}'); mYOoRjqstuOnSMVT_options.container = document.getElementById("mmedia-mYOoRjqstuOnSMVT"); const dp_mYOoRjqstuOnSMVT = new DPlayer(mYOoRjqstuOnSMVT_options); </script>
+<script src="https://cdn.jsdelivr.net/npm/dplayer@1/dist/DPlayer.min.js"></script><div id="mmedia-FeTcqlnnORCRIdfB"></div><script> var FeTcqlnnORCRIdfB_options = JSON.parse('{\"video\":{\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4\"}}'); FeTcqlnnORCRIdfB_options.container = document.getElementById("mmedia-FeTcqlnnORCRIdfB"); const dp_FeTcqlnnORCRIdfB = new DPlayer(FeTcqlnnORCRIdfB_options); </script>
 
 <pre class="line-numbers language-none"><code class="language-none">{% mmedias "dplayer" %}
 {
@@ -16359,9 +18115,9 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 mmedia 插件允许在 contents 部分使用 JSON 编写配置，使用 JSON5 标准。
 
-<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-OQbcMWUQSAMuImah" src="https://player.bilibili.com/player.html?bvid=BV1fs411S7u7&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-OQbcMWUQSAMuImah").style.height=document.getElementById("mmedia-OQbcMWUQSAMuImah").scrollWidth*0.76+"px";
+<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-jwCAQJJnjVUixRWn" src="https://player.bilibili.com/player.html?bvid=BV1fs411S7u7&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-jwCAQJJnjVUixRWn").style.height=document.getElementById("mmedia-jwCAQJJnjVUixRWn").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-OQbcMWUQSAMuImah").style.height=document.getElementById("mmedia-OQbcMWUQSAMuImah").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-jwCAQJJnjVUixRWn").style.height=document.getElementById("mmedia-jwCAQJJnjVUixRWn").scrollWidth*0.76+"px";
     }; </script>
 
 <pre class="line-numbers language-none"><code class="language-none">{% mmedia "bilibili" "bvid:BV1fs411S7u7" %}<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
@@ -16386,9 +18142,9 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，使用 JSON5 �
 | max_width       | 850px                                              | css 属性                                                |
 | margin          | auto                                               | css 属性                                                |
 
-<style>.xgplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="xgplayer"><iframe class="xgplayer" id="mmedia-RlZmrkwyEwSCgmZX" src="https://www.ixigua.com/iframe/6925997698269053453?autoplay=0&amp;startTime=undefined" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-RlZmrkwyEwSCgmZX").style.height=document.getElementById("mmedia-RlZmrkwyEwSCgmZX").scrollWidth*0.7+"px";
+<style>.xgplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="xgplayer"><iframe class="xgplayer" id="mmedia-MRXPFvZRBvgRrfyB" src="https://www.ixigua.com/iframe/6925997698269053453?autoplay=0&amp;startTime=undefined" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-MRXPFvZRBvgRrfyB").style.height=document.getElementById("mmedia-MRXPFvZRBvgRrfyB").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-RlZmrkwyEwSCgmZX").style.height=document.getElementById("mmedia-RlZmrkwyEwSCgmZX").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-MRXPFvZRBvgRrfyB").style.height=document.getElementById("mmedia-MRXPFvZRBvgRrfyB").scrollWidth*0.7+"px";
     }; </script>
 
 <pre class="line-numbers language-none"><code class="language-none">{% mmedia "xigua" "xid=6925997698269053453" %}<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
@@ -16432,7 +18188,7 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，使用 JSON5 �
 
 <pre class="line-numbers language-none"><code class="language-none">{% mmedia "artplayer" "url:https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4" %}<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
-<script src="https://cdn.jsdelivr.net/npm/artplayer@3/dist/artplayer.js"></script><div id="mmedia-VPxuwuGhWHailcld" style="width:100%;height:650px;max-width:1200px;center"></div><script> var VPxuwuGhWHailcld_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); VPxuwuGhWHailcld_options.container = "#mmedia-VPxuwuGhWHailcld"; const art_VPxuwuGhWHailcld = new Artplayer(VPxuwuGhWHailcld_options); </script>
+<script src="https://cdn.jsdelivr.net/npm/artplayer@3/dist/artplayer.js"></script><div id="mmedia-UewGvzQCMfLtoPbH" style="width:100%;height:650px;max-width:1200px;center"></div><script> var UewGvzQCMfLtoPbH_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); UewGvzQCMfLtoPbH_options.container = "#mmedia-UewGvzQCMfLtoPbH"; const art_UewGvzQCMfLtoPbH = new Artplayer(UewGvzQCMfLtoPbH_options); </script>
 <pre class="line-numbers language-none"><code class="language-none">{% mmedias "artplayer" %}
 {
   url: "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4"
@@ -16462,12 +18218,10 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，使用 JSON5 �
 <span class="token title important"><span class="token punctuation">##</span> 咕咕咕咕咕咕咕咕咕咕咕咕</span>
 <span class="token title important"><span class="token punctuation">##</span> 凑一下行数让版面好看点</span>
 {% endmarkmap %}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h2 id="系列教程-3"><strong>系列教程</strong></h2>
-<h3 id="hexo系列"><strong>hexo系列</strong></h3>
+<h2 id="系列教程-4"><strong>系列教程</strong></h2>
+<p><strong>hexo系列</strong></p>
 <ul>
-<li>
-<h4 id="hexo-独立博客搭建-三万字教程-基于Hexo的matery主题搭建博客并深度优化">hexo 独立博客搭建 <a href="https://blog.17lai.site/posts/40300608/">[三万字教程]基于Hexo的matery主题搭建博客并深度优化</a></h4>
-</li>
+<li>hexo 独立博客搭建 <a href="https://blog.17lai.site/posts/40300608/">[三万字教程]基于Hexo的matery主题搭建博客并深度优化</a></li>
 </ul>
 <blockquote>
 <ul>
@@ -16498,7 +18252,7 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，使用 JSON5 �
 <li>插入脑图</li>
 </ul>
 </blockquote>
-<h3 id="笔记系列"><strong>笔记系列</strong></h3>
+<p><strong>笔记系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
 </ul>
@@ -17015,16 +18769,14 @@ CMD ["/bin/bash"]Copy<span aria-hidden="true" class="line-numbers-rows"><span></
 <li><a target="_blank" rel="noopener" href="https://mritd.com/2017/09/05/git-flow-note/">git-flow-note</a></li>
 <li><a target="_blank" rel="noopener" href="https://mritd.com/2017/11/28/ci-cd-gitlab-ci/">ci-cd-gitlab-ci</a></li>
 </ul>
-<h2 id="系列教程-2"><strong>系列教程</strong></h2>
-<h3 id="Gitlab-使用系列-3">Gitlab 使用系列</h3>
-<blockquote>
+<h2 id="系列教程-3"><strong>系列教程</strong></h2>
+<p><strong>Gitlab 使用系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
 <li><a href="https://blog.17lai.site/posts/29a820b3/">破解Gitlab EE</a></li>
 <li><a href="https://blog.17lai.site/posts/d08eb7b/">Gitlab的安装及使用</a></li>
 <li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
 </ul>
-</blockquote>
 <link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
       <categories>
         <category>Gitlab</category>
@@ -17450,7 +19202,7 @@ GitBook version: <span class="token number">3.2</span>.3<span aria-hidden="true"
 <li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/245763905">自己动手制作电子书的最佳方式</a></li>
 </ul>
 <h2 id="系列教程-6"><strong>系列教程</strong></h2>
-<h3 id="Gitbook使用系列-3"><strong>Gitbook使用系列</strong></h3>
+<p><strong>Gitbook使用系列</strong></p>
 <ul>
 <li>
 <p><a href="https://blog.17lai.site/posts/7fe86002/">GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</a></p>
@@ -17462,7 +19214,7 @@ GitBook version: <span class="token number">3.2</span>.3<span aria-hidden="true"
 <p><a href="https://blog.17lai.site/posts/d6bad1e5/">自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</a></p>
 </li>
 </ul>
-<h3 id="笔记系列-4"><strong>笔记系列</strong></h3>
+<p><strong>笔记系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/a8535f26/">完美笔记进化论</a></li>
 </ul>
@@ -17511,15 +19263,13 @@ GitBook version: <span class="token number">3.2</span>.3<span aria-hidden="true"
 <li>其实博主更推荐私有部署joplin</li>
 </ul>
 </blockquote>
-<h3 id="Gitlab-使用系列-6">Gitlab 使用系列</h3>
-<blockquote>
+<p><strong>Gitlab 使用系列</strong></p>
 <ul>
 <li><a href="https://blog.17lai.site/posts/acc13b70/"><strong>Gitlab的安装及使用教程完全版</strong></a></li>
 <li><a href="https://blog.17lai.site/posts/29a820b3/">破解Gitlab EE</a></li>
 <li><a href="https://blog.17lai.site/posts/d08eb7b/">Gitlab的安装及使用</a></li>
 <li><a href="https://blog.17lai.site/posts/1879721e/">CI/CD与Git Flow与GitLab</a></li>
 </ul>
-</blockquote>
 <link rel="stylesheet" href="/css/bilicard.css" type="text/css">]]></content>
       <categories>
         <category>gitbook</category>
@@ -17560,11 +19310,11 @@ GitBook version: <span class="token number">3.2</span>.3<span aria-hidden="true"
 <blockquote>
 <p>博文页面内插入音乐列表</p>
 </blockquote>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-zdeGYoWSasmCTNuy"></div><script> var zdeGYoWSasmCTNuy_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); zdeGYoWSasmCTNuy_options.container = document.getElementById("mmedia-zdeGYoWSasmCTNuy"); const ap_zdeGYoWSasmCTNuy = new APlayer(zdeGYoWSasmCTNuy_options); </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-SyuyAqcRBNnCdeti"></div><script> var SyuyAqcRBNnCdeti_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); SyuyAqcRBNnCdeti_options.container = document.getElementById("mmedia-SyuyAqcRBNnCdeti"); const ap_SyuyAqcRBNnCdeti = new APlayer(SyuyAqcRBNnCdeti_options); </script>
 
 
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-unExnTmasuRqRXKB"></div><script> var unExnTmasuRqRXKB_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); unExnTmasuRqRXKB_options.container = document.getElementById("mmedia-unExnTmasuRqRXKB"); const ap_unExnTmasuRqRXKB = new APlayer(unExnTmasuRqRXKB_options); </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css"><script src="https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js"></script><div id="mmedia-BEuTLJRhiqPXasRS"></div><script> var BEuTLJRhiqPXasRS_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); BEuTLJRhiqPXasRS_options.container = document.getElementById("mmedia-BEuTLJRhiqPXasRS"); const ap_BEuTLJRhiqPXasRS = new APlayer(BEuTLJRhiqPXasRS_options); </script>
 <h2 id="单独Aplayer音乐页面">单独Aplayer音乐页面</h2>
 <blockquote>
 <p><strong>直接戳这里 -&gt;</strong> <a href="https://blog.17lai.site/musics/">Musics</a></p>
@@ -17645,9 +19395,9 @@ GitBook version: <span class="token number">3.2</span>.3<span aria-hidden="true"
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[<link rel="stylesheet" class="aplayer-secondary-style-marker" href="/assets/css/APlayer.min.css"><script src="/assets/js/APlayer.min.js" class="aplayer-secondary-script-marker"></script><h2 id="现场MV-2">现场MV</h2>
-<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-IRUybMbUItdofsZz" src="https://player.bilibili.com/player.html?bvid=BV1b64y1d7pw&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-IRUybMbUItdofsZz").style.height=document.getElementById("mmedia-IRUybMbUItdofsZz").scrollWidth*0.76+"px";
+<style>.bbplayer{width: 100%; max-width: 850px; margin: auto}</style><div class="bbplayer"><iframe class="bbplayer" id="mmedia-bbJBTsZJELPYIPDz" src="https://player.bilibili.com/player.html?bvid=BV1b64y1d7pw&amp;page=1&amp;high_quality=1&amp;danmaku=true" allowfullscreen="allowfullscreen" scrolling="no" border="0" frameborder="0" framespacing="0" sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><script> document.getElementById("mmedia-bbJBTsZJELPYIPDz").style.height=document.getElementById("mmedia-bbJBTsZJELPYIPDz").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-IRUybMbUItdofsZz").style.height=document.getElementById("mmedia-IRUybMbUItdofsZz").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-bbJBTsZJELPYIPDz").style.height=document.getElementById("mmedia-bbJBTsZJELPYIPDz").scrollWidth*0.76+"px";
     }; </script>
 <h2 id="背景介绍">背景介绍</h2>
 <p>《曾经我也想过一了百了》是日本歌手中岛美嘉演唱的歌曲，由秋田弘填词和谱曲、出羽良彰编曲，于2013年8月28日发行，收录在中岛美嘉个人专辑《TOUGH 为爱勇敢》中。该歌曲勾勒出向死而生、努力活着的人，让人感到温暖和希望，让因为压力迷茫无助而有轻生想法的人，开始积极拥抱生活。 《曾经我也想过一了百了》由日本摇滚乐队amazarashi的主唱秋田弘创作，创作理念为“为了描写浓烈的希望，必须先描写深层的黑暗”。2010年，迎来出道十周年的中岛美嘉宣布自己因耳咽管开放症暂停一切音乐活动。在疾病的影响下，歌唱对她而言变得无比艰难。2011年，她携单曲《Dear》复出，但复出后始终经历着状态的起伏和媒体的质疑。 中岛美嘉起先向amazarashi提出合作请求，希望乐队能为自己创作一首节奏明快的歌曲，但随后秋田弘向她播放了乐队一首未发行的样本歌曲，并认为该曲很适合由她来演唱。收到该曲时，中岛美嘉起先感到十分惊讶，但听到最后泪流不止，感到自己的心变得柔和，便立即要求演唱该曲。录制过程中，中岛美嘉将自己的心声融入到了该曲中，希望能将力量传达给低迷苦闷的听众。</p>
@@ -17705,10 +19455,10 @@ GitBook version: <span class="token number">3.2</span>.3<span aria-hidden="true"
 [05:13.65]世界に少し期待するよ<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <h2 id="中文翻唱">中文翻唱</h2>
 
-        <div id="aplayer-TGAKmTLJ" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
+        <div id="aplayer-LGDMoyVd" class="aplayer aplayer-tag-marker" style="margin-bottom: 20px;"></div>
 			  <script>
 				  var options = {"narrow":false,"autoplay":false,"showlrc":3,"mode":"random","mutex":true,"theme":"#e6d0b2","preload":"metadata","listmaxheight":"513px","music":[{"title":"曾经我也想过一了百了","author":"一么","url":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3","pic":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg","lrc":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc"},{"title":"僕が死のうと思ったのは","author":"中岛美嘉","url":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3","pic":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg","lrc":"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc"}]};
-				  options.element = document.getElementById("aplayer-TGAKmTLJ");
+				  options.element = document.getElementById("aplayer-LGDMoyVd");
 				  var ap = new APlayer(options);
 			    window.aplayers || (window.aplayers = []);
 				  window.aplayers.push(ap);
