@@ -24,11 +24,6 @@
     <category term="硬盘" />
     <category term="nas" />
     <category term="embeded" />
-    <category term="3G" />
-    <category term="4G" />
-    <category term="3531a" />
-    <category term="移植" />
-    <category term="嵌入式" />
     <category term="hisilicon" />
     <category term="driver" />
     <category term="3798m" />
@@ -78,6 +73,11 @@
     <category term="mariadb" />
     <category term="mermaid" />
     <category term="Nas" />
+    <category term="3G" />
+    <category term="4G" />
+    <category term="3531a" />
+    <category term="移植" />
+    <category term="嵌入式" />
     <category term="hexo" />
     <category term="matery" />
     <category term="cdn" />
@@ -1261,10 +1261,445 @@ build:
 &lt;blockquote&gt;
 &lt;p&gt;整理转载：&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://mritd.com/2021/10/27/the-best-image-build-tool-earthly/&#34;&gt;the-best-image-build-tool-earthly&lt;/a&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
+&lt;h2 id=&#34;系列教程-11&#34;&gt;&lt;strong&gt;系列教程&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://blog.17lai.site/atom.xml&#34;&gt;全部文章RSS订阅&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;docker系列&lt;/strong&gt; &lt;a href=&#34;https://blog.17lai.site/categories/docker/atom.xml&#34;&gt;&lt;strong&gt;Docker 分类 RSS 订阅&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/42b6a86d/&#34;&gt;Docker使用简明教程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/9912bd5d/&#34;&gt;使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/1802a8a7/&#34;&gt;为知笔记私有化Docker部署&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/593cc323/&#34;&gt;Earthly 一个更加强大的镜像构建工具&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/90e60aac/&#34;&gt;使用 Shell 脚本实现一个简单 Docker&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/465d2738/&#34;&gt;如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/462f1e5c/&#34;&gt;通过IPV6访问Qnap NAS中Docker的服务&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 &lt;link rel=&#34;stylesheet&#34; href=&#34;/css/bilicard.css&#34; type=&#34;text/css&#34;&gt;</content>
         <category term="docker" />
         <category term="earthly" />
         <updated>2021-10-31T23:25:00.000Z</updated>
+    </entry>
+    <entry>
+        <id>https://blog.17lai.site/posts/465d2738/</id>
+        <title>如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers Containers 的反向代理</title>
+        <link rel="alternate" href="https://blog.17lai.site/posts/465d2738/"/>
+        <content type="html">&lt;p&gt;How To Use Traefik v2 as a Reverse Proxy for Docker Containers on Ubuntu 20.04&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Traefik 适合配合Dockers swarm 做服务， Dockers portainer 做管理，ELK集群做监控日志。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src=&#34;https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1420211014200800.png&#34; alt=&#34;Traefik&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;traefik&lt;/code&gt; 与 &lt;code&gt;nginx&lt;/code&gt; 一样，是一款优秀的反向代理工具，或者叫 &lt;code&gt;Edge Router&lt;/code&gt;。至于使用它的原因则基于以下几点&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;无须重启即可更新配置&lt;/li&gt;
+&lt;li&gt;自动的服务发现与负载均衡&lt;/li&gt;
+&lt;li&gt;与 &lt;code&gt;docker&lt;/code&gt; 完美集成，基于 &lt;code&gt;container label&lt;/code&gt; 的配置&lt;/li&gt;
+&lt;li&gt;漂亮的 &lt;code&gt;dashboard&lt;/code&gt; 界面&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;metrics&lt;/code&gt; 的支持，支持对 &lt;code&gt;prometheus&lt;/code&gt; 和 &lt;code&gt;k8s&lt;/code&gt; 集成&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;Introduction&#34;&gt;Introduction&lt;/h3&gt;
+&lt;p&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://www.docker.com/&#34;&gt;Docker&lt;/a&gt; can be an efficient way to run web applications in production, but you may want to run multiple applications on the same Docker host. In this situation, you’ll need to set up a reverse proxy. This is because you only want to expose ports &lt;code&gt;80&lt;/code&gt; and &lt;code&gt;443&lt;/code&gt; to the rest of the world.&lt;/p&gt;
+&lt;p&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://traefik.io/&#34;&gt;Traefik&lt;/a&gt; is a Docker-aware reverse proxy that includes a monitoring dashboard. Traefik v1 has been widely used for a while, and &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://www.digitalocean.com/community/tutorials/how-to-use-traefik-as-a-reverse-proxy-for-docker-containers-on-ubuntu-20-04&#34;&gt;you can follow this earlier tutorial to install Traefik v1&lt;/a&gt;). But in this tutorial, you’ll install and configure Traefik v2, which includes quite a few differences.&lt;/p&gt;
+&lt;p&gt;The biggest difference between Traefik v1 and v2 is that &lt;em&gt;frontends&lt;/em&gt; and &lt;em&gt;backends&lt;/em&gt; were removed and their combined functionality spread out across &lt;em&gt;routers&lt;/em&gt;, &lt;em&gt;middlewares&lt;/em&gt;, and &lt;em&gt;services&lt;/em&gt;. Previously a backend did the job of making modifications to requests and getting that request to whatever was supposed to handle it. Traefik v2 provides more separation of concerns by introducing middlewares that can modify requests before sending them to a service. Middlewares make it easier to specify a single modification step that might be used by a lot of different routes so that they can be reused (such as HTTP Basic Auth, which you’ll see later). A router can also use many different middlewares.&lt;/p&gt;
+&lt;p&gt;In this tutorial you’ll configure Traefik v2 to route requests to two different web application containers: a &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;http://wordpress.org/&#34;&gt;Wordpress&lt;/a&gt; container and an &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://www.adminer.org/&#34;&gt;Adminer&lt;/a&gt; container, each talking to a &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://www.mysql.com/&#34;&gt;MySQL&lt;/a&gt; database. You’ll configure Traefik to serve everything over HTTPS using &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://letsencrypt.org/&#34;&gt;Let’s Encrypt&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&#34;Prerequisites&#34;&gt;Prerequisites&lt;/h2&gt;
+&lt;p&gt;To complete this tutorial, you will need the following:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://www.digitalocean.com/products/linux-distribution/ubuntu/&#34;&gt;One Ubuntu 20.04 server&lt;/a&gt; with a sudo non-root user and a firewall. You can set this up by following our &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-20-04&#34;&gt;Ubuntu 20.04 initial server setup guide&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;Docker installed on your server, which you can accomplish by following &lt;strong&gt;Steps 1 and 2&lt;/strong&gt; of &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04&#34;&gt;How to Install and Use Docker on Ubuntu 20.04&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;Docker Compose installed using the instructions from &lt;strong&gt;Step 1&lt;/strong&gt; of &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-20-04&#34;&gt;How to Install Docker Compose on Ubuntu 20.04&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;A domain and three A records, &lt;code&gt;db-admin.your_domain&lt;/code&gt;, &lt;code&gt;blog.your_domain&lt;/code&gt; and &lt;code&gt;monitor.your_domain&lt;/code&gt;. Each should point to the IP address of your server. You can learn how to point domains to DigitalOcean Droplets by reading through &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://www.digitalocean.com/docs/networking/dns/&#34;&gt;DigitalOcean’s Domains and DNS documentation&lt;/a&gt;. Throughout this tutorial, substitute your domain for &lt;code&gt;your_domain&lt;/code&gt; in the configuration files and examples.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;Step-1-—-Configuring-and-Running-Traefik&#34;&gt;Step 1 — Configuring and Running Traefik&lt;/h2&gt;
+&lt;p&gt;The Traefik project has an &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://hub.docker.com/_/traefik&#34;&gt;official Docker image&lt;/a&gt;, so you will use that to run Traefik in a Docker container.&lt;/p&gt;
+&lt;p&gt;But before you get your Traefik container up and running, you need to create a configuration file and set up an encrypted password so you can access the monitoring dashboard.&lt;/p&gt;
+&lt;p&gt;You’ll use the &lt;code&gt;htpasswd&lt;/code&gt; utility to create this encrypted password. First, install the utility, which is included in the &lt;code&gt;apache2-utils&lt;/code&gt; package:&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token function&#34;&gt;sudo&lt;/span&gt; &lt;span class=&#34;token function&#34;&gt;apt-get&lt;/span&gt; &lt;span class=&#34;token function&#34;&gt;install&lt;/span&gt; apache2-utils&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Then generate the password with &lt;code&gt;htpasswd&lt;/code&gt;. Substitute &lt;code&gt;secure_password&lt;/code&gt; with the password you’d like to use for the Traefik admin user:&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;htpasswd -nb admin secure_password&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The output from the program will look like this:&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-none&#34;&gt;&lt;code class=&#34;language-none&#34;&gt;Outputadmin:$apr1$ruca84Hq$mbjdMZBAG.KWn7vfN/SNK/&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;You’ll use this output in the Traefik configuration file to set up HTTP Basic Authentication for the Traefik health check and monitoring dashboard. Copy the entire output line so you can paste it later.&lt;/p&gt;
+&lt;p&gt;To configure the Traefik server, you’ll create two new configuration files called &lt;code&gt;traefik.toml&lt;/code&gt; and &lt;code&gt;traefik_dynamic.toml&lt;/code&gt; using the TOML format. &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://github.com/toml-lang/toml&#34;&gt;TOML&lt;/a&gt; is a configuration language similar to INI files, but standardized. &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.traefik.io/providers/overview/&#34;&gt;These files let us configure the Traefik server and various integrations&lt;/a&gt;, or &lt;code&gt;providers&lt;/code&gt;, that you want to use. In this tutorial, you will use three of Traefik’s available providers: &lt;code&gt;api&lt;/code&gt;, &lt;code&gt;docker&lt;/code&gt;, and &lt;code&gt;acme&lt;/code&gt;. The last of these, &lt;code&gt;acme&lt;/code&gt;, supports TLS certificates using Let’s Encrypt.&lt;/p&gt;
+&lt;p&gt;Create and open &lt;code&gt;traefik.toml&lt;/code&gt; using &lt;code&gt;nano&lt;/code&gt; or your preferred text editor:&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token function&#34;&gt;nano&lt;/span&gt; traefik.toml&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;First, you want to specify the ports that Traefik should listen on using the &lt;code&gt;entryPoints&lt;/code&gt; section of your config file. You want two because you want to listen on port &lt;code&gt;80&lt;/code&gt; and &lt;code&gt;443&lt;/code&gt;. Let’s call these &lt;code&gt;web&lt;/code&gt; (port &lt;code&gt;80&lt;/code&gt;) and &lt;code&gt;websecure&lt;/code&gt; (port &lt;code&gt;443&lt;/code&gt;).&lt;/p&gt;
+&lt;p&gt;Add the following configurations:&lt;/p&gt;
+&lt;p&gt;traefik.toml&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-toml&#34; data-language=&#34;toml&#34;&gt;&lt;code class=&#34;language-toml&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;entryPoints&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;entryPoints.web&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+    &lt;span class=&#34;token key property&#34;&gt;address&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;:80&#34;&lt;/span&gt;
+    &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;entryPoints.web.http.redirections.entryPoint&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+      &lt;span class=&#34;token key property&#34;&gt;to&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;websecure&#34;&lt;/span&gt;
+      &lt;span class=&#34;token key property&#34;&gt;scheme&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;https&#34;&lt;/span&gt;
+
+  &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;entryPoints.websecure&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+    &lt;span class=&#34;token key property&#34;&gt;address&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;:443&#34;&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Note that you are also automatically redirecting traffic to be handled over TLS.&lt;/p&gt;
+&lt;p&gt;Next, configure the Traefik &lt;code&gt;api&lt;/code&gt;, which gives you access to both the API and your dashboard interface. The heading of &lt;code&gt;[api]&lt;/code&gt; is all that you need because the dashboard is then enabled by default, but you’ll be explicit for the time being.&lt;/p&gt;
+&lt;p&gt;Add the following code:&lt;/p&gt;
+&lt;p&gt;traefik.toml&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-toml&#34; data-language=&#34;toml&#34;&gt;&lt;code class=&#34;language-toml&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;.&lt;/span&gt;
+&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;api&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;dashboard&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token boolean&#34;&gt;true&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;To finish securing your web requests you want to use Let’s Encrypt to generate valid TLS certificates. Traefik v2 supports Let’s Encrypt out of the box and you can configure it by creating a &lt;em&gt;certificates resolver&lt;/em&gt; of the type &lt;code&gt;acme&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Let’s configure your certificates resolver now using the name &lt;code&gt;lets-encrypt&lt;/code&gt;:&lt;/p&gt;
+&lt;p&gt;traefik.toml&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-toml&#34; data-language=&#34;toml&#34;&gt;&lt;code class=&#34;language-toml&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;.&lt;/span&gt;
+&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;certificatesResolvers.lets-encrypt.acme&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;email&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;your_email@your_domain&#34;&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;storage&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;acme.json&#34;&lt;/span&gt;
+  &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;certificatesResolvers.lets-encrypt.acme.tlsChallenge&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This section is called &lt;code&gt;acme&lt;/code&gt; because &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://github.com/ietf-wg-acme/acme/&#34;&gt;ACME&lt;/a&gt; is the name of the protocol used to communicate with Let’s Encrypt to manage certificates. The Let’s Encrypt service requires registration with a valid email address, so to have Traefik generate certificates for your hosts, set the &lt;code&gt;email&lt;/code&gt; key to your email address. You then specify that you will store the information that you will receive from Let’s Encrypt in a JSON file called &lt;code&gt;acme.json&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;The &lt;code&gt;acme.tlsChallenge&lt;/code&gt; section allows us to specify how Let’s Encrypt can verify that the certificate. You’re configuring it to serve a file as part of the challenge over port &lt;code&gt;443&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Finally, you need to configure Traefik to work with Docker.&lt;/p&gt;
+&lt;p&gt;Add the following configurations:&lt;/p&gt;
+&lt;p&gt;traefik.toml&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-toml&#34; data-language=&#34;toml&#34;&gt;&lt;code class=&#34;language-toml&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;.&lt;/span&gt;
+&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;providers.docker&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;watch&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token boolean&#34;&gt;true&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;network&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;web&#34;&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The &lt;code&gt;docker&lt;/code&gt; provider enables Traefik to act as a proxy in front of Docker containers. You’ve configured the provider to &lt;code&gt;watch&lt;/code&gt; for new containers on the &lt;code&gt;web&lt;/code&gt; network, which you’ll create soon.&lt;/p&gt;
+&lt;p&gt;Our final configuration uses the &lt;code&gt;file&lt;/code&gt; provider. With Traefik v2, static and dynamic configurations can’t be mixed and matched. To get around this, you will use &lt;code&gt;traefik.toml&lt;/code&gt; to define your static configurations and then keep your dynamic configurations in another file, which you will call &lt;code&gt;traefik_dynamic.toml&lt;/code&gt;. Here you are using the &lt;code&gt;file&lt;/code&gt; provider to tell Traefik that it should read in dynamic configurations from a different file.&lt;/p&gt;
+&lt;p&gt;Add the following &lt;code&gt;file&lt;/code&gt; provider:&lt;/p&gt;
+&lt;p&gt;traefik.toml&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;providers.file&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  filename &lt;span class=&#34;token operator&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;traefik_dynamic.toml&#34;&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Your completed &lt;code&gt;traefik.toml&lt;/code&gt; will look like this:&lt;/p&gt;
+&lt;p&gt;traefik.toml&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-toml&#34; data-language=&#34;toml&#34;&gt;&lt;code class=&#34;language-toml&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;entryPoints&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;entryPoints.web&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+    &lt;span class=&#34;token key property&#34;&gt;address&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;:80&#34;&lt;/span&gt;
+    &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;entryPoints.web.http.redirections.entryPoint&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+      &lt;span class=&#34;token key property&#34;&gt;to&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;websecure&#34;&lt;/span&gt;
+      &lt;span class=&#34;token key property&#34;&gt;scheme&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;https&#34;&lt;/span&gt;
+
+  &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;entryPoints.websecure&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+    &lt;span class=&#34;token key property&#34;&gt;address&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;:443&#34;&lt;/span&gt;
+
+&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;api&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;dashboard&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token boolean&#34;&gt;true&lt;/span&gt;
+
+&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;certificatesResolvers.lets-encrypt.acme&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;email&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;your_email@your_domain&#34;&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;storage&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;acme.json&#34;&lt;/span&gt;
+  &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;certificatesResolvers.lets-encrypt.acme.tlsChallenge&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+
+&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;providers.docker&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;watch&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token boolean&#34;&gt;true&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;network&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;web&#34;&lt;/span&gt;
+
+&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;providers.file&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;filename&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;traefik_dynamic.toml&#34;&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Save and close the file.&lt;/p&gt;
+&lt;p&gt;Now let’s create &lt;code&gt;traefik_dynamic.toml&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;The dynamic configuration values that you need to keep in their own file are the &lt;em&gt;middlewares&lt;/em&gt; and the &lt;em&gt;routers&lt;/em&gt;. To put your dashboard behind a password you need to customize the API’s &lt;em&gt;router&lt;/em&gt; and configure a &lt;em&gt;middleware&lt;/em&gt; to handle HTTP basic authentication. Let’s start by setting up the middleware.&lt;/p&gt;
+&lt;p&gt;The middleware is configured on a per-protocol basis and since you’re working with HTTP you’ll specify it as a section chained off of &lt;code&gt;http.middlewares&lt;/code&gt;. Next comes the name of your middleware so that you can reference it later, followed by the type of middleware that it is, which will be &lt;code&gt;basicAuth&lt;/code&gt; in this case. Let’s call your middleware &lt;code&gt;simpleAuth&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Create and open a new file called &lt;code&gt;traefik_dynamic.toml&lt;/code&gt;:&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token function&#34;&gt;nano&lt;/span&gt; traefik_dynamic.toml&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Add the following code. This is where you’ll paste the output from the &lt;code&gt;htpasswd&lt;/code&gt; command:&lt;/p&gt;
+&lt;p&gt;traefik_dynamic.toml&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-toml&#34; data-language=&#34;toml&#34;&gt;&lt;code class=&#34;language-toml&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;http.middlewares.simpleAuth.basicAuth&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;users&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;
+    &lt;span class=&#34;token string&#34;&gt;&#34;admin:$apr1$ruca84Hq$mbjdMZBAG.KWn7vfN/SNK/&#34;&lt;/span&gt;
+  &lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;To configure the router for the api you’ll once again be chaining off of the protocol name, but instead of using &lt;code&gt;http.middlewares&lt;/code&gt;, you’ll use &lt;code&gt;http.routers&lt;/code&gt; followed by the name of the router. In this case, the &lt;code&gt;api&lt;/code&gt; provides its own named router that you can configure by using the &lt;code&gt;[http.routers.api]&lt;/code&gt; section. You’ll configure the domain that you plan on using with your dashboard also by setting the &lt;code&gt;rule&lt;/code&gt; key using a host match, the entrypoint to use &lt;code&gt;websecure&lt;/code&gt;, and the middlewares to include &lt;code&gt;simpleAuth&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Add the following configurations:&lt;/p&gt;
+&lt;p&gt;traefik_dynamic.toml&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-toml&#34; data-language=&#34;toml&#34;&gt;&lt;code class=&#34;language-toml&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;.&lt;/span&gt;
+&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;http.routers.api&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;rule&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;Host(`monitor.your_domain`)&#34;&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;entrypoints&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token string&#34;&gt;&#34;websecure&#34;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;middlewares&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token string&#34;&gt;&#34;simpleAuth&#34;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;service&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;api@internal&#34;&lt;/span&gt;
+  &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;http.routers.api.tls&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+    &lt;span class=&#34;token key property&#34;&gt;certResolver&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;lets-encrypt&#34;&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The &lt;code&gt;web&lt;/code&gt; entry point handles port &lt;code&gt;80&lt;/code&gt;, while the &lt;code&gt;websecure&lt;/code&gt; entry point uses port &lt;code&gt;443&lt;/code&gt; for TLS/SSL. You automatically redirect all of the traffic on port &lt;code&gt;80&lt;/code&gt; to the &lt;code&gt;websecure&lt;/code&gt; entry point to force secure connections for all requests.&lt;/p&gt;
+&lt;p&gt;Notice the last three lines here configure a &lt;em&gt;service&lt;/em&gt;, enable tls, and configure &lt;code&gt;certResolver&lt;/code&gt; to &lt;code&gt;&#34;lets-encrypt&#34;&lt;/code&gt;. Services are the final step to determining where a request is finally handled. The &lt;code&gt;api@internal&lt;/code&gt; service is a built-in service that sits behind the API that you expose. Just like routers and middlewares, services can be configured in this file, but you won’t need to do that to achieve your desired result.&lt;/p&gt;
+&lt;p&gt;Your completed &lt;code&gt;traefik_dynamic.toml&lt;/code&gt; file will look like this:&lt;/p&gt;
+&lt;p&gt;traefik_dynamic.toml&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-toml&#34; data-language=&#34;toml&#34;&gt;&lt;code class=&#34;language-toml&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;http.middlewares.simpleAuth.basicAuth&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;users&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;
+    &lt;span class=&#34;token string&#34;&gt;&#34;admin:$apr1$ruca84Hq$mbjdMZBAG.KWn7vfN/SNK/&#34;&lt;/span&gt;
+  &lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+
+&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;http.routers.api&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;rule&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;Host(`monitor.your_domain`)&#34;&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;entrypoints&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token string&#34;&gt;&#34;websecure&#34;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;middlewares&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token string&#34;&gt;&#34;simpleAuth&#34;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+  &lt;span class=&#34;token key property&#34;&gt;service&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;api@internal&#34;&lt;/span&gt;
+  &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token table class-name&#34;&gt;http.routers.api.tls&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt;
+    &lt;span class=&#34;token key property&#34;&gt;certResolver&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;lets-encrypt&#34;&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Save the file and exit the editor.&lt;/p&gt;
+&lt;p&gt;With these configurations in place, you will now start Traefik.&lt;/p&gt;
+&lt;h2 id=&#34;Step-2-–-Running-the-Traefik-Container&#34;&gt;Step 2 – Running the Traefik Container&lt;/h2&gt;
+&lt;p&gt;In this step you will create a Docker network for the proxy to share with containers. You will then access the Traefik dashboard. The Docker network is necessary so that you can use it with applications that are run using Docker Compose.&lt;/p&gt;
+&lt;p&gt;Create a new Docker network called &lt;code&gt;web&lt;/code&gt;:&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token function&#34;&gt;docker&lt;/span&gt; network create web&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;When the Traefik container starts, you will add it to this network. Then you can add additional containers to this network later for Traefik to proxy to.&lt;/p&gt;
+&lt;p&gt;Next, create an empty file that will hold your Let’s Encrypt information. You’ll share this into the container so Traefik can use it:&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token function&#34;&gt;touch&lt;/span&gt; acme.json&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Traefik will only be able to use this file if the root user inside of the container has unique read and write access to it. To do this, lock down the permissions on &lt;code&gt;acme.json&lt;/code&gt; so that only the owner of the file has read and write permission.&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token function&#34;&gt;chmod&lt;/span&gt; &lt;span class=&#34;token number&#34;&gt;600&lt;/span&gt; acme.json&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Once the file gets passed to Docker, the owner will automatically change to the &lt;strong&gt;root&lt;/strong&gt; user inside the container.&lt;/p&gt;
+&lt;p&gt;Finally, create the Traefik container with this command:&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token function&#34;&gt;docker&lt;/span&gt; run -d &lt;span class=&#34;token punctuation&#34;&gt;\&lt;/span&gt;
+  -v /var/run/docker.sock:/var/run/docker.sock &lt;span class=&#34;token punctuation&#34;&gt;\&lt;/span&gt;
+  -v &lt;span class=&#34;token environment constant&#34;&gt;$PWD&lt;/span&gt;/traefik.toml:/traefik.toml &lt;span class=&#34;token punctuation&#34;&gt;\&lt;/span&gt;
+  -v &lt;span class=&#34;token environment constant&#34;&gt;$PWD&lt;/span&gt;/traefik_dynamic.toml:/traefik_dynamic.toml &lt;span class=&#34;token punctuation&#34;&gt;\&lt;/span&gt;
+  -v &lt;span class=&#34;token environment constant&#34;&gt;$PWD&lt;/span&gt;/acme.json:/acme.json &lt;span class=&#34;token punctuation&#34;&gt;\&lt;/span&gt;
+  -p &lt;span class=&#34;token number&#34;&gt;80&lt;/span&gt;:80 &lt;span class=&#34;token punctuation&#34;&gt;\&lt;/span&gt;
+  -p &lt;span class=&#34;token number&#34;&gt;443&lt;/span&gt;:443 &lt;span class=&#34;token punctuation&#34;&gt;\&lt;/span&gt;
+  --network web &lt;span class=&#34;token punctuation&#34;&gt;\&lt;/span&gt;
+  --name traefik &lt;span class=&#34;token punctuation&#34;&gt;\&lt;/span&gt;
+  traefik:v2.2&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This command is a little long. Let’s break it down.&lt;/p&gt;
+&lt;p&gt;You use the &lt;code&gt;-d&lt;/code&gt; flag to run the container in the background as a daemon. You then share your &lt;code&gt;docker.sock&lt;/code&gt; file into the container so that the Traefik process can listen for changes to containers. You also share the &lt;code&gt;traefik.toml&lt;/code&gt; and &lt;code&gt;traefik_dynamic.toml&lt;/code&gt; configuration files into the container, as well as &lt;code&gt;acme.json&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Next, you map ports &lt;code&gt;:80&lt;/code&gt; and &lt;code&gt;:443&lt;/code&gt; of your Docker host to the same ports in the Traefik container so Traefik receives all HTTP and HTTPS traffic to the server.&lt;/p&gt;
+&lt;p&gt;You set the network of the container to &lt;code&gt;web&lt;/code&gt;, and you name the container &lt;code&gt;traefik&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Finally, you use the &lt;code&gt;traefik:v2.2&lt;/code&gt; image for this container so that you can guarantee that you’re not running a completely different version than this tutorial is written for.&lt;/p&gt;
+&lt;p&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.docker.com/engine/reference/builder/#entrypoint&#34;&gt;A Docker image’s &lt;code&gt;ENTRYPOINT&lt;/code&gt; is a command that always runs when a container is created from the image&lt;/a&gt;. In this case, the command is the &lt;code&gt;traefik&lt;/code&gt; binary within the container. You can pass additional arguments to that command when you launch the container, but you’ve configured all of your settings in the &lt;code&gt;traefik.toml&lt;/code&gt; file.&lt;/p&gt;
+&lt;p&gt;With the container started, you now have a dashboard you can access to see the health of your containers. You can also use this dashboard to visualize the routers, services, and middlewares that Traefik has registered. You can try to access the monitoring dashboard by pointing your browser to &lt;code&gt;https://monitor.your_domain/dashboard/&lt;/code&gt; (the trailing &lt;code&gt;/&lt;/code&gt; is required).&lt;/p&gt;
+&lt;p&gt;You will be prompted for your username and password, which are &lt;strong&gt;admin&lt;/strong&gt; and the password you configured in Step 1.&lt;/p&gt;
+&lt;p&gt;Once logged in, you’ll see the Traefik interface:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1420211014200207.png&#34; alt=&#34;Empty Traefik dashboard&#34;&gt;&lt;/p&gt;
+&lt;p&gt;You will notice that there are already some routers and services registered, but those are the ones that come with Traefik and the router configuration that you wrote for the API.&lt;/p&gt;
+&lt;p&gt;You now have your Traefik proxy running, and you’ve configured it to work with Docker and monitor other containers. In the next step you will start some containers for Traefik to proxy.&lt;/p&gt;
+&lt;h2 id=&#34;Step-3-—-Registering-Containers-with-Traefik&#34;&gt;Step 3 — Registering Containers with Traefik&lt;/h2&gt;
+&lt;p&gt;With the Traefik container running, you’re ready to run applications behind it. Let’s launch the following containers behind Traefik:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;A blog using the &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://hub.docker.com/_/wordpress/&#34;&gt;official WordPress image&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;A database management server using the &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://hub.docker.com/_/adminer/&#34;&gt;official Adminer image&lt;/a&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;You’ll manage both of these applications with Docker Compose using a &lt;code&gt;docker-compose.yml&lt;/code&gt; file.&lt;/p&gt;
+&lt;p&gt;Create and open the &lt;code&gt;docker-compose.yml&lt;/code&gt; file in your editor:&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token function&#34;&gt;nano&lt;/span&gt; docker-compose.yml&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Add the following lines to the file to specify the version and the networks you’ll use:&lt;/p&gt;
+&lt;p&gt;docker-compose.yml&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-yaml&#34; data-language=&#34;yaml&#34;&gt;&lt;code class=&#34;language-yaml&#34;&gt;&lt;span class=&#34;token key atrule&#34;&gt;version&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;3&#34;&lt;/span&gt;
+
+&lt;span class=&#34;token key atrule&#34;&gt;networks&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;token key atrule&#34;&gt;web&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;external&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;token boolean important&#34;&gt;true&lt;/span&gt;
+  &lt;span class=&#34;token key atrule&#34;&gt;internal&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;external&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;token boolean important&#34;&gt;false&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;You use Docker Compose version &lt;code&gt;3&lt;/code&gt; because it’s the newest major version of the Compose file format.&lt;/p&gt;
+&lt;p&gt;For Traefik to recognize your applications, they must be part of the same network, and since you created the network manually, you pull it in by specifying the network name of &lt;code&gt;web&lt;/code&gt; and setting &lt;code&gt;external&lt;/code&gt; to &lt;code&gt;true&lt;/code&gt;. Then you define another network so that you can connect your exposed containers to a database container that you won’t expose through Traefik. You’ll call this network &lt;code&gt;internal&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Next, you’ll define each of your &lt;code&gt;services&lt;/code&gt;, one at a time. Let’s start with the &lt;code&gt;blog&lt;/code&gt; container, which you’ll base on the official WordPress image. Add this configuration to the bottom of the file:&lt;/p&gt;
+&lt;p&gt;docker-compose.yml&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-yaml&#34; data-language=&#34;yaml&#34;&gt;&lt;code class=&#34;language-yaml&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;...&lt;/span&gt;
+
+&lt;span class=&#34;token key atrule&#34;&gt;services&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;token key atrule&#34;&gt;blog&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;image&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; wordpress&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;4.9.8&lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt;apache
+    &lt;span class=&#34;token key atrule&#34;&gt;environment&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token key atrule&#34;&gt;WORDPRESS_DB_PASSWORD&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;labels&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.http.routers.blog.rule=Host(`blog.your_domain`)
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.http.routers.blog.tls=true
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.http.routers.blog.tls.certresolver=lets&lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt;encrypt
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.port=80
+    &lt;span class=&#34;token key atrule&#34;&gt;networks&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; internal
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; web
+    &lt;span class=&#34;token key atrule&#34;&gt;depends_on&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; mysql&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The &lt;code&gt;environment&lt;/code&gt; key lets you specify environment variables that will be set inside of the container. By not setting a value for &lt;code&gt;WORDPRESS_DB_PASSWORD&lt;/code&gt;, you’re telling Docker Compose to get the value from your shell and pass it through when you create the container. You will define this environment variable in your shell before starting the containers. This way you don’t hard-code passwords into the configuration file.&lt;/p&gt;
+&lt;p&gt;The &lt;code&gt;labels&lt;/code&gt; section is where you specify configuration values for Traefik. Docker labels don’t do anything by themselves, but Traefik reads these so it knows how to treat containers. Here’s what each of these labels does:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;traefik.http.routers.adminer.rule=Host(`````blog.your_domain`````)&lt;/code&gt; creates a new &lt;em&gt;router&lt;/em&gt; for your container and then specifies the routing rule used to determine if a request matches this container.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;traefik.routers.custom_name.tls=true&lt;/code&gt; specifies that this router should use TLS.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;traefik.routers.custom_name.tls.certResolver=lets-encrypt&lt;/code&gt; specifies that the certificates resolver that you created earlier called &lt;code&gt;lets-encrypt&lt;/code&gt; should be used to get a certificate for this route.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;traefik.port&lt;/code&gt; specifies the exposed port that Traefik should use to route traffic to this container.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;With this configuration, all traffic sent to your Docker host on port &lt;code&gt;80&lt;/code&gt; or &lt;code&gt;443&lt;/code&gt; with the domain of &lt;code&gt;blog.your_domain&lt;/code&gt; will be routed to the &lt;code&gt;blog&lt;/code&gt; container.&lt;/p&gt;
+&lt;p&gt;You assign this container to two different networks so that Traefik can find it via the &lt;code&gt;web&lt;/code&gt; network and it can communicate with the database container through the &lt;code&gt;internal&lt;/code&gt; network.&lt;/p&gt;
+&lt;p&gt;Lastly, the &lt;code&gt;depends_on&lt;/code&gt; key tells Docker Compose that this container needs to start &lt;em&gt;after&lt;/em&gt; its dependencies are running. Since WordPress needs a database to run, you must run your &lt;code&gt;mysql&lt;/code&gt; container before starting your &lt;code&gt;blog&lt;/code&gt; container.&lt;/p&gt;
+&lt;p&gt;Next, configure the MySQL service:&lt;/p&gt;
+&lt;p&gt;docker-compose.yml&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-yaml&#34; data-language=&#34;yaml&#34;&gt;&lt;code class=&#34;language-yaml&#34;&gt;&lt;span class=&#34;token key atrule&#34;&gt;services&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+&lt;span class=&#34;token punctuation&#34;&gt;...&lt;/span&gt;
+  &lt;span class=&#34;token key atrule&#34;&gt;mysql&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;image&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; mysql&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;token number&#34;&gt;5.7&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;environment&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token key atrule&#34;&gt;MYSQL_ROOT_PASSWORD&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;networks&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; internal
+    &lt;span class=&#34;token key atrule&#34;&gt;labels&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.enable=false&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;You’re using the official MySQL 5.7 image for this container. You’ll notice that you’re once again using an &lt;code&gt;environment&lt;/code&gt; item without a value. The &lt;code&gt;MYSQL_ROOT_PASSWORD&lt;/code&gt; and &lt;code&gt;WORDPRESS_DB_PASSWORD&lt;/code&gt; variables will need to be set to the same value to make sure that your WordPress container can communicate with the MySQL. You don’t want to expose the &lt;code&gt;mysql&lt;/code&gt; container to Traefik or the outside world, so you’re only assigning this container to the &lt;code&gt;internal&lt;/code&gt; network. Since Traefik has access to the Docker socket, the process will still expose a router for the &lt;code&gt;mysql&lt;/code&gt; container by default, so you’ll add the label &lt;code&gt;traefik.enable=false&lt;/code&gt; to specify that Traefik should not expose this container.&lt;/p&gt;
+&lt;p&gt;Finally, define the Adminer container:&lt;/p&gt;
+&lt;p&gt;docker-compose.yml&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-yaml&#34; data-language=&#34;yaml&#34;&gt;&lt;code class=&#34;language-yaml&#34;&gt;&lt;span class=&#34;token key atrule&#34;&gt;services&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+&lt;span class=&#34;token punctuation&#34;&gt;...&lt;/span&gt;
+  &lt;span class=&#34;token key atrule&#34;&gt;adminer&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;image&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; adminer&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;4.6.3&lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt;standalone
+    &lt;span class=&#34;token key atrule&#34;&gt;labels&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.http.routers.adminer.rule=Host(`db&lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt;admin.your_domain`)
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.http.routers.adminer.tls=true
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.http.routers.adminer.tls.certresolver=lets&lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt;encrypt
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.port=8080
+    &lt;span class=&#34;token key atrule&#34;&gt;networks&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; internal
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; web
+    &lt;span class=&#34;token key atrule&#34;&gt;depends_on&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; mysql&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This container is based on the official Adminer image. The &lt;code&gt;network&lt;/code&gt; and &lt;code&gt;depends_on&lt;/code&gt; configuration for this container exactly match what you’re using for the &lt;code&gt;blog&lt;/code&gt; container.&lt;/p&gt;
+&lt;p&gt;The line &lt;code&gt;traefik.http.routers.adminer.rule=Host(`````db-admin.your_domain`````)&lt;/code&gt; tells Traefik to examine the host requested. If it matches the pattern of &lt;code&gt;db-admin.your_domain&lt;/code&gt;, Traefik will route the traffic to the &lt;code&gt;adminer&lt;/code&gt; container over port &lt;code&gt;8080&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Your completed &lt;code&gt;docker-compose.yml&lt;/code&gt; file will look like this:&lt;/p&gt;
+&lt;p&gt;docker-compose.yml&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-yaml&#34; data-language=&#34;yaml&#34;&gt;&lt;code class=&#34;language-yaml&#34;&gt;&lt;span class=&#34;token key atrule&#34;&gt;version&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;3&#34;&lt;/span&gt;
+
+&lt;span class=&#34;token key atrule&#34;&gt;networks&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;token key atrule&#34;&gt;web&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;external&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;token boolean important&#34;&gt;true&lt;/span&gt;
+  &lt;span class=&#34;token key atrule&#34;&gt;internal&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;external&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;token boolean important&#34;&gt;false&lt;/span&gt;
+
+&lt;span class=&#34;token key atrule&#34;&gt;services&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;token key atrule&#34;&gt;blog&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;image&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; wordpress&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;4.9.8&lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt;apache
+    &lt;span class=&#34;token key atrule&#34;&gt;environment&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token key atrule&#34;&gt;WORDPRESS_DB_PASSWORD&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;labels&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.http.routers.blog.rule=Host(`blog.your_domain`)
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.http.routers.blog.tls=true
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.http.routers.blog.tls.certresolver=lets&lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt;encrypt
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.port=80
+    &lt;span class=&#34;token key atrule&#34;&gt;networks&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; internal
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; web
+    &lt;span class=&#34;token key atrule&#34;&gt;depends_on&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; mysql
+
+  &lt;span class=&#34;token key atrule&#34;&gt;mysql&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;image&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; mysql&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;token number&#34;&gt;5.7&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;environment&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token key atrule&#34;&gt;MYSQL_ROOT_PASSWORD&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;networks&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; internal
+    &lt;span class=&#34;token key atrule&#34;&gt;labels&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.enable=false
+
+  &lt;span class=&#34;token key atrule&#34;&gt;adminer&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;image&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; adminer&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;4.6.3&lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt;standalone
+    &lt;span class=&#34;token key atrule&#34;&gt;labels&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;labels&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.http.routers.adminer.rule=Host(`db&lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt;admin.your_domain`)
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.http.routers.adminer.tls=true
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.http.routers.adminer.tls.certresolver=lets&lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt;encrypt
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; traefik.port=8080
+    &lt;span class=&#34;token key atrule&#34;&gt;networks&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; internal
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; web
+    &lt;span class=&#34;token key atrule&#34;&gt;depends_on&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; mysql&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Save the file and exit the text editor.&lt;/p&gt;
+&lt;p&gt;Next, set values in your shell for the &lt;code&gt;WORDPRESS_DB_PASSWORD&lt;/code&gt; and &lt;code&gt;MYSQL_ROOT_PASSWORD&lt;/code&gt; variables:&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token builtin class-name&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;token assign-left variable&#34;&gt;WORDPRESS_DB_PASSWORD&lt;/span&gt;&lt;span class=&#34;token operator&#34;&gt;=&lt;/span&gt;secure_database_password
+&lt;span class=&#34;token builtin class-name&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;token assign-left variable&#34;&gt;MYSQL_ROOT_PASSWORD&lt;/span&gt;&lt;span class=&#34;token operator&#34;&gt;=&lt;/span&gt;secure_database_password&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Substitute &lt;code&gt;secure_database_password&lt;/code&gt; with your desired database password. Remember to use the same password for both &lt;code&gt;WORDPRESS_DB_PASSWORD&lt;/code&gt; and &lt;code&gt;MYSQL_ROOT_PASSWORD&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;With these variables set, run the containers using &lt;code&gt;docker-compose&lt;/code&gt;:&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token function&#34;&gt;docker-compose&lt;/span&gt; up -d&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now watch the Traefik admin dashboard while it populates.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1420211014200110.png&#34; alt=&#34;Populated Traefik dashboard&#34;&gt;&lt;/p&gt;
+&lt;p&gt;If you explore the &lt;strong&gt;Routers&lt;/strong&gt; section you will find routers for &lt;code&gt;adminer&lt;/code&gt; and &lt;code&gt;blog&lt;/code&gt; configured with TLS:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1420211014200142.png&#34; alt=&#34;HTTP Routers w/ TLS&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Navigate to &lt;code&gt;blog.your_domain&lt;/code&gt;, substituting &lt;code&gt;your_domain&lt;/code&gt; with your domain. You’ll be redirected to a TLS connection and you can now complete the WordPress setup:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1420211014200114.png&#34; alt=&#34;WordPress setup screen&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Now access Adminer by visiting &lt;code&gt;db-admin.your_domain&lt;/code&gt; in your browser, again substituting &lt;code&gt;your_domain&lt;/code&gt; with your domain. The &lt;code&gt;mysql&lt;/code&gt; container isn’t exposed to the outside world, but the &lt;code&gt;adminer&lt;/code&gt; container has access to it through the &lt;code&gt;internal&lt;/code&gt; Docker network that they share using the &lt;code&gt;mysql&lt;/code&gt; container name as a hostname.&lt;/p&gt;
+&lt;p&gt;On the Adminer login screen, enter &lt;code&gt;root&lt;/code&gt; for &lt;strong&gt;Username&lt;/strong&gt;, enter &lt;code&gt;mysql&lt;/code&gt; for &lt;strong&gt;Server&lt;/strong&gt;, and enter the value you set for &lt;code&gt;MYSQL_ROOT_PASSWORD&lt;/code&gt; for the &lt;strong&gt;Password&lt;/strong&gt;. Leave &lt;strong&gt;Database&lt;/strong&gt; empty. Now press &lt;strong&gt;Login&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;Once logged in, you’ll see the Adminer user interface.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1420211014200132.png&#34; alt=&#34;Adminer connected to the MySQL database&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Both sites are now working, and you can use the dashboard at &lt;code&gt;monitor.your_domain&lt;/code&gt; to keep an eye on your applications.&lt;/p&gt;
+&lt;h2 id=&#34;Conclusion&#34;&gt;Conclusion&lt;/h2&gt;
+&lt;p&gt;In this tutorial, you configured Traefik v2 to proxy requests to other applications in Docker containers.&lt;/p&gt;
+&lt;p&gt;Traefik’s declarative configuration at the application container level makes it easy to configure more services, and there’s no need to restart the &lt;code&gt;traefik&lt;/code&gt; container when you add new applications to proxy traffic to since Traefik notices the changes immediately through the Docker socket file it’s monitoring.&lt;/p&gt;
+&lt;p&gt;To learn more about what you can do with Traefik v2, head over to &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://doc.traefik.io/traefik/&#34;&gt;the official Traefik documentation&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&#34;服务集群&#34;&gt;服务集群&lt;/h2&gt;
+&lt;blockquote&gt;
+&lt;p&gt;k8s 太重了,虽然也有 k3s 之类的轻量级 k8s 解决方案，不过我还是选择了原生的 docker swarm。VPS 安装好 Docker 之后，不需要额外安装软件，就可以马上建立集群。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token comment&#34;&gt;# 集群初始化，节点成为 manager 节点&lt;/span&gt;
+&lt;span class=&#34;token function&#34;&gt;docker&lt;/span&gt; swarm init --advertise-addr&lt;span class=&#34;token operator&#34;&gt;=&lt;/span&gt;x.x.x.x
+
+&lt;span class=&#34;token comment&#34;&gt;# 集群丢失 Leader 时，强制重建集群&lt;/span&gt;
+&lt;span class=&#34;token function&#34;&gt;docker&lt;/span&gt; swarm init --advertise-addr&lt;span class=&#34;token operator&#34;&gt;=&lt;/span&gt;x.x.x.x --force-new-cluster
+
+&lt;span class=&#34;token comment&#34;&gt;# 获取作为 worker 节点加入集群的命令&lt;/span&gt;
+&lt;span class=&#34;token function&#34;&gt;docker&lt;/span&gt; swarm join-token worker
+
+&lt;span class=&#34;token comment&#34;&gt;# 获取作为 manager 节点加入集群的命令&lt;/span&gt;
+&lt;span class=&#34;token function&#34;&gt;docker&lt;/span&gt; swarm join-token manager
+
+&lt;span class=&#34;token comment&#34;&gt;# 加入集群&lt;/span&gt;
+&lt;span class=&#34;token function&#34;&gt;docker&lt;/span&gt; swarm &lt;span class=&#34;token function&#34;&gt;join&lt;/span&gt; --token xxx x.x.x.x:xxx --advertise-addr&lt;span class=&#34;token operator&#34;&gt;=&lt;/span&gt;x.x.x.x
+&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;参考：-3&#34;&gt;参考：&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://www.digitalocean.com/community/tutorials/how-to-use-traefik-v2-as-a-reverse-proxy-for-docker-containers-on-ubuntu-20-04&#34;&gt;digitalocean&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://shanyue.tech/op/traefik.html&#34;&gt;shanyue&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;系列教程-9&#34;&gt;&lt;strong&gt;系列教程&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://blog.17lai.site/atom.xml&#34;&gt;全部文章RSS订阅&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;docker系列&lt;/strong&gt; &lt;a href=&#34;https://blog.17lai.site/categories/docker/atom.xml&#34;&gt;&lt;strong&gt;Docker 分类 RSS 订阅&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/42b6a86d/&#34;&gt;Docker使用简明教程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/9912bd5d/&#34;&gt;使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/1802a8a7/&#34;&gt;为知笔记私有化Docker部署&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/593cc323/&#34;&gt;Earthly 一个更加强大的镜像构建工具&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/90e60aac/&#34;&gt;使用 Shell 脚本实现一个简单 Docker&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/465d2738/&#34;&gt;如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/462f1e5c/&#34;&gt;通过IPV6访问Qnap NAS中Docker的服务&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;link rel=&#34;stylesheet&#34; href=&#34;/css/bilicard.css&#34; type=&#34;text/css&#34;&gt;</content>
+        <category term="docker" />
+        <category term="traefik" />
+        <category term="proxy" />
+        <category term="swarm" />
+        <category term="ubuntu" />
+        <updated>2021-10-14T11:25:00.000Z</updated>
+    </entry>
+    <entry>
+        <id>https://blog.17lai.site/posts/462f1e5c/</id>
+        <title>通过IPV6访问Qnap NAS中Docker的服务</title>
+        <link rel="alternate" href="https://blog.17lai.site/posts/462f1e5c/"/>
+        <content type="html">&lt;h2 id=&#34;环境&#34;&gt;环境&lt;/h2&gt;
+&lt;p&gt;系统：QTS 4.3.6&lt;br&gt;
+网络：IPV4 &amp;amp; IPV6&lt;br&gt;
+Docker: 由Container Station提供&lt;/p&gt;
+&lt;h2 id=&#34;问题-2&#34;&gt;问题&lt;/h2&gt;
+&lt;p&gt;通过ipv6地址可以打开NAS的管理页面，但是无法访问Docker对应端口的服务。&lt;/p&gt;
+&lt;h2 id=&#34;排查&#34;&gt;排查&lt;/h2&gt;
+&lt;p&gt;QTS中Docker使用的虚拟交换机网络没有启动IPV6，且无法在虚拟交换机设置中手动启动。&lt;br&gt;
+这样一来，Docker只监听了tcp4的端口，对于主机上tcp6的端口的访问无法映射到docker容器上。&lt;/p&gt;
+&lt;h2 id=&#34;解决方案-2&#34;&gt;解决方案&lt;/h2&gt;
+&lt;p&gt;在主机上开一个tcp6的端口，将其转发到主机上与docker关联的tcp4端口。&lt;br&gt;
+即：&lt;br&gt;
+docker(tcp4)–&amp;gt;host(tcp4)–&amp;gt;host(tcp6)&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;在qts上安装包管理器：Entware. https://github.com/Entware/Entware/wiki/Install-on-QNAP-NAS&lt;/li&gt;
+&lt;li&gt;执行opkg update,更新&lt;/li&gt;
+&lt;li&gt;安装端口转发工具，这里使用socat：opkg install socat&lt;/li&gt;
+&lt;li&gt;设置转发host(tcp6)–&amp;gt;host(tcp4):(socat TCP6-LISTEN:6880,reuseaddr,fork TCP4:127.0.0.1:7880 &amp;amp;)&lt;/li&gt;
+&lt;li&gt;大功告成&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;系列教程-8&#34;&gt;&lt;strong&gt;系列教程&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://blog.17lai.site/atom.xml&#34;&gt;全部文章RSS订阅&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;docker系列&lt;/strong&gt; &lt;a href=&#34;https://blog.17lai.site/categories/docker/atom.xml&#34;&gt;&lt;strong&gt;Docker 分类 RSS 订阅&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/42b6a86d/&#34;&gt;Docker使用简明教程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/9912bd5d/&#34;&gt;使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/1802a8a7/&#34;&gt;为知笔记私有化Docker部署&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/593cc323/&#34;&gt;Earthly 一个更加强大的镜像构建工具&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/90e60aac/&#34;&gt;使用 Shell 脚本实现一个简单 Docker&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/465d2738/&#34;&gt;如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/462f1e5c/&#34;&gt;通过IPV6访问Qnap NAS中Docker的服务&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;link rel=&#34;stylesheet&#34; href=&#34;/css/bilicard.css&#34; type=&#34;text/css&#34;&gt;</content>
+        <category term="qnap" />
+        <category term="nas" />
+        <category term="docker" />
+        <category term="ipv6" />
+        <updated>2021-10-12T05:42:55.000Z</updated>
     </entry>
     <entry>
         <id>https://blog.17lai.site/posts/1802a8a7/</id>
@@ -1488,8 +1923,19 @@ pm2 start app.js --name&lt;span class=&#34;token operator&#34;&gt;=&lt;/span&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
 &lt;p&gt;编辑整理 From： &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://mp.weixin.qq.com/s/JQBUqdq1YNsGqolQ0jjfNg&#34;&gt;大大木头 [为知社区]&lt;/a&gt;&lt;/p&gt;
-&lt;h2 id=&#34;系列教程-10&#34;&gt;&lt;strong&gt;系列教程&lt;/strong&gt;&lt;/h2&gt;
-&lt;p&gt;&lt;strong&gt;笔记系列&lt;/strong&gt;&lt;/p&gt;
+&lt;h2 id=&#34;系列教程-23&#34;&gt;&lt;strong&gt;系列教程&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://blog.17lai.site/atom.xml&#34;&gt;全部文章RSS订阅&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;docker系列&lt;/strong&gt; &lt;a href=&#34;https://blog.17lai.site/categories/docker/atom.xml&#34;&gt;&lt;strong&gt;Docker 分类 RSS 订阅&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/42b6a86d/&#34;&gt;Docker使用简明教程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/9912bd5d/&#34;&gt;使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/1802a8a7/&#34;&gt;为知笔记私有化Docker部署&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/593cc323/&#34;&gt;Earthly 一个更加强大的镜像构建工具&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/90e60aac/&#34;&gt;使用 Shell 脚本实现一个简单 Docker&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/465d2738/&#34;&gt;如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/462f1e5c/&#34;&gt;通过IPV6访问Qnap NAS中Docker的服务&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;笔记系列&lt;/strong&gt;  &lt;a href=&#34;https://blog.17lai.site/categories/note/atom.xml&#34;&gt;&lt;strong&gt;Note分类RSS订阅&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/a8535f26/&#34;&gt;完美笔记进化论&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
@@ -1538,7 +1984,7 @@ pm2 start app.js --name&lt;span class=&#34;token operator&#34;&gt;=&lt;/span&gt;
 &lt;li&gt;其实博主更推荐私有部署joplin&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;&lt;strong&gt;Gitbook使用系列&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Gitbook使用系列&lt;/strong&gt; &lt;a href=&#34;https://blog.17lai.site/categories/gitbook/atom.xml&#34;&gt;Gitbook分类RSS订阅&lt;/a&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;&lt;a href=&#34;https://blog.17lai.site/posts/7fe86002/&#34;&gt;GitBook+GitLab撰写发布技术文档-Part1:GitBook篇&lt;/a&gt;&lt;/p&gt;
@@ -1550,14 +1996,14 @@ pm2 start app.js --name&lt;span class=&#34;token operator&#34;&gt;=&lt;/span&gt;
 &lt;p&gt;&lt;a href=&#34;https://blog.17lai.site/posts/d6bad1e5/&#34;&gt;自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;strong&gt;Gitlab 使用系列&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Gitlab 使用系列&lt;/strong&gt;  &lt;a href=&#34;https://blog.17lai.site/categories/gitlab/atom.xml&#34;&gt;&lt;strong&gt;Gitlab RSS 分类订阅&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/acc13b70/&#34;&gt;&lt;strong&gt;Gitlab的安装及使用教程完全版&lt;/strong&gt;&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/29a820b3/&#34;&gt;破解Gitlab EE&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/d08eb7b/&#34;&gt;Gitlab的安装及使用&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/1879721e/&#34;&gt;CI/CD与Git Flow与GitLab&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;strong&gt;hexo系列&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Hexo系列&lt;/strong&gt;  &lt;a href=&#34;https://blog.17lai.site/categories/hexo/atom.xml&#34;&gt;&lt;strong&gt;HexoRSS分类订阅&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;
@@ -1915,6 +2361,18 @@ services:
 &lt;p&gt;一些docker初始化安装，运行、更新时需要访问github，最好配置代理。推荐博主定制Docker &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://hub.docker.com/r/bloodstar/v2fly-privoxy&#34;&gt;bloodstar/v2fly-privoxy&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
+&lt;h2 id=&#34;系列教程-5&#34;&gt;&lt;strong&gt;系列教程&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://blog.17lai.site/atom.xml&#34;&gt;全部文章RSS订阅&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;docker系列&lt;/strong&gt; &lt;a href=&#34;https://blog.17lai.site/categories/docker/atom.xml&#34;&gt;&lt;strong&gt;Docker 分类 RSS 订阅&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/42b6a86d/&#34;&gt;Docker使用简明教程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/9912bd5d/&#34;&gt;使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/1802a8a7/&#34;&gt;为知笔记私有化Docker部署&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/593cc323/&#34;&gt;Earthly 一个更加强大的镜像构建工具&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/90e60aac/&#34;&gt;使用 Shell 脚本实现一个简单 Docker&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/465d2738/&#34;&gt;如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/462f1e5c/&#34;&gt;通过IPV6访问Qnap NAS中Docker的服务&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 &lt;link rel=&#34;stylesheet&#34; href=&#34;/css/bilicard.css&#34; type=&#34;text/css&#34;&gt;</content>
         <category term="emby" />
         <category term="sonarr" />
@@ -2115,6 +2573,18 @@ if &lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt; &lt;span class=&
 fi
 &lt;span class=&#34;token comment&#34;&gt;# 容器保活&lt;/span&gt;
 tail &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt;f /root/tomcat/conf/server.xml&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;系列教程-4&#34;&gt;&lt;strong&gt;系列教程&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://blog.17lai.site/atom.xml&#34;&gt;全部文章RSS订阅&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;docker系列&lt;/strong&gt; &lt;a href=&#34;https://blog.17lai.site/categories/docker/atom.xml&#34;&gt;&lt;strong&gt;Docker 分类 RSS 订阅&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/42b6a86d/&#34;&gt;Docker使用简明教程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/9912bd5d/&#34;&gt;使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/1802a8a7/&#34;&gt;为知笔记私有化Docker部署&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/593cc323/&#34;&gt;Earthly 一个更加强大的镜像构建工具&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/90e60aac/&#34;&gt;使用 Shell 脚本实现一个简单 Docker&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/465d2738/&#34;&gt;如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blog.17lai.site/posts/462f1e5c/&#34;&gt;通过IPV6访问Qnap NAS中Docker的服务&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 &lt;link rel=&#34;stylesheet&#34; href=&#34;/css/bilicard.css&#34; type=&#34;text/css&#34;&gt;</content>
         <category term="linux" />
         <category term="mysql" />
