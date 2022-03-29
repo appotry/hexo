@@ -1,1 +1,1 @@
-importScripts('https://cdn.webpushr.com/sw-server.min.js');
+"use strict";importScripts("https://cdn.webpushr.com/sw-server.min.js");
