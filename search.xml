@@ -1438,6 +1438,414 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
       </tags>
   </entry>
   <entry>
+    <title>宝塔linux面板重启、重置等命令整合</title>
+    <url>/posts/7b4e434c/</url>
+    <content><![CDATA[宝塔linux面板重启、重置等命令整合
+宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。
+来源于网络，原作已经不可考据，整理更新到目前最新版。
+现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、
+但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦
+Linux面板7.6.0安装命令：
+Centos安装命令：
+yum install -y wget &amp;&amp; wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; sh install.sh
+复制代码
+咨询离线安装版本
+试验性Centos/Ubuntu/Debian安装命令 独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中
+curl -sSO http://download.bt.cn/install/install_panel.sh &amp;&amp; bash install_panel.sh
+复制代码
+Ubuntu/Deepin安装命令：
+wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; sudo bash install.sh
+复制代码
+Debian安装命令：
+wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; bash install.sh
+复制代码
+Fedora安装命令:
+wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; bash install.sh
+复制代码
+**
+**Linux面板7.6.0升级命令：**curl http://download.bt.cn/install/update6.sh|bash复制代码
+以上节点无法使用的情况下，请使用下面的备用节点：
+**
+备用节点【香港】：
+（宝塔推荐使用CN2 双程GIA高品质，免备案的尊云zun.com香港云服务器安装）
+yum install -y wget &amp;&amp; wget -O install.sh http://103.224.251.67:5880/install/install_6.0.sh &amp;&amp; sh install.sh
+管理宝塔
+#停止
+/etc/init.d/bt stop
+#启动
+/etc/init.d/bt start
+#重启
+/etc/init.d/bt restart
+#卸载
+/etc/init.d/bt stop &amp;&amp; chkconfig --del bt &amp;&amp; rm -f /etc/init.d/bt &amp;&amp; rm -rf /www/server/panel
+#查看当前面板端口
+cat /www/server/panel/data/port.pl
+#修改面板端口，如要改成8881（centos 6  系统）
+echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
+iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 8881  -j ACCEPT
+service iptables save
+service iptables restart
+#修改面板端口，如要改成8881（centos 7  系统）
+echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
+firewall-cmd --permanent --zone=public  --add-port=8881/tcp
+firewall-cmd --reload
+#强制修改MySQL管理(root)密码，如要改成123456
+cd /www/server/panel &amp;&amp; python tools.pyc root 123456
+#修改面板密码，如要改成123456
+cd /www/server/panel &amp;&amp; python tools.pyc panel 123456
+#查看宝塔日志
+cat /tmp/panelBoot.pl
+#查看软件安装日志
+cat /tmp/panelExec.log
+#站点配置文件位置
+/www/server/panel/vhost
+#删除域名绑定面板
+rm -f /www/server/panel/data/domain.conf
+#清理登陆限制
+rm -f /www/server/panel/data/*.login
+#查看面板授权IP
+cat /www/server/panel/data/limitip.conf
+#关闭访问限制
+rm -f /www/server/panel/data/limitip.conf
+#查看许可域名
+cat /www/server/panel/data/domain.conf
+#关闭面板SSL
+rm -f /www/server/panel/data/ssl.pl &amp;&amp; /etc/init.d/bt restart
+#查看面板错误日志
+cat /tmp/panelBoot
+#查看数据库错误日志
+cat /www/server/data/*.err
+#站点配置文件目录(nginx)
+/www/server/panel/vhost/nginx
+#站点配置文件目录(apache)
+/www/server/panel/vhost/apache
+#站点默认目录
+/www/wwwroot
+#数据库备份目录
+/www/backup/database
+#站点备份目录
+/www/backup/site
+#站点日志
+/www/wwwlogs
+Nginx服务管理
+#nginx安装目录
+/www/server/nginx
+#启动
+/etc/init.d/nginx start
+#停止
+/etc/init.d/nginx stop
+#重启
+/etc/init.d/nginx restart
+#启载
+/etc/init.d/nginx reload
+#nginx配置文件
+/www/server/nginx/conf/nginx.conf
+Apache服务管理
+#apache安装目录
+/www/server/httpd
+#启动
+/etc/init.d/httpd start
+#停止
+/etc/init.d/httpd stop
+#重启
+/etc/init.d/httpd restart
+#启载
+/etc/init.d/httpd reload
+#apache配置文件
+/www/server/apache/conf/httpd.conf
+MySQL服务管理
+#mysql安装目录
+/www/server/mysql
+#phpmyadmin安装目录
+/www/server/phpmyadmin
+#数据存储目录
+/www/server/data
+#启动
+/etc/init.d/mysqld start
+#停止
+/etc/init.d/mysqld stop
+#重启
+/etc/init.d/mysqld restart
+#启载
+/etc/init.d/mysqld reload
+#mysql配置文件
+/etc/my.cnf
+FTP服务管理
+#ftp安装目录
+/www/server/pure-ftpd
+#启动
+/etc/init.d/pure-ftpd start
+#停止
+/etc/init.d/pure-ftpd stop
+#重启
+/etc/init.d/pure-ftpd restart
+#ftp配置文件
+/www/server/pure-ftpd/etc/pure-ftpd.conf
+PHP服务管理
+#php安装目录
+/www/server/php
+#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} start
+#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} stop
+#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} restart
+#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} reload
+#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)
+/www/server/php/{52|53|54|55|56|70|71}/etc/php.ini
+Redis服务管理
+#redis安装目录
+/www/server/redis
+#启动
+/etc/init.d/redis start
+#停止
+/etc/init.d/redis stop
+#redis配置文件
+/www/server/redis/redis.conf
+Memcached服务管理
+#memcached安装目录
+/usr/local/memcached
+#启动
+/etc/init.d/memcached start
+#停止
+/etc/init.d/memcached stop
+#重启
+/etc/init.d/memcached restart
+#启载
+/etc/init.d/memcached reload
+]]></content>
+      <categories>
+        <category>linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>宝塔</tag>
+        <tag>vps</tag>
+        <tag>建站</tag>
+        <tag>nginx</tag>
+        <tag>apache</tag>
+        <tag>mysql</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>docker使用简明教程</title>
+    <url>/posts/42b6a86d/</url>
+    <content><![CDATA[关于docker安装，查看，镜像管理，以及一个实用Dockerfile， LAMP，PHP，LTMJ。
+
+关于本blog，图床一般使用github，已经配置了CDN，如果图片还是未显示请自行代理解决
+
+一、Docker安装
+
+在Ubuntu系统下安装：
+
+apt-get install docker
+
+在Fedora/CentOS系统下安装：
+
+yum install docker
+dnf install docker # Fedora 25+
+
+在SUSE系统下安装：
+
+zypper install docker
+二、Docker容器
+
+首先启动Docker
+
+# 启动Docker
+systemctl start docker
+# 设置开机自启动，可选
+systemctl enable docker
+
+启动Docker测试容器
+
+docker run "hello-world"
+
+在启动容器时，如果使用的镜像在本地不存在，会尝试从网络上获取。
+在一般情况下，启动Web服务的容器，使用以下命令：
+
+# -d：daemon，使容器在后台运行
+# -p：port，指定容器的端口，这里是将容器的80端口映射到主机的8001端口
+docker run -d -p 8001:80 "image_name"
+
+查看容器运行情况
+
+docker ps
+
+Docker会为容器分配一个Container ID和一个Container Name，Name可以在运行时通过-name自行指定，这两个可以用来标识容器。
+需要停止容器时，使用以下命令：
+
+docker stop "container_name"
+# 或使用ID查找
+docker stop "container_id"
+# 重启
+docker restart "container_id"
+三、Docker镜像
+Dokerfile编译镜像
+
+Docker容器是运行的Docker镜像实例，一般情况下，我们需要制作自己的Docker镜像。
+Docker镜像的制作依赖于Dockerfile，我们稍后在讨论Dockerfile的编写，这里假定我们有一个编写好的Dockerfile。
+下面的命令将在当前路径查找Dockerfile并构建一个名为“image_name”的镜像。
+
+docker build -t "image_name" ./
+查看本地所有镜像
+
+在构建过程中需要在网络上下载来源镜像，可能需要一段时间。
+如果Dockerfile中的命令都正确结束（Exit code 0），那么Docker镜像的构建也将顺利完成，我们可以通过下面的命令查看我们的所有镜像：
+
+docker images
+导出备份已有镜像文件
+
+我们还可以导出我们制作好的Docker镜像，下面的命令将image_name镜像导出为image_name.tar
+
+docker save "image_name" &gt; image_name.tar
+导入已有镜像备份
+
+在另一台机器上，我们不需要网络就可以导入并使用该镜像：
+
+docker load &lt; image_name.tar
+四、Dockerfile
+
+Dockerfile本质上是一组命令集合，用于自动化构建镜像，下面以几个实例来说明Dockerfile的编写方法：
+
+实例一：LAMP（Linux+Apache+MySQL+PHP）环境配置
+# 来源镜像，一般可以使用标准的系统或者带有各种环境的系统
+# 显然这里使用的是标准的Ubuntu 14.04系统
+FROM ubuntu:14.04
+# 镜像作者
+MAINTAINER wrlu
+# 刷新日期
+ENV REFRESHED_AT 2018-08-05
+# 设定字符集
+ENV LANG C.UTF-8
+# RUN命令用于执行系统命令
+# 因为需要自动化安装，所以最好通过-y命令跳过确认
+# 更新APT软件源
+RUN apt-get update -y
+# 安装MySQL
+RUN apt-get -y install mysql-server
+# 安装Apache
+RUN apt-get -y install apache2
+# 安装PHP5
+RUN apt-get -y install php5 libapache2-mod-php5
+RUN apt-get install -yqq php5-mysql php5-curl php5-gd php5-intl php-pear php5-imagick php5-imap php5-mcrypt php5-memcache php5-ming php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl
+# 删除Apache2列出目录配置
+RUN sed -i 's/Options Indexes FollowSymLinks/Options None/' /etc/apache2/apache2.conf
+# COPY命令可以复制文件，但是似乎不能递归复制文件
+COPY IncludeAirline/* /var/www/html/
+COPY IncludeAirline/airlines/* /var/www/html/airlines/
+# 删除默认的主页
+RUN rm /var/www/html/index.html
+# 复制启动脚本
+COPY start.sh /root/start.sh
+RUN chmod +x /root/start.sh
+# 设置启动目录以及启动脚本
+ENTRYPOINT cd /root; ./start.sh
+# 设置需要暴露的端口
+EXPOSE 80,3306 
+
+本例中还有一个启动脚本start.sh，用于导入数据库，编写如下：
+
+#!/bin/bash
+# 启动后延时
+sleep 1
+# 启动Apache服务器
+/etc/init.d/apache2 start
+# 启动MySQL数据库
+find /var/lib/mysql -type f -exec touch {} ; &amp;&amp; service mysql start
+# 定义SQL文件路径
+sqlfile=/var/www/html/includeAirline.sql
+if [ -f $flagfile ]; then
+	# 修改MySQL的密码
+    mysqladmin -u root password "root"
+    # 登录MySQL并导入SQL文件执行
+    mysql -uroot -proot &lt; $sqlfile
+    # 删除SQL文件
+    rm -f $sqlfile
+fi
+# 此处注意，如果命令执行完后脚本退出
+# 则Docker容器也会因为没有前台应用运行而中止
+# 所以这里使用一个前台命令来保活Docker容器
+tail -f /var/log/apache2/error.log
+实例二：PHP环境配置：
+# 来源镜像，自带Apache+PHP环境
+FROM php:7.0-apache
+MAINTAINER tl
+ENV REFRESHED_AT 2018‐08‐03
+ENV LANG C.UTF‐8
+# ADD命令在COPY命令的基础上，具有自动解包tar的功能
+ADD web_tired.tar /var/www/html/
+EXPOSE 80
+实例三：LTMJ（Linux+Tomcat+MySQL+JSP）环境配置
+FROM ubuntu:16.04
+MAINTAINER wrlu
+ENV REFRESHED_AT 2018-08-05
+ENV LANG C.UTF-8
+RUN apt-get update -y
+RUN apt-get -y install mysql-server
+# 安装wget，因为Docker提供的镜像是最小镜像，所以用到的其他工具需要自行安装
+RUN apt-get -y install wget
+# 安装Java 8
+RUN apt-get -y install openjdk-8-jre
+# 下载Tomcat 8服务器
+RUN wget http://mirrors.hust.edu.cn/apache/tomcat/tomcat-8/v8.5.32/bin/apache-tomcat-8.5.32.tar.gz
+# 解压tar.gz
+RUN tar -xzf apache-tomcat-8.5.32.tar.gz -C /root
+RUN mv /root/apache-tomcat-8.5.32 /root/tomcat
+# 删除默认页面
+RUN rm -rf /root/tomcat/webapps/*
+# 拷贝war文件
+COPY CAAC-SQL-Injection.war /root/tomcat/webapps/
+COPY wafwtf.sql /root/
+COPY start.sh /root/start.sh
+RUN chmod +x /root/start.sh
+ENTRYPOINT cd /root; ./start.sh
+# Tomcat使用8080端口，不同于Apache
+EXPOSE 8080
+
+启动脚本如下：
+
+#!/bin/bash
+sleep 1
+find /var/lib/mysql -type f -exec touch {} ; &amp;&amp; service mysql start
+chmod +x /root/tomcat/bin/startup.sh
+# 启动Tomcat服务器
+/root/tomcat/bin/startup.sh
+sqlfile=/root/wafwtf.sql
+if [ -f $flagfile ]; then
+    mysqladmin -u root password "root"
+    mysql -uroot -proot &lt; $sqlfile
+    rm -f $sqlfile
+fi
+# 容器保活
+tail -f /root/tomcat/conf/server.xml
+系列教程
+全部文章RSS订阅
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>docker</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>mysql</tag>
+        <tag>docker</tag>
+        <tag>lamp</tag>
+        <tag>php</tag>
+        <tag>tomcat</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>海思MPP&amp;UNF构架源代码级分析</title>
     <url>/posts/13894dce/</url>
     <content><![CDATA[
@@ -2343,414 +2751,6 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
         <tag>mpp</tag>
         <tag>unf</tag>
         <tag>kernel</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>宝塔linux面板重启、重置等命令整合</title>
-    <url>/posts/7b4e434c/</url>
-    <content><![CDATA[宝塔linux面板重启、重置等命令整合
-宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。
-来源于网络，原作已经不可考据，整理更新到目前最新版。
-现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、
-但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦
-Linux面板7.6.0安装命令：
-Centos安装命令：
-yum install -y wget &amp;&amp; wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; sh install.sh
-复制代码
-咨询离线安装版本
-试验性Centos/Ubuntu/Debian安装命令 独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中
-curl -sSO http://download.bt.cn/install/install_panel.sh &amp;&amp; bash install_panel.sh
-复制代码
-Ubuntu/Deepin安装命令：
-wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; sudo bash install.sh
-复制代码
-Debian安装命令：
-wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; bash install.sh
-复制代码
-Fedora安装命令:
-wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; bash install.sh
-复制代码
-**
-**Linux面板7.6.0升级命令：**curl http://download.bt.cn/install/update6.sh|bash复制代码
-以上节点无法使用的情况下，请使用下面的备用节点：
-**
-备用节点【香港】：
-（宝塔推荐使用CN2 双程GIA高品质，免备案的尊云zun.com香港云服务器安装）
-yum install -y wget &amp;&amp; wget -O install.sh http://103.224.251.67:5880/install/install_6.0.sh &amp;&amp; sh install.sh
-管理宝塔
-#停止
-/etc/init.d/bt stop
-#启动
-/etc/init.d/bt start
-#重启
-/etc/init.d/bt restart
-#卸载
-/etc/init.d/bt stop &amp;&amp; chkconfig --del bt &amp;&amp; rm -f /etc/init.d/bt &amp;&amp; rm -rf /www/server/panel
-#查看当前面板端口
-cat /www/server/panel/data/port.pl
-#修改面板端口，如要改成8881（centos 6  系统）
-echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
-iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 8881  -j ACCEPT
-service iptables save
-service iptables restart
-#修改面板端口，如要改成8881（centos 7  系统）
-echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
-firewall-cmd --permanent --zone=public  --add-port=8881/tcp
-firewall-cmd --reload
-#强制修改MySQL管理(root)密码，如要改成123456
-cd /www/server/panel &amp;&amp; python tools.pyc root 123456
-#修改面板密码，如要改成123456
-cd /www/server/panel &amp;&amp; python tools.pyc panel 123456
-#查看宝塔日志
-cat /tmp/panelBoot.pl
-#查看软件安装日志
-cat /tmp/panelExec.log
-#站点配置文件位置
-/www/server/panel/vhost
-#删除域名绑定面板
-rm -f /www/server/panel/data/domain.conf
-#清理登陆限制
-rm -f /www/server/panel/data/*.login
-#查看面板授权IP
-cat /www/server/panel/data/limitip.conf
-#关闭访问限制
-rm -f /www/server/panel/data/limitip.conf
-#查看许可域名
-cat /www/server/panel/data/domain.conf
-#关闭面板SSL
-rm -f /www/server/panel/data/ssl.pl &amp;&amp; /etc/init.d/bt restart
-#查看面板错误日志
-cat /tmp/panelBoot
-#查看数据库错误日志
-cat /www/server/data/*.err
-#站点配置文件目录(nginx)
-/www/server/panel/vhost/nginx
-#站点配置文件目录(apache)
-/www/server/panel/vhost/apache
-#站点默认目录
-/www/wwwroot
-#数据库备份目录
-/www/backup/database
-#站点备份目录
-/www/backup/site
-#站点日志
-/www/wwwlogs
-Nginx服务管理
-#nginx安装目录
-/www/server/nginx
-#启动
-/etc/init.d/nginx start
-#停止
-/etc/init.d/nginx stop
-#重启
-/etc/init.d/nginx restart
-#启载
-/etc/init.d/nginx reload
-#nginx配置文件
-/www/server/nginx/conf/nginx.conf
-Apache服务管理
-#apache安装目录
-/www/server/httpd
-#启动
-/etc/init.d/httpd start
-#停止
-/etc/init.d/httpd stop
-#重启
-/etc/init.d/httpd restart
-#启载
-/etc/init.d/httpd reload
-#apache配置文件
-/www/server/apache/conf/httpd.conf
-MySQL服务管理
-#mysql安装目录
-/www/server/mysql
-#phpmyadmin安装目录
-/www/server/phpmyadmin
-#数据存储目录
-/www/server/data
-#启动
-/etc/init.d/mysqld start
-#停止
-/etc/init.d/mysqld stop
-#重启
-/etc/init.d/mysqld restart
-#启载
-/etc/init.d/mysqld reload
-#mysql配置文件
-/etc/my.cnf
-FTP服务管理
-#ftp安装目录
-/www/server/pure-ftpd
-#启动
-/etc/init.d/pure-ftpd start
-#停止
-/etc/init.d/pure-ftpd stop
-#重启
-/etc/init.d/pure-ftpd restart
-#ftp配置文件
-/www/server/pure-ftpd/etc/pure-ftpd.conf
-PHP服务管理
-#php安装目录
-/www/server/php
-#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} start
-#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} stop
-#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} restart
-#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} reload
-#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)
-/www/server/php/{52|53|54|55|56|70|71}/etc/php.ini
-Redis服务管理
-#redis安装目录
-/www/server/redis
-#启动
-/etc/init.d/redis start
-#停止
-/etc/init.d/redis stop
-#redis配置文件
-/www/server/redis/redis.conf
-Memcached服务管理
-#memcached安装目录
-/usr/local/memcached
-#启动
-/etc/init.d/memcached start
-#停止
-/etc/init.d/memcached stop
-#重启
-/etc/init.d/memcached restart
-#启载
-/etc/init.d/memcached reload
-]]></content>
-      <categories>
-        <category>linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>宝塔</tag>
-        <tag>vps</tag>
-        <tag>建站</tag>
-        <tag>nginx</tag>
-        <tag>apache</tag>
-        <tag>mysql</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>docker使用简明教程</title>
-    <url>/posts/42b6a86d/</url>
-    <content><![CDATA[关于docker安装，查看，镜像管理，以及一个实用Dockerfile， LAMP，PHP，LTMJ。
-
-关于本blog，图床一般使用github，已经配置了CDN，如果图片还是未显示请自行代理解决
-
-一、Docker安装
-
-在Ubuntu系统下安装：
-
-apt-get install docker
-
-在Fedora/CentOS系统下安装：
-
-yum install docker
-dnf install docker # Fedora 25+
-
-在SUSE系统下安装：
-
-zypper install docker
-二、Docker容器
-
-首先启动Docker
-
-# 启动Docker
-systemctl start docker
-# 设置开机自启动，可选
-systemctl enable docker
-
-启动Docker测试容器
-
-docker run "hello-world"
-
-在启动容器时，如果使用的镜像在本地不存在，会尝试从网络上获取。
-在一般情况下，启动Web服务的容器，使用以下命令：
-
-# -d：daemon，使容器在后台运行
-# -p：port，指定容器的端口，这里是将容器的80端口映射到主机的8001端口
-docker run -d -p 8001:80 "image_name"
-
-查看容器运行情况
-
-docker ps
-
-Docker会为容器分配一个Container ID和一个Container Name，Name可以在运行时通过-name自行指定，这两个可以用来标识容器。
-需要停止容器时，使用以下命令：
-
-docker stop "container_name"
-# 或使用ID查找
-docker stop "container_id"
-# 重启
-docker restart "container_id"
-三、Docker镜像
-Dokerfile编译镜像
-
-Docker容器是运行的Docker镜像实例，一般情况下，我们需要制作自己的Docker镜像。
-Docker镜像的制作依赖于Dockerfile，我们稍后在讨论Dockerfile的编写，这里假定我们有一个编写好的Dockerfile。
-下面的命令将在当前路径查找Dockerfile并构建一个名为“image_name”的镜像。
-
-docker build -t "image_name" ./
-查看本地所有镜像
-
-在构建过程中需要在网络上下载来源镜像，可能需要一段时间。
-如果Dockerfile中的命令都正确结束（Exit code 0），那么Docker镜像的构建也将顺利完成，我们可以通过下面的命令查看我们的所有镜像：
-
-docker images
-导出备份已有镜像文件
-
-我们还可以导出我们制作好的Docker镜像，下面的命令将image_name镜像导出为image_name.tar
-
-docker save "image_name" &gt; image_name.tar
-导入已有镜像备份
-
-在另一台机器上，我们不需要网络就可以导入并使用该镜像：
-
-docker load &lt; image_name.tar
-四、Dockerfile
-
-Dockerfile本质上是一组命令集合，用于自动化构建镜像，下面以几个实例来说明Dockerfile的编写方法：
-
-实例一：LAMP（Linux+Apache+MySQL+PHP）环境配置
-# 来源镜像，一般可以使用标准的系统或者带有各种环境的系统
-# 显然这里使用的是标准的Ubuntu 14.04系统
-FROM ubuntu:14.04
-# 镜像作者
-MAINTAINER wrlu
-# 刷新日期
-ENV REFRESHED_AT 2018-08-05
-# 设定字符集
-ENV LANG C.UTF-8
-# RUN命令用于执行系统命令
-# 因为需要自动化安装，所以最好通过-y命令跳过确认
-# 更新APT软件源
-RUN apt-get update -y
-# 安装MySQL
-RUN apt-get -y install mysql-server
-# 安装Apache
-RUN apt-get -y install apache2
-# 安装PHP5
-RUN apt-get -y install php5 libapache2-mod-php5
-RUN apt-get install -yqq php5-mysql php5-curl php5-gd php5-intl php-pear php5-imagick php5-imap php5-mcrypt php5-memcache php5-ming php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl
-# 删除Apache2列出目录配置
-RUN sed -i 's/Options Indexes FollowSymLinks/Options None/' /etc/apache2/apache2.conf
-# COPY命令可以复制文件，但是似乎不能递归复制文件
-COPY IncludeAirline/* /var/www/html/
-COPY IncludeAirline/airlines/* /var/www/html/airlines/
-# 删除默认的主页
-RUN rm /var/www/html/index.html
-# 复制启动脚本
-COPY start.sh /root/start.sh
-RUN chmod +x /root/start.sh
-# 设置启动目录以及启动脚本
-ENTRYPOINT cd /root; ./start.sh
-# 设置需要暴露的端口
-EXPOSE 80,3306 
-
-本例中还有一个启动脚本start.sh，用于导入数据库，编写如下：
-
-#!/bin/bash
-# 启动后延时
-sleep 1
-# 启动Apache服务器
-/etc/init.d/apache2 start
-# 启动MySQL数据库
-find /var/lib/mysql -type f -exec touch {} ; &amp;&amp; service mysql start
-# 定义SQL文件路径
-sqlfile=/var/www/html/includeAirline.sql
-if [ -f $flagfile ]; then
-	# 修改MySQL的密码
-    mysqladmin -u root password "root"
-    # 登录MySQL并导入SQL文件执行
-    mysql -uroot -proot &lt; $sqlfile
-    # 删除SQL文件
-    rm -f $sqlfile
-fi
-# 此处注意，如果命令执行完后脚本退出
-# 则Docker容器也会因为没有前台应用运行而中止
-# 所以这里使用一个前台命令来保活Docker容器
-tail -f /var/log/apache2/error.log
-实例二：PHP环境配置：
-# 来源镜像，自带Apache+PHP环境
-FROM php:7.0-apache
-MAINTAINER tl
-ENV REFRESHED_AT 2018‐08‐03
-ENV LANG C.UTF‐8
-# ADD命令在COPY命令的基础上，具有自动解包tar的功能
-ADD web_tired.tar /var/www/html/
-EXPOSE 80
-实例三：LTMJ（Linux+Tomcat+MySQL+JSP）环境配置
-FROM ubuntu:16.04
-MAINTAINER wrlu
-ENV REFRESHED_AT 2018-08-05
-ENV LANG C.UTF-8
-RUN apt-get update -y
-RUN apt-get -y install mysql-server
-# 安装wget，因为Docker提供的镜像是最小镜像，所以用到的其他工具需要自行安装
-RUN apt-get -y install wget
-# 安装Java 8
-RUN apt-get -y install openjdk-8-jre
-# 下载Tomcat 8服务器
-RUN wget http://mirrors.hust.edu.cn/apache/tomcat/tomcat-8/v8.5.32/bin/apache-tomcat-8.5.32.tar.gz
-# 解压tar.gz
-RUN tar -xzf apache-tomcat-8.5.32.tar.gz -C /root
-RUN mv /root/apache-tomcat-8.5.32 /root/tomcat
-# 删除默认页面
-RUN rm -rf /root/tomcat/webapps/*
-# 拷贝war文件
-COPY CAAC-SQL-Injection.war /root/tomcat/webapps/
-COPY wafwtf.sql /root/
-COPY start.sh /root/start.sh
-RUN chmod +x /root/start.sh
-ENTRYPOINT cd /root; ./start.sh
-# Tomcat使用8080端口，不同于Apache
-EXPOSE 8080
-
-启动脚本如下：
-
-#!/bin/bash
-sleep 1
-find /var/lib/mysql -type f -exec touch {} ; &amp;&amp; service mysql start
-chmod +x /root/tomcat/bin/startup.sh
-# 启动Tomcat服务器
-/root/tomcat/bin/startup.sh
-sqlfile=/root/wafwtf.sql
-if [ -f $flagfile ]; then
-    mysqladmin -u root password "root"
-    mysql -uroot -proot &lt; $sqlfile
-    rm -f $sqlfile
-fi
-# 容器保活
-tail -f /root/tomcat/conf/server.xml
-系列教程
-全部文章RSS订阅
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>docker</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>mysql</tag>
-        <tag>docker</tag>
-        <tag>lamp</tag>
-        <tag>php</tag>
-        <tag>tomcat</tag>
       </tags>
   </entry>
   <entry>
@@ -11407,9 +11407,9 @@ Vim
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-AqBJDjaieBggTwWk").style.height=document.getElementById("mmedia-AqBJDjaieBggTwWk").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-lbVQPXBEKidFGTtm").style.height=document.getElementById("mmedia-lbVQPXBEKidFGTtm").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-AqBJDjaieBggTwWk").style.height=document.getElementById("mmedia-AqBJDjaieBggTwWk").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-lbVQPXBEKidFGTtm").style.height=document.getElementById("mmedia-lbVQPXBEKidFGTtm").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -15608,11 +15608,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var GmIcwygQPNzjkrpS_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); GmIcwygQPNzjkrpS_options.container = document.getElementById("mmedia-GmIcwygQPNzjkrpS"); const ap_GmIcwygQPNzjkrpS = new APlayer(GmIcwygQPNzjkrpS_options); 
+ var UAfqiNyhuDUFPpsJ_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); UAfqiNyhuDUFPpsJ_options.container = document.getElementById("mmedia-UAfqiNyhuDUFPpsJ"); const ap_UAfqiNyhuDUFPpsJ = new APlayer(UAfqiNyhuDUFPpsJ_options); 
 
 - **列表**
 
- var YvSytctTIrQcusah_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); YvSytctTIrQcusah_options.container = document.getElementById("mmedia-YvSytctTIrQcusah"); const ap_YvSytctTIrQcusah = new APlayer(YvSytctTIrQcusah_options); 
+ var viFLyQsqKJXnhWcD_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); viFLyQsqKJXnhWcD_options.container = document.getElementById("mmedia-viFLyQsqKJXnhWcD"); const ap_viFLyQsqKJXnhWcD = new APlayer(viFLyQsqKJXnhWcD_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -15864,21 +15864,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-wABABZNxtygcOHgx").style.height=document.getElementById("mmedia-wABABZNxtygcOHgx").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-zWQmnJetVeSMfCqm").style.height=document.getElementById("mmedia-zWQmnJetVeSMfCqm").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-wABABZNxtygcOHgx").style.height=document.getElementById("mmedia-wABABZNxtygcOHgx").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-zWQmnJetVeSMfCqm").style.height=document.getElementById("mmedia-zWQmnJetVeSMfCqm").scrollWidth*0.76+"px";
     }; 
 
 **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-RtAxgBAnILpWnVDE").style.height=document.getElementById("mmedia-RtAxgBAnILpWnVDE").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-BudjBthWLEyuQMNN").style.height=document.getElementById("mmedia-BudjBthWLEyuQMNN").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-RtAxgBAnILpWnVDE").style.height=document.getElementById("mmedia-RtAxgBAnILpWnVDE").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-BudjBthWLEyuQMNN").style.height=document.getElementById("mmedia-BudjBthWLEyuQMNN").scrollWidth*0.7+"px";
     }; 
 
 **artplayer**
 
- var KTKFxzoFsVapzvlf_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); KTKFxzoFsVapzvlf_options.container = "#mmedia-KTKFxzoFsVapzvlf"; const art_KTKFxzoFsVapzvlf = new Artplayer(KTKFxzoFsVapzvlf_options); 
+ var WShmXUrkabNUgVrc_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); WShmXUrkabNUgVrc_options.container = "#mmedia-WShmXUrkabNUgVrc"; const art_WShmXUrkabNUgVrc = new Artplayer(WShmXUrkabNUgVrc_options); 
 脑图
 
 原作者记录
@@ -17032,11 +17032,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var tGxQSzswZalVCXWi_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); tGxQSzswZalVCXWi_options.container = document.getElementById("mmedia-tGxQSzswZalVCXWi"); const ap_tGxQSzswZalVCXWi = new APlayer(tGxQSzswZalVCXWi_options); 
+ var sPecBVZaZRzXIBec_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); sPecBVZaZRzXIBec_options.container = document.getElementById("mmedia-sPecBVZaZRzXIBec"); const ap_sPecBVZaZRzXIBec = new APlayer(sPecBVZaZRzXIBec_options); 
 
 
 
- var rhrXqCbRZTqjkued_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); rhrXqCbRZTqjkued_options.container = document.getElementById("mmedia-rhrXqCbRZTqjkued"); const ap_rhrXqCbRZTqjkued = new APlayer(rhrXqCbRZTqjkued_options); 
+ var gGjPUSvMCePfeudQ_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); gGjPUSvMCePfeudQ_options.container = document.getElementById("mmedia-gGjPUSvMCePfeudQ"); const ap_gGjPUSvMCePfeudQ = new APlayer(gGjPUSvMCePfeudQ_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -17117,9 +17117,9 @@ Android支持
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-jCxjUNVFGvkfTIag").style.height=document.getElementById("mmedia-jCxjUNVFGvkfTIag").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-iHgoeczbeLcKfHWF").style.height=document.getElementById("mmedia-iHgoeczbeLcKfHWF").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-jCxjUNVFGvkfTIag").style.height=document.getElementById("mmedia-jCxjUNVFGvkfTIag").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-iHgoeczbeLcKfHWF").style.height=document.getElementById("mmedia-iHgoeczbeLcKfHWF").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -17128,7 +17128,7 @@ Android支持
 
 ## 中文翻唱
 
- var PTdbcinZTvWONbqQ_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); PTdbcinZTvWONbqQ_options.container = document.getElementById("mmedia-PTdbcinZTvWONbqQ"); const ap_PTdbcinZTvWONbqQ = new APlayer(PTdbcinZTvWONbqQ_options); 
+ var CSdNaoyubLWstGYy_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); CSdNaoyubLWstGYy_options.container = document.getElementById("mmedia-CSdNaoyubLWstGYy"); const ap_CSdNaoyubLWstGYy = new APlayer(CSdNaoyubLWstGYy_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -20096,9 +20096,6 @@ Troubleshooting
         }, 100);
     }
 &lt;/script&gt;
-
-来自small-rose的模板
-
 @邮件通知效果：
 您在[ ${SITE_NAME}](https://blog.17lai.site/posts/40300608/${SITE_URL})上的留言有新回复啦！
 
@@ -20110,14 +20107,14 @@ ${NICK} 给您的回复如下：
 
 ${COMMENT}
 
-您可以点击[查看回复的完整內容](https://blog.17lai.site/posts/40300608/${POST_URL}#comments)，欢迎再次光临[ ${SITE_NAME}](https://blog.17lai.site/posts/40300608/${SITE_URL})。
+您可以点击查看回复的完整內容${POST_URL}#comments，欢迎再次光临 ${SITE_NAME}${SITE_URL}。
 @邮件通知模板代码：
 &lt;div style="border-radius: 10px 10px 10px 10px;font-size:13px; color: #555555;width: 666px;font-family:'Century Gothic','Trebuchet MS','Hiragino Sans GB',微软雅黑,'Microsoft Yahei',Tahoma,Helvetica,Arial,'SimSun',sans-serif;margin:50px auto;border:1px solid #eee;max-width:100%;background: #ffffff repeating-linear-gradient(-45deg,#fff,#fff 1.125rem,transparent 1.125rem,transparent 2.25rem);box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);"&gt;&lt;div style="width:100%;background:#49BDAD;color:#ffffff;border-radius: 10px 10px 0 0;background-image: -moz-linear-gradient(0deg, rgb(67, 198, 184), rgb(255, 209, 244));background-image: -webkit-linear-gradient(0deg, rgb(67, 198, 184), rgb(255, 209, 244));height: 66px;"&gt;&lt;p style="font-size:15px;word-break:break-all;padding: 23px 32px;margin:0;background-color: hsla(0,0%,100%,.4);border-radius: 10px 10px 0 0;"&gt;您在&lt;a style="text-decoration:none;color: #ffffff;" href="${SITE_URL}"&gt; ${SITE_NAME}&lt;/a&gt;上的留言有新回复啦！&lt;/p&gt;&lt;/div&gt;&lt;div style="margin:40px auto;width:90%"&gt;&lt;p&gt;${PARENT_NICK} 同学，您曾在文章上发表评论：&lt;/p&gt;&lt;div style="background: #fafafa repeating-linear-gradient(-45deg,#fff,#fff 1.125rem,transparent 1.125rem,transparent 2.25rem);box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);margin:20px 0px;padding:15px;border-radius:5px;font-size:14px;color:#555555;"&gt;${PARENT_COMMENT}&lt;/div&gt;&lt;p&gt;${NICK} 给您的回复如下：&lt;/p&gt;&lt;div style="background: #fafafa repeating-linear-gradient(-45deg,#fff,#fff 1.125rem,transparent 1.125rem,transparent 2.25rem);box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);margin:20px 0px;padding:15px;border-radius:5px;font-size:14px;color:#555555;"&gt;${COMMENT}&lt;/div&gt;&lt;p&gt;您可以点击&lt;a style="text-decoration:none; color:#12addb" href="${POST_URL}#comments"&gt;查看回复的完整內容&lt;/a&gt;，欢迎再次光临&lt;a style="text-decoration:none; color:#12addb" href="${SITE_URL}"&gt; ${SITE_NAME}&lt;/a&gt;。&lt;/p&gt;&lt;style type="text/css"&gt;a:link{text-decoration:none}a:visited{text-decoration:none}a:hover{text-decoration:none}a:active{text-decoration:none}&lt;/style&gt;&lt;/div&gt;&lt;div style="width:100%;background:#49BDAD;color:#ffffff;border-radius: 0 0 10px 10px;background-image: -moz-linear-gradient(0deg, rgb(67, 198, 184), rgb(255, 209, 244));background-image: -webkit-linear-gradient(0deg,rgb(67, 198, 184), rgb(255, 209, 244));height: 66px;"&gt;&lt;/div&gt;&lt;/div&gt;
 博主通知效果：
-您在[ {SITE_URL})上的文章有了新的评论！
-${NICK} 同学，发表评论说：
+您在[${SITE_NAME}${SITE_URL}上的文章有了新的评论！
+**${NICK}** 同学，发表评论说：
 ${COMMENT}
-您可以点击查看回复的完整內容。
+您可以点击查看回复的完整內容${POST_URL}#comments)。
 &lt;div style="border-radius: 10px 10px 10px 10px;font-size:13px; color: #555555;width: 666px;font-family:'Century Gothic','Trebuchet MS','Hiragino Sans GB',微软雅黑,'Microsoft Yahei',Tahoma,Helvetica,Arial,'SimSun',sans-serif;margin:50px auto;border:1px solid #eee;max-width:100%;background: #ffffff repeating-linear-gradient(-45deg,#fff,#fff 1.125rem,transparent 1.125rem,transparent 2.25rem);box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);"&gt;&lt;div style="width:100%;background:#49BDAD;color:#ffffff;border-radius: 10px 10px 0 0;background-image: -moz-linear-gradient(0deg, rgb(67, 198, 184), rgb(255, 209, 244));background-image: -webkit-linear-gradient(0deg, rgb(67, 198, 184), rgb(255, 209, 244));height: 66px;"&gt;&lt;p style="font-size:15px;word-break:break-all;padding: 23px 32px;margin:0;background-color: hsla(0,0%,100%,.4);border-radius: 10px 10px 0 0;"&gt;您在&lt;a style="text-decoration:none;color: #ffffff;" href="${SITE_URL}"&gt; ${SITE_NAME}&lt;/a&gt;上的文章有了新的评论！&lt;/p&gt;&lt;/div&gt;&lt;div style="margin:40px auto;width:90%"&gt;&lt;p&gt;&lt;strong&gt;${NICK}&lt;/strong&gt; 同学，发表评论说：&lt;/p&gt;&lt;div style="background: #fafafa repeating-linear-gradient(-45deg,#fff,#fff 1.125rem,transparent 1.125rem,transparent 2.25rem);box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);margin:20px 0px;padding:15px;border-radius:5px;font-size:14px;color:#555555;"&gt;${COMMENT}&lt;/div&gt;&lt;p&gt;您可以点击&lt;a style="text-decoration:none; color:#12addb" href="${POST_URL}#comments"&gt;查看回复的完整內容&lt;/a&gt;。&lt;/p&gt;&lt;style type="text/css"&gt;a:link{text-decoration:none}a:visited{text-decoration:none}a:hover{text-decoration:none}a:active{text-decoration:none}&lt;/style&gt;&lt;/div&gt;&lt;div style="width:100%;background:#49BDAD;color:#ffffff;border-radius: 0 0 10px 10px ;background-image: -moz-linear-gradient(0deg, rgb(67, 198, 184), rgb(255, 209, 244));background-image: -webkit-linear-gradient(0deg,rgb(67, 198, 184), rgb(255, 209, 244));height: 66px;"&gt;&lt;/div&gt;&lt;/div&gt;
 解决休眠
 免费版的 LeanCloud 容器，是有强制性休眠策略的，不能 24 小时运行：
