@@ -5287,179 +5287,6 @@ From: hackerchai
       </tags>
   </entry>
   <entry>
-    <title>【Gitlab】GitBook+GitLab撰写发布技术文档-Part2:GitLab篇</title>
-    <url>/posts/7790e989/</url>
-    <content><![CDATA[上一篇文章介绍了如果用 gitbook 写书，并且我们已经通过 gitbook build命令把书的内容打包成 HTML 格式发布到了_book文件夹中。
-接下来这篇文章将向大家介绍如何把写好的书发布到 gitlab 上。这里 gitlab 是我们自己搭建在公司内网中的，不过要用到的原理其实都是一样的，就是利用其 CI/CD 功能。
-关于 CI/CD 网上有很多详细的介绍，这里我就不不再重复啰嗦，如果有想学习的可以参看文末的致谢&amp;引用部分。
-原理
-简单来说CI 就类似一个触发器，你可以设定响应触发的条件，比如 master 分支有新的 commit合并进来，或者带有特殊 tag 的合并，亦或者其他指定分支的特殊提交，可以触发指定的指令。
-一般来说标准的流程是3步，打包(build)、测试(test)和发布(deploy)。也就是我们只需要把源码提交上以后，CI 可以帮我们完成自动化部署工作。
-考虑到我们在用 gitbook 写书的过程中需要预览时，其实已经在做build 和 test 的工作了，所以我们只需要在代码传到 gitlab 上后，让服务器帮我们执行发布的工作。
-所以前提是我们搭建好了一个web 服务，然后 CI 帮我们把打包好的内容部署到相应的网站目录中就好了。
-实现
-我们就按照原理，来一步一步尝试着完成工作吧。
-CI配置
-还记得我们上一篇文章中最后介绍目录结构时，有提到一个文件： gitlab-ci.yml。 这个文件是用YAML 进行配置，我们来看一下我们要用到的配置文件吧
-deploy:
-  stage: deploy
-  script:
-    # make backup
-    - sudo rm -rf /usr/share/nginx/html/TechDocs/example_bak
-    - sudo mv /usr/share/nginx/html/TechDocs/example /usr/share/nginx/html/TechDocs/example_bak
-    - sudo mkdir /usr/share/nginx/html/TechDocs/example
-    # deploy latest files
-    - cd _book
-    - sudo cp -rf . /usr/share/nginx/html/TechDocs/example/
-  only:
-    - master # this job will affect only the 'master' branch
-这段 yaml 配置就只有deploy 的步骤，我们在 script部分进行了一系列的操作，完成旧文件的备份以及新文件的部署。当我们的代码上传到远端后，就会自动执行 script 里的内容了。让我们尝试下吧。
-查看 CI 任务执行状态
-上传代码到 gitlab 的步骤这里就不介绍了。理论上说，当代码上传到 master 分支后，会自动执行我们设定好的部署任务。我们可以通过访问gitlab对应项目的页面， 在左侧菜单栏点击CI/CD来查看任务的执行情况。
-但是如果你和我一样是第一次处理 CI 任务，我们会得到下面的提示：
-
-原因页面上也给出了我们提示This job is waiting to be picked by a runner。
-Runner
-这里就需要引入第2个概念： runner。很容易从字面上理解，runner 就是我们任务的执行者，也很形象，我们提交了一个任务以后，总得有人来执行。这些任务有些是需要shell 脚本执行，有些可能需要登录到远程机器，有些可能需要 docker 的执行权限，所以这些执行者也都有个子的分工，可能有些执行者只负责执行特定项目的任务，有些执行者执行特殊 tag 的。所以接下来我们看看如何才能创建 runner 吧。
-shared runner
-前文提到了我们可能需要一些高权限的 runner 来跨项目间来执行任务。因为我们要做的是多个项目的技术文档，所以会有多个 gitbook 的项目，那这些项目的 CI 任务自然是公用1个 runner 就好，这种 runner 就叫做 shared runner。
-shared runner 的创建需要我们用管理员的帐号登录gitlab 页面，在 admin area 区域，点击 runner 来根据提示创建。
-
-这个页面会显示当前所有的 runner，包括项目独享的 runner 和共享的 shared runner。 我们看到目前还没有一个可用的 runner，所以之前的任务才会停留在等待 runner 来运行的状态。
-我们就根据页面的提示来创建 runner 吧。
-
-安装 gitlab-runner 工具
-第一步是安装工具，可以通过页面上的提示来进行不同主机环境的安装。我们这里用到的是 RHEL/CentOS，其他版本可以参见页面链接。
-我们登录到自建 gitlab 所在的主机，然后执行以下脚本
-$ sudo wget -O /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
-$ sudo chmod +x /usr/local/bin/gitlab-runner
-$ sudo useradd --comment 'GitLab Runner' --create-home gitlab-runner --shell /bin/bash
-$ sudo gitlab-runner install --user=gitlab-runner --working-directory=/home/gitlab-runner
-$ sudo gitlab-runner start
-新建 shared runner
-工具安装好了之后，我们就可以来创建用户了。
-$ gitlab-runner register
-之后按照提示，一步一步创建就好了：
-
-输入URL
-输入token。 URL 和 token 按照页面上给出的提示来创建就好了。token 用来标识创建的 runner 是某个项目特有的，还是 shared runner
-输入 runner 的描述，这个可以随便填写，只要自己能看明白，能区分就好了
-输入特定的 tag。 注意，这里最好留空，否则该 runner 仅会执行特定 tag 的提交
-选择执行类型。这里提供了很多常见的执行类型，例如 docker, docker-ssh, shell 等，我们这里输入 shell。
-
-
-之后我们就创建好了一个可以执行 shell 命令的 shared runner。再次回到之前的 web 页面上查看我们创建的 runner 信息。
-
-可以看到页面提示我们已经创建了一个 runner 可以执行all unassigned projects的任务
-
-我们还可以进入到特定的项目，在设置里面查看 runner 的情况，可以看到已经有一个可用的 shared runner。如果想创建该项目特有的 runner，按照页面上的提示，输入特定的 token 就好了。
-
-其他细节
-我们重新查看CI任务页面，大多数情况下，你的任务状态会是failed或者pendding。 如果是 failed，我们可以点击查看具体失败的原因，例如我遇到的问题就是 gitlab-runner 用户没有 sudo 权限。
-如果是 pendding，通常情况下是你的 job 没有合适的 runner 来执行，例如指定了分支或者添加了 tag 导致没有 runner 可用。
-
-如果一切都设置妥当，我们可以看到 CI 页面任务的最终状态是 passed，也就是成功执行了。这样，gitbook 的内容就成功部署到你的 web 页面上了。
-致谢&amp;引用
-
-基于 GitLab 的 CI 实践(https://zhuanlan.zhihu.com/p/41330476)
-如何使用 GitLab CI(https://medium.com/@mvpdw06/%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-gitlab-ci-ebf0b68ce24b)
-Configuring GitLab Runners(https://docs.gitlab.com/ee/ci/runners/)
-Registering Runners(https://docs.gitlab.com/runner/register/)
-Gitbook CI With Gitlab(https://xiaosuiba.github.io/Gitbook-CI-With-Gitlab/)
-在 Gitlab 平台簡單創建 GitBook 電子書的步驟(https://www.kenming.idv.tw/simple-create-gitbook_at_gitlab_steps/)
-How to create a static website using GitLab Pages(https://getpublii.com/docs/host-static-website-gitlab-pages.html)
-Install GitLab Runner manually on GNU/Linux(https://docs.gitlab.com/runner/install/linux-manually.html)
-
-From: lipeng1667
-系列教程
-全部文章RSS订阅
-Gitbook使用系列 Gitbook分类RSS订阅
-
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-
-
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-
-
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-
-笔记系列  Note分类RSS订阅
-
-完美笔记进化论
-
-
-经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
-
-pigo图床搭建与配置
-Joplin教程
-Snipaste截图工具
-Typora 作为Markdown编辑器最强
-
-
-
-Joplin入门指南&amp;实践方案
-
-
-
-Joplin和使用
-Joplin同步与备份
-Joplin导入与导出
-
-
-
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-
-
-
-Joplin安装使用，调用外部编辑器，网盘同步等等
-
-
-
-Joplin 插件以及其Markdown语法。All in One!
-
-
-
-Joplin简明教程
-markdown语法简明教程
-
-
-
-Joplin 插件使用推荐
-
-
-
-教你用各种插件打造一个强大的笔记工具。
-
-
-
-为知笔记私有化Docker部署
-
-
-
-如何部署自己私有的为知笔记。
-其实博主更推荐私有部署joplin
-
-
-Gitlab 使用系列  Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-]]></content>
-      <categories>
-        <category>gitbook</category>
-      </categories>
-      <tags>
-        <tag>git</tag>
-        <tag>linux</tag>
-        <tag>gitbook</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>【Gitbook】GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</title>
     <url>/posts/7fe86002/</url>
     <content><![CDATA[随着工作时间越来越久，项目越做越多，很多时候，手里面的技术文档都是零散的技术点。最近一直在着手把项目的技术开发文档(Technical Document)系统地整理一下。正好看到了非常棒的 GitBook 工具，又顺带研究了如何借助 Gitlab 的 CI/CD 功能实现自动部署。
@@ -5630,6 +5457,179 @@ res目录是我们要用到的一些图片资源文件夹，除了用到床图�
 
 Gitbook 简要介绍
 GitBook 学习笔记
+
+From: lipeng1667
+系列教程
+全部文章RSS订阅
+Gitbook使用系列 Gitbook分类RSS订阅
+
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+
+
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+
+
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+
+笔记系列  Note分类RSS订阅
+
+完美笔记进化论
+
+
+经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
+
+pigo图床搭建与配置
+Joplin教程
+Snipaste截图工具
+Typora 作为Markdown编辑器最强
+
+
+
+Joplin入门指南&amp;实践方案
+
+
+
+Joplin和使用
+Joplin同步与备份
+Joplin导入与导出
+
+
+
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+
+
+
+Joplin安装使用，调用外部编辑器，网盘同步等等
+
+
+
+Joplin 插件以及其Markdown语法。All in One!
+
+
+
+Joplin简明教程
+markdown语法简明教程
+
+
+
+Joplin 插件使用推荐
+
+
+
+教你用各种插件打造一个强大的笔记工具。
+
+
+
+为知笔记私有化Docker部署
+
+
+
+如何部署自己私有的为知笔记。
+其实博主更推荐私有部署joplin
+
+
+Gitlab 使用系列  Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+]]></content>
+      <categories>
+        <category>gitbook</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+        <tag>linux</tag>
+        <tag>gitbook</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>【Gitlab】GitBook+GitLab撰写发布技术文档-Part2:GitLab篇</title>
+    <url>/posts/7790e989/</url>
+    <content><![CDATA[上一篇文章介绍了如果用 gitbook 写书，并且我们已经通过 gitbook build命令把书的内容打包成 HTML 格式发布到了_book文件夹中。
+接下来这篇文章将向大家介绍如何把写好的书发布到 gitlab 上。这里 gitlab 是我们自己搭建在公司内网中的，不过要用到的原理其实都是一样的，就是利用其 CI/CD 功能。
+关于 CI/CD 网上有很多详细的介绍，这里我就不不再重复啰嗦，如果有想学习的可以参看文末的致谢&amp;引用部分。
+原理
+简单来说CI 就类似一个触发器，你可以设定响应触发的条件，比如 master 分支有新的 commit合并进来，或者带有特殊 tag 的合并，亦或者其他指定分支的特殊提交，可以触发指定的指令。
+一般来说标准的流程是3步，打包(build)、测试(test)和发布(deploy)。也就是我们只需要把源码提交上以后，CI 可以帮我们完成自动化部署工作。
+考虑到我们在用 gitbook 写书的过程中需要预览时，其实已经在做build 和 test 的工作了，所以我们只需要在代码传到 gitlab 上后，让服务器帮我们执行发布的工作。
+所以前提是我们搭建好了一个web 服务，然后 CI 帮我们把打包好的内容部署到相应的网站目录中就好了。
+实现
+我们就按照原理，来一步一步尝试着完成工作吧。
+CI配置
+还记得我们上一篇文章中最后介绍目录结构时，有提到一个文件： gitlab-ci.yml。 这个文件是用YAML 进行配置，我们来看一下我们要用到的配置文件吧
+deploy:
+  stage: deploy
+  script:
+    # make backup
+    - sudo rm -rf /usr/share/nginx/html/TechDocs/example_bak
+    - sudo mv /usr/share/nginx/html/TechDocs/example /usr/share/nginx/html/TechDocs/example_bak
+    - sudo mkdir /usr/share/nginx/html/TechDocs/example
+    # deploy latest files
+    - cd _book
+    - sudo cp -rf . /usr/share/nginx/html/TechDocs/example/
+  only:
+    - master # this job will affect only the 'master' branch
+这段 yaml 配置就只有deploy 的步骤，我们在 script部分进行了一系列的操作，完成旧文件的备份以及新文件的部署。当我们的代码上传到远端后，就会自动执行 script 里的内容了。让我们尝试下吧。
+查看 CI 任务执行状态
+上传代码到 gitlab 的步骤这里就不介绍了。理论上说，当代码上传到 master 分支后，会自动执行我们设定好的部署任务。我们可以通过访问gitlab对应项目的页面， 在左侧菜单栏点击CI/CD来查看任务的执行情况。
+但是如果你和我一样是第一次处理 CI 任务，我们会得到下面的提示：
+
+原因页面上也给出了我们提示This job is waiting to be picked by a runner。
+Runner
+这里就需要引入第2个概念： runner。很容易从字面上理解，runner 就是我们任务的执行者，也很形象，我们提交了一个任务以后，总得有人来执行。这些任务有些是需要shell 脚本执行，有些可能需要登录到远程机器，有些可能需要 docker 的执行权限，所以这些执行者也都有个子的分工，可能有些执行者只负责执行特定项目的任务，有些执行者执行特殊 tag 的。所以接下来我们看看如何才能创建 runner 吧。
+shared runner
+前文提到了我们可能需要一些高权限的 runner 来跨项目间来执行任务。因为我们要做的是多个项目的技术文档，所以会有多个 gitbook 的项目，那这些项目的 CI 任务自然是公用1个 runner 就好，这种 runner 就叫做 shared runner。
+shared runner 的创建需要我们用管理员的帐号登录gitlab 页面，在 admin area 区域，点击 runner 来根据提示创建。
+
+这个页面会显示当前所有的 runner，包括项目独享的 runner 和共享的 shared runner。 我们看到目前还没有一个可用的 runner，所以之前的任务才会停留在等待 runner 来运行的状态。
+我们就根据页面的提示来创建 runner 吧。
+
+安装 gitlab-runner 工具
+第一步是安装工具，可以通过页面上的提示来进行不同主机环境的安装。我们这里用到的是 RHEL/CentOS，其他版本可以参见页面链接。
+我们登录到自建 gitlab 所在的主机，然后执行以下脚本
+$ sudo wget -O /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
+$ sudo chmod +x /usr/local/bin/gitlab-runner
+$ sudo useradd --comment 'GitLab Runner' --create-home gitlab-runner --shell /bin/bash
+$ sudo gitlab-runner install --user=gitlab-runner --working-directory=/home/gitlab-runner
+$ sudo gitlab-runner start
+新建 shared runner
+工具安装好了之后，我们就可以来创建用户了。
+$ gitlab-runner register
+之后按照提示，一步一步创建就好了：
+
+输入URL
+输入token。 URL 和 token 按照页面上给出的提示来创建就好了。token 用来标识创建的 runner 是某个项目特有的，还是 shared runner
+输入 runner 的描述，这个可以随便填写，只要自己能看明白，能区分就好了
+输入特定的 tag。 注意，这里最好留空，否则该 runner 仅会执行特定 tag 的提交
+选择执行类型。这里提供了很多常见的执行类型，例如 docker, docker-ssh, shell 等，我们这里输入 shell。
+
+
+之后我们就创建好了一个可以执行 shell 命令的 shared runner。再次回到之前的 web 页面上查看我们创建的 runner 信息。
+
+可以看到页面提示我们已经创建了一个 runner 可以执行all unassigned projects的任务
+
+我们还可以进入到特定的项目，在设置里面查看 runner 的情况，可以看到已经有一个可用的 shared runner。如果想创建该项目特有的 runner，按照页面上的提示，输入特定的 token 就好了。
+
+其他细节
+我们重新查看CI任务页面，大多数情况下，你的任务状态会是failed或者pendding。 如果是 failed，我们可以点击查看具体失败的原因，例如我遇到的问题就是 gitlab-runner 用户没有 sudo 权限。
+如果是 pendding，通常情况下是你的 job 没有合适的 runner 来执行，例如指定了分支或者添加了 tag 导致没有 runner 可用。
+
+如果一切都设置妥当，我们可以看到 CI 页面任务的最终状态是 passed，也就是成功执行了。这样，gitbook 的内容就成功部署到你的 web 页面上了。
+致谢&amp;引用
+
+基于 GitLab 的 CI 实践(https://zhuanlan.zhihu.com/p/41330476)
+如何使用 GitLab CI(https://medium.com/@mvpdw06/%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-gitlab-ci-ebf0b68ce24b)
+Configuring GitLab Runners(https://docs.gitlab.com/ee/ci/runners/)
+Registering Runners(https://docs.gitlab.com/runner/register/)
+Gitbook CI With Gitlab(https://xiaosuiba.github.io/Gitbook-CI-With-Gitlab/)
+在 Gitlab 平台簡單創建 GitBook 電子書的步驟(https://www.kenming.idv.tw/simple-create-gitbook_at_gitlab_steps/)
+How to create a static website using GitLab Pages(https://getpublii.com/docs/host-static-website-gitlab-pages.html)
+Install GitLab Runner manually on GNU/Linux(https://docs.gitlab.com/runner/install/linux-manually.html)
 
 From: lipeng1667
 系列教程
@@ -11407,9 +11407,9 @@ Vim
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-PmoIDXpEOoakyiXB").style.height=document.getElementById("mmedia-PmoIDXpEOoakyiXB").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-pvrweZeAgWCbTmjW").style.height=document.getElementById("mmedia-pvrweZeAgWCbTmjW").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-PmoIDXpEOoakyiXB").style.height=document.getElementById("mmedia-PmoIDXpEOoakyiXB").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-pvrweZeAgWCbTmjW").style.height=document.getElementById("mmedia-pvrweZeAgWCbTmjW").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -11591,6 +11591,32 @@ Vim
       </tags>
   </entry>
   <entry>
+    <title>解决Thinkpad笔记本喇叭破音问题！</title>
+    <url>/posts/c945eae1/</url>
+    <content><![CDATA[问题
+主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。
+分析
+从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。
+解决方案
+如是，网购了一个新喇叭，拆机，换上，完美解决问题！
+喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。
+
+
+
+这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。
+型号：Thinkpad T4X0S
+
+]]></content>
+      <categories>
+        <category>life</category>
+      </categories>
+      <tags>
+        <tag>thinkpad</tag>
+        <tag>sound</tag>
+        <tag>speaker</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>http 错误代码表</title>
     <url>/posts/80906b88/</url>
     <content><![CDATA[所有 HTTP 状态代码及其定义。
@@ -11670,32 +11696,6 @@ HTTP&nbsp;502&nbsp;-&nbsp;网关错误
       <tags>
         <tag>web</tag>
         <tag>http</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>解决Thinkpad笔记本喇叭破音问题！</title>
-    <url>/posts/c945eae1/</url>
-    <content><![CDATA[问题
-主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。
-分析
-从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。
-解决方案
-如是，网购了一个新喇叭，拆机，换上，完美解决问题！
-喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。
-
-
-
-这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。
-型号：Thinkpad T4X0S
-
-]]></content>
-      <categories>
-        <category>life</category>
-      </categories>
-      <tags>
-        <tag>thinkpad</tag>
-        <tag>sound</tag>
-        <tag>speaker</tag>
       </tags>
   </entry>
   <entry>
@@ -15608,11 +15608,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var MRIxyGVIMwXgOKSA_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); MRIxyGVIMwXgOKSA_options.container = document.getElementById("mmedia-MRIxyGVIMwXgOKSA"); const ap_MRIxyGVIMwXgOKSA = new APlayer(MRIxyGVIMwXgOKSA_options); 
+ var INRtcHSFLKOErcEL_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); INRtcHSFLKOErcEL_options.container = document.getElementById("mmedia-INRtcHSFLKOErcEL"); const ap_INRtcHSFLKOErcEL = new APlayer(INRtcHSFLKOErcEL_options); 
 
 - **列表**
 
- var QBXKIAzVJSPyHPPv_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); QBXKIAzVJSPyHPPv_options.container = document.getElementById("mmedia-QBXKIAzVJSPyHPPv"); const ap_QBXKIAzVJSPyHPPv = new APlayer(QBXKIAzVJSPyHPPv_options); 
+ var hKIjfvNEkdGFTBCC_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); hKIjfvNEkdGFTBCC_options.container = document.getElementById("mmedia-hKIjfvNEkdGFTBCC"); const ap_hKIjfvNEkdGFTBCC = new APlayer(hKIjfvNEkdGFTBCC_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -15864,21 +15864,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-QZDDGgzvrxVneAHu").style.height=document.getElementById("mmedia-QZDDGgzvrxVneAHu").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-HaRvDbXyQBPOuczb").style.height=document.getElementById("mmedia-HaRvDbXyQBPOuczb").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-QZDDGgzvrxVneAHu").style.height=document.getElementById("mmedia-QZDDGgzvrxVneAHu").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-HaRvDbXyQBPOuczb").style.height=document.getElementById("mmedia-HaRvDbXyQBPOuczb").scrollWidth*0.76+"px";
     }; 
 
 **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-dwvOBZksYonRjgYD").style.height=document.getElementById("mmedia-dwvOBZksYonRjgYD").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-DlcfMOPizrmHvZLj").style.height=document.getElementById("mmedia-DlcfMOPizrmHvZLj").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-dwvOBZksYonRjgYD").style.height=document.getElementById("mmedia-dwvOBZksYonRjgYD").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-DlcfMOPizrmHvZLj").style.height=document.getElementById("mmedia-DlcfMOPizrmHvZLj").scrollWidth*0.7+"px";
     }; 
 
 **artplayer**
 
- var scrazYJGOpQcFvUK_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); scrazYJGOpQcFvUK_options.container = "#mmedia-scrazYJGOpQcFvUK"; const art_scrazYJGOpQcFvUK = new Artplayer(scrazYJGOpQcFvUK_options); 
+ var TRbZbyevlLJxogWh_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); TRbZbyevlLJxogWh_options.container = "#mmedia-TRbZbyevlLJxogWh"; const art_TRbZbyevlLJxogWh = new Artplayer(TRbZbyevlLJxogWh_options); 
 脑图
 
 原作者记录
@@ -17032,11 +17032,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var UnjDxpvwZShxkOuq_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); UnjDxpvwZShxkOuq_options.container = document.getElementById("mmedia-UnjDxpvwZShxkOuq"); const ap_UnjDxpvwZShxkOuq = new APlayer(UnjDxpvwZShxkOuq_options); 
+ var xneRiZxvsPwocFea_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); xneRiZxvsPwocFea_options.container = document.getElementById("mmedia-xneRiZxvsPwocFea"); const ap_xneRiZxvsPwocFea = new APlayer(xneRiZxvsPwocFea_options); 
 
 
 
- var FreDuzrDBaawnswl_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); FreDuzrDBaawnswl_options.container = document.getElementById("mmedia-FreDuzrDBaawnswl"); const ap_FreDuzrDBaawnswl = new APlayer(FreDuzrDBaawnswl_options); 
+ var miQkKZfKOtkstBgH_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); miQkKZfKOtkstBgH_options.container = document.getElementById("mmedia-miQkKZfKOtkstBgH"); const ap_miQkKZfKOtkstBgH = new APlayer(miQkKZfKOtkstBgH_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -17117,9 +17117,9 @@ Android支持
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-qYddjRYxowKIIvzI").style.height=document.getElementById("mmedia-qYddjRYxowKIIvzI").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-UzYVAenCLwNEhvSF").style.height=document.getElementById("mmedia-UzYVAenCLwNEhvSF").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-qYddjRYxowKIIvzI").style.height=document.getElementById("mmedia-qYddjRYxowKIIvzI").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-UzYVAenCLwNEhvSF").style.height=document.getElementById("mmedia-UzYVAenCLwNEhvSF").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -17128,7 +17128,7 @@ Android支持
 
 ## 中文翻唱
 
- var YFRrrPIdcIUhLnqG_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); YFRrrPIdcIUhLnqG_options.container = document.getElementById("mmedia-YFRrrPIdcIUhLnqG"); const ap_YFRrrPIdcIUhLnqG = new APlayer(YFRrrPIdcIUhLnqG_options); 
+ var DuqJDYVnXFUGwgjP_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); DuqJDYVnXFUGwgjP_options.container = document.getElementById("mmedia-DuqJDYVnXFUGwgjP"); const ap_DuqJDYVnXFUGwgjP = new APlayer(DuqJDYVnXFUGwgjP_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
