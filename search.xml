@@ -1438,6 +1438,197 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
       </tags>
   </entry>
   <entry>
+    <title>宝塔linux面板重启、重置等命令整合</title>
+    <url>/posts/7b4e434c/</url>
+    <content><![CDATA[宝塔linux面板重启、重置等命令整合
+宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。
+来源于网络，原作已经不可考据，整理更新到目前最新版。
+现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、
+但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦
+Linux面板7.6.0安装命令：
+Centos安装命令：
+yum install -y wget &amp;&amp; wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; sh install.sh
+复制代码
+咨询离线安装版本
+试验性Centos/Ubuntu/Debian安装命令 独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中
+curl -sSO http://download.bt.cn/install/install_panel.sh &amp;&amp; bash install_panel.sh
+复制代码
+Ubuntu/Deepin安装命令：
+wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; sudo bash install.sh
+复制代码
+Debian安装命令：
+wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; bash install.sh
+复制代码
+Fedora安装命令:
+wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; bash install.sh
+复制代码
+**
+**Linux面板7.6.0升级命令：**curl http://download.bt.cn/install/update6.sh|bash复制代码
+以上节点无法使用的情况下，请使用下面的备用节点：
+**
+备用节点【香港】：
+（宝塔推荐使用CN2 双程GIA高品质，免备案的尊云zun.com香港云服务器安装）
+yum install -y wget &amp;&amp; wget -O install.sh http://103.224.251.67:5880/install/install_6.0.sh &amp;&amp; sh install.sh
+管理宝塔
+#停止
+/etc/init.d/bt stop
+#启动
+/etc/init.d/bt start
+#重启
+/etc/init.d/bt restart
+#卸载
+/etc/init.d/bt stop &amp;&amp; chkconfig --del bt &amp;&amp; rm -f /etc/init.d/bt &amp;&amp; rm -rf /www/server/panel
+#查看当前面板端口
+cat /www/server/panel/data/port.pl
+#修改面板端口，如要改成8881（centos 6  系统）
+echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
+iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 8881  -j ACCEPT
+service iptables save
+service iptables restart
+#修改面板端口，如要改成8881（centos 7  系统）
+echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
+firewall-cmd --permanent --zone=public  --add-port=8881/tcp
+firewall-cmd --reload
+#强制修改MySQL管理(root)密码，如要改成123456
+cd /www/server/panel &amp;&amp; python tools.pyc root 123456
+#修改面板密码，如要改成123456
+cd /www/server/panel &amp;&amp; python tools.pyc panel 123456
+#查看宝塔日志
+cat /tmp/panelBoot.pl
+#查看软件安装日志
+cat /tmp/panelExec.log
+#站点配置文件位置
+/www/server/panel/vhost
+#删除域名绑定面板
+rm -f /www/server/panel/data/domain.conf
+#清理登陆限制
+rm -f /www/server/panel/data/*.login
+#查看面板授权IP
+cat /www/server/panel/data/limitip.conf
+#关闭访问限制
+rm -f /www/server/panel/data/limitip.conf
+#查看许可域名
+cat /www/server/panel/data/domain.conf
+#关闭面板SSL
+rm -f /www/server/panel/data/ssl.pl &amp;&amp; /etc/init.d/bt restart
+#查看面板错误日志
+cat /tmp/panelBoot
+#查看数据库错误日志
+cat /www/server/data/*.err
+#站点配置文件目录(nginx)
+/www/server/panel/vhost/nginx
+#站点配置文件目录(apache)
+/www/server/panel/vhost/apache
+#站点默认目录
+/www/wwwroot
+#数据库备份目录
+/www/backup/database
+#站点备份目录
+/www/backup/site
+#站点日志
+/www/wwwlogs
+Nginx服务管理
+#nginx安装目录
+/www/server/nginx
+#启动
+/etc/init.d/nginx start
+#停止
+/etc/init.d/nginx stop
+#重启
+/etc/init.d/nginx restart
+#启载
+/etc/init.d/nginx reload
+#nginx配置文件
+/www/server/nginx/conf/nginx.conf
+Apache服务管理
+#apache安装目录
+/www/server/httpd
+#启动
+/etc/init.d/httpd start
+#停止
+/etc/init.d/httpd stop
+#重启
+/etc/init.d/httpd restart
+#启载
+/etc/init.d/httpd reload
+#apache配置文件
+/www/server/apache/conf/httpd.conf
+MySQL服务管理
+#mysql安装目录
+/www/server/mysql
+#phpmyadmin安装目录
+/www/server/phpmyadmin
+#数据存储目录
+/www/server/data
+#启动
+/etc/init.d/mysqld start
+#停止
+/etc/init.d/mysqld stop
+#重启
+/etc/init.d/mysqld restart
+#启载
+/etc/init.d/mysqld reload
+#mysql配置文件
+/etc/my.cnf
+FTP服务管理
+#ftp安装目录
+/www/server/pure-ftpd
+#启动
+/etc/init.d/pure-ftpd start
+#停止
+/etc/init.d/pure-ftpd stop
+#重启
+/etc/init.d/pure-ftpd restart
+#ftp配置文件
+/www/server/pure-ftpd/etc/pure-ftpd.conf
+PHP服务管理
+#php安装目录
+/www/server/php
+#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} start
+#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} stop
+#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} restart
+#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} reload
+#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)
+/www/server/php/{52|53|54|55|56|70|71}/etc/php.ini
+Redis服务管理
+#redis安装目录
+/www/server/redis
+#启动
+/etc/init.d/redis start
+#停止
+/etc/init.d/redis stop
+#redis配置文件
+/www/server/redis/redis.conf
+Memcached服务管理
+#memcached安装目录
+/usr/local/memcached
+#启动
+/etc/init.d/memcached start
+#停止
+/etc/init.d/memcached stop
+#重启
+/etc/init.d/memcached restart
+#启载
+/etc/init.d/memcached reload
+]]></content>
+      <categories>
+        <category>linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>宝塔</tag>
+        <tag>vps</tag>
+        <tag>建站</tag>
+        <tag>nginx</tag>
+        <tag>apache</tag>
+        <tag>mysql</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>海思MPP&amp;UNF构架源代码级分析</title>
     <url>/posts/13894dce/</url>
     <content><![CDATA[
@@ -2343,197 +2534,6 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
         <tag>mpp</tag>
         <tag>unf</tag>
         <tag>kernel</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>宝塔linux面板重启、重置等命令整合</title>
-    <url>/posts/7b4e434c/</url>
-    <content><![CDATA[宝塔linux面板重启、重置等命令整合
-宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。
-来源于网络，原作已经不可考据，整理更新到目前最新版。
-现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、
-但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦
-Linux面板7.6.0安装命令：
-Centos安装命令：
-yum install -y wget &amp;&amp; wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; sh install.sh
-复制代码
-咨询离线安装版本
-试验性Centos/Ubuntu/Debian安装命令 独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中
-curl -sSO http://download.bt.cn/install/install_panel.sh &amp;&amp; bash install_panel.sh
-复制代码
-Ubuntu/Deepin安装命令：
-wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; sudo bash install.sh
-复制代码
-Debian安装命令：
-wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; bash install.sh
-复制代码
-Fedora安装命令:
-wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; bash install.sh
-复制代码
-**
-**Linux面板7.6.0升级命令：**curl http://download.bt.cn/install/update6.sh|bash复制代码
-以上节点无法使用的情况下，请使用下面的备用节点：
-**
-备用节点【香港】：
-（宝塔推荐使用CN2 双程GIA高品质，免备案的尊云zun.com香港云服务器安装）
-yum install -y wget &amp;&amp; wget -O install.sh http://103.224.251.67:5880/install/install_6.0.sh &amp;&amp; sh install.sh
-管理宝塔
-#停止
-/etc/init.d/bt stop
-#启动
-/etc/init.d/bt start
-#重启
-/etc/init.d/bt restart
-#卸载
-/etc/init.d/bt stop &amp;&amp; chkconfig --del bt &amp;&amp; rm -f /etc/init.d/bt &amp;&amp; rm -rf /www/server/panel
-#查看当前面板端口
-cat /www/server/panel/data/port.pl
-#修改面板端口，如要改成8881（centos 6  系统）
-echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
-iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 8881  -j ACCEPT
-service iptables save
-service iptables restart
-#修改面板端口，如要改成8881（centos 7  系统）
-echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
-firewall-cmd --permanent --zone=public  --add-port=8881/tcp
-firewall-cmd --reload
-#强制修改MySQL管理(root)密码，如要改成123456
-cd /www/server/panel &amp;&amp; python tools.pyc root 123456
-#修改面板密码，如要改成123456
-cd /www/server/panel &amp;&amp; python tools.pyc panel 123456
-#查看宝塔日志
-cat /tmp/panelBoot.pl
-#查看软件安装日志
-cat /tmp/panelExec.log
-#站点配置文件位置
-/www/server/panel/vhost
-#删除域名绑定面板
-rm -f /www/server/panel/data/domain.conf
-#清理登陆限制
-rm -f /www/server/panel/data/*.login
-#查看面板授权IP
-cat /www/server/panel/data/limitip.conf
-#关闭访问限制
-rm -f /www/server/panel/data/limitip.conf
-#查看许可域名
-cat /www/server/panel/data/domain.conf
-#关闭面板SSL
-rm -f /www/server/panel/data/ssl.pl &amp;&amp; /etc/init.d/bt restart
-#查看面板错误日志
-cat /tmp/panelBoot
-#查看数据库错误日志
-cat /www/server/data/*.err
-#站点配置文件目录(nginx)
-/www/server/panel/vhost/nginx
-#站点配置文件目录(apache)
-/www/server/panel/vhost/apache
-#站点默认目录
-/www/wwwroot
-#数据库备份目录
-/www/backup/database
-#站点备份目录
-/www/backup/site
-#站点日志
-/www/wwwlogs
-Nginx服务管理
-#nginx安装目录
-/www/server/nginx
-#启动
-/etc/init.d/nginx start
-#停止
-/etc/init.d/nginx stop
-#重启
-/etc/init.d/nginx restart
-#启载
-/etc/init.d/nginx reload
-#nginx配置文件
-/www/server/nginx/conf/nginx.conf
-Apache服务管理
-#apache安装目录
-/www/server/httpd
-#启动
-/etc/init.d/httpd start
-#停止
-/etc/init.d/httpd stop
-#重启
-/etc/init.d/httpd restart
-#启载
-/etc/init.d/httpd reload
-#apache配置文件
-/www/server/apache/conf/httpd.conf
-MySQL服务管理
-#mysql安装目录
-/www/server/mysql
-#phpmyadmin安装目录
-/www/server/phpmyadmin
-#数据存储目录
-/www/server/data
-#启动
-/etc/init.d/mysqld start
-#停止
-/etc/init.d/mysqld stop
-#重启
-/etc/init.d/mysqld restart
-#启载
-/etc/init.d/mysqld reload
-#mysql配置文件
-/etc/my.cnf
-FTP服务管理
-#ftp安装目录
-/www/server/pure-ftpd
-#启动
-/etc/init.d/pure-ftpd start
-#停止
-/etc/init.d/pure-ftpd stop
-#重启
-/etc/init.d/pure-ftpd restart
-#ftp配置文件
-/www/server/pure-ftpd/etc/pure-ftpd.conf
-PHP服务管理
-#php安装目录
-/www/server/php
-#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} start
-#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} stop
-#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} restart
-#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} reload
-#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)
-/www/server/php/{52|53|54|55|56|70|71}/etc/php.ini
-Redis服务管理
-#redis安装目录
-/www/server/redis
-#启动
-/etc/init.d/redis start
-#停止
-/etc/init.d/redis stop
-#redis配置文件
-/www/server/redis/redis.conf
-Memcached服务管理
-#memcached安装目录
-/usr/local/memcached
-#启动
-/etc/init.d/memcached start
-#停止
-/etc/init.d/memcached stop
-#重启
-/etc/init.d/memcached restart
-#启载
-/etc/init.d/memcached reload
-]]></content>
-      <categories>
-        <category>linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>宝塔</tag>
-        <tag>vps</tag>
-        <tag>建站</tag>
-        <tag>nginx</tag>
-        <tag>apache</tag>
-        <tag>mysql</tag>
       </tags>
   </entry>
   <entry>
@@ -4259,63 +4259,6 @@ network.protocol-handler.app.ed2k
       </tags>
   </entry>
   <entry>
-    <title>qnap IO 错误消除</title>
-    <url>/posts/5b1993ac/</url>
-    <content><![CDATA[处理步骤
-备份
-先备份数据，rsync比HBS3好用多了。
-如果没有坏块
-如果没有坏块，就在下图位置扫描坏块，扫描完，自动清除异常标志
-
-如果有坏块
-坏块修复
-如果有坏块，可以使用 “DiskGenius”扫描修复
-
-
-强制消除异常标志
-
-
-開啟SSH
-登入 console
-# sed -i '/pd_err_wwn_/d' /mnt/HDA_ROOT/.conf
-重啟 NAS.
-
-
-总结：
-为了安全和稳定性，有坏块后，备份数据，使用DiskGenius修复坏块，（只能修复逻辑坏块，不能修复物理坏块），然后最好全盘格式化再使用。
-SDD可以使用低级格式化，但会全盘减少一次写寿命。尽量少用。
-系列教程
-全部文章RSS订阅
-Nas系列 Nas 分类 RSS 订阅
-
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>qnap</tag>
-        <tag>nas</tag>
-        <tag>ssd</tag>
-        <tag>hdd</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>几种常用管理模型和方法</title>
     <url>/posts/ca630feb/</url>
     <content><![CDATA[这些只是基本的工具，你需要了解。但是，和行业相关的知识更重要。就像做数学题，把一堆错综复杂的线索中归纳总结出来问题，提出解决方法，这中间需要丰富的行业知识，这个没法速成。总结完后，执行阶段，就像数学加减乘除一样，这些是基本的工具和方法。
@@ -5089,6 +5032,63 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
+    <title>qnap IO 错误消除</title>
+    <url>/posts/5b1993ac/</url>
+    <content><![CDATA[处理步骤
+备份
+先备份数据，rsync比HBS3好用多了。
+如果没有坏块
+如果没有坏块，就在下图位置扫描坏块，扫描完，自动清除异常标志
+
+如果有坏块
+坏块修复
+如果有坏块，可以使用 “DiskGenius”扫描修复
+
+
+强制消除异常标志
+
+
+開啟SSH
+登入 console
+# sed -i '/pd_err_wwn_/d' /mnt/HDA_ROOT/.conf
+重啟 NAS.
+
+
+总结：
+为了安全和稳定性，有坏块后，备份数据，使用DiskGenius修复坏块，（只能修复逻辑坏块，不能修复物理坏块），然后最好全盘格式化再使用。
+SDD可以使用低级格式化，但会全盘减少一次写寿命。尽量少用。
+系列教程
+全部文章RSS订阅
+Nas系列 Nas 分类 RSS 订阅
+
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>ssd</tag>
+        <tag>hdd</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>QNAP 修改应用启动顺序</title>
     <url>/posts/77da2f80/</url>
     <content><![CDATA[
@@ -5138,66 +5138,6 @@ Earthly 一个更加强大的镜像构建工具
         <tag>qnap</tag>
         <tag>nas</tag>
         <tag>启动</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>通过宝塔面板实现MySQL性能简单调优</title>
-    <url>/posts/d5f56dd0/</url>
-    <content><![CDATA[
-在PHP+MYSQL架构网站运行过程中，往往会遇到各种性能问题影响，如MySQL、PHP、CPU、磁盘IO、缓存等，其中MySQL瓶颈就是最常见也最难解决的一种影响网站性能的因素；通常，我们会使用redis、memcached等缓存软件来缓存内容，这确实是最优的解决方案之一，但这需要网站程序的支持，然而多数常用网站程序并不支持或者不能完美支持这些缓存软件，今天我们就来谈谈如何通过MySQL自身的配置调整来优化MySQL性能，以缓解MySQL瓶颈问题。
-
-准备：
-
-​    1、宝塔Linux面板 正式版 5.2.0+ (2017/09/20发布)  测试版5.2.4+
-​    2、MySQL 5.x
-
-通常MySQL调优我们分以下几部分：
-
-​    1、MySQL配置参数调优 (需要根据网站运行情况调整)
-​    2、数据表索引调优 (效果明显，但通常优秀的开源程序都不需要调整)
-​    3、SQL语句调优 (这是程序员或DBA干的事)
-
-今天我们主要谈谈如果配合宝塔面板的新功能来进行MySQL配置参数调优，我们先来看两张图片：
-(图1)
-
-(图2)
-
-很明显，(图1)显示的是MySQL当前的运行状态，(图2)显示的是MySQL主要配置参数
-下面我们就来解读一下这两张图：
-1、活动/峰值连接数
-​      (图1)中当前活动的连接为1个，自MySQL服务启动以来，最高连接数为54；当最高连接数接近或等于(图2)中的max_connections时，应适当增加max_connections，需要注意的是，不要一下子增加过多，建议每次增加50，观察一段时间，不够再继续增加。
-2、线程缓存命中率
-​      (图1)中线程缓存命中率为99.78%，若这个值小于90%，建议适当增加(图2)中的thread_cache_size，建议每次增加8。
-3、索引命中率
-​      (图1)中索引命中率为99.50%，若这个值小于95%，建议适当增加(图2)中的key_buffer_size，建议每次增加64，需要说明的是，若您的数据库使用的是Innodb引擎，可忽略这个选项
-4、Innodb索引命中率
-(图1)中Innodb索引命中率为100%，若这个值小于95%，建议适当增加(图2)中的innodb_buffer_pool_size，建议每次增加64，需要说明的是，若您的数据库没有使用Innodb引擎，可忽略这个选项
-5、查询缓存命中率
-​      MySQL查询缓存是个比较受争议的功能，个人建议当你有在使用redis、memcached等缓存软件时，在(图2)中将query_cache_size设为0可以将其关闭，当你没有使用缓存软件，有多余的内存使用，且数据库瓶颈明显存在时，可以尝试开启查询缓存，这是个非常依赖数据表结构及SQL语句优化的功能，若数据表结构和SQL语句都针对查询缓存进行过优化，它的效果还是很不错的。
-6、创建临时表到磁盘
-​      (图1)中创建临时表到磁盘的比例是0.42%，这说明大部分临时表创建到内存了，不会过多增加磁盘IO的开销，建议，当比例大于2%时适当增加(图1)中的tmp_cache_size，建议每次增加32，当比例大于60%时，放弃吧，有些开源程序并没有专门优化过SQL语句，所以在运行过程中会开启大量临时表，加多少缓存都是不够用的。
-7、已打开的表
-​      当(图1)中的已打开的表接近或等于(图2)中的table_open_cache时，可以适当增加table_open_cache，但若设置过大可能导致您的程序频繁中断MySQL连接，建议在1024以内，最大不要超过2048。
-8、没有使用索引的量、没有使用索引的JOIN量
-​      若不为0，就检查下数据表索引吧，其实只要没有疯涨，比如一天增涨几千，一般可以忽略，必竟优化索引还是程序员或DBA去干比较合适。
-9、排序后的合并次数
-​      如果这个值在缓慢增张，建议适当增加(图2)中的sort_buffer_size，建议每次增加512，但最大不要超过8192，如果这个值一直在疯涨，增加sort_buffer_size也没用，就放弃这个选项吧，这个锅还是给程序开发者背。
-10、锁表次数
-​      如果服务器CPU开销不大的情况下，疯狂锁表，建议你将所有数据表转换成innodb，记得转换前备份哦。
-11、优化方案
-​      这个是我们根据内存大小给的一个推荐优化方案，仅是建议仅用于基础参考值，还是要根据实据情况来调整每一个配置项。
-注意：保存参数配置后不会立即生效，记得要重启MySQL服务。
-写在最后：
-因我本人并不是专业DBA，难免有错误或遗漏的地方，还请大家给予指正，另外，可能面板提供的参考数据及调整选项还不够丰富，我们在往后的更新中会根据需要考虑继续增加更多的调整选项，谢谢大家的支持。
-来自网络整理。
-]]></content>
-      <categories>
-        <category>mysql</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>mysql</tag>
-        <tag>优化</tag>
       </tags>
   </entry>
   <entry>
@@ -5284,6 +5224,66 @@ From: hackerchai
         <tag>tls</tag>
         <tag>隐私</tag>
         <tag>安全</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>通过宝塔面板实现MySQL性能简单调优</title>
+    <url>/posts/d5f56dd0/</url>
+    <content><![CDATA[
+在PHP+MYSQL架构网站运行过程中，往往会遇到各种性能问题影响，如MySQL、PHP、CPU、磁盘IO、缓存等，其中MySQL瓶颈就是最常见也最难解决的一种影响网站性能的因素；通常，我们会使用redis、memcached等缓存软件来缓存内容，这确实是最优的解决方案之一，但这需要网站程序的支持，然而多数常用网站程序并不支持或者不能完美支持这些缓存软件，今天我们就来谈谈如何通过MySQL自身的配置调整来优化MySQL性能，以缓解MySQL瓶颈问题。
+
+准备：
+
+​    1、宝塔Linux面板 正式版 5.2.0+ (2017/09/20发布)  测试版5.2.4+
+​    2、MySQL 5.x
+
+通常MySQL调优我们分以下几部分：
+
+​    1、MySQL配置参数调优 (需要根据网站运行情况调整)
+​    2、数据表索引调优 (效果明显，但通常优秀的开源程序都不需要调整)
+​    3、SQL语句调优 (这是程序员或DBA干的事)
+
+今天我们主要谈谈如果配合宝塔面板的新功能来进行MySQL配置参数调优，我们先来看两张图片：
+(图1)
+
+(图2)
+
+很明显，(图1)显示的是MySQL当前的运行状态，(图2)显示的是MySQL主要配置参数
+下面我们就来解读一下这两张图：
+1、活动/峰值连接数
+​      (图1)中当前活动的连接为1个，自MySQL服务启动以来，最高连接数为54；当最高连接数接近或等于(图2)中的max_connections时，应适当增加max_connections，需要注意的是，不要一下子增加过多，建议每次增加50，观察一段时间，不够再继续增加。
+2、线程缓存命中率
+​      (图1)中线程缓存命中率为99.78%，若这个值小于90%，建议适当增加(图2)中的thread_cache_size，建议每次增加8。
+3、索引命中率
+​      (图1)中索引命中率为99.50%，若这个值小于95%，建议适当增加(图2)中的key_buffer_size，建议每次增加64，需要说明的是，若您的数据库使用的是Innodb引擎，可忽略这个选项
+4、Innodb索引命中率
+(图1)中Innodb索引命中率为100%，若这个值小于95%，建议适当增加(图2)中的innodb_buffer_pool_size，建议每次增加64，需要说明的是，若您的数据库没有使用Innodb引擎，可忽略这个选项
+5、查询缓存命中率
+​      MySQL查询缓存是个比较受争议的功能，个人建议当你有在使用redis、memcached等缓存软件时，在(图2)中将query_cache_size设为0可以将其关闭，当你没有使用缓存软件，有多余的内存使用，且数据库瓶颈明显存在时，可以尝试开启查询缓存，这是个非常依赖数据表结构及SQL语句优化的功能，若数据表结构和SQL语句都针对查询缓存进行过优化，它的效果还是很不错的。
+6、创建临时表到磁盘
+​      (图1)中创建临时表到磁盘的比例是0.42%，这说明大部分临时表创建到内存了，不会过多增加磁盘IO的开销，建议，当比例大于2%时适当增加(图1)中的tmp_cache_size，建议每次增加32，当比例大于60%时，放弃吧，有些开源程序并没有专门优化过SQL语句，所以在运行过程中会开启大量临时表，加多少缓存都是不够用的。
+7、已打开的表
+​      当(图1)中的已打开的表接近或等于(图2)中的table_open_cache时，可以适当增加table_open_cache，但若设置过大可能导致您的程序频繁中断MySQL连接，建议在1024以内，最大不要超过2048。
+8、没有使用索引的量、没有使用索引的JOIN量
+​      若不为0，就检查下数据表索引吧，其实只要没有疯涨，比如一天增涨几千，一般可以忽略，必竟优化索引还是程序员或DBA去干比较合适。
+9、排序后的合并次数
+​      如果这个值在缓慢增张，建议适当增加(图2)中的sort_buffer_size，建议每次增加512，但最大不要超过8192，如果这个值一直在疯涨，增加sort_buffer_size也没用，就放弃这个选项吧，这个锅还是给程序开发者背。
+10、锁表次数
+​      如果服务器CPU开销不大的情况下，疯狂锁表，建议你将所有数据表转换成innodb，记得转换前备份哦。
+11、优化方案
+​      这个是我们根据内存大小给的一个推荐优化方案，仅是建议仅用于基础参考值，还是要根据实据情况来调整每一个配置项。
+注意：保存参数配置后不会立即生效，记得要重启MySQL服务。
+写在最后：
+因我本人并不是专业DBA，难免有错误或遗漏的地方，还请大家给予指正，另外，可能面板提供的参考数据及调整选项还不够丰富，我们在往后的更新中会根据需要考虑继续增加更多的调整选项，谢谢大家的支持。
+来自网络整理。
+]]></content>
+      <categories>
+        <category>mysql</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>mysql</tag>
+        <tag>优化</tag>
       </tags>
   </entry>
   <entry>
@@ -6583,366 +6583,6 @@ github卡片
       </tags>
   </entry>
   <entry>
-    <title>为知笔记私有化Docker部署</title>
-    <url>/posts/1802a8a7/</url>
-    <content><![CDATA[登陆NAS，打开套件中心，搜索docker，并安装。
-搜索wiznote，找到wiznote/wizserver，双击下载
-
-在NAS中创建共享目录，用于存放笔记数据
-
-
-启动File Station
-
-
-在docker目录下创建文件夹：
-wiz
-
-
-在wiz文件夹下创建文件夹：data
-
-
-
-双击创建容器，启用资源限制，设置为内存限制4096MB，官方介绍说需要4G内存
-
-
-
-高级设置，启动自动重新启动
-
-
-卷设置，使用刚才我们创建的data目录进行配置，装载路径/wiz/storage，docker/wiz/config装载路径/wiz/app/wizserver/config
-
-
-
-网络设置不动，端口设置添加映射：8888映射80端口（8888可以随便设置，跟访问地址有关）
-
-
-
-
-
-设置环境变量
-
-SEARCH=true TZ=Asia/Shanghai
-
-
-直接应用，启动docker，然后就静静的等待吧，可以看看镜像的日志，看到这些基本上就差不多启动好了（最新的镜像在NAS上首次启动非常慢，本人等了一个多小时才完全启动完毕，在本地安装速度非常快）
-
-
-通过 http://NAS的IP:8888，进行访问，就可以看到已经启动完成
-
-
-
-
-默认管理员账号：admin@wiz.cn，密码：123456
-管理后台登陆地址：http://IP地址:端口/wapp/pages/admin
-
-NAS开启SSH
-首先在NAS上启动SSH
-登陆NAS，打开控制面板-终端机和SNMP，在启动SSH功能前打上勾
-打开命令行，输入
-ssh NAS管理员账号@NAS的IP地址 ssh端口号默认是22
-看到提示符，输入账号的密码，输入时不可见，输入完成按回车，看到命令行提示符变了，登陆成功。
-进入容器
-在命令行中输入
-sudo docker ps
-可能提示输入密码，就输入NAS管理员的密码即可，显示列表，查看到如下列表，找到其中运行了为知笔记的一行
-
-复制为知笔记的CONTAINER ID，然后再输入如下命令并回车：
-sudo docker exec -it 粘贴刚复制好的ID号 /bin/bash
-至此进入到容器中
-修改配置文件
-输入如下命令打开配置文件进行编辑：
-vi /wiz/app/wizserver/config/default.json
-vi命令的具体使用方法请自行百度，保存好后退出，重启容器生效。
-进入docker，修改文件/wiz/wizserver/app/config/default.json
-"as": {
-     "admin": ["admin@wiz.cn"],
-     "share": {
-       "admin": ["admin@wiz.cn"],
-       "enableHttps": false,
-       "enableSubDomain": false,
-       "appShareUrl": "127.0.0.1:5001"
-     },
-其中127.0.0.1:5001修改为自己的服务器访问地址，可以给docker做个端口映射（因为群晖NAS占用了5001端口），譬如映射8889端口到容器的5001端口，则设置为xxx.xxx.xxx.xxx:8889，分享后的链接即为该链接。
-在NAS上可以用反向代理来解决二级域名的问题。
-分享功能需要用户绑定手机，并完成认证，在docker中登陆数据库，并修改数据
-mysql -u root -p
-输入密码，密码在docker中/wiz/wizserver/app/config/default.json中查看
-"mysql": {
-  "as": {
-   "host": "127.0.0.1",
-   "user": "root",
-   "password": "******************",
-   "database": "wizasent",
-   "connectionLimit": 50,
-   "connectTimeout": 60000,
-   "aquireTimeout": 60000,
-   "waitForConnections": true
-  },
-其中password就是密码，进入mysql控制台后，执行以下命令：
-use wizasent;
-update wiz_user set MOBILE='你的手机号', MOBILE_VERIFY='1' where ID='1';
-web端登陆为知笔记，并修改默认账号后，修改后的账号无法登陆管理后台，需要做以下配置，修改文件/wiz/wizserver/app/config/default.json，找到以下代码：
-"as": {
-  "admin": ["admin@wiz.cn"],
-  "share": {
-    "admin": ["admin@wiz.cn"],
-    "enableHttps": false,
-    "enableSubDomain": false,
-    "appShareUrl": "127.0.0.1:5001"
-  },
-其中admin@wiz.cn修改为修改后的账号。
-登陆NAS，打开控制面板-应用程序门户-反向代理
-点击新增，然后输入如下：
-
-实际测试来源协议选择https时只有网页端可以登陆，客户端无法登陆，暂时还是选择http为好，也可以网页端通过https登陆，客户端通过http登陆，配置两个不同的端口（记得要在路由上配置端口映射）。
-修改default.json
-{
-  "debug": true,
-  "enableHttps": true,
-  "storage": {
-     "__comments": "oss|local|s3|cos",
-     "use": "local",
-     "oss": {
-       "bucket": "data_root",
-       "region": "test",
-       "accessKeyId": "test",
-       "accessKeySecret": "test",
-       "internal": false
-     },
-其中enableHttps配置成true
-重启服务
-cd /wiz/app/wizserver
-pm2 restart all
-删除/wiz/storage/index/.search文件和/wiz/storage/index/nodes目录
-重启容器
-链接数据库，执行下列SQL
-update wizksent.wiz_kb_stat set index_new_status=4
-进入容器，执行
-cd /wiz/app/wizserver
-pm2 start app.js --name="index2"  -f -- -c 1 -i 1 -t 2 -s index
-pm2 start app.js --name="index2"  -f --  -s copy
-查看日志
-pm2 logs index2
-下载官方插件，并安装到Chrome中
-http://www.wiz.cn/downloads-webclipperchrome.html
-在浏览器中输入chrome://extensions/打开插件列表，开启开发者模式
-
-看ID号，在浏览器中输入chrome://inspect/#extensions在打开的列表中找到WizClipper，点击inspect，开启调试窗口。
-选择Sources标签，并打开文件Scripts\wiz\WizConstant.js
-在代码中查看note.wiz.cn和api.wiz.cn的网址全部替换成自己私有云的地址，实测，登陆没问题，保存失败。
-
-管理功能
-
-
-增加重建索引功能，以备不时之需
-
-
-增加备份与恢复功能
-
-
-增加markdown语法扩展：
-flow（流程图）、sequence（时序图）、mermaid（流程图、时序图、甘特图）、LaTeX（公式）
-
-
-增加手动配置分享链接
-
-
-支持社交绑定的配置
-
-
-支持对象存储或webdav存储
-
-
-Web&amp;Mac客户端
-
-
-增加自定义模板
-
-
-增加偏好设置，自定义快捷键（主要是编辑和预览切换的快捷键非常不适应）
-
-
-增加同步预览模式，可以参考下Typora，Bear都不错
-
-
-增加https访问方式
-
-
-支持导出jpg、png、docx格式
-
-
-浏览器插件
-
-增加支持私有云登陆
-
-【部署环境】
-群晖DS1517+（DSM6.2.2）
-容器分配内存4G，CPU*2核
-【出现的问题】
-
-
-网页版上提示，自动保存失败，网络错误，请尽快保存（最后发现是时区不通道导致的，第8点解决了此问题）
-
-
-所有社交平台账号无法绑定
-
-
-mywiz邮箱不可修改
-
-
-绑定手机无法收到验证码，即无法绑定手机（通过修改数据库搞定）
-
-
-存储设置功能多余（因为已经本地化部署了），改成数据备份/恢复就好了
-
-
-支付信息是支付到为知去的，这个功能容易产生误解（如果多人使用的话）
-
-
-docker容器的时区与宿主机时区不同，添加环境变量解决，TZ=Asia/Shanghai
-
-
-编辑整理 From： 大大木头 [为知社区]
-系列教程
-全部文章RSS订阅
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-笔记系列  Note分类RSS订阅
-
-完美笔记进化论
-
-
-经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
-
-pigo图床搭建与配置
-Joplin教程
-Snipaste截图工具
-Typora 作为Markdown编辑器最强
-
-
-
-Joplin入门指南&amp;实践方案
-
-
-
-Joplin和使用
-Joplin同步与备份
-Joplin导入与导出
-
-
-
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-
-
-
-Joplin安装使用，调用外部编辑器，网盘同步等等
-
-
-
-Joplin 插件以及其Markdown语法。All in One!
-
-
-
-Joplin简明教程
-markdown语法简明教程
-
-
-
-Joplin 插件使用推荐
-
-
-
-教你用各种插件打造一个强大的笔记工具。
-
-
-
-为知笔记私有化Docker部署
-
-
-
-如何部署自己私有的为知笔记。
-其实博主更推荐私有部署joplin
-
-
-Gitbook使用系列 Gitbook分类RSS订阅
-
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-
-
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-
-
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-
-Gitlab 使用系列  Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-Hexo系列  HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-
-Hexo Docker环境与Hexo基础配置篇
-
-
-hexo博客自定义修改篇
-
-
-hexo博客网络优化篇
-
-
-hexo博客增强部署篇
-
-
-hexo博客个性定制篇
-
-
-hexo博客常见问题篇
-
-
-Hexo Markdown以及各种插件功能测试
-
-
-
-
-markdown 各种其它语法插件
-latex公式支持
-mermaid图表
-plant uml图表
-URL卡片
-bilibili卡片
-github卡片
-豆瓣卡片
-插入音乐和视频
-插入脑图
-
-
-]]></content>
-      <categories>
-        <category>docker</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>note</tag>
-        <tag>wiz</tag>
-        <tag>docker</tag>
-        <tag>Nas</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Joplin 入门指南&amp;实践方案</title>
     <url>/posts/e6086437/</url>
     <content><![CDATA[Evernote笔记是我们常用的一个笔记服务，国内叫印象笔记，免费版本的Evernote笔记其实已经足够我们使用了，但是对于重度的笔记用户，Evernote某些功能可能需要付费升级才可以使用，而且你的笔记是存放在Evernote的服务器上。
@@ -7393,6 +7033,366 @@ github卡片
         <tag>Webdav</tag>
         <tag>Linux</tag>
         <tag>Joplin</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>为知笔记私有化Docker部署</title>
+    <url>/posts/1802a8a7/</url>
+    <content><![CDATA[登陆NAS，打开套件中心，搜索docker，并安装。
+搜索wiznote，找到wiznote/wizserver，双击下载
+
+在NAS中创建共享目录，用于存放笔记数据
+
+
+启动File Station
+
+
+在docker目录下创建文件夹：
+wiz
+
+
+在wiz文件夹下创建文件夹：data
+
+
+
+双击创建容器，启用资源限制，设置为内存限制4096MB，官方介绍说需要4G内存
+
+
+
+高级设置，启动自动重新启动
+
+
+卷设置，使用刚才我们创建的data目录进行配置，装载路径/wiz/storage，docker/wiz/config装载路径/wiz/app/wizserver/config
+
+
+
+网络设置不动，端口设置添加映射：8888映射80端口（8888可以随便设置，跟访问地址有关）
+
+
+
+
+
+设置环境变量
+
+SEARCH=true TZ=Asia/Shanghai
+
+
+直接应用，启动docker，然后就静静的等待吧，可以看看镜像的日志，看到这些基本上就差不多启动好了（最新的镜像在NAS上首次启动非常慢，本人等了一个多小时才完全启动完毕，在本地安装速度非常快）
+
+
+通过 http://NAS的IP:8888，进行访问，就可以看到已经启动完成
+
+
+
+
+默认管理员账号：admin@wiz.cn，密码：123456
+管理后台登陆地址：http://IP地址:端口/wapp/pages/admin
+
+NAS开启SSH
+首先在NAS上启动SSH
+登陆NAS，打开控制面板-终端机和SNMP，在启动SSH功能前打上勾
+打开命令行，输入
+ssh NAS管理员账号@NAS的IP地址 ssh端口号默认是22
+看到提示符，输入账号的密码，输入时不可见，输入完成按回车，看到命令行提示符变了，登陆成功。
+进入容器
+在命令行中输入
+sudo docker ps
+可能提示输入密码，就输入NAS管理员的密码即可，显示列表，查看到如下列表，找到其中运行了为知笔记的一行
+
+复制为知笔记的CONTAINER ID，然后再输入如下命令并回车：
+sudo docker exec -it 粘贴刚复制好的ID号 /bin/bash
+至此进入到容器中
+修改配置文件
+输入如下命令打开配置文件进行编辑：
+vi /wiz/app/wizserver/config/default.json
+vi命令的具体使用方法请自行百度，保存好后退出，重启容器生效。
+进入docker，修改文件/wiz/wizserver/app/config/default.json
+"as": {
+     "admin": ["admin@wiz.cn"],
+     "share": {
+       "admin": ["admin@wiz.cn"],
+       "enableHttps": false,
+       "enableSubDomain": false,
+       "appShareUrl": "127.0.0.1:5001"
+     },
+其中127.0.0.1:5001修改为自己的服务器访问地址，可以给docker做个端口映射（因为群晖NAS占用了5001端口），譬如映射8889端口到容器的5001端口，则设置为xxx.xxx.xxx.xxx:8889，分享后的链接即为该链接。
+在NAS上可以用反向代理来解决二级域名的问题。
+分享功能需要用户绑定手机，并完成认证，在docker中登陆数据库，并修改数据
+mysql -u root -p
+输入密码，密码在docker中/wiz/wizserver/app/config/default.json中查看
+"mysql": {
+  "as": {
+   "host": "127.0.0.1",
+   "user": "root",
+   "password": "******************",
+   "database": "wizasent",
+   "connectionLimit": 50,
+   "connectTimeout": 60000,
+   "aquireTimeout": 60000,
+   "waitForConnections": true
+  },
+其中password就是密码，进入mysql控制台后，执行以下命令：
+use wizasent;
+update wiz_user set MOBILE='你的手机号', MOBILE_VERIFY='1' where ID='1';
+web端登陆为知笔记，并修改默认账号后，修改后的账号无法登陆管理后台，需要做以下配置，修改文件/wiz/wizserver/app/config/default.json，找到以下代码：
+"as": {
+  "admin": ["admin@wiz.cn"],
+  "share": {
+    "admin": ["admin@wiz.cn"],
+    "enableHttps": false,
+    "enableSubDomain": false,
+    "appShareUrl": "127.0.0.1:5001"
+  },
+其中admin@wiz.cn修改为修改后的账号。
+登陆NAS，打开控制面板-应用程序门户-反向代理
+点击新增，然后输入如下：
+
+实际测试来源协议选择https时只有网页端可以登陆，客户端无法登陆，暂时还是选择http为好，也可以网页端通过https登陆，客户端通过http登陆，配置两个不同的端口（记得要在路由上配置端口映射）。
+修改default.json
+{
+  "debug": true,
+  "enableHttps": true,
+  "storage": {
+     "__comments": "oss|local|s3|cos",
+     "use": "local",
+     "oss": {
+       "bucket": "data_root",
+       "region": "test",
+       "accessKeyId": "test",
+       "accessKeySecret": "test",
+       "internal": false
+     },
+其中enableHttps配置成true
+重启服务
+cd /wiz/app/wizserver
+pm2 restart all
+删除/wiz/storage/index/.search文件和/wiz/storage/index/nodes目录
+重启容器
+链接数据库，执行下列SQL
+update wizksent.wiz_kb_stat set index_new_status=4
+进入容器，执行
+cd /wiz/app/wizserver
+pm2 start app.js --name="index2"  -f -- -c 1 -i 1 -t 2 -s index
+pm2 start app.js --name="index2"  -f --  -s copy
+查看日志
+pm2 logs index2
+下载官方插件，并安装到Chrome中
+http://www.wiz.cn/downloads-webclipperchrome.html
+在浏览器中输入chrome://extensions/打开插件列表，开启开发者模式
+
+看ID号，在浏览器中输入chrome://inspect/#extensions在打开的列表中找到WizClipper，点击inspect，开启调试窗口。
+选择Sources标签，并打开文件Scripts\wiz\WizConstant.js
+在代码中查看note.wiz.cn和api.wiz.cn的网址全部替换成自己私有云的地址，实测，登陆没问题，保存失败。
+
+管理功能
+
+
+增加重建索引功能，以备不时之需
+
+
+增加备份与恢复功能
+
+
+增加markdown语法扩展：
+flow（流程图）、sequence（时序图）、mermaid（流程图、时序图、甘特图）、LaTeX（公式）
+
+
+增加手动配置分享链接
+
+
+支持社交绑定的配置
+
+
+支持对象存储或webdav存储
+
+
+Web&amp;Mac客户端
+
+
+增加自定义模板
+
+
+增加偏好设置，自定义快捷键（主要是编辑和预览切换的快捷键非常不适应）
+
+
+增加同步预览模式，可以参考下Typora，Bear都不错
+
+
+增加https访问方式
+
+
+支持导出jpg、png、docx格式
+
+
+浏览器插件
+
+增加支持私有云登陆
+
+【部署环境】
+群晖DS1517+（DSM6.2.2）
+容器分配内存4G，CPU*2核
+【出现的问题】
+
+
+网页版上提示，自动保存失败，网络错误，请尽快保存（最后发现是时区不通道导致的，第8点解决了此问题）
+
+
+所有社交平台账号无法绑定
+
+
+mywiz邮箱不可修改
+
+
+绑定手机无法收到验证码，即无法绑定手机（通过修改数据库搞定）
+
+
+存储设置功能多余（因为已经本地化部署了），改成数据备份/恢复就好了
+
+
+支付信息是支付到为知去的，这个功能容易产生误解（如果多人使用的话）
+
+
+docker容器的时区与宿主机时区不同，添加环境变量解决，TZ=Asia/Shanghai
+
+
+编辑整理 From： 大大木头 [为知社区]
+系列教程
+全部文章RSS订阅
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+笔记系列  Note分类RSS订阅
+
+完美笔记进化论
+
+
+经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
+
+pigo图床搭建与配置
+Joplin教程
+Snipaste截图工具
+Typora 作为Markdown编辑器最强
+
+
+
+Joplin入门指南&amp;实践方案
+
+
+
+Joplin和使用
+Joplin同步与备份
+Joplin导入与导出
+
+
+
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+
+
+
+Joplin安装使用，调用外部编辑器，网盘同步等等
+
+
+
+Joplin 插件以及其Markdown语法。All in One!
+
+
+
+Joplin简明教程
+markdown语法简明教程
+
+
+
+Joplin 插件使用推荐
+
+
+
+教你用各种插件打造一个强大的笔记工具。
+
+
+
+为知笔记私有化Docker部署
+
+
+
+如何部署自己私有的为知笔记。
+其实博主更推荐私有部署joplin
+
+
+Gitbook使用系列 Gitbook分类RSS订阅
+
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+
+
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+
+
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+
+Gitlab 使用系列  Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+Hexo系列  HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+
+Hexo Docker环境与Hexo基础配置篇
+
+
+hexo博客自定义修改篇
+
+
+hexo博客网络优化篇
+
+
+hexo博客增强部署篇
+
+
+hexo博客个性定制篇
+
+
+hexo博客常见问题篇
+
+
+Hexo Markdown以及各种插件功能测试
+
+
+
+
+markdown 各种其它语法插件
+latex公式支持
+mermaid图表
+plant uml图表
+URL卡片
+bilibili卡片
+github卡片
+豆瓣卡片
+插入音乐和视频
+插入脑图
+
+
+]]></content>
+      <categories>
+        <category>docker</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>note</tag>
+        <tag>wiz</tag>
+        <tag>docker</tag>
+        <tag>Nas</tag>
       </tags>
   </entry>
   <entry>
@@ -9277,6 +9277,57 @@ https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&a
       </tags>
   </entry>
   <entry>
+    <title>自动曝光原理</title>
+    <url>/posts/509c7bd3/</url>
+    <content><![CDATA[自动曝光的原理
+曝光是摄影中十分重要的一个环节，它决定了一张图片的明暗，如下图所示，第一张图片太暗，而第三种图片太亮。
+
+曝光由什么来决定
+使用过数码相机的人都知道曝光由光圈、曝光时间、ISO三者共同决定，详细的关系就不赘述。
+光圈：控制进光量；
+曝光时间：光到达的时间长度；
+ISO：增益；
+但是对于手机以及其他电子产品使用的微型摄像头，光圈大小是固定的，所以手机拍照的曝光由曝光时间和**增益(ISO)**来控制。
+什么是自动曝光
+数码相机中有一种手动模式，可手动设置光圈、曝光时间、ISO来控制曝光，该模式的使用对摄影师的要求会比较高。另外 数码相机的全自动模式、光圈优先模式、快门优先模式以及手机等电子产品的曝光都属于自动曝光。
+自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。
+自动曝光的标准
+在此之前需要了解物体的亮度与色彩是由物体对光线的反射率来决定的。例如纯黑色的放射率是0，纯白色的反射率是100%，处于中间的灰度的反射率是18%，这就是18%中间灰度。
+
+具有一定反射率的物体在最终的图像中被还原到了其相应的灰度级，这就意味着达到了正确的曝光。例如摄影师们通常在拍摄之前使用中性灰卡测试曝光是否正常。
+但是相机在各种场景下无法识别物体的反射率，因此采用了一个简单粗暴而又行之有效的方法，统一将图像整体平均亮度设置为中性灰的亮度。该方法基于**科学家认为自然界的平均反射率是18%**这一理论。当然，这个方法也不是走遍天下都不怕，比如拍摄雪景时需要增加曝光补偿，不然会偏暗，因为雪景的亮度远远大于中性灰度。这也就是摄影中的一句口诀的由来“白增黑减”。
+自动曝光算法
+上面已经讲了自动曝光的标准，也就确立了曝光目标，要达到这一目标还要自动曝光算法来实现。
+目前比较常见的算法有平均亮度法、权重均值法、亮度直方图等。其中最普遍的就是平均亮度法。平均亮度法就是对图像所以像素亮度求平均值，通过不断调整曝光参数最终达到目标亮度。而权重均值法是对图像不同区域设置不同权重来计算图像亮度，例如相机中的各种测光模式的选择就是改变不同区域的权重。亮度直方图法是通过为直方图中峰值分配不同权重来计算图像亮度。
+自动曝光实现的过程：
+第一步：对当前图像进行亮度统计；
+第二步：根据当前图像亮度确定曝光值；
+第三步：计算新的曝光参数，曝光时间、光圈、增益；
+第四步：将新的曝光参数应用到相机；
+第五步：重复步骤一到四，直到亮度满足要求。
+曝光参数调整_曝光表
+前面留下两个问题：“第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。” 第一个问题在前面有过解释，第二个问题也就是自动曝光实现步骤的第三步，曝光值由光圈、曝光时间、增益沟通决定，当计算出一个曝光量，曝光三要素有很多种组合方式。一般情况下有曝光曲线，每个曝光量对应一组参数。手机中曝光曲线可以通过Tuning调整。
+From: 积极的悲观主义者
+系列教程
+全部文章RSS订阅
+Embeded系列 Embeded 分类 RSS 订阅
+
+海思MPP&amp;UNF构架源代码级分析
+3G,4G,Wifi选型需求分析及技术简介
+自动曝光原理
+ISP 数字图像处理 算法概述、工作原理、架构、处理流程
+
+]]></content>
+      <categories>
+        <category>embeded</category>
+      </categories>
+      <tags>
+        <tag>3a</tag>
+        <tag>ae</tag>
+        <tag>image</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>在浏览器输入 URL 回车之后发生了什么</title>
     <url>/posts/656a0abb/</url>
     <content><![CDATA[前言
@@ -9564,57 +9615,6 @@ From: 4ark.me
       <tags>
         <tag>web</tag>
         <tag>http</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>自动曝光原理</title>
-    <url>/posts/509c7bd3/</url>
-    <content><![CDATA[自动曝光的原理
-曝光是摄影中十分重要的一个环节，它决定了一张图片的明暗，如下图所示，第一张图片太暗，而第三种图片太亮。
-
-曝光由什么来决定
-使用过数码相机的人都知道曝光由光圈、曝光时间、ISO三者共同决定，详细的关系就不赘述。
-光圈：控制进光量；
-曝光时间：光到达的时间长度；
-ISO：增益；
-但是对于手机以及其他电子产品使用的微型摄像头，光圈大小是固定的，所以手机拍照的曝光由曝光时间和**增益(ISO)**来控制。
-什么是自动曝光
-数码相机中有一种手动模式，可手动设置光圈、曝光时间、ISO来控制曝光，该模式的使用对摄影师的要求会比较高。另外 数码相机的全自动模式、光圈优先模式、快门优先模式以及手机等电子产品的曝光都属于自动曝光。
-自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。
-自动曝光的标准
-在此之前需要了解物体的亮度与色彩是由物体对光线的反射率来决定的。例如纯黑色的放射率是0，纯白色的反射率是100%，处于中间的灰度的反射率是18%，这就是18%中间灰度。
-
-具有一定反射率的物体在最终的图像中被还原到了其相应的灰度级，这就意味着达到了正确的曝光。例如摄影师们通常在拍摄之前使用中性灰卡测试曝光是否正常。
-但是相机在各种场景下无法识别物体的反射率，因此采用了一个简单粗暴而又行之有效的方法，统一将图像整体平均亮度设置为中性灰的亮度。该方法基于**科学家认为自然界的平均反射率是18%**这一理论。当然，这个方法也不是走遍天下都不怕，比如拍摄雪景时需要增加曝光补偿，不然会偏暗，因为雪景的亮度远远大于中性灰度。这也就是摄影中的一句口诀的由来“白增黑减”。
-自动曝光算法
-上面已经讲了自动曝光的标准，也就确立了曝光目标，要达到这一目标还要自动曝光算法来实现。
-目前比较常见的算法有平均亮度法、权重均值法、亮度直方图等。其中最普遍的就是平均亮度法。平均亮度法就是对图像所以像素亮度求平均值，通过不断调整曝光参数最终达到目标亮度。而权重均值法是对图像不同区域设置不同权重来计算图像亮度，例如相机中的各种测光模式的选择就是改变不同区域的权重。亮度直方图法是通过为直方图中峰值分配不同权重来计算图像亮度。
-自动曝光实现的过程：
-第一步：对当前图像进行亮度统计；
-第二步：根据当前图像亮度确定曝光值；
-第三步：计算新的曝光参数，曝光时间、光圈、增益；
-第四步：将新的曝光参数应用到相机；
-第五步：重复步骤一到四，直到亮度满足要求。
-曝光参数调整_曝光表
-前面留下两个问题：“第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。” 第一个问题在前面有过解释，第二个问题也就是自动曝光实现步骤的第三步，曝光值由光圈、曝光时间、增益沟通决定，当计算出一个曝光量，曝光三要素有很多种组合方式。一般情况下有曝光曲线，每个曝光量对应一组参数。手机中曝光曲线可以通过Tuning调整。
-From: 积极的悲观主义者
-系列教程
-全部文章RSS订阅
-Embeded系列 Embeded 分类 RSS 订阅
-
-海思MPP&amp;UNF构架源代码级分析
-3G,4G,Wifi选型需求分析及技术简介
-自动曝光原理
-ISP 数字图像处理 算法概述、工作原理、架构、处理流程
-
-]]></content>
-      <categories>
-        <category>embeded</category>
-      </categories>
-      <tags>
-        <tag>3a</tag>
-        <tag>ae</tag>
-        <tag>image</tag>
       </tags>
   </entry>
   <entry>
@@ -11404,12 +11404,120 @@ Vim
       </tags>
   </entry>
   <entry>
+    <title>解决Thinkpad笔记本喇叭破音问题！</title>
+    <url>/posts/c945eae1/</url>
+    <content><![CDATA[问题
+主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。
+分析
+从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。
+解决方案
+如是，网购了一个新喇叭，拆机，换上，完美解决问题！
+喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。
+
+
+
+这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。
+型号：Thinkpad T4X0S
+
+]]></content>
+      <categories>
+        <category>life</category>
+      </categories>
+      <tags>
+        <tag>thinkpad</tag>
+        <tag>sound</tag>
+        <tag>speaker</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>http 错误代码表</title>
+    <url>/posts/80906b88/</url>
+    <content><![CDATA[所有 HTTP 状态代码及其定义。
+　代码&nbsp;&nbsp;指示&nbsp;&nbsp;
+2xx&nbsp;&nbsp;成功&nbsp;&nbsp;
+200&nbsp;&nbsp;正常；请求已完成。&nbsp;&nbsp;
+201&nbsp;&nbsp;正常；紧接 POST 命令。&nbsp;&nbsp;
+202&nbsp;&nbsp;正常；已接受用于处理，但处理尚未完成。&nbsp;&nbsp;
+203&nbsp;&nbsp;正常；部分信息 — 返回的信息只是一部分。&nbsp;&nbsp;
+204&nbsp;&nbsp;正常；无响应 — 已接收请求，但不存在要回送的信息。&nbsp;&nbsp;
+3xx&nbsp;&nbsp;重定向&nbsp;&nbsp;
+301&nbsp;&nbsp;已移动 — 请求的数据具有新的位置且更改是永久的。&nbsp;&nbsp;
+302&nbsp;&nbsp;已找到 — 请求的数据临时具有不同 URI。&nbsp;&nbsp;
+303&nbsp;&nbsp;请参阅其它 — 可在另一 URI 下找到对请求的响应，且应使用 GET 方法检索此响应。&nbsp;&nbsp;
+304&nbsp;&nbsp;未修改 — 未按预期修改文档。&nbsp;&nbsp;
+305&nbsp;&nbsp;使用代理 — 必须通过位置字段中提供的代理来访问请求的资源。&nbsp;&nbsp;
+306&nbsp;&nbsp;未使用 — 不再使用；保留此代码以便将来使用。&nbsp;&nbsp;
+4xx&nbsp;&nbsp;客户机中出现的错误&nbsp;&nbsp;
+400&nbsp;&nbsp;错误请求 — 请求中有语法问题，或不能满足请求。&nbsp;&nbsp;
+401&nbsp;&nbsp;未授权 — 未授权客户机访问数据。&nbsp;&nbsp;
+402&nbsp;&nbsp;需要付款 — 表示计费系统已有效。&nbsp;&nbsp;
+403&nbsp;&nbsp;禁止 — 即使有授权也不需要访问。&nbsp;&nbsp;
+404&nbsp;&nbsp;找不到 — 服务器找不到给定的资源；文档不存在。&nbsp;&nbsp;
+407&nbsp;&nbsp;代理认证请求 — 客户机首先必须使用代理认证自身。&nbsp;&nbsp;
+415&nbsp;&nbsp;介质类型不受支持 — 服务器拒绝服务请求，因为不支持请求实体的格式。&nbsp;&nbsp;
+5xx&nbsp;&nbsp;服务器中出现的错误&nbsp;&nbsp;
+500&nbsp;&nbsp;内部错误 — 因为意外情况，服务器不能完成请求。&nbsp;&nbsp;
+501&nbsp;&nbsp;未执行 — 服务器不支持请求的工具。&nbsp;&nbsp;
+502&nbsp;&nbsp;错误网关 — 服务器接收到来自上游服务器的无效响应。&nbsp;&nbsp;
+503&nbsp;&nbsp;无法获得服务 — 由于临时过载或维护，服务器无法处理请求。
+
+HTTP&nbsp;400&nbsp;-&nbsp;请求无效&nbsp;
+HTTP&nbsp;401.1&nbsp;-&nbsp;未授权：登录失败&nbsp;
+HTTP&nbsp;401.2&nbsp;-&nbsp;未授权：服务器配置问题导致登录失败&nbsp;
+HTTP&nbsp;401.3&nbsp;-&nbsp;ACL&nbsp;禁止访问资源&nbsp;
+HTTP&nbsp;401.4&nbsp;-&nbsp;未授权：授权被筛选器拒绝&nbsp;
+HTTP&nbsp;401.5&nbsp;-&nbsp;未授权：ISAPI&nbsp;或&nbsp;CGI&nbsp;授权失败&nbsp;&nbsp;
+HTTP&nbsp;403&nbsp;-&nbsp;禁止访问&nbsp;
+HTTP&nbsp;403&nbsp;-&nbsp;对&nbsp;Internet&nbsp;服务管理器&nbsp;(HTML)&nbsp;的访问仅限于&nbsp;Localhost&nbsp;
+HTTP&nbsp;403.1&nbsp;禁止访问：禁止可执行访问&nbsp;
+HTTP&nbsp;403.2&nbsp;-&nbsp;禁止访问：禁止读访问&nbsp;
+HTTP&nbsp;403.3&nbsp;-&nbsp;禁止访问：禁止写访问&nbsp;
+HTTP&nbsp;403.4&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;
+HTTP&nbsp;403.5&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;128&nbsp;
+HTTP&nbsp;403.6&nbsp;-&nbsp;禁止访问：IP&nbsp;地址被拒绝&nbsp;
+HTTP&nbsp;403.7&nbsp;-&nbsp;禁止访问：要求客户证书&nbsp;
+HTTP&nbsp;403.8&nbsp;-&nbsp;禁止访问：禁止站点访问&nbsp;
+HTTP&nbsp;403.9&nbsp;-&nbsp;禁止访问：连接的用户过多&nbsp;
+HTTP&nbsp;403.10&nbsp;-&nbsp;禁止访问：配置无效&nbsp;
+HTTP&nbsp;403.11&nbsp;-&nbsp;禁止访问：密码更改&nbsp;
+HTTP&nbsp;403.12&nbsp;-&nbsp;禁止访问：映射器拒绝访问&nbsp;
+HTTP&nbsp;403.13&nbsp;-&nbsp;禁止访问：客户证书已被吊销&nbsp;
+HTTP&nbsp;403.15&nbsp;-&nbsp;禁止访问：客户访问许可过多&nbsp;
+HTTP&nbsp;403.16&nbsp;-&nbsp;禁止访问：客户证书不可信或者无效&nbsp;
+HTTP&nbsp;403.17&nbsp;-&nbsp;禁止访问：客户证书已经到期或者尚未生效&nbsp;
+HTTP&nbsp;404.1&nbsp;-&nbsp;无法找到&nbsp;Web&nbsp;站点&nbsp;
+HTTP&nbsp;404&nbsp;-&nbsp;无法找到文件&nbsp;
+HTTP&nbsp;405&nbsp;-&nbsp;资源被禁止&nbsp;
+HTTP&nbsp;406&nbsp;-&nbsp;无法接受&nbsp;
+HTTP&nbsp;407&nbsp;-&nbsp;要求代理身份验证&nbsp;
+HTTP&nbsp;410&nbsp;-&nbsp;永远不可用&nbsp;
+HTTP&nbsp;412&nbsp;-&nbsp;先决条件失败&nbsp;
+HTTP&nbsp;414&nbsp;-&nbsp;请求&nbsp;-&nbsp;URI&nbsp;太长&nbsp;
+HTTP&nbsp;500&nbsp;-&nbsp;内部服务器错误&nbsp;
+HTTP&nbsp;500.100&nbsp;-&nbsp;内部服务器错误&nbsp;-&nbsp;ASP&nbsp;错误&nbsp;
+HTTP&nbsp;500-11&nbsp;服务器关闭&nbsp;
+HTTP&nbsp;500-12&nbsp;应用程序重新启动&nbsp;
+HTTP&nbsp;500-13&nbsp;-&nbsp;服务器太忙&nbsp;
+HTTP&nbsp;500-14&nbsp;-&nbsp;应用程序无效&nbsp;
+HTTP&nbsp;500-15&nbsp;-&nbsp;不允许请求&nbsp;global.asa&nbsp;
+Error&nbsp;501&nbsp;-&nbsp;未实现&nbsp;
+HTTP&nbsp;502&nbsp;-&nbsp;网关错误
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-KGqxaUWpulRgtbTF").style.height=document.getElementById("mmedia-KGqxaUWpulRgtbTF").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-thPMrMMzEbncgWfL").style.height=document.getElementById("mmedia-thPMrMMzEbncgWfL").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-KGqxaUWpulRgtbTF").style.height=document.getElementById("mmedia-KGqxaUWpulRgtbTF").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-thPMrMMzEbncgWfL").style.height=document.getElementById("mmedia-thPMrMMzEbncgWfL").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -11588,114 +11696,6 @@ Vim
       <tags>
         <tag>music</tag>
         <tag>韩红</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>解决Thinkpad笔记本喇叭破音问题！</title>
-    <url>/posts/c945eae1/</url>
-    <content><![CDATA[问题
-主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。
-分析
-从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。
-解决方案
-如是，网购了一个新喇叭，拆机，换上，完美解决问题！
-喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。
-
-
-
-这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。
-型号：Thinkpad T4X0S
-
-]]></content>
-      <categories>
-        <category>life</category>
-      </categories>
-      <tags>
-        <tag>thinkpad</tag>
-        <tag>sound</tag>
-        <tag>speaker</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>http 错误代码表</title>
-    <url>/posts/80906b88/</url>
-    <content><![CDATA[所有 HTTP 状态代码及其定义。
-　代码&nbsp;&nbsp;指示&nbsp;&nbsp;
-2xx&nbsp;&nbsp;成功&nbsp;&nbsp;
-200&nbsp;&nbsp;正常；请求已完成。&nbsp;&nbsp;
-201&nbsp;&nbsp;正常；紧接 POST 命令。&nbsp;&nbsp;
-202&nbsp;&nbsp;正常；已接受用于处理，但处理尚未完成。&nbsp;&nbsp;
-203&nbsp;&nbsp;正常；部分信息 — 返回的信息只是一部分。&nbsp;&nbsp;
-204&nbsp;&nbsp;正常；无响应 — 已接收请求，但不存在要回送的信息。&nbsp;&nbsp;
-3xx&nbsp;&nbsp;重定向&nbsp;&nbsp;
-301&nbsp;&nbsp;已移动 — 请求的数据具有新的位置且更改是永久的。&nbsp;&nbsp;
-302&nbsp;&nbsp;已找到 — 请求的数据临时具有不同 URI。&nbsp;&nbsp;
-303&nbsp;&nbsp;请参阅其它 — 可在另一 URI 下找到对请求的响应，且应使用 GET 方法检索此响应。&nbsp;&nbsp;
-304&nbsp;&nbsp;未修改 — 未按预期修改文档。&nbsp;&nbsp;
-305&nbsp;&nbsp;使用代理 — 必须通过位置字段中提供的代理来访问请求的资源。&nbsp;&nbsp;
-306&nbsp;&nbsp;未使用 — 不再使用；保留此代码以便将来使用。&nbsp;&nbsp;
-4xx&nbsp;&nbsp;客户机中出现的错误&nbsp;&nbsp;
-400&nbsp;&nbsp;错误请求 — 请求中有语法问题，或不能满足请求。&nbsp;&nbsp;
-401&nbsp;&nbsp;未授权 — 未授权客户机访问数据。&nbsp;&nbsp;
-402&nbsp;&nbsp;需要付款 — 表示计费系统已有效。&nbsp;&nbsp;
-403&nbsp;&nbsp;禁止 — 即使有授权也不需要访问。&nbsp;&nbsp;
-404&nbsp;&nbsp;找不到 — 服务器找不到给定的资源；文档不存在。&nbsp;&nbsp;
-407&nbsp;&nbsp;代理认证请求 — 客户机首先必须使用代理认证自身。&nbsp;&nbsp;
-415&nbsp;&nbsp;介质类型不受支持 — 服务器拒绝服务请求，因为不支持请求实体的格式。&nbsp;&nbsp;
-5xx&nbsp;&nbsp;服务器中出现的错误&nbsp;&nbsp;
-500&nbsp;&nbsp;内部错误 — 因为意外情况，服务器不能完成请求。&nbsp;&nbsp;
-501&nbsp;&nbsp;未执行 — 服务器不支持请求的工具。&nbsp;&nbsp;
-502&nbsp;&nbsp;错误网关 — 服务器接收到来自上游服务器的无效响应。&nbsp;&nbsp;
-503&nbsp;&nbsp;无法获得服务 — 由于临时过载或维护，服务器无法处理请求。
-
-HTTP&nbsp;400&nbsp;-&nbsp;请求无效&nbsp;
-HTTP&nbsp;401.1&nbsp;-&nbsp;未授权：登录失败&nbsp;
-HTTP&nbsp;401.2&nbsp;-&nbsp;未授权：服务器配置问题导致登录失败&nbsp;
-HTTP&nbsp;401.3&nbsp;-&nbsp;ACL&nbsp;禁止访问资源&nbsp;
-HTTP&nbsp;401.4&nbsp;-&nbsp;未授权：授权被筛选器拒绝&nbsp;
-HTTP&nbsp;401.5&nbsp;-&nbsp;未授权：ISAPI&nbsp;或&nbsp;CGI&nbsp;授权失败&nbsp;&nbsp;
-HTTP&nbsp;403&nbsp;-&nbsp;禁止访问&nbsp;
-HTTP&nbsp;403&nbsp;-&nbsp;对&nbsp;Internet&nbsp;服务管理器&nbsp;(HTML)&nbsp;的访问仅限于&nbsp;Localhost&nbsp;
-HTTP&nbsp;403.1&nbsp;禁止访问：禁止可执行访问&nbsp;
-HTTP&nbsp;403.2&nbsp;-&nbsp;禁止访问：禁止读访问&nbsp;
-HTTP&nbsp;403.3&nbsp;-&nbsp;禁止访问：禁止写访问&nbsp;
-HTTP&nbsp;403.4&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;
-HTTP&nbsp;403.5&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;128&nbsp;
-HTTP&nbsp;403.6&nbsp;-&nbsp;禁止访问：IP&nbsp;地址被拒绝&nbsp;
-HTTP&nbsp;403.7&nbsp;-&nbsp;禁止访问：要求客户证书&nbsp;
-HTTP&nbsp;403.8&nbsp;-&nbsp;禁止访问：禁止站点访问&nbsp;
-HTTP&nbsp;403.9&nbsp;-&nbsp;禁止访问：连接的用户过多&nbsp;
-HTTP&nbsp;403.10&nbsp;-&nbsp;禁止访问：配置无效&nbsp;
-HTTP&nbsp;403.11&nbsp;-&nbsp;禁止访问：密码更改&nbsp;
-HTTP&nbsp;403.12&nbsp;-&nbsp;禁止访问：映射器拒绝访问&nbsp;
-HTTP&nbsp;403.13&nbsp;-&nbsp;禁止访问：客户证书已被吊销&nbsp;
-HTTP&nbsp;403.15&nbsp;-&nbsp;禁止访问：客户访问许可过多&nbsp;
-HTTP&nbsp;403.16&nbsp;-&nbsp;禁止访问：客户证书不可信或者无效&nbsp;
-HTTP&nbsp;403.17&nbsp;-&nbsp;禁止访问：客户证书已经到期或者尚未生效&nbsp;
-HTTP&nbsp;404.1&nbsp;-&nbsp;无法找到&nbsp;Web&nbsp;站点&nbsp;
-HTTP&nbsp;404&nbsp;-&nbsp;无法找到文件&nbsp;
-HTTP&nbsp;405&nbsp;-&nbsp;资源被禁止&nbsp;
-HTTP&nbsp;406&nbsp;-&nbsp;无法接受&nbsp;
-HTTP&nbsp;407&nbsp;-&nbsp;要求代理身份验证&nbsp;
-HTTP&nbsp;410&nbsp;-&nbsp;永远不可用&nbsp;
-HTTP&nbsp;412&nbsp;-&nbsp;先决条件失败&nbsp;
-HTTP&nbsp;414&nbsp;-&nbsp;请求&nbsp;-&nbsp;URI&nbsp;太长&nbsp;
-HTTP&nbsp;500&nbsp;-&nbsp;内部服务器错误&nbsp;
-HTTP&nbsp;500.100&nbsp;-&nbsp;内部服务器错误&nbsp;-&nbsp;ASP&nbsp;错误&nbsp;
-HTTP&nbsp;500-11&nbsp;服务器关闭&nbsp;
-HTTP&nbsp;500-12&nbsp;应用程序重新启动&nbsp;
-HTTP&nbsp;500-13&nbsp;-&nbsp;服务器太忙&nbsp;
-HTTP&nbsp;500-14&nbsp;-&nbsp;应用程序无效&nbsp;
-HTTP&nbsp;500-15&nbsp;-&nbsp;不允许请求&nbsp;global.asa&nbsp;
-Error&nbsp;501&nbsp;-&nbsp;未实现&nbsp;
-HTTP&nbsp;502&nbsp;-&nbsp;网关错误
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
       </tags>
   </entry>
   <entry>
@@ -15665,11 +15665,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var TMsjTKMMvhfEtYMD_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); TMsjTKMMvhfEtYMD_options.container = document.getElementById("mmedia-TMsjTKMMvhfEtYMD"); const ap_TMsjTKMMvhfEtYMD = new APlayer(TMsjTKMMvhfEtYMD_options); 
+ var HsfmuHTteoBwycjt_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); HsfmuHTteoBwycjt_options.container = document.getElementById("mmedia-HsfmuHTteoBwycjt"); const ap_HsfmuHTteoBwycjt = new APlayer(HsfmuHTteoBwycjt_options); 
 
 - **列表**
 
- var jUJJMmDKmLbcJjRX_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); jUJJMmDKmLbcJjRX_options.container = document.getElementById("mmedia-jUJJMmDKmLbcJjRX"); const ap_jUJJMmDKmLbcJjRX = new APlayer(jUJJMmDKmLbcJjRX_options); 
+ var aMvQPjxYJnfBtbzV_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); aMvQPjxYJnfBtbzV_options.container = document.getElementById("mmedia-aMvQPjxYJnfBtbzV"); const ap_aMvQPjxYJnfBtbzV = new APlayer(aMvQPjxYJnfBtbzV_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -15921,21 +15921,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-QWJedBQqBBKnhYtP").style.height=document.getElementById("mmedia-QWJedBQqBBKnhYtP").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-GtQAQqCSoPxsLYTF").style.height=document.getElementById("mmedia-GtQAQqCSoPxsLYTF").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-QWJedBQqBBKnhYtP").style.height=document.getElementById("mmedia-QWJedBQqBBKnhYtP").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-GtQAQqCSoPxsLYTF").style.height=document.getElementById("mmedia-GtQAQqCSoPxsLYTF").scrollWidth*0.76+"px";
     }; 
 
 **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-nOsuewhVJlyoSekU").style.height=document.getElementById("mmedia-nOsuewhVJlyoSekU").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-jHOjpvjoUlZKbjVU").style.height=document.getElementById("mmedia-jHOjpvjoUlZKbjVU").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-nOsuewhVJlyoSekU").style.height=document.getElementById("mmedia-nOsuewhVJlyoSekU").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-jHOjpvjoUlZKbjVU").style.height=document.getElementById("mmedia-jHOjpvjoUlZKbjVU").scrollWidth*0.7+"px";
     }; 
 
 **artplayer**
 
- var iwuzsbWIVmIIlFpw_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); iwuzsbWIVmIIlFpw_options.container = "#mmedia-iwuzsbWIVmIIlFpw"; const art_iwuzsbWIVmIIlFpw = new Artplayer(iwuzsbWIVmIIlFpw_options); 
+ var vUcZZYNSgglQCBZr_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); vUcZZYNSgglQCBZr_options.container = "#mmedia-vUcZZYNSgglQCBZr"; const art_vUcZZYNSgglQCBZr = new Artplayer(vUcZZYNSgglQCBZr_options); 
 脑图
 
 原作者记录
@@ -17089,11 +17089,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var DHsDwomvstkLdxJg_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); DHsDwomvstkLdxJg_options.container = document.getElementById("mmedia-DHsDwomvstkLdxJg"); const ap_DHsDwomvstkLdxJg = new APlayer(DHsDwomvstkLdxJg_options); 
+ var qohJpCXVlAmwsURL_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); qohJpCXVlAmwsURL_options.container = document.getElementById("mmedia-qohJpCXVlAmwsURL"); const ap_qohJpCXVlAmwsURL = new APlayer(qohJpCXVlAmwsURL_options); 
 
 
 
- var bpvkpufJYvqksCbE_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); bpvkpufJYvqksCbE_options.container = document.getElementById("mmedia-bpvkpufJYvqksCbE"); const ap_bpvkpufJYvqksCbE = new APlayer(bpvkpufJYvqksCbE_options); 
+ var qOIVXdwRPDwdoDID_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); qOIVXdwRPDwdoDID_options.container = document.getElementById("mmedia-qOIVXdwRPDwdoDID"); const ap_qOIVXdwRPDwdoDID = new APlayer(qOIVXdwRPDwdoDID_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -17174,9 +17174,9 @@ Android支持
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-bmBwkLgijqIgnrjV").style.height=document.getElementById("mmedia-bmBwkLgijqIgnrjV").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-eTmSmVSvnPwboPYW").style.height=document.getElementById("mmedia-eTmSmVSvnPwboPYW").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-bmBwkLgijqIgnrjV").style.height=document.getElementById("mmedia-bmBwkLgijqIgnrjV").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-eTmSmVSvnPwboPYW").style.height=document.getElementById("mmedia-eTmSmVSvnPwboPYW").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -17185,7 +17185,7 @@ Android支持
 
 ## 中文翻唱
 
- var eTizwXnJAQpcFJhF_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); eTizwXnJAQpcFJhF_options.container = document.getElementById("mmedia-eTizwXnJAQpcFJhF"); const ap_eTizwXnJAQpcFJhF = new APlayer(eTizwXnJAQpcFJhF_options); 
+ var nCPCMlUlQPnNxkGm_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); nCPCMlUlQPnNxkGm_options.container = document.getElementById("mmedia-nCPCMlUlQPnNxkGm"); const ap_nCPCMlUlQPnNxkGm = new APlayer(nCPCMlUlQPnNxkGm_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -18671,167 +18671,6 @@ RAR registration data``Federal Agency ``for` `Education``1000000 PC usage licens
         <tag>crack</tag>
         <tag>tools</tag>
         <tag>winrar</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>emoji表情符号</title>
-    <url>/posts/80938cfe/</url>
-    <content><![CDATA[
-emoji表情符号是非常流行的表情符号，几乎没有地方都会支持。这里列举出常用的emoji表情不好，方便大家使用与查阅。
-
-
-常用符号
-❤❥웃유♋☮✌☏☢☠✔☑♚▲♪✈✞÷↑↓◆◇⊙■□△▽¿─│♥❣♂♀☿Ⓐ✍✉☣☤✘☒♛▼♫⌘☪≈←→◈◎☉★☆⊿※¡━┃♡ღ ツ
-
-☼☁❅♒✎©®™Σ✪✯☭➳ 卐 √↖↗●◐Θ◤◥︻〖〗┄┆℃℉°✿ϟ☃☂✄¢€£∞✫★½✡×↙↘○◑⊕◣◢︼【】┅┇☽☾✚〓
-
-▂▃▄▅▆▇█▉▊▋▌▍▎▏↔↕☽☾ の•▸◂▴▾┈┊①②③④⑤⑥⑦⑧⑨⑩ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ ㍿ ▓♨♛❖♓☪✙
-
-┉┋☹☺☻ت ヅツッシ Üϡﭢ™℠℗©®♥❤❥❣❦❧♡۵웃유ღ♋♂♀☿☼☀☁☂☄☾☽❄☃☈⊙☉℃℉❅✺ϟ☇♤♧♡♢♠♣
-
-♥♦☜☞☝✍☚☛☟✌✽✾✿❁❃❋❀⚘☑✓✔√☐☒✗✘ ㄨ ✕✖✖⋆✢✣✤✥❋✦✧✩✰✪✫✬✭✮✯❂✡★✱✲✳✴✵✶✷✸✹✺✻✼❄❅❆❇❈❉❊†☨✞✝☥☦☓☩☯☧☬
-
-☸✡♁✙♆。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴々﹟#
-
-﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼☩☨☦✞✛✜✝✙✠✚†‡◉○◌◍◎●◐◑◒◓◔◕◖◗❂☢⊗⊙◘◙◍⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌
-
-≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱㊣㊎㊍㊌㊋㊏㊐㊊㊚㊛㊤㊥
-
-㊦㊧㊨㊒㊞㊑㊒㊓㊔㊕㊖㊗㊘㊜㊝㊟㊠㊡㊢㊩㊪㊫㊬㊭㊮㊯㊰㊙ ㉿ 囍 ♔♕♖♗♘♙♚♛♜♝♞♟ℂℍℕℙℚℝℤℬℰℯℱℊℋℎℐℒℓℳℴ℘ℛℭ℮ℌℑℜℨ♪♫♩♬♭♮♯°øⒶ☮✌☪✡☭✯ 卐 ✐✎✏
-
-✑✒✍✉✁✂✃✄✆✉☎☏➟➡➢➣➤➥➦➧➨➚➘➙➛➜➝➞➸♐➲➳⏎➴➵➶➷➸➹➺➻➼➽←↑→↓↔↕↖↗↘↙↚↛↜↝
-
-↞↟↠↡↢↣↤↥↦↧↨➫➬➩➪➭➮➯➱↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹↺↻↼↽↾↿⇀⇁⇂⇃⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇕
-
-⇖⇗⇘⇙⇚⇛⇜⇝⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪➀➁➂➃➄➅➆➇➈➉➊➋➌➍➎➏➐➑➒➓㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡ
-
-ⓢⓣⓤⓥⓦⓧⓨⓩ⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵ⅠⅡⅢⅣⅤ
-
-ⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹⅺⅻⅼⅽⅾⅿ┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫
-┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽
-┾┿╀╁╂╃╄╅╆╇╈╉╊╋╌╍╎╏
-═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬◤◥◄►▶◀◣◢▲
-
-▼◥▸◂▴▾△▽▷◁⊿▻◅▵▿▹◃❏❐❑❒▀▁▂▃▄▅▆▇▉▊▋█▌▍▎▏▐░▒▓▔▕■□▢▣▤▥▦▧
-
-▨▩▪▫▬▭▮▯ ㋀㋁㋂㋃㋄㋅㋆㋇㋈㋉㋊㋋㏠㏡㏢㏣㏤㏥㏦㏧㏨㏩㏪㏫㏬㏭㏮㏯㏰㏱㏲
-
-㏳㏴㏵㏶㏷㏸㏹㏺㏻㏼㏽㏾㍙㍚㍛㍜㍝㍞㍟㍠㍡㍢㍣㍤㍥㍦㍧㍨㍩㍪㍫㍬㍭㍮㍯㍰㍘
-
-☰☲☱☴☵☶☳☷☯
-特殊符号
-♠♣♧♡♥❤❥❣♂♀✲☀☼☾☽◐◑☺☻☎☏✿❀№↑↓←→√×÷★℃℉°◆◇⊙■□△▽¿½☯✡ ㍿卍卐 ♂♀✚〓㎡♪♫♩♬
-
-㊚㊛囍㊒㊖ Φ♀♂‖KaTeX parse error: Expected ‘EOF’, got ‘&amp;’ at position 3: @*&amp;̲#※卍卐 Ψ♫♬♭♩♪♯♮⌒¶∮…
-编号序号
-①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳⓪
-
-❶❷❸❹❺❻❼❽❾❿⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴
-
-㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉㈠㈡㈢㈣㈤㈥㈦㈧㈨㈩⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇
-
-⒈⒉⒊⒋⒌⒍⒎⒏⒐⒑⒒⒓⒔⒕⒖⒗⒘⒙⒚⒛
-
-ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹ
-
-ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ
-
-⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵
-数学符号
-﹢﹣×÷±/=≌∽≦≧≒ ﹤﹥ ≈≡≠=≤≥&lt;&gt;≮≯∷∶∫∮∝∞∧∨∑∏∪∩∈∵∴⊥∥∠⌒⊙√∟⊿㏒㏑%
-
-‰⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟
-
-≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱øØπ
-爱心符号
-♥❣ღ♠♡♤❤❥
-标点符号
-。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴
-
-々﹟#﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊
-
-（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】
-
-︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼❝❞
-单位符号
-°′″＄￥〒￠￡％＠℃℉ ﹩﹪‰﹫㎡㏕㎜㎝㎞㏎m³㎎㎏㏄º○¤%$º¹²³
-货币符号
-€£Ұ₴$₰¢₤¥₳₲₪₵ 元 ₣₱฿¤₡₮₭₩ރ 円 ₢₥₫₦zł﷼₠₧₯₨Kčर₹ƒ₸ ￠
-箭头符号（含推导&amp;转换符号）
-↑↓←→↖↗↘↙↔↕➻➼➽➸➳➺➻➴➵➶➷➹▶►▷◁◀◄«
-
-»➩➪➫➬➭➮➯➱⏎➲➾➔➘➙➚➛➜➝➞➟➠➡➢➣➤➥➦➧➨
-
-↚↛↜↝↞↟↠↠↡↢↣↤↤↥↦↧↨⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇖⇗⇘⇙
-
-⇜↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹☇☈↼↽↾↿⇀⇁⇂⇃⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪↺↻⇚⇛♐
-符号图案
-✐✎✏✑✒✍✉✁✂✃✄✆✉☎☏☑✓✔√☐☒✗✘ ㄨ ✕✖✖☢☠☣✈★☆✡ 囍㍿ ☯☰☲☱☴☵☶☳☷
-
-☜☞☝✍☚☛☟✌♤♧♡♢♠♣♥♦☀☁☂❄☃♨웃유❖☽☾☪✿♂♀✪✯☭➳ 卍卐 √×■◆●○◐◑✙☺☻
-
-❀⚘♔♕♖♗♘♙♚♛♜♝♞♟♧♡♂♀♠♣♥❤☜☞☎☏⊙◎☺☻☼▧▨♨◐◑↔↕▪▒◊◦▣▤▥▦▩◘◈◇
-
-♬♪♩♭♪ の ★☆→ あぃ￡ Ю〓§♤♥▶¤✲❈✿✲❈➹☀☂☁【】┱┲❣✚✪✣✤✥✦❉❥❦❧❃❂❁❀✄☪☣☢☠☭ღ▶▷◀◁
-
-☀☁☂☃☄★☆☇☈⊙☊☋☌☍ⓛⓞⓥⓔ╬『』∴☀♫♬♩♭♪☆∷﹌の ★◎▶☺☻►◄▧▨♨◐◑↔↕↘▀▄█▌
-
-◦☼♪ の ☆→♧ ぃ￡ ❤▒▬♦◊◦♠♣▣۰•❤•۰►◄▧▨♨◐◑↔↕▪▫☼♦⊙●○①⊕◎Θ⊙¤ ㊣ ★☆♀◆◇◣◢◥▲▼△▽⊿◤◥
-
-✐✌✍✡✓✔✕✖♂♀♥♡☜☞☎☏⊙◎☺☻►◄▧▨♨◐◑↔↕♥♡▪▫☼♦▀▄█▌▐░▒▬♦◊◘◙◦☼♠♣▣▤▥▦▩◘◙◈
-
-♫♬♪♩♭♪✄☪☣☢☠♯♩♪♫♬♭♮☎☏☪♈ºº₪¤큐«»™♂✿♥ 　 ◕‿-｡　｡◕‿◕｡
-希腊字母
-ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ
-
-αβγδεζνξοπρσηθικλμτυφχψω
-俄语字母
-АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвг
-
-деёжзийклмнопрстуфхцчшщъыьэюя
-汉语拼音
-āáǎàōóǒòēéěèīíǐìūúǔùǖǘǚǜüêɑńňɡ ㄅㄆㄇㄈㄉ
-
-ㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄚㄛㄜㄝㄞ
-
-ㄟㄠㄡㄢㄣㄤㄥㄦㄧㄨㄩ
-中文字符
-零壹贰叁肆伍陆柒捌玖拾佰仟万亿吉太拍艾分厘毫微
-
-卍卐卄巜弍弎弐朤氺曱甴囍兀々〆のぁ〡〢〣〤〥〦〧〨〩
-
-㊎㊍㊌㊋㊏㊚㊛㊐㊊㊣㊤㊥㊦㊧㊨㊒㊫㊑㊓㊔㊕㊖㊗㊘㊜㊝㊞㊟㊠㊡㊢㊩㊪㊬㊭㊮㊯㊰
-
-㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉
-日文符号
-ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてで
-
-とどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎ
-
-わゐゑをんゔゕゖァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタ
-
-ダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユ
-
-ョヨラリルレロヮワヰヱヲンヴヵヶヷヸヹヺ・ーヽヾヿ゠ㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇺㇻㇼㇽㇾㇿ
-制表符号
-─ ━│┃╌╍╎╏┄ ┅┆┇┈ ┉┊┋┌┍┎┏┐┑┒┓└ ┕┖┗ ┘┙┚┛├┝┞┟┠┡┢┣ ┤┥┦┧┨┩┪┫┬ ┭ ┮ ┯ ┰ ┱ ┲ ┳
-
-┴ ┵ ┶ ┷ ┸ ┹ ┺ ┻┼ ┽ ┾ ┿ ╀ ╁ ╂ ╃ ╄ ╅ ╆ ╇ ╈ ╉ ╊ ╋ ╪ ╫ ╬═║╒╓╔ ╕╖╗╘╙╚ ╛╜╝╞╟╠ ╡╢╣
-
-╤ ╥ ╦ ╧ ╨ ╩ ╳╔ ╗╝╚ ╬ ═ ╓ ╩ ┠ ┨┯ ┷┏ ┓┗ ┛┳ ⊥ ﹃ ﹄┌ ╮ ╭ ╯╰
-皇冠符号
-♚ 　 ♛ 　 ♝ 　 ♞ 　 ♜ 　 ♟ 　 ♔ 　 ♕ 　 ♗ 　 ♘ 　 ♖ 　 ♟
-彩色表情符号
-🌹🍀🍎💰📱🌙🍁🍂🍃🌷💎🔪🔫🏀⚽⚡👄👍🔥
-常用 emoji 符号
-😀😁😂😃😄😅😆😉😊😋😎😍😘😗😙😚☺😇😐😑😶😏😣😥😮😯😪😫😴😌😛😜😝😒😓😔😕😲😷😖😞😟😤😢😭😦😧😨😬😰😱😳😵😡😠😈👿👹👺💀👻👽👦👧👨👩👴👵👶👱👮👲👳👷👸💂🎅👰👼💆💇🙍🙎🙅🙆💁🙋🙇🙌🙏👤👥🚶🏃👯💃👫👬👭💏💑👪💪👈👉☝👆👇✌✋👌👍👎✊👊👋👏👐✍👣👀👂👃👅👄💋👓👔👕👖👗👘👙👚👛👜👝🎒💼👞👟👠👡👢👑👒🎩🎓💄💅💍🌂🙈🙉🙊🐵🐒🐶🐕🐩🐺🐱😺😸😹😻😼😽🙀😿😾🐈🐯🐅🐆🐴🐎🐮🐂🐃🐄🐷🐖🐗🐽🐏🐑🐐🐪🐫🐘🐭🐁🐀🐹🐰🐇🐻🐨🐼🐾🐔🐓🐣🐤🐥🐦🐧🐸🐊🐢🐍🐲🐉🐳🐋🐬🐟🐠🐡🐙🐚🐌🐛🐜🐝🐞🦋💐🌸💮🌹🌺🌻🌼🌷🌱🌲🌳🌴🌵🌾🌿🍀🍁🍂🍃🌍🌎🌏🌐🌑🌒🌓🌔🌕🌖🌗🌘🌙🌚🌛🌜☀🌝🌞⭐🌟🌠☁⛅☔⚡❄🔥💧🌊💩🍇🍈🍉🍊🍋🍌🍍🍎🍏🍐🍑🍒🍓🍅🍆🌽🍄🌰🍞🍖🍗🍔🍟🍕🍳🍲🍱🍘🍙🍚🍛🍜🍝🍠🍢🍣🍤🍥🍡🍦🍧🍨🍩🍪🎂🍰🍫🍬🍭🍮🍯🍼☕🍵🍶🍷🍸🍹🍺🍻🍴🎪🎭🎨🎰🚣🛀🎫🏆⚽⚾🏀🏈🏉🎾🎱🎳⛳🎣🎽🎿🏂🏄🏇🏊🚴🚵🎯🎮🎲🎷🎸🎺🎻🎬👾🌋🗻🏠🏡🏢🏣🏤🏥🏦🏨🏩🏪🏫🏬🏭🏯🏰💒🗼🗽⛪⛲🌁🌃🌆🌇🌉🌌🎠🎡🎢🚂🚃🚄🚅🚆🚇🚈🚉🚊🚝🚞🚋🚌🚍🚎🚏🚐🚑🚒🚓🚔🚕🚖🚗🚘🚚🚛🚜🚲⛽🚨🚥🚦🚧⚓⛵🚤🚢✈💺🚁🚟🚠🚡🚀🎑🗿🛂🛃🛄🛅💌💎🔪💈🚪🚽🚿🛁⌛⏳⌚⏰🎈🎉🎊🎎🎏🎐🎀🎁📯📻📱📲☎📞📟📠🔋🔌💻💽💾💿📀🎥📺📷📹📼🔍🔎🔬🔭📡💡🔦🏮📔📕📖📗📘📙📚📓📃📜📄📰📑🔖💰💴💵💶💷💸💳✉📧📨📩📤📥📦📫📪📬📭📮✏✒📝📁📂📅📆📇📈📉📊📋📌📍📎📏📐✂🔒🔓🔏🔐🔑🔨🔫🔧🔩🔗💉💊🚬🔮🚩🎌💦💨💣☠♠♥♦♣🀄🎴🔇🔈🔉🔊📢📣💤💢💬💭♨🌀🔔🔕✡✝🔯📛🔰🔱⭕✅☑✔✖❌❎➕➖➗➰➿〽✳✴❇‼⁉❓❔❕❗©®™🎦🔅🔆💯🔠🔡🔢🔣🔤🅰🆎🅱🆑🆒🆓ℹ🆔Ⓜ🆕🆖🅾🆗🅿🆘🆙🆚🈁🈂🈷🈶🈯 🉐 🈹🈚🈲 🉑 🈸🈴🈳 ㊗㊙ 🈺🈵▪▫◻◼◽◾⬛⬜🔶🔷🔸🔹🔺🔻💠🔲🔳⚪⚫🔴🔵♈♉♊♋♌♍♎♏♐♑♒♓⛎💘❤💓💔💕💖💗💙💚💛💜💝💞💟❣🌿🚧💒☎📟💽⬆↗➡↘⬇↙⬅↖↕↔↩↪⤴⤵🔃🔄🔙🔚🔛🔜🔝🔀🔁🔂▶⏩◀⏪🔼⏫🔽⏬📱📶📳📴♻🏧🚮🚰♿🚹🚺🚻🚼🚾⚠🚸⛔🚫🚳🚭🚯🚱🚷🔞
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>emoji</tag>
       </tags>
   </entry>
   <entry>
@@ -20561,6 +20400,167 @@ CI/CD与Git Flow与GitLab
         <tag>matery</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>emoji表情符号</title>
+    <url>/posts/80938cfe/</url>
+    <content><![CDATA[
+emoji表情符号是非常流行的表情符号，几乎没有地方都会支持。这里列举出常用的emoji表情不好，方便大家使用与查阅。
+
+
+常用符号
+❤❥웃유♋☮✌☏☢☠✔☑♚▲♪✈✞÷↑↓◆◇⊙■□△▽¿─│♥❣♂♀☿Ⓐ✍✉☣☤✘☒♛▼♫⌘☪≈←→◈◎☉★☆⊿※¡━┃♡ღ ツ
+
+☼☁❅♒✎©®™Σ✪✯☭➳ 卐 √↖↗●◐Θ◤◥︻〖〗┄┆℃℉°✿ϟ☃☂✄¢€£∞✫★½✡×↙↘○◑⊕◣◢︼【】┅┇☽☾✚〓
+
+▂▃▄▅▆▇█▉▊▋▌▍▎▏↔↕☽☾ の•▸◂▴▾┈┊①②③④⑤⑥⑦⑧⑨⑩ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ ㍿ ▓♨♛❖♓☪✙
+
+┉┋☹☺☻ت ヅツッシ Üϡﭢ™℠℗©®♥❤❥❣❦❧♡۵웃유ღ♋♂♀☿☼☀☁☂☄☾☽❄☃☈⊙☉℃℉❅✺ϟ☇♤♧♡♢♠♣
+
+♥♦☜☞☝✍☚☛☟✌✽✾✿❁❃❋❀⚘☑✓✔√☐☒✗✘ ㄨ ✕✖✖⋆✢✣✤✥❋✦✧✩✰✪✫✬✭✮✯❂✡★✱✲✳✴✵✶✷✸✹✺✻✼❄❅❆❇❈❉❊†☨✞✝☥☦☓☩☯☧☬
+
+☸✡♁✙♆。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴々﹟#
+
+﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼☩☨☦✞✛✜✝✙✠✚†‡◉○◌◍◎●◐◑◒◓◔◕◖◗❂☢⊗⊙◘◙◍⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌
+
+≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱㊣㊎㊍㊌㊋㊏㊐㊊㊚㊛㊤㊥
+
+㊦㊧㊨㊒㊞㊑㊒㊓㊔㊕㊖㊗㊘㊜㊝㊟㊠㊡㊢㊩㊪㊫㊬㊭㊮㊯㊰㊙ ㉿ 囍 ♔♕♖♗♘♙♚♛♜♝♞♟ℂℍℕℙℚℝℤℬℰℯℱℊℋℎℐℒℓℳℴ℘ℛℭ℮ℌℑℜℨ♪♫♩♬♭♮♯°øⒶ☮✌☪✡☭✯ 卐 ✐✎✏
+
+✑✒✍✉✁✂✃✄✆✉☎☏➟➡➢➣➤➥➦➧➨➚➘➙➛➜➝➞➸♐➲➳⏎➴➵➶➷➸➹➺➻➼➽←↑→↓↔↕↖↗↘↙↚↛↜↝
+
+↞↟↠↡↢↣↤↥↦↧↨➫➬➩➪➭➮➯➱↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹↺↻↼↽↾↿⇀⇁⇂⇃⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇕
+
+⇖⇗⇘⇙⇚⇛⇜⇝⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪➀➁➂➃➄➅➆➇➈➉➊➋➌➍➎➏➐➑➒➓㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡ
+
+ⓢⓣⓤⓥⓦⓧⓨⓩ⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵ⅠⅡⅢⅣⅤ
+
+ⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹⅺⅻⅼⅽⅾⅿ┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫
+┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽
+┾┿╀╁╂╃╄╅╆╇╈╉╊╋╌╍╎╏
+═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬◤◥◄►▶◀◣◢▲
+
+▼◥▸◂▴▾△▽▷◁⊿▻◅▵▿▹◃❏❐❑❒▀▁▂▃▄▅▆▇▉▊▋█▌▍▎▏▐░▒▓▔▕■□▢▣▤▥▦▧
+
+▨▩▪▫▬▭▮▯ ㋀㋁㋂㋃㋄㋅㋆㋇㋈㋉㋊㋋㏠㏡㏢㏣㏤㏥㏦㏧㏨㏩㏪㏫㏬㏭㏮㏯㏰㏱㏲
+
+㏳㏴㏵㏶㏷㏸㏹㏺㏻㏼㏽㏾㍙㍚㍛㍜㍝㍞㍟㍠㍡㍢㍣㍤㍥㍦㍧㍨㍩㍪㍫㍬㍭㍮㍯㍰㍘
+
+☰☲☱☴☵☶☳☷☯
+特殊符号
+♠♣♧♡♥❤❥❣♂♀✲☀☼☾☽◐◑☺☻☎☏✿❀№↑↓←→√×÷★℃℉°◆◇⊙■□△▽¿½☯✡ ㍿卍卐 ♂♀✚〓㎡♪♫♩♬
+
+㊚㊛囍㊒㊖ Φ♀♂‖KaTeX parse error: Expected ‘EOF’, got ‘&amp;’ at position 3: @*&amp;̲#※卍卐 Ψ♫♬♭♩♪♯♮⌒¶∮…
+编号序号
+①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳⓪
+
+❶❷❸❹❺❻❼❽❾❿⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴
+
+㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉㈠㈡㈢㈣㈤㈥㈦㈧㈨㈩⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇
+
+⒈⒉⒊⒋⒌⒍⒎⒏⒐⒑⒒⒓⒔⒕⒖⒗⒘⒙⒚⒛
+
+ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹ
+
+ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ
+
+⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵
+数学符号
+﹢﹣×÷±/=≌∽≦≧≒ ﹤﹥ ≈≡≠=≤≥&lt;&gt;≮≯∷∶∫∮∝∞∧∨∑∏∪∩∈∵∴⊥∥∠⌒⊙√∟⊿㏒㏑%
+
+‰⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟
+
+≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱øØπ
+爱心符号
+♥❣ღ♠♡♤❤❥
+标点符号
+。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴
+
+々﹟#﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊
+
+（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】
+
+︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼❝❞
+单位符号
+°′″＄￥〒￠￡％＠℃℉ ﹩﹪‰﹫㎡㏕㎜㎝㎞㏎m³㎎㎏㏄º○¤%$º¹²³
+货币符号
+€£Ұ₴$₰¢₤¥₳₲₪₵ 元 ₣₱฿¤₡₮₭₩ރ 円 ₢₥₫₦zł﷼₠₧₯₨Kčर₹ƒ₸ ￠
+箭头符号（含推导&amp;转换符号）
+↑↓←→↖↗↘↙↔↕➻➼➽➸➳➺➻➴➵➶➷➹▶►▷◁◀◄«
+
+»➩➪➫➬➭➮➯➱⏎➲➾➔➘➙➚➛➜➝➞➟➠➡➢➣➤➥➦➧➨
+
+↚↛↜↝↞↟↠↠↡↢↣↤↤↥↦↧↨⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇖⇗⇘⇙
+
+⇜↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹☇☈↼↽↾↿⇀⇁⇂⇃⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪↺↻⇚⇛♐
+符号图案
+✐✎✏✑✒✍✉✁✂✃✄✆✉☎☏☑✓✔√☐☒✗✘ ㄨ ✕✖✖☢☠☣✈★☆✡ 囍㍿ ☯☰☲☱☴☵☶☳☷
+
+☜☞☝✍☚☛☟✌♤♧♡♢♠♣♥♦☀☁☂❄☃♨웃유❖☽☾☪✿♂♀✪✯☭➳ 卍卐 √×■◆●○◐◑✙☺☻
+
+❀⚘♔♕♖♗♘♙♚♛♜♝♞♟♧♡♂♀♠♣♥❤☜☞☎☏⊙◎☺☻☼▧▨♨◐◑↔↕▪▒◊◦▣▤▥▦▩◘◈◇
+
+♬♪♩♭♪ の ★☆→ あぃ￡ Ю〓§♤♥▶¤✲❈✿✲❈➹☀☂☁【】┱┲❣✚✪✣✤✥✦❉❥❦❧❃❂❁❀✄☪☣☢☠☭ღ▶▷◀◁
+
+☀☁☂☃☄★☆☇☈⊙☊☋☌☍ⓛⓞⓥⓔ╬『』∴☀♫♬♩♭♪☆∷﹌の ★◎▶☺☻►◄▧▨♨◐◑↔↕↘▀▄█▌
+
+◦☼♪ の ☆→♧ ぃ￡ ❤▒▬♦◊◦♠♣▣۰•❤•۰►◄▧▨♨◐◑↔↕▪▫☼♦⊙●○①⊕◎Θ⊙¤ ㊣ ★☆♀◆◇◣◢◥▲▼△▽⊿◤◥
+
+✐✌✍✡✓✔✕✖♂♀♥♡☜☞☎☏⊙◎☺☻►◄▧▨♨◐◑↔↕♥♡▪▫☼♦▀▄█▌▐░▒▬♦◊◘◙◦☼♠♣▣▤▥▦▩◘◙◈
+
+♫♬♪♩♭♪✄☪☣☢☠♯♩♪♫♬♭♮☎☏☪♈ºº₪¤큐«»™♂✿♥ 　 ◕‿-｡　｡◕‿◕｡
+希腊字母
+ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ
+
+αβγδεζνξοπρσηθικλμτυφχψω
+俄语字母
+АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвг
+
+деёжзийклмнопрстуфхцчшщъыьэюя
+汉语拼音
+āáǎàōóǒòēéěèīíǐìūúǔùǖǘǚǜüêɑńňɡ ㄅㄆㄇㄈㄉ
+
+ㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄚㄛㄜㄝㄞ
+
+ㄟㄠㄡㄢㄣㄤㄥㄦㄧㄨㄩ
+中文字符
+零壹贰叁肆伍陆柒捌玖拾佰仟万亿吉太拍艾分厘毫微
+
+卍卐卄巜弍弎弐朤氺曱甴囍兀々〆のぁ〡〢〣〤〥〦〧〨〩
+
+㊎㊍㊌㊋㊏㊚㊛㊐㊊㊣㊤㊥㊦㊧㊨㊒㊫㊑㊓㊔㊕㊖㊗㊘㊜㊝㊞㊟㊠㊡㊢㊩㊪㊬㊭㊮㊯㊰
+
+㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉
+日文符号
+ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてで
+
+とどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎ
+
+わゐゑをんゔゕゖァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタ
+
+ダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユ
+
+ョヨラリルレロヮワヰヱヲンヴヵヶヷヸヹヺ・ーヽヾヿ゠ㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇺㇻㇼㇽㇾㇿ
+制表符号
+─ ━│┃╌╍╎╏┄ ┅┆┇┈ ┉┊┋┌┍┎┏┐┑┒┓└ ┕┖┗ ┘┙┚┛├┝┞┟┠┡┢┣ ┤┥┦┧┨┩┪┫┬ ┭ ┮ ┯ ┰ ┱ ┲ ┳
+
+┴ ┵ ┶ ┷ ┸ ┹ ┺ ┻┼ ┽ ┾ ┿ ╀ ╁ ╂ ╃ ╄ ╅ ╆ ╇ ╈ ╉ ╊ ╋ ╪ ╫ ╬═║╒╓╔ ╕╖╗╘╙╚ ╛╜╝╞╟╠ ╡╢╣
+
+╤ ╥ ╦ ╧ ╨ ╩ ╳╔ ╗╝╚ ╬ ═ ╓ ╩ ┠ ┨┯ ┷┏ ┓┗ ┛┳ ⊥ ﹃ ﹄┌ ╮ ╭ ╯╰
+皇冠符号
+♚ 　 ♛ 　 ♝ 　 ♞ 　 ♜ 　 ♟ 　 ♔ 　 ♕ 　 ♗ 　 ♘ 　 ♖ 　 ♟
+彩色表情符号
+🌹🍀🍎💰📱🌙🍁🍂🍃🌷💎🔪🔫🏀⚽⚡👄👍🔥
+常用 emoji 符号
+😀😁😂😃😄😅😆😉😊😋😎😍😘😗😙😚☺😇😐😑😶😏😣😥😮😯😪😫😴😌😛😜😝😒😓😔😕😲😷😖😞😟😤😢😭😦😧😨😬😰😱😳😵😡😠😈👿👹👺💀👻👽👦👧👨👩👴👵👶👱👮👲👳👷👸💂🎅👰👼💆💇🙍🙎🙅🙆💁🙋🙇🙌🙏👤👥🚶🏃👯💃👫👬👭💏💑👪💪👈👉☝👆👇✌✋👌👍👎✊👊👋👏👐✍👣👀👂👃👅👄💋👓👔👕👖👗👘👙👚👛👜👝🎒💼👞👟👠👡👢👑👒🎩🎓💄💅💍🌂🙈🙉🙊🐵🐒🐶🐕🐩🐺🐱😺😸😹😻😼😽🙀😿😾🐈🐯🐅🐆🐴🐎🐮🐂🐃🐄🐷🐖🐗🐽🐏🐑🐐🐪🐫🐘🐭🐁🐀🐹🐰🐇🐻🐨🐼🐾🐔🐓🐣🐤🐥🐦🐧🐸🐊🐢🐍🐲🐉🐳🐋🐬🐟🐠🐡🐙🐚🐌🐛🐜🐝🐞🦋💐🌸💮🌹🌺🌻🌼🌷🌱🌲🌳🌴🌵🌾🌿🍀🍁🍂🍃🌍🌎🌏🌐🌑🌒🌓🌔🌕🌖🌗🌘🌙🌚🌛🌜☀🌝🌞⭐🌟🌠☁⛅☔⚡❄🔥💧🌊💩🍇🍈🍉🍊🍋🍌🍍🍎🍏🍐🍑🍒🍓🍅🍆🌽🍄🌰🍞🍖🍗🍔🍟🍕🍳🍲🍱🍘🍙🍚🍛🍜🍝🍠🍢🍣🍤🍥🍡🍦🍧🍨🍩🍪🎂🍰🍫🍬🍭🍮🍯🍼☕🍵🍶🍷🍸🍹🍺🍻🍴🎪🎭🎨🎰🚣🛀🎫🏆⚽⚾🏀🏈🏉🎾🎱🎳⛳🎣🎽🎿🏂🏄🏇🏊🚴🚵🎯🎮🎲🎷🎸🎺🎻🎬👾🌋🗻🏠🏡🏢🏣🏤🏥🏦🏨🏩🏪🏫🏬🏭🏯🏰💒🗼🗽⛪⛲🌁🌃🌆🌇🌉🌌🎠🎡🎢🚂🚃🚄🚅🚆🚇🚈🚉🚊🚝🚞🚋🚌🚍🚎🚏🚐🚑🚒🚓🚔🚕🚖🚗🚘🚚🚛🚜🚲⛽🚨🚥🚦🚧⚓⛵🚤🚢✈💺🚁🚟🚠🚡🚀🎑🗿🛂🛃🛄🛅💌💎🔪💈🚪🚽🚿🛁⌛⏳⌚⏰🎈🎉🎊🎎🎏🎐🎀🎁📯📻📱📲☎📞📟📠🔋🔌💻💽💾💿📀🎥📺📷📹📼🔍🔎🔬🔭📡💡🔦🏮📔📕📖📗📘📙📚📓📃📜📄📰📑🔖💰💴💵💶💷💸💳✉📧📨📩📤📥📦📫📪📬📭📮✏✒📝📁📂📅📆📇📈📉📊📋📌📍📎📏📐✂🔒🔓🔏🔐🔑🔨🔫🔧🔩🔗💉💊🚬🔮🚩🎌💦💨💣☠♠♥♦♣🀄🎴🔇🔈🔉🔊📢📣💤💢💬💭♨🌀🔔🔕✡✝🔯📛🔰🔱⭕✅☑✔✖❌❎➕➖➗➰➿〽✳✴❇‼⁉❓❔❕❗©®™🎦🔅🔆💯🔠🔡🔢🔣🔤🅰🆎🅱🆑🆒🆓ℹ🆔Ⓜ🆕🆖🅾🆗🅿🆘🆙🆚🈁🈂🈷🈶🈯 🉐 🈹🈚🈲 🉑 🈸🈴🈳 ㊗㊙ 🈺🈵▪▫◻◼◽◾⬛⬜🔶🔷🔸🔹🔺🔻💠🔲🔳⚪⚫🔴🔵♈♉♊♋♌♍♎♏♐♑♒♓⛎💘❤💓💔💕💖💗💙💚💛💜💝💞💟❣🌿🚧💒☎📟💽⬆↗➡↘⬇↙⬅↖↕↔↩↪⤴⤵🔃🔄🔙🔚🔛🔜🔝🔀🔁🔂▶⏩◀⏪🔼⏫🔽⏬📱📶📳📴♻🏧🚮🚰♿🚹🚺🚻🚼🚾⚠🚸⛔🚫🚳🚭🚯🚱🚷🔞
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>emoji</tag>
       </tags>
   </entry>
   <entry>
