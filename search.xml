@@ -5721,6 +5721,375 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
+    <title>Mariadb/Mysql命令行常用命令</title>
+    <url>/posts/f0b0af52/</url>
+    <content><![CDATA[一、初始化等
+1、登陆数据库方法
+mysql -u用户名 -p用户密码
+2、修改root及用户密码
+use mysql;
+update user set password=password('11111111') where user='root' and host='localhost';
+flush privileges;
+MariaDB [mysql]&gt; update user set password=password('11111111') where user='root' and host='localhost';
+Query OK, 1 row affected (0.01 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+ 
+MariaDB [mysql]&gt; flush privileges;
+Query OK, 0 rows affected (0.01 sec)
+ 
+MariaDB [mysql]&gt; exit
+3、创建用户
+insert into mysql.user(host,user,password)values("localhost","test",password("password"));
+flush privileges;
+4、删除用户
+DELETE FROM user WHERE User="test" and Host="localhost";
+flush privileges;　　
+5、删除用户的数据库
+drop database test1;
+6、交互模式初始化
+mysql_secure_installation
+二、 常用操作
+1、显示数据库列表
+show databases;:查看所有的数据库
+2、创建数据库
+create database zxg;：创建名尾zxg的数据库
+3、进入数据库
+use zxg;:进入zxg的数据库
+4、显示库中的数据表
+show tables;：查看数据库里有多少张表
+5、创建数据表
+create table t1 (id varchar(20),name varchar(20));:创建名为t1表，并创建两两个字段，id、name，varchar表示设置数据长度，用字符来定义长度单位，其
+6、插入数据
+insert into t1 values（"1"，"zxg"）;:向表中插入数据
+7、查看数据表
+select * from t1; ：查看t1表数据内容
+8、多条件查询
+select * from t1 where id=1 and age = 'zxg ' ;: id、age 多个条件查询
+9、查看字段内容
+desc t1;:查看t1 表字段内容
+10、修改字段长度
+alter table t1 modify column name varchar(20);:修改name字段的长度
+11、修改该字段内容
+update t1 set name='zxg.net' where id=1;：修改name字段的内容
+12、权限刷新
+flush privileges; :刷新权限
+13、清空表单
+delete from t1;` :清空表内容
+14、删除数据表
+`drop table t1:删除表
+15、删除数据库
+drop database zxg;：删除zxg数据库
+16、查看数据库字符集
+show variables like '%char%';:查看数据库字符集
+17、查看存储引擎
+show engines;:查看MySQL存储引擎。
+18、查看默认存储引擎
+show variables like '%storage_engine%';:查看MySQL默认的存储引擎
+19、修改存储引擎
+alter table t1 engine=innodb;:修改MySQL t1表存储引擎
+[root@web2 ~]# mysql
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 2
+Server version: 5.5.60-MariaDB MariaDB Server
+ 
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+ 
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+ 
+MariaDB [(none)]&gt; show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| test               |
++--------------------+
+4 rows in set (0.00 sec)
+ 
+MariaDB [(none)]&gt;  create database zxg;                 
+Query OK, 1 row affected (0.00 sec)
+ 
+MariaDB [(none)]&gt; use zxg;
+Database changed
+MariaDB [zxg]&gt; show tables;
+Empty set (0.00 sec)
+ 
+MariaDB [zxg]&gt; create table t1(id varchar(20),name varchar(20));
+Query OK, 0 rows affected (0.00 sec)
+ 
+MariaDB [zxg]&gt; show tables;
++---------------+
+| Tables_in_zxg |
++---------------+
+| t1            |
++---------------+
+1 row in set (0.00 sec)
+ 
+MariaDB [zxg]&gt;
+MariaDB [zxg]&gt; insert into t1 values ("1","zxg");
+Query OK, 1 row affected (0.01 sec)
+ 
+MariaDB [zxg]&gt; select *from t1;
++------+------+
+| id | name |
++------+------+
+| 1 | zxg |
++------+------+
+1 row in set (0.00 sec)
+ 
+MariaDB [zxg]&gt; select *from t1 where id=1;
++------+------+
+| id | name |
++------+------+
+| 1 | zxg |
++------+------+
+1 row in set (0.00 sec)
+ 
+MariaDB [zxg]&gt; select *from t1 where id=1 and name='zxg';
++------+------+
+| id | name |
++------+------+
+| 1 | zxg |
++------+------+
+1 row in set (0.01 sec)
+ 
+MariaDB [zxg]&gt; desc t1;
++-------+-------------+------+-----+---------+-------+
+| Field | Type | Null | Key | Default | Extra |
++-------+-------------+------+-----+---------+-------+
+| id | varchar(20) | YES | | NULL | |
+| name | varchar(20) | YES | | NULL | |
++-------+-------------+------+-----+---------+-------+
+2 rows in set (0.00 sec)
+ 
+MariaDB [zxg]&gt; alter table t1 modify column name varchar(20);
+Query OK, 0 rows affected (0.00 sec)
+Records: 0 Duplicates: 0 Warnings: 0
+ 
+MariaDB [zxg]&gt; update t1 set name='zxg.net' where id=1;
+Query OK, 1 row affected (0.00 sec)
+Rows matched: 1 Changed: 1 Warnings: 0
+MariaDB [zxg]&gt;
+ 
+三、mysql 数据库字符集设置
+mysql数据库存储数据时，默认编码为latinl，存储中文字符时，在调用时会显示为乱码，为了解决该乱码问题，需修改该mysql默认字符集为UTE-8
+装mariadb的是时候看已经默认为ute-8
+MariaDB [(none)]&gt; show variables like '%char%';
++--------------------------+----------------------------+
+| Variable_name            | Value                      |
++--------------------------+----------------------------+
+| character_set_client     | utf8                       |
+| character_set_connection | utf8                       |
+| character_set_database   | latin1                     |
+| character_set_filesystem | binary                     |
+| character_set_results    | utf8                       |
+| character_set_server     | latin1                     |
+| character_set_system     | utf8                       |
+| character_sets_dir       | /usr/share/mysql/charsets/ |
++--------------------------+----------------------------+
+8 rows in set (0.00 sec)
+如不是，可以设置
+SET character_set_client = utf8;
+SET character_set_results = utf8;
+SET character_set_connection = utf8;
+四、mysql 数据库密码管理
+设置密码访问，密码破解、密码权限、修改密码；
+1、创建用户及授权
+grant all on zxg.* to test@localhost identified by 'pas';
+grant select,insert,update,delete on *.*to test@"%" identified by 'pas';
+grant all on zxg.* to test@`192.168.216.53` identified by 'pas'
+2、破解密码方法
+停止服务---》跳过权限方式启动---》单开一个窗口登陆---》登陆修改密码即可
+1）systemctl stop mariadb
+2）mysqld_safe --skip-grant-tables &amp;
+[root@web2 ~]# mysqld_safe --skip-grant-tables &amp;
+[1] 47542
+[root@web2 ~]# 190520 15:45:22 mysqld_safe Logging to '/var/log/mariadb/mariadb.log'.
+190520 15:45:22 mysqld_safe Starting mysqld daemon with databases from /var/lib/mysql
+[root@web2 ~]# mysql
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 1
+Server version: 5.5.60-MariaDB MariaDB Server
+ 
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+ 
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+ 
+MariaDB [(none)]&gt; use mysql;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+ 
+Database changed
+MariaDB [mysql]&gt; update user set password=password('11111111') where user='root' ;
+Query OK, 3 rows affected (0.01 sec)
+Rows matched: 4  Changed: 3  Warnings: 0
+ 
+MariaDB [mysql]&gt; flush privileges;
+Query OK, 0 rows affected (0.00 sec)
+ 
+MariaDB [mysql]&gt; exit
+Bye
+[root@web2 ~]#
+然后退出”跳过权限方式“ ctrl+c ，正常启动mysql就可以了
+五、mysql 配置文件详解
+1、参数说明
+[mysqld]                                                              #服务端配置
+port        = 3306                                                    #监听端口
+socket      = /tmp/mysql.sock                                         #通信设置
+user    = mariadb                                                     #使用mariadb用户启动
+basedir = /usr/local/mariadb                                          #安装路径
+datadir = /data/mysql                                                 #数据目录
+log_error = /data/mysql/mariadb.err                             　　　 #错误日志
+pid-file = /data/mysql/mariadb.pid                             　　　　#pid进程文件
+skip-external-locking                                                 #避免mysql的外部锁定，减少出错几率提高稳定性
+key_buffer_size = 64M                                                 #缓存存储引擎参数，这个参数可以设置为64M
+max_allowed_packet = 1M                                               #允许最大接收数据包的大小，防止服务器发送过大的数据包，可以设置为16MB或者更大，但设置太大也可能有危险
+table_open_cache = 256                                                #mysql每打开一个表，都会读入一些数据到table_open_cache缓存中，当MYSQL在这个缓存中找不到相应的信息时，才会去磁盘读取，默认值64，假设系统有200个并发连接，则需将此参数设置为200*N（N为每个连接所需的文件描述符数目）；当设置为很大时，如果系统处理不了那么多文件描述符，那么就会出现客户端失效，连接不上
+sort_buffer_size = 1M                                                 #在表进行order by和group by 排序操作时，由于排序的字段没有索引，会出现Using filesort，为了提高性能，可用此参数增加每个线程分配的缓存区大小，默认时256k，这个参数不要设置过大，一般128~256k，另外一般出现using filesort的时候，要通过增加索引来解决
+net_buffer_length = 8K                                                #包消息缓冲区初始化net_buffer_length字节，但需要时可以增长到max_allowed_packet字节
+read_buffer_size = 1M                                                 #该参数用于表的顺序扫描，表示每个线程分配的缓冲区大小，比如在进行全表扫描时，mysql会按照数据的存储顺序一次读取数据块，每次读取的数据块首先会暂存在read_buffer_size中，当buffer空间被写满或者全部数据读取结束后，在将buffer中的数据返回给上层调用者，以提高效率默认128k，也不要设置过大
+read_rnd_buffer_size = 512K                                           #该参数用于表的随机读取，表示每个线程分配的缓冲区大小，比如，按照一个非索引字段做order by排序操作时，就会利用这个缓冲区来暂存读取的数据，默认时256k，也不要设置过大
+myisam_sort_buffer_size = 16M                                         #当myisam表执行repair table或创建索引时，用以缓冲排序索引，设置太小可能会遇到"myisam_sort_buffer_size is to small"
+thread_cache_size = 32                                                #线程池，线程缓冲。用来缓冲空闲的线程，以至于不被销毁，如果线程缓冲在的空闲线程，需要重新建立新连接，则会优先调用线程池中的缓冲，很快就能相应连接请求，每建立一个连接，都需要一个线程与之匹配。
+query_cache_size = 32M                                                #缓存select语句和结果集大小的参数。查询缓存会存储一个select查询的文本与被传送到客户端的相应结果。如果之后接收到一个相同的查询，服务器会从查询缓存中检索结果，而不是再次分析和执行这个同样的查询。如果你的环境中写操作很少，读操作频繁，那么打开query_cache_type=1，会对性能有明显提升。如果写操作频繁，则应该关闭它（query_cache_type=0）。
+tmp_table_size = 64M                                                  #临时HEAP数据表的最大长度(默认设置是32M); 超过这个长度的临时数据表将被转换为MyISAM数据表并存入一个临时文件。
+                                                                      #
+explicit_defaults_for_timestamp = true                     　　　　　　 #是否显示默认时间戳
+#skip-networking                                                      #
+max_connections = 500                                                 #该参数用来设置最大连接数，告诉你当前你的服务器允许多少并发连接。默认为100，一般设置为512-1000即可。请记住，太多的连接会导致内存的使用量过高并且会锁住你的 MySQL 服务器。一般小网站需要 100-200 的连接数，而较大可能需要 500-800 甚至更多。这里的值很大程度上取决于你 MySQL/MariaDB 的使用情况。
+max_connect_errors = 100                                              #如果有时网络抽风，或者应用配置错误，或者其他原因导致客户端短时间内不断的尝试连接，客户端可能会被列入黑名单，然后将无法连接，直到再次刷新主机缓存。这个选项默认值太小了，可以考虑设的足够大（如果你的服务器配置够强大的话）。
+open_files_limit = 65535                                              #mysql打开最大文件数
+                                                                      #
+log-bin=mysql-bin                                                     #这些路径相对于datadir
+binlog_format=mixed                                                   #日志格式
+server-id   = 1                                                       #给服务器分配一个独一无二的ID编号; n的取值范围是1~2的32次方启用二进制日志功能。在复制数据同步的时候会用到，Helloweba后面会有文章介绍。
+expire_logs_days = 10                                                 #启用二进制日志后，保留日志的天数。服务器会自动清理指定天数前的日志文件，如果不设置则会导致服务器空间耗尽。一般设置为7～14天。
+                                                                       #
+default_storage_engine = InnoDB                                     　#新数据表的默认存储引擎(默认设置是MyISAM)。这项设置还可以通过–default-table-type选项来设置。
+innodb_file_per_table = 1                                             #提供了更灵活的方式，它把每个数据库的信息保存在一个 .ibd 数据文件中。每个 .idb 文件代表它自己的表空间。通过这样的方式可以更快地完成类似 “TRUNCATE” 的数据库操作，当删除或截断一个数据库表时，你也可以回收未使用的空间。这样配置的另一个好处是你可以将某些数据库表放在一个单独的存储设备。这可以大大提升你磁盘的 I/O 负载。
+innodb_data_home_dir = /data/mysql                             　　　　#InnoDB主目录，所有与InnoDB数据表有关的目录或文件路径都相对于这个路径。在默认的情况下，这个主目录就是MySQL的数据目录。
+innodb_data_file_path = ibdata1:10M:autoextend     　　　　　　　　　　　#用来容纳InnoDB为数据表的表空间: 可能涉及一个以上的文件; 每一个表空间文件的最大长度都必须以字节(B)、兆字节(MB)或千兆字节(GB)为单位给出; 表空间文件的名字必须以分号隔开; 最后一个表空间文件还可以带一个autoextend属性和一个最大长度(max:n)。
+innodb_log_group_home_dir = /data/mysql                     　　　　　　#用来存放InnoDB日志文件的目录路径(如ib_logfile0、ib_logfile1等)。在默认的情况下，InnoDB驱动程序将使用 MySQL数据目录作为自己保存日志文件的位置。
+innodb_buffer_pool_size = 256M                                     　　#这个参数是InnoDB存储引擎的核心参数，默认为128KB，这个参数要设置为物理内存的60%～70%。
+innodb_log_file_size = 64M                                            #事务日志文件写操作缓存区的最大长度(默认设置是1MB)。
+innodb_log_buffer_size = 8M                                           #事务日志所使用的缓存区。InnoDB在写事务日志的时候，为了提高性能，先将信息写入Innodb Log Buffer中，当满足innodb_flush_log_trx_commit参数所设置的相应条件（或者日志缓冲区写满）时，再将日志写到文件（或者同步到磁盘）中。可以通过innodb_log_buffer_size参数设置其可以使用的最大内存空间。默认是8MB，一般为16～64MB即可。
+innodb_flush_log_at_trx_commit = 1                             　　　　#这个选项决定着什么时候把日志信息写入日志文件以及什么时候把这些文件物理地写(术语称为”同步”)到硬盘上。设置值0的意思是每隔一秒写一次日 志并进行 同步，这可以减少硬盘写操作次数，但可能造成数据丢失; 设置值1(设置设置)的意思是在每执行完一条COMMIT命令就写一次日志并进行同步，这可以防止数据丢失，但硬盘写操作可能会很频繁; 设置值2是一般折衷的办法，即每执行完一条COMMIT命令写一次日志，每隔一秒进行一次同步。
+innodb_lock_wait_timeout = 50                                         #如果某个事务在等待n秒(s)后还没有获得所需要的资源，就使用ROLLBACK命令放弃这个事务。这项设置对于发现和处理未能被InnoDB数据表驱动 程序识别出来的死锁条件有着重要的意义。这个选项的默认设置是50s。
+                                                                      #
+[mysqldump]                                                           #
+quick                                                                 #
+max_allowed_packet = 16M                                              #          
+                                                                      #
+[mysql]                                                               #
+no-auto-rehash                                                        #
+                                                                      #
+[myisamchk]                                                           #
+key_buffer_size = 64M                                                 #  
+sort_buffer_size = 1M                                                 #  
+read_buffer = 2M                                                      #
+write_buffer = 2M                                                     #
+                                                                      #
+[mysqlhotcopy]                                                        #
+interactive-timeout                                                   #
+2、mysql数据库索引案例（百万量级）
+[client]
+port    =3306                                  
+socket    =/tmp/mysql.sock                     
+ 
+ 
+ 
+[mysqld]                                                                             
+port        = 3306                                                         
+socket      = /tmp/mysql.sock                                   
+user    = mysql  
+server_id　　= 10
+datadir　　= /data/mysql/
+old_passwords　　= 1
+lower_case_table_names　　= 1
+character-set-server　　= utf8
+default-storage-engine　　= MYISAM
+log-bin　　= bin.log
+log-error　　= error.log
+pid-file　　= mysql.pid
+long_query_time　　= 2
+slow_query_time　　= 2
+slow_query_log　
+slow_query_log_file　　= slow.log
+binlog_cache_size　　= 4MB
+binlog_format　　= mixed
+max_binlog_cache_size　　= 16MB
+max_binlog_size　　= 1GB
+expire_logs_days　　= 30
+ft_min_word_len　　= 4
+back_log　　= 512
+max_allowed_packet　　= 64MB
+max_connections　　= 4096
+max_connect_errors　　= 100
+join_buffer_size　　= 2MB
+read_buffer_size　　= 2MB
+read_rnd_buffer_size　　= 2MB
+sort_buffer_size　　　　= 2MB
+query_cache_size　　= 2MB
+table_open_cache　　= 10000
+thread_cache_size　　= 256
+max_heap_table_size　　= 64MB
+tmp_table_size　　= 64MB
+thread_stack　　= 192KB
+thread_concurrency　　= 24
+local-infile　　= 0
+skip-show-database
+skip-name-resolve
+skip-external-locking
+connect_timeout　　= 600
+interactive_timeout　　= 600
+wait_timeout　　= 600
+#MyISAM
+key_buffer_size　　= 512MB
+bulk_insert_buffer_size　　= 64MB
+mysiam_sort_buffer_size　　= 64MB
+mysiam_max_sort_file_size　　= 1GB
+mysiam_repair_threads　　= 1
+concurrent_insert　　= 2
+myisam_recover
+#INNODB
+innodb_buffer_pool_size　　= 64G
+innodb_additional_mem_pool_size　　= 32MB
+innodb_data_file_path　　=　ibdata1:1G;ibdata2:1G:autoextend
+innodb_read_io_threads　　= 8
+innodb_write_io_threads 　　= 8
+innodb_file_per_table　　= 1
+innodb_flush_log_at_thx_commit　　= 2
+innodb_lock_wait_timeout　　= 120
+innodb_log_buffer_size　　= 8MB
+innodb_log_file_size　　= 256MB
+innodb_log_files_in_group　　= 3
+innodb_max_dirty_pages_pct　　= 90
+innodb_thread_concurrency　　= 16
+innodb_open_files　　= 10000
+#innodb_force_recovery　　= 4
+#replication slave
+read-only
+#skip-salve-start
+relay-log　　= relay.log
+log-slave-updates
+本文参考：
+mariadb-mysql配置文件my-cnf解读
+MySQL教程
+《曝光：Linux企业运维实战》
+夜法之书 整理编辑 From: zhangxingeng
+]]></content>
+      <categories>
+        <category>mysql</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>mysql</tag>
+        <tag>docker</tag>
+        <tag>mariadb</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Joplin 插件以及其Markdown语法。All in One!</title>
     <url>/posts/92d347d6/</url>
     <content><![CDATA[Joplin是一个以Markdown为主要语法的笔记程序，发展到今天增加了许多插件，这些插件也大大增强了它的功能，今天我们就讲讲Joplin的各个插件的作用和使用方法。
@@ -6574,375 +6943,6 @@ github卡片
       </tags>
   </entry>
   <entry>
-    <title>Mariadb/Mysql命令行常用命令</title>
-    <url>/posts/f0b0af52/</url>
-    <content><![CDATA[一、初始化等
-1、登陆数据库方法
-mysql -u用户名 -p用户密码
-2、修改root及用户密码
-use mysql;
-update user set password=password('11111111') where user='root' and host='localhost';
-flush privileges;
-MariaDB [mysql]&gt; update user set password=password('11111111') where user='root' and host='localhost';
-Query OK, 1 row affected (0.01 sec)
-Rows matched: 1  Changed: 1  Warnings: 0
- 
-MariaDB [mysql]&gt; flush privileges;
-Query OK, 0 rows affected (0.01 sec)
- 
-MariaDB [mysql]&gt; exit
-3、创建用户
-insert into mysql.user(host,user,password)values("localhost","test",password("password"));
-flush privileges;
-4、删除用户
-DELETE FROM user WHERE User="test" and Host="localhost";
-flush privileges;　　
-5、删除用户的数据库
-drop database test1;
-6、交互模式初始化
-mysql_secure_installation
-二、 常用操作
-1、显示数据库列表
-show databases;:查看所有的数据库
-2、创建数据库
-create database zxg;：创建名尾zxg的数据库
-3、进入数据库
-use zxg;:进入zxg的数据库
-4、显示库中的数据表
-show tables;：查看数据库里有多少张表
-5、创建数据表
-create table t1 (id varchar(20),name varchar(20));:创建名为t1表，并创建两两个字段，id、name，varchar表示设置数据长度，用字符来定义长度单位，其
-6、插入数据
-insert into t1 values（"1"，"zxg"）;:向表中插入数据
-7、查看数据表
-select * from t1; ：查看t1表数据内容
-8、多条件查询
-select * from t1 where id=1 and age = 'zxg ' ;: id、age 多个条件查询
-9、查看字段内容
-desc t1;:查看t1 表字段内容
-10、修改字段长度
-alter table t1 modify column name varchar(20);:修改name字段的长度
-11、修改该字段内容
-update t1 set name='zxg.net' where id=1;：修改name字段的内容
-12、权限刷新
-flush privileges; :刷新权限
-13、清空表单
-delete from t1;` :清空表内容
-14、删除数据表
-`drop table t1:删除表
-15、删除数据库
-drop database zxg;：删除zxg数据库
-16、查看数据库字符集
-show variables like '%char%';:查看数据库字符集
-17、查看存储引擎
-show engines;:查看MySQL存储引擎。
-18、查看默认存储引擎
-show variables like '%storage_engine%';:查看MySQL默认的存储引擎
-19、修改存储引擎
-alter table t1 engine=innodb;:修改MySQL t1表存储引擎
-[root@web2 ~]# mysql
-Welcome to the MariaDB monitor.  Commands end with ; or \g.
-Your MariaDB connection id is 2
-Server version: 5.5.60-MariaDB MariaDB Server
- 
-Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
- 
-Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
- 
-MariaDB [(none)]&gt; show databases;
-+--------------------+
-| Database           |
-+--------------------+
-| information_schema |
-| mysql              |
-| performance_schema |
-| test               |
-+--------------------+
-4 rows in set (0.00 sec)
- 
-MariaDB [(none)]&gt;  create database zxg;                 
-Query OK, 1 row affected (0.00 sec)
- 
-MariaDB [(none)]&gt; use zxg;
-Database changed
-MariaDB [zxg]&gt; show tables;
-Empty set (0.00 sec)
- 
-MariaDB [zxg]&gt; create table t1(id varchar(20),name varchar(20));
-Query OK, 0 rows affected (0.00 sec)
- 
-MariaDB [zxg]&gt; show tables;
-+---------------+
-| Tables_in_zxg |
-+---------------+
-| t1            |
-+---------------+
-1 row in set (0.00 sec)
- 
-MariaDB [zxg]&gt;
-MariaDB [zxg]&gt; insert into t1 values ("1","zxg");
-Query OK, 1 row affected (0.01 sec)
- 
-MariaDB [zxg]&gt; select *from t1;
-+------+------+
-| id | name |
-+------+------+
-| 1 | zxg |
-+------+------+
-1 row in set (0.00 sec)
- 
-MariaDB [zxg]&gt; select *from t1 where id=1;
-+------+------+
-| id | name |
-+------+------+
-| 1 | zxg |
-+------+------+
-1 row in set (0.00 sec)
- 
-MariaDB [zxg]&gt; select *from t1 where id=1 and name='zxg';
-+------+------+
-| id | name |
-+------+------+
-| 1 | zxg |
-+------+------+
-1 row in set (0.01 sec)
- 
-MariaDB [zxg]&gt; desc t1;
-+-------+-------------+------+-----+---------+-------+
-| Field | Type | Null | Key | Default | Extra |
-+-------+-------------+------+-----+---------+-------+
-| id | varchar(20) | YES | | NULL | |
-| name | varchar(20) | YES | | NULL | |
-+-------+-------------+------+-----+---------+-------+
-2 rows in set (0.00 sec)
- 
-MariaDB [zxg]&gt; alter table t1 modify column name varchar(20);
-Query OK, 0 rows affected (0.00 sec)
-Records: 0 Duplicates: 0 Warnings: 0
- 
-MariaDB [zxg]&gt; update t1 set name='zxg.net' where id=1;
-Query OK, 1 row affected (0.00 sec)
-Rows matched: 1 Changed: 1 Warnings: 0
-MariaDB [zxg]&gt;
- 
-三、mysql 数据库字符集设置
-mysql数据库存储数据时，默认编码为latinl，存储中文字符时，在调用时会显示为乱码，为了解决该乱码问题，需修改该mysql默认字符集为UTE-8
-装mariadb的是时候看已经默认为ute-8
-MariaDB [(none)]&gt; show variables like '%char%';
-+--------------------------+----------------------------+
-| Variable_name            | Value                      |
-+--------------------------+----------------------------+
-| character_set_client     | utf8                       |
-| character_set_connection | utf8                       |
-| character_set_database   | latin1                     |
-| character_set_filesystem | binary                     |
-| character_set_results    | utf8                       |
-| character_set_server     | latin1                     |
-| character_set_system     | utf8                       |
-| character_sets_dir       | /usr/share/mysql/charsets/ |
-+--------------------------+----------------------------+
-8 rows in set (0.00 sec)
-如不是，可以设置
-SET character_set_client = utf8;
-SET character_set_results = utf8;
-SET character_set_connection = utf8;
-四、mysql 数据库密码管理
-设置密码访问，密码破解、密码权限、修改密码；
-1、创建用户及授权
-grant all on zxg.* to test@localhost identified by 'pas';
-grant select,insert,update,delete on *.*to test@"%" identified by 'pas';
-grant all on zxg.* to test@`192.168.216.53` identified by 'pas'
-2、破解密码方法
-停止服务---》跳过权限方式启动---》单开一个窗口登陆---》登陆修改密码即可
-1）systemctl stop mariadb
-2）mysqld_safe --skip-grant-tables &amp;
-[root@web2 ~]# mysqld_safe --skip-grant-tables &amp;
-[1] 47542
-[root@web2 ~]# 190520 15:45:22 mysqld_safe Logging to '/var/log/mariadb/mariadb.log'.
-190520 15:45:22 mysqld_safe Starting mysqld daemon with databases from /var/lib/mysql
-[root@web2 ~]# mysql
-Welcome to the MariaDB monitor.  Commands end with ; or \g.
-Your MariaDB connection id is 1
-Server version: 5.5.60-MariaDB MariaDB Server
- 
-Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
- 
-Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
- 
-MariaDB [(none)]&gt; use mysql;
-Reading table information for completion of table and column names
-You can turn off this feature to get a quicker startup with -A
- 
-Database changed
-MariaDB [mysql]&gt; update user set password=password('11111111') where user='root' ;
-Query OK, 3 rows affected (0.01 sec)
-Rows matched: 4  Changed: 3  Warnings: 0
- 
-MariaDB [mysql]&gt; flush privileges;
-Query OK, 0 rows affected (0.00 sec)
- 
-MariaDB [mysql]&gt; exit
-Bye
-[root@web2 ~]#
-然后退出”跳过权限方式“ ctrl+c ，正常启动mysql就可以了
-五、mysql 配置文件详解
-1、参数说明
-[mysqld]                                                              #服务端配置
-port        = 3306                                                    #监听端口
-socket      = /tmp/mysql.sock                                         #通信设置
-user    = mariadb                                                     #使用mariadb用户启动
-basedir = /usr/local/mariadb                                          #安装路径
-datadir = /data/mysql                                                 #数据目录
-log_error = /data/mysql/mariadb.err                             　　　 #错误日志
-pid-file = /data/mysql/mariadb.pid                             　　　　#pid进程文件
-skip-external-locking                                                 #避免mysql的外部锁定，减少出错几率提高稳定性
-key_buffer_size = 64M                                                 #缓存存储引擎参数，这个参数可以设置为64M
-max_allowed_packet = 1M                                               #允许最大接收数据包的大小，防止服务器发送过大的数据包，可以设置为16MB或者更大，但设置太大也可能有危险
-table_open_cache = 256                                                #mysql每打开一个表，都会读入一些数据到table_open_cache缓存中，当MYSQL在这个缓存中找不到相应的信息时，才会去磁盘读取，默认值64，假设系统有200个并发连接，则需将此参数设置为200*N（N为每个连接所需的文件描述符数目）；当设置为很大时，如果系统处理不了那么多文件描述符，那么就会出现客户端失效，连接不上
-sort_buffer_size = 1M                                                 #在表进行order by和group by 排序操作时，由于排序的字段没有索引，会出现Using filesort，为了提高性能，可用此参数增加每个线程分配的缓存区大小，默认时256k，这个参数不要设置过大，一般128~256k，另外一般出现using filesort的时候，要通过增加索引来解决
-net_buffer_length = 8K                                                #包消息缓冲区初始化net_buffer_length字节，但需要时可以增长到max_allowed_packet字节
-read_buffer_size = 1M                                                 #该参数用于表的顺序扫描，表示每个线程分配的缓冲区大小，比如在进行全表扫描时，mysql会按照数据的存储顺序一次读取数据块，每次读取的数据块首先会暂存在read_buffer_size中，当buffer空间被写满或者全部数据读取结束后，在将buffer中的数据返回给上层调用者，以提高效率默认128k，也不要设置过大
-read_rnd_buffer_size = 512K                                           #该参数用于表的随机读取，表示每个线程分配的缓冲区大小，比如，按照一个非索引字段做order by排序操作时，就会利用这个缓冲区来暂存读取的数据，默认时256k，也不要设置过大
-myisam_sort_buffer_size = 16M                                         #当myisam表执行repair table或创建索引时，用以缓冲排序索引，设置太小可能会遇到"myisam_sort_buffer_size is to small"
-thread_cache_size = 32                                                #线程池，线程缓冲。用来缓冲空闲的线程，以至于不被销毁，如果线程缓冲在的空闲线程，需要重新建立新连接，则会优先调用线程池中的缓冲，很快就能相应连接请求，每建立一个连接，都需要一个线程与之匹配。
-query_cache_size = 32M                                                #缓存select语句和结果集大小的参数。查询缓存会存储一个select查询的文本与被传送到客户端的相应结果。如果之后接收到一个相同的查询，服务器会从查询缓存中检索结果，而不是再次分析和执行这个同样的查询。如果你的环境中写操作很少，读操作频繁，那么打开query_cache_type=1，会对性能有明显提升。如果写操作频繁，则应该关闭它（query_cache_type=0）。
-tmp_table_size = 64M                                                  #临时HEAP数据表的最大长度(默认设置是32M); 超过这个长度的临时数据表将被转换为MyISAM数据表并存入一个临时文件。
-                                                                      #
-explicit_defaults_for_timestamp = true                     　　　　　　 #是否显示默认时间戳
-#skip-networking                                                      #
-max_connections = 500                                                 #该参数用来设置最大连接数，告诉你当前你的服务器允许多少并发连接。默认为100，一般设置为512-1000即可。请记住，太多的连接会导致内存的使用量过高并且会锁住你的 MySQL 服务器。一般小网站需要 100-200 的连接数，而较大可能需要 500-800 甚至更多。这里的值很大程度上取决于你 MySQL/MariaDB 的使用情况。
-max_connect_errors = 100                                              #如果有时网络抽风，或者应用配置错误，或者其他原因导致客户端短时间内不断的尝试连接，客户端可能会被列入黑名单，然后将无法连接，直到再次刷新主机缓存。这个选项默认值太小了，可以考虑设的足够大（如果你的服务器配置够强大的话）。
-open_files_limit = 65535                                              #mysql打开最大文件数
-                                                                      #
-log-bin=mysql-bin                                                     #这些路径相对于datadir
-binlog_format=mixed                                                   #日志格式
-server-id   = 1                                                       #给服务器分配一个独一无二的ID编号; n的取值范围是1~2的32次方启用二进制日志功能。在复制数据同步的时候会用到，Helloweba后面会有文章介绍。
-expire_logs_days = 10                                                 #启用二进制日志后，保留日志的天数。服务器会自动清理指定天数前的日志文件，如果不设置则会导致服务器空间耗尽。一般设置为7～14天。
-                                                                       #
-default_storage_engine = InnoDB                                     　#新数据表的默认存储引擎(默认设置是MyISAM)。这项设置还可以通过–default-table-type选项来设置。
-innodb_file_per_table = 1                                             #提供了更灵活的方式，它把每个数据库的信息保存在一个 .ibd 数据文件中。每个 .idb 文件代表它自己的表空间。通过这样的方式可以更快地完成类似 “TRUNCATE” 的数据库操作，当删除或截断一个数据库表时，你也可以回收未使用的空间。这样配置的另一个好处是你可以将某些数据库表放在一个单独的存储设备。这可以大大提升你磁盘的 I/O 负载。
-innodb_data_home_dir = /data/mysql                             　　　　#InnoDB主目录，所有与InnoDB数据表有关的目录或文件路径都相对于这个路径。在默认的情况下，这个主目录就是MySQL的数据目录。
-innodb_data_file_path = ibdata1:10M:autoextend     　　　　　　　　　　　#用来容纳InnoDB为数据表的表空间: 可能涉及一个以上的文件; 每一个表空间文件的最大长度都必须以字节(B)、兆字节(MB)或千兆字节(GB)为单位给出; 表空间文件的名字必须以分号隔开; 最后一个表空间文件还可以带一个autoextend属性和一个最大长度(max:n)。
-innodb_log_group_home_dir = /data/mysql                     　　　　　　#用来存放InnoDB日志文件的目录路径(如ib_logfile0、ib_logfile1等)。在默认的情况下，InnoDB驱动程序将使用 MySQL数据目录作为自己保存日志文件的位置。
-innodb_buffer_pool_size = 256M                                     　　#这个参数是InnoDB存储引擎的核心参数，默认为128KB，这个参数要设置为物理内存的60%～70%。
-innodb_log_file_size = 64M                                            #事务日志文件写操作缓存区的最大长度(默认设置是1MB)。
-innodb_log_buffer_size = 8M                                           #事务日志所使用的缓存区。InnoDB在写事务日志的时候，为了提高性能，先将信息写入Innodb Log Buffer中，当满足innodb_flush_log_trx_commit参数所设置的相应条件（或者日志缓冲区写满）时，再将日志写到文件（或者同步到磁盘）中。可以通过innodb_log_buffer_size参数设置其可以使用的最大内存空间。默认是8MB，一般为16～64MB即可。
-innodb_flush_log_at_trx_commit = 1                             　　　　#这个选项决定着什么时候把日志信息写入日志文件以及什么时候把这些文件物理地写(术语称为”同步”)到硬盘上。设置值0的意思是每隔一秒写一次日 志并进行 同步，这可以减少硬盘写操作次数，但可能造成数据丢失; 设置值1(设置设置)的意思是在每执行完一条COMMIT命令就写一次日志并进行同步，这可以防止数据丢失，但硬盘写操作可能会很频繁; 设置值2是一般折衷的办法，即每执行完一条COMMIT命令写一次日志，每隔一秒进行一次同步。
-innodb_lock_wait_timeout = 50                                         #如果某个事务在等待n秒(s)后还没有获得所需要的资源，就使用ROLLBACK命令放弃这个事务。这项设置对于发现和处理未能被InnoDB数据表驱动 程序识别出来的死锁条件有着重要的意义。这个选项的默认设置是50s。
-                                                                      #
-[mysqldump]                                                           #
-quick                                                                 #
-max_allowed_packet = 16M                                              #          
-                                                                      #
-[mysql]                                                               #
-no-auto-rehash                                                        #
-                                                                      #
-[myisamchk]                                                           #
-key_buffer_size = 64M                                                 #  
-sort_buffer_size = 1M                                                 #  
-read_buffer = 2M                                                      #
-write_buffer = 2M                                                     #
-                                                                      #
-[mysqlhotcopy]                                                        #
-interactive-timeout                                                   #
-2、mysql数据库索引案例（百万量级）
-[client]
-port    =3306                                  
-socket    =/tmp/mysql.sock                     
- 
- 
- 
-[mysqld]                                                                             
-port        = 3306                                                         
-socket      = /tmp/mysql.sock                                   
-user    = mysql  
-server_id　　= 10
-datadir　　= /data/mysql/
-old_passwords　　= 1
-lower_case_table_names　　= 1
-character-set-server　　= utf8
-default-storage-engine　　= MYISAM
-log-bin　　= bin.log
-log-error　　= error.log
-pid-file　　= mysql.pid
-long_query_time　　= 2
-slow_query_time　　= 2
-slow_query_log　
-slow_query_log_file　　= slow.log
-binlog_cache_size　　= 4MB
-binlog_format　　= mixed
-max_binlog_cache_size　　= 16MB
-max_binlog_size　　= 1GB
-expire_logs_days　　= 30
-ft_min_word_len　　= 4
-back_log　　= 512
-max_allowed_packet　　= 64MB
-max_connections　　= 4096
-max_connect_errors　　= 100
-join_buffer_size　　= 2MB
-read_buffer_size　　= 2MB
-read_rnd_buffer_size　　= 2MB
-sort_buffer_size　　　　= 2MB
-query_cache_size　　= 2MB
-table_open_cache　　= 10000
-thread_cache_size　　= 256
-max_heap_table_size　　= 64MB
-tmp_table_size　　= 64MB
-thread_stack　　= 192KB
-thread_concurrency　　= 24
-local-infile　　= 0
-skip-show-database
-skip-name-resolve
-skip-external-locking
-connect_timeout　　= 600
-interactive_timeout　　= 600
-wait_timeout　　= 600
-#MyISAM
-key_buffer_size　　= 512MB
-bulk_insert_buffer_size　　= 64MB
-mysiam_sort_buffer_size　　= 64MB
-mysiam_max_sort_file_size　　= 1GB
-mysiam_repair_threads　　= 1
-concurrent_insert　　= 2
-myisam_recover
-#INNODB
-innodb_buffer_pool_size　　= 64G
-innodb_additional_mem_pool_size　　= 32MB
-innodb_data_file_path　　=　ibdata1:1G;ibdata2:1G:autoextend
-innodb_read_io_threads　　= 8
-innodb_write_io_threads 　　= 8
-innodb_file_per_table　　= 1
-innodb_flush_log_at_thx_commit　　= 2
-innodb_lock_wait_timeout　　= 120
-innodb_log_buffer_size　　= 8MB
-innodb_log_file_size　　= 256MB
-innodb_log_files_in_group　　= 3
-innodb_max_dirty_pages_pct　　= 90
-innodb_thread_concurrency　　= 16
-innodb_open_files　　= 10000
-#innodb_force_recovery　　= 4
-#replication slave
-read-only
-#skip-salve-start
-relay-log　　= relay.log
-log-slave-updates
-本文参考：
-mariadb-mysql配置文件my-cnf解读
-MySQL教程
-《曝光：Linux企业运维实战》
-夜法之书 整理编辑 From: zhangxingeng
-]]></content>
-      <categories>
-        <category>mysql</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>mysql</tag>
-        <tag>docker</tag>
-        <tag>mariadb</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Joplin 入门指南&amp;实践方案</title>
     <url>/posts/e6086437/</url>
     <content><![CDATA[Evernote笔记是我们常用的一个笔记服务，国内叫印象笔记，免费版本的Evernote笔记其实已经足够我们使用了，但是对于重度的笔记用户，Evernote某些功能可能需要付费升级才可以使用，而且你的笔记是存放在Evernote的服务器上。
@@ -7393,431 +7393,6 @@ github卡片
         <tag>Webdav</tag>
         <tag>Linux</tag>
         <tag>Joplin</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Joplin 插件使用推荐</title>
-    <url>/posts/e3ee7f8b/</url>
-    <content><![CDATA[Joplin插件推荐
-
-Gif图片加载较慢，请耐心等待！
-
-persistent-text-folding-in-editor
-
-
-Ctrl(or Cmd) + Alt + F to fold all
-Ctrl(or Cmd) + Alt + U to unfold all
-
-Plugin: Conflict Resolution
-
-Joplin Kanban Plugin
-
-Usage
-To get started, you'll need a notebook which will contain all tasks that you want to see on the board. The plugin will only show tasks in a single notebook and it's sub-notebooks.
-A kanban board is defined by a special type of note, which contains all of its configuration. Create a new note, and paste in the following:
-```kanban
-columns:
-  - name: Backlog
-    backlog: true
-  - name: Work in progress
-    tag: wip
-  - name: Finished
-    tag: done
-```
-It is important that the confiuration is surrounded by a code block (kanban ... ), otherwise it won't be detected.
-joplin_plugin_nlr
-
-插件安装后会在工具菜单添加一项：NLR
-
-
-
-点击 NLR 打开新的panel，即可在输入框输入书名或作者名称搜索小说
-
-
-
-点击卡片右上方 INFO 打开新的小说目录，章节卡片右上checkbox选中即代表下载此chapter，选中后，点击上方DOWNLOAD开始下载，在笔记列表中即可看到小说文本了。
-
-
-joplin-outline
-
-joplin-persistent-layout
-Save editor layout (editor/split view/viewer/rich text) for each note separately.
-To persist the layout for a note follow these steps:
-
-
-Specify the tags for which a specific layout should be used.
-
-
-To do this, go to the plugin's settings/options page and add the tags to the settings.
-
-
-An example configuration could like this:
-
-
-
-
-
-Make sure that the correct value is selected in View &gt; Layout button sequence.
-
-To be able to use the layout switching correctly, this setting must be set accordingly. Otherwise the editor layout might not be switched to the expected one.
-For example: If a tag is specified in option Tags for editor layout mode: Rendered Markdown viewer and least one note uses it, the setting must also contain Viewer.
-
-
-
-Add the appropriate tags to the notes. If not already done.
-
-When the selected note is changed, the editor layout is switched.
-If none of the selected note's tags matches a specified layout tag, the default layout from the option Default editor layout is used.
-
-If nothing is selected as default editor layout, the currently active editor layout will be kept.
-
-
-If more than one tag is specified for a note, the first matching one is used.
-
-
-
-Plugin: inline tags
-
-joplin-plugin-note-overview
-
-Create one or more notes with the following content:
-&lt;!-- note-overview-plugin
-search: -tag:*
-fields: updated_time, title
-alias: updated_time AS Last edit, title AS Title
-sort: title DESC
---&gt;
-Several of these blocks can be included in one note, also between text.
-The note content is updated every x minutes (depending on your setting) or manualy by Tools &gt; Create Note overview.
-joplin-plugin-embed-search
-```search
-your search query
-```
-
-Additional features
-
-you can paste sort:asc or sort:desc to sort notes by title ascending or descending
-A shorthand notebook:this, that narrows search to current notebook only.
-Basic content embedding content:true (beta):
-
-
-Spoilers
-
-
-
-
-可使用%%遮盖部分文字。
-
-
-
-
-格式：
-
-
-
-%%扰流板、遮挡板%%
-
-
-
-软件内呈现：
-
-
-
-
-
-
-点击前
-点击后
-
-
-
-以及一个类似闪卡的可折叠块
-格式：
-
-
-
-:[
-
-测试，标题
-
-测试，内容
-
-]:
-
-
-
-软件内呈现：
-
-
-
-点击前
-点击后
-Notes statistics
-
-
-
-笔记内部的数据统计。
-
-
-
-Note tabs
-
-
-
-像浏览器一样浏览文档，支持多个打开放置。
-
-
-
-
-
-
-Quick links
-
-
-
-使用@@快速链接笔记文件。
-
-
-
-
-
-
-Jira Issue
-
-Homenotes
-
-选择一个笔记作为每次打开软件时的首个笔记，可以把这个功能当作书签用。
-
-Admonition
-!!! note This is the admonition title
-This is the admonition body
-!!!
-
-The following admonition types, supported by Docarys, are recognized by this plugin:
-
-
-
-Type
-
-
-
-
-note
-
-
-abstract
-
-
-info
-
-
-tip
-
-
-success
-
-
-question
-
-
-warning
-
-
-failure
-
-
-danger
-
-
-bug
-
-
-example
-
-
-quote
-
-
-
-Encrypted notes
-
-字面意义，加密笔记，记住密码不得找回。
-
-Favorites
-
-
-
-
-收藏夹，支持笔记、标签笔记本的收纳（随取随用）
-
-
-
-更改收藏夹中的笔记名不会更改原始笔记。
-
-
-
-Highlight
-
-打出[h:colour:scope]后，插件会自动识别成代码。
-
-
-
-
-颜色
-范围（自动选择的）
-
-
-
-
-m = mark
-e = empty
-
-
-r = red
-w = word
-
-
-g = green
-s = sentence
-
-
-b = blue
-l = line
-
-
-y = yellow
-
-
-
-
-
-其他插件：
-官方插件下载地址及其介绍
-系列教程
-全部文章RSS订阅
-笔记系列  Note分类RSS订阅
-
-完美笔记进化论
-
-
-经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
-
-pigo图床搭建与配置
-Joplin教程
-Snipaste截图工具
-Typora 作为Markdown编辑器最强
-
-
-
-Joplin入门指南&amp;实践方案
-
-
-
-Joplin和使用
-Joplin同步与备份
-Joplin导入与导出
-
-
-
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-
-
-
-Joplin安装使用，调用外部编辑器，网盘同步等等
-
-
-
-Joplin 插件以及其Markdown语法。All in One!
-
-
-
-Joplin简明教程
-markdown语法简明教程
-
-
-
-Joplin 插件使用推荐
-
-
-
-教你用各种插件打造一个强大的笔记工具。
-
-
-
-为知笔记私有化Docker部署
-
-
-
-如何部署自己私有的为知笔记。
-其实博主更推荐私有部署joplin
-
-
-Gitbook使用系列 Gitbook分类RSS订阅
-
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-
-
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-
-
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-
-Gitlab 使用系列  Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-Hexo系列  HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-
-Hexo Docker环境与Hexo基础配置篇
-
-
-hexo博客自定义修改篇
-
-
-hexo博客网络优化篇
-
-
-hexo博客增强部署篇
-
-
-hexo博客个性定制篇
-
-
-hexo博客常见问题篇
-
-
-Hexo Markdown以及各种插件功能测试
-
-
-
-
-markdown 各种其它语法插件
-latex公式支持
-mermaid图表
-plant uml图表
-URL卡片
-bilibili卡片
-github卡片
-豆瓣卡片
-插入音乐和视频
-插入脑图
-
-
-]]></content>
-      <categories>
-        <category>note</category>
-      </categories>
-      <tags>
-        <tag>note</tag>
-        <tag>markdown</tag>
-        <tag>joplin</tag>
       </tags>
   </entry>
   <entry>
@@ -9125,6 +8700,431 @@ CI/CD与Git Flow与GitLab
         <tag>matery</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Joplin 插件使用推荐</title>
+    <url>/posts/e3ee7f8b/</url>
+    <content><![CDATA[Joplin插件推荐
+
+Gif图片加载较慢，请耐心等待！
+
+persistent-text-folding-in-editor
+
+
+Ctrl(or Cmd) + Alt + F to fold all
+Ctrl(or Cmd) + Alt + U to unfold all
+
+Plugin: Conflict Resolution
+
+Joplin Kanban Plugin
+
+Usage
+To get started, you'll need a notebook which will contain all tasks that you want to see on the board. The plugin will only show tasks in a single notebook and it's sub-notebooks.
+A kanban board is defined by a special type of note, which contains all of its configuration. Create a new note, and paste in the following:
+```kanban
+columns:
+  - name: Backlog
+    backlog: true
+  - name: Work in progress
+    tag: wip
+  - name: Finished
+    tag: done
+```
+It is important that the confiuration is surrounded by a code block (kanban ... ), otherwise it won't be detected.
+joplin_plugin_nlr
+
+插件安装后会在工具菜单添加一项：NLR
+
+
+
+点击 NLR 打开新的panel，即可在输入框输入书名或作者名称搜索小说
+
+
+
+点击卡片右上方 INFO 打开新的小说目录，章节卡片右上checkbox选中即代表下载此chapter，选中后，点击上方DOWNLOAD开始下载，在笔记列表中即可看到小说文本了。
+
+
+joplin-outline
+
+joplin-persistent-layout
+Save editor layout (editor/split view/viewer/rich text) for each note separately.
+To persist the layout for a note follow these steps:
+
+
+Specify the tags for which a specific layout should be used.
+
+
+To do this, go to the plugin's settings/options page and add the tags to the settings.
+
+
+An example configuration could like this:
+
+
+
+
+
+Make sure that the correct value is selected in View &gt; Layout button sequence.
+
+To be able to use the layout switching correctly, this setting must be set accordingly. Otherwise the editor layout might not be switched to the expected one.
+For example: If a tag is specified in option Tags for editor layout mode: Rendered Markdown viewer and least one note uses it, the setting must also contain Viewer.
+
+
+
+Add the appropriate tags to the notes. If not already done.
+
+When the selected note is changed, the editor layout is switched.
+If none of the selected note's tags matches a specified layout tag, the default layout from the option Default editor layout is used.
+
+If nothing is selected as default editor layout, the currently active editor layout will be kept.
+
+
+If more than one tag is specified for a note, the first matching one is used.
+
+
+
+Plugin: inline tags
+
+joplin-plugin-note-overview
+
+Create one or more notes with the following content:
+&lt;!-- note-overview-plugin
+search: -tag:*
+fields: updated_time, title
+alias: updated_time AS Last edit, title AS Title
+sort: title DESC
+--&gt;
+Several of these blocks can be included in one note, also between text.
+The note content is updated every x minutes (depending on your setting) or manualy by Tools &gt; Create Note overview.
+joplin-plugin-embed-search
+```search
+your search query
+```
+
+Additional features
+
+you can paste sort:asc or sort:desc to sort notes by title ascending or descending
+A shorthand notebook:this, that narrows search to current notebook only.
+Basic content embedding content:true (beta):
+
+
+Spoilers
+
+
+
+
+可使用%%遮盖部分文字。
+
+
+
+
+格式：
+
+
+
+%%扰流板、遮挡板%%
+
+
+
+软件内呈现：
+
+
+
+
+
+
+点击前
+点击后
+
+
+
+以及一个类似闪卡的可折叠块
+格式：
+
+
+
+:[
+
+测试，标题
+
+测试，内容
+
+]:
+
+
+
+软件内呈现：
+
+
+
+点击前
+点击后
+Notes statistics
+
+
+
+笔记内部的数据统计。
+
+
+
+Note tabs
+
+
+
+像浏览器一样浏览文档，支持多个打开放置。
+
+
+
+
+
+
+Quick links
+
+
+
+使用@@快速链接笔记文件。
+
+
+
+
+
+
+Jira Issue
+
+Homenotes
+
+选择一个笔记作为每次打开软件时的首个笔记，可以把这个功能当作书签用。
+
+Admonition
+!!! note This is the admonition title
+This is the admonition body
+!!!
+
+The following admonition types, supported by Docarys, are recognized by this plugin:
+
+
+
+Type
+
+
+
+
+note
+
+
+abstract
+
+
+info
+
+
+tip
+
+
+success
+
+
+question
+
+
+warning
+
+
+failure
+
+
+danger
+
+
+bug
+
+
+example
+
+
+quote
+
+
+
+Encrypted notes
+
+字面意义，加密笔记，记住密码不得找回。
+
+Favorites
+
+
+
+
+收藏夹，支持笔记、标签笔记本的收纳（随取随用）
+
+
+
+更改收藏夹中的笔记名不会更改原始笔记。
+
+
+
+Highlight
+
+打出[h:colour:scope]后，插件会自动识别成代码。
+
+
+
+
+颜色
+范围（自动选择的）
+
+
+
+
+m = mark
+e = empty
+
+
+r = red
+w = word
+
+
+g = green
+s = sentence
+
+
+b = blue
+l = line
+
+
+y = yellow
+
+
+
+
+
+其他插件：
+官方插件下载地址及其介绍
+系列教程
+全部文章RSS订阅
+笔记系列  Note分类RSS订阅
+
+完美笔记进化论
+
+
+经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
+
+pigo图床搭建与配置
+Joplin教程
+Snipaste截图工具
+Typora 作为Markdown编辑器最强
+
+
+
+Joplin入门指南&amp;实践方案
+
+
+
+Joplin和使用
+Joplin同步与备份
+Joplin导入与导出
+
+
+
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+
+
+
+Joplin安装使用，调用外部编辑器，网盘同步等等
+
+
+
+Joplin 插件以及其Markdown语法。All in One!
+
+
+
+Joplin简明教程
+markdown语法简明教程
+
+
+
+Joplin 插件使用推荐
+
+
+
+教你用各种插件打造一个强大的笔记工具。
+
+
+
+为知笔记私有化Docker部署
+
+
+
+如何部署自己私有的为知笔记。
+其实博主更推荐私有部署joplin
+
+
+Gitbook使用系列 Gitbook分类RSS订阅
+
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+
+
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+
+
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+
+Gitlab 使用系列  Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+Hexo系列  HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+
+Hexo Docker环境与Hexo基础配置篇
+
+
+hexo博客自定义修改篇
+
+
+hexo博客网络优化篇
+
+
+hexo博客增强部署篇
+
+
+hexo博客个性定制篇
+
+
+hexo博客常见问题篇
+
+
+Hexo Markdown以及各种插件功能测试
+
+
+
+
+markdown 各种其它语法插件
+latex公式支持
+mermaid图表
+plant uml图表
+URL卡片
+bilibili卡片
+github卡片
+豆瓣卡片
+插入音乐和视频
+插入脑图
+
+
+]]></content>
+      <categories>
+        <category>note</category>
+      </categories>
+      <tags>
+        <tag>note</tag>
+        <tag>markdown</tag>
+        <tag>joplin</tag>
       </tags>
   </entry>
   <entry>
@@ -11407,9 +11407,9 @@ Vim
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-OYvZTBraJMKngQjp").style.height=document.getElementById("mmedia-OYvZTBraJMKngQjp").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-WqtxjpialkbTbbmt").style.height=document.getElementById("mmedia-WqtxjpialkbTbbmt").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-OYvZTBraJMKngQjp").style.height=document.getElementById("mmedia-OYvZTBraJMKngQjp").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-WqtxjpialkbTbbmt").style.height=document.getElementById("mmedia-WqtxjpialkbTbbmt").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -11969,52 +11969,6 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
-    <title>通过IPV6访问Qnap NAS中Docker的服务</title>
-    <url>/posts/462f1e5c/</url>
-    <content><![CDATA[环境
-系统：QTS 4.3.6
-网络：IPV4 &amp; IPV6
-Docker: 由Container Station提供
-问题
-通过ipv6地址可以打开NAS的管理页面，但是无法访问Docker对应端口的服务。
-排查
-QTS中Docker使用的虚拟交换机网络没有启动IPV6，且无法在虚拟交换机设置中手动启动。
-这样一来，Docker只监听了tcp4的端口，对于主机上tcp6的端口的访问无法映射到docker容器上。
-解决方案
-在主机上开一个tcp6的端口，将其转发到主机上与docker关联的tcp4端口。
-即：
-docker(tcp4)–&gt;host(tcp4)–&gt;host(tcp6)
-
-在qts上安装包管理器：Entware. https://github.com/Entware/Entware/wiki/Install-on-QNAP-NAS
-执行opkg update,更新
-安装端口转发工具，这里使用socat：opkg install socat
-设置转发host(tcp6)–&gt;host(tcp4):(socat TCP6-LISTEN:6880,reuseaddr,fork TCP4:127.0.0.1:7880 &amp;)
-大功告成
-
-系列教程
-全部文章RSS订阅
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>docker</category>
-      </categories>
-      <tags>
-        <tag>qnap</tag>
-        <tag>nas</tag>
-        <tag>docker</tag>
-        <tag>ipv6</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>CMake快速入门教程</title>
     <url>/posts/495db4d3/</url>
     <content><![CDATA[1.cmake简介
@@ -12110,6 +12064,52 @@ ALL_BUILD
         <tag>linux</tag>
         <tag>cmake</tag>
         <tag>develop</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>通过IPV6访问Qnap NAS中Docker的服务</title>
+    <url>/posts/462f1e5c/</url>
+    <content><![CDATA[环境
+系统：QTS 4.3.6
+网络：IPV4 &amp; IPV6
+Docker: 由Container Station提供
+问题
+通过ipv6地址可以打开NAS的管理页面，但是无法访问Docker对应端口的服务。
+排查
+QTS中Docker使用的虚拟交换机网络没有启动IPV6，且无法在虚拟交换机设置中手动启动。
+这样一来，Docker只监听了tcp4的端口，对于主机上tcp6的端口的访问无法映射到docker容器上。
+解决方案
+在主机上开一个tcp6的端口，将其转发到主机上与docker关联的tcp4端口。
+即：
+docker(tcp4)–&gt;host(tcp4)–&gt;host(tcp6)
+
+在qts上安装包管理器：Entware. https://github.com/Entware/Entware/wiki/Install-on-QNAP-NAS
+执行opkg update,更新
+安装端口转发工具，这里使用socat：opkg install socat
+设置转发host(tcp6)–&gt;host(tcp4):(socat TCP6-LISTEN:6880,reuseaddr,fork TCP4:127.0.0.1:7880 &amp;)
+大功告成
+
+系列教程
+全部文章RSS订阅
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>docker</category>
+      </categories>
+      <tags>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>docker</tag>
+        <tag>ipv6</tag>
       </tags>
   </entry>
   <entry>
@@ -15665,11 +15665,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var fLcSoldZcddjrtwc_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); fLcSoldZcddjrtwc_options.container = document.getElementById("mmedia-fLcSoldZcddjrtwc"); const ap_fLcSoldZcddjrtwc = new APlayer(fLcSoldZcddjrtwc_options); 
+ var HSzzDlTDYcJSAjcn_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); HSzzDlTDYcJSAjcn_options.container = document.getElementById("mmedia-HSzzDlTDYcJSAjcn"); const ap_HSzzDlTDYcJSAjcn = new APlayer(HSzzDlTDYcJSAjcn_options); 
 
 - **列表**
 
- var QkZwnHgrlAYxTmXh_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); QkZwnHgrlAYxTmXh_options.container = document.getElementById("mmedia-QkZwnHgrlAYxTmXh"); const ap_QkZwnHgrlAYxTmXh = new APlayer(QkZwnHgrlAYxTmXh_options); 
+ var AFBLJqmgolnkXLLs_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); AFBLJqmgolnkXLLs_options.container = document.getElementById("mmedia-AFBLJqmgolnkXLLs"); const ap_AFBLJqmgolnkXLLs = new APlayer(AFBLJqmgolnkXLLs_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -15921,21 +15921,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-UdUVsuswktEujZww").style.height=document.getElementById("mmedia-UdUVsuswktEujZww").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-SBAmkcgnmOlTFLLO").style.height=document.getElementById("mmedia-SBAmkcgnmOlTFLLO").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-UdUVsuswktEujZww").style.height=document.getElementById("mmedia-UdUVsuswktEujZww").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-SBAmkcgnmOlTFLLO").style.height=document.getElementById("mmedia-SBAmkcgnmOlTFLLO").scrollWidth*0.76+"px";
     }; 
 
 **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ntlFsNOpBKCxnvyU").style.height=document.getElementById("mmedia-ntlFsNOpBKCxnvyU").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-cCywDEtKPzORjDvl").style.height=document.getElementById("mmedia-cCywDEtKPzORjDvl").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-ntlFsNOpBKCxnvyU").style.height=document.getElementById("mmedia-ntlFsNOpBKCxnvyU").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-cCywDEtKPzORjDvl").style.height=document.getElementById("mmedia-cCywDEtKPzORjDvl").scrollWidth*0.7+"px";
     }; 
 
 **artplayer**
 
- var LPazTLNGLOGzAlXm_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); LPazTLNGLOGzAlXm_options.container = "#mmedia-LPazTLNGLOGzAlXm"; const art_LPazTLNGLOGzAlXm = new Artplayer(LPazTLNGLOGzAlXm_options); 
+ var HLStvuLjmEFFnWim_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); HLStvuLjmEFFnWim_options.container = "#mmedia-HLStvuLjmEFFnWim"; const art_HLStvuLjmEFFnWim = new Artplayer(HLStvuLjmEFFnWim_options); 
 脑图
 
 原作者记录
@@ -17089,11 +17089,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var QXLUmszcEgrWoYwR_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); QXLUmszcEgrWoYwR_options.container = document.getElementById("mmedia-QXLUmszcEgrWoYwR"); const ap_QXLUmszcEgrWoYwR = new APlayer(QXLUmszcEgrWoYwR_options); 
+ var MbkiWqZYhNryGzGf_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); MbkiWqZYhNryGzGf_options.container = document.getElementById("mmedia-MbkiWqZYhNryGzGf"); const ap_MbkiWqZYhNryGzGf = new APlayer(MbkiWqZYhNryGzGf_options); 
 
 
 
- var biOkeuHaIZeOzdbp_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); biOkeuHaIZeOzdbp_options.container = document.getElementById("mmedia-biOkeuHaIZeOzdbp"); const ap_biOkeuHaIZeOzdbp = new APlayer(biOkeuHaIZeOzdbp_options); 
+ var gRCAzCMyMQBoEBPl_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); gRCAzCMyMQBoEBPl_options.container = document.getElementById("mmedia-gRCAzCMyMQBoEBPl"); const ap_gRCAzCMyMQBoEBPl = new APlayer(gRCAzCMyMQBoEBPl_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -17168,6 +17168,157 @@ Android支持
         <tag>music</tag>
         <tag>mstream</tag>
         <tag>selfhost</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>音乐推荐-曾经我也想过一了百了</title>
+    <url>/posts/8b7d3a9a/</url>
+    <content><![CDATA[现场MV
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-DgsNNSUEFzIaCeQD").style.height=document.getElementById("mmedia-DgsNNSUEFzIaCeQD").scrollWidth*0.76+"px";
+    window.onresize = function(){
+      document.getElementById("mmedia-DgsNNSUEFzIaCeQD").style.height=document.getElementById("mmedia-DgsNNSUEFzIaCeQD").scrollWidth*0.76+"px";
+    }; 
+
+## 背景介绍
+
+《曾经我也想过一了百了》是日本歌手中岛美嘉演唱的歌曲，由秋田弘填词和谱曲、出羽良彰编曲，于2013年8月28日发行，收录在中岛美嘉个人专辑《TOUGH 为爱勇敢》中。该歌曲勾勒出向死而生、努力活着的人，让人感到温暖和希望，让因为压力迷茫无助而有轻生想法的人，开始积极拥抱生活。 《曾经我也想过一了百了》由日本摇滚乐队amazarashi的主唱秋田弘创作，创作理念为“为了描写浓烈的希望，必须先描写深层的黑暗”。2010年，迎来出道十周年的中岛美嘉宣布自己因耳咽管开放症暂停一切音乐活动。在疾病的影响下，歌唱对她而言变得无比艰难。2011年，她携单曲《Dear》复出，但复出后始终经历着状态的起伏和媒体的质疑。 中岛美嘉起先向amazarashi提出合作请求，希望乐队能为自己创作一首节奏明快的歌曲，但随后秋田弘向她播放了乐队一首未发行的样本歌曲，并认为该曲很适合由她来演唱。收到该曲时，中岛美嘉起先感到十分惊讶，但听到最后泪流不止，感到自己的心变得柔和，便立即要求演唱该曲。录制过程中，中岛美嘉将自己的心声融入到了该曲中，希望能将力量传达给低迷苦闷的听众。
+
+## 中文翻唱
+
+ var iYOFFCUZOgDvxUqy_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); iYOFFCUZOgDvxUqy_options.container = document.getElementById("mmedia-iYOFFCUZOgDvxUqy"); const ap_iYOFFCUZOgDvxUqy = new APlayer(iYOFFCUZOgDvxUqy_options); 
+LRC歌词
+[00:02.09]作曲 : 秋田 ひろむ
+[00:02.64]曾经我也想过一了百了
+[00:03.21]原唱：中岛美嘉
+[00:04.46] 
+[00:29.85]曾经我 也想过 一了百了
+[00:34.79]因为看见蜷缩的猫
+[00:37.40]在码头望着远方
+[00:40.40]海浪拍打在岸上
+[00:43.44]一阵又一阵侵踏
+[00:46.22]希望那些过往都消失
+[00:49.38]不再回望
+[00:52.43]曾经我 也想过
+[00:54.82]一了百了
+[00:57.46]是因为生日的那天
+[01:00.10]杏花 又开放
+[01:03.75]阳光灿烂树荫下
+[01:06.41]落花已沉睡安详
+[01:09.84]是否我也 能化作尘土
+[01:12.16]不再流浪
+[01:15.76]仍放抽屉里过期的糖
+[01:18.28]迷路的单车被留在回家路上
+[01:21.27]还有海边抛弃的避风港
+[01:23.88]全都提醒 我和他们一样
+[01:26.75]昨天和今天的画面不断浮现
+[01:29.74]明天 渴望能不能有
+[01:31.54]新的改变
+[01:32.90]不能沮丧 我知道啊
+[01:35.55]可是啊
+[01:40.88]曾经我 也想过 一了百了
+[01:46.24]身边一切都像在问我
+[01:49.19]过得好不好
+[01:52.28]泪不能停止的流
+[01:55.05]流进心底的荒漠
+[01:58.28]这颗心中的模样
+[02:00.17]早空如一具躯壳
+[02:26.84]曾经我 也想过 一了百了
+[02:32.71]因为我的存在
+[02:34.23]总让别人失望
+[02:37.98]不曾拥有就不怕
+[02:40.80]关于人与人的伤
+[02:44.18]这么简单的道理
+[02:45.96]我也只会搞砸
+[02:49.80]曾经我 也想过 一了百了
+[02:55.49]是因为墙上
+[02:56.52]那张骄傲的自画像
+[03:00.96]无力反驳地跪下
+[03:03.66]只说的出一句话
+[03:06.99]生而为人的我
+[03:08.61]真的对不起呀
+[03:12.75]房间里闪烁着荧幕微光
+[03:15.56]伴随着屋外夜色的声音嘈杂
+[03:18.43]电话那头传来窒息的话
+[03:21.28]刺痛在笼中
+[03:22.44]备受折磨的时间啊
+[03:24.25]黑暗中我装备
+[03:25.58]唐吉轲德的毅力
+[03:26.89]对抗看不见的敌人
+[03:28.38]摧毁我的决心
+[03:29.85]不要害怕我知道啊可是啊
+[03:38.04]曾经我也想过一了百了
+[03:44.29]为何人们都说我无可救药
+[03:49.69]不强求能明白我
+[03:52.60]不奢望时间倒流
+[03:55.70]因为很久很久以前我曾爱过
+[04:00.86]曾经我 也想过 一了百了
+[04:06.89]是因为我该那样
+[04:08.43]灿烂那样美好
+[04:12.49]一味消极着过去
+[04:14.95]离去的念头缠绕
+[04:17.29]闭上眼能感受到
+[04:20.04]更好的明天来到
+[04:24.35]茫茫人海中的你
+[04:27.01]泪光中微笑的你
+[04:30.26]在我耳边温柔唱起这首歌曲
+[00:00.10]僕が死のうと思ったのは (曾经我也想过一了百了) - 中島美嘉 (なかしま みか)
+[00:00.20]词：秋田ひろむ
+[00:00.30]曲：秋田ひろむ
+[00:00.40]编曲：出羽良彰
+[00:27.95]僕が死のうと思ったのは
+[00:33.83]ウミネコが桟橋で鳴いたから
+[00:39.20]波の随意に浮かんで消える
+[00:45.33]過去も啄ばんで飛んでいけ
+[00:50.70]僕が死のうと思ったのは
+[00:56.52]誕生日に杏の花が咲いたから
+[01:02.22]その木漏れ日でうたた寝したら
+[01:08.09]虫の死骸と土になれるかな
+[01:14.09]薄荷飴 漁港の灯台
+[01:17.05]錆びたアーチ橋 捨てた自転車
+[01:19.74]木造の駅のストーブの前で
+[01:22.74]どこにも旅立てない心
+[01:25.61]今日はまるで昨日みたいだ
+[01:28.30]明日を変えるなら今日を変えなきゃ
+[01:31.56]分かってる 分かってる けれど
+[01:39.71]僕が死のうと思ったのは
+[01:44.89]心が空っぽになったから
+[01:50.71]満たされないと泣いているのは
+[01:56.39]きっと満たされたいと願うから
+[02:25.49]僕が死のうと思ったのは
+[02:30.69]靴紐が解けたから
+[02:36.57]結びなおすのは苦手なんだよ
+[02:42.25]人との繋がりもまた然り
+[02:47.90]僕が死のうと思ったのは
+[02:53.65]少年が僕を見つめていたから
+[02:59.30]ベッドの上で土下座してるよ
+[03:05.12]あの日の僕にごめんなさいと
+[03:11.43]パソコンの薄明かり
+[03:14.05]上階の部屋の生活音
+[03:16.80]インターフォンのチャイムの音
+[03:19.80]耳を塞ぐ鳥かごの少年
+[03:22.87]見えない敵と戦ってる
+[03:25.43]六畳一間のドンキホーテ
+[03:28.30]ゴールはどうせ醜いものさ
+[03:36.74]僕が死のうと思ったのは
+[03:42.05]冷たい人と言われたから
+[03:47.94]愛されたいと泣いているのは
+[03:53.63]人の温もりを知ってしまったから
+[04:22.79]僕が死のうと思ったのは
+[04:27.91]あなたが綺麗に笑うから
+[04:33.49]死ぬことばかり考えてしまうのは
+[04:39.62]きっと生きる事に真面目すぎるから
+[04:45.43]僕が死のうと思ったのは
+[04:50.70]まだあなたに出会ってなかったから
+[04:56.51]あなたのような人が生まれた
+[05:02.09]世界を少し好きになったよ
+[05:07.96]あなたのような人が生きてる
+[05:13.65]世界に少し期待するよ]]></content>
+      <categories>
+        <category>music</category>
+      </categories>
+      <tags>
+        <tag>music</tag>
+        <tag>中岛美嘉</tag>
       </tags>
   </entry>
   <entry>
@@ -17473,157 +17624,6 @@ jenkins 创建项目
         <tag>ci/cd</tag>
         <tag>node</tag>
         <tag>jenkins</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>音乐推荐-曾经我也想过一了百了</title>
-    <url>/posts/8b7d3a9a/</url>
-    <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-FhmzhJymqgyIqOki").style.height=document.getElementById("mmedia-FhmzhJymqgyIqOki").scrollWidth*0.76+"px";
-    window.onresize = function(){
-      document.getElementById("mmedia-FhmzhJymqgyIqOki").style.height=document.getElementById("mmedia-FhmzhJymqgyIqOki").scrollWidth*0.76+"px";
-    }; 
-
-## 背景介绍
-
-《曾经我也想过一了百了》是日本歌手中岛美嘉演唱的歌曲，由秋田弘填词和谱曲、出羽良彰编曲，于2013年8月28日发行，收录在中岛美嘉个人专辑《TOUGH 为爱勇敢》中。该歌曲勾勒出向死而生、努力活着的人，让人感到温暖和希望，让因为压力迷茫无助而有轻生想法的人，开始积极拥抱生活。 《曾经我也想过一了百了》由日本摇滚乐队amazarashi的主唱秋田弘创作，创作理念为“为了描写浓烈的希望，必须先描写深层的黑暗”。2010年，迎来出道十周年的中岛美嘉宣布自己因耳咽管开放症暂停一切音乐活动。在疾病的影响下，歌唱对她而言变得无比艰难。2011年，她携单曲《Dear》复出，但复出后始终经历着状态的起伏和媒体的质疑。 中岛美嘉起先向amazarashi提出合作请求，希望乐队能为自己创作一首节奏明快的歌曲，但随后秋田弘向她播放了乐队一首未发行的样本歌曲，并认为该曲很适合由她来演唱。收到该曲时，中岛美嘉起先感到十分惊讶，但听到最后泪流不止，感到自己的心变得柔和，便立即要求演唱该曲。录制过程中，中岛美嘉将自己的心声融入到了该曲中，希望能将力量传达给低迷苦闷的听众。
-
-## 中文翻唱
-
- var xfNsZduBvgYRWKZP_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); xfNsZduBvgYRWKZP_options.container = document.getElementById("mmedia-xfNsZduBvgYRWKZP"); const ap_xfNsZduBvgYRWKZP = new APlayer(xfNsZduBvgYRWKZP_options); 
-LRC歌词
-[00:02.09]作曲 : 秋田 ひろむ
-[00:02.64]曾经我也想过一了百了
-[00:03.21]原唱：中岛美嘉
-[00:04.46] 
-[00:29.85]曾经我 也想过 一了百了
-[00:34.79]因为看见蜷缩的猫
-[00:37.40]在码头望着远方
-[00:40.40]海浪拍打在岸上
-[00:43.44]一阵又一阵侵踏
-[00:46.22]希望那些过往都消失
-[00:49.38]不再回望
-[00:52.43]曾经我 也想过
-[00:54.82]一了百了
-[00:57.46]是因为生日的那天
-[01:00.10]杏花 又开放
-[01:03.75]阳光灿烂树荫下
-[01:06.41]落花已沉睡安详
-[01:09.84]是否我也 能化作尘土
-[01:12.16]不再流浪
-[01:15.76]仍放抽屉里过期的糖
-[01:18.28]迷路的单车被留在回家路上
-[01:21.27]还有海边抛弃的避风港
-[01:23.88]全都提醒 我和他们一样
-[01:26.75]昨天和今天的画面不断浮现
-[01:29.74]明天 渴望能不能有
-[01:31.54]新的改变
-[01:32.90]不能沮丧 我知道啊
-[01:35.55]可是啊
-[01:40.88]曾经我 也想过 一了百了
-[01:46.24]身边一切都像在问我
-[01:49.19]过得好不好
-[01:52.28]泪不能停止的流
-[01:55.05]流进心底的荒漠
-[01:58.28]这颗心中的模样
-[02:00.17]早空如一具躯壳
-[02:26.84]曾经我 也想过 一了百了
-[02:32.71]因为我的存在
-[02:34.23]总让别人失望
-[02:37.98]不曾拥有就不怕
-[02:40.80]关于人与人的伤
-[02:44.18]这么简单的道理
-[02:45.96]我也只会搞砸
-[02:49.80]曾经我 也想过 一了百了
-[02:55.49]是因为墙上
-[02:56.52]那张骄傲的自画像
-[03:00.96]无力反驳地跪下
-[03:03.66]只说的出一句话
-[03:06.99]生而为人的我
-[03:08.61]真的对不起呀
-[03:12.75]房间里闪烁着荧幕微光
-[03:15.56]伴随着屋外夜色的声音嘈杂
-[03:18.43]电话那头传来窒息的话
-[03:21.28]刺痛在笼中
-[03:22.44]备受折磨的时间啊
-[03:24.25]黑暗中我装备
-[03:25.58]唐吉轲德的毅力
-[03:26.89]对抗看不见的敌人
-[03:28.38]摧毁我的决心
-[03:29.85]不要害怕我知道啊可是啊
-[03:38.04]曾经我也想过一了百了
-[03:44.29]为何人们都说我无可救药
-[03:49.69]不强求能明白我
-[03:52.60]不奢望时间倒流
-[03:55.70]因为很久很久以前我曾爱过
-[04:00.86]曾经我 也想过 一了百了
-[04:06.89]是因为我该那样
-[04:08.43]灿烂那样美好
-[04:12.49]一味消极着过去
-[04:14.95]离去的念头缠绕
-[04:17.29]闭上眼能感受到
-[04:20.04]更好的明天来到
-[04:24.35]茫茫人海中的你
-[04:27.01]泪光中微笑的你
-[04:30.26]在我耳边温柔唱起这首歌曲
-[00:00.10]僕が死のうと思ったのは (曾经我也想过一了百了) - 中島美嘉 (なかしま みか)
-[00:00.20]词：秋田ひろむ
-[00:00.30]曲：秋田ひろむ
-[00:00.40]编曲：出羽良彰
-[00:27.95]僕が死のうと思ったのは
-[00:33.83]ウミネコが桟橋で鳴いたから
-[00:39.20]波の随意に浮かんで消える
-[00:45.33]過去も啄ばんで飛んでいけ
-[00:50.70]僕が死のうと思ったのは
-[00:56.52]誕生日に杏の花が咲いたから
-[01:02.22]その木漏れ日でうたた寝したら
-[01:08.09]虫の死骸と土になれるかな
-[01:14.09]薄荷飴 漁港の灯台
-[01:17.05]錆びたアーチ橋 捨てた自転車
-[01:19.74]木造の駅のストーブの前で
-[01:22.74]どこにも旅立てない心
-[01:25.61]今日はまるで昨日みたいだ
-[01:28.30]明日を変えるなら今日を変えなきゃ
-[01:31.56]分かってる 分かってる けれど
-[01:39.71]僕が死のうと思ったのは
-[01:44.89]心が空っぽになったから
-[01:50.71]満たされないと泣いているのは
-[01:56.39]きっと満たされたいと願うから
-[02:25.49]僕が死のうと思ったのは
-[02:30.69]靴紐が解けたから
-[02:36.57]結びなおすのは苦手なんだよ
-[02:42.25]人との繋がりもまた然り
-[02:47.90]僕が死のうと思ったのは
-[02:53.65]少年が僕を見つめていたから
-[02:59.30]ベッドの上で土下座してるよ
-[03:05.12]あの日の僕にごめんなさいと
-[03:11.43]パソコンの薄明かり
-[03:14.05]上階の部屋の生活音
-[03:16.80]インターフォンのチャイムの音
-[03:19.80]耳を塞ぐ鳥かごの少年
-[03:22.87]見えない敵と戦ってる
-[03:25.43]六畳一間のドンキホーテ
-[03:28.30]ゴールはどうせ醜いものさ
-[03:36.74]僕が死のうと思ったのは
-[03:42.05]冷たい人と言われたから
-[03:47.94]愛されたいと泣いているのは
-[03:53.63]人の温もりを知ってしまったから
-[04:22.79]僕が死のうと思ったのは
-[04:27.91]あなたが綺麗に笑うから
-[04:33.49]死ぬことばかり考えてしまうのは
-[04:39.62]きっと生きる事に真面目すぎるから
-[04:45.43]僕が死のうと思ったのは
-[04:50.70]まだあなたに出会ってなかったから
-[04:56.51]あなたのような人が生まれた
-[05:02.09]世界を少し好きになったよ
-[05:07.96]あなたのような人が生きてる
-[05:13.65]世界に少し期待するよ]]></content>
-      <categories>
-        <category>music</category>
-      </categories>
-      <tags>
-        <tag>music</tag>
-        <tag>中岛美嘉</tag>
       </tags>
   </entry>
   <entry>
@@ -18631,49 +18631,6 @@ hello to data1 volume from ubuntu16.04
       </tags>
   </entry>
   <entry>
-    <title>winrar去广告和破解</title>
-    <url>/posts/3b296307/</url>
-    <content><![CDATA[
-WinRAR 是一款不错的解压缩软件，但还是收费软件，广告不少，今天就总结了一下网上的各路教程。
-
-
-crack winrar
-首先通过特殊方式获取软件许可：
-新建一个文本文档
-
-在这个文本文档里输入内容：
-RAR registration data``Federal Agency ``for` `Education``1000000 PC usage license``UID=b621cca9a84bc5deffbf``6412612250ffbf533df6db2dfe8ccc3aae5362c06d54762105357d``5e3b1489e751c76bf6e0640001014be50a52303fed29664b074145``7e567d04159ad8defc3fb6edf32831fd1966f72c21c0c53c02fbbb``2f91cfca671d9c482b11b8ac3281cb21378e85606494da349941fa``e9ee328f12dc73e90b6356b921fbfb8522d6562a6a4b97e8ef6c9f``fb866be1e3826b5aa126a4d2bfe9336ad63003fc0e71c307fc2c60``64416495d4c55a0cc82d402110498da970812063934815d81470829275
-
-然后将文件名改为：rarreg.key
-
-再将这个文件导入WinRAR的安装文件夹
-
-
-这时点开关于WinRAR，已经获取许可。
-
-去除广告
-接下来使用Resource Hacker软件打开winrar.exe
-
-进入字串表，找到“80”，删除“1267”和“1277”行
-点击绿色三角形按钮，编译。
-
-然后：文件→另存为，进行保存。
-
-然后对源文件：winrar.exe进行替换,注意，要关闭winrar软件
-
-至此，已经完成破解和去广告了。
-参考来源 52pojie
-]]></content>
-      <categories>
-        <category>tools</category>
-      </categories>
-      <tags>
-        <tag>crack</tag>
-        <tag>tools</tag>
-        <tag>winrar</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>emoji表情符号</title>
     <url>/posts/80938cfe/</url>
     <content><![CDATA[
@@ -18832,6 +18789,49 @@ emoji表情符号是非常流行的表情符号，几乎没有地方都会支持
       <tags>
         <tag>web</tag>
         <tag>emoji</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>winrar去广告和破解</title>
+    <url>/posts/3b296307/</url>
+    <content><![CDATA[
+WinRAR 是一款不错的解压缩软件，但还是收费软件，广告不少，今天就总结了一下网上的各路教程。
+
+
+crack winrar
+首先通过特殊方式获取软件许可：
+新建一个文本文档
+
+在这个文本文档里输入内容：
+RAR registration data``Federal Agency ``for` `Education``1000000 PC usage license``UID=b621cca9a84bc5deffbf``6412612250ffbf533df6db2dfe8ccc3aae5362c06d54762105357d``5e3b1489e751c76bf6e0640001014be50a52303fed29664b074145``7e567d04159ad8defc3fb6edf32831fd1966f72c21c0c53c02fbbb``2f91cfca671d9c482b11b8ac3281cb21378e85606494da349941fa``e9ee328f12dc73e90b6356b921fbfb8522d6562a6a4b97e8ef6c9f``fb866be1e3826b5aa126a4d2bfe9336ad63003fc0e71c307fc2c60``64416495d4c55a0cc82d402110498da970812063934815d81470829275
+
+然后将文件名改为：rarreg.key
+
+再将这个文件导入WinRAR的安装文件夹
+
+
+这时点开关于WinRAR，已经获取许可。
+
+去除广告
+接下来使用Resource Hacker软件打开winrar.exe
+
+进入字串表，找到“80”，删除“1267”和“1277”行
+点击绿色三角形按钮，编译。
+
+然后：文件→另存为，进行保存。
+
+然后对源文件：winrar.exe进行替换,注意，要关闭winrar软件
+
+至此，已经完成破解和去广告了。
+参考来源 52pojie
+]]></content>
+      <categories>
+        <category>tools</category>
+      </categories>
+      <tags>
+        <tag>crack</tag>
+        <tag>tools</tag>
+        <tag>winrar</tag>
       </tags>
   </entry>
   <entry>
