@@ -2757,700 +2757,6 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
-    <title>Gitlab的安装及使用教程完全版</title>
-    <url>/posts/acc13b70/</url>
-    <content><![CDATA[1. Gitlab概述
-
-1.1 GitLab介绍
-GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。
-GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。
-它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找
-1.2 Gitlab服务构成
-Nginx：静态web服务器。
-gitlab-shell：用于处理Git命令和修改authorized keys列表。
-gitlab-workhorse: 轻量级的反向代理服务器。
-logrotate：日志文件管理工具。
-postgresql：数据库。
-redis：缓存数据库。
-sidekiq：用于在后台执行队列任务（异步执行）。
-unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。
-1.3 Gitlab工作流程
-
-1.4 GitLab Shell
-GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表
-当通过SSH访问GitLab Server时，GitLab Shell会：
-
-限制执行预定义好的Git命令（git push，git pull，git annex）
-调用GitLab Rails API检查权限
-执行pre-receive钩子（在企业版中叫做Git钩子）
-执行用户请求的动作，处理GitLab的post-receive动作
-处理自定义的post-receive动作
-
-当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：
-如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作
-如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：
-
-调用GitLab Rails API 检查权限
-执行pre-receive钩子（在GitLab企业版中叫做Git钩子）
-执行你请求的动作
-处理GitLab的post-receive动作
-处理自定义的post-receive动作
-
-1.5 GitLab Workhorse
-GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。
-2. Gitlab的安装部署
-
-Gitlab要求服务器内存2G以上
-
-2.1 方式一:下载gitlab-ce的rpm包
-
-gitlab官方rpm包下载
-清华的源
-
-将对应版本的gitlab-ce下载到本地后，直接yum安装即可
-# 要先将这个rpm包下载到本地
-yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm
-2.2 方式二:配置yum源
-在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：
-[gitlab-ce]
-name=gitlab-ce
-baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/
-Repo_gpgcheck=0
-Enabled=1
-Gpgkey=https://packages.gitlab.com/gpg.key
-然后创建cache，再直接安装gitlab-ce
-yum makecache  # 这一步会创建大量的数据
- 
-# 直接安装最新版
-yum install -y gitlab-ce
- 
-# 如果要安装指定的版本，在后面填上版本号即可
-yum install -y  gitlab-ce-13.6.1
- 
-# 如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
-yum install gitlab-ce -y --nogpgcheck
-2.2.1. 单服务启动模式
-docker run -d --name gitlab --hostname gitlab.example.com \
--e GITLAB_OMNIBUS_CONFIG="
-    external_url 'https://gitlab.example.com'
-    gitlab_rails['gitlab_shell_ssh_port'] = 22
-    nginx['redirect_http_to_https'] = true
-    nginx['ssl_dhparam'] = '/etc/gitlab/ssl/dhparam.pem'
-    nginx['ssl_certificate'] = '/etc/gitlab/ssl/domain.crt'
-    nginx['ssl_certificate_key'] = '/etc/gitlab/ssl/domain.key'
-    nginx['custom_gitlab_server_config'] = 'location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n'
-    high_availability['mountpoint'] = ['/etc/gitlab', '/var/log/gitlab' '/var/opt/gitlab'  # 严格限定gitlab服务启动前，指定文件系统挂完毕
-" \
--p 22:22 -p 80:80 -p 443:443 \
--v /srv/gitlab/config:/etc/gitlab \
--v /srv/gitlab/logs:/var/log/gitlab \
--v /srv/gitlab/data:/var/opt/gitlab \
--v /etc/certs:/etc/gitlab/ssl \
---restart=always gitlab/gitlab-ce:latest
- 
-2.2.1. Compose服务编排模式(推荐方式)
-docker pull gitlab/gitlab-ce:latest
- 
-############################ 多行命令开始 ##########################
-cat &gt; docker-compose.yaml &lt;&lt;EOF
-version: '2'
- 
-services:
- 
-  Gitlab:
-    image: 'gitlab/gitlab-ce:latest'
-    container_name: 'gitlab'
-    hostname: 'gitlab.example.com'
-    restart: always
-    ports:
-      - '22:22'
-      - '80:80'
-      - '443:443'
-    environment:
-      GITLAB_OMNIBUS_CONFIG: |
-        # Add any other gitlab.rb configuration here, each on its own line
-        external_url 'https://gitlab.example.com'
-        gitlab_rails['gitlab_shell_ssh_port'] = 22
-        nginx['redirect_http_to_https'] = true
-        nginx['ssl_dhparam'] = "/etc/gitlab/ssl/dhparam.pem"
-        nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
-        nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
-        nginx['custom_gitlab_server_config'] = "location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n"
-        high_availability['mountpoint'] = ["/etc/gitlab", "/var/log/gitlab", "/var/opt/gitlab"]  # 严格限定gitlab服务启动前，指定文件系统挂完毕
-    volumes:
-      - /srv/gitlab/config:/etc/gitlab
-      - /srv/gitlab/logs:/var/log/gitlab
-      - /srv/gitlab/data:/var/opt/gitlab
-      - /etc/certs:/etc/gitlab/ssl
-EOF
-############################ 多行命令结束 ##########################
- 
-# 启动服务
-docker-compose -f docker-compose.yaml up -d
- 
-2.3 gitlab的配置
-配置文件位置  /etc/gitlab/gitlab.rb
-[root@centos7 test]# vim /etc/gitlab/gitlab.rb
- 
-[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
- 
-external_url 'http://10.0.0.51'  # 这里一定要加上http://
- 
-# 配置邮件服务
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.qq.com"
-gitlab_rails['smtp_port'] = 25
-gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
-gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
-gitlab_rails['smtp_domain'] = "qq.com"
-gitlab_rails['smtp_authentication'] = "login"
-gitlab_rails['smtp_enable_starttls_auto'] = true
-gitlab_rails['smtp_tls'] = false
-gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
-user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址
-修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。
-gitlab-ctl reconfigure # 重载配置文件
-gitlab-ctl restart
-测试邮件服务器
-gitlab-rails console
-Notify.test_email('rollinghell@foxmail.com','testbiaoti','testzhegnwen1').deliver_now
-[root@test102 ~]# gitlab-rails console
---------------------------------------------------------------------------------
- GitLab:       12.5.0 (1f0ab8978ef)
-GitLab Shell: 10.2.0
- PostgreSQL:   10.9
---------------------------------------------------------------------------------
-Loading production environment (Rails 5.2.3)
-irb(main):001:0&gt; Notify.test_email('andycrusoe@gmail.com','test','test').deliver_now
-Notify#test_email: processed outbound mail in 1.4ms
-Sent mail to anliven@126.com (73.0ms)
-Date: Wed, 27 Nov 2019 15:12:58 +0800
-From: GitLab &lt;gitlab@192.168.16.102&gt;
-Reply-To: GitLab &lt;noreply@192.168.16.102&gt;
-To: anliven@126.com
-Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;
-Subject: test
-Mime-Version: 1.0
-Content-Type: text/html;
-charset=UTF-8
-Content-Transfer-Encoding: 7bit
-Auto-Submitted: auto-generated
-X-Auto-Response-Suppress: All
-&lt;!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd"&gt;
-&lt;html&gt;&lt;body&gt;&lt;p&gt;test&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
-=&gt; #&lt;Mail::Message:70141649239780, Multipart: false, Headers: &lt;Date: Wed, 27 Nov 2019 15:12:58 +0800&gt;, &lt;From: GitLab &lt;gitlab@192.168.16.102&gt;&gt;, &lt;Reply-To: GitLab &lt;noreply@192.168.16.102&gt;&gt;, &lt;To: anliven@126.com&gt;, &lt;Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;&gt;, &lt;Subject: test&gt;, &lt;Mime-Version: 1.0&gt;, &lt;Content-Type: text/html; charset=UTF-8&gt;, &lt;Content-Transfer-Encoding: 7bit&gt;, &lt;Auto-Submitted: auto-generated&gt;, &lt;X-Auto-Response-Suppress: All&gt;&gt;
-irb(main):002:0&gt;
-irb(main):003:0&gt; exit
-[root@test102 ~]#
- 
-配置gitlab代理
-https://docs.gitlab.com/omnibus/settings/environment-variables.html
-gitaly['env'] = {
-    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
-    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
-}
-2.4 Gitlab常用命令
-gitlab-ctl start         # 启动所有 gitlab 组件
-gitlab-ctl stop          # 停止所有 gitlab 组件
-gitlab-ctl restart       # 重启所有 gitlab 组件
-gitlab-ctl status        # 查看服务状态
- 
-gitlab-ctl reconfigure   # 启动服务
-gitlab-ctl show-config   # 验证配置文件
- 
-gitlab-ctl tail          # 查看日志
- 
-gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
- 
-vim /etc/gitlab/gitlab.rb # 修改默认的配置文件
-2.5 gitlab-ctl常用命令介绍
-
-
-
-命令
-说明
-
-
-
-
-check-config
-检查在gitlab中是否有任何配置。在指定版本中删除的rb
-
-
-deploy-page
-安装部署页面
-
-
-diff-config
-将用户配置与包可用配置进行比较
-
-
-remove-accounts
-删除所有用户和组
-
-
-upgrade
-升级
-
-
-service-list
-查看所有服务
-
-
-once
-如果GitLab服务停止了就启动服务，如果已启动就不做任何操作
-
-
-restart
-重启GitLab服务
-
-
-start
-如果GitLab服务停止了就启动服务，如果已启动就重启服务
-
-
-stop
-停止GitLab服务
-
-
-status
-查看GitLab服务状态
-
-
-reconfigure
-重新配置GitLab并启动
-
-
-
-3. Gitlab的使用
-
-Gitlab安装好后，设置密码，管理账户为root
-
-3.1 创建Group
-
-填上组名即可，这里组名为java
-
-
-
-3.2 创建User
-
-创建四个User：pm、dev1、dev2、dev3
-
-
-
-3.3 添加User到Group中并授权
-
-3.4 创建Project并配置SSH
-
-
-
-
-3.5 在项目中添加成员
-
-
-3.6 将本地文件推送到Gitlab
-# 将app01项目克隆下来
-git clone git@10.0.0.51:java/app01.git
- 
-# 初始化配置
-git config --global user.name "hgzero"
-git config --global user.email "hgzero@qq.com"
- 
-# 在app01目录下新建一些文件
- 
-# 推送到gitlab
-git add .
-git commit -m "first edition"
-git push origin master
-
-4. 制定开发计划
-4.1 创建开发计划
-
-项目：app01
-版本：v1.0
-
-
-4.2 创建里程碑Milestones
-
-用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）
-要根据开发计划来创建Milestones
-
-
-
-
-
-4.3 根据开发计划创建issue
-
-创建4个issue，分派给dev1和dev2这两个开发人员
-
-
-
-
-
-
-
-**4.4 开发者登录账号查看分派的任务 **
-
-然后开发dev1登录gitlab，就能看到任务已经分配过来了
-
-
-4.5 开发流程
-
-公司里的开发开始任务
-
-# 1. 先从仓库把项目拉下来
-git clone git@10.0.0.51:java/app01.git
-cd app01/
- 
-# 2.先创建一个自己的分支，然后进行开发
-git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
-git status
- 
-# 3. 开始开发首页
-echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
- 
-# 4. 开发完成后，把项目传到仓库
-git add .
-git commit -m "index"
-# 如果写成 git commit -m "close #2" ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
- 
-# 传到index分支
-git push origin index
-4.6 合并分支
-1）开发dev1发送合并分支请求给pm
-
-
-
-2）pm收到开发的Merge请求后进行处理
-
-使用pm登录，就可以看到pm已经收到了合并请求merge request
-
-
-
-
-
-3）开发dev1确认任务完成
-
-退出pm账户，登入dev1账户：
-
-
-
-或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close
-
-
-
-这个时候Milestones的进度已经往前进了一些了：
-
-
-4.7 开发其他功能
-
-然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发
-
-git checkout master  # 切换到master
-git pull             # 从远端仓库拉取数据
-# 然后再进行其他操作
-5. Gitlab备份恢复
-5.1 备份gitlab
-1）修改配置文件
-
-/etc/gitlab/gitlab.rb
-
-# 备份保存的位置，这里是默认位置，可修改成指定的位置
-gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
- 
-# 设置备份保存的时间，超过此时间的日志将会被新覆盖
-gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
- 
-# 特别注意：
-#     如果自定义了备份保存位置，则要修改备份目录的权限，比如：
-#     chown -R git.git /data/backup/gitlab
-
-配置完成后要重启以使配置生效
-
-# 重读配置文件
-gitlab-ctl reconfigure
- 
-# 重启gitlab
-gitlab-ctl restart
-2）设置定时任务
-# 每天凌晨2点定时创建备份
-# 将一下内容写入到定时任务中 crontab -e
-0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create
- 
-# 备份策略建议：
-#     本地保留3到7天，在异地备份永久保存
-3）备份时间的识别
-# 备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
- 
-data  -d  @1494170842
-5.2 恢复gitlab
-1）停止停止相关数据连接,数据写入服务
-# 停止数据写入服务
-gitlab-ctl stop puma
-gitlab-ctl stop sidekiq
-2）进行数据恢复并重启
-# 进行恢复
-gitlab-rake gitlab:backup:restore BACKUP=1627839447_2021_08_01_14.1.1-ee  # 这个时间戳就是刚刚备份的文件前面的时间戳
- 
-# 重启
-gitlab-ctl restart
-6. gitlab邮件通知配置
-
-vim  /etc/gitlab/gitlab.rb
-
-gitlab_rails['time_zone'] = 'Asia/Shanghai'
- 
-gitlab_rails['gitlab_email_enabled'] = true
-gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
-gitlab_rails['gitlab_email_display_name'] = 'gitlab'
- 
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
-gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
-gitlab_rails['smtp_user_name'] = "smtp用户名"
-gitlab_rails['smtp_password'] = "smtp用户密码"
-gitlab_rails['smtp_domain'] = "163.com"
-gitlab_rails['smtp_authentication'] = "login"
-启用邮件功能
-Gitlab 的 Compose 配置 GITLAB_OMNIBUS_CONFIG 节点下增加如下几行：
-########## 邮件服务配置 ##########
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.exmail.qq.com"
-gitlab_rails['smtp_port'] = 465
-gitlab_rails['smtp_tls'] = true
-gitlab_rails['smtp_user_name'] = "账号"
-gitlab_rails['smtp_password'] = "密码"
-gitlab_rails['smtp_authentication'] = "login"
-gitlab_rails['smtp_enable_starttls_auto'] = true 
-gitlab_rails['gitlab_email_from'] = "发件人邮箱"
- 
-7. 使用SourceTree进行项目开发
-
-7.1 项目拉取
-
-先把项目克隆下来
-
-
-
-
-如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加
-
-
-
-7.2 创建分支进行功能开发
-1）新建立一个叫“pay”的分支
-
-
-2）进行功能开发
-
-7.3 提交项目
-1）开发pay功能完成后进行提交
-
-可以看到SourceTree中已经有“未提交的更改”
-
-
-
-2）添加“用户信息”
-
-** 3）进行提交**
-
-
-注释也可以写成  close #3    ，作用是提交完成后关闭3号issue
-
-7.4 推送到仓库
-
-
-
-然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了
-
-7.5 项目上线
-1）当所有工作完成之后，就可以进行上线了
-
-2）打标签
-
-上线先打个标签
-
-
-
-
-** 3）删除无用分支**
-
-然后删除已经合并到主干中的不必要的分支，如index、pay等
-最后一定要注意时间一定要同步，不然会错乱
-
-8. Gitlab调优
-gitlab对内存资源的消耗比较厉害
-其中尤以 sidekiq队列 及 unicorn服务 两个组件对内存消耗最多
-可以再容器启动时对相关参数进行微调：
-unicorn['worker_processes'] = 1
-unicorn['worker_memory_limit_min'] = "300 * 1 &lt;&lt; 20"
-unicorn['worker_memory_limit_max'] = "400 * 1 &lt;&lt; 20"
-unicorn['worker_timeout'] = 15
-sidekiq['concurrency'] = 10
-sidekiq_cluster['enable'] = false
-sidekiq_cluster['ha'] = false
-redis['maxclients'] = "100"
-nginx['worker_processes'] = 2
-nginx['worker_connections'] = 512
-nginx['keepalive_timeout'] = 300
-nginx['cache_max_size'] = '200m'
-mattermost['enable'] = false
-mattermost_nginx['enable'] = false
-gitlab_pages['enable'] = false
-pages_nginx['enable'] = false
-postgresql['shared_buffers'] = "256MB"
-postgresql['max_connections'] = 30
-postgresql['work_mem'] = "8MB"
-postgresql['maintenance_work_mem'] = "16MB"
-postgresql['effective_cache_size'] = "1MB"
-postgresql['checkpoint_timeout'] = "5min"
-postgresql['checkpoint_warning'] = "30s"
- 
-配置调整后需要重载一下
-docker exec gitlab gitlab-ctl reconfigure
-docker-compose down
-docker-compose up -d
- 
-
-9. Gitlab 启用 ContainerRegistry
-
-ContainerRegistry是Gitlab内置的Docker Registry集成组件
-集成后每个项目可获得私有的 Docker 镜像存储空间
-ContainerRegistry 可以复用 Gitlab 域名 或者 独立域名
-这里配置为复用域名（此时ContainerRegistry 将复用 Gitlab 的 TLS 证书）
-
-
-docker-compose.yaml中Gitlab服务的 GITLAB_OMNIBUS_CONFIG 节点下增加如下配置：
-
-registry_external_url "https://gitlab.example.com:4567"  # ContainerRegistry的外部访问地址
-registry_nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
-registry_nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
-gitlab_rails['registry_host'] = "gitlab.example.com"
-gitlab_rails['registry_port'] = "4567"
-gitlab_rails['registry_api_url'] = "http://localhost:5000"
-gitlab_rails['gitlab_default_projects_features_builds'] = false
-gitlab_rails['gitlab_default_projects_features_container_registry'] = false
- 
-
-端口开放增加 - 4567:4567
-服务重启 docker-compose restart Gitlab
-
-ContainerRegistry 集成后可以通过 Gitlab 账户登录： docker login gitlab.example.com:4567
-
-日常维护命令
-# Gitlab维护
-docker exec gitlab gitlab-ctl status  # gitlab各组件服务状态
-docker exec gitlab gitlab-ctl start/restart/stop [组件名]  # gitlab所有组件的统一控制（其中Unicorn组件重启完成前GitLab会报502）
-docker exec gitlab gitlab-ctl tail [/var/log/gitlab下的某子目录]  # 实时查看日志
- 
-docker exec gitlab update-permissions  # 修复gitlab版本升级后出现的权限问题
-docker exec gitlab gitlab-ctl reconfigure  # 重载配置
-docker exec -t gitlab gitlab-rake gitlab:backup:create  # 创建备份
- 
-# ContainerRegistry维护
-docker exec gitlab gitlab-ctl registry-garbage-collect  # 垃圾回收，清理废弃layer（registry停机）
- 
-
-Import Repository(Repo By Url)
-# 账号密码若存在特殊字符则需要url编码
-https://username:password@host:port/group/project.git
- 
-10. GitLab重置用户名密码
-打开终端，访问：
-gitlab-rails console
-输入：
-user = User.where(id: 1).first
-user.password='123456'
-user.password_confirmation = '123456'
-user.save! #注意加上 “！”
-然后退出命令行即可。
-quit
- gitlab-rails console production 命令 开始初始化密码
-# 在irb(main):001:0&gt; 后面通过 u=User.where(id:1).first 来查找与切换账号（User.all 可以查看所有用户）
-# 通过u.password='12345678'设置密码为12345678(这里的密码看自己喜欢)：
-# 通过u.password_confirmation='12345678' 再次确认密码
-# 通过 u.save!进行保存
-11. HTTPS SSL 支持
-
-
-nginx反向代理方式
-
-注意docker 内部没有ca支持， 需要手动添加
-
-
-
-域名提供商提供的免费证书
-
-这种证书直接用，如果是自签名证书，需要添加自己的ca root证书到服务器
-
-
-
-12. Gitlab恢复数据出现must be owner of解决方法
-按正常Gitlab备份数据gitlab-rake gitlab:backup:create
-ERROR: must be owner of extension plpgsql
-ERROR: must be owner of schema public
-ERROR: schema “public” already exists
-ERROR: must be owner of schema public
-ERROR: must be owner of extension plpgsql
-WARNING: no privileges could be revoked for “public”
-WARNING: no privileges could be revoked for “public”
-WARNING: no privileges were granted for “public”
-WARNING: no privileges were granted for “public”
-解决方法：
-**1. 修改postgresql配置 **
-cd /var/opt/gitlab/postgresql/data
-$ vi /var/opt/gitlab/postgresql/data/postgresql.conf
-listen_addresses = '*'
-找到listen_addresses = ” 改为listen_addresses = ‘*’
-修改 /var/opt/gitlab/postgresql/data/pg_hba.conf
-在这个文件最后面加入
-$ vi /var/opt/gitlab/postgresql/data/pg_hba.conf
-local   all         all                               trust
-host    all         all                               127.0.0.1/32 trust
-host    all         all                               ::1/128 trust    #ipv6 可以不配置
-2. 重启gitlab生效
-gitlab-ctl restart
-3. 修改gitlab账号为超级用户
-进入postgresql命令行
-cd /opt/gitlab/embedded/bin
-su gitlab-psql
-./psql -h 127.0.0.1 gitlabhq_production
-查看账户权限
-\du
-执行修改gitlab用户为超级权限
-ALTER USER gitlab WITH SUPERUSER;
-退出
-\q
-
-4. 从1462989681编号备份中恢复
-gitlab-rake gitlab:backup:restore BACKUP=1462989681
-这样Gitlab恢复数据就不会再报must be owner of extension plpgsql错误。
-4. 重启gitlab
-gitlab-ctl restart
-本文作者：夜法之书       写作不易，转载请注明来源地址！
-参考链接：
-
-https://www.cnblogs.com/hgzero/p/14088215.html
-http://www.51blogs.net/2017/11/10/1110113243.html
-https://my.oschina.net/u/2400083/blog/808097
-
-
-]]></content>
-      <categories>
-        <category>gitlab</category>
-      </categories>
-      <tags>
-        <tag>gitlab</tag>
-        <tag>git</tag>
-        <tag>docker</tag>
-        <tag>registry</tag>
-        <tag>教程</tag>
-        <tag>email</tag>
-        <tag>https</tag>
-        <tag>ssl</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Debian Lenny Laptop安装记录</title>
     <url>/posts/b1fe1bb8/</url>
     <content><![CDATA[Debian Lenny Laptop安装记录
@@ -4259,6 +3565,700 @@ network.protocol-handler.app.ed2k
         <tag>laptop</tag>
         <tag>ed2k</tag>
         <tag>ati</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Gitlab的安装及使用教程完全版</title>
+    <url>/posts/acc13b70/</url>
+    <content><![CDATA[1. Gitlab概述
+
+1.1 GitLab介绍
+GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。
+GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。
+它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找
+1.2 Gitlab服务构成
+Nginx：静态web服务器。
+gitlab-shell：用于处理Git命令和修改authorized keys列表。
+gitlab-workhorse: 轻量级的反向代理服务器。
+logrotate：日志文件管理工具。
+postgresql：数据库。
+redis：缓存数据库。
+sidekiq：用于在后台执行队列任务（异步执行）。
+unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。
+1.3 Gitlab工作流程
+
+1.4 GitLab Shell
+GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表
+当通过SSH访问GitLab Server时，GitLab Shell会：
+
+限制执行预定义好的Git命令（git push，git pull，git annex）
+调用GitLab Rails API检查权限
+执行pre-receive钩子（在企业版中叫做Git钩子）
+执行用户请求的动作，处理GitLab的post-receive动作
+处理自定义的post-receive动作
+
+当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：
+如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作
+如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：
+
+调用GitLab Rails API 检查权限
+执行pre-receive钩子（在GitLab企业版中叫做Git钩子）
+执行你请求的动作
+处理GitLab的post-receive动作
+处理自定义的post-receive动作
+
+1.5 GitLab Workhorse
+GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。
+2. Gitlab的安装部署
+
+Gitlab要求服务器内存2G以上
+
+2.1 方式一:下载gitlab-ce的rpm包
+
+gitlab官方rpm包下载
+清华的源
+
+将对应版本的gitlab-ce下载到本地后，直接yum安装即可
+# 要先将这个rpm包下载到本地
+yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm
+2.2 方式二:配置yum源
+在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：
+[gitlab-ce]
+name=gitlab-ce
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/
+Repo_gpgcheck=0
+Enabled=1
+Gpgkey=https://packages.gitlab.com/gpg.key
+然后创建cache，再直接安装gitlab-ce
+yum makecache  # 这一步会创建大量的数据
+ 
+# 直接安装最新版
+yum install -y gitlab-ce
+ 
+# 如果要安装指定的版本，在后面填上版本号即可
+yum install -y  gitlab-ce-13.6.1
+ 
+# 如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
+yum install gitlab-ce -y --nogpgcheck
+2.2.1. 单服务启动模式
+docker run -d --name gitlab --hostname gitlab.example.com \
+-e GITLAB_OMNIBUS_CONFIG="
+    external_url 'https://gitlab.example.com'
+    gitlab_rails['gitlab_shell_ssh_port'] = 22
+    nginx['redirect_http_to_https'] = true
+    nginx['ssl_dhparam'] = '/etc/gitlab/ssl/dhparam.pem'
+    nginx['ssl_certificate'] = '/etc/gitlab/ssl/domain.crt'
+    nginx['ssl_certificate_key'] = '/etc/gitlab/ssl/domain.key'
+    nginx['custom_gitlab_server_config'] = 'location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n'
+    high_availability['mountpoint'] = ['/etc/gitlab', '/var/log/gitlab' '/var/opt/gitlab'  # 严格限定gitlab服务启动前，指定文件系统挂完毕
+" \
+-p 22:22 -p 80:80 -p 443:443 \
+-v /srv/gitlab/config:/etc/gitlab \
+-v /srv/gitlab/logs:/var/log/gitlab \
+-v /srv/gitlab/data:/var/opt/gitlab \
+-v /etc/certs:/etc/gitlab/ssl \
+--restart=always gitlab/gitlab-ce:latest
+ 
+2.2.1. Compose服务编排模式(推荐方式)
+docker pull gitlab/gitlab-ce:latest
+ 
+############################ 多行命令开始 ##########################
+cat &gt; docker-compose.yaml &lt;&lt;EOF
+version: '2'
+ 
+services:
+ 
+  Gitlab:
+    image: 'gitlab/gitlab-ce:latest'
+    container_name: 'gitlab'
+    hostname: 'gitlab.example.com'
+    restart: always
+    ports:
+      - '22:22'
+      - '80:80'
+      - '443:443'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        # Add any other gitlab.rb configuration here, each on its own line
+        external_url 'https://gitlab.example.com'
+        gitlab_rails['gitlab_shell_ssh_port'] = 22
+        nginx['redirect_http_to_https'] = true
+        nginx['ssl_dhparam'] = "/etc/gitlab/ssl/dhparam.pem"
+        nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
+        nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
+        nginx['custom_gitlab_server_config'] = "location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n"
+        high_availability['mountpoint'] = ["/etc/gitlab", "/var/log/gitlab", "/var/opt/gitlab"]  # 严格限定gitlab服务启动前，指定文件系统挂完毕
+    volumes:
+      - /srv/gitlab/config:/etc/gitlab
+      - /srv/gitlab/logs:/var/log/gitlab
+      - /srv/gitlab/data:/var/opt/gitlab
+      - /etc/certs:/etc/gitlab/ssl
+EOF
+############################ 多行命令结束 ##########################
+ 
+# 启动服务
+docker-compose -f docker-compose.yaml up -d
+ 
+2.3 gitlab的配置
+配置文件位置  /etc/gitlab/gitlab.rb
+[root@centos7 test]# vim /etc/gitlab/gitlab.rb
+ 
+[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
+ 
+external_url 'http://10.0.0.51'  # 这里一定要加上http://
+ 
+# 配置邮件服务
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.qq.com"
+gitlab_rails['smtp_port'] = 25
+gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
+gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
+gitlab_rails['smtp_domain'] = "qq.com"
+gitlab_rails['smtp_authentication'] = "login"
+gitlab_rails['smtp_enable_starttls_auto'] = true
+gitlab_rails['smtp_tls'] = false
+gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
+user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址
+修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。
+gitlab-ctl reconfigure # 重载配置文件
+gitlab-ctl restart
+测试邮件服务器
+gitlab-rails console
+Notify.test_email('rollinghell@foxmail.com','testbiaoti','testzhegnwen1').deliver_now
+[root@test102 ~]# gitlab-rails console
+--------------------------------------------------------------------------------
+ GitLab:       12.5.0 (1f0ab8978ef)
+GitLab Shell: 10.2.0
+ PostgreSQL:   10.9
+--------------------------------------------------------------------------------
+Loading production environment (Rails 5.2.3)
+irb(main):001:0&gt; Notify.test_email('andycrusoe@gmail.com','test','test').deliver_now
+Notify#test_email: processed outbound mail in 1.4ms
+Sent mail to anliven@126.com (73.0ms)
+Date: Wed, 27 Nov 2019 15:12:58 +0800
+From: GitLab &lt;gitlab@192.168.16.102&gt;
+Reply-To: GitLab &lt;noreply@192.168.16.102&gt;
+To: anliven@126.com
+Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;
+Subject: test
+Mime-Version: 1.0
+Content-Type: text/html;
+charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Auto-Submitted: auto-generated
+X-Auto-Response-Suppress: All
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd"&gt;
+&lt;html&gt;&lt;body&gt;&lt;p&gt;test&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
+=&gt; #&lt;Mail::Message:70141649239780, Multipart: false, Headers: &lt;Date: Wed, 27 Nov 2019 15:12:58 +0800&gt;, &lt;From: GitLab &lt;gitlab@192.168.16.102&gt;&gt;, &lt;Reply-To: GitLab &lt;noreply@192.168.16.102&gt;&gt;, &lt;To: anliven@126.com&gt;, &lt;Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;&gt;, &lt;Subject: test&gt;, &lt;Mime-Version: 1.0&gt;, &lt;Content-Type: text/html; charset=UTF-8&gt;, &lt;Content-Transfer-Encoding: 7bit&gt;, &lt;Auto-Submitted: auto-generated&gt;, &lt;X-Auto-Response-Suppress: All&gt;&gt;
+irb(main):002:0&gt;
+irb(main):003:0&gt; exit
+[root@test102 ~]#
+ 
+配置gitlab代理
+https://docs.gitlab.com/omnibus/settings/environment-variables.html
+gitaly['env'] = {
+    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
+    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
+}
+2.4 Gitlab常用命令
+gitlab-ctl start         # 启动所有 gitlab 组件
+gitlab-ctl stop          # 停止所有 gitlab 组件
+gitlab-ctl restart       # 重启所有 gitlab 组件
+gitlab-ctl status        # 查看服务状态
+ 
+gitlab-ctl reconfigure   # 启动服务
+gitlab-ctl show-config   # 验证配置文件
+ 
+gitlab-ctl tail          # 查看日志
+ 
+gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
+ 
+vim /etc/gitlab/gitlab.rb # 修改默认的配置文件
+2.5 gitlab-ctl常用命令介绍
+
+
+
+命令
+说明
+
+
+
+
+check-config
+检查在gitlab中是否有任何配置。在指定版本中删除的rb
+
+
+deploy-page
+安装部署页面
+
+
+diff-config
+将用户配置与包可用配置进行比较
+
+
+remove-accounts
+删除所有用户和组
+
+
+upgrade
+升级
+
+
+service-list
+查看所有服务
+
+
+once
+如果GitLab服务停止了就启动服务，如果已启动就不做任何操作
+
+
+restart
+重启GitLab服务
+
+
+start
+如果GitLab服务停止了就启动服务，如果已启动就重启服务
+
+
+stop
+停止GitLab服务
+
+
+status
+查看GitLab服务状态
+
+
+reconfigure
+重新配置GitLab并启动
+
+
+
+3. Gitlab的使用
+
+Gitlab安装好后，设置密码，管理账户为root
+
+3.1 创建Group
+
+填上组名即可，这里组名为java
+
+
+
+3.2 创建User
+
+创建四个User：pm、dev1、dev2、dev3
+
+
+
+3.3 添加User到Group中并授权
+
+3.4 创建Project并配置SSH
+
+
+
+
+3.5 在项目中添加成员
+
+
+3.6 将本地文件推送到Gitlab
+# 将app01项目克隆下来
+git clone git@10.0.0.51:java/app01.git
+ 
+# 初始化配置
+git config --global user.name "hgzero"
+git config --global user.email "hgzero@qq.com"
+ 
+# 在app01目录下新建一些文件
+ 
+# 推送到gitlab
+git add .
+git commit -m "first edition"
+git push origin master
+
+4. 制定开发计划
+4.1 创建开发计划
+
+项目：app01
+版本：v1.0
+
+
+4.2 创建里程碑Milestones
+
+用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）
+要根据开发计划来创建Milestones
+
+
+
+
+
+4.3 根据开发计划创建issue
+
+创建4个issue，分派给dev1和dev2这两个开发人员
+
+
+
+
+
+
+
+**4.4 开发者登录账号查看分派的任务 **
+
+然后开发dev1登录gitlab，就能看到任务已经分配过来了
+
+
+4.5 开发流程
+
+公司里的开发开始任务
+
+# 1. 先从仓库把项目拉下来
+git clone git@10.0.0.51:java/app01.git
+cd app01/
+ 
+# 2.先创建一个自己的分支，然后进行开发
+git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
+git status
+ 
+# 3. 开始开发首页
+echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
+ 
+# 4. 开发完成后，把项目传到仓库
+git add .
+git commit -m "index"
+# 如果写成 git commit -m "close #2" ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
+ 
+# 传到index分支
+git push origin index
+4.6 合并分支
+1）开发dev1发送合并分支请求给pm
+
+
+
+2）pm收到开发的Merge请求后进行处理
+
+使用pm登录，就可以看到pm已经收到了合并请求merge request
+
+
+
+
+
+3）开发dev1确认任务完成
+
+退出pm账户，登入dev1账户：
+
+
+
+或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close
+
+
+
+这个时候Milestones的进度已经往前进了一些了：
+
+
+4.7 开发其他功能
+
+然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发
+
+git checkout master  # 切换到master
+git pull             # 从远端仓库拉取数据
+# 然后再进行其他操作
+5. Gitlab备份恢复
+5.1 备份gitlab
+1）修改配置文件
+
+/etc/gitlab/gitlab.rb
+
+# 备份保存的位置，这里是默认位置，可修改成指定的位置
+gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
+ 
+# 设置备份保存的时间，超过此时间的日志将会被新覆盖
+gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
+ 
+# 特别注意：
+#     如果自定义了备份保存位置，则要修改备份目录的权限，比如：
+#     chown -R git.git /data/backup/gitlab
+
+配置完成后要重启以使配置生效
+
+# 重读配置文件
+gitlab-ctl reconfigure
+ 
+# 重启gitlab
+gitlab-ctl restart
+2）设置定时任务
+# 每天凌晨2点定时创建备份
+# 将一下内容写入到定时任务中 crontab -e
+0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create
+ 
+# 备份策略建议：
+#     本地保留3到7天，在异地备份永久保存
+3）备份时间的识别
+# 备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
+ 
+data  -d  @1494170842
+5.2 恢复gitlab
+1）停止停止相关数据连接,数据写入服务
+# 停止数据写入服务
+gitlab-ctl stop puma
+gitlab-ctl stop sidekiq
+2）进行数据恢复并重启
+# 进行恢复
+gitlab-rake gitlab:backup:restore BACKUP=1627839447_2021_08_01_14.1.1-ee  # 这个时间戳就是刚刚备份的文件前面的时间戳
+ 
+# 重启
+gitlab-ctl restart
+6. gitlab邮件通知配置
+
+vim  /etc/gitlab/gitlab.rb
+
+gitlab_rails['time_zone'] = 'Asia/Shanghai'
+ 
+gitlab_rails['gitlab_email_enabled'] = true
+gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
+gitlab_rails['gitlab_email_display_name'] = 'gitlab'
+ 
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
+gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
+gitlab_rails['smtp_user_name'] = "smtp用户名"
+gitlab_rails['smtp_password'] = "smtp用户密码"
+gitlab_rails['smtp_domain'] = "163.com"
+gitlab_rails['smtp_authentication'] = "login"
+启用邮件功能
+Gitlab 的 Compose 配置 GITLAB_OMNIBUS_CONFIG 节点下增加如下几行：
+########## 邮件服务配置 ##########
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.exmail.qq.com"
+gitlab_rails['smtp_port'] = 465
+gitlab_rails['smtp_tls'] = true
+gitlab_rails['smtp_user_name'] = "账号"
+gitlab_rails['smtp_password'] = "密码"
+gitlab_rails['smtp_authentication'] = "login"
+gitlab_rails['smtp_enable_starttls_auto'] = true 
+gitlab_rails['gitlab_email_from'] = "发件人邮箱"
+ 
+7. 使用SourceTree进行项目开发
+
+7.1 项目拉取
+
+先把项目克隆下来
+
+
+
+
+如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加
+
+
+
+7.2 创建分支进行功能开发
+1）新建立一个叫“pay”的分支
+
+
+2）进行功能开发
+
+7.3 提交项目
+1）开发pay功能完成后进行提交
+
+可以看到SourceTree中已经有“未提交的更改”
+
+
+
+2）添加“用户信息”
+
+** 3）进行提交**
+
+
+注释也可以写成  close #3    ，作用是提交完成后关闭3号issue
+
+7.4 推送到仓库
+
+
+
+然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了
+
+7.5 项目上线
+1）当所有工作完成之后，就可以进行上线了
+
+2）打标签
+
+上线先打个标签
+
+
+
+
+** 3）删除无用分支**
+
+然后删除已经合并到主干中的不必要的分支，如index、pay等
+最后一定要注意时间一定要同步，不然会错乱
+
+8. Gitlab调优
+gitlab对内存资源的消耗比较厉害
+其中尤以 sidekiq队列 及 unicorn服务 两个组件对内存消耗最多
+可以再容器启动时对相关参数进行微调：
+unicorn['worker_processes'] = 1
+unicorn['worker_memory_limit_min'] = "300 * 1 &lt;&lt; 20"
+unicorn['worker_memory_limit_max'] = "400 * 1 &lt;&lt; 20"
+unicorn['worker_timeout'] = 15
+sidekiq['concurrency'] = 10
+sidekiq_cluster['enable'] = false
+sidekiq_cluster['ha'] = false
+redis['maxclients'] = "100"
+nginx['worker_processes'] = 2
+nginx['worker_connections'] = 512
+nginx['keepalive_timeout'] = 300
+nginx['cache_max_size'] = '200m'
+mattermost['enable'] = false
+mattermost_nginx['enable'] = false
+gitlab_pages['enable'] = false
+pages_nginx['enable'] = false
+postgresql['shared_buffers'] = "256MB"
+postgresql['max_connections'] = 30
+postgresql['work_mem'] = "8MB"
+postgresql['maintenance_work_mem'] = "16MB"
+postgresql['effective_cache_size'] = "1MB"
+postgresql['checkpoint_timeout'] = "5min"
+postgresql['checkpoint_warning'] = "30s"
+ 
+配置调整后需要重载一下
+docker exec gitlab gitlab-ctl reconfigure
+docker-compose down
+docker-compose up -d
+ 
+
+9. Gitlab 启用 ContainerRegistry
+
+ContainerRegistry是Gitlab内置的Docker Registry集成组件
+集成后每个项目可获得私有的 Docker 镜像存储空间
+ContainerRegistry 可以复用 Gitlab 域名 或者 独立域名
+这里配置为复用域名（此时ContainerRegistry 将复用 Gitlab 的 TLS 证书）
+
+
+docker-compose.yaml中Gitlab服务的 GITLAB_OMNIBUS_CONFIG 节点下增加如下配置：
+
+registry_external_url "https://gitlab.example.com:4567"  # ContainerRegistry的外部访问地址
+registry_nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
+registry_nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
+gitlab_rails['registry_host'] = "gitlab.example.com"
+gitlab_rails['registry_port'] = "4567"
+gitlab_rails['registry_api_url'] = "http://localhost:5000"
+gitlab_rails['gitlab_default_projects_features_builds'] = false
+gitlab_rails['gitlab_default_projects_features_container_registry'] = false
+ 
+
+端口开放增加 - 4567:4567
+服务重启 docker-compose restart Gitlab
+
+ContainerRegistry 集成后可以通过 Gitlab 账户登录： docker login gitlab.example.com:4567
+
+日常维护命令
+# Gitlab维护
+docker exec gitlab gitlab-ctl status  # gitlab各组件服务状态
+docker exec gitlab gitlab-ctl start/restart/stop [组件名]  # gitlab所有组件的统一控制（其中Unicorn组件重启完成前GitLab会报502）
+docker exec gitlab gitlab-ctl tail [/var/log/gitlab下的某子目录]  # 实时查看日志
+ 
+docker exec gitlab update-permissions  # 修复gitlab版本升级后出现的权限问题
+docker exec gitlab gitlab-ctl reconfigure  # 重载配置
+docker exec -t gitlab gitlab-rake gitlab:backup:create  # 创建备份
+ 
+# ContainerRegistry维护
+docker exec gitlab gitlab-ctl registry-garbage-collect  # 垃圾回收，清理废弃layer（registry停机）
+ 
+
+Import Repository(Repo By Url)
+# 账号密码若存在特殊字符则需要url编码
+https://username:password@host:port/group/project.git
+ 
+10. GitLab重置用户名密码
+打开终端，访问：
+gitlab-rails console
+输入：
+user = User.where(id: 1).first
+user.password='123456'
+user.password_confirmation = '123456'
+user.save! #注意加上 “！”
+然后退出命令行即可。
+quit
+ gitlab-rails console production 命令 开始初始化密码
+# 在irb(main):001:0&gt; 后面通过 u=User.where(id:1).first 来查找与切换账号（User.all 可以查看所有用户）
+# 通过u.password='12345678'设置密码为12345678(这里的密码看自己喜欢)：
+# 通过u.password_confirmation='12345678' 再次确认密码
+# 通过 u.save!进行保存
+11. HTTPS SSL 支持
+
+
+nginx反向代理方式
+
+注意docker 内部没有ca支持， 需要手动添加
+
+
+
+域名提供商提供的免费证书
+
+这种证书直接用，如果是自签名证书，需要添加自己的ca root证书到服务器
+
+
+
+12. Gitlab恢复数据出现must be owner of解决方法
+按正常Gitlab备份数据gitlab-rake gitlab:backup:create
+ERROR: must be owner of extension plpgsql
+ERROR: must be owner of schema public
+ERROR: schema “public” already exists
+ERROR: must be owner of schema public
+ERROR: must be owner of extension plpgsql
+WARNING: no privileges could be revoked for “public”
+WARNING: no privileges could be revoked for “public”
+WARNING: no privileges were granted for “public”
+WARNING: no privileges were granted for “public”
+解决方法：
+**1. 修改postgresql配置 **
+cd /var/opt/gitlab/postgresql/data
+$ vi /var/opt/gitlab/postgresql/data/postgresql.conf
+listen_addresses = '*'
+找到listen_addresses = ” 改为listen_addresses = ‘*’
+修改 /var/opt/gitlab/postgresql/data/pg_hba.conf
+在这个文件最后面加入
+$ vi /var/opt/gitlab/postgresql/data/pg_hba.conf
+local   all         all                               trust
+host    all         all                               127.0.0.1/32 trust
+host    all         all                               ::1/128 trust    #ipv6 可以不配置
+2. 重启gitlab生效
+gitlab-ctl restart
+3. 修改gitlab账号为超级用户
+进入postgresql命令行
+cd /opt/gitlab/embedded/bin
+su gitlab-psql
+./psql -h 127.0.0.1 gitlabhq_production
+查看账户权限
+\du
+执行修改gitlab用户为超级权限
+ALTER USER gitlab WITH SUPERUSER;
+退出
+\q
+
+4. 从1462989681编号备份中恢复
+gitlab-rake gitlab:backup:restore BACKUP=1462989681
+这样Gitlab恢复数据就不会再报must be owner of extension plpgsql错误。
+4. 重启gitlab
+gitlab-ctl restart
+本文作者：夜法之书       写作不易，转载请注明来源地址！
+参考链接：
+
+https://www.cnblogs.com/hgzero/p/14088215.html
+http://www.51blogs.net/2017/11/10/1110113243.html
+https://my.oschina.net/u/2400083/blog/808097
+
+
+]]></content>
+      <categories>
+        <category>gitlab</category>
+      </categories>
+      <tags>
+        <tag>gitlab</tag>
+        <tag>git</tag>
+        <tag>docker</tag>
+        <tag>registry</tag>
+        <tag>教程</tag>
+        <tag>email</tag>
+        <tag>https</tag>
+        <tag>ssl</tag>
       </tags>
   </entry>
   <entry>
@@ -5156,66 +5156,6 @@ Earthly 一个更加强大的镜像构建工具
         <tag>qnap</tag>
         <tag>nas</tag>
         <tag>启动</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>通过宝塔面板实现MySQL性能简单调优</title>
-    <url>/posts/d5f56dd0/</url>
-    <content><![CDATA[
-在PHP+MYSQL架构网站运行过程中，往往会遇到各种性能问题影响，如MySQL、PHP、CPU、磁盘IO、缓存等，其中MySQL瓶颈就是最常见也最难解决的一种影响网站性能的因素；通常，我们会使用redis、memcached等缓存软件来缓存内容，这确实是最优的解决方案之一，但这需要网站程序的支持，然而多数常用网站程序并不支持或者不能完美支持这些缓存软件，今天我们就来谈谈如何通过MySQL自身的配置调整来优化MySQL性能，以缓解MySQL瓶颈问题。
-
-准备：
-
-​    1、宝塔Linux面板 正式版 5.2.0+ (2017/09/20发布)  测试版5.2.4+
-​    2、MySQL 5.x
-
-通常MySQL调优我们分以下几部分：
-
-​    1、MySQL配置参数调优 (需要根据网站运行情况调整)
-​    2、数据表索引调优 (效果明显，但通常优秀的开源程序都不需要调整)
-​    3、SQL语句调优 (这是程序员或DBA干的事)
-
-今天我们主要谈谈如果配合宝塔面板的新功能来进行MySQL配置参数调优，我们先来看两张图片：
-(图1)
-
-(图2)
-
-很明显，(图1)显示的是MySQL当前的运行状态，(图2)显示的是MySQL主要配置参数
-下面我们就来解读一下这两张图：
-1、活动/峰值连接数
-​      (图1)中当前活动的连接为1个，自MySQL服务启动以来，最高连接数为54；当最高连接数接近或等于(图2)中的max_connections时，应适当增加max_connections，需要注意的是，不要一下子增加过多，建议每次增加50，观察一段时间，不够再继续增加。
-2、线程缓存命中率
-​      (图1)中线程缓存命中率为99.78%，若这个值小于90%，建议适当增加(图2)中的thread_cache_size，建议每次增加8。
-3、索引命中率
-​      (图1)中索引命中率为99.50%，若这个值小于95%，建议适当增加(图2)中的key_buffer_size，建议每次增加64，需要说明的是，若您的数据库使用的是Innodb引擎，可忽略这个选项
-4、Innodb索引命中率
-(图1)中Innodb索引命中率为100%，若这个值小于95%，建议适当增加(图2)中的innodb_buffer_pool_size，建议每次增加64，需要说明的是，若您的数据库没有使用Innodb引擎，可忽略这个选项
-5、查询缓存命中率
-​      MySQL查询缓存是个比较受争议的功能，个人建议当你有在使用redis、memcached等缓存软件时，在(图2)中将query_cache_size设为0可以将其关闭，当你没有使用缓存软件，有多余的内存使用，且数据库瓶颈明显存在时，可以尝试开启查询缓存，这是个非常依赖数据表结构及SQL语句优化的功能，若数据表结构和SQL语句都针对查询缓存进行过优化，它的效果还是很不错的。
-6、创建临时表到磁盘
-​      (图1)中创建临时表到磁盘的比例是0.42%，这说明大部分临时表创建到内存了，不会过多增加磁盘IO的开销，建议，当比例大于2%时适当增加(图1)中的tmp_cache_size，建议每次增加32，当比例大于60%时，放弃吧，有些开源程序并没有专门优化过SQL语句，所以在运行过程中会开启大量临时表，加多少缓存都是不够用的。
-7、已打开的表
-​      当(图1)中的已打开的表接近或等于(图2)中的table_open_cache时，可以适当增加table_open_cache，但若设置过大可能导致您的程序频繁中断MySQL连接，建议在1024以内，最大不要超过2048。
-8、没有使用索引的量、没有使用索引的JOIN量
-​      若不为0，就检查下数据表索引吧，其实只要没有疯涨，比如一天增涨几千，一般可以忽略，必竟优化索引还是程序员或DBA去干比较合适。
-9、排序后的合并次数
-​      如果这个值在缓慢增张，建议适当增加(图2)中的sort_buffer_size，建议每次增加512，但最大不要超过8192，如果这个值一直在疯涨，增加sort_buffer_size也没用，就放弃这个选项吧，这个锅还是给程序开发者背。
-10、锁表次数
-​      如果服务器CPU开销不大的情况下，疯狂锁表，建议你将所有数据表转换成innodb，记得转换前备份哦。
-11、优化方案
-​      这个是我们根据内存大小给的一个推荐优化方案，仅是建议仅用于基础参考值，还是要根据实据情况来调整每一个配置项。
-注意：保存参数配置后不会立即生效，记得要重启MySQL服务。
-写在最后：
-因我本人并不是专业DBA，难免有错误或遗漏的地方，还请大家给予指正，另外，可能面板提供的参考数据及调整选项还不够丰富，我们在往后的更新中会根据需要考虑继续增加更多的调整选项，谢谢大家的支持。
-来自网络整理。
-]]></content>
-      <categories>
-        <category>mysql</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>mysql</tag>
-        <tag>优化</tag>
       </tags>
   </entry>
   <entry>
@@ -9309,296 +9249,6 @@ https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&a
       </tags>
   </entry>
   <entry>
-    <title>在浏览器输入 URL 回车之后发生了什么</title>
-    <url>/posts/656a0abb/</url>
-    <content><![CDATA[前言
-
-这个问题已经是老生常谈了，更是经常被作为面试的压轴题出现，网上也有很多文章，但最近闲的无聊，然后就自己做了一篇笔记，感觉比之前理解更透彻了。
-这篇笔记是我这两天看了数十篇文章总结出来的，所以相对全面一点，但由于我是做前端的，所以会比较重点分析浏览器渲染页面那一部分，至于其他部分我会罗列出关键词，感兴趣的可以自行查阅，
-**注意：**本文的步骤是建立在，请求的是一个简单的 HTTP 请求，没有 HTTPS、HTTP2、最简单的 DNS、没有代理、并且服务器没有任何问题的基础上，尽管这是不切实际的。
-大致流程
-
-URL 解析
-DNS 查询
-TCP 连接
-处理请求
-接受响应
-渲染页面
-
-一、URL 解析
-地址解析：
-首先判断你输入的是一个合法的 URL 还是一个待搜索的关键词，并且根据你输入的内容进行自动完成、字符编码等操作。
-HSTS
-由于安全隐患，会使用 HSTS 强制客户端使用 HTTPS 访问页面。详见：你所不知道的 HSTS (opens new window)。
-其他操作
-浏览器还会进行一些额外的操作，比如安全检查、访问限制（之前国产浏览器限制 996.icu）。
-检查缓存
-
-二、DNS 查询
-基本步骤
-
-1. 浏览器缓存
-浏览器会先检查是否在缓存中，没有则调用系统库函数进行查询。
-2. 操作系统缓存
-操作系统也有自己的 DNS 缓存，但在这之前，会向检查域名是否存在本地的 Hosts 文件里，没有则向 DNS 服务器发送查询请求。
-3. 路由器缓存
-路由器也有自己的缓存。
-4. ISP DNS 缓存
-ISP DNS 就是在客户端电脑上设置的首选 DNS 服务器，它们在大多数情况下都会有缓存。
-根域名服务器查询
-在前面所有步骤没有缓存的情况下，本地 DNS 服务器会将请求转发到互联网上的根域，下面这个图很好的诠释了整个流程：
-
-
-根域名服务器：维基百科 (opens new window)
-
-需要注意的点
-
-递归方式：一路查下去中间不返回，得到最终结果才返回信息（浏览器到本地 DNS 服务器的过程）
-迭代方式，就是本地 DNS 服务器到根域名服务器查询的方式。
-什么是 DNS 劫持
-前端 dns-prefetch 优化
-
-三、TCP 连接
-TCP/IP 分为四层，在发送数据时，每层都要对数据进行封装：
-
-1. 应用层：发送 HTTP 请求
-在前面的步骤我们已经得到服务器的 IP 地址，浏览器会开始构造一个 HTTP 报文，其中包括：
-
-请求报头（Request Header）：请求方法、目标地址、遵循的协议等等
-请求主体（其他参数）
-
-其中需要注意的点：
-
-浏览器只能发送 GET、POST 方法，而打开网页使用的是 GET 方法
-
-2. 传输层：TCP 传输报文
-传输层会发起一条到达服务器的 TCP 连接，为了方便传输，会对数据进行分割（以报文段为单位），并标记编号，方便服务器接受时能够准确地还原报文信息。
-在建立连接前，会先进行 TCP 三次握手。
-
-关于 TCP/IP 三次握手，网上已经有很多段子和图片生动地描述了。
-相关知识点：
-
-SYN 泛洪攻击
-
-
-3. 网络层：IP 协议查询 Mac 地址
-将数据段打包，并加入源及目标的 IP 地址，并且负责寻找传输路线。
-判断目标地址是否与当前地址处于同一网络中，是的话直接根据 Mac 地址发送，否则使用路由表查找下一跳地址，以及使用 ARP 协议查询它的 Mac 地址。
-
-注意：在 OSI 参考模型中 ARP 协议位于链路层，但在 TCP/IP 中，它位于网络层。
-
-4. 链路层：以太网协议
-以太网协议
-根据以太网协议将数据分为以“帧”为单位的数据包，每一帧分为两个部分：
-
-标头：数据包的发送者、接受者、数据类型
-数据：数据包具体内容
-
-Mac 地址
-以太网规定了连入网络的所有设备都必须具备“网卡”接口，数据包都是从一块网卡传递到另一块网卡，网卡的地址就是 Mac 地址。每一个 Mac 地址都是独一无二的，具备了一对一的能力。
-广播
-发送数据的方法很原始，直接把数据通过 ARP 协议，向本网络的所有机器发送，接收方根据标头信息与自身 Mac 地址比较，一致就接受，否则丢弃。
-注意：接收方回应是单播。
-
-相关知识点：
-
-ARP 攻击
-
-
-服务器接受请求
-接受过程就是把以上步骤逆转过来，参见上图。
-四、服务器处理请求
-大致流程
-
-HTTPD
-最常见的 HTTPD 有 Linux 上常用的 Apache 和 Nginx，以及 Windows 上的 IIS。
-它会监听得到的请求，然后开启一个子进程去处理这个请求。
-处理请求
-接受 TCP 报文后，会对连接进行处理，对 HTTP 协议进行解析（请求方法、域名、路径等），并且进行一些验证：
-
-验证是否配置虚拟主机
-验证虚拟主机是否接受此方法
-验证该用户可以使用该方法（根据 IP 地址、身份信息等）
-
-重定向
-假如服务器配置了 HTTP 重定向，就会返回一个 301永久重定向响应，浏览器就会根据响应，重新发送 HTTP 请求（重新执行上面的过程）。
-
-关于更多：详见这篇文章 (opens new window)
-
-URL 重写
-然后会查看 URL 重写规则，如果请求的文件是真实存在的，比如图片、html、css、js 文件等，则会直接把这个文件返回。
-否则服务器会按照规则把请求重写到 一个 REST 风格的 URL 上。
-然后根据动态语言的脚本，来决定调用什么类型的动态文件解释器来处理这个请求。
-以 PHP 语言的 MVC 框架举例，它首先会初始化一些环境的参数，根据 URL 由上到下地去匹配路由，然后让路由所定义的方法去处理请求。
-五、浏览器接受响应
-浏览器接收到来自服务器的响应资源后，会对资源进行分析。
-首先查看 Response header，根据不同状态码做不同的事（比如上面提到的重定向）。
-如果响应资源进行了压缩（比如 gzip），还需要进行解压。
-然后，对响应资源做缓存。
-接下来，根据响应资源里的 MIME (opens new window) 类型去解析响应内容（比如 HTML、Image 各有不同的解析方式）。
-六、渲染页面
-浏览器内核
-
-不同的浏览器内核，渲染过程也不完全相同，但大致流程都差不多。
-基本流程
-
-1. HTML 解析
-首先要知道浏览器解析是从上往下一行一行地解析的。
-解析的过程可以分为四个步骤：
-1. 解码（encoding）
-传输回来的其实都是一些二进制字节数据，浏览器需要根据文件指定编码（例如 UTF-8）转换成字符串，也就是 HTML 代码。
-2. 预解析（pre-parsing）
-预解析做的事情是提前加载资源，减少处理时间，它会识别一些会请求资源的属性，比如img标签的src属性，并将这个请求加到请求队列中。
-3. 符号化（Tokenization）
-符号化是词法分析的过程，将输入解析成符号，HTML 符号包括，开始标签、结束标签、属性名和属性值。
-它通过一个状态机去识别符号的状态，比如遇到&lt;，&gt;状态都会产生变化。
-4. 构建树（tree construction）
-
-注意：符号化和构建树是并行操作的，也就是说只要解析到一个开始标签，就会创建一个 DOM 节点。
-
-在上一步符号化中，解析器获得这些标记，然后以合适的方法创建DOM对象并把这些符号插入到DOM对象中。
-
-浏览器容错进制
-你从来没有在浏览器看过类似"语法无效"的错误，这是因为浏览器去纠正错误的语法，然后继续工作。
-事件
-当整个解析的过程完成以后，浏览器会通过DOMContentLoaded事件来通知DOM解析完成。
-2. CSS 解析
-一旦浏览器下载了 CSS，CSS 解析器就会处理它遇到的任何 CSS，根据语法规范 (opens new window)解析出所有的 CSS 并进行标记化，然后我们得到一个规则表。
-CSS 匹配规则
-在匹配一个节点对应的 CSS 规则时，是按照从右到左的顺序的，例如：div p { font-size :14px }会先寻找所有的p标签然后判断它的父元素是否为div。
-所以我们写 CSS 时，尽量用 id 和 class，千万不要过度层叠。
-3. 渲染树
-其实这就是一个 DOM 树和 CSS 规则树合并的过程。
-
-注意：渲染树会忽略那些不需要渲染的节点，比如设置了display:none的节点。
-
-计算
-通过计算让任何尺寸值都减少到三个可能之一：auto、百分比、px，比如把rem转化为px。
-级联
-浏览器需要一种方法来确定哪些样式才真正需要应用到对应元素，所以它使用一个叫做specificity的公式，这个公式会通过：
-
-标签名、class、id
-是否内联样式
-!important
-
-然后得出一个权重值，取最高的那个。
-渲染阻塞
-当遇到一个script标签时，DOM 构建会被暂停，直至脚本完成执行，然后继续构建 DOM 树。
-但如果 JS 依赖 CSS 样式，而它还没有被下载和构建时，浏览器就会延迟脚本执行，直至 CSS Rules 被构建。
-所有我们知道：
-
-CSS 会阻塞 JS 执行
-JS 会阻塞后面的 DOM 解析
-
-为了避免这种情况，应该以下原则：
-
-CSS 资源排在 JavaScript 资源前面
-JS 放在 HTML 最底部，也就是 &lt;/body&gt;前
-
-另外，如果要改变阻塞模式，可以使用 defer 与 async，详见：这篇文章 (opens new window)
-
-布局与绘制
-
-确定渲染树种所有节点的几何属性，比如：位置、大小等等，最后输入一个盒子模型，它能精准地捕获到每个元素在屏幕内的准确位置与大小。
-然后遍历渲染树，调用渲染器的 paint() 方法在屏幕上显示其内容。
-5. 合并渲染层
-把以上绘制的所有图片合并，最终输出一张图片。
-6. 回流与重绘
-回流(reflow)
-当浏览器发现某个部分发现变化影响了布局时，需要倒回去重新渲染，会从html标签开始递归往下，重新计算位置和大小。
-reflow 基本是无法避免的，因为当你滑动一下鼠标、resize 窗口，页面就会产生变化。
-重绘(repaint)
-改变了某个元素的背景色、文字颜色等等不会影响周围元素的位置变化时，就会发生重绘。
-每次重绘后，浏览器还需要合并渲染层并输出到屏幕上。
-回流的成本要比重绘高很多，所以我们应该尽量避免产生回流。
-比如：
-
-display:none 会触发回流，而 visibility:hidden 只会触发重绘。
-
-
-JavaScript 编译执行
-
-大致流程
-
-可以分为三个阶段：
-1. 词法分析
-JS 脚本加载完毕后，会首先进入语法分析阶段，它首先会分析代码块的语法是否正确，不正确则抛出“语法错误”，停止执行。
-几个步骤：
-
-分词，例如将var a = 2，，分成var、a、=、2这样的词法单元。
-解析，将词法单元转换成抽象语法树（AST）。
-代码生成，将抽象语法树转换成机器指令。
-
-2. 预编译
-JS 有三种运行环境：
-
-全局环境
-函数环境
-eval
-
-每进入一个不同的运行环境都会创建一个对应的执行上下文，根据不同的上下文环境，形成一个函数调用栈，栈底永远是全局执行上下文，栈顶则永远是当前执行上下文。
-创建执行上下文
-创建执行上下文的过程中，主要做了以下三件事：
-
-创建变量对象
-
-参数、函数、变量
-
-
-建立作用域链
-
-确认当前执行环境是否能访问变量
-
-
-确定 This 指向
-
-3. 执行
-JS 线程
-
-虽然 JS 是单线程的，但实际上参与工作的线程一共有四个：
-
-其中三个只是协助，只有 JS 引擎线程是真正执行的
-
-
-JS 引擎线程：也叫 JS 内核，负责解析执行 JS 脚本程序的主线程，例如 V8 引擎
-事件触发线程：属于浏览器内核线程，主要用于控制事件，例如鼠标、键盘等，当事件被触发时，就会把事件的处理函数推进事件队列，等待 JS 引擎线程执行
-定时器触发线程：主要控制setInterval和setTimeout，用来计时，计时完毕后，则把定时器的处理函数推进事件队列中，等待 JS 引擎线程。
-HTTP 异步请求线程：通过 XMLHttpRequest 连接后，通过浏览器新开的一个线程，监控 readyState 状态变更时，如果设置了该状态的回调函数，则将该状态的处理函数推进事件队列中，等待 JS 引擎线程执行。
-
-注：浏览器对同一域名的并发连接数是有限的，通常为 6 个。
-宏任务
-分为：
-
-同步任务：按照顺序执行，只有前一个任务完成后，才能执行后一个任务
-异步任务：不直接执行，只有满足触发条件时，相关的线程将该异步任务推进任务队列中，等待 JS 引擎主线程上的任务执行完毕时才开始执行，例如异步 Ajax、DOM 事件，setTimeout 等。
-
-微任务
-微任务是 ES6 和 Node 环境下的，主要 API 有：Promise，process.nextTick。
-微任务的执行在宏任务的同步任务之后，在异步任务之前。
-
-代码例子
-以上代码输出顺序为：1,3,5,4,2
-参考文档
-
-what-happens-when-zh_CN (opens new window)
-Tags to DOM (opens new window)
-彻底理解浏览器的缓存机制 (opens new window)
-浏览器的工作原理：新式网络浏览器幕后揭秘 (opens new window)
-深入浅出浏览器渲染原理 (opens new window)
-js 引擎的执行过程（一） (opens new window)
-还有一些找不到了。。。。。
-
-From: 4ark.me
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>自动曝光原理</title>
     <url>/posts/509c7bd3/</url>
     <content><![CDATA[自动曝光的原理
@@ -11439,9 +11089,9 @@ Vim
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-bxeBlaPnxlYaSEwG").style.height=document.getElementById("mmedia-bxeBlaPnxlYaSEwG").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-jsbDgZVneqmFvAkH").style.height=document.getElementById("mmedia-jsbDgZVneqmFvAkH").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-bxeBlaPnxlYaSEwG").style.height=document.getElementById("mmedia-bxeBlaPnxlYaSEwG").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-jsbDgZVneqmFvAkH").style.height=document.getElementById("mmedia-jsbDgZVneqmFvAkH").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -11646,6 +11296,356 @@ Vim
         <tag>thinkpad</tag>
         <tag>sound</tag>
         <tag>speaker</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>在浏览器输入 URL 回车之后发生了什么</title>
+    <url>/posts/656a0abb/</url>
+    <content><![CDATA[前言
+
+这个问题已经是老生常谈了，更是经常被作为面试的压轴题出现，网上也有很多文章，但最近闲的无聊，然后就自己做了一篇笔记，感觉比之前理解更透彻了。
+这篇笔记是我这两天看了数十篇文章总结出来的，所以相对全面一点，但由于我是做前端的，所以会比较重点分析浏览器渲染页面那一部分，至于其他部分我会罗列出关键词，感兴趣的可以自行查阅，
+**注意：**本文的步骤是建立在，请求的是一个简单的 HTTP 请求，没有 HTTPS、HTTP2、最简单的 DNS、没有代理、并且服务器没有任何问题的基础上，尽管这是不切实际的。
+大致流程
+
+URL 解析
+DNS 查询
+TCP 连接
+处理请求
+接受响应
+渲染页面
+
+一、URL 解析
+地址解析：
+首先判断你输入的是一个合法的 URL 还是一个待搜索的关键词，并且根据你输入的内容进行自动完成、字符编码等操作。
+HSTS
+由于安全隐患，会使用 HSTS 强制客户端使用 HTTPS 访问页面。详见：你所不知道的 HSTS (opens new window)。
+其他操作
+浏览器还会进行一些额外的操作，比如安全检查、访问限制（之前国产浏览器限制 996.icu）。
+检查缓存
+
+二、DNS 查询
+基本步骤
+
+1. 浏览器缓存
+浏览器会先检查是否在缓存中，没有则调用系统库函数进行查询。
+2. 操作系统缓存
+操作系统也有自己的 DNS 缓存，但在这之前，会向检查域名是否存在本地的 Hosts 文件里，没有则向 DNS 服务器发送查询请求。
+3. 路由器缓存
+路由器也有自己的缓存。
+4. ISP DNS 缓存
+ISP DNS 就是在客户端电脑上设置的首选 DNS 服务器，它们在大多数情况下都会有缓存。
+根域名服务器查询
+在前面所有步骤没有缓存的情况下，本地 DNS 服务器会将请求转发到互联网上的根域，下面这个图很好的诠释了整个流程：
+
+
+根域名服务器：维基百科 (opens new window)
+
+需要注意的点
+
+递归方式：一路查下去中间不返回，得到最终结果才返回信息（浏览器到本地 DNS 服务器的过程）
+迭代方式，就是本地 DNS 服务器到根域名服务器查询的方式。
+什么是 DNS 劫持
+前端 dns-prefetch 优化
+
+三、TCP 连接
+TCP/IP 分为四层，在发送数据时，每层都要对数据进行封装：
+
+1. 应用层：发送 HTTP 请求
+在前面的步骤我们已经得到服务器的 IP 地址，浏览器会开始构造一个 HTTP 报文，其中包括：
+
+请求报头（Request Header）：请求方法、目标地址、遵循的协议等等
+请求主体（其他参数）
+
+其中需要注意的点：
+
+浏览器只能发送 GET、POST 方法，而打开网页使用的是 GET 方法
+
+2. 传输层：TCP 传输报文
+传输层会发起一条到达服务器的 TCP 连接，为了方便传输，会对数据进行分割（以报文段为单位），并标记编号，方便服务器接受时能够准确地还原报文信息。
+在建立连接前，会先进行 TCP 三次握手。
+
+关于 TCP/IP 三次握手，网上已经有很多段子和图片生动地描述了。
+相关知识点：
+
+SYN 泛洪攻击
+
+
+3. 网络层：IP 协议查询 Mac 地址
+将数据段打包，并加入源及目标的 IP 地址，并且负责寻找传输路线。
+判断目标地址是否与当前地址处于同一网络中，是的话直接根据 Mac 地址发送，否则使用路由表查找下一跳地址，以及使用 ARP 协议查询它的 Mac 地址。
+
+注意：在 OSI 参考模型中 ARP 协议位于链路层，但在 TCP/IP 中，它位于网络层。
+
+4. 链路层：以太网协议
+以太网协议
+根据以太网协议将数据分为以“帧”为单位的数据包，每一帧分为两个部分：
+
+标头：数据包的发送者、接受者、数据类型
+数据：数据包具体内容
+
+Mac 地址
+以太网规定了连入网络的所有设备都必须具备“网卡”接口，数据包都是从一块网卡传递到另一块网卡，网卡的地址就是 Mac 地址。每一个 Mac 地址都是独一无二的，具备了一对一的能力。
+广播
+发送数据的方法很原始，直接把数据通过 ARP 协议，向本网络的所有机器发送，接收方根据标头信息与自身 Mac 地址比较，一致就接受，否则丢弃。
+注意：接收方回应是单播。
+
+相关知识点：
+
+ARP 攻击
+
+
+服务器接受请求
+接受过程就是把以上步骤逆转过来，参见上图。
+四、服务器处理请求
+大致流程
+
+HTTPD
+最常见的 HTTPD 有 Linux 上常用的 Apache 和 Nginx，以及 Windows 上的 IIS。
+它会监听得到的请求，然后开启一个子进程去处理这个请求。
+处理请求
+接受 TCP 报文后，会对连接进行处理，对 HTTP 协议进行解析（请求方法、域名、路径等），并且进行一些验证：
+
+验证是否配置虚拟主机
+验证虚拟主机是否接受此方法
+验证该用户可以使用该方法（根据 IP 地址、身份信息等）
+
+重定向
+假如服务器配置了 HTTP 重定向，就会返回一个 301永久重定向响应，浏览器就会根据响应，重新发送 HTTP 请求（重新执行上面的过程）。
+
+关于更多：详见这篇文章 (opens new window)
+
+URL 重写
+然后会查看 URL 重写规则，如果请求的文件是真实存在的，比如图片、html、css、js 文件等，则会直接把这个文件返回。
+否则服务器会按照规则把请求重写到 一个 REST 风格的 URL 上。
+然后根据动态语言的脚本，来决定调用什么类型的动态文件解释器来处理这个请求。
+以 PHP 语言的 MVC 框架举例，它首先会初始化一些环境的参数，根据 URL 由上到下地去匹配路由，然后让路由所定义的方法去处理请求。
+五、浏览器接受响应
+浏览器接收到来自服务器的响应资源后，会对资源进行分析。
+首先查看 Response header，根据不同状态码做不同的事（比如上面提到的重定向）。
+如果响应资源进行了压缩（比如 gzip），还需要进行解压。
+然后，对响应资源做缓存。
+接下来，根据响应资源里的 MIME (opens new window) 类型去解析响应内容（比如 HTML、Image 各有不同的解析方式）。
+六、渲染页面
+浏览器内核
+
+不同的浏览器内核，渲染过程也不完全相同，但大致流程都差不多。
+基本流程
+
+1. HTML 解析
+首先要知道浏览器解析是从上往下一行一行地解析的。
+解析的过程可以分为四个步骤：
+1. 解码（encoding）
+传输回来的其实都是一些二进制字节数据，浏览器需要根据文件指定编码（例如 UTF-8）转换成字符串，也就是 HTML 代码。
+2. 预解析（pre-parsing）
+预解析做的事情是提前加载资源，减少处理时间，它会识别一些会请求资源的属性，比如img标签的src属性，并将这个请求加到请求队列中。
+3. 符号化（Tokenization）
+符号化是词法分析的过程，将输入解析成符号，HTML 符号包括，开始标签、结束标签、属性名和属性值。
+它通过一个状态机去识别符号的状态，比如遇到&lt;，&gt;状态都会产生变化。
+4. 构建树（tree construction）
+
+注意：符号化和构建树是并行操作的，也就是说只要解析到一个开始标签，就会创建一个 DOM 节点。
+
+在上一步符号化中，解析器获得这些标记，然后以合适的方法创建DOM对象并把这些符号插入到DOM对象中。
+
+浏览器容错进制
+你从来没有在浏览器看过类似"语法无效"的错误，这是因为浏览器去纠正错误的语法，然后继续工作。
+事件
+当整个解析的过程完成以后，浏览器会通过DOMContentLoaded事件来通知DOM解析完成。
+2. CSS 解析
+一旦浏览器下载了 CSS，CSS 解析器就会处理它遇到的任何 CSS，根据语法规范 (opens new window)解析出所有的 CSS 并进行标记化，然后我们得到一个规则表。
+CSS 匹配规则
+在匹配一个节点对应的 CSS 规则时，是按照从右到左的顺序的，例如：div p { font-size :14px }会先寻找所有的p标签然后判断它的父元素是否为div。
+所以我们写 CSS 时，尽量用 id 和 class，千万不要过度层叠。
+3. 渲染树
+其实这就是一个 DOM 树和 CSS 规则树合并的过程。
+
+注意：渲染树会忽略那些不需要渲染的节点，比如设置了display:none的节点。
+
+计算
+通过计算让任何尺寸值都减少到三个可能之一：auto、百分比、px，比如把rem转化为px。
+级联
+浏览器需要一种方法来确定哪些样式才真正需要应用到对应元素，所以它使用一个叫做specificity的公式，这个公式会通过：
+
+标签名、class、id
+是否内联样式
+!important
+
+然后得出一个权重值，取最高的那个。
+渲染阻塞
+当遇到一个script标签时，DOM 构建会被暂停，直至脚本完成执行，然后继续构建 DOM 树。
+但如果 JS 依赖 CSS 样式，而它还没有被下载和构建时，浏览器就会延迟脚本执行，直至 CSS Rules 被构建。
+所有我们知道：
+
+CSS 会阻塞 JS 执行
+JS 会阻塞后面的 DOM 解析
+
+为了避免这种情况，应该以下原则：
+
+CSS 资源排在 JavaScript 资源前面
+JS 放在 HTML 最底部，也就是 &lt;/body&gt;前
+
+另外，如果要改变阻塞模式，可以使用 defer 与 async，详见：这篇文章 (opens new window)
+
+布局与绘制
+
+确定渲染树种所有节点的几何属性，比如：位置、大小等等，最后输入一个盒子模型，它能精准地捕获到每个元素在屏幕内的准确位置与大小。
+然后遍历渲染树，调用渲染器的 paint() 方法在屏幕上显示其内容。
+5. 合并渲染层
+把以上绘制的所有图片合并，最终输出一张图片。
+6. 回流与重绘
+回流(reflow)
+当浏览器发现某个部分发现变化影响了布局时，需要倒回去重新渲染，会从html标签开始递归往下，重新计算位置和大小。
+reflow 基本是无法避免的，因为当你滑动一下鼠标、resize 窗口，页面就会产生变化。
+重绘(repaint)
+改变了某个元素的背景色、文字颜色等等不会影响周围元素的位置变化时，就会发生重绘。
+每次重绘后，浏览器还需要合并渲染层并输出到屏幕上。
+回流的成本要比重绘高很多，所以我们应该尽量避免产生回流。
+比如：
+
+display:none 会触发回流，而 visibility:hidden 只会触发重绘。
+
+
+JavaScript 编译执行
+
+大致流程
+
+可以分为三个阶段：
+1. 词法分析
+JS 脚本加载完毕后，会首先进入语法分析阶段，它首先会分析代码块的语法是否正确，不正确则抛出“语法错误”，停止执行。
+几个步骤：
+
+分词，例如将var a = 2，，分成var、a、=、2这样的词法单元。
+解析，将词法单元转换成抽象语法树（AST）。
+代码生成，将抽象语法树转换成机器指令。
+
+2. 预编译
+JS 有三种运行环境：
+
+全局环境
+函数环境
+eval
+
+每进入一个不同的运行环境都会创建一个对应的执行上下文，根据不同的上下文环境，形成一个函数调用栈，栈底永远是全局执行上下文，栈顶则永远是当前执行上下文。
+创建执行上下文
+创建执行上下文的过程中，主要做了以下三件事：
+
+创建变量对象
+
+参数、函数、变量
+
+
+建立作用域链
+
+确认当前执行环境是否能访问变量
+
+
+确定 This 指向
+
+3. 执行
+JS 线程
+
+虽然 JS 是单线程的，但实际上参与工作的线程一共有四个：
+
+其中三个只是协助，只有 JS 引擎线程是真正执行的
+
+
+JS 引擎线程：也叫 JS 内核，负责解析执行 JS 脚本程序的主线程，例如 V8 引擎
+事件触发线程：属于浏览器内核线程，主要用于控制事件，例如鼠标、键盘等，当事件被触发时，就会把事件的处理函数推进事件队列，等待 JS 引擎线程执行
+定时器触发线程：主要控制setInterval和setTimeout，用来计时，计时完毕后，则把定时器的处理函数推进事件队列中，等待 JS 引擎线程。
+HTTP 异步请求线程：通过 XMLHttpRequest 连接后，通过浏览器新开的一个线程，监控 readyState 状态变更时，如果设置了该状态的回调函数，则将该状态的处理函数推进事件队列中，等待 JS 引擎线程执行。
+
+注：浏览器对同一域名的并发连接数是有限的，通常为 6 个。
+宏任务
+分为：
+
+同步任务：按照顺序执行，只有前一个任务完成后，才能执行后一个任务
+异步任务：不直接执行，只有满足触发条件时，相关的线程将该异步任务推进任务队列中，等待 JS 引擎主线程上的任务执行完毕时才开始执行，例如异步 Ajax、DOM 事件，setTimeout 等。
+
+微任务
+微任务是 ES6 和 Node 环境下的，主要 API 有：Promise，process.nextTick。
+微任务的执行在宏任务的同步任务之后，在异步任务之前。
+
+代码例子
+以上代码输出顺序为：1,3,5,4,2
+参考文档
+
+what-happens-when-zh_CN (opens new window)
+Tags to DOM (opens new window)
+彻底理解浏览器的缓存机制 (opens new window)
+浏览器的工作原理：新式网络浏览器幕后揭秘 (opens new window)
+深入浅出浏览器渲染原理 (opens new window)
+js 引擎的执行过程（一） (opens new window)
+还有一些找不到了。。。。。
+
+From: 4ark.me
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>通过宝塔面板实现MySQL性能简单调优</title>
+    <url>/posts/d5f56dd0/</url>
+    <content><![CDATA[
+在PHP+MYSQL架构网站运行过程中，往往会遇到各种性能问题影响，如MySQL、PHP、CPU、磁盘IO、缓存等，其中MySQL瓶颈就是最常见也最难解决的一种影响网站性能的因素；通常，我们会使用redis、memcached等缓存软件来缓存内容，这确实是最优的解决方案之一，但这需要网站程序的支持，然而多数常用网站程序并不支持或者不能完美支持这些缓存软件，今天我们就来谈谈如何通过MySQL自身的配置调整来优化MySQL性能，以缓解MySQL瓶颈问题。
+
+准备：
+
+​    1、宝塔Linux面板 正式版 5.2.0+ (2017/09/20发布)  测试版5.2.4+
+​    2、MySQL 5.x
+
+通常MySQL调优我们分以下几部分：
+
+​    1、MySQL配置参数调优 (需要根据网站运行情况调整)
+​    2、数据表索引调优 (效果明显，但通常优秀的开源程序都不需要调整)
+​    3、SQL语句调优 (这是程序员或DBA干的事)
+
+今天我们主要谈谈如果配合宝塔面板的新功能来进行MySQL配置参数调优，我们先来看两张图片：
+(图1)
+
+(图2)
+
+很明显，(图1)显示的是MySQL当前的运行状态，(图2)显示的是MySQL主要配置参数
+下面我们就来解读一下这两张图：
+1、活动/峰值连接数
+​      (图1)中当前活动的连接为1个，自MySQL服务启动以来，最高连接数为54；当最高连接数接近或等于(图2)中的max_connections时，应适当增加max_connections，需要注意的是，不要一下子增加过多，建议每次增加50，观察一段时间，不够再继续增加。
+2、线程缓存命中率
+​      (图1)中线程缓存命中率为99.78%，若这个值小于90%，建议适当增加(图2)中的thread_cache_size，建议每次增加8。
+3、索引命中率
+​      (图1)中索引命中率为99.50%，若这个值小于95%，建议适当增加(图2)中的key_buffer_size，建议每次增加64，需要说明的是，若您的数据库使用的是Innodb引擎，可忽略这个选项
+4、Innodb索引命中率
+(图1)中Innodb索引命中率为100%，若这个值小于95%，建议适当增加(图2)中的innodb_buffer_pool_size，建议每次增加64，需要说明的是，若您的数据库没有使用Innodb引擎，可忽略这个选项
+5、查询缓存命中率
+​      MySQL查询缓存是个比较受争议的功能，个人建议当你有在使用redis、memcached等缓存软件时，在(图2)中将query_cache_size设为0可以将其关闭，当你没有使用缓存软件，有多余的内存使用，且数据库瓶颈明显存在时，可以尝试开启查询缓存，这是个非常依赖数据表结构及SQL语句优化的功能，若数据表结构和SQL语句都针对查询缓存进行过优化，它的效果还是很不错的。
+6、创建临时表到磁盘
+​      (图1)中创建临时表到磁盘的比例是0.42%，这说明大部分临时表创建到内存了，不会过多增加磁盘IO的开销，建议，当比例大于2%时适当增加(图1)中的tmp_cache_size，建议每次增加32，当比例大于60%时，放弃吧，有些开源程序并没有专门优化过SQL语句，所以在运行过程中会开启大量临时表，加多少缓存都是不够用的。
+7、已打开的表
+​      当(图1)中的已打开的表接近或等于(图2)中的table_open_cache时，可以适当增加table_open_cache，但若设置过大可能导致您的程序频繁中断MySQL连接，建议在1024以内，最大不要超过2048。
+8、没有使用索引的量、没有使用索引的JOIN量
+​      若不为0，就检查下数据表索引吧，其实只要没有疯涨，比如一天增涨几千，一般可以忽略，必竟优化索引还是程序员或DBA去干比较合适。
+9、排序后的合并次数
+​      如果这个值在缓慢增张，建议适当增加(图2)中的sort_buffer_size，建议每次增加512，但最大不要超过8192，如果这个值一直在疯涨，增加sort_buffer_size也没用，就放弃这个选项吧，这个锅还是给程序开发者背。
+10、锁表次数
+​      如果服务器CPU开销不大的情况下，疯狂锁表，建议你将所有数据表转换成innodb，记得转换前备份哦。
+11、优化方案
+​      这个是我们根据内存大小给的一个推荐优化方案，仅是建议仅用于基础参考值，还是要根据实据情况来调整每一个配置项。
+注意：保存参数配置后不会立即生效，记得要重启MySQL服务。
+写在最后：
+因我本人并不是专业DBA，难免有错误或遗漏的地方，还请大家给予指正，另外，可能面板提供的参考数据及调整选项还不够丰富，我们在往后的更新中会根据需要考虑继续增加更多的调整选项，谢谢大家的支持。
+来自网络整理。
+]]></content>
+      <categories>
+        <category>mysql</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>mysql</tag>
+        <tag>优化</tag>
       </tags>
   </entry>
   <entry>
@@ -15718,11 +15718,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var CTzAtwpEuSEpuohj_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); CTzAtwpEuSEpuohj_options.container = document.getElementById("mmedia-CTzAtwpEuSEpuohj"); const ap_CTzAtwpEuSEpuohj = new APlayer(CTzAtwpEuSEpuohj_options); 
+ var ggteRPnfSDwChjDu_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); ggteRPnfSDwChjDu_options.container = document.getElementById("mmedia-ggteRPnfSDwChjDu"); const ap_ggteRPnfSDwChjDu = new APlayer(ggteRPnfSDwChjDu_options); 
 
 - **列表**
 
- var tatINMiQCcPErHOF_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); tatINMiQCcPErHOF_options.container = document.getElementById("mmedia-tatINMiQCcPErHOF"); const ap_tatINMiQCcPErHOF = new APlayer(tatINMiQCcPErHOF_options); 
+ var HyvGLYLZzDGpAxFC_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); HyvGLYLZzDGpAxFC_options.container = document.getElementById("mmedia-HyvGLYLZzDGpAxFC"); const ap_HyvGLYLZzDGpAxFC = new APlayer(HyvGLYLZzDGpAxFC_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -15974,21 +15974,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-cseFDvratvsyfRoX").style.height=document.getElementById("mmedia-cseFDvratvsyfRoX").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-GvIVFMmyEwrTMwZF").style.height=document.getElementById("mmedia-GvIVFMmyEwrTMwZF").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-cseFDvratvsyfRoX").style.height=document.getElementById("mmedia-cseFDvratvsyfRoX").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-GvIVFMmyEwrTMwZF").style.height=document.getElementById("mmedia-GvIVFMmyEwrTMwZF").scrollWidth*0.76+"px";
     }; 
 
 **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-gXXPBTWisTocPfOX").style.height=document.getElementById("mmedia-gXXPBTWisTocPfOX").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-YBZkekJlXecBnkXg").style.height=document.getElementById("mmedia-YBZkekJlXecBnkXg").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-gXXPBTWisTocPfOX").style.height=document.getElementById("mmedia-gXXPBTWisTocPfOX").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-YBZkekJlXecBnkXg").style.height=document.getElementById("mmedia-YBZkekJlXecBnkXg").scrollWidth*0.7+"px";
     }; 
 
 **artplayer**
 
- var LPOspaGpQcUQEvgr_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); LPOspaGpQcUQEvgr_options.container = "#mmedia-LPOspaGpQcUQEvgr"; const art_LPOspaGpQcUQEvgr = new Artplayer(LPOspaGpQcUQEvgr_options); 
+ var ToLJSZsuQuGqoREN_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); ToLJSZsuQuGqoREN_options.container = "#mmedia-ToLJSZsuQuGqoREN"; const art_ToLJSZsuQuGqoREN = new Artplayer(ToLJSZsuQuGqoREN_options); 
 脑图
 
 原作者记录
@@ -16135,6 +16135,158 @@ Subsequent paragraphs are indented to show that they ↩︎
         <tag>hexo</tag>
         <tag>plantuml</tag>
         <tag>mathjax</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Earthly 一个更加强大的镜像构建工具</title>
+    <url>/posts/593cc323/</url>
+    <content><![CDATA[一、Earthly 介绍
+
+开局一张图，功能全靠吹。
+
+
+Earthly 是一个更加高级的 Docker 镜像构建工具，Earthly 通过自己定义的 Earthfile 来代替传统的 Dockerfile 完成镜像构建；Earthfile 就如同 Earthly 官方所描述:
+**Makefile + Dockerfile = Earthfile**
+在使用 Earthly 进行构建镜像时目前强依赖于 buildkit，Earthly 通过 buildkit 支持了一些 Dockerfile 的扩展语法，同时将 Dockerfile 与 Makefile 整合，使得多平台构建和代码化 Dockerfile 变得更加简单；使用 Earthly 可以更加方便的完成 Dockerfile 的代码复用以及更加友好的 CI 自动集成。
+二、快速开始
+2.1、安装依赖
+Earthly 目前依赖于 Docker 和 Git，所以安装 Earthly 前请确保机器已经安装了 Docker 和 Git。
+2.2、安装 Earthly
+Earthly 采用 Go 编写，所以主要就一个二进制文件，Linux 下安装可以直接参考官方的安装脚本:
+sudo /bin/sh -c 'wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly &amp;&amp; chmod +x /usr/local/bin/earthly &amp;&amp; /usr/local/bin/earthly bootstrap --with-autocomplete'Copy
+安装完成后 Earthly 将会启动一个 buildkitd 容器: earthly-buildkitd。
+2.3、语法高亮
+目前 Earthly 官方支持 VS Code、VIM 以及 Sublime Text 三种编辑器的语法高亮，具体如何安装请参考 官方文档。
+2.4、基本使用
+本示例源于官方 Basic 教程，以下示例以编译 Go 项目为样例:
+首先创建一个任意名称的目录，目录中存在项目源码文件以及一个 Earthfile 文件；
+main.go
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("hello world")
+}Copy
+Earthfile
+FROM golang:1.17-alpine
+WORKDIR /go-example
+
+build:
+    COPY main.go .
+    RUN go build -o build/go-example main.go
+    SAVE ARTIFACT build/go-example /go-example AS LOCAL build/go-example
+
+docker:
+    COPY +build/go-example .
+    ENTRYPOINT ["/go-example/go-example"]
+    SAVE IMAGE go-example:latestCopy
+有了 Earthfile 以后我们就可以使用 Earthly 将其打包为镜像；
+# 目录结构
+~/t/earthlytest ❯❯❯ tree
+.
+├── Earthfile
+└── main.go
+
+0 directories, 2 files
+
+# 通过 earthly 进行构建
+~/t/earthlytest ❯❯❯ earthly +dockerCopy
+
+构建完成后我们就可以直接从 docker 的 images 列表中查看刚刚构建的镜像，并运行:
+
+三、进阶使用
+3.1、多阶段构建
+Earthfile 中包含类似 Makefile 一样的 target，不同的 target 之间还可以通过特定语法进行引用，每个 target 都可以被单独执行，执行过程中 earthly 会自动解析这些依赖关系。
+这种多阶段构建时语法很弹性，我们可以在每个阶段运行独立的命令以及使用不同的基础镜像；从快速开始中可以看到，我们始终使用了一个基础镜像(golang:1.17-alpine)，对于 Go 这种编译后自带运行时不依赖其语言 SDK 的应用，我们事实上可以将 “发布物” 仅放在简单的运行时系统镜像内，从而减少最终镜像体积:
+
+由于使用了多个 target，所以我们可以单独的运行 build 这个 target 来验证我们的编译流程，这种多 target 的设计方便我们构建应用时对编译、打包步骤的细化拆分，同时也方便我们进行单独的验证。 例如我们单独执行 build 这个 target 来验证我们的编译流程是否正确:
+
+在其他阶段验证完成后，我们可以直接运行最终的 target，earthly 会自动识别到这种依赖关系从而自动运行其依赖的 target:
+
+3.2、扩展指令
+3.2.1、SAVE
+SAVE 指令是 Earthly 自己的一个扩展指令，实际上分为 SAVE ARTIFACT 和 SAVE IMAGE；其中 SAVE ARTIFACT 指令格式如下:
+SAVE ARTIFACT [--keep-ts] [--keep-own] [--if-exists] [--force] &lt;src&gt; [&lt;artifact-dest-path&gt;] [AS LOCAL &lt;local-path&gt;]Copy
+SAVE ARTIFACT 指令用于将文件或目录从 build 运行时环境保存到 target 的 artifact 环境；当保存到 artifact 环境后，可以通过 COPY 等命令在其他位置进行引用，类似于 Dockerfile 的 COPY --from... 语法；不同的是 SAVE ARTIFACT 支持 AS LOCAL &lt;local-path&gt; 附加参数，一但指定此参数后，earthly 会同时将文件或目录在宿主机复制一份，一般用于调试等目的。SAVE ARTIFACT 命令在上面的样例中已经展示了，在运行完 earthly +build 命令后实际上会在本地看到被 SAVE 出来的 ARTIFACT:
+
+而另一个 SAVE IMAGE 指令则主要用于将当前的 build 环境 SAVE 为一个 IMAGE，如果指定了 --push 选项，同时在执行 earthly +target 命令时也加入 --push 选项，该镜像将会自动被推送到目标 Registry 上。SAVE IMAGE 指令格式如下:
+SAVE IMAGE [--cache-from=&lt;cache-image&gt;] [--push] &lt;image-name&gt;...Copy
+
+3.2.2、GIT CLONE
+GIT CLONE 指令用于将指定 git 仓库 clone 到 build 环境中；与 RUN git clone... 命令不同的是，GIT CLONE 通过宿主机的 git 命令运行，它不依赖于容器内的 git 命令，同时还可以直接为 earthly 配置 git 认证，从而避免将这些安全信息泄漏到 build 环境中； 关于如何配置 earthly 的 git 认证请参考 官方文档；下面是 GIT CLONE 指令的样例
+
+3.2.3、COPY
+COPY 指令与标准的 Dockerfile COPY 指令类似，除了支持 Dockerfile 标准的 COPY 功能以外，earthly 中的 COPY 指令可以引用其他 target 环节产生的 artifact，在引用时会自动声明依赖关系；即当在 B target 中存在 COPY +A/xxxxx /path/to/copy 类似的指令时，如果只单纯的执行 earthly +B，那么 earthly 根据依赖分析会得出在 COPY 之前需要执行 target A。COPY 指令的语法格式如下:
+# 与 Dockerfile 相同的使用方式，从上下文复制
+COPY [options...] &lt;src&gt;... &lt;dest&gt;
+
+# 扩展支持的从 target 复制方式
+COPY [options...] &lt;src-artifact&gt;... &lt;dest&gt;Copy
+3.2.4、RUN
+RUN 指令在标准使用上与 Dockerfile 里保持一致，除此之外增加了更多的扩展选项，其指令格式如下:
+# shell 方式运行(/bin/sh -c)
+RUN [--push] [--entrypoint] [--privileged] [--secret &lt;env-var&gt;=&lt;secret-ref&gt;] [--ssh] [--mount &lt;mount-spec&gt;] [--] &lt;command&gt;
+
+# exec 方式运行
+RUN [[&lt;flags&gt;...], "&lt;executable&gt;", "&lt;arg1&gt;", "&lt;arg2&gt;", ...]Copy
+其中 --privileged 选项允许运行的命令使用 privileged capabilities，但是需要 earthly 在运行 target 时增加 --allow-privileged 选项；--interactive / --interactive-keep 选项用于交互式执行一些命令，在完成交互后 build 继续进行，在交互过程中进行的操作都会被持久化到 镜像中:
+
+限于篇幅原因，其他的具体指令请查阅官方文档 Earthfile reference。
+3.3、UDCS
+UDCs 全称 “User-defined commands”，即用户定义指令；通过 UDCs 我们可以将 Earthfile 中特定的命令剥离出来，从而实现更加通用和统一的代码复用；下面是一个定义 UDCs 指令的样例:
+# 定义一个 Command
+# ⚠️ 注意: 语法必须满足以下规则
+# 1、名称全大写
+# 2、名称下划线分割
+# 3、首个命令必须为 COMMAND(后面没有冒号)
+MY_COPY:
+    COMMAND
+    ARG src
+    ARG dest=./
+    ARG recursive=false
+    RUN cp $(if $recursive =  "true"; then printf -- -r; fi) "$src" "$dest"
+
+# target 中引用
+build:
+    FROM alpine:3.13
+    WORKDIR /udc-example
+    RUN echo "hello" &gt;./foo
+    # 通过 DO 关键字引用 UDCs
+    DO +MY_COPY --src=./foo --dest=./bar
+    RUN cat ./bar # prints "hello"Copy
+UDCs 不光可以定义在一个 Earthfile 中，UDCs 可以跨文件、跨目录引用:
+
+有了 UDCs 以后，我们可以通过这种方式将对基础镜像的版本统一控制、对特殊镜像的通用处理等操作全部抽象出来，然后每个 Earthfile 根据需要进行引用；关于 UDCs 的使用样例可以参考我的 autobuild 项目，其中的 udcs 目录定义了大量的通用 UDCs，这些 UDCs 被其他目标镜的 Earthfile 批量引用。
+3.4、多平台构建
+在以前使用 Dockerfile 的时候，我们需要自己配置然后开启 buildkit 来实现多平台构建；在配置过程中可能会很繁琐，现在使用 earthly 可以默认帮我们实现多平台的交叉编译，我们需要做的仅仅是在 Earthfile 中声明需要支持哪些平台而已:
+
+以上 Earthfile 在执行 earthly --push +all 构建时，将会自动构建四个平台的镜像，并保持单个 tag，同时由于使用了 --push 选项还会自动推送到 Docker Hub 上:
+
+四、总结
+Earthly 弥补了 Dockerfile 的很多不足，解决了很多痛点问题；但同样可能需要一些学习成本，但是如果已经熟悉了 Dockerfile 其实学习成本不高；所以目前还是比较推荐将 Dockerfile 切换为 Earthfile 进行统一和版本化管理的。本文由于篇幅所限(懒)很多地方没有讲，比如共享缓存等，所以关于 Earthly 更多的详细使用等最好还是仔细阅读一下官方文档。
+
+整理转载：the-best-image-build-tool-earthly
+
+系列教程
+全部文章RSS订阅
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>docker</category>
+      </categories>
+      <tags>
+        <tag>docker</tag>
+        <tag>earthly</tag>
       </tags>
   </entry>
   <entry>
@@ -16599,158 +16751,6 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
-    <title>Earthly 一个更加强大的镜像构建工具</title>
-    <url>/posts/593cc323/</url>
-    <content><![CDATA[一、Earthly 介绍
-
-开局一张图，功能全靠吹。
-
-
-Earthly 是一个更加高级的 Docker 镜像构建工具，Earthly 通过自己定义的 Earthfile 来代替传统的 Dockerfile 完成镜像构建；Earthfile 就如同 Earthly 官方所描述:
-**Makefile + Dockerfile = Earthfile**
-在使用 Earthly 进行构建镜像时目前强依赖于 buildkit，Earthly 通过 buildkit 支持了一些 Dockerfile 的扩展语法，同时将 Dockerfile 与 Makefile 整合，使得多平台构建和代码化 Dockerfile 变得更加简单；使用 Earthly 可以更加方便的完成 Dockerfile 的代码复用以及更加友好的 CI 自动集成。
-二、快速开始
-2.1、安装依赖
-Earthly 目前依赖于 Docker 和 Git，所以安装 Earthly 前请确保机器已经安装了 Docker 和 Git。
-2.2、安装 Earthly
-Earthly 采用 Go 编写，所以主要就一个二进制文件，Linux 下安装可以直接参考官方的安装脚本:
-sudo /bin/sh -c 'wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly &amp;&amp; chmod +x /usr/local/bin/earthly &amp;&amp; /usr/local/bin/earthly bootstrap --with-autocomplete'Copy
-安装完成后 Earthly 将会启动一个 buildkitd 容器: earthly-buildkitd。
-2.3、语法高亮
-目前 Earthly 官方支持 VS Code、VIM 以及 Sublime Text 三种编辑器的语法高亮，具体如何安装请参考 官方文档。
-2.4、基本使用
-本示例源于官方 Basic 教程，以下示例以编译 Go 项目为样例:
-首先创建一个任意名称的目录，目录中存在项目源码文件以及一个 Earthfile 文件；
-main.go
-package main
-
-import "fmt"
-
-func main() {
-    fmt.Println("hello world")
-}Copy
-Earthfile
-FROM golang:1.17-alpine
-WORKDIR /go-example
-
-build:
-    COPY main.go .
-    RUN go build -o build/go-example main.go
-    SAVE ARTIFACT build/go-example /go-example AS LOCAL build/go-example
-
-docker:
-    COPY +build/go-example .
-    ENTRYPOINT ["/go-example/go-example"]
-    SAVE IMAGE go-example:latestCopy
-有了 Earthfile 以后我们就可以使用 Earthly 将其打包为镜像；
-# 目录结构
-~/t/earthlytest ❯❯❯ tree
-.
-├── Earthfile
-└── main.go
-
-0 directories, 2 files
-
-# 通过 earthly 进行构建
-~/t/earthlytest ❯❯❯ earthly +dockerCopy
-
-构建完成后我们就可以直接从 docker 的 images 列表中查看刚刚构建的镜像，并运行:
-
-三、进阶使用
-3.1、多阶段构建
-Earthfile 中包含类似 Makefile 一样的 target，不同的 target 之间还可以通过特定语法进行引用，每个 target 都可以被单独执行，执行过程中 earthly 会自动解析这些依赖关系。
-这种多阶段构建时语法很弹性，我们可以在每个阶段运行独立的命令以及使用不同的基础镜像；从快速开始中可以看到，我们始终使用了一个基础镜像(golang:1.17-alpine)，对于 Go 这种编译后自带运行时不依赖其语言 SDK 的应用，我们事实上可以将 “发布物” 仅放在简单的运行时系统镜像内，从而减少最终镜像体积:
-
-由于使用了多个 target，所以我们可以单独的运行 build 这个 target 来验证我们的编译流程，这种多 target 的设计方便我们构建应用时对编译、打包步骤的细化拆分，同时也方便我们进行单独的验证。 例如我们单独执行 build 这个 target 来验证我们的编译流程是否正确:
-
-在其他阶段验证完成后，我们可以直接运行最终的 target，earthly 会自动识别到这种依赖关系从而自动运行其依赖的 target:
-
-3.2、扩展指令
-3.2.1、SAVE
-SAVE 指令是 Earthly 自己的一个扩展指令，实际上分为 SAVE ARTIFACT 和 SAVE IMAGE；其中 SAVE ARTIFACT 指令格式如下:
-SAVE ARTIFACT [--keep-ts] [--keep-own] [--if-exists] [--force] &lt;src&gt; [&lt;artifact-dest-path&gt;] [AS LOCAL &lt;local-path&gt;]Copy
-SAVE ARTIFACT 指令用于将文件或目录从 build 运行时环境保存到 target 的 artifact 环境；当保存到 artifact 环境后，可以通过 COPY 等命令在其他位置进行引用，类似于 Dockerfile 的 COPY --from... 语法；不同的是 SAVE ARTIFACT 支持 AS LOCAL &lt;local-path&gt; 附加参数，一但指定此参数后，earthly 会同时将文件或目录在宿主机复制一份，一般用于调试等目的。SAVE ARTIFACT 命令在上面的样例中已经展示了，在运行完 earthly +build 命令后实际上会在本地看到被 SAVE 出来的 ARTIFACT:
-
-而另一个 SAVE IMAGE 指令则主要用于将当前的 build 环境 SAVE 为一个 IMAGE，如果指定了 --push 选项，同时在执行 earthly +target 命令时也加入 --push 选项，该镜像将会自动被推送到目标 Registry 上。SAVE IMAGE 指令格式如下:
-SAVE IMAGE [--cache-from=&lt;cache-image&gt;] [--push] &lt;image-name&gt;...Copy
-
-3.2.2、GIT CLONE
-GIT CLONE 指令用于将指定 git 仓库 clone 到 build 环境中；与 RUN git clone... 命令不同的是，GIT CLONE 通过宿主机的 git 命令运行，它不依赖于容器内的 git 命令，同时还可以直接为 earthly 配置 git 认证，从而避免将这些安全信息泄漏到 build 环境中； 关于如何配置 earthly 的 git 认证请参考 官方文档；下面是 GIT CLONE 指令的样例
-
-3.2.3、COPY
-COPY 指令与标准的 Dockerfile COPY 指令类似，除了支持 Dockerfile 标准的 COPY 功能以外，earthly 中的 COPY 指令可以引用其他 target 环节产生的 artifact，在引用时会自动声明依赖关系；即当在 B target 中存在 COPY +A/xxxxx /path/to/copy 类似的指令时，如果只单纯的执行 earthly +B，那么 earthly 根据依赖分析会得出在 COPY 之前需要执行 target A。COPY 指令的语法格式如下:
-# 与 Dockerfile 相同的使用方式，从上下文复制
-COPY [options...] &lt;src&gt;... &lt;dest&gt;
-
-# 扩展支持的从 target 复制方式
-COPY [options...] &lt;src-artifact&gt;... &lt;dest&gt;Copy
-3.2.4、RUN
-RUN 指令在标准使用上与 Dockerfile 里保持一致，除此之外增加了更多的扩展选项，其指令格式如下:
-# shell 方式运行(/bin/sh -c)
-RUN [--push] [--entrypoint] [--privileged] [--secret &lt;env-var&gt;=&lt;secret-ref&gt;] [--ssh] [--mount &lt;mount-spec&gt;] [--] &lt;command&gt;
-
-# exec 方式运行
-RUN [[&lt;flags&gt;...], "&lt;executable&gt;", "&lt;arg1&gt;", "&lt;arg2&gt;", ...]Copy
-其中 --privileged 选项允许运行的命令使用 privileged capabilities，但是需要 earthly 在运行 target 时增加 --allow-privileged 选项；--interactive / --interactive-keep 选项用于交互式执行一些命令，在完成交互后 build 继续进行，在交互过程中进行的操作都会被持久化到 镜像中:
-
-限于篇幅原因，其他的具体指令请查阅官方文档 Earthfile reference。
-3.3、UDCS
-UDCs 全称 “User-defined commands”，即用户定义指令；通过 UDCs 我们可以将 Earthfile 中特定的命令剥离出来，从而实现更加通用和统一的代码复用；下面是一个定义 UDCs 指令的样例:
-# 定义一个 Command
-# ⚠️ 注意: 语法必须满足以下规则
-# 1、名称全大写
-# 2、名称下划线分割
-# 3、首个命令必须为 COMMAND(后面没有冒号)
-MY_COPY:
-    COMMAND
-    ARG src
-    ARG dest=./
-    ARG recursive=false
-    RUN cp $(if $recursive =  "true"; then printf -- -r; fi) "$src" "$dest"
-
-# target 中引用
-build:
-    FROM alpine:3.13
-    WORKDIR /udc-example
-    RUN echo "hello" &gt;./foo
-    # 通过 DO 关键字引用 UDCs
-    DO +MY_COPY --src=./foo --dest=./bar
-    RUN cat ./bar # prints "hello"Copy
-UDCs 不光可以定义在一个 Earthfile 中，UDCs 可以跨文件、跨目录引用:
-
-有了 UDCs 以后，我们可以通过这种方式将对基础镜像的版本统一控制、对特殊镜像的通用处理等操作全部抽象出来，然后每个 Earthfile 根据需要进行引用；关于 UDCs 的使用样例可以参考我的 autobuild 项目，其中的 udcs 目录定义了大量的通用 UDCs，这些 UDCs 被其他目标镜的 Earthfile 批量引用。
-3.4、多平台构建
-在以前使用 Dockerfile 的时候，我们需要自己配置然后开启 buildkit 来实现多平台构建；在配置过程中可能会很繁琐，现在使用 earthly 可以默认帮我们实现多平台的交叉编译，我们需要做的仅仅是在 Earthfile 中声明需要支持哪些平台而已:
-
-以上 Earthfile 在执行 earthly --push +all 构建时，将会自动构建四个平台的镜像，并保持单个 tag，同时由于使用了 --push 选项还会自动推送到 Docker Hub 上:
-
-四、总结
-Earthly 弥补了 Dockerfile 的很多不足，解决了很多痛点问题；但同样可能需要一些学习成本，但是如果已经熟悉了 Dockerfile 其实学习成本不高；所以目前还是比较推荐将 Dockerfile 切换为 Earthfile 进行统一和版本化管理的。本文由于篇幅所限(懒)很多地方没有讲，比如共享缓存等，所以关于 Earthly 更多的详细使用等最好还是仔细阅读一下官方文档。
-
-整理转载：the-best-image-build-tool-earthly
-
-系列教程
-全部文章RSS订阅
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>docker</category>
-      </categories>
-      <tags>
-        <tag>docker</tag>
-        <tag>earthly</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</title>
     <url>/posts/d6bad1e5/</url>
     <content><![CDATA[前言
@@ -17142,11 +17142,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var vfEidGSJMleJgECk_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); vfEidGSJMleJgECk_options.container = document.getElementById("mmedia-vfEidGSJMleJgECk"); const ap_vfEidGSJMleJgECk = new APlayer(vfEidGSJMleJgECk_options); 
+ var zzrQrWUfdbVzXghu_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); zzrQrWUfdbVzXghu_options.container = document.getElementById("mmedia-zzrQrWUfdbVzXghu"); const ap_zzrQrWUfdbVzXghu = new APlayer(zzrQrWUfdbVzXghu_options); 
 
 
 
- var GHWQBhVNYbsfdGqk_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); GHWQBhVNYbsfdGqk_options.container = document.getElementById("mmedia-GHWQBhVNYbsfdGqk"); const ap_GHWQBhVNYbsfdGqk = new APlayer(GHWQBhVNYbsfdGqk_options); 
+ var OFzOrvuLYtqoZmgY_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); OFzOrvuLYtqoZmgY_options.container = document.getElementById("mmedia-OFzOrvuLYtqoZmgY"); const ap_OFzOrvuLYtqoZmgY = new APlayer(OFzOrvuLYtqoZmgY_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -17227,9 +17227,9 @@ Android支持
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-gIDXDVdgsklaVExU").style.height=document.getElementById("mmedia-gIDXDVdgsklaVExU").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-rNYYtPhQHFOFwenP").style.height=document.getElementById("mmedia-rNYYtPhQHFOFwenP").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-gIDXDVdgsklaVExU").style.height=document.getElementById("mmedia-gIDXDVdgsklaVExU").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-rNYYtPhQHFOFwenP").style.height=document.getElementById("mmedia-rNYYtPhQHFOFwenP").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -17238,7 +17238,7 @@ Android支持
 
 ## 中文翻唱
 
- var IEHbQJDGWOKiQpnw_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); IEHbQJDGWOKiQpnw_options.container = document.getElementById("mmedia-IEHbQJDGWOKiQpnw"); const ap_IEHbQJDGWOKiQpnw = new APlayer(IEHbQJDGWOKiQpnw_options); 
+ var raEWFEtOGyyOSJOQ_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); raEWFEtOGyyOSJOQ_options.container = document.getElementById("mmedia-raEWFEtOGyyOSJOQ"); const ap_raEWFEtOGyyOSJOQ = new APlayer(raEWFEtOGyyOSJOQ_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -23320,7 +23320,7 @@ CI/CD与Git Flow与GitLab
 
 
 基本概念
-** 01. RM**
+01. RM
 RM是英文"repetition maximum"的缩写，中文意义是"最大重复值"。以8RM为例，意思是，某个重量你最多完成8次。一般而言1～6RM侧重锻炼力量，8～12RM侧重锻炼肌肉围度，15RM以上侧重锻炼肌肉耐力。
 02 升糖指数
 升糖指数全称为“血糖生成指数”，简称，它反映了某种食物与葡萄糖相比升高血糖的速度和能力。是反映通过进食引起人体血糖升高程度的指标，高gi为70以上，中gi为55～70，低gi为55以下。
