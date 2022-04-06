@@ -631,157 +631,6 @@ Create a new Pull Request
       </tags>
   </entry>
   <entry>
-    <title>破解Gitlab EE</title>
-    <url>/posts/29a820b3/</url>
-    <content><![CDATA[由于需要一些镜像等 gitlab 高级功能，所有破解gitlab ee版本。
-安装ruby
-安装完gitlab ee之后
-安装ruby：yum install ruby
-ruby版本需要2.3或以上。
-生成许可证
-gem install gitlab-license
-创建一个rb文件
-license.rb
-
-require "openssl"
-require "gitlab/license"
- 
-key_pair = OpenSSL::PKey::RSA.generate(2048)
-File.open("license_key", "w") { |f| f.write(key_pair.to_pem) }
- 
-public_key = key_pair.public_key
-File.open("license_key.pub", "w") { |f| f.write(public_key.to_pem) }
- 
-private_key = OpenSSL::PKey::RSA.new File.read("license_key")
-Gitlab::License.encryption_key = private_key
- 
-license = Gitlab::License.new
-license.licensee = {
-  "Name" =&gt; "none",
-  "Company" =&gt; "none",
-  "Email" =&gt; "example@test.com",
-}
-license.starts_at = Date.new(2020, 1, 1) # 开始时间
-license.expires_at = Date.new(2050, 1, 1) # 结束时间
-license.notify_admins_at = Date.new(2049, 12, 1)
-license.notify_users_at = Date.new(2049, 12, 1)
-license.block_changes_at = Date.new(2050, 1, 1)
-license.restrictions = {
-  active_user_count: 10000,
-}
- 
-puts "License:"
-puts license
- 
-data = license.export
-puts "Exported license:"
-puts data
-File.open("GitLabBV.gitlab-license", "w") { |f| f.write(data) }
- 
-public_key = OpenSSL::PKey::RSA.new File.read("license_key.pub")
-Gitlab::License.encryption_key = public_key
- 
-data = File.read("GitLabBV.gitlab-license")
-$license = Gitlab::License.import(data)
- 
-puts "Imported license:"
-puts $license
- 
-unless $license
-  raise "The license is invalid."
-end
- 
-if $license.restricted?(:active_user_count)
-  active_user_count = 10000
-  if active_user_count &gt; $license.restrictions[:active_user_count]
-    raise "The active user count exceeds the allowed amount!"
-  end
-end
- 
-if $license.notify_admins?
-  puts "The license is due to expire on #{$license.expires_at}."
-end
- 
-if $license.notify_users?
-  puts "The license is due to expire on #{$license.expires_at}."
-end
- 
-module Gitlab
-  class GitAccess
-    def check(cmd, changes = nil)
-      if $license.block_changes?
-        return build_status_object(false, "License expired")
-      end
-    end
-  end
-end
- 
-puts "This instance of GitLab Enterprise Edition is licensed to:"
-$license.licensee.each do |key, value|
-  puts "#{key}: #{value}"
-end
- 
-if $license.expired?
-  puts "The license expired on #{$license.expires_at}"
-elsif $license.will_expire?
-  puts "The license will expire on #{$license.expires_at}"
-else
-  puts "The license will never expire."
-end
- 
-
-ruby license.rb
-生成 GitLabBV.gitlab-license license_key license_key.pub 这三个文件。
-使用许可证
-用 license_key.pub 文件替换 /opt/gitlab/embedded/service/gitlab-rails/.license_encryption_key.pub。
-GitLabBV.gitlab-license 即是许可证，填入 ${address}/admin/license 地址并重启 gitlab-ctl restart 。
-修改等级
---- /opt/gitlab/embedded/service/gitlab-rails/ee/app/models/license.rb
-+++ /opt/gitlab/embedded/service/gitlab-rails/ee/app/models/license.rb
-@@ -458,7 +458,7 @@
-  end
- 
-  def plan
--    restricted_attr(:plan).presence || STARTER_PLAN
-+    restricted_attr(:plan).presence || ULTIMATE_PLAN
-  end
- 
-  def edition
- 
-修改完成后使用 gitlab-ctl restart 重新加载配置。
-Gitlab 使用系列
-
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-
-参考
-
-https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md
-
-系列教程
-全部文章RSS订阅
-Gitlab 使用系列  Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-]]></content>
-      <categories>
-        <category>gitlab</category>
-      </categories>
-      <tags>
-        <tag>gitlab</tag>
-        <tag>git</tag>
-        <tag>crack</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>完美笔记进化论</title>
     <url>/posts/a8535f26/</url>
     <content><![CDATA[前言：
@@ -4523,6 +4372,243 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
+    <title>transmission 使用及其配置</title>
+    <url>/posts/8f76d9dd/</url>
+    <content><![CDATA[安装
+qnapclub
+
+docker
+docker hub
+
+version: "2.1"
+services:
+  transmission:
+    image: ghcr.io/linuxserver/transmission
+    container_name: transmission
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+      - TRANSMISSION_WEB_HOME=/combustion-release/ #optional
+      - USER=username #optional
+      - PASS=password #optional
+      - WHITELIST=iplist #optional
+      - HOST_WHITELIST=dnsnane list #optional
+    volumes:
+      - &lt;path to data&gt;:/config
+      - &lt;path to downloads&gt;:/downloads
+      - &lt;path to watch folder&gt;:/watch
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped
+
+控制脚本
+/etc/init.d/QTransmission.sh start
+/etc/init.d/QTransmission.sh stop
+Transmission 配置详解
+vi /share/CACHEDEV1_DATA/.qpkg/QTransmission/etc/settings.json
+"alt-speed-up": 500, # 限速时段上传限速值
+"alt-speed-down": 500, # 限速时段下载限速值
+"alt-speed-enabled": false,
+"alt-speed-time-begin": 540,
+"alt-speed-time-day": 127, # 时段限速日期（星期几），127 表示每天，更复杂配置参考官网。用 7 位二进制数表示，然后转换成十进制数，0000001 表示周日，1000000 表示周六，0000010 表示周一，0000100 表示周二。如果你只要在周末限速，该数应该 1000001，转换为十进制就是 65
+"alt-speed-time-enabled": true, # 启用限速，为 false 时，以上计划配置则不生效，生效时会自动禁用 alt-speed-enabled 配置，二者只能选一个
+"alt-speed-time-end": 420, # 限速时段结束时间，这个配置表示的是凌晨零点到开始时间的分钟数，比如 7:00 就是 7*60=420。需要注意的是，该时间是用的 GMT 时间，即北京时间 -8 小时。比如你计划北京时间 7 点 30 分开始，这个数字应该是（7-8+24）*60+30=1410
+"bind-address-ipv4": "0.0.0.0", # IPv4 地址绑定，一般不要改动
+"bind-address-ipv6": "::", #IPv6 地址绑定，一般不要改动
+"blocklist-enabled": true, # 启动白名单，默认不启动，需要启动改为 true
+"blocklist-updates-enabled": false,
+"blocklist-url": "http://www.example.com/blocklist",
+"cache-size-mb": 4, #缓存大小，以 MB 为单位，建议设大一些，避免频繁读写硬盘而伤硬盘，建议设为内存大小的 1/6～1/4
+"compact-view": false,
+"dht-enabled": false, #关闭 DHT（不通过 tracker 寻找节点）功能，不少 PT 站的要求，但 BT 下载设置为 true 会使得下载更好
+"download-dir": "/share/Downloads", #下载的内容存放的目录
+"download-queue-enabled": true,  # 下载队列开关
+"download-queue-size": 5, # 下载队列数量
+"encryption": 1, # 加密。指定节点的加密模式，默认 1。0 表示关闭 , 0= 不加密，1= 优先加密，2= 必须加密
+"lazy-bitfield-enabled": true, # 默认为 true，设置为 true 时可以避免某些 ISP 通过查询完整位段来屏蔽 BT，从而破解部分 ISP 对 BT 的封杀，当然不一定完全有效
+"idle-seeding-limit": 30,
+"idle-seeding-limit-enabled": false,
+"incomplete-dir": "/share/Downloads",  # 临时文件路径
+"incomplete-dir-enabled": false,
+"inhibit-desktop-hibernation": true,
+"lpd-enabled": false, #禁用 LDP（本地节点发现，用于在本地网络寻找节点）, 不少 PT 站的要求
+"main-window-height": 500,
+"main-window-is-maximized": 0,
+"main-window-width": 615,
+"main-window-x": 337,
+"main-window-y": 211,
+"message-level": 2,
+"open-dialog-dir": "/share/Download",  # 网页对话框打开的根目录
+"peer-congestion-algorithm": "",
+"peer-limit-global": 240, # 全局连接数
+"peer-limit-per-torrent": 60, # 每个种子最多的连接数
+"peer-port": 51413, # 传入端口，预设的 port 口
+"peer-port-random-high": 65535, # 传入端口随机值范围上限
+"peer-port-random-low": 49152, # 传入端口随机值范围下限
+"peer-port-random-on-start": false, # 启用随机端口，默认关闭，不建议改为 true
+"peer-socket-tos": "default",
+"pex-enabled": false, # 是否启用用户交换，默认为 true，关于 PEX，有兴趣的朋友可参考 http://en.wikipedia.org/wiki/Peer_exchange，对于只用 PT 的朋友，可以设为 false, 禁用 PEX（节点交换，用于同已与您相连接的节点交换节点名单）, 不少 PT 站的要求
+"port-forwarding-enabled": true, # 启用端口转发（uPnP），如果路由支持并且也开启了 uPnP，则路由会自动做端口映射，但是需要注意的是如果内网有几台机器同时使用 transmission，就必须更改 peer-port 值为不一样
+"preallocation": 1, # 预分配文件磁盘空间，0= 关闭，1= 快速，2= 完全。建议取 1 开启该功能，防止下载大半了才发现磁盘不够。取 2 时，可以减少磁盘碎片，但速度较慢。
+"prefetch-enabled": 1,
+"queue-stalled-enabled": true,
+"queue-stalled-minutes": 30,
+"ratio-limit": 2, # 分享率限制
+"ratio-limit-enabled": false, # 启用分享率限制，默认不启用
+"rename-partial-files": true, #在未完成的文件名后添加后缀.part,false= 禁用
+"rpc-authentication-required": true, # 远程控制需要验证，默认为需要
+"rpc-bind-address": "0.0.0.0", # 远程控制地址绑定，允许 IP 通过 RPC 访问，默认值表示任何地址都可以访问
+"rpc-enabled": true, # 启用远程控制，默认启用
+"rpc-host-whitelist-enabled": true, # 是否开启主机白名单
+"rpc-host-whitelist": "", # 白名单，如果需要远程访问，最好配置
+"rpc-password": "{cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaE", #web-ui 的密码，可直接修改，重新运行或者 reload 服务的时候密码会自动 HASH 增加安全性
+"rpc-port": 9091, # 默认 web-ui 的 port 口，也是远程控制端口，可自行更改
+"rpc-url": "/transmission/",
+"rpc-username": "transmission", #默认登入名称，也是远程控制用户名
+"rpc-whitelist": "127.0.0.1", # 远程控制白名单，默认值为所有地址，支持通配符*，如 192.168.2.*
+"rpc-whitelist-enabled": true, # 启用远程控制白名单，如果启用，则仅仅上面列出的地址可以远程连接
+"scrape-paused-torrents-enabled": true,
+"script-torrent-done-enabled": false,
+"script-torrent-done-filename": "/home/",
+"seed-queue-enabled": false,
+"seed-queue-size": 10,
+"show-backup-trackers": true,
+"show-extra-peer-details": false,
+"show-filterbar": true,
+"show-notification-area-icon": false,
+"show-options-window": true,
+"show-statusbar": true,
+"show-toolbar": true,
+"show-tracker-scrapes": true,
+"sort-mode": "sort-by-age",
+"sort-reversed": false,
+"speed-limit-down": 300, #平时的下载限速
+"speed-limit-down-enabled": true, #启用平时下载限速
+"speed-limit-up": 30, #平时上传限速
+"speed-limit-up-enabled": true, #启用平时上传限速
+"start-added-torrents": false,
+"statusbar-stats": "total-ratio",
+"torrent-added-notification-enabled": true,
+"torrent-complete-notification-enabled": true,
+"torrent-complete-sound-enabled": true,
+"trash-can-enabled": true,
+"trash-original-torrent-files": false,
+"umask": 18,
+"upload-slots-per-torrent": 14
+"utp-enabled": true, #启用μTP 协议
+"watch-dir": "/share/bt",  # 监听文件夹目录
+"watch-dir-enabled": false # 是否监听文件夹
+Q：TR提示FILE NAME TOO LONG
+A：TR最大文件名MAX_PATH ,260个字符
+方法1：改路径和保存路径的文件夹名字，越短越好，在web control种子上面右键，修改种子文件或目录名称。次选方法，不勾选下载文件名过长的文件
+方法2：遇到个名字特长的，一直下载失败，使用软连接进一步缩短路径名长度
+#cd /
+#ln -s  /share/CACHEDEV1_DATA/Download/ DL
+方法3：
+上面两种还是不行，换QBittorrent吧
+不过，最近有好消息，这个bug我去看了下源代码，找到原来有人试图修复过它，但是并没有合并到最新版本。发个post提醒bug没有修复，居然有回复了。这个bug将在3.0版本修复，见下图。
+
+Q: transmission 如何修改登陆密码
+A: 第一种方式
+qnap 中，transmission3.0的配置文件路径如下
+/share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
+ 
+cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
+vim settings.json
+找到”rpc-password”:
+后面引号内就是经过加密的密码，不要管他怎么加密的，直接把引号内的内容修改为你的新密码就可以了，比如”rpc-password”:”xxorg.com”
+然后按“ESC”键，输入:wq 保存退出，然后重启tr即可
+第二种方式：
+# 1、控制台输入，-u后边是用户名，-v后边跟着的是登陆密码
+transmission-daemon --paused -t -u admin -v 123456
+# 将会把生成的密码保存到：~/.config/transmission-daemon/settings.json
+# 其实是生成配置文件并保存到当前登陆用户的家目录下
+# 2、打开~/.config/transmission-daemon/settings.json并复制加密的密码
+# 3、将加密的密码粘贴到/media/AiCard_01/transmission/config/settings.json
+# 替换掉内容为：rpc-password 后面的密码
+# 4、重启Transmission
+ps:通过ps定位transmission位置
+ps aux | grep trans
+# cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/bin
+# ./transmission-daemon --paused -t -u [name] -v [password]
+# cd ~/.config/transmission-daemon
+[~/.config/transmission-daemon] # vi settings.json
+复制生成的密码到前面的配置文件里面。
+Q: 为Transmission增加种子目录监控，实现自动下载
+/share/CACHEDEV3_DATA/.qpkg/QTransmission3/etc
+改/var/packages/transmission/target/var/settings.json 在最后面增加2行。
+"upload-slots-per-torrent": 14,（原文件最后一行，注意添加个逗号，不添加transmission好像不能启动） 
+"watch-dir": "/XXXXX/XXXXX", （修改成自己nas上的同步目录） 
+"watch-dir-enabled": true（无逗号）
+保存，退出。
+启动Transmission  等待1-2分钟，就好了。
+    "speed-limit-up-enabled": false,
+    "start-added-torrents": true,
+    "trash-original-torrent-files": false,
+    "umask": 18,
+    "upload-slots-per-torrent": 14,
+    "utp-enabled": true,
+    "watch-dir": "/share/Download/Seed/complete",
+    "watch-dir-enabled": true
+}
+Q: Nas 上面 Transmission 如何做种？
+A:
+注意，此方法仅适用于开启了ssh的机器
+可以看到可执行文件目录下有这么几个文件，每个人的安装目录都不一样，自行查找，或用
+我的文件位置是在/volume1/@appstore/transmission/bin，用到的命令是 transmission-create
+方法也很简单，写一个范例
+./transmission-create -p -o /volume1/data/Wi
+kiLeaks-Year-Zero-2017-v1.torrent -t https://announce.XXXXXXXXXX.cc/announce.php -s 2048 /volume1/da
+ta/WikiLeaks-Year-Zero-2017-v1.7z &amp;
+参数
+-p 表示这是私用的种子，这个必须要加上
+-o 生成的种子输出位置，不要忘记把名字打上
+-t tracker的地址，我用的家园的做范本，大家自行修改
+-s 每个文件块的大小，单位是KB，我设置的是2M，也就是2048KB
+最后空一格写源文件的位置，也就是文件的存放位置，可以是一个文件或者一整个目录
+最后可以空一行加一个&amp;，这样即使关掉窗口也可以在后台运行
+填完，回车，种子就在制作了
+种子已经躺在这了
+[/opt/QTransmission3/bin] # ./transmission-create -p -o /share/CACHEDEV1_DATA/Download/Seed/海贼王\ \(1999\).torrent -t https://announce.XXXXXXXX.video/announce.php -s 2048 /share/CACHEDEV1_DATA/Download/海贼王\ \(1999\)/ &amp;
+系列教程
+全部文章RSS订阅
+Nas系列 Nas 分类 RSS 订阅
+
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>bt</tag>
+        <tag>pt</tag>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>transmission</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程</title>
     <url>/posts/9912bd5d/</url>
     <content><![CDATA[
@@ -5238,243 +5324,6 @@ CI/CD与Git Flow与GitLab
         <tag>git</tag>
         <tag>linux</tag>
         <tag>gitbook</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>transmission 使用及其配置</title>
-    <url>/posts/8f76d9dd/</url>
-    <content><![CDATA[安装
-qnapclub
-
-docker
-docker hub
-
-version: "2.1"
-services:
-  transmission:
-    image: ghcr.io/linuxserver/transmission
-    container_name: transmission
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/London
-      - TRANSMISSION_WEB_HOME=/combustion-release/ #optional
-      - USER=username #optional
-      - PASS=password #optional
-      - WHITELIST=iplist #optional
-      - HOST_WHITELIST=dnsnane list #optional
-    volumes:
-      - &lt;path to data&gt;:/config
-      - &lt;path to downloads&gt;:/downloads
-      - &lt;path to watch folder&gt;:/watch
-    ports:
-      - 9091:9091
-      - 51413:51413
-      - 51413:51413/udp
-    restart: unless-stopped
-
-控制脚本
-/etc/init.d/QTransmission.sh start
-/etc/init.d/QTransmission.sh stop
-Transmission 配置详解
-vi /share/CACHEDEV1_DATA/.qpkg/QTransmission/etc/settings.json
-"alt-speed-up": 500, # 限速时段上传限速值
-"alt-speed-down": 500, # 限速时段下载限速值
-"alt-speed-enabled": false,
-"alt-speed-time-begin": 540,
-"alt-speed-time-day": 127, # 时段限速日期（星期几），127 表示每天，更复杂配置参考官网。用 7 位二进制数表示，然后转换成十进制数，0000001 表示周日，1000000 表示周六，0000010 表示周一，0000100 表示周二。如果你只要在周末限速，该数应该 1000001，转换为十进制就是 65
-"alt-speed-time-enabled": true, # 启用限速，为 false 时，以上计划配置则不生效，生效时会自动禁用 alt-speed-enabled 配置，二者只能选一个
-"alt-speed-time-end": 420, # 限速时段结束时间，这个配置表示的是凌晨零点到开始时间的分钟数，比如 7:00 就是 7*60=420。需要注意的是，该时间是用的 GMT 时间，即北京时间 -8 小时。比如你计划北京时间 7 点 30 分开始，这个数字应该是（7-8+24）*60+30=1410
-"bind-address-ipv4": "0.0.0.0", # IPv4 地址绑定，一般不要改动
-"bind-address-ipv6": "::", #IPv6 地址绑定，一般不要改动
-"blocklist-enabled": true, # 启动白名单，默认不启动，需要启动改为 true
-"blocklist-updates-enabled": false,
-"blocklist-url": "http://www.example.com/blocklist",
-"cache-size-mb": 4, #缓存大小，以 MB 为单位，建议设大一些，避免频繁读写硬盘而伤硬盘，建议设为内存大小的 1/6～1/4
-"compact-view": false,
-"dht-enabled": false, #关闭 DHT（不通过 tracker 寻找节点）功能，不少 PT 站的要求，但 BT 下载设置为 true 会使得下载更好
-"download-dir": "/share/Downloads", #下载的内容存放的目录
-"download-queue-enabled": true,  # 下载队列开关
-"download-queue-size": 5, # 下载队列数量
-"encryption": 1, # 加密。指定节点的加密模式，默认 1。0 表示关闭 , 0= 不加密，1= 优先加密，2= 必须加密
-"lazy-bitfield-enabled": true, # 默认为 true，设置为 true 时可以避免某些 ISP 通过查询完整位段来屏蔽 BT，从而破解部分 ISP 对 BT 的封杀，当然不一定完全有效
-"idle-seeding-limit": 30,
-"idle-seeding-limit-enabled": false,
-"incomplete-dir": "/share/Downloads",  # 临时文件路径
-"incomplete-dir-enabled": false,
-"inhibit-desktop-hibernation": true,
-"lpd-enabled": false, #禁用 LDP（本地节点发现，用于在本地网络寻找节点）, 不少 PT 站的要求
-"main-window-height": 500,
-"main-window-is-maximized": 0,
-"main-window-width": 615,
-"main-window-x": 337,
-"main-window-y": 211,
-"message-level": 2,
-"open-dialog-dir": "/share/Download",  # 网页对话框打开的根目录
-"peer-congestion-algorithm": "",
-"peer-limit-global": 240, # 全局连接数
-"peer-limit-per-torrent": 60, # 每个种子最多的连接数
-"peer-port": 51413, # 传入端口，预设的 port 口
-"peer-port-random-high": 65535, # 传入端口随机值范围上限
-"peer-port-random-low": 49152, # 传入端口随机值范围下限
-"peer-port-random-on-start": false, # 启用随机端口，默认关闭，不建议改为 true
-"peer-socket-tos": "default",
-"pex-enabled": false, # 是否启用用户交换，默认为 true，关于 PEX，有兴趣的朋友可参考 http://en.wikipedia.org/wiki/Peer_exchange，对于只用 PT 的朋友，可以设为 false, 禁用 PEX（节点交换，用于同已与您相连接的节点交换节点名单）, 不少 PT 站的要求
-"port-forwarding-enabled": true, # 启用端口转发（uPnP），如果路由支持并且也开启了 uPnP，则路由会自动做端口映射，但是需要注意的是如果内网有几台机器同时使用 transmission，就必须更改 peer-port 值为不一样
-"preallocation": 1, # 预分配文件磁盘空间，0= 关闭，1= 快速，2= 完全。建议取 1 开启该功能，防止下载大半了才发现磁盘不够。取 2 时，可以减少磁盘碎片，但速度较慢。
-"prefetch-enabled": 1,
-"queue-stalled-enabled": true,
-"queue-stalled-minutes": 30,
-"ratio-limit": 2, # 分享率限制
-"ratio-limit-enabled": false, # 启用分享率限制，默认不启用
-"rename-partial-files": true, #在未完成的文件名后添加后缀.part,false= 禁用
-"rpc-authentication-required": true, # 远程控制需要验证，默认为需要
-"rpc-bind-address": "0.0.0.0", # 远程控制地址绑定，允许 IP 通过 RPC 访问，默认值表示任何地址都可以访问
-"rpc-enabled": true, # 启用远程控制，默认启用
-"rpc-host-whitelist-enabled": true, # 是否开启主机白名单
-"rpc-host-whitelist": "", # 白名单，如果需要远程访问，最好配置
-"rpc-password": "{cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaE", #web-ui 的密码，可直接修改，重新运行或者 reload 服务的时候密码会自动 HASH 增加安全性
-"rpc-port": 9091, # 默认 web-ui 的 port 口，也是远程控制端口，可自行更改
-"rpc-url": "/transmission/",
-"rpc-username": "transmission", #默认登入名称，也是远程控制用户名
-"rpc-whitelist": "127.0.0.1", # 远程控制白名单，默认值为所有地址，支持通配符*，如 192.168.2.*
-"rpc-whitelist-enabled": true, # 启用远程控制白名单，如果启用，则仅仅上面列出的地址可以远程连接
-"scrape-paused-torrents-enabled": true,
-"script-torrent-done-enabled": false,
-"script-torrent-done-filename": "/home/",
-"seed-queue-enabled": false,
-"seed-queue-size": 10,
-"show-backup-trackers": true,
-"show-extra-peer-details": false,
-"show-filterbar": true,
-"show-notification-area-icon": false,
-"show-options-window": true,
-"show-statusbar": true,
-"show-toolbar": true,
-"show-tracker-scrapes": true,
-"sort-mode": "sort-by-age",
-"sort-reversed": false,
-"speed-limit-down": 300, #平时的下载限速
-"speed-limit-down-enabled": true, #启用平时下载限速
-"speed-limit-up": 30, #平时上传限速
-"speed-limit-up-enabled": true, #启用平时上传限速
-"start-added-torrents": false,
-"statusbar-stats": "total-ratio",
-"torrent-added-notification-enabled": true,
-"torrent-complete-notification-enabled": true,
-"torrent-complete-sound-enabled": true,
-"trash-can-enabled": true,
-"trash-original-torrent-files": false,
-"umask": 18,
-"upload-slots-per-torrent": 14
-"utp-enabled": true, #启用μTP 协议
-"watch-dir": "/share/bt",  # 监听文件夹目录
-"watch-dir-enabled": false # 是否监听文件夹
-Q：TR提示FILE NAME TOO LONG
-A：TR最大文件名MAX_PATH ,260个字符
-方法1：改路径和保存路径的文件夹名字，越短越好，在web control种子上面右键，修改种子文件或目录名称。次选方法，不勾选下载文件名过长的文件
-方法2：遇到个名字特长的，一直下载失败，使用软连接进一步缩短路径名长度
-#cd /
-#ln -s  /share/CACHEDEV1_DATA/Download/ DL
-方法3：
-上面两种还是不行，换QBittorrent吧
-不过，最近有好消息，这个bug我去看了下源代码，找到原来有人试图修复过它，但是并没有合并到最新版本。发个post提醒bug没有修复，居然有回复了。这个bug将在3.0版本修复，见下图。
-
-Q: transmission 如何修改登陆密码
-A: 第一种方式
-qnap 中，transmission3.0的配置文件路径如下
-/share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
- 
-cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
-vim settings.json
-找到”rpc-password”:
-后面引号内就是经过加密的密码，不要管他怎么加密的，直接把引号内的内容修改为你的新密码就可以了，比如”rpc-password”:”xxorg.com”
-然后按“ESC”键，输入:wq 保存退出，然后重启tr即可
-第二种方式：
-# 1、控制台输入，-u后边是用户名，-v后边跟着的是登陆密码
-transmission-daemon --paused -t -u admin -v 123456
-# 将会把生成的密码保存到：~/.config/transmission-daemon/settings.json
-# 其实是生成配置文件并保存到当前登陆用户的家目录下
-# 2、打开~/.config/transmission-daemon/settings.json并复制加密的密码
-# 3、将加密的密码粘贴到/media/AiCard_01/transmission/config/settings.json
-# 替换掉内容为：rpc-password 后面的密码
-# 4、重启Transmission
-ps:通过ps定位transmission位置
-ps aux | grep trans
-# cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/bin
-# ./transmission-daemon --paused -t -u [name] -v [password]
-# cd ~/.config/transmission-daemon
-[~/.config/transmission-daemon] # vi settings.json
-复制生成的密码到前面的配置文件里面。
-Q: 为Transmission增加种子目录监控，实现自动下载
-/share/CACHEDEV3_DATA/.qpkg/QTransmission3/etc
-改/var/packages/transmission/target/var/settings.json 在最后面增加2行。
-"upload-slots-per-torrent": 14,（原文件最后一行，注意添加个逗号，不添加transmission好像不能启动） 
-"watch-dir": "/XXXXX/XXXXX", （修改成自己nas上的同步目录） 
-"watch-dir-enabled": true（无逗号）
-保存，退出。
-启动Transmission  等待1-2分钟，就好了。
-    "speed-limit-up-enabled": false,
-    "start-added-torrents": true,
-    "trash-original-torrent-files": false,
-    "umask": 18,
-    "upload-slots-per-torrent": 14,
-    "utp-enabled": true,
-    "watch-dir": "/share/Download/Seed/complete",
-    "watch-dir-enabled": true
-}
-Q: Nas 上面 Transmission 如何做种？
-A:
-注意，此方法仅适用于开启了ssh的机器
-可以看到可执行文件目录下有这么几个文件，每个人的安装目录都不一样，自行查找，或用
-我的文件位置是在/volume1/@appstore/transmission/bin，用到的命令是 transmission-create
-方法也很简单，写一个范例
-./transmission-create -p -o /volume1/data/Wi
-kiLeaks-Year-Zero-2017-v1.torrent -t https://announce.XXXXXXXXXX.cc/announce.php -s 2048 /volume1/da
-ta/WikiLeaks-Year-Zero-2017-v1.7z &amp;
-参数
--p 表示这是私用的种子，这个必须要加上
--o 生成的种子输出位置，不要忘记把名字打上
--t tracker的地址，我用的家园的做范本，大家自行修改
--s 每个文件块的大小，单位是KB，我设置的是2M，也就是2048KB
-最后空一格写源文件的位置，也就是文件的存放位置，可以是一个文件或者一整个目录
-最后可以空一行加一个&amp;，这样即使关掉窗口也可以在后台运行
-填完，回车，种子就在制作了
-种子已经躺在这了
-[/opt/QTransmission3/bin] # ./transmission-create -p -o /share/CACHEDEV1_DATA/Download/Seed/海贼王\ \(1999\).torrent -t https://announce.XXXXXXXX.video/announce.php -s 2048 /share/CACHEDEV1_DATA/Download/海贼王\ \(1999\)/ &amp;
-系列教程
-全部文章RSS订阅
-Nas系列 Nas 分类 RSS 订阅
-
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>bt</tag>
-        <tag>pt</tag>
-        <tag>qnap</tag>
-        <tag>nas</tag>
-        <tag>transmission</tag>
       </tags>
   </entry>
   <entry>
@@ -7187,303 +7036,254 @@ github卡片
       </tags>
   </entry>
   <entry>
-    <title>Joplin 插件使用推荐</title>
-    <url>/posts/e3ee7f8b/</url>
-    <content><![CDATA[Joplin插件推荐
+    <title>破解Gitlab EE</title>
+    <url>/posts/29a820b3/</url>
+    <content><![CDATA[由于需要一些镜像等 gitlab 高级功能，所有破解gitlab ee版本。
+安装ruby
+安装完gitlab ee之后
+安装ruby：yum install ruby
+ruby版本需要2.3或以上。
+生成许可证
+gem install gitlab-license
+创建一个rb文件
+license.rb
+
+require "openssl"
+require "gitlab/license"
+ 
+key_pair = OpenSSL::PKey::RSA.generate(2048)
+File.open("license_key", "w") { |f| f.write(key_pair.to_pem) }
+ 
+public_key = key_pair.public_key
+File.open("license_key.pub", "w") { |f| f.write(public_key.to_pem) }
+ 
+private_key = OpenSSL::PKey::RSA.new File.read("license_key")
+Gitlab::License.encryption_key = private_key
+ 
+license = Gitlab::License.new
+license.licensee = {
+  "Name" =&gt; "none",
+  "Company" =&gt; "none",
+  "Email" =&gt; "example@test.com",
+}
+license.starts_at = Date.new(2020, 1, 1) # 开始时间
+license.expires_at = Date.new(2050, 1, 1) # 结束时间
+license.notify_admins_at = Date.new(2049, 12, 1)
+license.notify_users_at = Date.new(2049, 12, 1)
+license.block_changes_at = Date.new(2050, 1, 1)
+license.restrictions = {
+  active_user_count: 10000,
+}
+ 
+puts "License:"
+puts license
+ 
+data = license.export
+puts "Exported license:"
+puts data
+File.open("GitLabBV.gitlab-license", "w") { |f| f.write(data) }
+ 
+public_key = OpenSSL::PKey::RSA.new File.read("license_key.pub")
+Gitlab::License.encryption_key = public_key
+ 
+data = File.read("GitLabBV.gitlab-license")
+$license = Gitlab::License.import(data)
+ 
+puts "Imported license:"
+puts $license
+ 
+unless $license
+  raise "The license is invalid."
+end
+ 
+if $license.restricted?(:active_user_count)
+  active_user_count = 10000
+  if active_user_count &gt; $license.restrictions[:active_user_count]
+    raise "The active user count exceeds the allowed amount!"
+  end
+end
+ 
+if $license.notify_admins?
+  puts "The license is due to expire on #{$license.expires_at}."
+end
+ 
+if $license.notify_users?
+  puts "The license is due to expire on #{$license.expires_at}."
+end
+ 
+module Gitlab
+  class GitAccess
+    def check(cmd, changes = nil)
+      if $license.block_changes?
+        return build_status_object(false, "License expired")
+      end
+    end
+  end
+end
+ 
+puts "This instance of GitLab Enterprise Edition is licensed to:"
+$license.licensee.each do |key, value|
+  puts "#{key}: #{value}"
+end
+ 
+if $license.expired?
+  puts "The license expired on #{$license.expires_at}"
+elsif $license.will_expire?
+  puts "The license will expire on #{$license.expires_at}"
+else
+  puts "The license will never expire."
+end
+ 
+
+ruby license.rb
+生成 GitLabBV.gitlab-license license_key license_key.pub 这三个文件。
+使用许可证
+用 license_key.pub 文件替换 /opt/gitlab/embedded/service/gitlab-rails/.license_encryption_key.pub。
+GitLabBV.gitlab-license 即是许可证，填入 ${address}/admin/license 地址并重启 gitlab-ctl restart 。
+修改等级
+--- /opt/gitlab/embedded/service/gitlab-rails/ee/app/models/license.rb
++++ /opt/gitlab/embedded/service/gitlab-rails/ee/app/models/license.rb
+@@ -458,7 +458,7 @@
+  end
+ 
+  def plan
+-    restricted_attr(:plan).presence || STARTER_PLAN
++    restricted_attr(:plan).presence || ULTIMATE_PLAN
+  end
+ 
+  def edition
+ 
+修改完成后使用 gitlab-ctl restart 重新加载配置。
+Gitlab 使用系列
 
-Gif图片加载较慢，请耐心等待！
 
-persistent-text-folding-in-editor
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
 
 
-Ctrl(or Cmd) + Alt + F to fold all
-Ctrl(or Cmd) + Alt + U to unfold all
+参考
 
-Plugin: Conflict Resolution
+https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md
 
-Joplin Kanban Plugin
+系列教程
+全部文章RSS订阅
+Gitlab 使用系列  Gitlab RSS 分类订阅
 
-Usage
-To get started, you'll need a notebook which will contain all tasks that you want to see on the board. The plugin will only show tasks in a single notebook and it's sub-notebooks.
-A kanban board is defined by a special type of note, which contains all of its configuration. Create a new note, and paste in the following:
-```kanban
-columns:
-  - name: Backlog
-    backlog: true
-  - name: Work in progress
-    tag: wip
-  - name: Finished
-    tag: done
-```
-It is important that the confiuration is surrounded by a code block (kanban ... ), otherwise it won't be detected.
-joplin_plugin_nlr
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
 
-插件安装后会在工具菜单添加一项：NLR
+]]></content>
+      <categories>
+        <category>gitlab</category>
+      </categories>
+      <tags>
+        <tag>gitlab</tag>
+        <tag>git</tag>
+        <tag>crack</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化</title>
+    <url>/posts/45f878cd/</url>
+    <content><![CDATA[Evernote笔记是我们常用的一个笔记服务，国内叫印象笔记，免费版本的Evernote笔记其实已经足够我们使用了，但是对于重度的笔记用户，Evernote某些功能可能需要付费升级才可以使用，而且你的笔记是存放在Evernote的服务器上。
+有些同学可能觉得放在Evernote服务器上的笔记会不安全，况且有些隐私性很强的笔记确实不适合放在公共的服务器上。此时，你需要一个可以保护个人隐私同时还可以与Evernote笔记功能相媲美的免费笔记服务：Joplin，它是一款免费开源的笔记软件。
+Joplin跨平台支持，包括PC桌面端，移动端，甚至提供了命令行版本，原生支持 markdown 格式，搜索速度快，可以通过其他第三方同步工具 (Dropbox/NextCloud/OneDrive/WebDAV/etc) 进行备份以及同步 ，支持浏览器Web clipper即网页剪贴。
 
+Evernote笔记该有的功能Joplin都有了，如果你不想掏钱购买Evernote付费版本，Joplin将是最佳的替代品。更多的自建服务还有：
 
+Chevereto免费相册程序安装与使用-免费自建图床和公共图片相册
+自建RSS阅读器Tiny Tiny RSS安装和配置自动更新,全文RSS,更换主题,手机RSS登录
+放弃付费1Password改用免费开源的bitwarden_rs自建密码管理系统-安装,使用和备份
 
-点击 NLR 打开新的panel，即可在输入框输入书名或作者名称搜索小说
+PS：更新记录
 
+1、平时经常要校对文本，以及有大量的文件需要在电脑和移动硬盘同步，可以试试这些免费的同步对比工具：八大免费的文件对比同步工具-免费文件对比分析与复制同步备份软件。2021.3.24
+2、对于1Password这类的密码管理软件重度依赖，但是苦于囊中羞涩的话，不防自建密码管理平台：Bitwarden自建密码存储系统图文教程-开源免费的bitwarden_rs安装与使用。2020.10.10
 
+一、Joplin安装和使用
+网站：
 
-点击卡片右上方 INFO 打开新的小说目录，章节卡片右上checkbox选中即代表下载此chapter，选中后，点击上方DOWNLOAD开始下载，在笔记列表中即可看到小说文本了。
+https://joplinapp.org/
 
+直接到官网下载Joplin安装包，安装好了就可以启动Joplin了，以下是Joplin的软件界面，分成三栏，和我们平时熟悉的笔记软件是一样的。（点击放大）
 
-joplin-outline
+这是Joplin的编辑器，支持 MarkDown，图片、数学公式、复选框等 MarkDown 语法。
 
-joplin-persistent-layout
-Save editor layout (editor/split view/viewer/rich text) for each note separately.
-To persist the layout for a note follow these steps:
+不习惯MarkDown，直接切换为可视编辑即可。
 
+在Joplin的设置选项中还提供了非常多的MarkDown的插件，对于MarkDown深度用户来是一个福音。
 
-Specify the tags for which a specific layout should be used.
+二、Joplin的特色功能
+2.1 笔记历史版本
+Joplin提供了笔记历史版本，让你轻松地恢复任意时间的笔记版本。在“工具” &gt; “选项” &gt; “笔记历史”中启用，以及设置保留的笔记历史天数。要查看笔记的历史版本，点击编辑器上方的笔记属性图标，然后选择恢复：
 
+2.2 E2EE安全加密
+在同步过程中，笔记本、笔记、标签等均以纯文本文件的方式同步，如果你还觉得不安全，你可以开启端到端加密（E2EE），把文件加密后同步到云端。由于 Joplin 的去中心化，密码必须手动在每个终端设置。
 
-To do this, go to the plugin's settings/options page and add the tags to the settings.
+**注意：不要在多个设备上同时启用加密，否则可能会造成加密密钥问题。特别提醒：**加密之前，先将笔记导出JEX备份一份，以防万一。
+2.3 Joplin手机APP
+Joplin可以直接在各大应用市场上下载，使用起来也很方便。
 
+2.4 外部编辑器
+Joplin自带的编辑已经非常强大的，如果你想要使用自己的编辑器来编辑笔记也是可以的，包括 文本编辑器（如 Notepad++）、 Markdown 编辑器（如 Typora）等。
 
-An example configuration could like this:
+通过 Ctrl+E，或 Joplin 编辑器上方的图标（如下图）从外部编辑器打开笔记，从外部编辑器打开后，Joplin 将持续监控该文件，当你从外部编辑机保存后，Joplin 将自动同步最新变动。
 
+你可以在“工具” &gt; “选项” &gt; “通用选项”中指定编辑器的路径。
+三、Joplin同步与备份
+Joplin与其它的笔记软件很大的不同就是没有存储功能，你需要将Joplin的笔记放在自己的主机或者网盘里，幸运的是Joplin支持多种方式的云同步：Nextcloud / Dropbox / OneDrive / File system / WebDAV。
+3.1 Joplin免费网盘同步
+目前，Joplin支持Dropbox 、OneDrive 网盘同步，在同步选项中选择OneDrive，然后就会打开认证。
 
+同意验证。
 
+与 OneDrive 同步时，Joplin 会在 OneDrive 中创建一个子目录：/Apps/Joplin，Joplin 仅有此目录的读写权限。如下图：
 
+3.2 Joplin使用WebDAV同步
+WebDAV 可以自建，或使用支持 WebDAV 的云盘，另外 NAS（如群晖）通常也支持 WebDAV。
 
-Make sure that the correct value is selected in View &gt; Layout button sequence.
+**Nextcloud：**Nextcloud是一个开源的免费的自建个人云存储方案，要启用 Nextcloud 同步，你需要在 Nextcloud 中创建一个目录（比如：Joplin），在左下角的“设置”中获取 WebDAV 的 URL，在 Joplin 同步设置中，填入 WebDAV URL、用户名和密码。
 
-To be able to use the layout switching correctly, this setting must be set accordingly. Otherwise the editor layout might not be switched to the expected one.
-For example: If a tag is specified in option Tags for editor layout mode: Rendered Markdown viewer and least one note uses it, the setting must also contain Viewer.
+有关于Nextcloud安装与使用教程，请参考：Oneinstack安装NextCloud以及使用Aria2离线下载和ocDownloader插件配置。
+**坚果云：**首次同步时会因为 WebDAV 短时间内的大量请求被坚果云临时限制，坚果云提示为“Too many requests”，这个封锁会持续大约6小时。同步之前，在 Joplin 的“工具” &gt; “选项” &gt; “同步” &gt; “高级选项”中，将“最大并发连接数”改为1可以有效避免。
 
+关于坚果云的使用方法，请参考：巧用又拍云FTP和坚果云WebDAV-打造个人文件备份和数据云存储。
+四、Joplin导入与导出
+Joplin可以很方便地支持从Evernote（印象笔记）导入，方法如下：
+从 Evernote（印象笔记）导入：
 
+打开 Evernote，右击要导出的笔记本，选择“导出笔记“，导出 .enex 格式文件。
+在 Joplin 中，选择“文件” &gt; “导入” &gt; “ENEX – Evernote导出文件（Markdown）”即可导入。
 
-Add the appropriate tags to the notes. If not already done.
+从 Markdown 文件导入：
 
-When the selected note is changed, the editor layout is switched.
-If none of the selected note's tags matches a specified layout tag, the default layout from the option Default editor layout is used.
+使用 Joplin 可以轻松导入 Markdown 文件或整个目录，选择“文件” &gt; “导入” &gt; “MD – Markdown（文件/目录）”导入即可。
 
-If nothing is selected as default editor layout, the currently active editor layout will be kept.
+从其他应用程序导入：
 
+通常，很多应用程序都支持导入到 Evernote 中，所以从其他应用程序导入的思路是先导入 Evernote，再导出 .enex 文件，最后导入 Joplin 中。
 
-If more than one tag is specified for a note, the first matching one is used.
+如下图：
 
+如果哪天你不想使用Joplin了，也可以很方便地导出。Joplin 支持多种导出格式，导出格式均为标准格式，可以在不依赖 Joplin 的情况下查看、编辑，部分格式支持无损/有损重新导入：
 
+JEX：Joplin 的无损导出格式，包含所有的元数据如标签、更新时间等。JEX是实际上是一个tar文件，可以直接解压出 MarkDown 文件。这种格式常用于备份，可以无损重新导入。
+RAW：同 JEX 格式相似，只是数据会保存为目录，并且每个笔记都会导出为一个单独的文件。可以无损重新导入。
+JSON：导出为 JSON 格式的文件。不支持重新导入。
+MD：按照笔记本的分级结构导出为目录，每条笔记在对应的目录中导出为 Markdown 格式的文件，目录名和文件名与原笔记本对应，此种格式易于读取，但是导出的文件将丢失元数据。可以有损导入（丢失元数据）。
+HTML：导出为网页文件，将 Markdown 格式转为 html 标签，带有样式。不支持导入。
+PDF：将单个笔记导出为 PDF 格式的文件。不支持导入。
 
-Plugin: inline tags
+如下图：
 
-joplin-plugin-note-overview
-
-Create one or more notes with the following content:
-&lt;!-- note-overview-plugin
-search: -tag:*
-fields: updated_time, title
-alias: updated_time AS Last edit, title AS Title
-sort: title DESC
---&gt;
-Several of these blocks can be included in one note, also between text.
-The note content is updated every x minutes (depending on your setting) or manualy by Tools &gt; Create Note overview.
-joplin-plugin-embed-search
-```search
-your search query
-```
-
-Additional features
-
-you can paste sort:asc or sort:desc to sort notes by title ascending or descending
-A shorthand notebook:this, that narrows search to current notebook only.
-Basic content embedding content:true (beta):
-
-
-Spoilers
-
-
-
-
-可使用%%遮盖部分文字。
-
-
-
-
-格式：
-
-
-
-%%扰流板、遮挡板%%
-
-
-
-软件内呈现：
-
-
-
-
-
-
-点击前
-点击后
-
-
-
-以及一个类似闪卡的可折叠块
-格式：
-
-
-
-:[
-
-测试，标题
-
-测试，内容
-
-]:
-
-
-
-软件内呈现：
-
-
-
-点击前
-点击后
-Notes statistics
-
-
-
-笔记内部的数据统计。
-
-
-
-Note tabs
-
-
-
-像浏览器一样浏览文档，支持多个打开放置。
-
-
-
-
-
-
-Quick links
-
-
-
-使用@@快速链接笔记文件。
-
-
-
-
-
-
-Jira Issue
-
-Homenotes
-
-选择一个笔记作为每次打开软件时的首个笔记，可以把这个功能当作书签用。
-
-Admonition
-!!! note This is the admonition title
-This is the admonition body
-!!!
-
-The following admonition types, supported by Docarys, are recognized by this plugin:
-
-
-
-Type
-
-
-
-
-note
-
-
-abstract
-
-
-info
-
-
-tip
-
-
-success
-
-
-question
-
-
-warning
-
-
-failure
-
-
-danger
-
-
-bug
-
-
-example
-
-
-quote
-
-
-
-Encrypted notes
-
-字面意义，加密笔记，记住密码不得找回。
-
-Favorites
-
-
-
-
-收藏夹，支持笔记、标签笔记本的收纳（随取随用）
-
-
-
-更改收藏夹中的笔记名不会更改原始笔记。
-
-
-
-Highlight
-
-打出[h:colour:scope]后，插件会自动识别成代码。
-
-
-
-
-颜色
-范围（自动选择的）
-
-
-
-
-m = mark
-e = empty
-
-
-r = red
-w = word
-
-
-g = green
-s = sentence
-
-
-b = blue
-l = line
-
-
-y = yellow
-
-
-
-
-
-其他插件：
-官方插件下载地址及其介绍
+五、总结
+免费开源的笔记Joplin无论在功能上还是使用体验上基本上与Evernote印象笔记无异了，在隐私保护方面做得非常好，特别适合那些想要保存个人信息笔记的用户。
+使用免费开源的笔记Joplin最大的问题就是找好同步的网盘或者云存储，另外强烈建议大家在对Joplin的设置进行调整时先备份一个，以免同步后删除了所有的笔记。
+编辑整理 From：挖站否
 系列教程
 全部文章RSS订阅
 笔记系列  Note分类RSS订阅
@@ -7607,8 +7407,10 @@ github卡片
       </categories>
       <tags>
         <tag>note</tag>
-        <tag>markdown</tag>
-        <tag>joplin</tag>
+        <tag>Docker</tag>
+        <tag>Webdav</tag>
+        <tag>Linux</tag>
+        <tag>Joplin</tag>
       </tags>
   </entry>
   <entry>
@@ -8933,6 +8735,431 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
+    <title>Joplin 插件使用推荐</title>
+    <url>/posts/e3ee7f8b/</url>
+    <content><![CDATA[Joplin插件推荐
+
+Gif图片加载较慢，请耐心等待！
+
+persistent-text-folding-in-editor
+
+
+Ctrl(or Cmd) + Alt + F to fold all
+Ctrl(or Cmd) + Alt + U to unfold all
+
+Plugin: Conflict Resolution
+
+Joplin Kanban Plugin
+
+Usage
+To get started, you'll need a notebook which will contain all tasks that you want to see on the board. The plugin will only show tasks in a single notebook and it's sub-notebooks.
+A kanban board is defined by a special type of note, which contains all of its configuration. Create a new note, and paste in the following:
+```kanban
+columns:
+  - name: Backlog
+    backlog: true
+  - name: Work in progress
+    tag: wip
+  - name: Finished
+    tag: done
+```
+It is important that the confiuration is surrounded by a code block (kanban ... ), otherwise it won't be detected.
+joplin_plugin_nlr
+
+插件安装后会在工具菜单添加一项：NLR
+
+
+
+点击 NLR 打开新的panel，即可在输入框输入书名或作者名称搜索小说
+
+
+
+点击卡片右上方 INFO 打开新的小说目录，章节卡片右上checkbox选中即代表下载此chapter，选中后，点击上方DOWNLOAD开始下载，在笔记列表中即可看到小说文本了。
+
+
+joplin-outline
+
+joplin-persistent-layout
+Save editor layout (editor/split view/viewer/rich text) for each note separately.
+To persist the layout for a note follow these steps:
+
+
+Specify the tags for which a specific layout should be used.
+
+
+To do this, go to the plugin's settings/options page and add the tags to the settings.
+
+
+An example configuration could like this:
+
+
+
+
+
+Make sure that the correct value is selected in View &gt; Layout button sequence.
+
+To be able to use the layout switching correctly, this setting must be set accordingly. Otherwise the editor layout might not be switched to the expected one.
+For example: If a tag is specified in option Tags for editor layout mode: Rendered Markdown viewer and least one note uses it, the setting must also contain Viewer.
+
+
+
+Add the appropriate tags to the notes. If not already done.
+
+When the selected note is changed, the editor layout is switched.
+If none of the selected note's tags matches a specified layout tag, the default layout from the option Default editor layout is used.
+
+If nothing is selected as default editor layout, the currently active editor layout will be kept.
+
+
+If more than one tag is specified for a note, the first matching one is used.
+
+
+
+Plugin: inline tags
+
+joplin-plugin-note-overview
+
+Create one or more notes with the following content:
+&lt;!-- note-overview-plugin
+search: -tag:*
+fields: updated_time, title
+alias: updated_time AS Last edit, title AS Title
+sort: title DESC
+--&gt;
+Several of these blocks can be included in one note, also between text.
+The note content is updated every x minutes (depending on your setting) or manualy by Tools &gt; Create Note overview.
+joplin-plugin-embed-search
+```search
+your search query
+```
+
+Additional features
+
+you can paste sort:asc or sort:desc to sort notes by title ascending or descending
+A shorthand notebook:this, that narrows search to current notebook only.
+Basic content embedding content:true (beta):
+
+
+Spoilers
+
+
+
+
+可使用%%遮盖部分文字。
+
+
+
+
+格式：
+
+
+
+%%扰流板、遮挡板%%
+
+
+
+软件内呈现：
+
+
+
+
+
+
+点击前
+点击后
+
+
+
+以及一个类似闪卡的可折叠块
+格式：
+
+
+
+:[
+
+测试，标题
+
+测试，内容
+
+]:
+
+
+
+软件内呈现：
+
+
+
+点击前
+点击后
+Notes statistics
+
+
+
+笔记内部的数据统计。
+
+
+
+Note tabs
+
+
+
+像浏览器一样浏览文档，支持多个打开放置。
+
+
+
+
+
+
+Quick links
+
+
+
+使用@@快速链接笔记文件。
+
+
+
+
+
+
+Jira Issue
+
+Homenotes
+
+选择一个笔记作为每次打开软件时的首个笔记，可以把这个功能当作书签用。
+
+Admonition
+!!! note This is the admonition title
+This is the admonition body
+!!!
+
+The following admonition types, supported by Docarys, are recognized by this plugin:
+
+
+
+Type
+
+
+
+
+note
+
+
+abstract
+
+
+info
+
+
+tip
+
+
+success
+
+
+question
+
+
+warning
+
+
+failure
+
+
+danger
+
+
+bug
+
+
+example
+
+
+quote
+
+
+
+Encrypted notes
+
+字面意义，加密笔记，记住密码不得找回。
+
+Favorites
+
+
+
+
+收藏夹，支持笔记、标签笔记本的收纳（随取随用）
+
+
+
+更改收藏夹中的笔记名不会更改原始笔记。
+
+
+
+Highlight
+
+打出[h:colour:scope]后，插件会自动识别成代码。
+
+
+
+
+颜色
+范围（自动选择的）
+
+
+
+
+m = mark
+e = empty
+
+
+r = red
+w = word
+
+
+g = green
+s = sentence
+
+
+b = blue
+l = line
+
+
+y = yellow
+
+
+
+
+
+其他插件：
+官方插件下载地址及其介绍
+系列教程
+全部文章RSS订阅
+笔记系列  Note分类RSS订阅
+
+完美笔记进化论
+
+
+经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
+
+pigo图床搭建与配置
+Joplin教程
+Snipaste截图工具
+Typora 作为Markdown编辑器最强
+
+
+
+Joplin入门指南&amp;实践方案
+
+
+
+Joplin和使用
+Joplin同步与备份
+Joplin导入与导出
+
+
+
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+
+
+
+Joplin安装使用，调用外部编辑器，网盘同步等等
+
+
+
+Joplin 插件以及其Markdown语法。All in One!
+
+
+
+Joplin简明教程
+markdown语法简明教程
+
+
+
+Joplin 插件使用推荐
+
+
+
+教你用各种插件打造一个强大的笔记工具。
+
+
+
+为知笔记私有化Docker部署
+
+
+
+如何部署自己私有的为知笔记。
+其实博主更推荐私有部署joplin
+
+
+Gitbook使用系列 Gitbook分类RSS订阅
+
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+
+
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+
+
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+
+Gitlab 使用系列  Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+Hexo系列  HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+
+Hexo Docker环境与Hexo基础配置篇
+
+
+hexo博客自定义修改篇
+
+
+hexo博客网络优化篇
+
+
+hexo博客增强部署篇
+
+
+hexo博客个性定制篇
+
+
+hexo博客常见问题篇
+
+
+Hexo Markdown以及各种插件功能测试
+
+
+
+
+markdown 各种其它语法插件
+latex公式支持
+mermaid图表
+plant uml图表
+URL卡片
+bilibili卡片
+github卡片
+豆瓣卡片
+插入音乐和视频
+插入脑图
+
+
+]]></content>
+      <categories>
+        <category>note</category>
+      </categories>
+      <tags>
+        <tag>note</tag>
+        <tag>markdown</tag>
+        <tag>joplin</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>浏览器的渲染过程</title>
     <url>/posts/69a052c9/</url>
     <content><![CDATA[
@@ -9082,230 +9309,54 @@ https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&a
       </tags>
   </entry>
   <entry>
-    <title>替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化</title>
-    <url>/posts/45f878cd/</url>
-    <content><![CDATA[Evernote笔记是我们常用的一个笔记服务，国内叫印象笔记，免费版本的Evernote笔记其实已经足够我们使用了，但是对于重度的笔记用户，Evernote某些功能可能需要付费升级才可以使用，而且你的笔记是存放在Evernote的服务器上。
-有些同学可能觉得放在Evernote服务器上的笔记会不安全，况且有些隐私性很强的笔记确实不适合放在公共的服务器上。此时，你需要一个可以保护个人隐私同时还可以与Evernote笔记功能相媲美的免费笔记服务：Joplin，它是一款免费开源的笔记软件。
-Joplin跨平台支持，包括PC桌面端，移动端，甚至提供了命令行版本，原生支持 markdown 格式，搜索速度快，可以通过其他第三方同步工具 (Dropbox/NextCloud/OneDrive/WebDAV/etc) 进行备份以及同步 ，支持浏览器Web clipper即网页剪贴。
+    <title>自动曝光原理</title>
+    <url>/posts/509c7bd3/</url>
+    <content><![CDATA[自动曝光的原理
+曝光是摄影中十分重要的一个环节，它决定了一张图片的明暗，如下图所示，第一张图片太暗，而第三种图片太亮。
 
-Evernote笔记该有的功能Joplin都有了，如果你不想掏钱购买Evernote付费版本，Joplin将是最佳的替代品。更多的自建服务还有：
+曝光由什么来决定
+使用过数码相机的人都知道曝光由光圈、曝光时间、ISO三者共同决定，详细的关系就不赘述。
+光圈：控制进光量；
+曝光时间：光到达的时间长度；
+ISO：增益；
+但是对于手机以及其他电子产品使用的微型摄像头，光圈大小是固定的，所以手机拍照的曝光由曝光时间和**增益(ISO)**来控制。
+什么是自动曝光
+数码相机中有一种手动模式，可手动设置光圈、曝光时间、ISO来控制曝光，该模式的使用对摄影师的要求会比较高。另外 数码相机的全自动模式、光圈优先模式、快门优先模式以及手机等电子产品的曝光都属于自动曝光。
+自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。
+自动曝光的标准
+在此之前需要了解物体的亮度与色彩是由物体对光线的反射率来决定的。例如纯黑色的放射率是0，纯白色的反射率是100%，处于中间的灰度的反射率是18%，这就是18%中间灰度。
 
-Chevereto免费相册程序安装与使用-免费自建图床和公共图片相册
-自建RSS阅读器Tiny Tiny RSS安装和配置自动更新,全文RSS,更换主题,手机RSS登录
-放弃付费1Password改用免费开源的bitwarden_rs自建密码管理系统-安装,使用和备份
-
-PS：更新记录
-
-1、平时经常要校对文本，以及有大量的文件需要在电脑和移动硬盘同步，可以试试这些免费的同步对比工具：八大免费的文件对比同步工具-免费文件对比分析与复制同步备份软件。2021.3.24
-2、对于1Password这类的密码管理软件重度依赖，但是苦于囊中羞涩的话，不防自建密码管理平台：Bitwarden自建密码存储系统图文教程-开源免费的bitwarden_rs安装与使用。2020.10.10
-
-一、Joplin安装和使用
-网站：
-
-https://joplinapp.org/
-
-直接到官网下载Joplin安装包，安装好了就可以启动Joplin了，以下是Joplin的软件界面，分成三栏，和我们平时熟悉的笔记软件是一样的。（点击放大）
-
-这是Joplin的编辑器，支持 MarkDown，图片、数学公式、复选框等 MarkDown 语法。
-
-不习惯MarkDown，直接切换为可视编辑即可。
-
-在Joplin的设置选项中还提供了非常多的MarkDown的插件，对于MarkDown深度用户来是一个福音。
-
-二、Joplin的特色功能
-2.1 笔记历史版本
-Joplin提供了笔记历史版本，让你轻松地恢复任意时间的笔记版本。在“工具” &gt; “选项” &gt; “笔记历史”中启用，以及设置保留的笔记历史天数。要查看笔记的历史版本，点击编辑器上方的笔记属性图标，然后选择恢复：
-
-2.2 E2EE安全加密
-在同步过程中，笔记本、笔记、标签等均以纯文本文件的方式同步，如果你还觉得不安全，你可以开启端到端加密（E2EE），把文件加密后同步到云端。由于 Joplin 的去中心化，密码必须手动在每个终端设置。
-
-**注意：不要在多个设备上同时启用加密，否则可能会造成加密密钥问题。特别提醒：**加密之前，先将笔记导出JEX备份一份，以防万一。
-2.3 Joplin手机APP
-Joplin可以直接在各大应用市场上下载，使用起来也很方便。
-
-2.4 外部编辑器
-Joplin自带的编辑已经非常强大的，如果你想要使用自己的编辑器来编辑笔记也是可以的，包括 文本编辑器（如 Notepad++）、 Markdown 编辑器（如 Typora）等。
-
-通过 Ctrl+E，或 Joplin 编辑器上方的图标（如下图）从外部编辑器打开笔记，从外部编辑器打开后，Joplin 将持续监控该文件，当你从外部编辑机保存后，Joplin 将自动同步最新变动。
-
-你可以在“工具” &gt; “选项” &gt; “通用选项”中指定编辑器的路径。
-三、Joplin同步与备份
-Joplin与其它的笔记软件很大的不同就是没有存储功能，你需要将Joplin的笔记放在自己的主机或者网盘里，幸运的是Joplin支持多种方式的云同步：Nextcloud / Dropbox / OneDrive / File system / WebDAV。
-3.1 Joplin免费网盘同步
-目前，Joplin支持Dropbox 、OneDrive 网盘同步，在同步选项中选择OneDrive，然后就会打开认证。
-
-同意验证。
-
-与 OneDrive 同步时，Joplin 会在 OneDrive 中创建一个子目录：/Apps/Joplin，Joplin 仅有此目录的读写权限。如下图：
-
-3.2 Joplin使用WebDAV同步
-WebDAV 可以自建，或使用支持 WebDAV 的云盘，另外 NAS（如群晖）通常也支持 WebDAV。
-
-**Nextcloud：**Nextcloud是一个开源的免费的自建个人云存储方案，要启用 Nextcloud 同步，你需要在 Nextcloud 中创建一个目录（比如：Joplin），在左下角的“设置”中获取 WebDAV 的 URL，在 Joplin 同步设置中，填入 WebDAV URL、用户名和密码。
-
-有关于Nextcloud安装与使用教程，请参考：Oneinstack安装NextCloud以及使用Aria2离线下载和ocDownloader插件配置。
-**坚果云：**首次同步时会因为 WebDAV 短时间内的大量请求被坚果云临时限制，坚果云提示为“Too many requests”，这个封锁会持续大约6小时。同步之前，在 Joplin 的“工具” &gt; “选项” &gt; “同步” &gt; “高级选项”中，将“最大并发连接数”改为1可以有效避免。
-
-关于坚果云的使用方法，请参考：巧用又拍云FTP和坚果云WebDAV-打造个人文件备份和数据云存储。
-四、Joplin导入与导出
-Joplin可以很方便地支持从Evernote（印象笔记）导入，方法如下：
-从 Evernote（印象笔记）导入：
-
-打开 Evernote，右击要导出的笔记本，选择“导出笔记“，导出 .enex 格式文件。
-在 Joplin 中，选择“文件” &gt; “导入” &gt; “ENEX – Evernote导出文件（Markdown）”即可导入。
-
-从 Markdown 文件导入：
-
-使用 Joplin 可以轻松导入 Markdown 文件或整个目录，选择“文件” &gt; “导入” &gt; “MD – Markdown（文件/目录）”导入即可。
-
-从其他应用程序导入：
-
-通常，很多应用程序都支持导入到 Evernote 中，所以从其他应用程序导入的思路是先导入 Evernote，再导出 .enex 文件，最后导入 Joplin 中。
-
-如下图：
-
-如果哪天你不想使用Joplin了，也可以很方便地导出。Joplin 支持多种导出格式，导出格式均为标准格式，可以在不依赖 Joplin 的情况下查看、编辑，部分格式支持无损/有损重新导入：
-
-JEX：Joplin 的无损导出格式，包含所有的元数据如标签、更新时间等。JEX是实际上是一个tar文件，可以直接解压出 MarkDown 文件。这种格式常用于备份，可以无损重新导入。
-RAW：同 JEX 格式相似，只是数据会保存为目录，并且每个笔记都会导出为一个单独的文件。可以无损重新导入。
-JSON：导出为 JSON 格式的文件。不支持重新导入。
-MD：按照笔记本的分级结构导出为目录，每条笔记在对应的目录中导出为 Markdown 格式的文件，目录名和文件名与原笔记本对应，此种格式易于读取，但是导出的文件将丢失元数据。可以有损导入（丢失元数据）。
-HTML：导出为网页文件，将 Markdown 格式转为 html 标签，带有样式。不支持导入。
-PDF：将单个笔记导出为 PDF 格式的文件。不支持导入。
-
-如下图：
-
-五、总结
-免费开源的笔记Joplin无论在功能上还是使用体验上基本上与Evernote印象笔记无异了，在隐私保护方面做得非常好，特别适合那些想要保存个人信息笔记的用户。
-使用免费开源的笔记Joplin最大的问题就是找好同步的网盘或者云存储，另外强烈建议大家在对Joplin的设置进行调整时先备份一个，以免同步后删除了所有的笔记。
-编辑整理 From：挖站否
+具有一定反射率的物体在最终的图像中被还原到了其相应的灰度级，这就意味着达到了正确的曝光。例如摄影师们通常在拍摄之前使用中性灰卡测试曝光是否正常。
+但是相机在各种场景下无法识别物体的反射率，因此采用了一个简单粗暴而又行之有效的方法，统一将图像整体平均亮度设置为中性灰的亮度。该方法基于**科学家认为自然界的平均反射率是18%**这一理论。当然，这个方法也不是走遍天下都不怕，比如拍摄雪景时需要增加曝光补偿，不然会偏暗，因为雪景的亮度远远大于中性灰度。这也就是摄影中的一句口诀的由来“白增黑减”。
+自动曝光算法
+上面已经讲了自动曝光的标准，也就确立了曝光目标，要达到这一目标还要自动曝光算法来实现。
+目前比较常见的算法有平均亮度法、权重均值法、亮度直方图等。其中最普遍的就是平均亮度法。平均亮度法就是对图像所以像素亮度求平均值，通过不断调整曝光参数最终达到目标亮度。而权重均值法是对图像不同区域设置不同权重来计算图像亮度，例如相机中的各种测光模式的选择就是改变不同区域的权重。亮度直方图法是通过为直方图中峰值分配不同权重来计算图像亮度。
+自动曝光实现的过程：
+第一步：对当前图像进行亮度统计；
+第二步：根据当前图像亮度确定曝光值；
+第三步：计算新的曝光参数，曝光时间、光圈、增益；
+第四步：将新的曝光参数应用到相机；
+第五步：重复步骤一到四，直到亮度满足要求。
+曝光参数调整_曝光表
+前面留下两个问题：“第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。” 第一个问题在前面有过解释，第二个问题也就是自动曝光实现步骤的第三步，曝光值由光圈、曝光时间、增益沟通决定，当计算出一个曝光量，曝光三要素有很多种组合方式。一般情况下有曝光曲线，每个曝光量对应一组参数。手机中曝光曲线可以通过Tuning调整。
+From: 积极的悲观主义者
 系列教程
 全部文章RSS订阅
-笔记系列  Note分类RSS订阅
-
-完美笔记进化论
-
-
-经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
-
-pigo图床搭建与配置
-Joplin教程
-Snipaste截图工具
-Typora 作为Markdown编辑器最强
-
-
-
-Joplin入门指南&amp;实践方案
-
-
-
-Joplin和使用
-Joplin同步与备份
-Joplin导入与导出
-
-
-
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-
-
-
-Joplin安装使用，调用外部编辑器，网盘同步等等
-
-
-
-Joplin 插件以及其Markdown语法。All in One!
-
-
-
-Joplin简明教程
-markdown语法简明教程
-
-
-
-Joplin 插件使用推荐
-
-
-
-教你用各种插件打造一个强大的笔记工具。
-
-
-
-为知笔记私有化Docker部署
-
-
-
-如何部署自己私有的为知笔记。
-其实博主更推荐私有部署joplin
-
-
-Gitbook使用系列 Gitbook分类RSS订阅
-
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-
-
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-
-
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-
-Gitlab 使用系列  Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-Hexo系列  HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-
-Hexo Docker环境与Hexo基础配置篇
-
-
-hexo博客自定义修改篇
-
-
-hexo博客网络优化篇
-
-
-hexo博客增强部署篇
-
-
-hexo博客个性定制篇
-
-
-hexo博客常见问题篇
-
-
-Hexo Markdown以及各种插件功能测试
-
-
-
-
-markdown 各种其它语法插件
-latex公式支持
-mermaid图表
-plant uml图表
-URL卡片
-bilibili卡片
-github卡片
-豆瓣卡片
-插入音乐和视频
-插入脑图
-
+Embeded系列 Embeded 分类 RSS 订阅
+
+海思MPP&amp;UNF构架源代码级分析
+3G,4G,Wifi选型需求分析及技术简介
+自动曝光原理
+ISP 数字图像处理 算法概述、工作原理、架构、处理流程
 
 ]]></content>
       <categories>
-        <category>note</category>
+        <category>embeded</category>
       </categories>
       <tags>
-        <tag>note</tag>
-        <tag>Docker</tag>
-        <tag>Webdav</tag>
-        <tag>Linux</tag>
-        <tag>Joplin</tag>
+        <tag>3a</tag>
+        <tag>ae</tag>
+        <tag>image</tag>
       </tags>
   </entry>
   <entry>
@@ -9599,57 +9650,6 @@ From: 4ark.me
       </tags>
   </entry>
   <entry>
-    <title>自动曝光原理</title>
-    <url>/posts/509c7bd3/</url>
-    <content><![CDATA[自动曝光的原理
-曝光是摄影中十分重要的一个环节，它决定了一张图片的明暗，如下图所示，第一张图片太暗，而第三种图片太亮。
-
-曝光由什么来决定
-使用过数码相机的人都知道曝光由光圈、曝光时间、ISO三者共同决定，详细的关系就不赘述。
-光圈：控制进光量；
-曝光时间：光到达的时间长度；
-ISO：增益；
-但是对于手机以及其他电子产品使用的微型摄像头，光圈大小是固定的，所以手机拍照的曝光由曝光时间和**增益(ISO)**来控制。
-什么是自动曝光
-数码相机中有一种手动模式，可手动设置光圈、曝光时间、ISO来控制曝光，该模式的使用对摄影师的要求会比较高。另外 数码相机的全自动模式、光圈优先模式、快门优先模式以及手机等电子产品的曝光都属于自动曝光。
-自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。
-自动曝光的标准
-在此之前需要了解物体的亮度与色彩是由物体对光线的反射率来决定的。例如纯黑色的放射率是0，纯白色的反射率是100%，处于中间的灰度的反射率是18%，这就是18%中间灰度。
-
-具有一定反射率的物体在最终的图像中被还原到了其相应的灰度级，这就意味着达到了正确的曝光。例如摄影师们通常在拍摄之前使用中性灰卡测试曝光是否正常。
-但是相机在各种场景下无法识别物体的反射率，因此采用了一个简单粗暴而又行之有效的方法，统一将图像整体平均亮度设置为中性灰的亮度。该方法基于**科学家认为自然界的平均反射率是18%**这一理论。当然，这个方法也不是走遍天下都不怕，比如拍摄雪景时需要增加曝光补偿，不然会偏暗，因为雪景的亮度远远大于中性灰度。这也就是摄影中的一句口诀的由来“白增黑减”。
-自动曝光算法
-上面已经讲了自动曝光的标准，也就确立了曝光目标，要达到这一目标还要自动曝光算法来实现。
-目前比较常见的算法有平均亮度法、权重均值法、亮度直方图等。其中最普遍的就是平均亮度法。平均亮度法就是对图像所以像素亮度求平均值，通过不断调整曝光参数最终达到目标亮度。而权重均值法是对图像不同区域设置不同权重来计算图像亮度，例如相机中的各种测光模式的选择就是改变不同区域的权重。亮度直方图法是通过为直方图中峰值分配不同权重来计算图像亮度。
-自动曝光实现的过程：
-第一步：对当前图像进行亮度统计；
-第二步：根据当前图像亮度确定曝光值；
-第三步：计算新的曝光参数，曝光时间、光圈、增益；
-第四步：将新的曝光参数应用到相机；
-第五步：重复步骤一到四，直到亮度满足要求。
-曝光参数调整_曝光表
-前面留下两个问题：“第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。” 第一个问题在前面有过解释，第二个问题也就是自动曝光实现步骤的第三步，曝光值由光圈、曝光时间、增益沟通决定，当计算出一个曝光量，曝光三要素有很多种组合方式。一般情况下有曝光曲线，每个曝光量对应一组参数。手机中曝光曲线可以通过Tuning调整。
-From: 积极的悲观主义者
-系列教程
-全部文章RSS订阅
-Embeded系列 Embeded 分类 RSS 订阅
-
-海思MPP&amp;UNF构架源代码级分析
-3G,4G,Wifi选型需求分析及技术简介
-自动曝光原理
-ISP 数字图像处理 算法概述、工作原理、架构、处理流程
-
-]]></content>
-      <categories>
-        <category>embeded</category>
-      </categories>
-      <tags>
-        <tag>3a</tag>
-        <tag>ae</tag>
-        <tag>image</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>深度学习之视频人脸识别系列</title>
     <url>/posts/a0f3c838/</url>
     <content><![CDATA[系列1 简介
@@ -9899,6 +9899,701 @@ From： https://cloud.tencent.com/developer/article/1160037?from=article.detail.
       <tags>
         <tag>ai</tag>
         <tag>face</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Vim IDE Docker 以及中文指南</title>
+    <url>/posts/647e6265/</url>
+    <content><![CDATA[
+Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！
+
+Vim Docker
+
+docker pull bloodstar/vim
+alias edit='docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim' 
+edit some.file 
+alias edit_update="docker pull bloodstar/vim:latest"
+Vim IDE Docker
+
+What's inside:
+
+Alpine Linux
+Vim + a ton of awesome plugins see bloodstar/vim:latest
+Good support of Golang development with bloodstar/go-tools container
+tmux
+powerline
+Mosh
+OpenSSH, Bash, OMF, Python, etc.
+
+how to start the daemon(and all containers)
+docker create -v '/usr/lib/go' --name go-tools \
+'bloodstar/go-tools' '/bin/true'
+
+docker run -v $('pwd'):/home/developer/workspace \
+--volumes-from go-tools \
+-v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
+-v /etc/localtime:/etc/localtime:ro \
+-d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
+--name drop-in bloodstar/drop-in
+-v /etc/localtime:/etc/localtime:ro - makes tmux display local time
+how to connect:
+mosh --ssh="ssh -p 62222" -- developer@$&lt;ip&gt; tmux -u
+or without host identity check:
+mosh --ssh="ssh -o StrictHostKeyChecking=no -p 62222" -- developer@$&lt;ip&gt; tmux -u
+Useful Bash scripts
+Connect
+#!/bin/bash
+ip=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' drop-in)
+mosh --ssh="ssh -p 62222" -- developer@$ip tmux -u
+start the daemon(and all containers)
+#!/bin/bash
+dtc_id=$(docker ps -a -q --filter 'name=vim-go-tools')
+if [[ -z "${dtc_id}" ]]; then
+ echo 'vim-go-tools container not found. Creating...'
+ docker create -v '/usr/lib/go' --name 'vim-go-tools' \
+   'bloodstar/go-tools' '/bin/true'
+ echo 'Done!'
+fi
+echo 'starting daemon...'
+docker run -v $('pwd'):/home/developer/workspace \
+  --volumes-from vim-go-tools \
+  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
+  -v /etc/localtime:/etc/localtime:ro \
+  -e "GEMAIL=&lt;github email&gt;" \
+  -e "GNAME=&lt;github name&gt;" \
+  -d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
+  --name drop-in bloodstar/drop-in
+echo 'Done!'
+Vim 中文快查表   &lt;= 戳这里
+
+Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！
+快去看看吧。
+
+Vim
+
+]]></content>
+      <categories>
+        <category>tools</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>docker</tag>
+        <tag>vim</tag>
+        <tag>ide</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>从文学的角度，分析韩红的《天亮了》</title>
+    <url>/posts/cb623532/</url>
+    <content><![CDATA[现场MV
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ioFXvQzDKoHWznhp").style.height=document.getElementById("mmedia-ioFXvQzDKoHWznhp").scrollWidth*0.76+"px";
+    window.onresize = function(){
+      document.getElementById("mmedia-ioFXvQzDKoHWznhp").style.height=document.getElementById("mmedia-ioFXvQzDKoHWznhp").scrollWidth*0.76+"px";
+    }; 
+
+精品分析： 原作：石晶兰 短文吧
+再做个传送门： 天亮了，听歌时，关灯，准备纸巾。
+
+先分析结构。
+看歌词。
+那是一个秋天，风儿那么缠绵，
+让我想起他们那双无助的眼。
+就在那美丽风景相伴的地方，
+我听到一声巨响震彻山谷。
+就是那个秋天，再看不到爸爸的脸。
+他用他的双肩，托起我重生的起点。
+黑暗中泪水沾满了双眼，
+不要离开不要伤害。
+共八行，等于两个四行。
+两个四行一一对应，前三行，旋律基本是相同的。只有最后一行，为了与后面衔接，所以不同。
+两个四行的布置，等于是一种重复。
+这样的重要，在文学结构上，常见于起承。
+但歌，相当于诗。囿于篇幅，在结构上，通常会有所缺失。起承两者，一般缺失的，都是起。那样的做法，也就是直接叙事，存在让受众猝不及防的弊病。
+然后，《天亮了》并不是。
+“那是一个秋天，风儿那么缠绵”和“就是那个秋天”分明是起。
+所以，《天亮了》并没有进行文学结构上的省略。
+“那是一个秋天，风儿那么缠绵”是起，接紧着的三行歌词，自然就是承了。
+那么，第五行“就是那个秋天”怎么又来一个起呢？
+自然是因为篇幅太短，叙事不够（前面承得不够），所以，还需要再承一下。
+不能够不要第五行的起，直接往下写吗？
+真要说的话，其实也能。不过，再加四行承，真的就能把事情说清楚吗？
+显然，韩红想要表达的东西很多，她认为，不能。
+仅靠精练语言，明显是不够的，还需要换角度陈述。
+第五行的再起，实际上，就是为后面的换角度承，打基础的。
+这种写法，也是有先例的。请看邓丽君《相见在明天》歌词：
+记得我俩初相见，
+风吹花儿飞满天。
+你说我的笑容像花朵，
+比那花儿更娇艳。
+我还记得那一天，
+送你送到小河边。
+手牵着手呀心里有千言，
+相对却无言。
+跟《天亮了》一样，《相见在明天》也是两个四行，也是起承起承。
+并且，两起两承，还跟诗词的押韵一样，其重复，不仅有加深印象的作用，更有共鸣回旋的作用，正是唐陈子昂所说的“音情顿挫”的顿挫，极大的提升了作品的美感，让受众的接受度大大提高，
+继续看《天亮了》歌词：
+我看到爸爸妈妈就这么走远，
+留下我在这陌生的人世间。
+不知道未来还会有什么风险。
+我想要紧紧抓住他的手。
+妈妈告诉我希望还会有。
+看到太阳出来妈妈笑了。
+天亮了。
+六行都是转。具体在这里，自然不是转折，而是高那个潮。
+此处值得一说的是合，只有三个字“天亮了”。
+这三个字，正好也是这首歌的歌名。
+但是这三个字表达的，到底是什么意思、什么情感呢？
+题都城南庄/唐/崔护
+去年今日此门中，人面桃花相映红。
+人面不知何处去，桃花依旧笑春风。
+不难看出，最后一句“桃花依旧笑春风”跟前面三句的叙述，是接不上的。
+去年这儿，有人面有桃花。今年这儿人面没有了，接下来说的通常是：还真是让人怀念啊。
+俗吗？的确俗。并且，还不仅仅是俗，还存在因为什么而怀念那个姑娘的严重问题。
+动机不纯的话，写出来就会玷污那个姑娘。动机纯粹，只是单纯的对美好事物的欣赏，写出来的话，又有自夸之嫌。
+还真是不好写啊。
+不好写，干脆就不写，另起一笔：“桃花依旧笑春风”。究竟表达的是什么样的滋味，让受众自己去想。
+《天亮了》末尾的合“天亮了”，就是“桃花依旧笑春风”这种表现手法。太多的感情，千言万语，加总在一起，实在难以挽上疙瘩。于是，就另起一行，来了句看似关系不大的“天亮了”，让一切，尽在无言中。
+不同的受众，会有不同的感受。因而这种让受众自己去想的结尾，总是余味无穷。
+文学结构分析，就到这儿。第二段的结构跟第一段相同，就不讲了。
+下面进行逐句评讲。
+“那是一个秋天，风儿那么缠绵，”没毛病。“那是”开头，虽然不出彩，但是很自然，容易被人接受，接着往下听。
+“让我想起他们那双无助的眼。”这里，“他们”是两个人；“那双”眼睛虽然是复数，但落实到人，却是单数。因此，这是一个小错误。
+很显然，用相同性质的词语直接替换是不行的，譬如“四只”。四，数量较多，会分散受众的注意力，让受众去思考为什么是四。因而，如果硬要改的话，只能用其它性质的词语去替换，譬如“彷徨”。
+但“彷徨无助”，又稍显生僻，会影响听者的接受速度，形成不怎么大的接受障碍。而如果也用“无”的话，无什么呢？无神？听上去，岂不是比“彷徨无助”更不容易分辨。
+所以，实在要改，就只能把“他们”二字挪到这儿。
+那样一来，“让我想起”就要掺进两个水字了，譬如“风儿让我想起”。
+是不是太水了？
+于是，我最终感觉，还是不改为好。
+小错误嘛，存在也无妨。这就像文豪写书法一样，多一点少一点，多一笔少一笑，根本不算错误，关键是，那个字不能被错认为是别的字。
+“那双无助的眼”也一样，虽然存在小错误，但由于不影响表达内容，听者一听，就知道是怎么回事。由于没有影响信息传递，所以不改也是行的。
+“就在那美丽风景相伴的地方，我听到一声巨响震彻山谷。”这两小句，没有基础毛病。
+值得注意的是，这两小句，存在一个对比：一个美丽的地方，一件悲惨的事。颇有一种把美好的事情撕烂了给读者看的悲剧色彩。
+“就是那个秋天，再看不到爸爸的脸。”
+为什么提到爸爸没提到妈妈？爸爸妈妈，可以一起提，也可以先后提。这里，实际上是先后提。先提爸爸，后面会提到妈妈。
+先提爸爸，又比先提妈妈要好。这是因为，时至今日，最不令人怀疑的，是父女情。虽然背景事件中，那是个儿子，但韩红是女的，唱出来的声音又带有明显的女性特征。女声，提到爸爸，无形中，就相当于女儿提到爸爸。其中的感情，就往父女情的方向靠近了那么一点，让听者一下就能接受，丝毫没有怀疑。
+“他用他的双肩，托起我重生的起点。”
+背景事件的具体经过，可能生还的当事人都已经记不清楚了。这一句，属于带有归纳性、比拟性的描述。因而不需要因为“用”“双肩托起”，去询问是不是父亲从洪水中救起了儿子那样的细节。
+“黑暗中泪水沾满了双眼，”
+“黑暗中”很妙。只描述了环境，没有指明时间。那其实表达的是，若干个“黑暗中”。包括当时，也包括事后。并且，“黑暗”有天然的，也有人为的。天然的，譬如天黑加停电；人为的，譬如钻进被窝里。这些，都被包括了进去。
+“不要离开、不要伤害。”这句，就有些难度了。
+“不要离开”好理解。可以是儿子对父母的呼唤。但“不要伤害”呢？
+“不要伤害”，到底是谁对谁发出的呐喊，后面再讲。
+“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。不知道未来还会有什么风险。”
+三小句，基础上没毛病。直接看上去，字面意思表达能力似乎稍弱。真是不是，后面再说。
+“我想要紧紧抓住他的手”中的“他”，指父亲，也可以指母亲。
+“妈妈告诉我希望还会有。看到太阳出来妈妈笑了。”这是绝望中的回忆。这一家人，以前也是经受过苦难的。在曾经难熬的岁月中，妈妈曾经多次鼓励过儿子。鼓励的时候，有直述“告诉我希望还会有”，也有以身作则“看到太阳出来，妈妈笑了”。
+“天亮了。”尽在不言中，就不再讲了。
+“这是一个夜晚天上宿星点点，我在梦里看见我的妈妈。”
+继“那是”之后，此处出现了“这是”。表示已经是事后，灾难之后。
+“一个人在世上要学会坚强”，很明显，这不是儿子对父母能够说出的话。
+结合前一小句“我在梦里看见我的妈妈”，可以发现，这是妈妈对儿子说的话。并且还是死去之后的妈妈对儿子所说的话。
+“我在梦里看见我的妈妈。一个人在世上要学会坚强”紧接着的两句，主语变了。前一句是“我”，后一句是“妈妈”。同时，又因为死去的人继续说话这一违反科学常理的设定，使得后一句主语“妈妈”变得有些难以理解。
+其实，受众的心，也是强大的。多听两遍，也还是能够理解的。
+这两句主语的变化，从玄学的角度看，简单。但从文学的角度看，跳跃就非常大了。
+唐/李白有句：“千里江陵一日还”。“千里江陵”说的是千里之外的江陵。站在什么地方能够说出此话，自然是白帝城。“还”，指回来，站在什么地方能够说“还”，当然只能是江陵。就这么一句，视角就从白帝城跳到了江陵。
+《天亮了》中，这两句紧挨着的歌词的主语跳跃，其实跟“千里江陵一日还”的视角跳跃，是相似的类型。
+“你不要离开不要伤害”上一段出现过，就不讲了。
+“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。”
+比较上一段，区别的，是第三小句。此处的第三小句，从陈述中跳脱出来了，相当于插入了一个事后的心愿。
+“我想要紧紧抓住他的手。妈妈告诉我希望还会有，看到太阳出来、天亮了。”
+比较上一段，区别的仍然是第三小句。“妈妈笑了”变成“天亮了”。但此处的“天亮了”，跟前面不一样，并不是起承转合的合，不是收尾，而就是一个简单的陈述，其实质，就相当于“妈妈笑了”。
+“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。
+“我想要紧紧抓住他的手。妈妈告诉我希望还会有。看到太阳出来，他们笑了。”
+重复，强调，加倍。略有不同的，就是“妈妈笑了”变成“他们笑了”。由“妈妈”变成“他们”，实际上也在告诉受众，马上就要收尾了。
+以什么收尾，收到哪里呢？依然还是“天亮了”，尽在不言中，让受众自己去想，
+不知道是哪年哪天了，无意中，我就这么偶然听到了这首歌。
+一听，就感受很好听。
+一听，就听出来了，里面讲述了一场事故。因为有“我听到一声巨响震彻山谷”、“再看不到爸爸的脸”。
+另外，还听出了事故中，父母对孩子的救助。因为有“他用他的双肩托起我重生的起点”。
+很明显，事故是悲惨的，事故中的父母是可歌可泣的，事故之后的儿子或女儿（从歌词中听不出孩子的性别）是可怜的。
+但是，就这么算了么？
+这么好听的歌，最后一句“天亮了”到底表述的是怎样的感情？
+没弄清楚，怎么能算完。
+生活中，有各种各样的事故。最常见的，恐怕应该是车祸。
+车祸事故，几乎每天都能够在地方新闻上看到。
+看到车祸事故的新闻，心中有什么感受？
+悲伤么？自然没有。
+一般来说，亲人，才会悲伤。陌生人，通常只是略带同情、怜悯。
+此处说的是，同样的事，因为自身角度的不同，感受大不相同。
+那么，《天亮了》应该站在什么样的角度去欣赏呢？
+最容易想到的角度，有两个。
+一是生还的儿子或女儿。但是，站在这个角度欣赏，“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间，不知道未来还会有什么风险。”真的弱爆了。
+另一个角度，则是富有同情心的旁观善良人士。这个角度的存在，是因为韩红。因为，就这么看过去，韩红，对于此次事故，似乎就是富有同情心的旁观善良人士。
+但这个角度还是不行。“黑暗中泪水沾满了双眼”，没什么感觉。
+于是乎，就剩下了不常见的角度——死去父母的角度！
+我试着想象了这样的角度，再听《天亮了》，眼泪一下子就出来了。
+我是在这之后，才搜索得知了《天亮了》的创作背景。
+是的，韩红，把自己当作那个孩子的父母，并且还把自己当作了孩子死去的父母。《天亮了》这首歌，表达的是死者对生者的寄托！
+重新再看歌词。“黑暗中泪水沾满了双眼”，所指的，就不仅仅是事后孩子多次在被窝里痛哭，并且还指死去的父母在地狱中带泪含悲。
+“不要离开”，只是孩子对父母的呼唤么？已然不是。以父母为参照物，生存的孩子，又何尝不是一种离开。
+当然不是说想要孩子一起死，否则就不会用双肩托起重生的起点了。
+“不要伤害”的答案，此时就出来了。那就是死去的父母发出的呐喊。呐喊的对象是天地——老天爷，不要伤害我们的孩子！
+“一个人在世上要学会坚强”不再是父母对自己的叮嘱，而是自己，对自己幸存的子女的叮嘱。
+于是乎，最后一句合中的“天亮了”，就表达了深深的无奈。
+天亮了，通常指清晨，代表的是希望。但是，对于死者来说，天亮了，就代表魂魄状态的死者必须离开。
+这是自然规律，死者必须离开。不想离开，也必须离开。因为——天亮了。
+难怪韩红唱这三个字的时候，泣不成声。
+题外话又冒出来了。
+我曾经进行过无数次评论。有那么一个人，曾经对于我的少部分评论非常不服。那就是，关于李白的诗的评论。
+他认为，一件事物，可以从好坏两方面去说。他认为，李白的诗，就像打油诗，水平并不高。只是因为我的评论，才变得水平绝高了。
+具体的说法就是，我先假定李诗水平绝高，然后往去往绝高的方向分析。
+我的确也是这样做的。
+但是，别人的诗，也可以假定为水平绝高啊，难道说真的就能分析出水平绝高来吗？
+譬如杜甫的“三顾频烦天下计”。“顾频烦”三字的“页”旁，看不见吗？不擅书法，才会视而不见，所以杜甫不擅书法。是“频烦天下计”么？明明就只烦了一次。次数相对较多的，反而是“顾”，顾了三次。于是这句应该读成“三顾频、烦天下计”。这水平还怎么绝高呢？
+相似的例子还有很多。无论是谁的作品，都能事先假定为水平绝高。但只有李白的诗，才会真的分析出水平绝高的答案出来。
+所以，李诗的水平，是真的绝高。
+这番题外话，表达的是，前面关于《天亮了》的评论，或许韩红自己并没那么想，或者韩红没想那么多，或许《天亮了》就仅仅是韩红的偶然之得。
+我要说的是，《天亮了》既然已经成为作品，那么它就脱离了作者韩红，变成了一种独立的存在。不能因为韩红的文学水平不够高，而去否认《天亮了》的文学成就。
+我的确是抱着欣赏的态度，先假定《天亮了》文学水平很高，然后真往极高文学水平的方向去分析的。但是很幸运，我得出了《天亮了》文学水平果然很高的结论。
+换首别的歌，行吗？
+谁说行，谁上。
+最后，我还要说的是，文学水平，所指的，并不仅仅是文字方面的能力。
+在打基础的时候，在斟酌字词句，在训练表达力、说服力的阶段，的确单指文字方面。
+但是，在跨入感染力阶段之后，就不是了。
+更多的，是提高心性。
+心性高了，视角就不同了，感受也随之不同了，不管是写出来的作品，还是唱出来的歌，那都是不同的。
+很多人说邓丽君的演唱水平并不高，那是不对的。应该说，邓丽君的演唱水平，其实很多人都达到过。个别的，譬如韩红，偶尔还超越过。
+但是，为什么邓丽君流传下来的歌曲就那么多呢？其他歌者流传下来的歌就那么少呢？
+就是因为心性。
+心性与感染力关系，最容易明白的例子，就是翻唱。
+《何日君在来》、《船歌》在邓丽君翻唱之前，并不好听，结果邓丽君一唱，就化腐朽为神奇了。
+恰好，韩红也有过化腐朽为神奇的表现，譬如《妹妹找哥泪花流》、《天之大》（可搜）。
+心性如此之高的韩红，偶得《天亮了》极高文学水准的作品，就是正常的了。
+（全文完）
+]]></content>
+      <categories>
+        <category>music</category>
+      </categories>
+      <tags>
+        <tag>music</tag>
+        <tag>韩红</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>解决Thinkpad笔记本喇叭破音问题！</title>
+    <url>/posts/c945eae1/</url>
+    <content><![CDATA[问题
+主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。
+分析
+从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。
+解决方案
+如是，网购了一个新喇叭，拆机，换上，完美解决问题！
+喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。
+
+
+
+这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。
+型号：Thinkpad T4X0S
+
+]]></content>
+      <categories>
+        <category>life</category>
+      </categories>
+      <tags>
+        <tag>thinkpad</tag>
+        <tag>sound</tag>
+        <tag>speaker</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>http 错误代码表</title>
+    <url>/posts/80906b88/</url>
+    <content><![CDATA[所有 HTTP 状态代码及其定义。
+　代码&nbsp;&nbsp;指示&nbsp;&nbsp;
+2xx&nbsp;&nbsp;成功&nbsp;&nbsp;
+200&nbsp;&nbsp;正常；请求已完成。&nbsp;&nbsp;
+201&nbsp;&nbsp;正常；紧接 POST 命令。&nbsp;&nbsp;
+202&nbsp;&nbsp;正常；已接受用于处理，但处理尚未完成。&nbsp;&nbsp;
+203&nbsp;&nbsp;正常；部分信息 — 返回的信息只是一部分。&nbsp;&nbsp;
+204&nbsp;&nbsp;正常；无响应 — 已接收请求，但不存在要回送的信息。&nbsp;&nbsp;
+3xx&nbsp;&nbsp;重定向&nbsp;&nbsp;
+301&nbsp;&nbsp;已移动 — 请求的数据具有新的位置且更改是永久的。&nbsp;&nbsp;
+302&nbsp;&nbsp;已找到 — 请求的数据临时具有不同 URI。&nbsp;&nbsp;
+303&nbsp;&nbsp;请参阅其它 — 可在另一 URI 下找到对请求的响应，且应使用 GET 方法检索此响应。&nbsp;&nbsp;
+304&nbsp;&nbsp;未修改 — 未按预期修改文档。&nbsp;&nbsp;
+305&nbsp;&nbsp;使用代理 — 必须通过位置字段中提供的代理来访问请求的资源。&nbsp;&nbsp;
+306&nbsp;&nbsp;未使用 — 不再使用；保留此代码以便将来使用。&nbsp;&nbsp;
+4xx&nbsp;&nbsp;客户机中出现的错误&nbsp;&nbsp;
+400&nbsp;&nbsp;错误请求 — 请求中有语法问题，或不能满足请求。&nbsp;&nbsp;
+401&nbsp;&nbsp;未授权 — 未授权客户机访问数据。&nbsp;&nbsp;
+402&nbsp;&nbsp;需要付款 — 表示计费系统已有效。&nbsp;&nbsp;
+403&nbsp;&nbsp;禁止 — 即使有授权也不需要访问。&nbsp;&nbsp;
+404&nbsp;&nbsp;找不到 — 服务器找不到给定的资源；文档不存在。&nbsp;&nbsp;
+407&nbsp;&nbsp;代理认证请求 — 客户机首先必须使用代理认证自身。&nbsp;&nbsp;
+415&nbsp;&nbsp;介质类型不受支持 — 服务器拒绝服务请求，因为不支持请求实体的格式。&nbsp;&nbsp;
+5xx&nbsp;&nbsp;服务器中出现的错误&nbsp;&nbsp;
+500&nbsp;&nbsp;内部错误 — 因为意外情况，服务器不能完成请求。&nbsp;&nbsp;
+501&nbsp;&nbsp;未执行 — 服务器不支持请求的工具。&nbsp;&nbsp;
+502&nbsp;&nbsp;错误网关 — 服务器接收到来自上游服务器的无效响应。&nbsp;&nbsp;
+503&nbsp;&nbsp;无法获得服务 — 由于临时过载或维护，服务器无法处理请求。
+
+HTTP&nbsp;400&nbsp;-&nbsp;请求无效&nbsp;
+HTTP&nbsp;401.1&nbsp;-&nbsp;未授权：登录失败&nbsp;
+HTTP&nbsp;401.2&nbsp;-&nbsp;未授权：服务器配置问题导致登录失败&nbsp;
+HTTP&nbsp;401.3&nbsp;-&nbsp;ACL&nbsp;禁止访问资源&nbsp;
+HTTP&nbsp;401.4&nbsp;-&nbsp;未授权：授权被筛选器拒绝&nbsp;
+HTTP&nbsp;401.5&nbsp;-&nbsp;未授权：ISAPI&nbsp;或&nbsp;CGI&nbsp;授权失败&nbsp;&nbsp;
+HTTP&nbsp;403&nbsp;-&nbsp;禁止访问&nbsp;
+HTTP&nbsp;403&nbsp;-&nbsp;对&nbsp;Internet&nbsp;服务管理器&nbsp;(HTML)&nbsp;的访问仅限于&nbsp;Localhost&nbsp;
+HTTP&nbsp;403.1&nbsp;禁止访问：禁止可执行访问&nbsp;
+HTTP&nbsp;403.2&nbsp;-&nbsp;禁止访问：禁止读访问&nbsp;
+HTTP&nbsp;403.3&nbsp;-&nbsp;禁止访问：禁止写访问&nbsp;
+HTTP&nbsp;403.4&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;
+HTTP&nbsp;403.5&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;128&nbsp;
+HTTP&nbsp;403.6&nbsp;-&nbsp;禁止访问：IP&nbsp;地址被拒绝&nbsp;
+HTTP&nbsp;403.7&nbsp;-&nbsp;禁止访问：要求客户证书&nbsp;
+HTTP&nbsp;403.8&nbsp;-&nbsp;禁止访问：禁止站点访问&nbsp;
+HTTP&nbsp;403.9&nbsp;-&nbsp;禁止访问：连接的用户过多&nbsp;
+HTTP&nbsp;403.10&nbsp;-&nbsp;禁止访问：配置无效&nbsp;
+HTTP&nbsp;403.11&nbsp;-&nbsp;禁止访问：密码更改&nbsp;
+HTTP&nbsp;403.12&nbsp;-&nbsp;禁止访问：映射器拒绝访问&nbsp;
+HTTP&nbsp;403.13&nbsp;-&nbsp;禁止访问：客户证书已被吊销&nbsp;
+HTTP&nbsp;403.15&nbsp;-&nbsp;禁止访问：客户访问许可过多&nbsp;
+HTTP&nbsp;403.16&nbsp;-&nbsp;禁止访问：客户证书不可信或者无效&nbsp;
+HTTP&nbsp;403.17&nbsp;-&nbsp;禁止访问：客户证书已经到期或者尚未生效&nbsp;
+HTTP&nbsp;404.1&nbsp;-&nbsp;无法找到&nbsp;Web&nbsp;站点&nbsp;
+HTTP&nbsp;404&nbsp;-&nbsp;无法找到文件&nbsp;
+HTTP&nbsp;405&nbsp;-&nbsp;资源被禁止&nbsp;
+HTTP&nbsp;406&nbsp;-&nbsp;无法接受&nbsp;
+HTTP&nbsp;407&nbsp;-&nbsp;要求代理身份验证&nbsp;
+HTTP&nbsp;410&nbsp;-&nbsp;永远不可用&nbsp;
+HTTP&nbsp;412&nbsp;-&nbsp;先决条件失败&nbsp;
+HTTP&nbsp;414&nbsp;-&nbsp;请求&nbsp;-&nbsp;URI&nbsp;太长&nbsp;
+HTTP&nbsp;500&nbsp;-&nbsp;内部服务器错误&nbsp;
+HTTP&nbsp;500.100&nbsp;-&nbsp;内部服务器错误&nbsp;-&nbsp;ASP&nbsp;错误&nbsp;
+HTTP&nbsp;500-11&nbsp;服务器关闭&nbsp;
+HTTP&nbsp;500-12&nbsp;应用程序重新启动&nbsp;
+HTTP&nbsp;500-13&nbsp;-&nbsp;服务器太忙&nbsp;
+HTTP&nbsp;500-14&nbsp;-&nbsp;应用程序无效&nbsp;
+HTTP&nbsp;500-15&nbsp;-&nbsp;不允许请求&nbsp;global.asa&nbsp;
+Error&nbsp;501&nbsp;-&nbsp;未实现&nbsp;
+HTTP&nbsp;502&nbsp;-&nbsp;网关错误
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库</title>
+    <url>/posts/3847ad58/</url>
+    <content><![CDATA[背景
+动画、电影、剧集可使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息。
+而音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。桌面软件、多媒体管理软件（Foobar2000/Plex/Emby/Jellyfin等）都能解析展现歌曲信息。ID3标签是MP3音乐档案中的歌曲附加讯息，它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。缺少ID3标签并不会影响 MP3的播放，但若没有的话，管理音乐文件也会相当的麻烦。
+刮削效果
+Foobar2000读取效果：
+
+Jellyfin读取效果：
+
+Mp3tag
+
+纯手工修改，开源工具。
+
+
+Media Go
+
+不要使用最新版！老版本才有我们最需要的功能。
+
+
+添加媒体库
+
+
+自动获取属性
+
+歌曲属性修改
+
+MusicBrainz
+
+
+MusicBrainz官网：https://musicbrainz.org/
+MusicBrainz Picard下载地址：https://picard.musicbrainz.org/
+
+
+
+MusicBrainz Picard可以修改音乐的Tag标签信息，根据标签重命名文件。它的数据来源于非营利互联网音乐专辑数据库MusicBrainz项目，歌曲资源非常丰富。尤其它能根据声纹（音频指纹）识别Mp3文件进行匹配取信息，匹配率极高。不管是英文、中文歌曲，还是录音室版本、演唱会版本，都能很好地匹配出来。
+支持MP3、FLAC、OGG、M4A、WMA、WAV等主流的音频格式，wav,ape格式不支持，需要要转换成支持的格式。
+写入前后对比：
+
+MusicBrainz Picard使用教程：
+将音乐文件/文件夹拖入左侧窗口，点上方“查询“按钮，在MusicBrainz数据库里搜索对应音乐。
+
+如果搜索不到，点击”扫描“，使用声纹匹配，准确度更高。
+
+如果以上两种方法都搜索不到，或者添加的文件名变成乱码，右击”查找相似的音轨“
+
+手动输入歌曲名字，搜索，选择正确的歌曲信息，载入Picard。
+
+右侧窗口载入专辑信息。展开列表，绿色方块的就是匹配成功的音乐。底部窗口展示文件原始标签信息和MusicBrainz网站上的信息对照。
+
+如果匹配的不是正确的专辑信息，右击”查找相似的音轨“，选择正确的专辑信息载入Picard。
+如果搜索出了多张专辑，可点击错误的专辑拖动到目标专辑上完成匹配，省的一个一个文件的修改。
+
+最后点“保存”，将标签信息写入音乐文件。
+
+如何重命名文件：
+菜单栏-选项-勾选“重命名文件”，保存的时候会同时写入信息+重命名。
+
+默认设置是：序号 歌名.mp3，适合一个专辑一个文件夹使用。
+如果是单文件的话要去创建命名规则，选项-正在重命名文件-保存时重命名文件，填写命名规则。
+
+参考：
+
+使用MusicBrainz Picard刮削音乐 整理音乐资料库
+
+]]></content>
+      <categories>
+        <category>music</category>
+      </categories>
+      <tags>
+        <tag>music</tag>
+        <tag>刮削</tag>
+        <tag>musicbrainz</tag>
+        <tag>mp3tag</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕</title>
+    <url>/posts/e6d40157/</url>
+    <content><![CDATA[
+注意使用V3版本，V4版本收费！
+所以升级V3版本即可，不要升级到V4版本！不要升级到V4版本！不要升级到V4版本！
+
+
+Plex是一款很好用的个人媒体中心软件，但是因为国内网络的原因，使用默认的TMDB刮削器挂出来的效果并不好，要么就是影片信息不正确，要么就是海报不正常显示，实在让人头疼。
+tinyMediaManager是一款电影信息刮削和整理的软件，正好可以和plex配合，完美的解决这一问题。tinyMediaManager在刮削影片的过程中会把影片的海报、演员表、背景图片等等都保存到影片所在文件夹，自动生成电影的nfo信息文件，并对文件和文件夹进行重新命名的操作。在plex设置刮削代理的时候，需要用一款插件可以直接读取nfo的信息，完成刮削，下面把使用方法分享给大家，
+
+下载和安装tinyMediaManager
+官网下载地址：https://www.tinymediamanager.org/download/
+
+tmm下载
+下载后直接解压文件夹
+客户端需要java支持，先在电脑安装java
+客户端下载后是一个压缩包，解压之后就可以用
+
+解压之后打开tinyMediaManager.exe
+
+TMM设置
+TMM代理设置
+
+重要：很多源都需要代理才能访问。这里正确的配置才能正确的刮削！
+可以调整这里使用的内存，大内存可以极大加速刮削速度。
+
+
+电影刮削设置
+进行相关设置。Tmm可以对电影和电视剧的刮削进行分别设置，打开设置后选择电影选项，可以选择分级标准、自动重命名等选项。
+
+电影信息选项
+点击侧边栏媒体库目录，添加电影目录
+刮削器设置
+
+选择电影刮削器
+
+刮削器选项
+
+nfo选项，建议选择生成两种命名放视的nfo
+图片刮削器选择全选，图片文件名建议两边都选上，会分别生成两组命名格式不同的图片，为了保证plex能读取
+
+图片命名选项
+Tmm还可以自动下载预告片，字幕。字幕下载时可以输入opensubtitles账户
+
+字幕下载选项
+重命名规则
+这里重点讲一下重命名规则，刮削完后可以选择对电影文件和文件夹进行重命名，可能对于pt用户重命名可能会影响资源上传，可以不进行重命名操作。
+一般情况下电影刮削出来的信息，title是电影的中文标题名称，originaltitle是电影的原标题名称，一般是英文名称。软件默认的设置是文件和文件夹都命名成title，也就是中文标题，但是我发现这样在后期使用的时候有弊端。英文电影在检索字幕时会用文件名来检索，而用中文名称很多情况下检索不出来，所以这里把文件的命名规则改一下，改成originaltitle，并去掉年份信息的括号，中间连接符改成点，文件名设置成{- ,edition,}.{videoFormat}.${audioCodec}的格式。
+
+电影文件重命名选项
+
+刮削完的文件夹内文件信息
+
+刮削完的电影文件夹目录
+电视节目刮削设置类似，如果挂不出来可以用the tvdb来刮削。
+tmm有时候会出现网络不稳定，刮不到的情况，可以修改host解决
+改host 在host文件最后加一行13.224.161.90 http://api.themoviedb.org
+退出设置，开始刮削
+
+更新电影源
+
+选中要刮削的电影自动匹配
+电影手动刮削
+
+
+电视剧&amp;动画手动刮削
+电视剧元数据刮削
+
+
+季和集元数据刮削前整理
+
+刮削季元素
+整理好正确的季和集之后，才能正确的刮削季元素
+
+TMM整理完效果
+
+这里用海贼王做展示，一个季和集都特别多的剧。
+
+
+TMM目录重命名整理
+
+刮削完后，可以重命名视频文件，并进行目录整理。
+
+方法1
+
+方法2
+
+等所有电影的信息刮削完后，选择重命名和清理，这样就完成了刮削的操作。以后下载了新电影，直接打开tmm,更新源之后直接选择搜索未刮削过的电影完成刮削。刮削出来的信息kodi，emby等软件也都能用。
+Plex设置
+plex插件的安装和设置
+下载plex的插件
+插件XBMCnfoMoviesImporter和XBMCnfoTVImporter分别是刮削电影和电视剧的插件
+下载地址：https://github.com/gboudreau/XBMCnfoMoviesImporter.bundle
+如果不能下载的话可以联系我获取，还有几个很好用的plex插件
+下载完插件后就需要把插件解压到plex的插件目录：C:\Users\用户名\AppData\Local\Plex Media Server\Plug-ins
+
+plex插件目录
+注意解压后要把文件夹名后边的master去掉。
+plex代理设置
+Plex的代理设置就是选择刮削电影所用的刮削器及优先级。
+装好插件后重启plex，进行plex的设置。在代理设置中选择XBMCnfoMoviesImporter，把它的优先级调到最高，第二个可以设置成字幕插件。
+
+设置电影资料库的刮削器代理
+点击设置界面下方管理里边的资料库，选择电影资料夹的高级设置，设置如下
+
+
+plex代理设置
+
+刷新电影源数据资料
+设置完成后就可以在plex主页对电影文件夹刷新元数据了。等待刷新完后就可以载入所有的电影信息了。
+
+管理资料库-刷新电影元数据
+
+更新后的电影信息
+采用类似的设置，电视剧信息也能刮削。
+
+电视剧更新后的信息
+Emby设置
+
+Emby内置刮削工具，但是速度较慢。下面设置基于外部刮削工具TMM，所以没有勾选Emby刮削源！
+
+最终效果演示
+
+
+开始设置
+
+新增媒体库
+
+已有媒体库属性设置
+
+
+
+
+
+Emby字幕设置
+字幕下载设置，字幕下载工具见后面的[字幕下载]章节
+
+字幕下载
+想要较好的自动下载字幕，最好用前面介绍的tmm刮削改名之后再使用下面工具。
+subfinder 自动下载字幕
+
+Docker： superng6/subfinder
+
+下载完成，刮削后的目录，挂载到subfinder的media目录，就会自动下载字幕。
+字幕下载对电影，英文剧集支持较好。对于一些tv，动画手动下载字幕会更好一些。
+注意：官方的配置文件有问题，时效问题。修改URL到最新即可。
+chinesesubfinder
+
+Docker： allanpk716/chinesesubfinder
+新开发的中文字幕查找工具，上面那个很久没更新了，这个刚出来。使用nfo里面刮削出来的文件名来匹配字幕。所以就原理来说，这个字幕匹配更准确。
+
+bazarr
+
+Docker：linuxserver/bazarr
+字幕下载管理，配合sonarr, radarr 使用效果更好。对于英文剧集命名规范的支持较好，比如[name]S01E01
+
+参考
+
+利用tinyMediaManager刮削影片，解决家用nas软件plex电影墙的问题
+
+系列教程
+全部文章RSS订阅
+Nas系列 Nas 分类 RSS 订阅
+
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>emby</tag>
+        <tag>刮削</tag>
+        <tag>tmm</tag>
+        <tag>字幕</tag>
+        <tag>plex</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>通过IPV6访问Qnap NAS中Docker的服务</title>
+    <url>/posts/462f1e5c/</url>
+    <content><![CDATA[环境
+系统：QTS 4.3.6
+网络：IPV4 &amp; IPV6
+Docker: 由Container Station提供
+问题
+通过ipv6地址可以打开NAS的管理页面，但是无法访问Docker对应端口的服务。
+排查
+QTS中Docker使用的虚拟交换机网络没有启动IPV6，且无法在虚拟交换机设置中手动启动。
+这样一来，Docker只监听了tcp4的端口，对于主机上tcp6的端口的访问无法映射到docker容器上。
+解决方案
+在主机上开一个tcp6的端口，将其转发到主机上与docker关联的tcp4端口。
+即：
+docker(tcp4)–&gt;host(tcp4)–&gt;host(tcp6)
+
+在qts上安装包管理器：Entware. https://github.com/Entware/Entware/wiki/Install-on-QNAP-NAS
+执行opkg update,更新
+安装端口转发工具，这里使用socat：opkg install socat
+设置转发host(tcp6)–&gt;host(tcp4):(socat TCP6-LISTEN:6880,reuseaddr,fork TCP4:127.0.0.1:7880 &amp;)
+大功告成
+
+系列教程
+全部文章RSS订阅
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>docker</category>
+      </categories>
+      <tags>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>docker</tag>
+        <tag>ipv6</tag>
       </tags>
   </entry>
   <entry>
@@ -11352,655 +12047,6 @@ From https://mp.weixin.qq.com/s/UtYENocSsl0R10h8fww7Iw
         <tag>web</tag>
         <tag>http</tag>
         <tag>ccs</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Vim IDE Docker 以及中文指南</title>
-    <url>/posts/647e6265/</url>
-    <content><![CDATA[
-Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！
-
-Vim Docker
-
-docker pull bloodstar/vim
-alias edit='docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim' 
-edit some.file 
-alias edit_update="docker pull bloodstar/vim:latest"
-Vim IDE Docker
-
-What's inside:
-
-Alpine Linux
-Vim + a ton of awesome plugins see bloodstar/vim:latest
-Good support of Golang development with bloodstar/go-tools container
-tmux
-powerline
-Mosh
-OpenSSH, Bash, OMF, Python, etc.
-
-how to start the daemon(and all containers)
-docker create -v '/usr/lib/go' --name go-tools \
-'bloodstar/go-tools' '/bin/true'
-
-docker run -v $('pwd'):/home/developer/workspace \
---volumes-from go-tools \
--v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
--v /etc/localtime:/etc/localtime:ro \
--d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
---name drop-in bloodstar/drop-in
--v /etc/localtime:/etc/localtime:ro - makes tmux display local time
-how to connect:
-mosh --ssh="ssh -p 62222" -- developer@$&lt;ip&gt; tmux -u
-or without host identity check:
-mosh --ssh="ssh -o StrictHostKeyChecking=no -p 62222" -- developer@$&lt;ip&gt; tmux -u
-Useful Bash scripts
-Connect
-#!/bin/bash
-ip=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' drop-in)
-mosh --ssh="ssh -p 62222" -- developer@$ip tmux -u
-start the daemon(and all containers)
-#!/bin/bash
-dtc_id=$(docker ps -a -q --filter 'name=vim-go-tools')
-if [[ -z "${dtc_id}" ]]; then
- echo 'vim-go-tools container not found. Creating...'
- docker create -v '/usr/lib/go' --name 'vim-go-tools' \
-   'bloodstar/go-tools' '/bin/true'
- echo 'Done!'
-fi
-echo 'starting daemon...'
-docker run -v $('pwd'):/home/developer/workspace \
-  --volumes-from vim-go-tools \
-  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
-  -v /etc/localtime:/etc/localtime:ro \
-  -e "GEMAIL=&lt;github email&gt;" \
-  -e "GNAME=&lt;github name&gt;" \
-  -d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
-  --name drop-in bloodstar/drop-in
-echo 'Done!'
-Vim 中文快查表   &lt;= 戳这里
-
-Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！
-快去看看吧。
-
-Vim
-
-]]></content>
-      <categories>
-        <category>tools</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>docker</tag>
-        <tag>vim</tag>
-        <tag>ide</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>从文学的角度，分析韩红的《天亮了》</title>
-    <url>/posts/cb623532/</url>
-    <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-DshUsBZOyXXXcfvG").style.height=document.getElementById("mmedia-DshUsBZOyXXXcfvG").scrollWidth*0.76+"px";
-    window.onresize = function(){
-      document.getElementById("mmedia-DshUsBZOyXXXcfvG").style.height=document.getElementById("mmedia-DshUsBZOyXXXcfvG").scrollWidth*0.76+"px";
-    }; 
-
-精品分析： 原作：石晶兰 短文吧
-再做个传送门： 天亮了，听歌时，关灯，准备纸巾。
-
-先分析结构。
-看歌词。
-那是一个秋天，风儿那么缠绵，
-让我想起他们那双无助的眼。
-就在那美丽风景相伴的地方，
-我听到一声巨响震彻山谷。
-就是那个秋天，再看不到爸爸的脸。
-他用他的双肩，托起我重生的起点。
-黑暗中泪水沾满了双眼，
-不要离开不要伤害。
-共八行，等于两个四行。
-两个四行一一对应，前三行，旋律基本是相同的。只有最后一行，为了与后面衔接，所以不同。
-两个四行的布置，等于是一种重复。
-这样的重要，在文学结构上，常见于起承。
-但歌，相当于诗。囿于篇幅，在结构上，通常会有所缺失。起承两者，一般缺失的，都是起。那样的做法，也就是直接叙事，存在让受众猝不及防的弊病。
-然后，《天亮了》并不是。
-“那是一个秋天，风儿那么缠绵”和“就是那个秋天”分明是起。
-所以，《天亮了》并没有进行文学结构上的省略。
-“那是一个秋天，风儿那么缠绵”是起，接紧着的三行歌词，自然就是承了。
-那么，第五行“就是那个秋天”怎么又来一个起呢？
-自然是因为篇幅太短，叙事不够（前面承得不够），所以，还需要再承一下。
-不能够不要第五行的起，直接往下写吗？
-真要说的话，其实也能。不过，再加四行承，真的就能把事情说清楚吗？
-显然，韩红想要表达的东西很多，她认为，不能。
-仅靠精练语言，明显是不够的，还需要换角度陈述。
-第五行的再起，实际上，就是为后面的换角度承，打基础的。
-这种写法，也是有先例的。请看邓丽君《相见在明天》歌词：
-记得我俩初相见，
-风吹花儿飞满天。
-你说我的笑容像花朵，
-比那花儿更娇艳。
-我还记得那一天，
-送你送到小河边。
-手牵着手呀心里有千言，
-相对却无言。
-跟《天亮了》一样，《相见在明天》也是两个四行，也是起承起承。
-并且，两起两承，还跟诗词的押韵一样，其重复，不仅有加深印象的作用，更有共鸣回旋的作用，正是唐陈子昂所说的“音情顿挫”的顿挫，极大的提升了作品的美感，让受众的接受度大大提高，
-继续看《天亮了》歌词：
-我看到爸爸妈妈就这么走远，
-留下我在这陌生的人世间。
-不知道未来还会有什么风险。
-我想要紧紧抓住他的手。
-妈妈告诉我希望还会有。
-看到太阳出来妈妈笑了。
-天亮了。
-六行都是转。具体在这里，自然不是转折，而是高那个潮。
-此处值得一说的是合，只有三个字“天亮了”。
-这三个字，正好也是这首歌的歌名。
-但是这三个字表达的，到底是什么意思、什么情感呢？
-题都城南庄/唐/崔护
-去年今日此门中，人面桃花相映红。
-人面不知何处去，桃花依旧笑春风。
-不难看出，最后一句“桃花依旧笑春风”跟前面三句的叙述，是接不上的。
-去年这儿，有人面有桃花。今年这儿人面没有了，接下来说的通常是：还真是让人怀念啊。
-俗吗？的确俗。并且，还不仅仅是俗，还存在因为什么而怀念那个姑娘的严重问题。
-动机不纯的话，写出来就会玷污那个姑娘。动机纯粹，只是单纯的对美好事物的欣赏，写出来的话，又有自夸之嫌。
-还真是不好写啊。
-不好写，干脆就不写，另起一笔：“桃花依旧笑春风”。究竟表达的是什么样的滋味，让受众自己去想。
-《天亮了》末尾的合“天亮了”，就是“桃花依旧笑春风”这种表现手法。太多的感情，千言万语，加总在一起，实在难以挽上疙瘩。于是，就另起一行，来了句看似关系不大的“天亮了”，让一切，尽在无言中。
-不同的受众，会有不同的感受。因而这种让受众自己去想的结尾，总是余味无穷。
-文学结构分析，就到这儿。第二段的结构跟第一段相同，就不讲了。
-下面进行逐句评讲。
-“那是一个秋天，风儿那么缠绵，”没毛病。“那是”开头，虽然不出彩，但是很自然，容易被人接受，接着往下听。
-“让我想起他们那双无助的眼。”这里，“他们”是两个人；“那双”眼睛虽然是复数，但落实到人，却是单数。因此，这是一个小错误。
-很显然，用相同性质的词语直接替换是不行的，譬如“四只”。四，数量较多，会分散受众的注意力，让受众去思考为什么是四。因而，如果硬要改的话，只能用其它性质的词语去替换，譬如“彷徨”。
-但“彷徨无助”，又稍显生僻，会影响听者的接受速度，形成不怎么大的接受障碍。而如果也用“无”的话，无什么呢？无神？听上去，岂不是比“彷徨无助”更不容易分辨。
-所以，实在要改，就只能把“他们”二字挪到这儿。
-那样一来，“让我想起”就要掺进两个水字了，譬如“风儿让我想起”。
-是不是太水了？
-于是，我最终感觉，还是不改为好。
-小错误嘛，存在也无妨。这就像文豪写书法一样，多一点少一点，多一笔少一笑，根本不算错误，关键是，那个字不能被错认为是别的字。
-“那双无助的眼”也一样，虽然存在小错误，但由于不影响表达内容，听者一听，就知道是怎么回事。由于没有影响信息传递，所以不改也是行的。
-“就在那美丽风景相伴的地方，我听到一声巨响震彻山谷。”这两小句，没有基础毛病。
-值得注意的是，这两小句，存在一个对比：一个美丽的地方，一件悲惨的事。颇有一种把美好的事情撕烂了给读者看的悲剧色彩。
-“就是那个秋天，再看不到爸爸的脸。”
-为什么提到爸爸没提到妈妈？爸爸妈妈，可以一起提，也可以先后提。这里，实际上是先后提。先提爸爸，后面会提到妈妈。
-先提爸爸，又比先提妈妈要好。这是因为，时至今日，最不令人怀疑的，是父女情。虽然背景事件中，那是个儿子，但韩红是女的，唱出来的声音又带有明显的女性特征。女声，提到爸爸，无形中，就相当于女儿提到爸爸。其中的感情，就往父女情的方向靠近了那么一点，让听者一下就能接受，丝毫没有怀疑。
-“他用他的双肩，托起我重生的起点。”
-背景事件的具体经过，可能生还的当事人都已经记不清楚了。这一句，属于带有归纳性、比拟性的描述。因而不需要因为“用”“双肩托起”，去询问是不是父亲从洪水中救起了儿子那样的细节。
-“黑暗中泪水沾满了双眼，”
-“黑暗中”很妙。只描述了环境，没有指明时间。那其实表达的是，若干个“黑暗中”。包括当时，也包括事后。并且，“黑暗”有天然的，也有人为的。天然的，譬如天黑加停电；人为的，譬如钻进被窝里。这些，都被包括了进去。
-“不要离开、不要伤害。”这句，就有些难度了。
-“不要离开”好理解。可以是儿子对父母的呼唤。但“不要伤害”呢？
-“不要伤害”，到底是谁对谁发出的呐喊，后面再讲。
-“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。不知道未来还会有什么风险。”
-三小句，基础上没毛病。直接看上去，字面意思表达能力似乎稍弱。真是不是，后面再说。
-“我想要紧紧抓住他的手”中的“他”，指父亲，也可以指母亲。
-“妈妈告诉我希望还会有。看到太阳出来妈妈笑了。”这是绝望中的回忆。这一家人，以前也是经受过苦难的。在曾经难熬的岁月中，妈妈曾经多次鼓励过儿子。鼓励的时候，有直述“告诉我希望还会有”，也有以身作则“看到太阳出来，妈妈笑了”。
-“天亮了。”尽在不言中，就不再讲了。
-“这是一个夜晚天上宿星点点，我在梦里看见我的妈妈。”
-继“那是”之后，此处出现了“这是”。表示已经是事后，灾难之后。
-“一个人在世上要学会坚强”，很明显，这不是儿子对父母能够说出的话。
-结合前一小句“我在梦里看见我的妈妈”，可以发现，这是妈妈对儿子说的话。并且还是死去之后的妈妈对儿子所说的话。
-“我在梦里看见我的妈妈。一个人在世上要学会坚强”紧接着的两句，主语变了。前一句是“我”，后一句是“妈妈”。同时，又因为死去的人继续说话这一违反科学常理的设定，使得后一句主语“妈妈”变得有些难以理解。
-其实，受众的心，也是强大的。多听两遍，也还是能够理解的。
-这两句主语的变化，从玄学的角度看，简单。但从文学的角度看，跳跃就非常大了。
-唐/李白有句：“千里江陵一日还”。“千里江陵”说的是千里之外的江陵。站在什么地方能够说出此话，自然是白帝城。“还”，指回来，站在什么地方能够说“还”，当然只能是江陵。就这么一句，视角就从白帝城跳到了江陵。
-《天亮了》中，这两句紧挨着的歌词的主语跳跃，其实跟“千里江陵一日还”的视角跳跃，是相似的类型。
-“你不要离开不要伤害”上一段出现过，就不讲了。
-“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。”
-比较上一段，区别的，是第三小句。此处的第三小句，从陈述中跳脱出来了，相当于插入了一个事后的心愿。
-“我想要紧紧抓住他的手。妈妈告诉我希望还会有，看到太阳出来、天亮了。”
-比较上一段，区别的仍然是第三小句。“妈妈笑了”变成“天亮了”。但此处的“天亮了”，跟前面不一样，并不是起承转合的合，不是收尾，而就是一个简单的陈述，其实质，就相当于“妈妈笑了”。
-“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。
-“我想要紧紧抓住他的手。妈妈告诉我希望还会有。看到太阳出来，他们笑了。”
-重复，强调，加倍。略有不同的，就是“妈妈笑了”变成“他们笑了”。由“妈妈”变成“他们”，实际上也在告诉受众，马上就要收尾了。
-以什么收尾，收到哪里呢？依然还是“天亮了”，尽在不言中，让受众自己去想，
-不知道是哪年哪天了，无意中，我就这么偶然听到了这首歌。
-一听，就感受很好听。
-一听，就听出来了，里面讲述了一场事故。因为有“我听到一声巨响震彻山谷”、“再看不到爸爸的脸”。
-另外，还听出了事故中，父母对孩子的救助。因为有“他用他的双肩托起我重生的起点”。
-很明显，事故是悲惨的，事故中的父母是可歌可泣的，事故之后的儿子或女儿（从歌词中听不出孩子的性别）是可怜的。
-但是，就这么算了么？
-这么好听的歌，最后一句“天亮了”到底表述的是怎样的感情？
-没弄清楚，怎么能算完。
-生活中，有各种各样的事故。最常见的，恐怕应该是车祸。
-车祸事故，几乎每天都能够在地方新闻上看到。
-看到车祸事故的新闻，心中有什么感受？
-悲伤么？自然没有。
-一般来说，亲人，才会悲伤。陌生人，通常只是略带同情、怜悯。
-此处说的是，同样的事，因为自身角度的不同，感受大不相同。
-那么，《天亮了》应该站在什么样的角度去欣赏呢？
-最容易想到的角度，有两个。
-一是生还的儿子或女儿。但是，站在这个角度欣赏，“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间，不知道未来还会有什么风险。”真的弱爆了。
-另一个角度，则是富有同情心的旁观善良人士。这个角度的存在，是因为韩红。因为，就这么看过去，韩红，对于此次事故，似乎就是富有同情心的旁观善良人士。
-但这个角度还是不行。“黑暗中泪水沾满了双眼”，没什么感觉。
-于是乎，就剩下了不常见的角度——死去父母的角度！
-我试着想象了这样的角度，再听《天亮了》，眼泪一下子就出来了。
-我是在这之后，才搜索得知了《天亮了》的创作背景。
-是的，韩红，把自己当作那个孩子的父母，并且还把自己当作了孩子死去的父母。《天亮了》这首歌，表达的是死者对生者的寄托！
-重新再看歌词。“黑暗中泪水沾满了双眼”，所指的，就不仅仅是事后孩子多次在被窝里痛哭，并且还指死去的父母在地狱中带泪含悲。
-“不要离开”，只是孩子对父母的呼唤么？已然不是。以父母为参照物，生存的孩子，又何尝不是一种离开。
-当然不是说想要孩子一起死，否则就不会用双肩托起重生的起点了。
-“不要伤害”的答案，此时就出来了。那就是死去的父母发出的呐喊。呐喊的对象是天地——老天爷，不要伤害我们的孩子！
-“一个人在世上要学会坚强”不再是父母对自己的叮嘱，而是自己，对自己幸存的子女的叮嘱。
-于是乎，最后一句合中的“天亮了”，就表达了深深的无奈。
-天亮了，通常指清晨，代表的是希望。但是，对于死者来说，天亮了，就代表魂魄状态的死者必须离开。
-这是自然规律，死者必须离开。不想离开，也必须离开。因为——天亮了。
-难怪韩红唱这三个字的时候，泣不成声。
-题外话又冒出来了。
-我曾经进行过无数次评论。有那么一个人，曾经对于我的少部分评论非常不服。那就是，关于李白的诗的评论。
-他认为，一件事物，可以从好坏两方面去说。他认为，李白的诗，就像打油诗，水平并不高。只是因为我的评论，才变得水平绝高了。
-具体的说法就是，我先假定李诗水平绝高，然后往去往绝高的方向分析。
-我的确也是这样做的。
-但是，别人的诗，也可以假定为水平绝高啊，难道说真的就能分析出水平绝高来吗？
-譬如杜甫的“三顾频烦天下计”。“顾频烦”三字的“页”旁，看不见吗？不擅书法，才会视而不见，所以杜甫不擅书法。是“频烦天下计”么？明明就只烦了一次。次数相对较多的，反而是“顾”，顾了三次。于是这句应该读成“三顾频、烦天下计”。这水平还怎么绝高呢？
-相似的例子还有很多。无论是谁的作品，都能事先假定为水平绝高。但只有李白的诗，才会真的分析出水平绝高的答案出来。
-所以，李诗的水平，是真的绝高。
-这番题外话，表达的是，前面关于《天亮了》的评论，或许韩红自己并没那么想，或者韩红没想那么多，或许《天亮了》就仅仅是韩红的偶然之得。
-我要说的是，《天亮了》既然已经成为作品，那么它就脱离了作者韩红，变成了一种独立的存在。不能因为韩红的文学水平不够高，而去否认《天亮了》的文学成就。
-我的确是抱着欣赏的态度，先假定《天亮了》文学水平很高，然后真往极高文学水平的方向去分析的。但是很幸运，我得出了《天亮了》文学水平果然很高的结论。
-换首别的歌，行吗？
-谁说行，谁上。
-最后，我还要说的是，文学水平，所指的，并不仅仅是文字方面的能力。
-在打基础的时候，在斟酌字词句，在训练表达力、说服力的阶段，的确单指文字方面。
-但是，在跨入感染力阶段之后，就不是了。
-更多的，是提高心性。
-心性高了，视角就不同了，感受也随之不同了，不管是写出来的作品，还是唱出来的歌，那都是不同的。
-很多人说邓丽君的演唱水平并不高，那是不对的。应该说，邓丽君的演唱水平，其实很多人都达到过。个别的，譬如韩红，偶尔还超越过。
-但是，为什么邓丽君流传下来的歌曲就那么多呢？其他歌者流传下来的歌就那么少呢？
-就是因为心性。
-心性与感染力关系，最容易明白的例子，就是翻唱。
-《何日君在来》、《船歌》在邓丽君翻唱之前，并不好听，结果邓丽君一唱，就化腐朽为神奇了。
-恰好，韩红也有过化腐朽为神奇的表现，譬如《妹妹找哥泪花流》、《天之大》（可搜）。
-心性如此之高的韩红，偶得《天亮了》极高文学水准的作品，就是正常的了。
-（全文完）
-]]></content>
-      <categories>
-        <category>music</category>
-      </categories>
-      <tags>
-        <tag>music</tag>
-        <tag>韩红</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>解决Thinkpad笔记本喇叭破音问题！</title>
-    <url>/posts/c945eae1/</url>
-    <content><![CDATA[问题
-主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。
-分析
-从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。
-解决方案
-如是，网购了一个新喇叭，拆机，换上，完美解决问题！
-喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。
-
-
-
-这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。
-型号：Thinkpad T4X0S
-
-]]></content>
-      <categories>
-        <category>life</category>
-      </categories>
-      <tags>
-        <tag>thinkpad</tag>
-        <tag>sound</tag>
-        <tag>speaker</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>http 错误代码表</title>
-    <url>/posts/80906b88/</url>
-    <content><![CDATA[所有 HTTP 状态代码及其定义。
-　代码&nbsp;&nbsp;指示&nbsp;&nbsp;
-2xx&nbsp;&nbsp;成功&nbsp;&nbsp;
-200&nbsp;&nbsp;正常；请求已完成。&nbsp;&nbsp;
-201&nbsp;&nbsp;正常；紧接 POST 命令。&nbsp;&nbsp;
-202&nbsp;&nbsp;正常；已接受用于处理，但处理尚未完成。&nbsp;&nbsp;
-203&nbsp;&nbsp;正常；部分信息 — 返回的信息只是一部分。&nbsp;&nbsp;
-204&nbsp;&nbsp;正常；无响应 — 已接收请求，但不存在要回送的信息。&nbsp;&nbsp;
-3xx&nbsp;&nbsp;重定向&nbsp;&nbsp;
-301&nbsp;&nbsp;已移动 — 请求的数据具有新的位置且更改是永久的。&nbsp;&nbsp;
-302&nbsp;&nbsp;已找到 — 请求的数据临时具有不同 URI。&nbsp;&nbsp;
-303&nbsp;&nbsp;请参阅其它 — 可在另一 URI 下找到对请求的响应，且应使用 GET 方法检索此响应。&nbsp;&nbsp;
-304&nbsp;&nbsp;未修改 — 未按预期修改文档。&nbsp;&nbsp;
-305&nbsp;&nbsp;使用代理 — 必须通过位置字段中提供的代理来访问请求的资源。&nbsp;&nbsp;
-306&nbsp;&nbsp;未使用 — 不再使用；保留此代码以便将来使用。&nbsp;&nbsp;
-4xx&nbsp;&nbsp;客户机中出现的错误&nbsp;&nbsp;
-400&nbsp;&nbsp;错误请求 — 请求中有语法问题，或不能满足请求。&nbsp;&nbsp;
-401&nbsp;&nbsp;未授权 — 未授权客户机访问数据。&nbsp;&nbsp;
-402&nbsp;&nbsp;需要付款 — 表示计费系统已有效。&nbsp;&nbsp;
-403&nbsp;&nbsp;禁止 — 即使有授权也不需要访问。&nbsp;&nbsp;
-404&nbsp;&nbsp;找不到 — 服务器找不到给定的资源；文档不存在。&nbsp;&nbsp;
-407&nbsp;&nbsp;代理认证请求 — 客户机首先必须使用代理认证自身。&nbsp;&nbsp;
-415&nbsp;&nbsp;介质类型不受支持 — 服务器拒绝服务请求，因为不支持请求实体的格式。&nbsp;&nbsp;
-5xx&nbsp;&nbsp;服务器中出现的错误&nbsp;&nbsp;
-500&nbsp;&nbsp;内部错误 — 因为意外情况，服务器不能完成请求。&nbsp;&nbsp;
-501&nbsp;&nbsp;未执行 — 服务器不支持请求的工具。&nbsp;&nbsp;
-502&nbsp;&nbsp;错误网关 — 服务器接收到来自上游服务器的无效响应。&nbsp;&nbsp;
-503&nbsp;&nbsp;无法获得服务 — 由于临时过载或维护，服务器无法处理请求。
-
-HTTP&nbsp;400&nbsp;-&nbsp;请求无效&nbsp;
-HTTP&nbsp;401.1&nbsp;-&nbsp;未授权：登录失败&nbsp;
-HTTP&nbsp;401.2&nbsp;-&nbsp;未授权：服务器配置问题导致登录失败&nbsp;
-HTTP&nbsp;401.3&nbsp;-&nbsp;ACL&nbsp;禁止访问资源&nbsp;
-HTTP&nbsp;401.4&nbsp;-&nbsp;未授权：授权被筛选器拒绝&nbsp;
-HTTP&nbsp;401.5&nbsp;-&nbsp;未授权：ISAPI&nbsp;或&nbsp;CGI&nbsp;授权失败&nbsp;&nbsp;
-HTTP&nbsp;403&nbsp;-&nbsp;禁止访问&nbsp;
-HTTP&nbsp;403&nbsp;-&nbsp;对&nbsp;Internet&nbsp;服务管理器&nbsp;(HTML)&nbsp;的访问仅限于&nbsp;Localhost&nbsp;
-HTTP&nbsp;403.1&nbsp;禁止访问：禁止可执行访问&nbsp;
-HTTP&nbsp;403.2&nbsp;-&nbsp;禁止访问：禁止读访问&nbsp;
-HTTP&nbsp;403.3&nbsp;-&nbsp;禁止访问：禁止写访问&nbsp;
-HTTP&nbsp;403.4&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;
-HTTP&nbsp;403.5&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;128&nbsp;
-HTTP&nbsp;403.6&nbsp;-&nbsp;禁止访问：IP&nbsp;地址被拒绝&nbsp;
-HTTP&nbsp;403.7&nbsp;-&nbsp;禁止访问：要求客户证书&nbsp;
-HTTP&nbsp;403.8&nbsp;-&nbsp;禁止访问：禁止站点访问&nbsp;
-HTTP&nbsp;403.9&nbsp;-&nbsp;禁止访问：连接的用户过多&nbsp;
-HTTP&nbsp;403.10&nbsp;-&nbsp;禁止访问：配置无效&nbsp;
-HTTP&nbsp;403.11&nbsp;-&nbsp;禁止访问：密码更改&nbsp;
-HTTP&nbsp;403.12&nbsp;-&nbsp;禁止访问：映射器拒绝访问&nbsp;
-HTTP&nbsp;403.13&nbsp;-&nbsp;禁止访问：客户证书已被吊销&nbsp;
-HTTP&nbsp;403.15&nbsp;-&nbsp;禁止访问：客户访问许可过多&nbsp;
-HTTP&nbsp;403.16&nbsp;-&nbsp;禁止访问：客户证书不可信或者无效&nbsp;
-HTTP&nbsp;403.17&nbsp;-&nbsp;禁止访问：客户证书已经到期或者尚未生效&nbsp;
-HTTP&nbsp;404.1&nbsp;-&nbsp;无法找到&nbsp;Web&nbsp;站点&nbsp;
-HTTP&nbsp;404&nbsp;-&nbsp;无法找到文件&nbsp;
-HTTP&nbsp;405&nbsp;-&nbsp;资源被禁止&nbsp;
-HTTP&nbsp;406&nbsp;-&nbsp;无法接受&nbsp;
-HTTP&nbsp;407&nbsp;-&nbsp;要求代理身份验证&nbsp;
-HTTP&nbsp;410&nbsp;-&nbsp;永远不可用&nbsp;
-HTTP&nbsp;412&nbsp;-&nbsp;先决条件失败&nbsp;
-HTTP&nbsp;414&nbsp;-&nbsp;请求&nbsp;-&nbsp;URI&nbsp;太长&nbsp;
-HTTP&nbsp;500&nbsp;-&nbsp;内部服务器错误&nbsp;
-HTTP&nbsp;500.100&nbsp;-&nbsp;内部服务器错误&nbsp;-&nbsp;ASP&nbsp;错误&nbsp;
-HTTP&nbsp;500-11&nbsp;服务器关闭&nbsp;
-HTTP&nbsp;500-12&nbsp;应用程序重新启动&nbsp;
-HTTP&nbsp;500-13&nbsp;-&nbsp;服务器太忙&nbsp;
-HTTP&nbsp;500-14&nbsp;-&nbsp;应用程序无效&nbsp;
-HTTP&nbsp;500-15&nbsp;-&nbsp;不允许请求&nbsp;global.asa&nbsp;
-Error&nbsp;501&nbsp;-&nbsp;未实现&nbsp;
-HTTP&nbsp;502&nbsp;-&nbsp;网关错误
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库</title>
-    <url>/posts/3847ad58/</url>
-    <content><![CDATA[背景
-动画、电影、剧集可使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息。
-而音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。桌面软件、多媒体管理软件（Foobar2000/Plex/Emby/Jellyfin等）都能解析展现歌曲信息。ID3标签是MP3音乐档案中的歌曲附加讯息，它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。缺少ID3标签并不会影响 MP3的播放，但若没有的话，管理音乐文件也会相当的麻烦。
-刮削效果
-Foobar2000读取效果：
-
-Jellyfin读取效果：
-
-Mp3tag
-
-纯手工修改，开源工具。
-
-
-Media Go
-
-不要使用最新版！老版本才有我们最需要的功能。
-
-
-添加媒体库
-
-
-自动获取属性
-
-歌曲属性修改
-
-MusicBrainz
-
-
-MusicBrainz官网：https://musicbrainz.org/
-MusicBrainz Picard下载地址：https://picard.musicbrainz.org/
-
-
-
-MusicBrainz Picard可以修改音乐的Tag标签信息，根据标签重命名文件。它的数据来源于非营利互联网音乐专辑数据库MusicBrainz项目，歌曲资源非常丰富。尤其它能根据声纹（音频指纹）识别Mp3文件进行匹配取信息，匹配率极高。不管是英文、中文歌曲，还是录音室版本、演唱会版本，都能很好地匹配出来。
-支持MP3、FLAC、OGG、M4A、WMA、WAV等主流的音频格式，wav,ape格式不支持，需要要转换成支持的格式。
-写入前后对比：
-
-MusicBrainz Picard使用教程：
-将音乐文件/文件夹拖入左侧窗口，点上方“查询“按钮，在MusicBrainz数据库里搜索对应音乐。
-
-如果搜索不到，点击”扫描“，使用声纹匹配，准确度更高。
-
-如果以上两种方法都搜索不到，或者添加的文件名变成乱码，右击”查找相似的音轨“
-
-手动输入歌曲名字，搜索，选择正确的歌曲信息，载入Picard。
-
-右侧窗口载入专辑信息。展开列表，绿色方块的就是匹配成功的音乐。底部窗口展示文件原始标签信息和MusicBrainz网站上的信息对照。
-
-如果匹配的不是正确的专辑信息，右击”查找相似的音轨“，选择正确的专辑信息载入Picard。
-如果搜索出了多张专辑，可点击错误的专辑拖动到目标专辑上完成匹配，省的一个一个文件的修改。
-
-最后点“保存”，将标签信息写入音乐文件。
-
-如何重命名文件：
-菜单栏-选项-勾选“重命名文件”，保存的时候会同时写入信息+重命名。
-
-默认设置是：序号 歌名.mp3，适合一个专辑一个文件夹使用。
-如果是单文件的话要去创建命名规则，选项-正在重命名文件-保存时重命名文件，填写命名规则。
-
-参考：
-
-使用MusicBrainz Picard刮削音乐 整理音乐资料库
-
-]]></content>
-      <categories>
-        <category>music</category>
-      </categories>
-      <tags>
-        <tag>music</tag>
-        <tag>刮削</tag>
-        <tag>musicbrainz</tag>
-        <tag>mp3tag</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕</title>
-    <url>/posts/e6d40157/</url>
-    <content><![CDATA[
-注意使用V3版本，V4版本收费！
-所以升级V3版本即可，不要升级到V4版本！不要升级到V4版本！不要升级到V4版本！
-
-
-Plex是一款很好用的个人媒体中心软件，但是因为国内网络的原因，使用默认的TMDB刮削器挂出来的效果并不好，要么就是影片信息不正确，要么就是海报不正常显示，实在让人头疼。
-tinyMediaManager是一款电影信息刮削和整理的软件，正好可以和plex配合，完美的解决这一问题。tinyMediaManager在刮削影片的过程中会把影片的海报、演员表、背景图片等等都保存到影片所在文件夹，自动生成电影的nfo信息文件，并对文件和文件夹进行重新命名的操作。在plex设置刮削代理的时候，需要用一款插件可以直接读取nfo的信息，完成刮削，下面把使用方法分享给大家，
-
-下载和安装tinyMediaManager
-官网下载地址：https://www.tinymediamanager.org/download/
-
-tmm下载
-下载后直接解压文件夹
-客户端需要java支持，先在电脑安装java
-客户端下载后是一个压缩包，解压之后就可以用
-
-解压之后打开tinyMediaManager.exe
-
-TMM设置
-TMM代理设置
-
-重要：很多源都需要代理才能访问。这里正确的配置才能正确的刮削！
-可以调整这里使用的内存，大内存可以极大加速刮削速度。
-
-
-电影刮削设置
-进行相关设置。Tmm可以对电影和电视剧的刮削进行分别设置，打开设置后选择电影选项，可以选择分级标准、自动重命名等选项。
-
-电影信息选项
-点击侧边栏媒体库目录，添加电影目录
-刮削器设置
-
-选择电影刮削器
-
-刮削器选项
-
-nfo选项，建议选择生成两种命名放视的nfo
-图片刮削器选择全选，图片文件名建议两边都选上，会分别生成两组命名格式不同的图片，为了保证plex能读取
-
-图片命名选项
-Tmm还可以自动下载预告片，字幕。字幕下载时可以输入opensubtitles账户
-
-字幕下载选项
-重命名规则
-这里重点讲一下重命名规则，刮削完后可以选择对电影文件和文件夹进行重命名，可能对于pt用户重命名可能会影响资源上传，可以不进行重命名操作。
-一般情况下电影刮削出来的信息，title是电影的中文标题名称，originaltitle是电影的原标题名称，一般是英文名称。软件默认的设置是文件和文件夹都命名成title，也就是中文标题，但是我发现这样在后期使用的时候有弊端。英文电影在检索字幕时会用文件名来检索，而用中文名称很多情况下检索不出来，所以这里把文件的命名规则改一下，改成originaltitle，并去掉年份信息的括号，中间连接符改成点，文件名设置成{- ,edition,}.{videoFormat}.${audioCodec}的格式。
-
-电影文件重命名选项
-
-刮削完的文件夹内文件信息
-
-刮削完的电影文件夹目录
-电视节目刮削设置类似，如果挂不出来可以用the tvdb来刮削。
-tmm有时候会出现网络不稳定，刮不到的情况，可以修改host解决
-改host 在host文件最后加一行13.224.161.90 http://api.themoviedb.org
-退出设置，开始刮削
-
-更新电影源
-
-选中要刮削的电影自动匹配
-电影手动刮削
-
-
-电视剧&amp;动画手动刮削
-电视剧元数据刮削
-
-
-季和集元数据刮削前整理
-
-刮削季元素
-整理好正确的季和集之后，才能正确的刮削季元素
-
-TMM整理完效果
-
-这里用海贼王做展示，一个季和集都特别多的剧。
-
-
-TMM目录重命名整理
-
-刮削完后，可以重命名视频文件，并进行目录整理。
-
-方法1
-
-方法2
-
-等所有电影的信息刮削完后，选择重命名和清理，这样就完成了刮削的操作。以后下载了新电影，直接打开tmm,更新源之后直接选择搜索未刮削过的电影完成刮削。刮削出来的信息kodi，emby等软件也都能用。
-Plex设置
-plex插件的安装和设置
-下载plex的插件
-插件XBMCnfoMoviesImporter和XBMCnfoTVImporter分别是刮削电影和电视剧的插件
-下载地址：https://github.com/gboudreau/XBMCnfoMoviesImporter.bundle
-如果不能下载的话可以联系我获取，还有几个很好用的plex插件
-下载完插件后就需要把插件解压到plex的插件目录：C:\Users\用户名\AppData\Local\Plex Media Server\Plug-ins
-
-plex插件目录
-注意解压后要把文件夹名后边的master去掉。
-plex代理设置
-Plex的代理设置就是选择刮削电影所用的刮削器及优先级。
-装好插件后重启plex，进行plex的设置。在代理设置中选择XBMCnfoMoviesImporter，把它的优先级调到最高，第二个可以设置成字幕插件。
-
-设置电影资料库的刮削器代理
-点击设置界面下方管理里边的资料库，选择电影资料夹的高级设置，设置如下
-
-
-plex代理设置
-
-刷新电影源数据资料
-设置完成后就可以在plex主页对电影文件夹刷新元数据了。等待刷新完后就可以载入所有的电影信息了。
-
-管理资料库-刷新电影元数据
-
-更新后的电影信息
-采用类似的设置，电视剧信息也能刮削。
-
-电视剧更新后的信息
-Emby设置
-
-Emby内置刮削工具，但是速度较慢。下面设置基于外部刮削工具TMM，所以没有勾选Emby刮削源！
-
-最终效果演示
-
-
-开始设置
-
-新增媒体库
-
-已有媒体库属性设置
-
-
-
-
-
-Emby字幕设置
-字幕下载设置，字幕下载工具见后面的[字幕下载]章节
-
-字幕下载
-想要较好的自动下载字幕，最好用前面介绍的tmm刮削改名之后再使用下面工具。
-subfinder 自动下载字幕
-
-Docker： superng6/subfinder
-
-下载完成，刮削后的目录，挂载到subfinder的media目录，就会自动下载字幕。
-字幕下载对电影，英文剧集支持较好。对于一些tv，动画手动下载字幕会更好一些。
-注意：官方的配置文件有问题，时效问题。修改URL到最新即可。
-chinesesubfinder
-
-Docker： allanpk716/chinesesubfinder
-新开发的中文字幕查找工具，上面那个很久没更新了，这个刚出来。使用nfo里面刮削出来的文件名来匹配字幕。所以就原理来说，这个字幕匹配更准确。
-
-bazarr
-
-Docker：linuxserver/bazarr
-字幕下载管理，配合sonarr, radarr 使用效果更好。对于英文剧集命名规范的支持较好，比如[name]S01E01
-
-参考
-
-利用tinyMediaManager刮削影片，解决家用nas软件plex电影墙的问题
-
-系列教程
-全部文章RSS订阅
-Nas系列 Nas 分类 RSS 订阅
-
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>emby</tag>
-        <tag>刮削</tag>
-        <tag>tmm</tag>
-        <tag>字幕</tag>
-        <tag>plex</tag>
       </tags>
   </entry>
   <entry>
@@ -13925,52 +13971,6 @@ Mac Vscode 快捷键
       </tags>
   </entry>
   <entry>
-    <title>通过IPV6访问Qnap NAS中Docker的服务</title>
-    <url>/posts/462f1e5c/</url>
-    <content><![CDATA[环境
-系统：QTS 4.3.6
-网络：IPV4 &amp; IPV6
-Docker: 由Container Station提供
-问题
-通过ipv6地址可以打开NAS的管理页面，但是无法访问Docker对应端口的服务。
-排查
-QTS中Docker使用的虚拟交换机网络没有启动IPV6，且无法在虚拟交换机设置中手动启动。
-这样一来，Docker只监听了tcp4的端口，对于主机上tcp6的端口的访问无法映射到docker容器上。
-解决方案
-在主机上开一个tcp6的端口，将其转发到主机上与docker关联的tcp4端口。
-即：
-docker(tcp4)–&gt;host(tcp4)–&gt;host(tcp6)
-
-在qts上安装包管理器：Entware. https://github.com/Entware/Entware/wiki/Install-on-QNAP-NAS
-执行opkg update,更新
-安装端口转发工具，这里使用socat：opkg install socat
-设置转发host(tcp6)–&gt;host(tcp4):(socat TCP6-LISTEN:6880,reuseaddr,fork TCP4:127.0.0.1:7880 &amp;)
-大功告成
-
-系列教程
-全部文章RSS订阅
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>docker</category>
-      </categories>
-      <tags>
-        <tag>qnap</tag>
-        <tag>nas</tag>
-        <tag>docker</tag>
-        <tag>ipv6</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Hexo Markdown以及各种插件功能测试</title>
     <url>/posts/cf0f47fd/</url>
     <content><![CDATA[Markdown 插件
@@ -15718,11 +15718,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var pnlhnlgwRGkLUCRb_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); pnlhnlgwRGkLUCRb_options.container = document.getElementById("mmedia-pnlhnlgwRGkLUCRb"); const ap_pnlhnlgwRGkLUCRb = new APlayer(pnlhnlgwRGkLUCRb_options); 
+ var oIDHazwWkJSLDfad_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); oIDHazwWkJSLDfad_options.container = document.getElementById("mmedia-oIDHazwWkJSLDfad"); const ap_oIDHazwWkJSLDfad = new APlayer(oIDHazwWkJSLDfad_options); 
 
 - **列表**
 
- var iyxrToSoSQmuUgNe_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); iyxrToSoSQmuUgNe_options.container = document.getElementById("mmedia-iyxrToSoSQmuUgNe"); const ap_iyxrToSoSQmuUgNe = new APlayer(iyxrToSoSQmuUgNe_options); 
+ var rkTpBbUCVzEGgxeI_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); rkTpBbUCVzEGgxeI_options.container = document.getElementById("mmedia-rkTpBbUCVzEGgxeI"); const ap_rkTpBbUCVzEGgxeI = new APlayer(rkTpBbUCVzEGgxeI_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -15974,21 +15974,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-sAquaYmoXwSqXJHt").style.height=document.getElementById("mmedia-sAquaYmoXwSqXJHt").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-AAaCQHQUBADyIPIM").style.height=document.getElementById("mmedia-AAaCQHQUBADyIPIM").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-sAquaYmoXwSqXJHt").style.height=document.getElementById("mmedia-sAquaYmoXwSqXJHt").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-AAaCQHQUBADyIPIM").style.height=document.getElementById("mmedia-AAaCQHQUBADyIPIM").scrollWidth*0.76+"px";
     }; 
 
 **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-SdxrnjhqvMTLbPLL").style.height=document.getElementById("mmedia-SdxrnjhqvMTLbPLL").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-vadMSKNTqvLQEYVL").style.height=document.getElementById("mmedia-vadMSKNTqvLQEYVL").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-SdxrnjhqvMTLbPLL").style.height=document.getElementById("mmedia-SdxrnjhqvMTLbPLL").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-vadMSKNTqvLQEYVL").style.height=document.getElementById("mmedia-vadMSKNTqvLQEYVL").scrollWidth*0.7+"px";
     }; 
 
 **artplayer**
 
- var mcrdvNUOEmIaoQIQ_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); mcrdvNUOEmIaoQIQ_options.container = "#mmedia-mcrdvNUOEmIaoQIQ"; const art_mcrdvNUOEmIaoQIQ = new Artplayer(mcrdvNUOEmIaoQIQ_options); 
+ var ISrWRdzcONwzaMCv_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); ISrWRdzcONwzaMCv_options.container = "#mmedia-ISrWRdzcONwzaMCv"; const art_ISrWRdzcONwzaMCv = new Artplayer(ISrWRdzcONwzaMCv_options); 
 脑图
 
 原作者记录
@@ -17142,11 +17142,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var MMInGydUVHNRASTd_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); MMInGydUVHNRASTd_options.container = document.getElementById("mmedia-MMInGydUVHNRASTd"); const ap_MMInGydUVHNRASTd = new APlayer(MMInGydUVHNRASTd_options); 
+ var UwgXlmJwQuAFmGPF_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); UwgXlmJwQuAFmGPF_options.container = document.getElementById("mmedia-UwgXlmJwQuAFmGPF"); const ap_UwgXlmJwQuAFmGPF = new APlayer(UwgXlmJwQuAFmGPF_options); 
 
 
 
- var tQQgQlppmDdcwmKp_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); tQQgQlppmDdcwmKp_options.container = document.getElementById("mmedia-tQQgQlppmDdcwmKp"); const ap_tQQgQlppmDdcwmKp = new APlayer(tQQgQlppmDdcwmKp_options); 
+ var sHiTcDADwCYocpVp_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); sHiTcDADwCYocpVp_options.container = document.getElementById("mmedia-sHiTcDADwCYocpVp"); const ap_sHiTcDADwCYocpVp = new APlayer(sHiTcDADwCYocpVp_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -17227,9 +17227,9 @@ Android支持
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-xqDfDavLVXocnDdJ").style.height=document.getElementById("mmedia-xqDfDavLVXocnDdJ").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-BUZOjETYWQSBEXtV").style.height=document.getElementById("mmedia-BUZOjETYWQSBEXtV").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-xqDfDavLVXocnDdJ").style.height=document.getElementById("mmedia-xqDfDavLVXocnDdJ").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-BUZOjETYWQSBEXtV").style.height=document.getElementById("mmedia-BUZOjETYWQSBEXtV").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -17238,7 +17238,7 @@ Android支持
 
 ## 中文翻唱
 
- var ziCvADIlQyTlYsmA_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); ziCvADIlQyTlYsmA_options.container = document.getElementById("mmedia-ziCvADIlQyTlYsmA"); const ap_ziCvADIlQyTlYsmA = new APlayer(ziCvADIlQyTlYsmA_options); 
+ var XJVdbENdduQTuuFO_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); XJVdbENdduQTuuFO_options.container = document.getElementById("mmedia-XJVdbENdduQTuuFO"); const ap_XJVdbENdduQTuuFO = new APlayer(XJVdbENdduQTuuFO_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
