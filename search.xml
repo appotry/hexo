@@ -3427,6 +3427,316 @@ gitlab-rake gitlab:backup:restore BACKUP=1462989681
 这样Gitlab恢复数据就不会再报must be owner of extension plpgsql错误。
 4. 重启gitlab
 gitlab-ctl restart
+13. Gitlab Pages
+
+官方文档：https://docs.gitlab.com/ee/user/project/pages/ 。
+
+Gitlab Pages 使用 GitLab Pages daemon 服务，它是用 GO 语言实现的简单 HTTP 服务，并且可以监听外部 IP 地址以及为自定义域名和自定义证书提供支持。它通过 SNI 支持动态证书并且默认通过 HTTP2 协议发送页面。最后推荐你去看官方文档 README 以便全面了解它的工作原理。
+启用 Pages
+打开 gitlab.rb：
+sudo vim /etc/gitlab/gitlab.rb
+修改 Pages 配置：
+# Pages 服务地址
+pages_external_url "http://git.17lai.io"
+# 启用 pages
+gitlab_pages['enable'] = true
+# fails to start in Docker
+gitlab_pages['inplace_chroot'] = true
+让 Gitlab 使用当前配置：
+sudo gitlab-ctl reconfigure
+
+# stdout
+&gt; gitlab Reconfigured!
+如果没有域名怎么办呢？可以参考 Linux智能DNS服务搭建之Bind服务。
+使用 Pages
+
+官方的案例库：https://gitlab.com/pages
+
+用户文档
+一般有两种类型的Pages可以创建
+
+对于用户（username.example.io）或组（groupname.example.io）
+对于Project（username.example.io/projectname 或 groupname.example.io/projectname ）
+
+在GitLab中，usernames或groupnames是唯一的，我们经常把他们称为namespaces。在一个GitLab实例中只能有一个namespace。
+下面是Gitlab Pages类型、Project Name和 website URL对照表：
+
+GitLab Pages前提条件：
+简而言之，这是上传web站点到GitLab Pages需要的：
+
+Gitlab Pages使用的域名（向管理员询问）。
+创建一个Project。
+仓库的根目录放一个.gitlab-ci.yml，其中有个叫做pages的job。
+设置一个GitLab Runner构建web站点。
+
+部署简单的 html 项目
+
+我们在自己的 gitlab 上面创建一个测试项目：plain-html
+把项目拉取到本地：
+
+# 换成你自己的仓库地址
+git clone git@git.17lai.io:pages/plain-html.git
+
+在项目中新建 public 目录，然后添加 index.html 、 style.css 文件:
+
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;meta charset="utf-8"&gt;
+    &lt;meta name="generator" content="GitLab Pages"&gt;
+    &lt;title&gt;Plain HTML site using GitLab Pages&lt;/title&gt;
+    &lt;link rel="stylesheet" href="style.css"&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div class="navbar"&gt;
+      &lt;a href="https://pages.gitlab.io/plain-html/"&gt;Plain HTML Example&lt;/a&gt;
+      &lt;a href="https://gitlab.com/pages/plain-html/"&gt;Repository&lt;/a&gt;
+      &lt;a href="https://gitlab.com/pages/"&gt;Other Examples&lt;/a&gt;
+    &lt;/div&gt;
+
+    &lt;h1&gt;Hello World!&lt;/h1&gt;
+
+    &lt;p&gt;
+      This is a simple plain-HTML website on GitLab Pages, without any fancy static site generator.
+    &lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+body {
+  font-family: sans-serif;
+  margin: auto;
+  max-width: 1280px;
+}
+
+.navbar {
+  background-color: #313236;
+  border-radius: 2px;
+  max-width: 800px;
+}
+
+.navbar a {
+  color: #aaa;
+  display: inline-block;
+  font-size: 15px;
+  padding: 10px;
+  text-decoration: none;
+}
+
+.navbar a:hover {
+  color: #ffffff;
+}
+
+在项目根目录添加 .gitlab-ci.yml 文件：
+
+# This file is a template, and might need editing before it works on your project.
+# Full project: https://gitlab.com/pages/plain-html
+pages:
+  tags:
+    - html
+  stage: deploy
+  script:
+    - mkdir .public
+    - cp -r * .public
+    - mv .public public
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
+
+提交代码：
+
+git add .
+git commit -m"feat(pages):  开启 pages 服务"
+git push
+最后我们回到 gitlab 服务，在 plain-html 仓库中的 Settings / pages 页面可以看到已经有对应的服务地址了：
+
+
+gitlab 服务的域名跟 pages 的不要使用同一个，防止 XSS 攻击。
+
+
+
+管理员文档：https://docs.gitlab.com/ce/administration/pages/
+
+
+用户文档：https://docs.gitlab.com/ce/user/project/pages/index.html
+
+
+gitlab pages：https://pages.gitlab.io/
+
+
+Container Registry
+
+官方文档：https://docs.gitlab.com/ee/user/packages/container_registry/
+本节修改中
+
+开启 Container Registry
+修改gitlab配置文件： vim /etc/gitlab/gitlab.rb
+//外部访问地址，此处被nginx代理，暴露给外部访问
+registry_external_url 'http://xxx.com'
+//启用
+gitlab_rails['registry_enabled'] = true
+//registry 服务ip
+gitlab_rails['registry_host'] = "172.29.1.70"
+//registry 服务真正端口
+gitlab_rails['registry_port'] = "5000"
+这里需要注意的是，registry_external_url是外部访问的url，如docker需要pull和push，都是访问该路径。然后，刷新配置，重启：
+gitlab-ctl reconfigure
+gitlab-ctl restart
+访问Docker
+# docker login https://xxx.com -u root -p xxx
+Login Succeeded
+默认需要SSL，请使用反向代理
+官方文档有说明，如果启用了双重验证（Two-Factor Authentication）则不应该输入密码，而是token：
+docker login xxx.com -u &lt;username&gt; -p &lt;token&gt;
+CI
+GitLab Continuous Integration (GitLab CI/CD)
+
+
+CI: Continuous Integration：持续集成。
+CD: Coninuous delivery and deployment：持续交付和部署。
+
+Gitlab CI/CD 是以可持续方法论进行软件开发的内建工具（continuous integration service ）。
+
+在使用 Gitlab CI 之前，我们需要先了解几个概念：
+Stage
+阶段：通俗的讲就是步骤（把一件事分解成多个步骤来完成）。 从最上面的图中可以看到在 CI 中可能会有：Build、Unit Test 、Integration Tests 等多个阶段。
+Job
+任务：就是我们在每个阶段具体要做的事情，而一个阶段可能会有多个任务。
+Pipelines
+一条流水线 （ pipeline）就是 一组 在各个阶段执行的任务。在同一阶段的多个任务是可以并行的（如果 Runner 足够多的话），当全部的任务都执行成功之后流水线将会进入下一个阶段。反之，如果其中有一个任务失败，流水线的下一个阶段将不再执行。
+Runners
+在 Gitlab CI 中，Runner 负责运行定义在 .gitlab-ci.yml 中的代码。Runner 为三种：Shared Runners、Group Runners、Specific Runners，分别表示全局共用 Runner、组共用 Runner、单个项目指定的 Runner。
+.gitlab-ci.yml
+Gitlab CI 的配置文件，该文件声明了流水线的结构和顺序，以任务为最小单元。
+文件中允许定义的元素：
+
+image：docker 镜像，当 Gitlab-Runner 的类型为 docker 时，会根据该属性指定的镜像为脚本执行容器。
+services: 指定另一个 docker 镜像，主要用于提供服务层的能力，比如 mysql 。
+before_script：任务执行前的钩子事件，比如一个 node 项目，我们可以在这里安装依赖。
+after_script：任务执行后的钩子事件，当所有的任务都执行完毕之后被调用，不管任务是否执行成功。
+stages：定义流水线中的阶段，默认的为 build 、test、deploy。如果我们要在任务中指定其他的 stage，则需要使用该属性先申明。
+cache：需要缓存的文件，比如 node 项目可以把 node_modules 缓存起来。提示：可以定义在 .gitlab-ci.yml 顶级表示项目级别的，也可以申明在单个任务中。
+variables：变量，同样可以在顶级或者单个任务中申明。
+pages：内置的一个任务，用于上传任务执行的结果到 Gitlab Pages。
+include：合并其他的 .gitlab-ci.yml 文件配置。
+在单个任务中申明的元素：
+
+script：需要执行的脚本。
+stage：标识该任务所属的阶段。
+tags：为任务打上标签，用于选择特定的 Runner。
+only：用于表明何时创建该任务。
+except：用于表明何时不创建该任务。
+when：用于表明何时运行该任务。
+allow_failure：允许失败，该任务失败时不会影响整个流水线的结果。
+artifacts：任务执行的结果，比如执行 打包任务 后的产出资源。
+dependencies：依赖的其他任务。
+retry：当任务失败时最多重试的次数。
+coverage：指定如何从任务结果中提取代码覆盖率。
+parallel：允许并行的任务实例个数。
+
+
+
+
+请注意版本问题，每个属性对版本的要求并不一致，具体的可以点击属性查看官方文档。
+
+使用 Gitlab CI
+使用 Gitlab CI 服务的两种方式： 1. Auto DevOps 2. 手动配置 CI/CD
+Auto DevOps
+Auto DevOps 是 Gitlab 11.0 推出的新功能，它提供了预定义的 CI/CD 配置，允许我们自动检测、构建、测试、发布以及监控应用。
+暂未使用，待补充。
+手动配置 CI/CD
+手动配置主要就 2 个步骤，配置 .gitlab-ci.yml 文件，添加 Gitlab Runner 运行该文件。
+
+下面，我们看看如何配置 Gitlab Runner：
+Gitlab Runner
+Gitlab Runner 是一个开源项目，用来运行 .gitlab-ci.yml 中定义的任务并把结果返给 Gitlab。
+安装
+
+官方文档：https://docs.gitlab.com/runner/install/linux-repository.html
+
+首先，添加离线仓库：
+curl -L https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | sudo bash
+然后，安装最新版本：
+sudo apt-get install gitlab-runner
+注册
+
+官方文档：https://docs.gitlab.com/runner/register/index.html
+
+首先，我们进入要配置 Runner 的 Gitlab 仓库，在 Settings -&gt; CI / CD 页面展开 Runners 配置面板可以看到已经分配的 Runner 以及注册 Runner 需要的参数：
+然后，我们使用 Gitlab-Runner 命名开始注册：
+gitlab-runner register
+执行完会该命令，终端会有交互，要求我们输入以下参数：
+
+gitlab-ci coordinator url ：gitlab 服务地址
+gitlab-ci token：上图中的 token
+description：描述信息
+tags：标签，对应 .gitlab-ci.yml 任务中配置的 tags，只有 tags 匹配的任务才会被该 Runner 执行。
+executor：执行器，即任务脚本执行的环境
+
+
+如果使用 docker 执行，则需要事先安装 Docker 环境。
+
+参数填写完毕之后，一个 Runner 便被注册成功了：
+
+我们回到 gitlab 仓库页面，然后刷新便可以看到 _fzBq4PN 这个 Runner 已经被注册到该项目：
+
+
+我们可以点击 编辑图标 对该 Runner 进行修改。我比较喜欢把 Run untagged jobs 选项勾上，这样就不用每个任务都添加对应的 tags 了（因为现在涉及到的都是一些简单的流程）。
+
+总结
+首先，CI/CD 是一种软件开发流程，Gitlab CI/CD 是 Gitlab 为实现该流程而提供的一个内置工具（服务）。 其次，我们有 Auto DevOps 与 手动配置 两种方式使用，本文讲解的主要是 手动配置 方式。
+加速Gitlab Runner
+
+gitlab runner构建镜像每次RUN 安装依赖包，都远程下载?可以缓存加速吗？ 可以的！
+
+在将GitLab Runner注册到GitLab page上，让GitLab page可以和你的Runner通信时，有一步是填写使用的executor
+输入Runner的executor：
+Please enter the executor: ssh, docker+machine, docker-ssh+machine, kubernetes, docker, parallels, virtualbox, docker-ssh, shell:
+如果你选择Docker作为Runner的executor，你还要选择默认的docker image来运行job(当然，你也可以在.gitlab-ci.yml里指明你需要用的image),这句话就跟文章使用gitlab-runner往k8s上发送curl命令实现pod中容器使用的镜像版本更新，地址： 开头讲述的那样，不过.gitlab-ci.yml里指明的image优先级高。
+注册完成后你可以在/etc/gitlab-runner里发现 config.toml文件，该文件是Runner的配置文件
+接下来就牵涉到一个重要的话题 —— Executor
+
+Shell Executor
+以宿主机作为Runner的所有jobs的执行器。Runner将会从远程仓库pull你的工程，工程的目录为：/builds。如果你使用了cache，那么cache将会存在/cache/。
+但是，它需要将构建所需的所有依赖手动安装到安装了Runner的同一台计算机上，比如使用到的git,jdk,maven,docekr等
+Docker Executor
+所有jobs的执行环境为指定的docker image所生成的container，每个job都会生成一个container并且在job结束后立即销毁。这个说的就是config.toml文件和.gitlab-ci.yml中指定的image
+Docker executor默认将所有的builds存储在/builds/(这里的路径是container里的路径，Runner配置文件config.toml里的build_dir字段可以重新指明build的目录，默认对应于宿主机的目录是在宿主机的docker volume下：/var/lib/docker/volumes//_data/)，默认将所有的caches存储在container里的/cache目录(config.toml里的cache_dir字段可以重新指明cache的目录)，注意build_dir和cache_dir指向的均是container里的目录，要想将container里的数据持久化，需要用到volumes字段，这个字段的使用和docker volume的使用是类似的，只需在config.toml的[runner.docker]部分添加volumes = ["/cache", ":rw"]即可实现container里/cache目录数据的永久保存以及将host目录挂载到相应的container目录并具有读写的功能。
+比如：
+
+# 仅作展示，未显示完整
+[runners.docker]
+  image = "jdd.io/jre:1.8.275"
+  volumes = ["/cache","/run/docker.sock:/run/docker.sock"]
+当你使用docker 或 docker+machine executors时，你可以通过设置pull_policy来决定Runner如何pull docker image。pull_policy有三种值：
+always —— Runner始终从远程pull docker image。
+if-not-present —— Runner会首先检查本地是否有该image，如果有则用本地的，如果没有则从远程拉取。
+never —— Runner始终使用本地的image。
+
+注意：这一步就是本文开头提到的，使用本地镜像，不用再从dockerhub上拉取了
+
+# 仅作展示，未显示完整
+[runners.docker]
+  image = "jdd.io/jre:1.8.275"
+  pull_policy="if-not-present" # 添加这个选项就可以了
+  volumes = ["/cache","/run/docker.sock:/run/docker.sock"]
+当你使用docker, docker+machine 或 kubernetes作为executor时，GitLab Runner将会使用特定的container来处理Git、artifacts 和cache 操作。
+权限管理
+以管理员的身份登入gitlab，点击Settings，然后选择Members，可以通过输入名字选择要分配权限的小组成员，然后分配角色，选择权限有效时间，点击Add to Project就把人员拉近到项目中。
+GitLab的角色有以下四种：
+
+Guest：可以创建issue、发表评论，不能读写版本库
+Reporter：可以克隆代码，不能提交，可以赋予测试、产品经理此权限
+Developer：可以克隆代码、开发、提交、push，可以赋予开发人员此权限
+MainMaster：可以创建项目、添加tag、保护分支、添加项目成员、编辑项目，一般GitLab管理员或者CTO才有此权限
+
+访问权限 - Visibility Level：
+这个是在建立项目时就需要选定的，主要用于决定哪些人可以访问此项目，包含3种
+
+Private - 私有，只有属于该项目成员才有原先查看
+Internal - 内部，用个Gitlab账号的人都可以clone
+Public - 公开，任何人可以clone
+
 本文作者：夜法之书       写作不易，转载请注明来源地址！
 参考链接：
 
@@ -4949,6 +5259,11 @@ Docker：linuxserver/bazarr
 radarr示例图片
 使用Emby观看电影
 
+Emby win desktop 客户端
+从 Emby 官网 下载并安装 Emby 官方客户端。
+在Emby Theater桌面快捷方式上右键, 然后单击属性, 在弹出的页面上选择打开文件所在位置。
+删除目录下的data文件夹(如果没有则忽略)
+右上角搜索框输入main.js并执行搜索，点击编辑 -&gt; 替换, 然后在弹出的窗口中输入替换内容为https://tv.emby.media, 替换为为http://embycrack.tk. 最后点击全部替换按钮。
 音乐管理
 使用lidarr管理音乐
 
@@ -5056,6 +5371,30 @@ DNSMasq： 作为DNS后端，连接到DNSCrypt Proxy，并配置本地域名。�
 Xteve 看IPTV
 Docker: dnsforge/xteve
 结合Emby， jellyfin直接看iptv。
+
+解码
+由于H.265（HEVC，high efficiency Video Coding）专利费用过高，谷歌公司转而支持开源免费的AV1编码格式，因此Chrome浏览器和使用Chromium内核的Edge浏览器不支持H.265（HEVC）硬解码。从caniuse网站（https://caniuse.com/?search=hevc）可知，截至2021年9月16日，仅有macOS和iOS的Safari浏览器支持HEVC硬解码，Windows下所有还在持续升级的浏览器均不支持HEVC硬解码。
+Hevc 插件安装
+https://www.free-codecs.com/hevc_video_extension_download.htm
+可以这里下载安装插件
+Chrome 插件 H.265 / HEVC player
+You can download sample H.265 / HEVC streams (creative commons license) from
+http://www.libde265.org/downloads-videos/
+
+视频抖动问题 edge://flags/ 进入，搜索 Media Foundation playback for Windows 10，右边切换成 Enabled，重启浏览器。
+
+Win 10 Hevc 解码
+许多 OEM 商已经为你支付过 HEVC 的授权了，你可以下载 “来自设备制造商的 HEVC 视频扩展” 到支持的设备上。点击下面链接安装！
+ms-windows-store://pdp/?ProductId=9N4WGH0Z6VHQ
+
+Safari 安装
+
+Click here to download Safari 5.1.7 setup file from Apple. The setup supports both 32-bit and 64-bit Windows 11/10/8/7 systems.
+Run the installer and then follow the on-screen directions to get it installed.
+
+最新版Safari 没法在Win 10/11上面安装，Apple 停止了开发Windows版本的Safari！
+
+兼容性不好，不建议使用！
 
 注意事项
 
@@ -11439,9 +11778,9 @@ Vim
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-zwAVKljiZKtuIJGD").style.height=document.getElementById("mmedia-zwAVKljiZKtuIJGD").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-zKUflfKZHgtjBFHT").style.height=document.getElementById("mmedia-zKUflfKZHgtjBFHT").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-zwAVKljiZKtuIJGD").style.height=document.getElementById("mmedia-zwAVKljiZKtuIJGD").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-zKUflfKZHgtjBFHT").style.height=document.getElementById("mmedia-zKUflfKZHgtjBFHT").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -14969,10 +15308,10 @@ BILIBILI卡片
                 
                     
                         
-                        26.6万
+                        26.7万
                     
                         
-                        149
+                        153
                 
                     视频
                     
@@ -15718,11 +16057,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var XNfGopBAkZcvMovv_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); XNfGopBAkZcvMovv_options.container = document.getElementById("mmedia-XNfGopBAkZcvMovv"); const ap_XNfGopBAkZcvMovv = new APlayer(XNfGopBAkZcvMovv_options); 
+ var mkKTeffRvFNibMGD_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); mkKTeffRvFNibMGD_options.container = document.getElementById("mmedia-mkKTeffRvFNibMGD"); const ap_mkKTeffRvFNibMGD = new APlayer(mkKTeffRvFNibMGD_options); 
 
 - **列表**
 
- var miRHgfQfgilLXmzN_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); miRHgfQfgilLXmzN_options.container = document.getElementById("mmedia-miRHgfQfgilLXmzN"); const ap_miRHgfQfgilLXmzN = new APlayer(miRHgfQfgilLXmzN_options); 
+ var tGhzPlVIiXDUtQuk_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); tGhzPlVIiXDUtQuk_options.container = document.getElementById("mmedia-tGhzPlVIiXDUtQuk"); const ap_tGhzPlVIiXDUtQuk = new APlayer(tGhzPlVIiXDUtQuk_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -15974,21 +16313,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-KpTnVbzcAGZWgGjY").style.height=document.getElementById("mmedia-KpTnVbzcAGZWgGjY").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-yvOLshEzfRNQARNi").style.height=document.getElementById("mmedia-yvOLshEzfRNQARNi").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-KpTnVbzcAGZWgGjY").style.height=document.getElementById("mmedia-KpTnVbzcAGZWgGjY").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-yvOLshEzfRNQARNi").style.height=document.getElementById("mmedia-yvOLshEzfRNQARNi").scrollWidth*0.76+"px";
     }; 
 
 **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-OHyHqnrHkeaUeyTI").style.height=document.getElementById("mmedia-OHyHqnrHkeaUeyTI").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-WdqfaeNmSaEHLxYB").style.height=document.getElementById("mmedia-WdqfaeNmSaEHLxYB").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-OHyHqnrHkeaUeyTI").style.height=document.getElementById("mmedia-OHyHqnrHkeaUeyTI").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-WdqfaeNmSaEHLxYB").style.height=document.getElementById("mmedia-WdqfaeNmSaEHLxYB").scrollWidth*0.7+"px";
     }; 
 
 **artplayer**
 
- var zuakGUHeGAQeGhyW_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); zuakGUHeGAQeGhyW_options.container = "#mmedia-zuakGUHeGAQeGhyW"; const art_zuakGUHeGAQeGhyW = new Artplayer(zuakGUHeGAQeGhyW_options); 
+ var lhfxGzubrYwZlHJu_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); lhfxGzubrYwZlHJu_options.container = "#mmedia-lhfxGzubrYwZlHJu"; const art_lhfxGzubrYwZlHJu = new Artplayer(lhfxGzubrYwZlHJu_options); 
 脑图
 
 原作者记录
@@ -17142,11 +17481,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var pUDdQqOlszvNDwtS_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); pUDdQqOlszvNDwtS_options.container = document.getElementById("mmedia-pUDdQqOlszvNDwtS"); const ap_pUDdQqOlszvNDwtS = new APlayer(pUDdQqOlszvNDwtS_options); 
+ var DNqhCiJyygMAcAoB_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); DNqhCiJyygMAcAoB_options.container = document.getElementById("mmedia-DNqhCiJyygMAcAoB"); const ap_DNqhCiJyygMAcAoB = new APlayer(DNqhCiJyygMAcAoB_options); 
 
 
 
- var FsYMmGNtwWrgqBly_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); FsYMmGNtwWrgqBly_options.container = document.getElementById("mmedia-FsYMmGNtwWrgqBly"); const ap_FsYMmGNtwWrgqBly = new APlayer(FsYMmGNtwWrgqBly_options); 
+ var xfjkQZlaLDIHeQoo_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); xfjkQZlaLDIHeQoo_options.container = document.getElementById("mmedia-xfjkQZlaLDIHeQoo"); const ap_xfjkQZlaLDIHeQoo = new APlayer(xfjkQZlaLDIHeQoo_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -17227,9 +17566,9 @@ Android支持
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-wSZaLBYzVSfbLvES").style.height=document.getElementById("mmedia-wSZaLBYzVSfbLvES").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-imoStOAyQdyJAnXH").style.height=document.getElementById("mmedia-imoStOAyQdyJAnXH").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-wSZaLBYzVSfbLvES").style.height=document.getElementById("mmedia-wSZaLBYzVSfbLvES").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-imoStOAyQdyJAnXH").style.height=document.getElementById("mmedia-imoStOAyQdyJAnXH").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -17238,7 +17577,7 @@ Android支持
 
 ## 中文翻唱
 
- var zTYbxqJelYMYMUWu_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); zTYbxqJelYMYMUWu_options.container = document.getElementById("mmedia-zTYbxqJelYMYMUWu"); const ap_zTYbxqJelYMYMUWu = new APlayer(zTYbxqJelYMYMUWu_options); 
+ var pthEIduhDuJCAYLT_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); pthEIduhDuJCAYLT_options.container = document.getElementById("mmedia-pthEIduhDuJCAYLT"); const ap_pthEIduhDuJCAYLT = new APlayer(pthEIduhDuJCAYLT_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -23542,6 +23881,78 @@ RM是英文"repetition maximum"的缩写，中文意义是"最大重复值"。�
         <tag>fitness</tag>
         <tag>健身</tag>
         <tag>运动</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>项目开发管理工具推荐</title>
+    <url>/posts/f4c3ad41/</url>
+    <content><![CDATA[
+软件开发是复杂的创造性的劳动，需要依赖大量工具才能完成，因此想要提高软件开发的效率和质量，离不开强大、高效、易用、维护成本低的工具，下面我根据自己的经验，推荐一些好用的工具。
+
+即时通讯
+即时通讯和会议系统是项目开发过程中必不可少的，尤其是远程办公时，会议系统更是不可或缺。企业微信拥有和微信一致的沟通体验，简单易用。企业微信可随时随地发起和参与音视频会议，支持300人同时参会，并为主持人提供了管理功能。发言时还可演示文档或电脑屏幕，支持实时标注演示内容。
+
+官方网站：https://work.weixin.qq.com/
+项目管理
+目前主流的项目管理通常采用敏捷开发的模式，因此项目管理工具也要选择支持敏捷开发模式的工具，不建议使用禅道这样的重流程的工具，不适合敏捷团队，这里我推荐Taiga，它设计简洁，操作简单，充分体现了敏捷开发的理念。
+
+官方网站：https://taiga.io
+在线体验：https://tree.taiga.io
+体验版服务器在国外，访问可能会有点慢。
+代码托管
+前几年使用的比较多是SVN，近几年基本都使用GIT了，开源项目大都使用Github，虽然免费，但国内访问不稳定，速度慢，因此国内的公司基本都会自己搭建，我先后为公司搭建过两个托管平台，一个是Gitlab，一个是Gitea，Gitlab功能比较全面，但对硬件资源要求比较高，而且性能一般。所以推荐使用另一个开源的git托管平台——Gitea。
+
+官方网站：https://gitea.io
+在线体验：https://gitea.com
+持续交付
+最知名、使用最广泛的开源的持续集成、交付平台当属Jenkins，主要的优势在于有大量免费的插件可以使用，但实际使用发现，很多插件质量很差，配置项很多，真正想要落地，其实需要自己编写shell脚本。这里我推荐基于docker技术的一款现代化的持续交付平台DroneCI，它使用简单，可以和主流的Git代码托管平台无缝对接，并且不需要编写代码就可以满足大多数持续构建、交付的需求。
+
+官方网站：https://drone.io
+在线体验：https://cloud.drone.io
+体验版服务器在国外，访问可能会有点慢。
+制品库(本地仓库)
+Maven 仓库是项目中依赖的第三方库，这个库所在的位置叫做仓库。Maven 仓库能帮助我们管理构件（主要是JAR），它就是放置所有JAR文件（WAR，ZIP，POM等等）的地方。
+后来，除了Maven仓库，还有npm、nuget、pypi、docker等仓库也需要本地仓库。
+市面上可选的通用的本地仓库有：nexus、ARTIFACTORY，ARTIFACTORY是收费的，nexus是免费的，同时nexus以其易用性和可靠性，成为目前市场上最主流的本地仓库。
+官方网站：https://www.sonatype.com/product-nexus-repository
+文件存储
+在公司中，文件分享是一个很常用的功能，不同于云盘，他对性能和安全性没有那么高的要求，简单易用才是大家最关心的，这里推荐chfs，chfs是一个免费的、HTTP协议的文件共享服务器，使用浏览器可以快速访问。与其他常用文件共享方式（如FTP，飞秋，网盘，自己建站）相比，具有使用简单，适用场景更多的优点，在个人使用以及共享给他人的场景中非常方便快捷。
+官方网站：http://iscute.cn/chfs
+绘图(流程图、UML、思维导图)
+draw.io 是一个强大简洁的在线的绘图网站，支持流程图，UML图，架构图，原型图等。支持Github，Google Drive, One drive等网盘同步，并且永久免费。如果觉得使用Web版不方便，draw.io 也提供了多平台的离线桌面版可供下载。
+
+在线版：https://www.draw.io
+本地部署版：https://github.com/jgraph/drawio/releases/latest
+PC 安装版：https://github.com/jgraph/drawio-desktop/releases/latest
+接口管理
+维护不同工具之间数据一致性非常困难、低效。并且这里不仅仅是工作量的问题，更大的问题是多个系统之间数据不一致，导致协作低效、频繁出问题，开发测试人员痛苦不堪。
+Apifox 是接口管理、开发、测试全流程集成工具，定位 Postman + Swagger + Mock + JMeter。通过一套系统、一份数据，解决多个系统之间的数据同步问题。只要定义好接口文档，接口调试、数据 Mock、接口测试就可以直接使用，无需再次定义；接口文档和接口开发调试使用同一个工具，接口调试完成后即可保证和接口文档定义完全一致。高效、及时、准确！
+
+官方网站：https://www.apifox.cn
+安全测试
+在今天，网站的安全是容易被忽视的，黑客具备广泛的攻击手段，例如SQL注入，XSS，文件包含，目录遍历，参数篡改，认证攻击等，虽然你配置了正确的防火墙和WAF，但是这些安全防御软件仍然存在策略性的绕过。因此，需要您定期的扫描你的web应用，但是手动检测你所有的web应用是否存在安全漏洞比较复杂和费时，所以您需要一款自动化的web漏洞扫描工具来检测您的web应用是否存在安全漏洞。
+Acunetix Web Vulnerability Scanner（简称AWVS）是一款知名的Web网络漏洞扫描工具，它通过网络爬虫测试你的网站安全，检测流行安全漏洞。
+
+官方网站：https://www.acunetix.com
+性能测试
+Locust是一个用于可扩展的，分布式的，性能测试的，开源的，用Python编写框架/工具，它非常容易使用，也非常好学。
+它的主要思想就是模拟一群用户将访问你的网站。每个用户的行为由你编写的python代码定义，同时可以从Web界面中实时观察到用户的行为。
+Locust完全是事件驱动的，因此在单台机器上能够支持几千并发用户访问。
+与其它许多基于事件的应用相比，Locust并不使用回调，而是使用gevent，而gevent是基于协程的，可以用同步的方式来编写异步执行的代码。
+
+官方网站：https://www.locust.io
+代码静态分析平台
+SonarQube 是一款用于代码质量管理的开源工具，它主要用于管理源代码的质量。 通过插件形式，可以支持众多计算机语言，比如 java, C#, go，C/C++, PL/SQL, Cobol, JavaScrip, Groovy 等。sonar可以通过PMD,CheckStyle,Findbugs等等代码规则检测工具来检测你的代码，帮助你发现代码的漏洞，Bug，异味等信息。
+Sonar 不仅提供了对 IDE 的支持，可以在 Eclipse和 IntelliJ IDEA 这些工具里联机查看结果；同时 Sonar 还对大量的持续集成工具提供了接口支持，可以很方便地在持续集成中使用 Sonar
+
+官方网站：https://www.sonarqube.org
+]]></content>
+      <categories>
+        <category>devops</category>
+      </categories>
+      <tags>
+        <tag>devops</tag>
+        <tag>cicd</tag>
       </tags>
   </entry>
 </search>

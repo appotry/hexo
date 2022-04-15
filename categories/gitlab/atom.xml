@@ -138,6 +138,8 @@
     <category term="fitness" />
     <category term="健身" />
     <category term="运动" />
+    <category term="devops" />
+    <category term="cicd" />
     <entry>
         <id>https://blog.17lai.site/posts/1879721e/</id>
         <title>CI/CD与Git Flow与GitLab</title>
@@ -1268,6 +1270,316 @@ listen_addresses &lt;span class=&#34;token operator&#34;&gt;=&lt;/span&gt; &lt;s
 &lt;p&gt;这样Gitlab恢复数据就不会再报must be owner of extension plpgsql错误。&lt;/p&gt;
 &lt;h4 id=&#34;4-重启gitlab&#34;&gt;&lt;strong&gt;4. 重启gitlab&lt;/strong&gt;&lt;/h4&gt;
 &lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;gitlab-ctl restart&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;13-Gitlab-Pages&#34;&gt;13. Gitlab Pages&lt;/h2&gt;
+&lt;blockquote&gt;
+&lt;p&gt;官方文档：https://docs.gitlab.com/ee/user/project/pages/ 。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Gitlab Pages 使用 &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://gitlab.com/gitlab-org/gitlab-pages&#34;&gt;GitLab Pages daemon&lt;/a&gt; 服务，它是用 GO 语言实现的简单 HTTP 服务，并且可以监听外部 IP 地址以及为自定义域名和自定义证书提供支持。它通过 SNI 支持动态证书并且默认通过 HTTP2 协议发送页面。最后推荐你去看官方文档 &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://gitlab.com/gitlab-org/gitlab-pages/blob/master/README.md&#34;&gt;README&lt;/a&gt; 以便全面了解它的工作原理。&lt;/p&gt;
+&lt;h3 id=&#34;启用-Pages&#34;&gt;启用 Pages&lt;/h3&gt;
+&lt;p&gt;打开 &lt;code&gt;gitlab.rb&lt;/code&gt;：&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-none&#34;&gt;&lt;code class=&#34;language-none&#34;&gt;sudo vim /etc/gitlab/gitlab.rb&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;修改 &lt;code&gt;Pages&lt;/code&gt; 配置：&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token comment&#34;&gt;# Pages 服务地址&lt;/span&gt;
+pages_external_url &lt;span class=&#34;token string&#34;&gt;&#34;http://git.17lai.io&#34;&lt;/span&gt;
+&lt;span class=&#34;token comment&#34;&gt;# 启用 pages&lt;/span&gt;
+gitlab_pages&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token string&#34;&gt;&#39;enable&#39;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;token operator&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token boolean&#34;&gt;true&lt;/span&gt;
+&lt;span class=&#34;token comment&#34;&gt;# fails to start in Docker&lt;/span&gt;
+gitlab_pages&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token string&#34;&gt;&#39;inplace_chroot&#39;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;token operator&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token boolean&#34;&gt;true&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;让 &lt;code&gt;Gitlab&lt;/code&gt; 使用当前配置：&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token function&#34;&gt;sudo&lt;/span&gt; gitlab-ctl reconfigure
+
+&lt;span class=&#34;token comment&#34;&gt;# stdout&lt;/span&gt;
+&lt;span class=&#34;token operator&#34;&gt;&amp;gt;&lt;/span&gt; gitlab Reconfigured&lt;span class=&#34;token operator&#34;&gt;!&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;如果没有域名怎么办呢？可以参考 &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://www.imooc.com/learn/634&#34;&gt;Linux智能DNS服务搭建之Bind服务&lt;/a&gt;。&lt;/p&gt;
+&lt;h3 id=&#34;使用-Pages&#34;&gt;使用 Pages&lt;/h3&gt;
+&lt;blockquote&gt;
+&lt;p&gt;官方的案例库：https://gitlab.com/pages&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;strong&gt;用户文档&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;一般有两种类型的Pages可以创建&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;对于用户（username.example.io）或组（groupname.example.io）&lt;/li&gt;
+&lt;li&gt;对于Project（username.example.io/projectname 或 groupname.example.io/projectname ）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;在GitLab中，usernames或groupnames是唯一的，我们经常把他们称为namespaces。在一个GitLab实例中只能有一个namespace。&lt;/p&gt;
+&lt;p&gt;下面是Gitlab Pages类型、Project Name和 website URL对照表：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://images.weserv.nl?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2022/04/0820220408205156.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;GitLab Pages前提条件：&lt;/p&gt;
+&lt;p&gt;简而言之，这是上传web站点到GitLab Pages需要的：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Gitlab Pages使用的域名（向管理员询问）。&lt;/li&gt;
+&lt;li&gt;创建一个Project。&lt;/li&gt;
+&lt;li&gt;仓库的根目录放一个.gitlab-ci.yml，其中有个叫做pages的job。&lt;/li&gt;
+&lt;li&gt;设置一个GitLab Runner构建web站点。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h4 id=&#34;部署简单的-html-项目&#34;&gt;部署简单的 html 项目&lt;/h4&gt;
+&lt;ol&gt;
+&lt;li&gt;我们在自己的 &lt;code&gt;gitlab&lt;/code&gt; 上面创建一个测试项目：&lt;code&gt;plain-html&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;把项目拉取到本地：&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre class=&#34;line-numbers language-none&#34;&gt;&lt;code class=&#34;language-none&#34;&gt;# 换成你自己的仓库地址
+git clone git@git.17lai.io:pages/plain-html.git&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;在项目中新建 &lt;code&gt;public&lt;/code&gt; 目录，然后添加 &lt;code&gt;index.html&lt;/code&gt; 、 &lt;code&gt;style.css&lt;/code&gt; 文件:&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre class=&#34;line-numbers language-html&#34; data-language=&#34;html&#34;&gt;&lt;code class=&#34;language-html&#34;&gt;&lt;span class=&#34;token doctype&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;!&lt;/span&gt;&lt;span class=&#34;token doctype-tag&#34;&gt;DOCTYPE&lt;/span&gt; &lt;span class=&#34;token name&#34;&gt;html&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;&lt;/span&gt;html&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+  &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;&lt;/span&gt;head&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+    &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;&lt;/span&gt;meta&lt;/span&gt; &lt;span class=&#34;token attr-name&#34;&gt;charset&lt;/span&gt;&lt;span class=&#34;token attr-value&#34;&gt;&lt;span class=&#34;token punctuation attr-equals&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;utf-8&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+    &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;&lt;/span&gt;meta&lt;/span&gt; &lt;span class=&#34;token attr-name&#34;&gt;name&lt;/span&gt;&lt;span class=&#34;token attr-value&#34;&gt;&lt;span class=&#34;token punctuation attr-equals&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;generator&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;&lt;/span&gt; &lt;span class=&#34;token attr-name&#34;&gt;content&lt;/span&gt;&lt;span class=&#34;token attr-value&#34;&gt;&lt;span class=&#34;token punctuation attr-equals&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;GitLab Pages&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+    &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;&lt;/span&gt;title&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;Plain HTML site using GitLab Pages&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;/&lt;/span&gt;title&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+    &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;&lt;/span&gt;link&lt;/span&gt; &lt;span class=&#34;token attr-name&#34;&gt;rel&lt;/span&gt;&lt;span class=&#34;token attr-value&#34;&gt;&lt;span class=&#34;token punctuation attr-equals&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;stylesheet&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;&lt;/span&gt; &lt;span class=&#34;token attr-name&#34;&gt;href&lt;/span&gt;&lt;span class=&#34;token attr-value&#34;&gt;&lt;span class=&#34;token punctuation attr-equals&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;style.css&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+  &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;/&lt;/span&gt;head&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+  &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;&lt;/span&gt;body&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+    &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;&lt;/span&gt;div&lt;/span&gt; &lt;span class=&#34;token attr-name&#34;&gt;class&lt;/span&gt;&lt;span class=&#34;token attr-value&#34;&gt;&lt;span class=&#34;token punctuation attr-equals&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;navbar&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;&lt;/span&gt;a&lt;/span&gt; &lt;span class=&#34;token attr-name&#34;&gt;href&lt;/span&gt;&lt;span class=&#34;token attr-value&#34;&gt;&lt;span class=&#34;token punctuation attr-equals&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;https://pages.gitlab.io/plain-html/&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;Plain HTML Example&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;/&lt;/span&gt;a&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;&lt;/span&gt;a&lt;/span&gt; &lt;span class=&#34;token attr-name&#34;&gt;href&lt;/span&gt;&lt;span class=&#34;token attr-value&#34;&gt;&lt;span class=&#34;token punctuation attr-equals&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;https://gitlab.com/pages/plain-html/&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;Repository&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;/&lt;/span&gt;a&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;&lt;/span&gt;a&lt;/span&gt; &lt;span class=&#34;token attr-name&#34;&gt;href&lt;/span&gt;&lt;span class=&#34;token attr-value&#34;&gt;&lt;span class=&#34;token punctuation attr-equals&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;https://gitlab.com/pages/&lt;span class=&#34;token punctuation&#34;&gt;&#34;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;Other Examples&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;/&lt;/span&gt;a&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+    &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;/&lt;/span&gt;div&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+
+    &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;&lt;/span&gt;h1&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;Hello World!&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;/&lt;/span&gt;h1&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+
+    &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;&lt;/span&gt;p&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+      This is a simple plain-HTML website on GitLab Pages, without any fancy static site generator.
+    &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;/&lt;/span&gt;p&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+  &lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;/&lt;/span&gt;body&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;
+&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token tag&#34;&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;lt;/&lt;/span&gt;html&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;&amp;gt;&lt;/span&gt;&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;line-numbers language-css&#34; data-language=&#34;css&#34;&gt;&lt;code class=&#34;language-css&#34;&gt;&lt;span class=&#34;token selector&#34;&gt;body&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;{&lt;/span&gt;
+  &lt;span class=&#34;token property&#34;&gt;font-family&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; sans-serif&lt;span class=&#34;token punctuation&#34;&gt;;&lt;/span&gt;
+  &lt;span class=&#34;token property&#34;&gt;margin&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; auto&lt;span class=&#34;token punctuation&#34;&gt;;&lt;/span&gt;
+  &lt;span class=&#34;token property&#34;&gt;max-width&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; 1280px&lt;span class=&#34;token punctuation&#34;&gt;;&lt;/span&gt;
+&lt;span class=&#34;token punctuation&#34;&gt;}&lt;/span&gt;
+
+&lt;span class=&#34;token selector&#34;&gt;.navbar&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;{&lt;/span&gt;
+  &lt;span class=&#34;token property&#34;&gt;background-color&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; #313236&lt;span class=&#34;token punctuation&#34;&gt;;&lt;/span&gt;
+  &lt;span class=&#34;token property&#34;&gt;border-radius&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; 2px&lt;span class=&#34;token punctuation&#34;&gt;;&lt;/span&gt;
+  &lt;span class=&#34;token property&#34;&gt;max-width&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; 800px&lt;span class=&#34;token punctuation&#34;&gt;;&lt;/span&gt;
+&lt;span class=&#34;token punctuation&#34;&gt;}&lt;/span&gt;
+
+&lt;span class=&#34;token selector&#34;&gt;.navbar a&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;{&lt;/span&gt;
+  &lt;span class=&#34;token property&#34;&gt;color&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; #aaa&lt;span class=&#34;token punctuation&#34;&gt;;&lt;/span&gt;
+  &lt;span class=&#34;token property&#34;&gt;display&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; inline-block&lt;span class=&#34;token punctuation&#34;&gt;;&lt;/span&gt;
+  &lt;span class=&#34;token property&#34;&gt;font-size&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; 15px&lt;span class=&#34;token punctuation&#34;&gt;;&lt;/span&gt;
+  &lt;span class=&#34;token property&#34;&gt;padding&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; 10px&lt;span class=&#34;token punctuation&#34;&gt;;&lt;/span&gt;
+  &lt;span class=&#34;token property&#34;&gt;text-decoration&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; none&lt;span class=&#34;token punctuation&#34;&gt;;&lt;/span&gt;
+&lt;span class=&#34;token punctuation&#34;&gt;}&lt;/span&gt;
+
+&lt;span class=&#34;token selector&#34;&gt;.navbar a:hover&lt;/span&gt; &lt;span class=&#34;token punctuation&#34;&gt;{&lt;/span&gt;
+  &lt;span class=&#34;token property&#34;&gt;color&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; #ffffff&lt;span class=&#34;token punctuation&#34;&gt;;&lt;/span&gt;
+&lt;span class=&#34;token punctuation&#34;&gt;}&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;在项目根目录添加 &lt;code&gt;.gitlab-ci.yml&lt;/code&gt; 文件：&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre class=&#34;line-numbers language-yaml&#34; data-language=&#34;yaml&#34;&gt;&lt;code class=&#34;language-yaml&#34;&gt;&lt;span class=&#34;token comment&#34;&gt;# This file is a template, and might need editing before it works on your project.&lt;/span&gt;
+&lt;span class=&#34;token comment&#34;&gt;# Full project: https://gitlab.com/pages/plain-html&lt;/span&gt;
+&lt;span class=&#34;token key atrule&#34;&gt;pages&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;token key atrule&#34;&gt;tags&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; html
+  &lt;span class=&#34;token key atrule&#34;&gt;stage&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt; deploy
+  &lt;span class=&#34;token key atrule&#34;&gt;script&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; mkdir .public
+    &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; cp &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt;r * .public
+    &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; mv .public public
+  &lt;span class=&#34;token key atrule&#34;&gt;artifacts&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token key atrule&#34;&gt;paths&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; public
+  &lt;span class=&#34;token key atrule&#34;&gt;only&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;token punctuation&#34;&gt;-&lt;/span&gt; master&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;提交代码：&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre class=&#34;line-numbers language-none&#34;&gt;&lt;code class=&#34;language-none&#34;&gt;git add .
+git commit -m&#34;feat(pages):  开启 pages 服务&#34;
+git push&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;最后我们回到 gitlab 服务，在 &lt;code&gt;plain-html&lt;/code&gt; 仓库中的 &lt;code&gt;Settings / pages&lt;/code&gt; 页面可以看到已经有对应的服务地址了：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://images.weserv.nl?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2022/04/0820220408203643.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;gitlab 服务的域名跟 pages 的不要使用同一个，防止 XSS 攻击。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;管理员文档：https://docs.gitlab.com/ce/administration/pages/&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;用户文档：https://docs.gitlab.com/ce/user/project/pages/index.html&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;gitlab pages：https://pages.gitlab.io/&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;Container-Registry&#34;&gt;Container Registry&lt;/h2&gt;
+&lt;blockquote&gt;
+&lt;p&gt;官方文档：&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://links.jianshu.com/go?to=https%3A%2F%2Fdocs.gitlab.com%2Fee%2Fuser%2Fpackages%2Fcontainer_registry%2F&#34;&gt;https://docs.gitlab.com/ee/user/packages/container_registry/&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;本节修改中&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;开启-Container-Registry&#34;&gt;开启 Container Registry&lt;/h3&gt;
+&lt;p&gt;修改gitlab配置文件： vim /etc/gitlab/gitlab.rb&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;//外部访问地址，此处被nginx代理，暴露给外部访问
+registry_external_url &lt;span class=&#34;token string&#34;&gt;&#39;http://xxx.com&#39;&lt;/span&gt;
+//启用
+gitlab_rails&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token string&#34;&gt;&#39;registry_enabled&#39;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;token operator&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token boolean&#34;&gt;true&lt;/span&gt;
+//registry 服务ip
+gitlab_rails&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token string&#34;&gt;&#39;registry_host&#39;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;token operator&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;172.29.1.70&#34;&lt;/span&gt;
+//registry 服务真正端口
+gitlab_rails&lt;span class=&#34;token punctuation&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;token string&#34;&gt;&#39;registry_port&#39;&lt;/span&gt;&lt;span class=&#34;token punctuation&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;token operator&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;token string&#34;&gt;&#34;5000&#34;&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;这里需要注意的是，registry_external_url是外部访问的url，如docker需要pull和push，都是访问该路径。然后，刷新配置，重启：&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;gitlab-ctl reconfigure
+gitlab-ctl restart&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&#34;访问Docker&#34;&gt;访问Docker&lt;/h3&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token comment&#34;&gt;# docker login https://xxx.com -u root -p xxx&lt;/span&gt;
+Login Succeeded&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;默认&lt;mark&gt;需要SSL&lt;/mark&gt;，请使用反向代理&lt;/p&gt;
+&lt;p&gt;官方文档有说明，如果启用了双重验证（Two-Factor Authentication）则不应该输入密码，而是token：&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;&lt;span class=&#34;token function&#34;&gt;docker&lt;/span&gt; login xxx.com -u &lt;span class=&#34;token operator&#34;&gt;&amp;lt;&lt;/span&gt;username&lt;span class=&#34;token operator&#34;&gt;&amp;gt;&lt;/span&gt; -p &lt;span class=&#34;token operator&#34;&gt;&amp;lt;&lt;/span&gt;token&lt;span class=&#34;token operator&#34;&gt;&amp;gt;&lt;/span&gt;&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;CI&#34;&gt;CI&lt;/h2&gt;
+&lt;p&gt;GitLab Continuous Integration (GitLab CI/CD)&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;CI: Continuous Integration：持续集成。&lt;/li&gt;
+&lt;li&gt;CD: Coninuous delivery and deployment：持续交付和部署。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Gitlab CI/CD 是以可持续方法论进行软件开发的内建工具（&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://about.gitlab.com/gitlab-ci/&#34;&gt;continuous integration service&lt;/a&gt; ）。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;在使用 Gitlab CI 之前，我们需要先了解几个概念：&lt;/p&gt;
+&lt;h3 id=&#34;Stage&#34;&gt;Stage&lt;/h3&gt;
+&lt;p&gt;阶段：通俗的讲就是步骤（把一件事分解成多个步骤来完成）。 从最上面的图中可以看到在 &lt;code&gt;CI&lt;/code&gt; 中可能会有：&lt;code&gt;Build&lt;/code&gt;、&lt;code&gt;Unit Test&lt;/code&gt; 、&lt;code&gt;Integration Tests&lt;/code&gt; 等多个阶段。&lt;/p&gt;
+&lt;h3 id=&#34;Job&#34;&gt;Job&lt;/h3&gt;
+&lt;p&gt;任务：就是我们在每个阶段具体要做的事情，而一个阶段可能会有多个任务。&lt;/p&gt;
+&lt;h3 id=&#34;Pipelines&#34;&gt;Pipelines&lt;/h3&gt;
+&lt;p&gt;一条流水线 （ &lt;code&gt;pipeline&lt;/code&gt;）就是 &lt;strong&gt;一组&lt;/strong&gt; 在各个阶段执行的任务。在同一阶段的多个任务是可以并行的（如果 &lt;code&gt;Runner&lt;/code&gt; 足够多的话），当全部的任务都执行成功之后流水线将会进入下一个阶段。反之，如果其中有一个任务失败，流水线的下一个阶段将不再执行。&lt;/p&gt;
+&lt;h3 id=&#34;Runners&#34;&gt;Runners&lt;/h3&gt;
+&lt;p&gt;在 Gitlab CI 中，&lt;code&gt;Runner&lt;/code&gt; 负责运行定义在 &lt;code&gt;.gitlab-ci.yml&lt;/code&gt; 中的代码。&lt;code&gt;Runner&lt;/code&gt; 为三种：&lt;code&gt;Shared Runners&lt;/code&gt;、&lt;code&gt;Group Runners&lt;/code&gt;、&lt;code&gt;Specific Runners&lt;/code&gt;，分别表示全局共用 Runner、组共用 Runner、单个项目指定的 Runner。&lt;/p&gt;
+&lt;h3 id=&#34;gitlab-ci-yml&#34;&gt;.gitlab-ci.yml&lt;/h3&gt;
+&lt;p&gt;Gitlab CI 的配置文件，该文件声明了流水线的结构和顺序，以任务为最小单元。&lt;/p&gt;
+&lt;p&gt;文件中允许定义的元素：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#image&#34;&gt;&lt;code&gt;image&lt;/code&gt;&lt;/a&gt;：docker 镜像，当 Gitlab-Runner 的类型为 docker 时，会根据该属性指定的镜像为脚本执行容器。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#services&#34;&gt;&lt;code&gt;services&lt;/code&gt;&lt;/a&gt;: 指定另一个 docker 镜像，主要用于提供服务层的能力，比如 &lt;code&gt;mysql&lt;/code&gt; 。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#before_script-and-after_script&#34;&gt;&lt;code&gt;before_script&lt;/code&gt;&lt;/a&gt;：任务执行前的钩子事件，比如一个 node 项目，我们可以在这里安装依赖。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#before_script-and-after_script&#34;&gt;&lt;code&gt;after_script&lt;/code&gt;&lt;/a&gt;：任务执行后的钩子事件，当所有的任务都执行完毕之后被调用，不管任务是否执行成功。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#stages&#34;&gt;&lt;code&gt;stages&lt;/code&gt;&lt;/a&gt;：定义流水线中的阶段，默认的为 &lt;code&gt;build&lt;/code&gt; 、&lt;code&gt;test&lt;/code&gt;、&lt;code&gt;deploy&lt;/code&gt;。如果我们要在任务中指定其他的 &lt;code&gt;stage&lt;/code&gt;，则需要使用该属性先申明。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#cache&#34;&gt;&lt;code&gt;cache&lt;/code&gt;&lt;/a&gt;：需要缓存的文件，比如 node 项目可以把 node_modules 缓存起来。提示：可以定义在 &lt;code&gt;.gitlab-ci.yml&lt;/code&gt; 顶级表示项目级别的，也可以申明在单个任务中。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#variables&#34;&gt;&lt;code&gt;variables&lt;/code&gt;&lt;/a&gt;：变量，同样可以在顶级或者单个任务中申明。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#pages&#34;&gt;&lt;code&gt;pages&lt;/code&gt;&lt;/a&gt;：内置的一个任务，用于上传任务执行的结果到 &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/user/project/pages/index.html&#34;&gt;Gitlab Pages&lt;/a&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#include&#34;&gt;&lt;code&gt;include&lt;/code&gt;&lt;/a&gt;：合并其他的 &lt;code&gt;.gitlab-ci.yml&lt;/code&gt; 文件配置。&lt;/li&gt;
+&lt;li&gt;在单个任务中申明的元素：
+&lt;ol&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#script&#34;&gt;&lt;code&gt;script&lt;/code&gt;&lt;/a&gt;：需要执行的脚本。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#stage&#34;&gt;&lt;code&gt;stage&lt;/code&gt;&lt;/a&gt;：标识该任务所属的阶段。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#tags&#34;&gt;&lt;code&gt;tags&lt;/code&gt;&lt;/a&gt;：为任务打上标签，用于选择特定的 &lt;code&gt;Runner&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#onlyexcept-basic&#34;&gt;&lt;code&gt;only&lt;/code&gt;&lt;/a&gt;：用于表明何时&lt;strong&gt;创建&lt;/strong&gt;该任务。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#onlyexcept-basic&#34;&gt;&lt;code&gt;except&lt;/code&gt;&lt;/a&gt;：用于表明何时&lt;strong&gt;不创建&lt;/strong&gt;该任务。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#when&#34;&gt;&lt;code&gt;when&lt;/code&gt;&lt;/a&gt;：用于表明何时&lt;strong&gt;运行&lt;/strong&gt;该任务。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#allow_failure&#34;&gt;&lt;code&gt;allow_failure&lt;/code&gt;&lt;/a&gt;：允许失败，该任务失败时不会影响整个流水线的结果。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#artifacts&#34;&gt;&lt;code&gt;artifacts&lt;/code&gt;&lt;/a&gt;：任务执行的结果，比如执行 &lt;code&gt;打包任务&lt;/code&gt; 后的产出资源。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#dependencies&#34;&gt;&lt;code&gt;dependencies&lt;/code&gt;&lt;/a&gt;：依赖的其他任务。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#retry&#34;&gt;&lt;code&gt;retry&lt;/code&gt;&lt;/a&gt;：当任务失败时最多重试的次数。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#coverage&#34;&gt;&lt;code&gt;coverage&lt;/code&gt;&lt;/a&gt;：指定如何从任务结果中提取代码覆盖率。&lt;/li&gt;
+&lt;li&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/ci/yaml/README.html#parallel&#34;&gt;&lt;code&gt;parallel&lt;/code&gt;&lt;/a&gt;：允许并行的任务实例个数。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;请注意版本问题，每个属性对版本的要求并不一致，具体的可以点击属性查看官方文档。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;使用-Gitlab-CI&#34;&gt;使用 Gitlab CI&lt;/h3&gt;
+&lt;p&gt;使用 Gitlab CI 服务的两种方式： 1. &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/topics/autodevops/index.html&#34;&gt;Auto DevOps&lt;/a&gt; 2. 手动配置 CI/CD&lt;/p&gt;
+&lt;h4 id=&#34;Auto-DevOps&#34;&gt;&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/topics/autodevops/index.html&#34;&gt;Auto DevOps&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;Auto DevOps 是 Gitlab 11.0 推出的新功能，它提供了预定义的 CI/CD 配置，允许我们自动检测、构建、测试、发布以及监控应用。&lt;/p&gt;
+&lt;p&gt;暂未使用，待补充。&lt;/p&gt;
+&lt;h4 id=&#34;手动配置-CI-CD&#34;&gt;手动配置 CI/CD&lt;/h4&gt;
+&lt;p&gt;手动配置主要就 2 个步骤，配置 &lt;code&gt;.gitlab-ci.yml&lt;/code&gt; 文件，添加 Gitlab Runner 运行该文件。&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;下面，我们看看如何配置 Gitlab Runner：&lt;/p&gt;
+&lt;h4 id=&#34;Gitlab-Runner&#34;&gt;Gitlab Runner&lt;/h4&gt;
+&lt;p&gt;Gitlab Runner 是一个开源项目，用来运行 &lt;code&gt;.gitlab-ci.yml&lt;/code&gt; 中定义的任务并把结果返给 Gitlab。&lt;/p&gt;
+&lt;h5 id=&#34;安装&#34;&gt;安装&lt;/h5&gt;
+&lt;blockquote&gt;
+&lt;p&gt;官方文档：https://docs.gitlab.com/runner/install/linux-repository.html&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;首先，添加离线仓库：&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-none&#34;&gt;&lt;code class=&#34;language-none&#34;&gt;curl -L https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | sudo bash&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;然后，安装最新版本：&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-none&#34;&gt;&lt;code class=&#34;language-none&#34;&gt;sudo apt-get install gitlab-runner&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h5 id=&#34;注册&#34;&gt;注册&lt;/h5&gt;
+&lt;blockquote&gt;
+&lt;p&gt;官方文档：https://docs.gitlab.com/runner/register/index.html&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;首先，我们进入要配置 Runner 的 Gitlab 仓库，在 &lt;code&gt;Settings -&amp;gt; CI / CD&lt;/code&gt; 页面展开 &lt;code&gt;Runners&lt;/code&gt; 配置面板可以看到已经分配的 Runner 以及注册 Runner 需要的参数：&lt;img src=&#34;https://images.weserv.nl?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2022/04/0820220408170943.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;然后，我们使用 Gitlab-Runner 命名开始注册：&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-none&#34;&gt;&lt;code class=&#34;language-none&#34;&gt;gitlab-runner register&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;执行完会该命令，终端会有交互，要求我们输入以下参数：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;gitlab-ci coordinator url ：gitlab 服务地址&lt;/li&gt;
+&lt;li&gt;gitlab-ci token：上图中的 token&lt;/li&gt;
+&lt;li&gt;description：描述信息&lt;/li&gt;
+&lt;li&gt;tags：标签，对应 &lt;code&gt;.gitlab-ci.yml&lt;/code&gt; 任务中配置的 tags，只有 tags 匹配的任务才会被该 Runner 执行。&lt;/li&gt;
+&lt;li&gt;executor：&lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/runner/executors/README.html&#34;&gt;执行器&lt;/a&gt;，即任务脚本执行的环境&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;如果使用 docker 执行，则需要事先安装 &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.docker.com/install/linux/docker-ce/ubuntu/&#34;&gt;Docker&lt;/a&gt; 环境。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;参数填写完毕之后，一个 Runner 便被注册成功了：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://images.weserv.nl?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2022/04/0820220408170946.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;p&gt;我们回到 gitlab 仓库页面，然后刷新便可以看到 &lt;code&gt;_fzBq4PN&lt;/code&gt; 这个 Runner 已经被注册到该项目：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://images.weserv.nl?url=https://raw.githubusercontent.com/appotry/cloudimg/main/data/2022/04/0820220408170952.png&#34; alt=&#34;img&#34;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;我们可以点击 &lt;code&gt;编辑图标&lt;/code&gt; 对该 Runner 进行修改。我比较喜欢把 &lt;code&gt;Run untagged jobs&lt;/code&gt; 选项勾上，这样就不用每个任务都添加对应的 tags 了（因为现在涉及到的都是一些简单的流程）。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;总结-2&#34;&gt;总结&lt;/h3&gt;
+&lt;p&gt;首先，CI/CD 是一种软件开发流程，Gitlab CI/CD 是 Gitlab 为实现该流程而提供的一个内置工具（服务）。 其次，我们有 &lt;a target=&#34;_blank&#34; rel=&#34;noopener&#34; href=&#34;https://docs.gitlab.com/ce/topics/autodevops/index.html&#34;&gt;Auto DevOps&lt;/a&gt; 与 &lt;code&gt;手动配置&lt;/code&gt; 两种方式使用，本文讲解的主要是 &lt;code&gt;手动配置&lt;/code&gt; 方式。&lt;/p&gt;
+&lt;h2 id=&#34;加速Gitlab-Runner&#34;&gt;加速Gitlab Runner&lt;/h2&gt;
+&lt;blockquote&gt;
+&lt;p&gt;gitlab runner构建镜像每次RUN 安装依赖包，都远程下载?可以缓存加速吗？ 可以的！&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;在将GitLab Runner注册到GitLab page上，让GitLab page可以和你的Runner通信时，有一步是填写使用的executor&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-none&#34;&gt;&lt;code class=&#34;language-none&#34;&gt;输入Runner的executor：
+Please enter the executor: ssh, docker+machine, docker-ssh+machine, kubernetes, docker, parallels, virtualbox, docker-ssh, shell:&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;如果你选择Docker作为Runner的executor，你还要选择默认的docker image来运行job(当然，你也可以在.gitlab-ci.yml里指明你需要用的image),这句话就跟文章使用gitlab-runner往k8s上发送curl命令实现pod中容器使用的镜像版本更新，地址： 开头讲述的那样，不过.gitlab-ci.yml里指明的image优先级高。&lt;/p&gt;
+&lt;p&gt;注册完成后你可以在/etc/gitlab-runner里发现 config.toml文件，该文件是Runner的配置文件&lt;/p&gt;
+&lt;p&gt;接下来就牵涉到一个重要的话题 —— Executor&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Shell Executor&lt;br&gt;
+以宿主机作为Runner的所有jobs的执行器。Runner将会从远程仓库pull你的工程，工程的目录为：/builds。如果你使用了cache，那么cache将会存在/cache/。&lt;br&gt;
+但是，它需要将构建所需的所有依赖手动安装到安装了Runner的同一台计算机上，比如使用到的git,jdk,maven,docekr等&lt;/li&gt;
+&lt;li&gt;Docker Executor&lt;br&gt;
+所有jobs的执行环境为指定的docker image所生成的container，每个job都会生成一个container并且在job结束后立即销毁。这个说的就是config.toml文件和.gitlab-ci.yml中指定的image&lt;br&gt;
+Docker executor默认将所有的builds存储在/builds/(这里的路径是container里的路径，Runner配置文件config.toml里的build_dir字段可以重新指明build的目录，默认对应于宿主机的目录是在宿主机的docker volume下：/var/lib/docker/volumes//_data/)，默认将所有的caches存储在container里的/cache目录(config.toml里的cache_dir字段可以重新指明cache的目录)，注意build_dir和cache_dir指向的均是container里的目录，要想将container里的数据持久化，需要用到volumes字段，这个字段的使用和docker volume的使用是类似的，只需在config.toml的[runner.docker]部分添加volumes = [&#34;/cache&#34;, &#34;:rw&#34;]即可实现container里/cache目录数据的永久保存以及将host目录挂载到相应的container目录并具有读写的功能。&lt;br&gt;
+比如：&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre class=&#34;line-numbers language-none&#34;&gt;&lt;code class=&#34;language-none&#34;&gt;# 仅作展示，未显示完整
+[runners.docker]
+  image = &#34;jdd.io/jre:1.8.275&#34;
+  volumes = [&#34;/cache&#34;,&#34;/run/docker.sock:/run/docker.sock&#34;]&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;当你使用docker 或 docker+machine executors时，你可以通过设置pull_policy来决定Runner如何pull docker image。pull_policy有三种值：&lt;/p&gt;
+&lt;pre class=&#34;line-numbers language-none&#34;&gt;&lt;code class=&#34;language-none&#34;&gt;always —— Runner始终从远程pull docker image。
+if-not-present —— Runner会首先检查本地是否有该image，如果有则用本地的，如果没有则从远程拉取。
+never —— Runner始终使用本地的image。&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;p&gt;注意：这一步就是本文开头提到的，使用本地镜像，不用再从dockerhub上拉取了&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;pre class=&#34;line-numbers language-none&#34;&gt;&lt;code class=&#34;language-none&#34;&gt;# 仅作展示，未显示完整
+[runners.docker]
+  image = &#34;jdd.io/jre:1.8.275&#34;
+  pull_policy=&#34;if-not-present&#34; # 添加这个选项就可以了
+  volumes = [&#34;/cache&#34;,&#34;/run/docker.sock:/run/docker.sock&#34;]&lt;span aria-hidden=&#34;true&#34; class=&#34;line-numbers-rows&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;当你使用docker, docker+machine 或 kubernetes作为executor时，GitLab Runner将会使用特定的container来处理Git、artifacts 和cache 操作。&lt;/p&gt;
+&lt;h2 id=&#34;权限管理&#34;&gt;权限管理&lt;/h2&gt;
+&lt;p&gt;以管理员的身份登入gitlab，点击Settings，然后选择Members，可以通过输入名字选择要分配权限的小组成员，然后分配角色，选择权限有效时间，点击Add to Project就把人员拉近到项目中。&lt;/p&gt;
+&lt;p&gt;GitLab的角色有以下四种：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Guest：可以创建issue、发表评论，不能读写版本库&lt;/li&gt;
+&lt;li&gt;Reporter：可以克隆代码，不能提交，可以赋予测试、产品经理此权限&lt;/li&gt;
+&lt;li&gt;Developer：可以克隆代码、开发、提交、push，可以赋予开发人员此权限&lt;/li&gt;
+&lt;li&gt;MainMaster：可以创建项目、添加tag、保护分支、添加项目成员、编辑项目，一般GitLab管理员或者CTO才有此权限&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;访问权限 - Visibility Level：&lt;/p&gt;
+&lt;p&gt;这个是在建立项目时就需要选定的，主要用于决定哪些人可以访问此项目，包含3种&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Private - 私有，只有属于该项目成员才有原先查看&lt;/li&gt;
+&lt;li&gt;Internal - 内部，用个Gitlab账号的人都可以clone&lt;/li&gt;
+&lt;li&gt;Public - 公开，任何人可以clone&lt;/li&gt;
+&lt;/ul&gt;
 &lt;p&gt;本文作者：夜法之书       写作不易，转载请注明来源地址！&lt;/p&gt;
 &lt;h2 id=&#34;参考链接：&#34;&gt;参考链接：&lt;/h2&gt;
 &lt;ol&gt;
