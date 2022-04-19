@@ -1,150 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Github Pages + jekyll 全面介绍极简搭建个人网站和博客</title>
-    <url>/posts/1991789c/</url>
-    <content><![CDATA[利用github pages搭建个人博客。本文指导建立github工程，并配置github pages搭建博客的全过程。
-注意：图床使用github，图片显示问题自己解决
-第一步，建立Github仓库
-首先到这里Github，创建一个仓库。
-
-仓库名称有固定的格式： username.github.io，其中username必须是Github账户的用户名（我的是scottcgi），github.io是固定的，这个地址将会成为个人站点的网站地址。另外，我们可以勾选Initialize this repository with a README，让仓库自动创建一个README.md文件，我们用它来做站点的首页（当然也可以不创建，后面自行创建，或是建立index.html也行）。
-注意： username如果不是Github账户名，这个仓库就会成为username.github.io的子站点，比如访问地址会是：username.github.io/aaa.github.io。可见，username.github.io是github默认分配给你的域名，同名仓库即代表着默认网站内容。而username.github.io/仓库名称，是用来访问你的其它仓库的地址。
-第二步，设置仓库开启Github Pages
-进入仓库设置界面，如图。
-
-这里能够重新修改仓库的名称，比如这个仓库内容是fork别人的，就可以在这里修改成自己的username.github.io名称。
-
-在Setting页面下有Github Pages的设置选项。绿色表示部署成功，每次修改仓库内容，都会出发Github jekyll重新编译部署，需要1-2分钟的时间，更新才能体现。如果有编译错误，包括js，css，html，markdown语法问题，都会显示红色以及错误页面和行号，同时会发邮件通知。其中，Source有以下几个选项：
-gh-pages branch 是项目新建一个分支命名为这个，使用这个分支来做站点内容。
-master branch 是使用主分支也是默认的，来作为站点内容。
-master branch/docs folder 是使用主分支的docs文件夹来作为站点内容。
-None 就是禁用Github Pages。
-如果是username.github.io只能使用主分支，其它仓库项目可以选择其它两个。接下来Choose a theme是Github提供的内置的网站主题，选择即可应用无需其它设置。Custom domain是自定义域名，本文暂不讨论。
-第三步，使用Github内置主题
-选择好主题，过一会刷新网站地址就已经能看到效果了，而在Code页面仅有两个文件。
-
-编辑README.md文件的内容，就会默认显示在网站首页，_config.yml 是jekyll的全局配置文件，现在里面只有一句话，theme: jekyll-theme-modernist。我们可以手动修改这个theme主题配置，网站就会应用不同的主题。
-Github内置支持的几个主题，官方的仓库在这里：https://pages.github.com/themes，每个README.md里都有介绍如何设置。
-那么我们现在就有两种方法来使用这些主题：
-第一种，就是直接fork一个主题仓库，然后修改仓库名称为我们自己的，然后修改我们需要的部分。
-
-第二种，只是简单的Choose (Change) theme（或在_config.yml设置theme），然后我们对照着官方仓库的主题目录，需要改什么文件就按照同样的路径拷贝单独一个文件到自己的仓库来修改（保持路径一致），这样就可以保持自己仓库的简洁。（如果使用了github内置的主题，github就会把你仓库的内容和内置主题内容合并到一起编译成静态网页。）
-另外，更多主题可以参看这两个地址（不要挑花眼了）： jekyll themes 和 jekyll wiki site。
-第四步，jekyll的目录结构
-我们只需要关注几个核心的目录结构如下（可以自己创建）：
-- _layouts （存放页面模板，md或html文件的内容会填充模板）
-- _sass（存放样式表）
-- _includes （可以复用在其它页面被include的html页面）
-- _posts（博客文章页面）
-- assets（原生的资源文件）
-  - js
-  - css
-  - image
-- _config.yml （全局配置文件）
-- index.html, index.md, README.md （首页index.html优先级最高，如果没有index，默认启用README.md文件）
-- 自定义文件和目录
-  更多更详细的目录结构参看jekyll官网：https://jekyllrb.com/docs/structure
-第五步，jekyll的模板编程语言Liquid的使用
-
-
-变量  被嵌入在页面中，会在静态页面生成的时候被替换成具体的数值。常用的全局变量对象有：site 和 page。这两个对象有很多默认自带的属性，比如：，。更多的默认值参看：https://jekyllrb.com/docs/variables。
-
-
-site对象对应的就是网站范围，自定义变量放在_config.yml中，比如title:标题使用访问。
-
-
-page对象对应的是单个页面，自定义变量放在每个页面的最开头，比如：
-
-
-myNum:100
- 
-myStr:我是字符串
-使用 和  访问。
-条件判断语句，更多详见：https://shopify.github.io/liquid/tags/control-flow
-
-循环迭代，更多详见：https://shopify.github.io/liquid/tags/iteration
-
-默认函数，可以对变量进行一些处理，比如大小写转化、数学运算、格式化、排序等等，在Liquid中叫做Filters。比如{{ "Hello World!" | downcase }}转换字符串为小写。更多内置函数详见：https://jekyllrb.com/docs/liquid/filters
-第六步，使用_config.yml文件设置jekyll
-如果不是fork别人的仓库，就需要自己创建一个这个文件。然后，我们就可以配置一些默认的属性来控制jekyll的编译过程。更多详细的内置属性详见：https://jekyllrb.com/docs/configuration/default
-同时我们可以自定变量，会自动绑定到site对象上，比如我们可以把导航配置到_config.yml中：
-
-
-当然，我们也可以把一些数据单独放入一个yml文件，然后放在固定的数据文件夹_data下，比如_data/navigation.yml，这样访问这个文件的数据对象就是site.data.navigation。
-第七步，_layouts模板配置
-_layouts文件夹存放的是页面模板，默认需要一个default.html，什么意思？就是说，layout提供一个页面的布局框架，这是固定的模式，包括样式、结构、布局、脚本控制等等。然后，我们在用其它md或html文件去动态填充这个框架，这样就形成了一个完整的页面。比如我的default.html页面如下：
-
-
-
-{% seo %} 是jekyll的一个插件提供的seo优化，详情在这里：https://github.com/jekyll/jekyll-seo-tag
-核心在于 content 这个变量是内置的，会用我们的md或html页面填充这部分内容。
-其它的，我们看到会大量使用变量和流程控制代码，来填充模板的方方面面。
-于是，填充模板的内容，一方面是来自读取配置文件的变量，一方面是来自_includes的页面，还有就是来自 content 对应的页面。
-当然，我们也可以不使用 content 来填充模板，而是使用_includes的页面来代替content  ，但这样不够灵活，因为使用content ，我们可以在每个页面单独设置对应的layout模板。
-
-第八步，md和html页面编写
-站点内容页面，可以使用markdown或html来编写，但markdown编写的md文件，在浏览器地址访问的时候依然使用html文件后缀。推荐使用markdown来书写内容，语法参见：Github md 示例 和 Github md 教程。比如下面这个About.md页面：
----
-layout: default
-title: About
----
-# About page
- 
-This page tells you a little bit about me.
- 
-layout: default 就是告诉jekyll这个页面使用哪个模板，即这个页面会放入哪个模板的content。当然，我们可以在_layouts文件夹下提供多个不同的模板，然后根据需要不同的页面使用不同的layout。
-页面可以放在任意位置和目录，访问的时候从站点域名开始，带上目录名称，再次注意需要使用html结尾。如果想要自定义浏览器的访问路径，可以参看详细设置：permalinks。
-md和html页面的区别：
-md有自己的语法，可以使用少量的html标签，最终会编译成html，侧重于内容编写。
-html可以随意使用html标签，可以使用liquid模板语言，侧重于页面模板和功能控制。
-至此，我们就可以在github上，新建md文件然后编辑提交，等待几分钟编译生成之后，就可以在浏览器里看到页面内容了。
-第九步，博客文章编写和管理
-我们自然可以新建目录，提交文章，然后添加一个文章列表页面。但我们也可以把这些交给jekyll的内置机制来完成，因为它提供了一些方便的内置文章管理功能。
-
-_posts文件夹是内置的放置文章的目录，我们可以将固定格式year-moth-day-name.md名称的md文件放到这里。比如新建一篇md的博客文章放到_posts目录下：
-
----
-layout: post
----
-这是一篇博客文章。
-
-
-接下来我们需要添加一个post的模板页面到_layouts文件夹下面。
-
-
-可见，模板页面本身也可以使用模板，这里post使用了default模板，而这里 content 就会填充_posts下面编写的页面（如果页面使用了layout: post模板）。
-最后，我们还需要编写一个博客文章列表的页面，用来展示所有的文章。比如在根目录新建blog.html页面：
-
-
-site.posts jekyll会自动生成_posts目录的对象。
-_post.url jekyll会自动会设置在_posts目录下的页面url。
-post.title 默认是md文件名称，但也可以在文章页面自定义title: 我的文章自定义名称。
-post.excerpt 默认是文章第一段的摘要文字。
-
-第十步，Github Pages的限制
-
-Github Pages 并不是无限存储和无限流量的静态站点服务，一些限制如下：
-内容存储不能超过1GB。
-每个月100GB流量带宽。
-每小时编译构建次数不超过10次。（在线修改重新编译并未发现这个限制）
-更多参看官方说明：usage-limits。
-
-总结
-在实际的使用过程中，我发现完全可以在Github网站上，编写md和html页面，修改js和css文件，来完成站点的设置和搭建。只不过每次修改都要触发Github jekyll的编译行为，有点慢（不知道是不是增量编译），没有在本地修改调试的速度快。
-更多jekyll详细的设置和功能，参看官方网站的文档：https://jekyllrb.com/docs。
-原文链接：https://blog.csdn.net/tom_221x/article/details/84630283
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>github</tag>
-        <tag>jekyll</tag>
-        <tag>blog</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Gitlab的安装及使用</title>
     <url>/posts/d08eb7b/</url>
     <content><![CDATA[Gitlab概述
@@ -9493,9 +9349,9 @@ CI/CD与Git Flow与GitLab
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>hexo</tag>
         <tag>matery</tag>
+        <tag>github</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
       </tags>
@@ -10240,6 +10096,382 @@ From： https://cloud.tencent.com/developer/article/1160037?from=article.detail.
       <tags>
         <tag>ai</tag>
         <tag>face</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Vim IDE Docker 以及中文指南</title>
+    <url>/posts/647e6265/</url>
+    <content><![CDATA[
+Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！
+
+Vim Docker
+
+docker pull bloodstar/vim
+alias edit='docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim' 
+edit some.file 
+alias edit_update="docker pull bloodstar/vim:latest"
+Vim IDE Docker
+
+What's inside:
+
+Alpine Linux
+Vim + a ton of awesome plugins see bloodstar/vim:latest
+Good support of Golang development with bloodstar/go-tools container
+tmux
+powerline
+Mosh
+OpenSSH, Bash, OMF, Python, etc.
+
+how to start the daemon(and all containers)
+docker create -v '/usr/lib/go' --name go-tools \
+'bloodstar/go-tools' '/bin/true'
+
+docker run -v $('pwd'):/home/developer/workspace \
+--volumes-from go-tools \
+-v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
+-v /etc/localtime:/etc/localtime:ro \
+-d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
+--name drop-in bloodstar/drop-in
+-v /etc/localtime:/etc/localtime:ro - makes tmux display local time
+how to connect:
+mosh --ssh="ssh -p 62222" -- developer@$&lt;ip&gt; tmux -u
+or without host identity check:
+mosh --ssh="ssh -o StrictHostKeyChecking=no -p 62222" -- developer@$&lt;ip&gt; tmux -u
+Useful Bash scripts
+Connect
+#!/bin/bash
+ip=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' drop-in)
+mosh --ssh="ssh -p 62222" -- developer@$ip tmux -u
+start the daemon(and all containers)
+#!/bin/bash
+dtc_id=$(docker ps -a -q --filter 'name=vim-go-tools')
+if [[ -z "${dtc_id}" ]]; then
+ echo 'vim-go-tools container not found. Creating...'
+ docker create -v '/usr/lib/go' --name 'vim-go-tools' \
+   'bloodstar/go-tools' '/bin/true'
+ echo 'Done!'
+fi
+echo 'starting daemon...'
+docker run -v $('pwd'):/home/developer/workspace \
+  --volumes-from vim-go-tools \
+  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
+  -v /etc/localtime:/etc/localtime:ro \
+  -e "GEMAIL=&lt;github email&gt;" \
+  -e "GNAME=&lt;github name&gt;" \
+  -d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
+  --name drop-in bloodstar/drop-in
+echo 'Done!'
+Vim 中文快查表   &lt;= 戳这里
+
+Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！
+快去看看吧。
+
+Vim
+
+]]></content>
+      <categories>
+        <category>tools</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>docker</tag>
+        <tag>vim</tag>
+        <tag>ide</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>从文学的角度，分析韩红的《天亮了》</title>
+    <url>/posts/cb623532/</url>
+    <content><![CDATA[现场MV
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-giCPyXYxHeyvGhhV").style.height=document.getElementById("mmedia-giCPyXYxHeyvGhhV").scrollWidth*0.76+"px";
+    window.onresize = function(){
+      document.getElementById("mmedia-giCPyXYxHeyvGhhV").style.height=document.getElementById("mmedia-giCPyXYxHeyvGhhV").scrollWidth*0.76+"px";
+    }; 
+
+精品分析： 原作：石晶兰 短文吧
+再做个传送门： 天亮了，听歌时，关灯，准备纸巾。
+
+先分析结构。
+看歌词。
+那是一个秋天，风儿那么缠绵，
+让我想起他们那双无助的眼。
+就在那美丽风景相伴的地方，
+我听到一声巨响震彻山谷。
+就是那个秋天，再看不到爸爸的脸。
+他用他的双肩，托起我重生的起点。
+黑暗中泪水沾满了双眼，
+不要离开不要伤害。
+共八行，等于两个四行。
+两个四行一一对应，前三行，旋律基本是相同的。只有最后一行，为了与后面衔接，所以不同。
+两个四行的布置，等于是一种重复。
+这样的重要，在文学结构上，常见于起承。
+但歌，相当于诗。囿于篇幅，在结构上，通常会有所缺失。起承两者，一般缺失的，都是起。那样的做法，也就是直接叙事，存在让受众猝不及防的弊病。
+然后，《天亮了》并不是。
+“那是一个秋天，风儿那么缠绵”和“就是那个秋天”分明是起。
+所以，《天亮了》并没有进行文学结构上的省略。
+“那是一个秋天，风儿那么缠绵”是起，接紧着的三行歌词，自然就是承了。
+那么，第五行“就是那个秋天”怎么又来一个起呢？
+自然是因为篇幅太短，叙事不够（前面承得不够），所以，还需要再承一下。
+不能够不要第五行的起，直接往下写吗？
+真要说的话，其实也能。不过，再加四行承，真的就能把事情说清楚吗？
+显然，韩红想要表达的东西很多，她认为，不能。
+仅靠精练语言，明显是不够的，还需要换角度陈述。
+第五行的再起，实际上，就是为后面的换角度承，打基础的。
+这种写法，也是有先例的。请看邓丽君《相见在明天》歌词：
+记得我俩初相见，
+风吹花儿飞满天。
+你说我的笑容像花朵，
+比那花儿更娇艳。
+我还记得那一天，
+送你送到小河边。
+手牵着手呀心里有千言，
+相对却无言。
+跟《天亮了》一样，《相见在明天》也是两个四行，也是起承起承。
+并且，两起两承，还跟诗词的押韵一样，其重复，不仅有加深印象的作用，更有共鸣回旋的作用，正是唐陈子昂所说的“音情顿挫”的顿挫，极大的提升了作品的美感，让受众的接受度大大提高，
+继续看《天亮了》歌词：
+我看到爸爸妈妈就这么走远，
+留下我在这陌生的人世间。
+不知道未来还会有什么风险。
+我想要紧紧抓住他的手。
+妈妈告诉我希望还会有。
+看到太阳出来妈妈笑了。
+天亮了。
+六行都是转。具体在这里，自然不是转折，而是高那个潮。
+此处值得一说的是合，只有三个字“天亮了”。
+这三个字，正好也是这首歌的歌名。
+但是这三个字表达的，到底是什么意思、什么情感呢？
+题都城南庄/唐/崔护
+去年今日此门中，人面桃花相映红。
+人面不知何处去，桃花依旧笑春风。
+不难看出，最后一句“桃花依旧笑春风”跟前面三句的叙述，是接不上的。
+去年这儿，有人面有桃花。今年这儿人面没有了，接下来说的通常是：还真是让人怀念啊。
+俗吗？的确俗。并且，还不仅仅是俗，还存在因为什么而怀念那个姑娘的严重问题。
+动机不纯的话，写出来就会玷污那个姑娘。动机纯粹，只是单纯的对美好事物的欣赏，写出来的话，又有自夸之嫌。
+还真是不好写啊。
+不好写，干脆就不写，另起一笔：“桃花依旧笑春风”。究竟表达的是什么样的滋味，让受众自己去想。
+《天亮了》末尾的合“天亮了”，就是“桃花依旧笑春风”这种表现手法。太多的感情，千言万语，加总在一起，实在难以挽上疙瘩。于是，就另起一行，来了句看似关系不大的“天亮了”，让一切，尽在无言中。
+不同的受众，会有不同的感受。因而这种让受众自己去想的结尾，总是余味无穷。
+文学结构分析，就到这儿。第二段的结构跟第一段相同，就不讲了。
+下面进行逐句评讲。
+“那是一个秋天，风儿那么缠绵，”没毛病。“那是”开头，虽然不出彩，但是很自然，容易被人接受，接着往下听。
+“让我想起他们那双无助的眼。”这里，“他们”是两个人；“那双”眼睛虽然是复数，但落实到人，却是单数。因此，这是一个小错误。
+很显然，用相同性质的词语直接替换是不行的，譬如“四只”。四，数量较多，会分散受众的注意力，让受众去思考为什么是四。因而，如果硬要改的话，只能用其它性质的词语去替换，譬如“彷徨”。
+但“彷徨无助”，又稍显生僻，会影响听者的接受速度，形成不怎么大的接受障碍。而如果也用“无”的话，无什么呢？无神？听上去，岂不是比“彷徨无助”更不容易分辨。
+所以，实在要改，就只能把“他们”二字挪到这儿。
+那样一来，“让我想起”就要掺进两个水字了，譬如“风儿让我想起”。
+是不是太水了？
+于是，我最终感觉，还是不改为好。
+小错误嘛，存在也无妨。这就像文豪写书法一样，多一点少一点，多一笔少一笑，根本不算错误，关键是，那个字不能被错认为是别的字。
+“那双无助的眼”也一样，虽然存在小错误，但由于不影响表达内容，听者一听，就知道是怎么回事。由于没有影响信息传递，所以不改也是行的。
+“就在那美丽风景相伴的地方，我听到一声巨响震彻山谷。”这两小句，没有基础毛病。
+值得注意的是，这两小句，存在一个对比：一个美丽的地方，一件悲惨的事。颇有一种把美好的事情撕烂了给读者看的悲剧色彩。
+“就是那个秋天，再看不到爸爸的脸。”
+为什么提到爸爸没提到妈妈？爸爸妈妈，可以一起提，也可以先后提。这里，实际上是先后提。先提爸爸，后面会提到妈妈。
+先提爸爸，又比先提妈妈要好。这是因为，时至今日，最不令人怀疑的，是父女情。虽然背景事件中，那是个儿子，但韩红是女的，唱出来的声音又带有明显的女性特征。女声，提到爸爸，无形中，就相当于女儿提到爸爸。其中的感情，就往父女情的方向靠近了那么一点，让听者一下就能接受，丝毫没有怀疑。
+“他用他的双肩，托起我重生的起点。”
+背景事件的具体经过，可能生还的当事人都已经记不清楚了。这一句，属于带有归纳性、比拟性的描述。因而不需要因为“用”“双肩托起”，去询问是不是父亲从洪水中救起了儿子那样的细节。
+“黑暗中泪水沾满了双眼，”
+“黑暗中”很妙。只描述了环境，没有指明时间。那其实表达的是，若干个“黑暗中”。包括当时，也包括事后。并且，“黑暗”有天然的，也有人为的。天然的，譬如天黑加停电；人为的，譬如钻进被窝里。这些，都被包括了进去。
+“不要离开、不要伤害。”这句，就有些难度了。
+“不要离开”好理解。可以是儿子对父母的呼唤。但“不要伤害”呢？
+“不要伤害”，到底是谁对谁发出的呐喊，后面再讲。
+“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。不知道未来还会有什么风险。”
+三小句，基础上没毛病。直接看上去，字面意思表达能力似乎稍弱。真是不是，后面再说。
+“我想要紧紧抓住他的手”中的“他”，指父亲，也可以指母亲。
+“妈妈告诉我希望还会有。看到太阳出来妈妈笑了。”这是绝望中的回忆。这一家人，以前也是经受过苦难的。在曾经难熬的岁月中，妈妈曾经多次鼓励过儿子。鼓励的时候，有直述“告诉我希望还会有”，也有以身作则“看到太阳出来，妈妈笑了”。
+“天亮了。”尽在不言中，就不再讲了。
+“这是一个夜晚天上宿星点点，我在梦里看见我的妈妈。”
+继“那是”之后，此处出现了“这是”。表示已经是事后，灾难之后。
+“一个人在世上要学会坚强”，很明显，这不是儿子对父母能够说出的话。
+结合前一小句“我在梦里看见我的妈妈”，可以发现，这是妈妈对儿子说的话。并且还是死去之后的妈妈对儿子所说的话。
+“我在梦里看见我的妈妈。一个人在世上要学会坚强”紧接着的两句，主语变了。前一句是“我”，后一句是“妈妈”。同时，又因为死去的人继续说话这一违反科学常理的设定，使得后一句主语“妈妈”变得有些难以理解。
+其实，受众的心，也是强大的。多听两遍，也还是能够理解的。
+这两句主语的变化，从玄学的角度看，简单。但从文学的角度看，跳跃就非常大了。
+唐/李白有句：“千里江陵一日还”。“千里江陵”说的是千里之外的江陵。站在什么地方能够说出此话，自然是白帝城。“还”，指回来，站在什么地方能够说“还”，当然只能是江陵。就这么一句，视角就从白帝城跳到了江陵。
+《天亮了》中，这两句紧挨着的歌词的主语跳跃，其实跟“千里江陵一日还”的视角跳跃，是相似的类型。
+“你不要离开不要伤害”上一段出现过，就不讲了。
+“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。”
+比较上一段，区别的，是第三小句。此处的第三小句，从陈述中跳脱出来了，相当于插入了一个事后的心愿。
+“我想要紧紧抓住他的手。妈妈告诉我希望还会有，看到太阳出来、天亮了。”
+比较上一段，区别的仍然是第三小句。“妈妈笑了”变成“天亮了”。但此处的“天亮了”，跟前面不一样，并不是起承转合的合，不是收尾，而就是一个简单的陈述，其实质，就相当于“妈妈笑了”。
+“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。
+“我想要紧紧抓住他的手。妈妈告诉我希望还会有。看到太阳出来，他们笑了。”
+重复，强调，加倍。略有不同的，就是“妈妈笑了”变成“他们笑了”。由“妈妈”变成“他们”，实际上也在告诉受众，马上就要收尾了。
+以什么收尾，收到哪里呢？依然还是“天亮了”，尽在不言中，让受众自己去想，
+不知道是哪年哪天了，无意中，我就这么偶然听到了这首歌。
+一听，就感受很好听。
+一听，就听出来了，里面讲述了一场事故。因为有“我听到一声巨响震彻山谷”、“再看不到爸爸的脸”。
+另外，还听出了事故中，父母对孩子的救助。因为有“他用他的双肩托起我重生的起点”。
+很明显，事故是悲惨的，事故中的父母是可歌可泣的，事故之后的儿子或女儿（从歌词中听不出孩子的性别）是可怜的。
+但是，就这么算了么？
+这么好听的歌，最后一句“天亮了”到底表述的是怎样的感情？
+没弄清楚，怎么能算完。
+生活中，有各种各样的事故。最常见的，恐怕应该是车祸。
+车祸事故，几乎每天都能够在地方新闻上看到。
+看到车祸事故的新闻，心中有什么感受？
+悲伤么？自然没有。
+一般来说，亲人，才会悲伤。陌生人，通常只是略带同情、怜悯。
+此处说的是，同样的事，因为自身角度的不同，感受大不相同。
+那么，《天亮了》应该站在什么样的角度去欣赏呢？
+最容易想到的角度，有两个。
+一是生还的儿子或女儿。但是，站在这个角度欣赏，“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间，不知道未来还会有什么风险。”真的弱爆了。
+另一个角度，则是富有同情心的旁观善良人士。这个角度的存在，是因为韩红。因为，就这么看过去，韩红，对于此次事故，似乎就是富有同情心的旁观善良人士。
+但这个角度还是不行。“黑暗中泪水沾满了双眼”，没什么感觉。
+于是乎，就剩下了不常见的角度——死去父母的角度！
+我试着想象了这样的角度，再听《天亮了》，眼泪一下子就出来了。
+我是在这之后，才搜索得知了《天亮了》的创作背景。
+是的，韩红，把自己当作那个孩子的父母，并且还把自己当作了孩子死去的父母。《天亮了》这首歌，表达的是死者对生者的寄托！
+重新再看歌词。“黑暗中泪水沾满了双眼”，所指的，就不仅仅是事后孩子多次在被窝里痛哭，并且还指死去的父母在地狱中带泪含悲。
+“不要离开”，只是孩子对父母的呼唤么？已然不是。以父母为参照物，生存的孩子，又何尝不是一种离开。
+当然不是说想要孩子一起死，否则就不会用双肩托起重生的起点了。
+“不要伤害”的答案，此时就出来了。那就是死去的父母发出的呐喊。呐喊的对象是天地——老天爷，不要伤害我们的孩子！
+“一个人在世上要学会坚强”不再是父母对自己的叮嘱，而是自己，对自己幸存的子女的叮嘱。
+于是乎，最后一句合中的“天亮了”，就表达了深深的无奈。
+天亮了，通常指清晨，代表的是希望。但是，对于死者来说，天亮了，就代表魂魄状态的死者必须离开。
+这是自然规律，死者必须离开。不想离开，也必须离开。因为——天亮了。
+难怪韩红唱这三个字的时候，泣不成声。
+题外话又冒出来了。
+我曾经进行过无数次评论。有那么一个人，曾经对于我的少部分评论非常不服。那就是，关于李白的诗的评论。
+他认为，一件事物，可以从好坏两方面去说。他认为，李白的诗，就像打油诗，水平并不高。只是因为我的评论，才变得水平绝高了。
+具体的说法就是，我先假定李诗水平绝高，然后往去往绝高的方向分析。
+我的确也是这样做的。
+但是，别人的诗，也可以假定为水平绝高啊，难道说真的就能分析出水平绝高来吗？
+譬如杜甫的“三顾频烦天下计”。“顾频烦”三字的“页”旁，看不见吗？不擅书法，才会视而不见，所以杜甫不擅书法。是“频烦天下计”么？明明就只烦了一次。次数相对较多的，反而是“顾”，顾了三次。于是这句应该读成“三顾频、烦天下计”。这水平还怎么绝高呢？
+相似的例子还有很多。无论是谁的作品，都能事先假定为水平绝高。但只有李白的诗，才会真的分析出水平绝高的答案出来。
+所以，李诗的水平，是真的绝高。
+这番题外话，表达的是，前面关于《天亮了》的评论，或许韩红自己并没那么想，或者韩红没想那么多，或许《天亮了》就仅仅是韩红的偶然之得。
+我要说的是，《天亮了》既然已经成为作品，那么它就脱离了作者韩红，变成了一种独立的存在。不能因为韩红的文学水平不够高，而去否认《天亮了》的文学成就。
+我的确是抱着欣赏的态度，先假定《天亮了》文学水平很高，然后真往极高文学水平的方向去分析的。但是很幸运，我得出了《天亮了》文学水平果然很高的结论。
+换首别的歌，行吗？
+谁说行，谁上。
+最后，我还要说的是，文学水平，所指的，并不仅仅是文字方面的能力。
+在打基础的时候，在斟酌字词句，在训练表达力、说服力的阶段，的确单指文字方面。
+但是，在跨入感染力阶段之后，就不是了。
+更多的，是提高心性。
+心性高了，视角就不同了，感受也随之不同了，不管是写出来的作品，还是唱出来的歌，那都是不同的。
+很多人说邓丽君的演唱水平并不高，那是不对的。应该说，邓丽君的演唱水平，其实很多人都达到过。个别的，譬如韩红，偶尔还超越过。
+但是，为什么邓丽君流传下来的歌曲就那么多呢？其他歌者流传下来的歌就那么少呢？
+就是因为心性。
+心性与感染力关系，最容易明白的例子，就是翻唱。
+《何日君在来》、《船歌》在邓丽君翻唱之前，并不好听，结果邓丽君一唱，就化腐朽为神奇了。
+恰好，韩红也有过化腐朽为神奇的表现，譬如《妹妹找哥泪花流》、《天之大》（可搜）。
+心性如此之高的韩红，偶得《天亮了》极高文学水准的作品，就是正常的了。
+（全文完）
+]]></content>
+      <categories>
+        <category>music</category>
+      </categories>
+      <tags>
+        <tag>music</tag>
+        <tag>韩红</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>解决Thinkpad笔记本喇叭破音问题！</title>
+    <url>/posts/c945eae1/</url>
+    <content><![CDATA[问题
+主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。
+分析
+从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。
+解决方案
+如是，网购了一个新喇叭，拆机，换上，完美解决问题！
+喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。
+
+
+
+这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。
+型号：Thinkpad T4X0S
+
+]]></content>
+      <categories>
+        <category>life</category>
+      </categories>
+      <tags>
+        <tag>thinkpad</tag>
+        <tag>sound</tag>
+        <tag>speaker</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>http 错误代码表</title>
+    <url>/posts/80906b88/</url>
+    <content><![CDATA[所有 HTTP 状态代码及其定义。
+　代码&nbsp;&nbsp;指示&nbsp;&nbsp;
+2xx&nbsp;&nbsp;成功&nbsp;&nbsp;
+200&nbsp;&nbsp;正常；请求已完成。&nbsp;&nbsp;
+201&nbsp;&nbsp;正常；紧接 POST 命令。&nbsp;&nbsp;
+202&nbsp;&nbsp;正常；已接受用于处理，但处理尚未完成。&nbsp;&nbsp;
+203&nbsp;&nbsp;正常；部分信息 — 返回的信息只是一部分。&nbsp;&nbsp;
+204&nbsp;&nbsp;正常；无响应 — 已接收请求，但不存在要回送的信息。&nbsp;&nbsp;
+3xx&nbsp;&nbsp;重定向&nbsp;&nbsp;
+301&nbsp;&nbsp;已移动 — 请求的数据具有新的位置且更改是永久的。&nbsp;&nbsp;
+302&nbsp;&nbsp;已找到 — 请求的数据临时具有不同 URI。&nbsp;&nbsp;
+303&nbsp;&nbsp;请参阅其它 — 可在另一 URI 下找到对请求的响应，且应使用 GET 方法检索此响应。&nbsp;&nbsp;
+304&nbsp;&nbsp;未修改 — 未按预期修改文档。&nbsp;&nbsp;
+305&nbsp;&nbsp;使用代理 — 必须通过位置字段中提供的代理来访问请求的资源。&nbsp;&nbsp;
+306&nbsp;&nbsp;未使用 — 不再使用；保留此代码以便将来使用。&nbsp;&nbsp;
+4xx&nbsp;&nbsp;客户机中出现的错误&nbsp;&nbsp;
+400&nbsp;&nbsp;错误请求 — 请求中有语法问题，或不能满足请求。&nbsp;&nbsp;
+401&nbsp;&nbsp;未授权 — 未授权客户机访问数据。&nbsp;&nbsp;
+402&nbsp;&nbsp;需要付款 — 表示计费系统已有效。&nbsp;&nbsp;
+403&nbsp;&nbsp;禁止 — 即使有授权也不需要访问。&nbsp;&nbsp;
+404&nbsp;&nbsp;找不到 — 服务器找不到给定的资源；文档不存在。&nbsp;&nbsp;
+407&nbsp;&nbsp;代理认证请求 — 客户机首先必须使用代理认证自身。&nbsp;&nbsp;
+415&nbsp;&nbsp;介质类型不受支持 — 服务器拒绝服务请求，因为不支持请求实体的格式。&nbsp;&nbsp;
+5xx&nbsp;&nbsp;服务器中出现的错误&nbsp;&nbsp;
+500&nbsp;&nbsp;内部错误 — 因为意外情况，服务器不能完成请求。&nbsp;&nbsp;
+501&nbsp;&nbsp;未执行 — 服务器不支持请求的工具。&nbsp;&nbsp;
+502&nbsp;&nbsp;错误网关 — 服务器接收到来自上游服务器的无效响应。&nbsp;&nbsp;
+503&nbsp;&nbsp;无法获得服务 — 由于临时过载或维护，服务器无法处理请求。
+
+HTTP&nbsp;400&nbsp;-&nbsp;请求无效&nbsp;
+HTTP&nbsp;401.1&nbsp;-&nbsp;未授权：登录失败&nbsp;
+HTTP&nbsp;401.2&nbsp;-&nbsp;未授权：服务器配置问题导致登录失败&nbsp;
+HTTP&nbsp;401.3&nbsp;-&nbsp;ACL&nbsp;禁止访问资源&nbsp;
+HTTP&nbsp;401.4&nbsp;-&nbsp;未授权：授权被筛选器拒绝&nbsp;
+HTTP&nbsp;401.5&nbsp;-&nbsp;未授权：ISAPI&nbsp;或&nbsp;CGI&nbsp;授权失败&nbsp;&nbsp;
+HTTP&nbsp;403&nbsp;-&nbsp;禁止访问&nbsp;
+HTTP&nbsp;403&nbsp;-&nbsp;对&nbsp;Internet&nbsp;服务管理器&nbsp;(HTML)&nbsp;的访问仅限于&nbsp;Localhost&nbsp;
+HTTP&nbsp;403.1&nbsp;禁止访问：禁止可执行访问&nbsp;
+HTTP&nbsp;403.2&nbsp;-&nbsp;禁止访问：禁止读访问&nbsp;
+HTTP&nbsp;403.3&nbsp;-&nbsp;禁止访问：禁止写访问&nbsp;
+HTTP&nbsp;403.4&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;
+HTTP&nbsp;403.5&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;128&nbsp;
+HTTP&nbsp;403.6&nbsp;-&nbsp;禁止访问：IP&nbsp;地址被拒绝&nbsp;
+HTTP&nbsp;403.7&nbsp;-&nbsp;禁止访问：要求客户证书&nbsp;
+HTTP&nbsp;403.8&nbsp;-&nbsp;禁止访问：禁止站点访问&nbsp;
+HTTP&nbsp;403.9&nbsp;-&nbsp;禁止访问：连接的用户过多&nbsp;
+HTTP&nbsp;403.10&nbsp;-&nbsp;禁止访问：配置无效&nbsp;
+HTTP&nbsp;403.11&nbsp;-&nbsp;禁止访问：密码更改&nbsp;
+HTTP&nbsp;403.12&nbsp;-&nbsp;禁止访问：映射器拒绝访问&nbsp;
+HTTP&nbsp;403.13&nbsp;-&nbsp;禁止访问：客户证书已被吊销&nbsp;
+HTTP&nbsp;403.15&nbsp;-&nbsp;禁止访问：客户访问许可过多&nbsp;
+HTTP&nbsp;403.16&nbsp;-&nbsp;禁止访问：客户证书不可信或者无效&nbsp;
+HTTP&nbsp;403.17&nbsp;-&nbsp;禁止访问：客户证书已经到期或者尚未生效&nbsp;
+HTTP&nbsp;404.1&nbsp;-&nbsp;无法找到&nbsp;Web&nbsp;站点&nbsp;
+HTTP&nbsp;404&nbsp;-&nbsp;无法找到文件&nbsp;
+HTTP&nbsp;405&nbsp;-&nbsp;资源被禁止&nbsp;
+HTTP&nbsp;406&nbsp;-&nbsp;无法接受&nbsp;
+HTTP&nbsp;407&nbsp;-&nbsp;要求代理身份验证&nbsp;
+HTTP&nbsp;410&nbsp;-&nbsp;永远不可用&nbsp;
+HTTP&nbsp;412&nbsp;-&nbsp;先决条件失败&nbsp;
+HTTP&nbsp;414&nbsp;-&nbsp;请求&nbsp;-&nbsp;URI&nbsp;太长&nbsp;
+HTTP&nbsp;500&nbsp;-&nbsp;内部服务器错误&nbsp;
+HTTP&nbsp;500.100&nbsp;-&nbsp;内部服务器错误&nbsp;-&nbsp;ASP&nbsp;错误&nbsp;
+HTTP&nbsp;500-11&nbsp;服务器关闭&nbsp;
+HTTP&nbsp;500-12&nbsp;应用程序重新启动&nbsp;
+HTTP&nbsp;500-13&nbsp;-&nbsp;服务器太忙&nbsp;
+HTTP&nbsp;500-14&nbsp;-&nbsp;应用程序无效&nbsp;
+HTTP&nbsp;500-15&nbsp;-&nbsp;不允许请求&nbsp;global.asa&nbsp;
+Error&nbsp;501&nbsp;-&nbsp;未实现&nbsp;
+HTTP&nbsp;502&nbsp;-&nbsp;网关错误
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
       </tags>
   </entry>
   <entry>
@@ -11693,382 +11925,6 @@ From https://mp.weixin.qq.com/s/UtYENocSsl0R10h8fww7Iw
         <tag>web</tag>
         <tag>http</tag>
         <tag>ccs</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Vim IDE Docker 以及中文指南</title>
-    <url>/posts/647e6265/</url>
-    <content><![CDATA[
-Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！
-
-Vim Docker
-
-docker pull bloodstar/vim
-alias edit='docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim' 
-edit some.file 
-alias edit_update="docker pull bloodstar/vim:latest"
-Vim IDE Docker
-
-What's inside:
-
-Alpine Linux
-Vim + a ton of awesome plugins see bloodstar/vim:latest
-Good support of Golang development with bloodstar/go-tools container
-tmux
-powerline
-Mosh
-OpenSSH, Bash, OMF, Python, etc.
-
-how to start the daemon(and all containers)
-docker create -v '/usr/lib/go' --name go-tools \
-'bloodstar/go-tools' '/bin/true'
-
-docker run -v $('pwd'):/home/developer/workspace \
---volumes-from go-tools \
--v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
--v /etc/localtime:/etc/localtime:ro \
--d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
---name drop-in bloodstar/drop-in
--v /etc/localtime:/etc/localtime:ro - makes tmux display local time
-how to connect:
-mosh --ssh="ssh -p 62222" -- developer@$&lt;ip&gt; tmux -u
-or without host identity check:
-mosh --ssh="ssh -o StrictHostKeyChecking=no -p 62222" -- developer@$&lt;ip&gt; tmux -u
-Useful Bash scripts
-Connect
-#!/bin/bash
-ip=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' drop-in)
-mosh --ssh="ssh -p 62222" -- developer@$ip tmux -u
-start the daemon(and all containers)
-#!/bin/bash
-dtc_id=$(docker ps -a -q --filter 'name=vim-go-tools')
-if [[ -z "${dtc_id}" ]]; then
- echo 'vim-go-tools container not found. Creating...'
- docker create -v '/usr/lib/go' --name 'vim-go-tools' \
-   'bloodstar/go-tools' '/bin/true'
- echo 'Done!'
-fi
-echo 'starting daemon...'
-docker run -v $('pwd'):/home/developer/workspace \
-  --volumes-from vim-go-tools \
-  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
-  -v /etc/localtime:/etc/localtime:ro \
-  -e "GEMAIL=&lt;github email&gt;" \
-  -e "GNAME=&lt;github name&gt;" \
-  -d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
-  --name drop-in bloodstar/drop-in
-echo 'Done!'
-Vim 中文快查表   &lt;= 戳这里
-
-Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！
-快去看看吧。
-
-Vim
-
-]]></content>
-      <categories>
-        <category>tools</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>docker</tag>
-        <tag>vim</tag>
-        <tag>ide</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>从文学的角度，分析韩红的《天亮了》</title>
-    <url>/posts/cb623532/</url>
-    <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-RXtmWuNwTKTkDKNc").style.height=document.getElementById("mmedia-RXtmWuNwTKTkDKNc").scrollWidth*0.76+"px";
-    window.onresize = function(){
-      document.getElementById("mmedia-RXtmWuNwTKTkDKNc").style.height=document.getElementById("mmedia-RXtmWuNwTKTkDKNc").scrollWidth*0.76+"px";
-    }; 
-
-精品分析： 原作：石晶兰 短文吧
-再做个传送门： 天亮了，听歌时，关灯，准备纸巾。
-
-先分析结构。
-看歌词。
-那是一个秋天，风儿那么缠绵，
-让我想起他们那双无助的眼。
-就在那美丽风景相伴的地方，
-我听到一声巨响震彻山谷。
-就是那个秋天，再看不到爸爸的脸。
-他用他的双肩，托起我重生的起点。
-黑暗中泪水沾满了双眼，
-不要离开不要伤害。
-共八行，等于两个四行。
-两个四行一一对应，前三行，旋律基本是相同的。只有最后一行，为了与后面衔接，所以不同。
-两个四行的布置，等于是一种重复。
-这样的重要，在文学结构上，常见于起承。
-但歌，相当于诗。囿于篇幅，在结构上，通常会有所缺失。起承两者，一般缺失的，都是起。那样的做法，也就是直接叙事，存在让受众猝不及防的弊病。
-然后，《天亮了》并不是。
-“那是一个秋天，风儿那么缠绵”和“就是那个秋天”分明是起。
-所以，《天亮了》并没有进行文学结构上的省略。
-“那是一个秋天，风儿那么缠绵”是起，接紧着的三行歌词，自然就是承了。
-那么，第五行“就是那个秋天”怎么又来一个起呢？
-自然是因为篇幅太短，叙事不够（前面承得不够），所以，还需要再承一下。
-不能够不要第五行的起，直接往下写吗？
-真要说的话，其实也能。不过，再加四行承，真的就能把事情说清楚吗？
-显然，韩红想要表达的东西很多，她认为，不能。
-仅靠精练语言，明显是不够的，还需要换角度陈述。
-第五行的再起，实际上，就是为后面的换角度承，打基础的。
-这种写法，也是有先例的。请看邓丽君《相见在明天》歌词：
-记得我俩初相见，
-风吹花儿飞满天。
-你说我的笑容像花朵，
-比那花儿更娇艳。
-我还记得那一天，
-送你送到小河边。
-手牵着手呀心里有千言，
-相对却无言。
-跟《天亮了》一样，《相见在明天》也是两个四行，也是起承起承。
-并且，两起两承，还跟诗词的押韵一样，其重复，不仅有加深印象的作用，更有共鸣回旋的作用，正是唐陈子昂所说的“音情顿挫”的顿挫，极大的提升了作品的美感，让受众的接受度大大提高，
-继续看《天亮了》歌词：
-我看到爸爸妈妈就这么走远，
-留下我在这陌生的人世间。
-不知道未来还会有什么风险。
-我想要紧紧抓住他的手。
-妈妈告诉我希望还会有。
-看到太阳出来妈妈笑了。
-天亮了。
-六行都是转。具体在这里，自然不是转折，而是高那个潮。
-此处值得一说的是合，只有三个字“天亮了”。
-这三个字，正好也是这首歌的歌名。
-但是这三个字表达的，到底是什么意思、什么情感呢？
-题都城南庄/唐/崔护
-去年今日此门中，人面桃花相映红。
-人面不知何处去，桃花依旧笑春风。
-不难看出，最后一句“桃花依旧笑春风”跟前面三句的叙述，是接不上的。
-去年这儿，有人面有桃花。今年这儿人面没有了，接下来说的通常是：还真是让人怀念啊。
-俗吗？的确俗。并且，还不仅仅是俗，还存在因为什么而怀念那个姑娘的严重问题。
-动机不纯的话，写出来就会玷污那个姑娘。动机纯粹，只是单纯的对美好事物的欣赏，写出来的话，又有自夸之嫌。
-还真是不好写啊。
-不好写，干脆就不写，另起一笔：“桃花依旧笑春风”。究竟表达的是什么样的滋味，让受众自己去想。
-《天亮了》末尾的合“天亮了”，就是“桃花依旧笑春风”这种表现手法。太多的感情，千言万语，加总在一起，实在难以挽上疙瘩。于是，就另起一行，来了句看似关系不大的“天亮了”，让一切，尽在无言中。
-不同的受众，会有不同的感受。因而这种让受众自己去想的结尾，总是余味无穷。
-文学结构分析，就到这儿。第二段的结构跟第一段相同，就不讲了。
-下面进行逐句评讲。
-“那是一个秋天，风儿那么缠绵，”没毛病。“那是”开头，虽然不出彩，但是很自然，容易被人接受，接着往下听。
-“让我想起他们那双无助的眼。”这里，“他们”是两个人；“那双”眼睛虽然是复数，但落实到人，却是单数。因此，这是一个小错误。
-很显然，用相同性质的词语直接替换是不行的，譬如“四只”。四，数量较多，会分散受众的注意力，让受众去思考为什么是四。因而，如果硬要改的话，只能用其它性质的词语去替换，譬如“彷徨”。
-但“彷徨无助”，又稍显生僻，会影响听者的接受速度，形成不怎么大的接受障碍。而如果也用“无”的话，无什么呢？无神？听上去，岂不是比“彷徨无助”更不容易分辨。
-所以，实在要改，就只能把“他们”二字挪到这儿。
-那样一来，“让我想起”就要掺进两个水字了，譬如“风儿让我想起”。
-是不是太水了？
-于是，我最终感觉，还是不改为好。
-小错误嘛，存在也无妨。这就像文豪写书法一样，多一点少一点，多一笔少一笑，根本不算错误，关键是，那个字不能被错认为是别的字。
-“那双无助的眼”也一样，虽然存在小错误，但由于不影响表达内容，听者一听，就知道是怎么回事。由于没有影响信息传递，所以不改也是行的。
-“就在那美丽风景相伴的地方，我听到一声巨响震彻山谷。”这两小句，没有基础毛病。
-值得注意的是，这两小句，存在一个对比：一个美丽的地方，一件悲惨的事。颇有一种把美好的事情撕烂了给读者看的悲剧色彩。
-“就是那个秋天，再看不到爸爸的脸。”
-为什么提到爸爸没提到妈妈？爸爸妈妈，可以一起提，也可以先后提。这里，实际上是先后提。先提爸爸，后面会提到妈妈。
-先提爸爸，又比先提妈妈要好。这是因为，时至今日，最不令人怀疑的，是父女情。虽然背景事件中，那是个儿子，但韩红是女的，唱出来的声音又带有明显的女性特征。女声，提到爸爸，无形中，就相当于女儿提到爸爸。其中的感情，就往父女情的方向靠近了那么一点，让听者一下就能接受，丝毫没有怀疑。
-“他用他的双肩，托起我重生的起点。”
-背景事件的具体经过，可能生还的当事人都已经记不清楚了。这一句，属于带有归纳性、比拟性的描述。因而不需要因为“用”“双肩托起”，去询问是不是父亲从洪水中救起了儿子那样的细节。
-“黑暗中泪水沾满了双眼，”
-“黑暗中”很妙。只描述了环境，没有指明时间。那其实表达的是，若干个“黑暗中”。包括当时，也包括事后。并且，“黑暗”有天然的，也有人为的。天然的，譬如天黑加停电；人为的，譬如钻进被窝里。这些，都被包括了进去。
-“不要离开、不要伤害。”这句，就有些难度了。
-“不要离开”好理解。可以是儿子对父母的呼唤。但“不要伤害”呢？
-“不要伤害”，到底是谁对谁发出的呐喊，后面再讲。
-“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。不知道未来还会有什么风险。”
-三小句，基础上没毛病。直接看上去，字面意思表达能力似乎稍弱。真是不是，后面再说。
-“我想要紧紧抓住他的手”中的“他”，指父亲，也可以指母亲。
-“妈妈告诉我希望还会有。看到太阳出来妈妈笑了。”这是绝望中的回忆。这一家人，以前也是经受过苦难的。在曾经难熬的岁月中，妈妈曾经多次鼓励过儿子。鼓励的时候，有直述“告诉我希望还会有”，也有以身作则“看到太阳出来，妈妈笑了”。
-“天亮了。”尽在不言中，就不再讲了。
-“这是一个夜晚天上宿星点点，我在梦里看见我的妈妈。”
-继“那是”之后，此处出现了“这是”。表示已经是事后，灾难之后。
-“一个人在世上要学会坚强”，很明显，这不是儿子对父母能够说出的话。
-结合前一小句“我在梦里看见我的妈妈”，可以发现，这是妈妈对儿子说的话。并且还是死去之后的妈妈对儿子所说的话。
-“我在梦里看见我的妈妈。一个人在世上要学会坚强”紧接着的两句，主语变了。前一句是“我”，后一句是“妈妈”。同时，又因为死去的人继续说话这一违反科学常理的设定，使得后一句主语“妈妈”变得有些难以理解。
-其实，受众的心，也是强大的。多听两遍，也还是能够理解的。
-这两句主语的变化，从玄学的角度看，简单。但从文学的角度看，跳跃就非常大了。
-唐/李白有句：“千里江陵一日还”。“千里江陵”说的是千里之外的江陵。站在什么地方能够说出此话，自然是白帝城。“还”，指回来，站在什么地方能够说“还”，当然只能是江陵。就这么一句，视角就从白帝城跳到了江陵。
-《天亮了》中，这两句紧挨着的歌词的主语跳跃，其实跟“千里江陵一日还”的视角跳跃，是相似的类型。
-“你不要离开不要伤害”上一段出现过，就不讲了。
-“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。”
-比较上一段，区别的，是第三小句。此处的第三小句，从陈述中跳脱出来了，相当于插入了一个事后的心愿。
-“我想要紧紧抓住他的手。妈妈告诉我希望还会有，看到太阳出来、天亮了。”
-比较上一段，区别的仍然是第三小句。“妈妈笑了”变成“天亮了”。但此处的“天亮了”，跟前面不一样，并不是起承转合的合，不是收尾，而就是一个简单的陈述，其实质，就相当于“妈妈笑了”。
-“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。
-“我想要紧紧抓住他的手。妈妈告诉我希望还会有。看到太阳出来，他们笑了。”
-重复，强调，加倍。略有不同的，就是“妈妈笑了”变成“他们笑了”。由“妈妈”变成“他们”，实际上也在告诉受众，马上就要收尾了。
-以什么收尾，收到哪里呢？依然还是“天亮了”，尽在不言中，让受众自己去想，
-不知道是哪年哪天了，无意中，我就这么偶然听到了这首歌。
-一听，就感受很好听。
-一听，就听出来了，里面讲述了一场事故。因为有“我听到一声巨响震彻山谷”、“再看不到爸爸的脸”。
-另外，还听出了事故中，父母对孩子的救助。因为有“他用他的双肩托起我重生的起点”。
-很明显，事故是悲惨的，事故中的父母是可歌可泣的，事故之后的儿子或女儿（从歌词中听不出孩子的性别）是可怜的。
-但是，就这么算了么？
-这么好听的歌，最后一句“天亮了”到底表述的是怎样的感情？
-没弄清楚，怎么能算完。
-生活中，有各种各样的事故。最常见的，恐怕应该是车祸。
-车祸事故，几乎每天都能够在地方新闻上看到。
-看到车祸事故的新闻，心中有什么感受？
-悲伤么？自然没有。
-一般来说，亲人，才会悲伤。陌生人，通常只是略带同情、怜悯。
-此处说的是，同样的事，因为自身角度的不同，感受大不相同。
-那么，《天亮了》应该站在什么样的角度去欣赏呢？
-最容易想到的角度，有两个。
-一是生还的儿子或女儿。但是，站在这个角度欣赏，“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间，不知道未来还会有什么风险。”真的弱爆了。
-另一个角度，则是富有同情心的旁观善良人士。这个角度的存在，是因为韩红。因为，就这么看过去，韩红，对于此次事故，似乎就是富有同情心的旁观善良人士。
-但这个角度还是不行。“黑暗中泪水沾满了双眼”，没什么感觉。
-于是乎，就剩下了不常见的角度——死去父母的角度！
-我试着想象了这样的角度，再听《天亮了》，眼泪一下子就出来了。
-我是在这之后，才搜索得知了《天亮了》的创作背景。
-是的，韩红，把自己当作那个孩子的父母，并且还把自己当作了孩子死去的父母。《天亮了》这首歌，表达的是死者对生者的寄托！
-重新再看歌词。“黑暗中泪水沾满了双眼”，所指的，就不仅仅是事后孩子多次在被窝里痛哭，并且还指死去的父母在地狱中带泪含悲。
-“不要离开”，只是孩子对父母的呼唤么？已然不是。以父母为参照物，生存的孩子，又何尝不是一种离开。
-当然不是说想要孩子一起死，否则就不会用双肩托起重生的起点了。
-“不要伤害”的答案，此时就出来了。那就是死去的父母发出的呐喊。呐喊的对象是天地——老天爷，不要伤害我们的孩子！
-“一个人在世上要学会坚强”不再是父母对自己的叮嘱，而是自己，对自己幸存的子女的叮嘱。
-于是乎，最后一句合中的“天亮了”，就表达了深深的无奈。
-天亮了，通常指清晨，代表的是希望。但是，对于死者来说，天亮了，就代表魂魄状态的死者必须离开。
-这是自然规律，死者必须离开。不想离开，也必须离开。因为——天亮了。
-难怪韩红唱这三个字的时候，泣不成声。
-题外话又冒出来了。
-我曾经进行过无数次评论。有那么一个人，曾经对于我的少部分评论非常不服。那就是，关于李白的诗的评论。
-他认为，一件事物，可以从好坏两方面去说。他认为，李白的诗，就像打油诗，水平并不高。只是因为我的评论，才变得水平绝高了。
-具体的说法就是，我先假定李诗水平绝高，然后往去往绝高的方向分析。
-我的确也是这样做的。
-但是，别人的诗，也可以假定为水平绝高啊，难道说真的就能分析出水平绝高来吗？
-譬如杜甫的“三顾频烦天下计”。“顾频烦”三字的“页”旁，看不见吗？不擅书法，才会视而不见，所以杜甫不擅书法。是“频烦天下计”么？明明就只烦了一次。次数相对较多的，反而是“顾”，顾了三次。于是这句应该读成“三顾频、烦天下计”。这水平还怎么绝高呢？
-相似的例子还有很多。无论是谁的作品，都能事先假定为水平绝高。但只有李白的诗，才会真的分析出水平绝高的答案出来。
-所以，李诗的水平，是真的绝高。
-这番题外话，表达的是，前面关于《天亮了》的评论，或许韩红自己并没那么想，或者韩红没想那么多，或许《天亮了》就仅仅是韩红的偶然之得。
-我要说的是，《天亮了》既然已经成为作品，那么它就脱离了作者韩红，变成了一种独立的存在。不能因为韩红的文学水平不够高，而去否认《天亮了》的文学成就。
-我的确是抱着欣赏的态度，先假定《天亮了》文学水平很高，然后真往极高文学水平的方向去分析的。但是很幸运，我得出了《天亮了》文学水平果然很高的结论。
-换首别的歌，行吗？
-谁说行，谁上。
-最后，我还要说的是，文学水平，所指的，并不仅仅是文字方面的能力。
-在打基础的时候，在斟酌字词句，在训练表达力、说服力的阶段，的确单指文字方面。
-但是，在跨入感染力阶段之后，就不是了。
-更多的，是提高心性。
-心性高了，视角就不同了，感受也随之不同了，不管是写出来的作品，还是唱出来的歌，那都是不同的。
-很多人说邓丽君的演唱水平并不高，那是不对的。应该说，邓丽君的演唱水平，其实很多人都达到过。个别的，譬如韩红，偶尔还超越过。
-但是，为什么邓丽君流传下来的歌曲就那么多呢？其他歌者流传下来的歌就那么少呢？
-就是因为心性。
-心性与感染力关系，最容易明白的例子，就是翻唱。
-《何日君在来》、《船歌》在邓丽君翻唱之前，并不好听，结果邓丽君一唱，就化腐朽为神奇了。
-恰好，韩红也有过化腐朽为神奇的表现，譬如《妹妹找哥泪花流》、《天之大》（可搜）。
-心性如此之高的韩红，偶得《天亮了》极高文学水准的作品，就是正常的了。
-（全文完）
-]]></content>
-      <categories>
-        <category>music</category>
-      </categories>
-      <tags>
-        <tag>music</tag>
-        <tag>韩红</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>解决Thinkpad笔记本喇叭破音问题！</title>
-    <url>/posts/c945eae1/</url>
-    <content><![CDATA[问题
-主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。
-分析
-从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。
-解决方案
-如是，网购了一个新喇叭，拆机，换上，完美解决问题！
-喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。
-
-
-
-这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。
-型号：Thinkpad T4X0S
-
-]]></content>
-      <categories>
-        <category>life</category>
-      </categories>
-      <tags>
-        <tag>thinkpad</tag>
-        <tag>sound</tag>
-        <tag>speaker</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>http 错误代码表</title>
-    <url>/posts/80906b88/</url>
-    <content><![CDATA[所有 HTTP 状态代码及其定义。
-　代码&nbsp;&nbsp;指示&nbsp;&nbsp;
-2xx&nbsp;&nbsp;成功&nbsp;&nbsp;
-200&nbsp;&nbsp;正常；请求已完成。&nbsp;&nbsp;
-201&nbsp;&nbsp;正常；紧接 POST 命令。&nbsp;&nbsp;
-202&nbsp;&nbsp;正常；已接受用于处理，但处理尚未完成。&nbsp;&nbsp;
-203&nbsp;&nbsp;正常；部分信息 — 返回的信息只是一部分。&nbsp;&nbsp;
-204&nbsp;&nbsp;正常；无响应 — 已接收请求，但不存在要回送的信息。&nbsp;&nbsp;
-3xx&nbsp;&nbsp;重定向&nbsp;&nbsp;
-301&nbsp;&nbsp;已移动 — 请求的数据具有新的位置且更改是永久的。&nbsp;&nbsp;
-302&nbsp;&nbsp;已找到 — 请求的数据临时具有不同 URI。&nbsp;&nbsp;
-303&nbsp;&nbsp;请参阅其它 — 可在另一 URI 下找到对请求的响应，且应使用 GET 方法检索此响应。&nbsp;&nbsp;
-304&nbsp;&nbsp;未修改 — 未按预期修改文档。&nbsp;&nbsp;
-305&nbsp;&nbsp;使用代理 — 必须通过位置字段中提供的代理来访问请求的资源。&nbsp;&nbsp;
-306&nbsp;&nbsp;未使用 — 不再使用；保留此代码以便将来使用。&nbsp;&nbsp;
-4xx&nbsp;&nbsp;客户机中出现的错误&nbsp;&nbsp;
-400&nbsp;&nbsp;错误请求 — 请求中有语法问题，或不能满足请求。&nbsp;&nbsp;
-401&nbsp;&nbsp;未授权 — 未授权客户机访问数据。&nbsp;&nbsp;
-402&nbsp;&nbsp;需要付款 — 表示计费系统已有效。&nbsp;&nbsp;
-403&nbsp;&nbsp;禁止 — 即使有授权也不需要访问。&nbsp;&nbsp;
-404&nbsp;&nbsp;找不到 — 服务器找不到给定的资源；文档不存在。&nbsp;&nbsp;
-407&nbsp;&nbsp;代理认证请求 — 客户机首先必须使用代理认证自身。&nbsp;&nbsp;
-415&nbsp;&nbsp;介质类型不受支持 — 服务器拒绝服务请求，因为不支持请求实体的格式。&nbsp;&nbsp;
-5xx&nbsp;&nbsp;服务器中出现的错误&nbsp;&nbsp;
-500&nbsp;&nbsp;内部错误 — 因为意外情况，服务器不能完成请求。&nbsp;&nbsp;
-501&nbsp;&nbsp;未执行 — 服务器不支持请求的工具。&nbsp;&nbsp;
-502&nbsp;&nbsp;错误网关 — 服务器接收到来自上游服务器的无效响应。&nbsp;&nbsp;
-503&nbsp;&nbsp;无法获得服务 — 由于临时过载或维护，服务器无法处理请求。
-
-HTTP&nbsp;400&nbsp;-&nbsp;请求无效&nbsp;
-HTTP&nbsp;401.1&nbsp;-&nbsp;未授权：登录失败&nbsp;
-HTTP&nbsp;401.2&nbsp;-&nbsp;未授权：服务器配置问题导致登录失败&nbsp;
-HTTP&nbsp;401.3&nbsp;-&nbsp;ACL&nbsp;禁止访问资源&nbsp;
-HTTP&nbsp;401.4&nbsp;-&nbsp;未授权：授权被筛选器拒绝&nbsp;
-HTTP&nbsp;401.5&nbsp;-&nbsp;未授权：ISAPI&nbsp;或&nbsp;CGI&nbsp;授权失败&nbsp;&nbsp;
-HTTP&nbsp;403&nbsp;-&nbsp;禁止访问&nbsp;
-HTTP&nbsp;403&nbsp;-&nbsp;对&nbsp;Internet&nbsp;服务管理器&nbsp;(HTML)&nbsp;的访问仅限于&nbsp;Localhost&nbsp;
-HTTP&nbsp;403.1&nbsp;禁止访问：禁止可执行访问&nbsp;
-HTTP&nbsp;403.2&nbsp;-&nbsp;禁止访问：禁止读访问&nbsp;
-HTTP&nbsp;403.3&nbsp;-&nbsp;禁止访问：禁止写访问&nbsp;
-HTTP&nbsp;403.4&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;
-HTTP&nbsp;403.5&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;128&nbsp;
-HTTP&nbsp;403.6&nbsp;-&nbsp;禁止访问：IP&nbsp;地址被拒绝&nbsp;
-HTTP&nbsp;403.7&nbsp;-&nbsp;禁止访问：要求客户证书&nbsp;
-HTTP&nbsp;403.8&nbsp;-&nbsp;禁止访问：禁止站点访问&nbsp;
-HTTP&nbsp;403.9&nbsp;-&nbsp;禁止访问：连接的用户过多&nbsp;
-HTTP&nbsp;403.10&nbsp;-&nbsp;禁止访问：配置无效&nbsp;
-HTTP&nbsp;403.11&nbsp;-&nbsp;禁止访问：密码更改&nbsp;
-HTTP&nbsp;403.12&nbsp;-&nbsp;禁止访问：映射器拒绝访问&nbsp;
-HTTP&nbsp;403.13&nbsp;-&nbsp;禁止访问：客户证书已被吊销&nbsp;
-HTTP&nbsp;403.15&nbsp;-&nbsp;禁止访问：客户访问许可过多&nbsp;
-HTTP&nbsp;403.16&nbsp;-&nbsp;禁止访问：客户证书不可信或者无效&nbsp;
-HTTP&nbsp;403.17&nbsp;-&nbsp;禁止访问：客户证书已经到期或者尚未生效&nbsp;
-HTTP&nbsp;404.1&nbsp;-&nbsp;无法找到&nbsp;Web&nbsp;站点&nbsp;
-HTTP&nbsp;404&nbsp;-&nbsp;无法找到文件&nbsp;
-HTTP&nbsp;405&nbsp;-&nbsp;资源被禁止&nbsp;
-HTTP&nbsp;406&nbsp;-&nbsp;无法接受&nbsp;
-HTTP&nbsp;407&nbsp;-&nbsp;要求代理身份验证&nbsp;
-HTTP&nbsp;410&nbsp;-&nbsp;永远不可用&nbsp;
-HTTP&nbsp;412&nbsp;-&nbsp;先决条件失败&nbsp;
-HTTP&nbsp;414&nbsp;-&nbsp;请求&nbsp;-&nbsp;URI&nbsp;太长&nbsp;
-HTTP&nbsp;500&nbsp;-&nbsp;内部服务器错误&nbsp;
-HTTP&nbsp;500.100&nbsp;-&nbsp;内部服务器错误&nbsp;-&nbsp;ASP&nbsp;错误&nbsp;
-HTTP&nbsp;500-11&nbsp;服务器关闭&nbsp;
-HTTP&nbsp;500-12&nbsp;应用程序重新启动&nbsp;
-HTTP&nbsp;500-13&nbsp;-&nbsp;服务器太忙&nbsp;
-HTTP&nbsp;500-14&nbsp;-&nbsp;应用程序无效&nbsp;
-HTTP&nbsp;500-15&nbsp;-&nbsp;不允许请求&nbsp;global.asa&nbsp;
-Error&nbsp;501&nbsp;-&nbsp;未实现&nbsp;
-HTTP&nbsp;502&nbsp;-&nbsp;网关错误
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
       </tags>
   </entry>
   <entry>
@@ -16059,11 +15915,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var kmtkwfvXzWHcKNli_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); kmtkwfvXzWHcKNli_options.container = document.getElementById("mmedia-kmtkwfvXzWHcKNli"); const ap_kmtkwfvXzWHcKNli = new APlayer(kmtkwfvXzWHcKNli_options); 
+ var YlhgEsZePpHCKBJi_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); YlhgEsZePpHCKBJi_options.container = document.getElementById("mmedia-YlhgEsZePpHCKBJi"); const ap_YlhgEsZePpHCKBJi = new APlayer(YlhgEsZePpHCKBJi_options); 
 
 - **列表**
 
- var WTDWLAjFgLzCAzhI_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); WTDWLAjFgLzCAzhI_options.container = document.getElementById("mmedia-WTDWLAjFgLzCAzhI"); const ap_WTDWLAjFgLzCAzhI = new APlayer(WTDWLAjFgLzCAzhI_options); 
+ var lKmyFNvmchQnLTyu_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); lKmyFNvmchQnLTyu_options.container = document.getElementById("mmedia-lKmyFNvmchQnLTyu"); const ap_lKmyFNvmchQnLTyu = new APlayer(lKmyFNvmchQnLTyu_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -16315,21 +16171,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-YxOWEGYiJBbGPbxt").style.height=document.getElementById("mmedia-YxOWEGYiJBbGPbxt").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-AGmQexSGrThcPRHL").style.height=document.getElementById("mmedia-AGmQexSGrThcPRHL").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-YxOWEGYiJBbGPbxt").style.height=document.getElementById("mmedia-YxOWEGYiJBbGPbxt").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-AGmQexSGrThcPRHL").style.height=document.getElementById("mmedia-AGmQexSGrThcPRHL").scrollWidth*0.76+"px";
     }; 
 
 **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-EwyckOEhsjYjTJbN").style.height=document.getElementById("mmedia-EwyckOEhsjYjTJbN").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-OOzDWaqzqdwoLdTI").style.height=document.getElementById("mmedia-OOzDWaqzqdwoLdTI").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-EwyckOEhsjYjTJbN").style.height=document.getElementById("mmedia-EwyckOEhsjYjTJbN").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-OOzDWaqzqdwoLdTI").style.height=document.getElementById("mmedia-OOzDWaqzqdwoLdTI").scrollWidth*0.7+"px";
     }; 
 
 **artplayer**
 
- var QdFiuSVfThvHQLbv_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); QdFiuSVfThvHQLbv_options.container = "#mmedia-QdFiuSVfThvHQLbv"; const art_QdFiuSVfThvHQLbv = new Artplayer(QdFiuSVfThvHQLbv_options); 
+ var RcxVbZTglwsNQYxV_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); RcxVbZTglwsNQYxV_options.container = "#mmedia-RcxVbZTglwsNQYxV"; const art_RcxVbZTglwsNQYxV = new Artplayer(RcxVbZTglwsNQYxV_options); 
 脑图
 
 原作者记录
@@ -17454,6 +17310,150 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
+    <title>Github Pages + jekyll 全面介绍极简搭建个人网站和博客</title>
+    <url>/posts/1991789c/</url>
+    <content><![CDATA[利用github pages搭建个人博客。本文指导建立github工程，并配置github pages搭建博客的全过程。
+注意：图床使用github，图片显示问题自己解决
+第一步，建立Github仓库
+首先到这里Github，创建一个仓库。
+
+仓库名称有固定的格式： username.github.io，其中username必须是Github账户的用户名（我的是scottcgi），github.io是固定的，这个地址将会成为个人站点的网站地址。另外，我们可以勾选Initialize this repository with a README，让仓库自动创建一个README.md文件，我们用它来做站点的首页（当然也可以不创建，后面自行创建，或是建立index.html也行）。
+注意： username如果不是Github账户名，这个仓库就会成为username.github.io的子站点，比如访问地址会是：username.github.io/aaa.github.io。可见，username.github.io是github默认分配给你的域名，同名仓库即代表着默认网站内容。而username.github.io/仓库名称，是用来访问你的其它仓库的地址。
+第二步，设置仓库开启Github Pages
+进入仓库设置界面，如图。
+
+这里能够重新修改仓库的名称，比如这个仓库内容是fork别人的，就可以在这里修改成自己的username.github.io名称。
+
+在Setting页面下有Github Pages的设置选项。绿色表示部署成功，每次修改仓库内容，都会出发Github jekyll重新编译部署，需要1-2分钟的时间，更新才能体现。如果有编译错误，包括js，css，html，markdown语法问题，都会显示红色以及错误页面和行号，同时会发邮件通知。其中，Source有以下几个选项：
+gh-pages branch 是项目新建一个分支命名为这个，使用这个分支来做站点内容。
+master branch 是使用主分支也是默认的，来作为站点内容。
+master branch/docs folder 是使用主分支的docs文件夹来作为站点内容。
+None 就是禁用Github Pages。
+如果是username.github.io只能使用主分支，其它仓库项目可以选择其它两个。接下来Choose a theme是Github提供的内置的网站主题，选择即可应用无需其它设置。Custom domain是自定义域名，本文暂不讨论。
+第三步，使用Github内置主题
+选择好主题，过一会刷新网站地址就已经能看到效果了，而在Code页面仅有两个文件。
+
+编辑README.md文件的内容，就会默认显示在网站首页，_config.yml 是jekyll的全局配置文件，现在里面只有一句话，theme: jekyll-theme-modernist。我们可以手动修改这个theme主题配置，网站就会应用不同的主题。
+Github内置支持的几个主题，官方的仓库在这里：https://pages.github.com/themes，每个README.md里都有介绍如何设置。
+那么我们现在就有两种方法来使用这些主题：
+第一种，就是直接fork一个主题仓库，然后修改仓库名称为我们自己的，然后修改我们需要的部分。
+
+第二种，只是简单的Choose (Change) theme（或在_config.yml设置theme），然后我们对照着官方仓库的主题目录，需要改什么文件就按照同样的路径拷贝单独一个文件到自己的仓库来修改（保持路径一致），这样就可以保持自己仓库的简洁。（如果使用了github内置的主题，github就会把你仓库的内容和内置主题内容合并到一起编译成静态网页。）
+另外，更多主题可以参看这两个地址（不要挑花眼了）： jekyll themes 和 jekyll wiki site。
+第四步，jekyll的目录结构
+我们只需要关注几个核心的目录结构如下（可以自己创建）：
+- _layouts （存放页面模板，md或html文件的内容会填充模板）
+- _sass（存放样式表）
+- _includes （可以复用在其它页面被include的html页面）
+- _posts（博客文章页面）
+- assets（原生的资源文件）
+  - js
+  - css
+  - image
+- _config.yml （全局配置文件）
+- index.html, index.md, README.md （首页index.html优先级最高，如果没有index，默认启用README.md文件）
+- 自定义文件和目录
+  更多更详细的目录结构参看jekyll官网：https://jekyllrb.com/docs/structure
+第五步，jekyll的模板编程语言Liquid的使用
+
+
+变量  被嵌入在页面中，会在静态页面生成的时候被替换成具体的数值。常用的全局变量对象有：site 和 page。这两个对象有很多默认自带的属性，比如：，。更多的默认值参看：https://jekyllrb.com/docs/variables。
+
+
+site对象对应的就是网站范围，自定义变量放在_config.yml中，比如title:标题使用访问。
+
+
+page对象对应的是单个页面，自定义变量放在每个页面的最开头，比如：
+
+
+myNum:100
+ 
+myStr:我是字符串
+使用 和  访问。
+条件判断语句，更多详见：https://shopify.github.io/liquid/tags/control-flow
+
+循环迭代，更多详见：https://shopify.github.io/liquid/tags/iteration
+
+默认函数，可以对变量进行一些处理，比如大小写转化、数学运算、格式化、排序等等，在Liquid中叫做Filters。比如{{ "Hello World!" | downcase }}转换字符串为小写。更多内置函数详见：https://jekyllrb.com/docs/liquid/filters
+第六步，使用_config.yml文件设置jekyll
+如果不是fork别人的仓库，就需要自己创建一个这个文件。然后，我们就可以配置一些默认的属性来控制jekyll的编译过程。更多详细的内置属性详见：https://jekyllrb.com/docs/configuration/default
+同时我们可以自定变量，会自动绑定到site对象上，比如我们可以把导航配置到_config.yml中：
+
+
+当然，我们也可以把一些数据单独放入一个yml文件，然后放在固定的数据文件夹_data下，比如_data/navigation.yml，这样访问这个文件的数据对象就是site.data.navigation。
+第七步，_layouts模板配置
+_layouts文件夹存放的是页面模板，默认需要一个default.html，什么意思？就是说，layout提供一个页面的布局框架，这是固定的模式，包括样式、结构、布局、脚本控制等等。然后，我们在用其它md或html文件去动态填充这个框架，这样就形成了一个完整的页面。比如我的default.html页面如下：
+
+
+
+{% seo %} 是jekyll的一个插件提供的seo优化，详情在这里：https://github.com/jekyll/jekyll-seo-tag
+核心在于 content 这个变量是内置的，会用我们的md或html页面填充这部分内容。
+其它的，我们看到会大量使用变量和流程控制代码，来填充模板的方方面面。
+于是，填充模板的内容，一方面是来自读取配置文件的变量，一方面是来自_includes的页面，还有就是来自 content 对应的页面。
+当然，我们也可以不使用 content 来填充模板，而是使用_includes的页面来代替content  ，但这样不够灵活，因为使用content ，我们可以在每个页面单独设置对应的layout模板。
+
+第八步，md和html页面编写
+站点内容页面，可以使用markdown或html来编写，但markdown编写的md文件，在浏览器地址访问的时候依然使用html文件后缀。推荐使用markdown来书写内容，语法参见：Github md 示例 和 Github md 教程。比如下面这个About.md页面：
+---
+layout: default
+title: About
+---
+# About page
+ 
+This page tells you a little bit about me.
+ 
+layout: default 就是告诉jekyll这个页面使用哪个模板，即这个页面会放入哪个模板的content。当然，我们可以在_layouts文件夹下提供多个不同的模板，然后根据需要不同的页面使用不同的layout。
+页面可以放在任意位置和目录，访问的时候从站点域名开始，带上目录名称，再次注意需要使用html结尾。如果想要自定义浏览器的访问路径，可以参看详细设置：permalinks。
+md和html页面的区别：
+md有自己的语法，可以使用少量的html标签，最终会编译成html，侧重于内容编写。
+html可以随意使用html标签，可以使用liquid模板语言，侧重于页面模板和功能控制。
+至此，我们就可以在github上，新建md文件然后编辑提交，等待几分钟编译生成之后，就可以在浏览器里看到页面内容了。
+第九步，博客文章编写和管理
+我们自然可以新建目录，提交文章，然后添加一个文章列表页面。但我们也可以把这些交给jekyll的内置机制来完成，因为它提供了一些方便的内置文章管理功能。
+
+_posts文件夹是内置的放置文章的目录，我们可以将固定格式year-moth-day-name.md名称的md文件放到这里。比如新建一篇md的博客文章放到_posts目录下：
+
+---
+layout: post
+---
+这是一篇博客文章。
+
+
+接下来我们需要添加一个post的模板页面到_layouts文件夹下面。
+
+
+可见，模板页面本身也可以使用模板，这里post使用了default模板，而这里 content 就会填充_posts下面编写的页面（如果页面使用了layout: post模板）。
+最后，我们还需要编写一个博客文章列表的页面，用来展示所有的文章。比如在根目录新建blog.html页面：
+
+
+site.posts jekyll会自动生成_posts目录的对象。
+_post.url jekyll会自动会设置在_posts目录下的页面url。
+post.title 默认是md文件名称，但也可以在文章页面自定义title: 我的文章自定义名称。
+post.excerpt 默认是文章第一段的摘要文字。
+
+第十步，Github Pages的限制
+
+Github Pages 并不是无限存储和无限流量的静态站点服务，一些限制如下：
+内容存储不能超过1GB。
+每个月100GB流量带宽。
+每小时编译构建次数不超过10次。（在线修改重新编译并未发现这个限制）
+更多参看官方说明：usage-limits。
+
+总结
+在实际的使用过程中，我发现完全可以在Github网站上，编写md和html页面，修改js和css文件，来完成站点的设置和搭建。只不过每次修改都要触发Github jekyll的编译行为，有点慢（不知道是不是增量编译），没有在本地修改调试的速度快。
+更多jekyll详细的设置和功能，参看官方网站的文档：https://jekyllrb.com/docs。
+原文链接：https://blog.csdn.net/tom_221x/article/details/84630283
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>github</tag>
+        <tag>jekyll</tag>
+        <tag>blog</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>私人在线音乐服务器搭建与使用介绍</title>
     <url>/posts/2b9325d0/</url>
     <content><![CDATA[
@@ -17483,11 +17483,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var vtujBNOagMDXXIAT_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); vtujBNOagMDXXIAT_options.container = document.getElementById("mmedia-vtujBNOagMDXXIAT"); const ap_vtujBNOagMDXXIAT = new APlayer(vtujBNOagMDXXIAT_options); 
+ var TZVoLzMhPvzlmnWU_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); TZVoLzMhPvzlmnWU_options.container = document.getElementById("mmedia-TZVoLzMhPvzlmnWU"); const ap_TZVoLzMhPvzlmnWU = new APlayer(TZVoLzMhPvzlmnWU_options); 
 
 
 
- var xNKvSoRzRGtFHZwE_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); xNKvSoRzRGtFHZwE_options.container = document.getElementById("mmedia-xNKvSoRzRGtFHZwE"); const ap_xNKvSoRzRGtFHZwE = new APlayer(xNKvSoRzRGtFHZwE_options); 
+ var JyDHSembUxXDpjrq_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); JyDHSembUxXDpjrq_options.container = document.getElementById("mmedia-JyDHSembUxXDpjrq"); const ap_JyDHSembUxXDpjrq = new APlayer(JyDHSembUxXDpjrq_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -17568,9 +17568,9 @@ Android支持
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-RzQNxQzPfJuDEHsx").style.height=document.getElementById("mmedia-RzQNxQzPfJuDEHsx").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-xnQOqMdITbHMjTlg").style.height=document.getElementById("mmedia-xnQOqMdITbHMjTlg").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-RzQNxQzPfJuDEHsx").style.height=document.getElementById("mmedia-RzQNxQzPfJuDEHsx").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-xnQOqMdITbHMjTlg").style.height=document.getElementById("mmedia-xnQOqMdITbHMjTlg").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -17579,7 +17579,7 @@ Android支持
 
 ## 中文翻唱
 
- var UJwcmFWJjRSMtnOw_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); UJwcmFWJjRSMtnOw_options.container = document.getElementById("mmedia-UJwcmFWJjRSMtnOw"); const ap_UJwcmFWJjRSMtnOw = new APlayer(UJwcmFWJjRSMtnOw_options); 
+ var fZfMYqwHvVhJDEdV_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); fZfMYqwHvVhJDEdV_options.container = document.getElementById("mmedia-fZfMYqwHvVhJDEdV"); const ap_fZfMYqwHvVhJDEdV = new APlayer(fZfMYqwHvVhJDEdV_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -20950,9 +20950,9 @@ CI/CD与Git Flow与GitLab
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>hexo</tag>
         <tag>matery</tag>
+        <tag>github</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
       </tags>
@@ -21536,9 +21536,9 @@ CI/CD与Git Flow与GitLab
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>hexo</tag>
         <tag>matery</tag>
+        <tag>github</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
       </tags>
@@ -22030,9 +22030,9 @@ CI/CD与Git Flow与GitLab
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>hexo</tag>
         <tag>matery</tag>
+        <tag>github</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
       </tags>
@@ -22957,9 +22957,9 @@ CI/CD与Git Flow与GitLab
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>hexo</tag>
         <tag>matery</tag>
+        <tag>github</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
       </tags>
@@ -23645,9 +23645,9 @@ CI/CD与Git Flow与GitLab
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>hexo</tag>
         <tag>matery</tag>
+        <tag>github</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
       </tags>
@@ -31945,6 +31945,52 @@ SWOT 分析
         <tag>管理</tag>
         <tag>ipd</tag>
         <tag>绩效</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Git介绍以及分支模型图解</title>
+    <url>/posts/d32a07a7/</url>
+    <content><![CDATA[
+不废话，直接上图。
+由 Drawio 绘制
+
+
+GIT架构
+GIT的架构，可以分为几个部分：
+
+本地工作区(working directory)
+暂存区(stage area, 又称为索引区, index)、
+本地仓库(local repository)、
+远程仓库副本
+远程仓库(remote repository)。
+
+**工作区(working directory)，**简言之就是你工作的区域。对于git而言，就是的本地工作目录。工作区的内容会包含提交到暂存区和版本库(当前提交点)的内容，同时也包含自己的修改内容。
+**暂存区(stage area, 又称为索引区index)，**是git中一个非常重要的概念。是我们把修改提交版本库前的一个过渡阶段。查看GIT自带帮助手册的时候，通常以index来表示暂存区。在工作目录下有一个.git的目录，里面有个index文件，存储着关于暂存区的内容。git add命令将工作区内容添加到暂存区。
+**本地仓库(local repository)，**版本控制系统的仓库，存在于本地。当执行git commit命令后，会将暂存区内容提交到仓库之中。在工作区下面有.git的目录，这个目录下的内容不属于工作区，里面便是仓库的数据信息，暂存区相关内容也在其中。
+**远程版本库(remote repository)，**与本地仓库概念基本一致，不同之处在于一个存在远程，可用于远程协作，一个却是存在于本地。通过push/pull可实现本地与远程的交互；
+**远程仓库副本，**可以理解为存在于本地的远程仓库缓存。如需更新，可通过git fetch/pull命令获取远程仓库内容。使用fech获取时，并未合并到本地仓库，此时可使用git merge实现远程仓库副本与本地仓库的合并。
+.git介绍
+.git目录下各个文件中所存放的内容信息：
+**HEAD，**当前所在位置，其实就是工作区的在版本库中的那个提交点，最终会指向一个40位的HASH值；
+**config，**当前版本库的专有配置文件，如使用命令git config user.name poloxue便会记录在此文件；
+**description，**被gitweb (Github的原型)用来显示对repo的描述。
+**hooks，**git有可自动运行在 git 任有意义阶段的脚本hooks, 如commit/release/pull/push等状态之前或者之后。个人思考的一个用处，如pre-push可以用来强制进行代码检查。
+**index，**存放暂存区(stage area)的相关信息；
+**info/exclue，**可以做到和.gitignore相同的事情，用于排除不要包含进版本库的文件。区别就是，此文件不会被共享。
+**refs/heads，**目录下有关于本地仓库的所有分支；
+**refs/remote，**目录下有关于远程仓库的所有分支；
+**object，**目录下存放的就是实际的数据文件
+附录：
+Git 教程
+Git book
+]]></content>
+      <categories>
+        <category>devops</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+        <tag>devops</tag>
+        <tag>drowio</tag>
       </tags>
   </entry>
 </search>
