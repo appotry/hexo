@@ -4835,6 +4835,243 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
+    <title>transmission 使用及其配置</title>
+    <url>/posts/8f76d9dd/</url>
+    <content><![CDATA[安装
+qnapclub
+
+docker
+docker hub
+
+version: "2.1"
+services:
+  transmission:
+    image: ghcr.io/linuxserver/transmission
+    container_name: transmission
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+      - TRANSMISSION_WEB_HOME=/combustion-release/ #optional
+      - USER=username #optional
+      - PASS=password #optional
+      - WHITELIST=iplist #optional
+      - HOST_WHITELIST=dnsnane list #optional
+    volumes:
+      - &lt;path to data&gt;:/config
+      - &lt;path to downloads&gt;:/downloads
+      - &lt;path to watch folder&gt;:/watch
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped
+
+控制脚本
+/etc/init.d/QTransmission.sh start
+/etc/init.d/QTransmission.sh stop
+Transmission 配置详解
+vi /share/CACHEDEV1_DATA/.qpkg/QTransmission/etc/settings.json
+"alt-speed-up": 500, # 限速时段上传限速值
+"alt-speed-down": 500, # 限速时段下载限速值
+"alt-speed-enabled": false,
+"alt-speed-time-begin": 540,
+"alt-speed-time-day": 127, # 时段限速日期（星期几），127 表示每天，更复杂配置参考官网。用 7 位二进制数表示，然后转换成十进制数，0000001 表示周日，1000000 表示周六，0000010 表示周一，0000100 表示周二。如果你只要在周末限速，该数应该 1000001，转换为十进制就是 65
+"alt-speed-time-enabled": true, # 启用限速，为 false 时，以上计划配置则不生效，生效时会自动禁用 alt-speed-enabled 配置，二者只能选一个
+"alt-speed-time-end": 420, # 限速时段结束时间，这个配置表示的是凌晨零点到开始时间的分钟数，比如 7:00 就是 7*60=420。需要注意的是，该时间是用的 GMT 时间，即北京时间 -8 小时。比如你计划北京时间 7 点 30 分开始，这个数字应该是（7-8+24）*60+30=1410
+"bind-address-ipv4": "0.0.0.0", # IPv4 地址绑定，一般不要改动
+"bind-address-ipv6": "::", #IPv6 地址绑定，一般不要改动
+"blocklist-enabled": true, # 启动白名单，默认不启动，需要启动改为 true
+"blocklist-updates-enabled": false,
+"blocklist-url": "http://www.example.com/blocklist",
+"cache-size-mb": 4, #缓存大小，以 MB 为单位，建议设大一些，避免频繁读写硬盘而伤硬盘，建议设为内存大小的 1/6～1/4
+"compact-view": false,
+"dht-enabled": false, #关闭 DHT（不通过 tracker 寻找节点）功能，不少 PT 站的要求，但 BT 下载设置为 true 会使得下载更好
+"download-dir": "/share/Downloads", #下载的内容存放的目录
+"download-queue-enabled": true,  # 下载队列开关
+"download-queue-size": 5, # 下载队列数量
+"encryption": 1, # 加密。指定节点的加密模式，默认 1。0 表示关闭 , 0= 不加密，1= 优先加密，2= 必须加密
+"lazy-bitfield-enabled": true, # 默认为 true，设置为 true 时可以避免某些 ISP 通过查询完整位段来屏蔽 BT，从而破解部分 ISP 对 BT 的封杀，当然不一定完全有效
+"idle-seeding-limit": 30,
+"idle-seeding-limit-enabled": false,
+"incomplete-dir": "/share/Downloads",  # 临时文件路径
+"incomplete-dir-enabled": false,
+"inhibit-desktop-hibernation": true,
+"lpd-enabled": false, #禁用 LDP（本地节点发现，用于在本地网络寻找节点）, 不少 PT 站的要求
+"main-window-height": 500,
+"main-window-is-maximized": 0,
+"main-window-width": 615,
+"main-window-x": 337,
+"main-window-y": 211,
+"message-level": 2,
+"open-dialog-dir": "/share/Download",  # 网页对话框打开的根目录
+"peer-congestion-algorithm": "",
+"peer-limit-global": 240, # 全局连接数
+"peer-limit-per-torrent": 60, # 每个种子最多的连接数
+"peer-port": 51413, # 传入端口，预设的 port 口
+"peer-port-random-high": 65535, # 传入端口随机值范围上限
+"peer-port-random-low": 49152, # 传入端口随机值范围下限
+"peer-port-random-on-start": false, # 启用随机端口，默认关闭，不建议改为 true
+"peer-socket-tos": "default",
+"pex-enabled": false, # 是否启用用户交换，默认为 true，关于 PEX，有兴趣的朋友可参考 http://en.wikipedia.org/wiki/Peer_exchange，对于只用 PT 的朋友，可以设为 false, 禁用 PEX（节点交换，用于同已与您相连接的节点交换节点名单）, 不少 PT 站的要求
+"port-forwarding-enabled": true, # 启用端口转发（uPnP），如果路由支持并且也开启了 uPnP，则路由会自动做端口映射，但是需要注意的是如果内网有几台机器同时使用 transmission，就必须更改 peer-port 值为不一样
+"preallocation": 1, # 预分配文件磁盘空间，0= 关闭，1= 快速，2= 完全。建议取 1 开启该功能，防止下载大半了才发现磁盘不够。取 2 时，可以减少磁盘碎片，但速度较慢。
+"prefetch-enabled": 1,
+"queue-stalled-enabled": true,
+"queue-stalled-minutes": 30,
+"ratio-limit": 2, # 分享率限制
+"ratio-limit-enabled": false, # 启用分享率限制，默认不启用
+"rename-partial-files": true, #在未完成的文件名后添加后缀.part,false= 禁用
+"rpc-authentication-required": true, # 远程控制需要验证，默认为需要
+"rpc-bind-address": "0.0.0.0", # 远程控制地址绑定，允许 IP 通过 RPC 访问，默认值表示任何地址都可以访问
+"rpc-enabled": true, # 启用远程控制，默认启用
+"rpc-host-whitelist-enabled": true, # 是否开启主机白名单
+"rpc-host-whitelist": "", # 白名单，如果需要远程访问，最好配置
+"rpc-password": "{cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaE", #web-ui 的密码，可直接修改，重新运行或者 reload 服务的时候密码会自动 HASH 增加安全性
+"rpc-port": 9091, # 默认 web-ui 的 port 口，也是远程控制端口，可自行更改
+"rpc-url": "/transmission/",
+"rpc-username": "transmission", #默认登入名称，也是远程控制用户名
+"rpc-whitelist": "127.0.0.1", # 远程控制白名单，默认值为所有地址，支持通配符*，如 192.168.2.*
+"rpc-whitelist-enabled": true, # 启用远程控制白名单，如果启用，则仅仅上面列出的地址可以远程连接
+"scrape-paused-torrents-enabled": true,
+"script-torrent-done-enabled": false,
+"script-torrent-done-filename": "/home/",
+"seed-queue-enabled": false,
+"seed-queue-size": 10,
+"show-backup-trackers": true,
+"show-extra-peer-details": false,
+"show-filterbar": true,
+"show-notification-area-icon": false,
+"show-options-window": true,
+"show-statusbar": true,
+"show-toolbar": true,
+"show-tracker-scrapes": true,
+"sort-mode": "sort-by-age",
+"sort-reversed": false,
+"speed-limit-down": 300, #平时的下载限速
+"speed-limit-down-enabled": true, #启用平时下载限速
+"speed-limit-up": 30, #平时上传限速
+"speed-limit-up-enabled": true, #启用平时上传限速
+"start-added-torrents": false,
+"statusbar-stats": "total-ratio",
+"torrent-added-notification-enabled": true,
+"torrent-complete-notification-enabled": true,
+"torrent-complete-sound-enabled": true,
+"trash-can-enabled": true,
+"trash-original-torrent-files": false,
+"umask": 18,
+"upload-slots-per-torrent": 14
+"utp-enabled": true, #启用μTP 协议
+"watch-dir": "/share/bt",  # 监听文件夹目录
+"watch-dir-enabled": false # 是否监听文件夹
+Q：TR提示FILE NAME TOO LONG
+A：TR最大文件名MAX_PATH ,260个字符
+方法1：改路径和保存路径的文件夹名字，越短越好，在web control种子上面右键，修改种子文件或目录名称。次选方法，不勾选下载文件名过长的文件
+方法2：遇到个名字特长的，一直下载失败，使用软连接进一步缩短路径名长度
+#cd /
+#ln -s  /share/CACHEDEV1_DATA/Download/ DL
+方法3：
+上面两种还是不行，换QBittorrent吧
+不过，最近有好消息，这个bug我去看了下源代码，找到原来有人试图修复过它，但是并没有合并到最新版本。发个post提醒bug没有修复，居然有回复了。这个bug将在3.0版本修复，见下图。
+
+Q: transmission 如何修改登陆密码
+A: 第一种方式
+qnap 中，transmission3.0的配置文件路径如下
+/share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
+ 
+cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
+vim settings.json
+找到”rpc-password”:
+后面引号内就是经过加密的密码，不要管他怎么加密的，直接把引号内的内容修改为你的新密码就可以了，比如”rpc-password”:”xxorg.com”
+然后按“ESC”键，输入:wq 保存退出，然后重启tr即可
+第二种方式：
+# 1、控制台输入，-u后边是用户名，-v后边跟着的是登陆密码
+transmission-daemon --paused -t -u admin -v 123456
+# 将会把生成的密码保存到：~/.config/transmission-daemon/settings.json
+# 其实是生成配置文件并保存到当前登陆用户的家目录下
+# 2、打开~/.config/transmission-daemon/settings.json并复制加密的密码
+# 3、将加密的密码粘贴到/media/AiCard_01/transmission/config/settings.json
+# 替换掉内容为：rpc-password 后面的密码
+# 4、重启Transmission
+ps:通过ps定位transmission位置
+ps aux | grep trans
+# cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/bin
+# ./transmission-daemon --paused -t -u [name] -v [password]
+# cd ~/.config/transmission-daemon
+[~/.config/transmission-daemon] # vi settings.json
+复制生成的密码到前面的配置文件里面。
+Q: 为Transmission增加种子目录监控，实现自动下载
+/share/CACHEDEV3_DATA/.qpkg/QTransmission3/etc
+改/var/packages/transmission/target/var/settings.json 在最后面增加2行。
+"upload-slots-per-torrent": 14,（原文件最后一行，注意添加个逗号，不添加transmission好像不能启动） 
+"watch-dir": "/XXXXX/XXXXX", （修改成自己nas上的同步目录） 
+"watch-dir-enabled": true（无逗号）
+保存，退出。
+启动Transmission  等待1-2分钟，就好了。
+    "speed-limit-up-enabled": false,
+    "start-added-torrents": true,
+    "trash-original-torrent-files": false,
+    "umask": 18,
+    "upload-slots-per-torrent": 14,
+    "utp-enabled": true,
+    "watch-dir": "/share/Download/Seed/complete",
+    "watch-dir-enabled": true
+}
+Q: Nas 上面 Transmission 如何做种？
+A:
+注意，此方法仅适用于开启了ssh的机器
+可以看到可执行文件目录下有这么几个文件，每个人的安装目录都不一样，自行查找，或用
+我的文件位置是在/volume1/@appstore/transmission/bin，用到的命令是 transmission-create
+方法也很简单，写一个范例
+./transmission-create -p -o /volume1/data/Wi
+kiLeaks-Year-Zero-2017-v1.torrent -t https://announce.XXXXXXXXXX.cc/announce.php -s 2048 /volume1/da
+ta/WikiLeaks-Year-Zero-2017-v1.7z &amp;
+参数
+-p 表示这是私用的种子，这个必须要加上
+-o 生成的种子输出位置，不要忘记把名字打上
+-t tracker的地址，我用的家园的做范本，大家自行修改
+-s 每个文件块的大小，单位是KB，我设置的是2M，也就是2048KB
+最后空一格写源文件的位置，也就是文件的存放位置，可以是一个文件或者一整个目录
+最后可以空一行加一个&amp;，这样即使关掉窗口也可以在后台运行
+填完，回车，种子就在制作了
+种子已经躺在这了
+[/opt/QTransmission3/bin] # ./transmission-create -p -o /share/CACHEDEV1_DATA/Download/Seed/海贼王\ \(1999\).torrent -t https://announce.XXXXXXXX.video/announce.php -s 2048 /share/CACHEDEV1_DATA/Download/海贼王\ \(1999\)/ &amp;
+系列教程
+全部文章RSS订阅
+Nas系列 Nas 分类 RSS 订阅
+
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>bt</tag>
+        <tag>pt</tag>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>transmission</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程</title>
     <url>/posts/9912bd5d/</url>
     <content><![CDATA[
@@ -5205,243 +5442,6 @@ Earthly 一个更加强大的镜像构建工具
         <tag>sonarr</tag>
         <tag>jeckett</tag>
         <tag>portainer</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>transmission 使用及其配置</title>
-    <url>/posts/8f76d9dd/</url>
-    <content><![CDATA[安装
-qnapclub
-
-docker
-docker hub
-
-version: "2.1"
-services:
-  transmission:
-    image: ghcr.io/linuxserver/transmission
-    container_name: transmission
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/London
-      - TRANSMISSION_WEB_HOME=/combustion-release/ #optional
-      - USER=username #optional
-      - PASS=password #optional
-      - WHITELIST=iplist #optional
-      - HOST_WHITELIST=dnsnane list #optional
-    volumes:
-      - &lt;path to data&gt;:/config
-      - &lt;path to downloads&gt;:/downloads
-      - &lt;path to watch folder&gt;:/watch
-    ports:
-      - 9091:9091
-      - 51413:51413
-      - 51413:51413/udp
-    restart: unless-stopped
-
-控制脚本
-/etc/init.d/QTransmission.sh start
-/etc/init.d/QTransmission.sh stop
-Transmission 配置详解
-vi /share/CACHEDEV1_DATA/.qpkg/QTransmission/etc/settings.json
-"alt-speed-up": 500, # 限速时段上传限速值
-"alt-speed-down": 500, # 限速时段下载限速值
-"alt-speed-enabled": false,
-"alt-speed-time-begin": 540,
-"alt-speed-time-day": 127, # 时段限速日期（星期几），127 表示每天，更复杂配置参考官网。用 7 位二进制数表示，然后转换成十进制数，0000001 表示周日，1000000 表示周六，0000010 表示周一，0000100 表示周二。如果你只要在周末限速，该数应该 1000001，转换为十进制就是 65
-"alt-speed-time-enabled": true, # 启用限速，为 false 时，以上计划配置则不生效，生效时会自动禁用 alt-speed-enabled 配置，二者只能选一个
-"alt-speed-time-end": 420, # 限速时段结束时间，这个配置表示的是凌晨零点到开始时间的分钟数，比如 7:00 就是 7*60=420。需要注意的是，该时间是用的 GMT 时间，即北京时间 -8 小时。比如你计划北京时间 7 点 30 分开始，这个数字应该是（7-8+24）*60+30=1410
-"bind-address-ipv4": "0.0.0.0", # IPv4 地址绑定，一般不要改动
-"bind-address-ipv6": "::", #IPv6 地址绑定，一般不要改动
-"blocklist-enabled": true, # 启动白名单，默认不启动，需要启动改为 true
-"blocklist-updates-enabled": false,
-"blocklist-url": "http://www.example.com/blocklist",
-"cache-size-mb": 4, #缓存大小，以 MB 为单位，建议设大一些，避免频繁读写硬盘而伤硬盘，建议设为内存大小的 1/6～1/4
-"compact-view": false,
-"dht-enabled": false, #关闭 DHT（不通过 tracker 寻找节点）功能，不少 PT 站的要求，但 BT 下载设置为 true 会使得下载更好
-"download-dir": "/share/Downloads", #下载的内容存放的目录
-"download-queue-enabled": true,  # 下载队列开关
-"download-queue-size": 5, # 下载队列数量
-"encryption": 1, # 加密。指定节点的加密模式，默认 1。0 表示关闭 , 0= 不加密，1= 优先加密，2= 必须加密
-"lazy-bitfield-enabled": true, # 默认为 true，设置为 true 时可以避免某些 ISP 通过查询完整位段来屏蔽 BT，从而破解部分 ISP 对 BT 的封杀，当然不一定完全有效
-"idle-seeding-limit": 30,
-"idle-seeding-limit-enabled": false,
-"incomplete-dir": "/share/Downloads",  # 临时文件路径
-"incomplete-dir-enabled": false,
-"inhibit-desktop-hibernation": true,
-"lpd-enabled": false, #禁用 LDP（本地节点发现，用于在本地网络寻找节点）, 不少 PT 站的要求
-"main-window-height": 500,
-"main-window-is-maximized": 0,
-"main-window-width": 615,
-"main-window-x": 337,
-"main-window-y": 211,
-"message-level": 2,
-"open-dialog-dir": "/share/Download",  # 网页对话框打开的根目录
-"peer-congestion-algorithm": "",
-"peer-limit-global": 240, # 全局连接数
-"peer-limit-per-torrent": 60, # 每个种子最多的连接数
-"peer-port": 51413, # 传入端口，预设的 port 口
-"peer-port-random-high": 65535, # 传入端口随机值范围上限
-"peer-port-random-low": 49152, # 传入端口随机值范围下限
-"peer-port-random-on-start": false, # 启用随机端口，默认关闭，不建议改为 true
-"peer-socket-tos": "default",
-"pex-enabled": false, # 是否启用用户交换，默认为 true，关于 PEX，有兴趣的朋友可参考 http://en.wikipedia.org/wiki/Peer_exchange，对于只用 PT 的朋友，可以设为 false, 禁用 PEX（节点交换，用于同已与您相连接的节点交换节点名单）, 不少 PT 站的要求
-"port-forwarding-enabled": true, # 启用端口转发（uPnP），如果路由支持并且也开启了 uPnP，则路由会自动做端口映射，但是需要注意的是如果内网有几台机器同时使用 transmission，就必须更改 peer-port 值为不一样
-"preallocation": 1, # 预分配文件磁盘空间，0= 关闭，1= 快速，2= 完全。建议取 1 开启该功能，防止下载大半了才发现磁盘不够。取 2 时，可以减少磁盘碎片，但速度较慢。
-"prefetch-enabled": 1,
-"queue-stalled-enabled": true,
-"queue-stalled-minutes": 30,
-"ratio-limit": 2, # 分享率限制
-"ratio-limit-enabled": false, # 启用分享率限制，默认不启用
-"rename-partial-files": true, #在未完成的文件名后添加后缀.part,false= 禁用
-"rpc-authentication-required": true, # 远程控制需要验证，默认为需要
-"rpc-bind-address": "0.0.0.0", # 远程控制地址绑定，允许 IP 通过 RPC 访问，默认值表示任何地址都可以访问
-"rpc-enabled": true, # 启用远程控制，默认启用
-"rpc-host-whitelist-enabled": true, # 是否开启主机白名单
-"rpc-host-whitelist": "", # 白名单，如果需要远程访问，最好配置
-"rpc-password": "{cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaE", #web-ui 的密码，可直接修改，重新运行或者 reload 服务的时候密码会自动 HASH 增加安全性
-"rpc-port": 9091, # 默认 web-ui 的 port 口，也是远程控制端口，可自行更改
-"rpc-url": "/transmission/",
-"rpc-username": "transmission", #默认登入名称，也是远程控制用户名
-"rpc-whitelist": "127.0.0.1", # 远程控制白名单，默认值为所有地址，支持通配符*，如 192.168.2.*
-"rpc-whitelist-enabled": true, # 启用远程控制白名单，如果启用，则仅仅上面列出的地址可以远程连接
-"scrape-paused-torrents-enabled": true,
-"script-torrent-done-enabled": false,
-"script-torrent-done-filename": "/home/",
-"seed-queue-enabled": false,
-"seed-queue-size": 10,
-"show-backup-trackers": true,
-"show-extra-peer-details": false,
-"show-filterbar": true,
-"show-notification-area-icon": false,
-"show-options-window": true,
-"show-statusbar": true,
-"show-toolbar": true,
-"show-tracker-scrapes": true,
-"sort-mode": "sort-by-age",
-"sort-reversed": false,
-"speed-limit-down": 300, #平时的下载限速
-"speed-limit-down-enabled": true, #启用平时下载限速
-"speed-limit-up": 30, #平时上传限速
-"speed-limit-up-enabled": true, #启用平时上传限速
-"start-added-torrents": false,
-"statusbar-stats": "total-ratio",
-"torrent-added-notification-enabled": true,
-"torrent-complete-notification-enabled": true,
-"torrent-complete-sound-enabled": true,
-"trash-can-enabled": true,
-"trash-original-torrent-files": false,
-"umask": 18,
-"upload-slots-per-torrent": 14
-"utp-enabled": true, #启用μTP 协议
-"watch-dir": "/share/bt",  # 监听文件夹目录
-"watch-dir-enabled": false # 是否监听文件夹
-Q：TR提示FILE NAME TOO LONG
-A：TR最大文件名MAX_PATH ,260个字符
-方法1：改路径和保存路径的文件夹名字，越短越好，在web control种子上面右键，修改种子文件或目录名称。次选方法，不勾选下载文件名过长的文件
-方法2：遇到个名字特长的，一直下载失败，使用软连接进一步缩短路径名长度
-#cd /
-#ln -s  /share/CACHEDEV1_DATA/Download/ DL
-方法3：
-上面两种还是不行，换QBittorrent吧
-不过，最近有好消息，这个bug我去看了下源代码，找到原来有人试图修复过它，但是并没有合并到最新版本。发个post提醒bug没有修复，居然有回复了。这个bug将在3.0版本修复，见下图。
-
-Q: transmission 如何修改登陆密码
-A: 第一种方式
-qnap 中，transmission3.0的配置文件路径如下
-/share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
- 
-cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
-vim settings.json
-找到”rpc-password”:
-后面引号内就是经过加密的密码，不要管他怎么加密的，直接把引号内的内容修改为你的新密码就可以了，比如”rpc-password”:”xxorg.com”
-然后按“ESC”键，输入:wq 保存退出，然后重启tr即可
-第二种方式：
-# 1、控制台输入，-u后边是用户名，-v后边跟着的是登陆密码
-transmission-daemon --paused -t -u admin -v 123456
-# 将会把生成的密码保存到：~/.config/transmission-daemon/settings.json
-# 其实是生成配置文件并保存到当前登陆用户的家目录下
-# 2、打开~/.config/transmission-daemon/settings.json并复制加密的密码
-# 3、将加密的密码粘贴到/media/AiCard_01/transmission/config/settings.json
-# 替换掉内容为：rpc-password 后面的密码
-# 4、重启Transmission
-ps:通过ps定位transmission位置
-ps aux | grep trans
-# cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/bin
-# ./transmission-daemon --paused -t -u [name] -v [password]
-# cd ~/.config/transmission-daemon
-[~/.config/transmission-daemon] # vi settings.json
-复制生成的密码到前面的配置文件里面。
-Q: 为Transmission增加种子目录监控，实现自动下载
-/share/CACHEDEV3_DATA/.qpkg/QTransmission3/etc
-改/var/packages/transmission/target/var/settings.json 在最后面增加2行。
-"upload-slots-per-torrent": 14,（原文件最后一行，注意添加个逗号，不添加transmission好像不能启动） 
-"watch-dir": "/XXXXX/XXXXX", （修改成自己nas上的同步目录） 
-"watch-dir-enabled": true（无逗号）
-保存，退出。
-启动Transmission  等待1-2分钟，就好了。
-    "speed-limit-up-enabled": false,
-    "start-added-torrents": true,
-    "trash-original-torrent-files": false,
-    "umask": 18,
-    "upload-slots-per-torrent": 14,
-    "utp-enabled": true,
-    "watch-dir": "/share/Download/Seed/complete",
-    "watch-dir-enabled": true
-}
-Q: Nas 上面 Transmission 如何做种？
-A:
-注意，此方法仅适用于开启了ssh的机器
-可以看到可执行文件目录下有这么几个文件，每个人的安装目录都不一样，自行查找，或用
-我的文件位置是在/volume1/@appstore/transmission/bin，用到的命令是 transmission-create
-方法也很简单，写一个范例
-./transmission-create -p -o /volume1/data/Wi
-kiLeaks-Year-Zero-2017-v1.torrent -t https://announce.XXXXXXXXXX.cc/announce.php -s 2048 /volume1/da
-ta/WikiLeaks-Year-Zero-2017-v1.7z &amp;
-参数
--p 表示这是私用的种子，这个必须要加上
--o 生成的种子输出位置，不要忘记把名字打上
--t tracker的地址，我用的家园的做范本，大家自行修改
--s 每个文件块的大小，单位是KB，我设置的是2M，也就是2048KB
-最后空一格写源文件的位置，也就是文件的存放位置，可以是一个文件或者一整个目录
-最后可以空一行加一个&amp;，这样即使关掉窗口也可以在后台运行
-填完，回车，种子就在制作了
-种子已经躺在这了
-[/opt/QTransmission3/bin] # ./transmission-create -p -o /share/CACHEDEV1_DATA/Download/Seed/海贼王\ \(1999\).torrent -t https://announce.XXXXXXXX.video/announce.php -s 2048 /share/CACHEDEV1_DATA/Download/海贼王\ \(1999\)/ &amp;
-系列教程
-全部文章RSS订阅
-Nas系列 Nas 分类 RSS 订阅
-
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>bt</tag>
-        <tag>pt</tag>
-        <tag>qnap</tag>
-        <tag>nas</tag>
-        <tag>transmission</tag>
       </tags>
   </entry>
   <entry>
@@ -6446,6 +6446,499 @@ MySQL教程
         <tag>mysql</tag>
         <tag>docker</tag>
         <tag>mariadb</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Joplin 插件以及其Markdown语法。All in One!</title>
+    <url>/posts/92d347d6/</url>
+    <content><![CDATA[Joplin是一个以Markdown为主要语法的笔记程序，发展到今天增加了许多插件，这些插件也大大增强了它的功能，今天我们就讲讲Joplin的各个插件的作用和使用方法。
+首先我们打开Joplin，依次点击工具-&gt;选项设置页面，然后点击Markdown选项卡，我们就可以看到如下界面
+
+下面我们一个一个讲解一下每个插件的大概作用和用法，某些插件的详细使用方法可能需要我独立写一篇文章来介绍，这里我就先抛砖引玉大致介绍一下。
+启动软中断插件
+Joplin默认使用的是硬中断方式，那么什么是软中断什么是硬中断呢？如果你刚开始使用Markdown撰写自己的笔记你可能会非常的不习惯，因为标准的Markdown语法里面换行需要两个回车符号，但是像word之类的编辑器都是一个回车，普通人会感觉很不习惯，所以Joplin默认采用了硬中断方式，这样你可以使用一个回车符实现换行。但是当我们启用软中断插件之后，我们就需要两个回车符来实现换行（准确说应该是分段），使用两个空格加一个回车来实现换行，前者的间距会比后者的大。启用软中断其实对于普通人来说不是很好用，很难适应，所以我不建议大家开启该插件！
+启用typographer支持
+这个插件的作用是用来申明我们的版权的，因为有时候我们可能需要将我们的笔记分享给别人，但是想要声明文章是我们写的，我们就可以启用该插件来声明我们的著作权，而且该插件会给我们渲染成指定的版权声明格式，讲讲怎么用：
+我们启用插件之后，在我们想要声明著作权的地方键入：
+(c)著作权所有人
+然后Joplin就会给我们渲染为：
+
+是不是很熟悉，很多网页的底部都会有这个声明！
+启用数学表达式
+这个是Markdown自带语法，Joplin使用插件来实现的，其实就是大家在Markdown语法里面看到的行内公式使用，行间公式使用$$…$$。需要说明的是Joplin使用的是Katex来解析数学符号，它的语法和Latex的数学公式写法差不多，我到现在还没有碰到很大的不同的地方！
+启用高亮==Mark==句法
+这个其实就是一个语句高亮插件，中间的语句会被高亮显示，有助于我们对重要的内容进行强调，自己一试就一目了然了。
+
+启用脚注
+脚注的功能就是对文中的某一个特定的术语等进行解释补充说明，有点像是论文的参考文献，下面是一个简单的示例，相信大家一看就懂
+
+根据图片你可能明白了脚注的使用方法：在我们想要使用脚注的地方使用[^唯一标识符]注明，然后在文章的最后使用响应的标识符进行说明即可，比如例子中的
+[^lightzhan]:知乎搜索light zhan即可找到我了
+注意那个冒号一定要是英文冒号，中文冒号可能无法被成功解析。
+启用目录扩展
+启用该扩展，我们就可以使用相应的语法在某个位置插入我们文章的目录，具体的语法为
+[toc]
+注意着是一个固定的符号，不需要改变什么，只需要在我们想要插入目录的地方放上**[toc]**即可，例如
+
+上图最重要的就是坐上脚的[toc]指令，该指令自动生成了右边的整个目录！
+启用下标~sub~和上标^sup^句法
+一看到sub如果不小心就会认为这个是删除线，大错特错了，一定要明白两者的区别，删除线是左右都是两个波浪线，而这个只有一个波浪线，一定要搞清楚这个。下面我们看看这个插件的作用和用法。
+这两个插件的作用其实很简单，就是下标和上标，看例子应该就明白的
+
+启用术语表插件
+对于这个插件得先知道什么是术语表。所谓的术语表其实可以理解为一个定义的列表，很多专业的书籍的前面都会有术语表，因为它需要给出书中所用术语的定义和解释。还不懂？我们在Joplin中启用该插件，然后新建一个笔记，输入如下文字：
+Qdown
+
+:   Qdown是由lightzhan开发的全功能软件下载程序，这里是程序的介绍页哦:http://lightzhan.xyz/index.php/qdown/ 
+
+LightZhan
+
+:   计算机爱好一名，爱折腾哎生活，*欢迎知乎关注lightzhan哦*
+
+        可以嵌入一些代码
+
+    定义第三段 
+这些文字会被解析显示为：
+
+对比一下发现了什么没有？术语表的每一项由两个部分组成，第一部分是术语，第二部分是该术语的解释，多个术语及其解释组合在一起就组成了表，这就是术语表！需要特别注意的是术语表的书写格式是固定的，如果你想要快速上手，建议你拷贝上面我提供的示例进行修改，修改两下你就懂格式到底是怎么回事了！
+启用缩写句法
+这个插件很有意思，也很有用。你是否记得有些程序的按钮，当你把鼠标放上去的时候它会显示按钮的作用。不记得了？不存在，我们也使用例子来说明。下面我们启用缩写句法插件，然后新建笔记，在笔记里面输入：
+*[Qdown]: 由lightzhan开发
+*[LightZhan]:  欢迎知乎关注我哦
+Qdown 是由 LightZhan 开发的一款全协议下载器.
+该文本会被Joplin显示为
+
+这可能并不能完全显示出该插件的作用，因为截图的原因截不到，当我们把鼠标放在Qdown上面的时候，鼠标所在的位置处会弹出“由lightzhan”开发的提示。不理解的可以拷贝上面的代码到Joplin感受一下，记得要开启该插件哦！需要注意的是该句中对应的缩写词前后都要有空格，负责你可能看不到上面的效果。
+启用Markdown emoji
+该插件是用于在我们的笔记中插入表情的，这是一个简单的示例截图
+
+详细的表情和表情的代码，可以参考这里。
+启用++insert++句法
+这个插件很好理解，一试便知道作用和用法了
+
+说了那么多，就是在对应的文字下面显示一个下划线！
+Markdown是非常好用的笔记书写规范，记着，Markdown不是某一个软件，而是一个通用的笔记书写规范，通过使用该规范进行写作，解析器会按照规定的样式将其渲染显示出来，说得直白点就是用于文字排版的。
+Markdown的排版语法
+这里的讲解如果有不懂的可以参见下一节的示例：
+
+标题。markdown的标题使用“#”符号开头，一级标题一个”#”，二级标题两个“#”（也就是“##”），以此类推三级标题四级标题…….，不同级的标题会被渲染为不同的大小和样式（根据各个软件和相应的主题而定）；
+粗体。markdown的粗体字使用两个“**”包裹即可，比如 “你好”解析后变为“你好”；
+斜体。markdown的斜体使用“*”或者“_”包裹，比如“你好”解析显示为“你好”；
+引用。markdown的引用使用“&gt;”开头，大部分软件要求“&gt;”要和引用内容之间有一个空格；
+代码。对于程序员来说可能想要在文中插入代码，markdown是支持插入代码的，行间代码使用一个"`"符号包裹，注意这个符号是键盘左上角Esc下面的那个键，不是我们所谓的英文上一撇；
+数学公式。markdown的数学解析一般使用latex语法，行内公式使用一个$包裹即可，行间公式使用两个$包裹；
+markdown的列表分为有序列表和无序列表。有序列表就是有序号，无序列表就是 无序号，有序列表就是在数字后面一个点，然后空一格写正文，比如：1. xxxxxxx，第二点需要新起一行2. xxxxxx。无序列表是使用“*”或者“-”开始，后面跟一个空格写上正文。
+markdown的勾选框。markdown的勾选框使用- [ ]，注意字符之间都是有空格的。比如：第一行- [ ] A,第二行- [ ] B。这样对应的渲染结果就是勾选框和对应的选项。注意字符之间的空格！
+表格。markdown的表格非常易于理解，请看下面的示例。
+
+示例代码和渲染结果
+下面的示例左边是书写文字，右边是渲染结果，注意书写文字里面的标识符和内容之间的空格：
+
+
+
+需要说明的是上面的粗体显示为了橘红色的字体，这是我自己设置的格式，这个等大家熟悉了后可以使用CSS设计自己喜欢的样式。下面是表格的渲染结果 （其中左边的源代码不用那样对齐 ，横线的个数一处最少3个就行 ，右边是解析后的显示结果） ：
+
+额~，左边左下角那个是鼠标光标，不是文字内容哈。需要说明的是不同的软件的不同的主题可能显示的结果会不一样，但是书写的语法是不变的。
+启用 multimarkdown 表格扩展
+这个插件说高深也不高深，看名字应该就能知道这是一个增强Markdown表格功能的插件，大家记得Markdown的表格是怎么使用的吗？如果忘记的话赶紧看看这篇文章回顾一下，不然下面的内容可能体会不会那么深！
+好啦，我这里假设读者知道markdown的表格是怎么用的，然后我们开始讲解multimarkdown扩展。Markdown自带的表格功能是非常有限的，如果你使用过的话就会发现它能做出来的表格一定是规整的，行和列一定是划分均匀整齐的，但是有时候我们需要的表格可能是这样的：
+
+这种表格使用Markdown的表格是不可能做出来的，因为分组的效果和占用两个格子的效果是做不出来的，但是如果你启用了MultiMarkdown插件，你就可以使用下面的代码渲染出来：
+|             |          分组                 ||
+第一个表头     | 第二个表头     | 第三个表头      |
+ ------------ | :-----------: | -----------:   |
+内容          |          占用两个格子           ||
+内容          |   **内容**     |         内容    |
+新的一部分     |     更多       |         更多    |
+更多          | 带有一个跳过的 '\|'              ||
+[LightZhan制作]
+你可以把上面的代码拷贝进Joplin编辑器研究一番就能理解MultiMardown表格扩展的用法了，下面我详细讲解一下。
+MultiMarkdown的表格扩展支持下面的功能：
+
+使得元素占据多个列（上面的示例中有）
+使得元素占据多个行
+在表格上面或者下面对表头进行分组（上面的例子中有）
+在表格的上面或者下面标注表格标题（上面的例子中有）
+在表格中包含分块元素（列表、代码、段落等等）
+表格不需要表头
+
+上面标注了“上面的例子中有”的我这里就不在讲了，因为代码一研究或者修改修改就知道咋回事的，下面我们主要讲讲上面的例子中没有涉及到的。
+1.使得表格占据多行。这个其实很好用，但是有两种情况。第一种情况是一个项目占据两格。这种情况要占据多行的话，在我们对应列的起始行写上内容，然后接下来要合并的行直接写“^^”。不明白不存在，我们来一个例子：
+
+上面对应的代码是什么呢？看下面：
+作者		| 信息			  | 信息		 |
+----:		| --------------:         | ---------:	         |
+LightZhan	| ligthzhan.xyz 				||
+^^		| 更多Joplin教程           | Qdown下载器	         |
+[LightZhan制作，允许规范转载]
+把上面的代码拷贝进编辑器改改试试，很容易明白里面的玄机的！
+第二种情况是我们添加块，看下面一点。
+2.**在表格中添加块元素。**这个不用多说，直接在表格的格子里面用Markdown语法写作，渲染成对应的Markdown格式！比如加粗、斜体、代码块等等。下面来一个简单的例子，需要注意的是下面的例子当中我们的内容有几行！
+|   Markdown   | 渲染结果       |
+|--------------|---------------|
+|    *斜体*    | *斜体*         | \
+|              |               |
+|    - 项目1   | - 项目1        | \
+|    - 项目2   | - 项目2        |
+|    ```python | ```python       \
+|    .1 + .2   | .1 + .2         \
+|    ```       | ```           |
+[LightZhan制作，允许规范转载]
+注意代码后面的”\”，这个符号是指定换行的，如果项目占据多行一定要写上。上面的代码复制黏贴进编辑器可以看到下面的渲染结果
+
+**3.表格不需要表头。**这个也很简单，直接不写表头即可。拷贝下面的代码进编辑器
+----:		| --------------: | ---------:	 |
+LightZhan	| lightzhan.xyz 	        ||
+^^		| 更多Joplin教程  | Qdown下载器	 |
+[LightZhan制作，允许规范转载]
+然后你就可以看到惊喜
+
+启用Fountain语法支持
+这个插件的目标人群非常少，Fountain语法是用来写电影剧本的，而且要是要细讲的话估计又是一篇文章，因为使用的人非常少，所以我这里就不讲这个了。
+Mermaid插件的作用
+Mermaid是一个用于画流程图、时序图、类图、状态图、甘特图、饼图的Markdown扩展，其中状态图是最新8.4版本的新功能。如果你不知道这些图是干什么的，不存在，下面的教程里面我会每个都给出例子。
+在Joplin里面使用Mermaid
+在Joplin里面如果想要使用Mermaid，那么你需要使用代码块，并且代码的类型填写mermaid，详细的格式如下：
+```mermaid
+graph TD
+    Start --&gt; Stop
+```
+在渲染区我们就能得到如下的结果
+
+Mermaid流程图
+下面我们讲解在Mermaid里面画流程图。上一节的示例便是流程图，我们把上一节的代码拿出来分析一下。首先我们看代码的第一行：graph TD，这一行代码有两个作用，graph表示我们图的类型，graph表示流程图，而第二个TD表示图的方向，可能的方向有如下几个
+
+TB：自顶向下
+BT：自底向上
+RL：从右到左
+LR：从左到右
+TD：和TB一样
+
+上面我们的例子使用的是TD，如果你对其它的方向不明白，可以把代码拷贝到编辑器里面修改方向参数就可以理解各个方向的意义了。
+上面的代码非常基础，因为如果要实现比较复杂的流程图，我们就需要使用一些比较高级的语法，比如定义节点。所谓的节点，你可以简单的理解为上面图片中的方框，但是如果我们要使用其它形状的节点怎么办呢？在上面的例子中我使用了默认的节点定义方法，也就是直接使用文本,这种方式定义节点的话id和显示文本是一样的，而且形状是固定的矩形。如果要定义不同的节点形状，或者使得id和显示文本不一样，可以使用下面的语法
+
+定义矩形形状的节点：id[text]
+定义圆角矩形的节点：id(text)
+定义椭圆形的节点：id([text])
+定义圆柱形的节点：id[(text)]
+定义圆形的节点：id((text))
+定义非对称图形的节点：id&gt;text]
+定义菱形的节点：id{text}
+定义六角形的节点：id
+定义平行四边形的节点(两个方向)：id[/text/]或者[\text]
+定义梯形的节点(两个方向)：id[/text] 或者 di[\text/]
+
+注意上面的id和text是需要我们自己定义替换的，如果同一个id有多个text，取最后一次的定义值！
+有了节点我们还需要将节点连接起来，也就是我们要使用线条或者箭头来进行节点的连接，Mermaid支持下面的方式：
+
+实线箭头：A–&gt;B
+实线无箭头：A–B
+无箭头实线上带文本：A–text–B
+实线箭头带文本：A–&gt;|text|B 或者 A–text–&gt;B
+虚线箭头：A-.-&gt;B
+虚线箭头带文本：A-.text.-&gt;B
+粗线箭头：A==&gt;B
+粗线箭头带箭头：Atext&gt;B
+
+最好的办法就是把上面的代码拷贝进编辑器看看，一看你应该就能理解各个图形的形状！
+上面我们讲解了节点和连线，下面我们说说图形的绘制。上面我使用的例子非常基础，下面来一个复杂点的例子供大家修改和研究
+```mermaid
+graph TD
+    light[LightZhan]
+    url[lightzhan.xyz]
+    QdownUrl[访问LightZhan博客Qdown页面]
+    Qdown((Qdown))
+    function[功能]
+    Qdown--&gt;|作者|light 
+    light--个人主页--&gt;url
+    Qdown--&gt;function
+    Qdown--&gt;QdownUrl
+    function1[极速下载]
+    function2[磁链/BT下载]
+    function3[迅雷下载]
+    function5[下载体验]
+    function4[Http/Https/FTP/SFTP]
+    function-.功能1.-&gt;function1
+    function-.功能2.-&gt;function2
+    function-.功能3.-&gt;function3
+    function-.功能4.-&gt;function4
+    function-.更多功能.-&gt;function5
+    annocement[本文首发于lightzhan.xyz,允许规范转载]
+
+```
+上面代码的渲染结果如下：
+
+如果不清楚，可以把上面的代码拷贝到编辑器进行修改和摸索！
+Mermaid时序图
+时序图是用于展示过程的方式和顺序的。举例来说，两个人之间的对话:
+A先问B：Qdown是啥？B回答：Qdown是全功能的下载软件！A又问：哪里可以下载呀？B回答： http://lightzhan.xyz/index.php/qdown/ 。我们使用mermaid绘制时序图来展示上面的对话过程：
+
+这样是不是看上去清晰了很多了呢？希望通过这个例子能让你深切地感受到时序图是干什么用的！好了，放上上面的时序图的代码供大家研究：
+```mermaid
+sequenceDiagram
+A-&gt;&gt;B:Qdown是啥？
+B--&gt;&gt;A:Qdown是全功能的下载软件！
+A-&gt;&gt;B:哪里可以下载呀？
+B--&gt;&gt;A:http://lightzhan.xyz/index.php/qdown/
+```
+让我们来简单分析一下上面的代码。你可能注意到了第一行的sequenceDiagram，这个就是告诉mermaid我们在这里绘制时序图，然后下面有箭头，在时序图里面，mermaid支持下面类型的箭头和线段：
+
+实线并且没有箭头：A-&gt;B:text
+虚线没有箭头：A–&gt;B:text
+实线带箭头：A-&gt;&gt;B:text
+虚线带箭头：A–&gt;&gt;B:text
+实线并且在终点带一个x：A-xB:text
+虚线并且在终点带一个x：A–xB:text
+
+上面的text就是要显示在箭头或线段上的文本，在mermaid的时序图里面被称为消息，线段或箭头类型如果有不清楚的可以拷贝到编辑器里面看看，一目了然！
+还记得上面我们在流程图里面的节点吗？在时序图里面不是定义节点，而是定义参与者，也就是上面的A和B。上面的代码中我们定义参与者的方式采用的是默认方式，也就是不显示定义，有时候我们的参与者的名字太长的话可以使用显示定义来定义别名：
+participant John
+participant Alice
+participant A as Alice
+participant J as John
+上面代码的第一二行仅仅是显式定义我们的参与者，第三四行给我们的参与者定义别名，定义了别名后我们在下面的使用中就可以直接使用A代替Alice，使用J代替John了，这样输入会方便很多！
+好了，时序图差不多就讲到这里，接下来的一些高级用法大部分我们都用不到，或者要使用的话不如使用专业的绘图软件使用插图的方式导入。
+使用Mermaid绘制类图
+类的定义
+在讲解如何绘制类图之前我们先了解一下什么是类图！如果你是计算机专业或者会计算机编程的话应该就懂面向对象编程，对象是类的实例，而这里要绘制的类图就和面向对象编程里面的类相关。
+对于编程人员来说，函数具有参数和返回值，属性具有变量类型，我们举一个例子来说一下：
+class BankAccount{
+  +String owner
+  +BigDecimal balance
+  +deposit(amount) bool
+  +withdrawl(amount)
+}
+上面的代码的渲染结果为：
+
+上面的代码是我直接从官方借鉴的，可以直观地看出对于银行账户（BankAccount），一共有两个属性和两个方法，属性都是具有对应的变量类型，而对于函数具有参数（amount），并且deposit函数还具有bool类型的返回值。你或许看到了前面的+号，这个是对应变量或属性的可见性，分别有：
+
++ public
+– private
+# protected
+~ Package/Internal
+
+如果我们想要定义的函数是抽象函数咋办呢？在括号的后面添加*即可：
+someAbstractMethod()*
+在渲染过后抽象函数会使用斜体进行显示，这里就不截图展示了。对于静态函数，将后面的*换为$即可，在显示时静态函数会具有下划线。
+类之间的关系
+在编程中我们常常会用到的关系：
+
+
+
+&lt;|–
+继承（Inheritance）
+
+
+
+
+*–
+组成（Composition）
+
+
+o–
+聚集（Aggregation）
+
+
+–&gt;
+关联（Association）
+
+
+—
+实线（Link (Solid)）
+
+
+…&gt;
+依赖（Dependency）
+
+
+…|&gt;
+实现（Realization）
+
+
+…
+虚线（Link (Dashed)）
+
+
+
+下面我们举一个例子：“狗”继承自“动物”类别
+```mermaid
+classDiagram
+    class 动物{
+        特点1：能动
+        特点2：能叫
+    }
+    class 狗{
+        特点1：4条腿
+        特点2：会汪汪叫
+        特点3：可爱至极
+        汪汪叫(陌生人)
+    }
+    动物 &lt;|-- 狗
+```
+渲染结果为：
+
+结合代码和展示结果应该很好理解，这就是一个狗继承自动物的简单例子，我们还可以对关系结果打标签：
+```mermaid
+classDiagram
+    class 动物{
+        特点1：能动
+        特点2：能叫
+    }
+    class 狗{
+        特点1：4条腿
+        特点2：会汪汪叫
+        特点3：可爱至极
+        汪汪叫(陌生人)
+    }
+    动物 &lt;|-- 狗:属于（继承）
+```
+我们在关系指示后面加上冒号，然后后面加上关系说明，这样在渲染结果当中我们就可以看到箭头上出现了我们需要的标签说明：
+
+好了，使用mermaid绘制类图就讲到这里，还有一些用法不是很常用，我就不讲了。
+使用mermaid绘制饼图
+绘制饼图的需求比较多，很多数据展示需要我们绘制饼图，幸运的是mermaid给我们提供了绘制饼图的功能，使用方法极其简单：
+```mermaid
+pie
+    title LightZhan创作，允许规范转载（http://lightzhan.xyz）
+    "Joplin" : 42.96
+    "Qdown" : 50.05
+    " 黑科技" : 10.01
+    "其它" :  5
+
+```
+在上面的代码中，pie关键字指定我们要绘制饼图，然后tiltile指定我们的标题，后面是数据分布，注意，mermaid会将我们输入的数据进行计算，上面的数据加起来并不是100，所以我们看到在下面的渲染结果中数据对应不上。
+
+Joplin插件非常丰富，你能找到各种各样的功能，这里推荐一些插件使用，见下面这篇文章， Joplin插件推荐。
+参考：
+
+lightzhan.xyz
+
+系列教程
+全部文章RSS订阅
+笔记系列  Note分类RSS订阅
+
+完美笔记进化论
+
+
+经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
+
+pigo图床搭建与配置
+Joplin教程
+Snipaste截图工具
+Typora 作为Markdown编辑器最强
+
+
+
+Joplin入门指南&amp;实践方案
+
+
+
+Joplin和使用
+Joplin同步与备份
+Joplin导入与导出
+
+
+
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+
+
+
+Joplin安装使用，调用外部编辑器，网盘同步等等
+
+
+
+Joplin 插件以及其Markdown语法。All in One!
+
+
+
+Joplin简明教程
+markdown语法简明教程
+
+
+
+Joplin 插件使用推荐
+
+
+
+教你用各种插件打造一个强大的笔记工具。
+
+
+
+为知笔记私有化Docker部署
+
+
+
+如何部署自己私有的为知笔记。
+其实博主更推荐私有部署joplin
+
+
+Gitbook使用系列 Gitbook分类RSS订阅
+
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+
+
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+
+
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+
+Gitlab 使用系列  Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+Hexo系列  HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+
+Hexo Docker环境与Hexo基础配置篇
+
+
+hexo博客自定义修改篇
+
+
+hexo博客网络优化篇
+
+
+hexo博客增强部署篇
+
+
+hexo博客个性定制篇
+
+
+hexo博客常见问题篇
+
+
+Hexo Markdown以及各种插件功能测试
+
+
+
+
+markdown 各种其它语法插件
+latex公式支持
+mermaid图表
+plant uml图表
+URL卡片
+bilibili卡片
+github卡片
+豆瓣卡片
+插入音乐和视频
+插入脑图
+
+
+]]></content>
+      <categories>
+        <category>note</category>
+      </categories>
+      <tags>
+        <tag>markdown</tag>
+        <tag>joplin</tag>
+        <tag>note</tag>
+        <tag>mermaid</tag>
       </tags>
   </entry>
   <entry>
@@ -9447,499 +9940,6 @@ From: 4ark.me
       </tags>
   </entry>
   <entry>
-    <title>Joplin 插件以及其Markdown语法。All in One!</title>
-    <url>/posts/92d347d6/</url>
-    <content><![CDATA[Joplin是一个以Markdown为主要语法的笔记程序，发展到今天增加了许多插件，这些插件也大大增强了它的功能，今天我们就讲讲Joplin的各个插件的作用和使用方法。
-首先我们打开Joplin，依次点击工具-&gt;选项设置页面，然后点击Markdown选项卡，我们就可以看到如下界面
-
-下面我们一个一个讲解一下每个插件的大概作用和用法，某些插件的详细使用方法可能需要我独立写一篇文章来介绍，这里我就先抛砖引玉大致介绍一下。
-启动软中断插件
-Joplin默认使用的是硬中断方式，那么什么是软中断什么是硬中断呢？如果你刚开始使用Markdown撰写自己的笔记你可能会非常的不习惯，因为标准的Markdown语法里面换行需要两个回车符号，但是像word之类的编辑器都是一个回车，普通人会感觉很不习惯，所以Joplin默认采用了硬中断方式，这样你可以使用一个回车符实现换行。但是当我们启用软中断插件之后，我们就需要两个回车符来实现换行（准确说应该是分段），使用两个空格加一个回车来实现换行，前者的间距会比后者的大。启用软中断其实对于普通人来说不是很好用，很难适应，所以我不建议大家开启该插件！
-启用typographer支持
-这个插件的作用是用来申明我们的版权的，因为有时候我们可能需要将我们的笔记分享给别人，但是想要声明文章是我们写的，我们就可以启用该插件来声明我们的著作权，而且该插件会给我们渲染成指定的版权声明格式，讲讲怎么用：
-我们启用插件之后，在我们想要声明著作权的地方键入：
-(c)著作权所有人
-然后Joplin就会给我们渲染为：
-
-是不是很熟悉，很多网页的底部都会有这个声明！
-启用数学表达式
-这个是Markdown自带语法，Joplin使用插件来实现的，其实就是大家在Markdown语法里面看到的行内公式使用，行间公式使用$$…$$。需要说明的是Joplin使用的是Katex来解析数学符号，它的语法和Latex的数学公式写法差不多，我到现在还没有碰到很大的不同的地方！
-启用高亮==Mark==句法
-这个其实就是一个语句高亮插件，中间的语句会被高亮显示，有助于我们对重要的内容进行强调，自己一试就一目了然了。
-
-启用脚注
-脚注的功能就是对文中的某一个特定的术语等进行解释补充说明，有点像是论文的参考文献，下面是一个简单的示例，相信大家一看就懂
-
-根据图片你可能明白了脚注的使用方法：在我们想要使用脚注的地方使用[^唯一标识符]注明，然后在文章的最后使用响应的标识符进行说明即可，比如例子中的
-[^lightzhan]:知乎搜索light zhan即可找到我了
-注意那个冒号一定要是英文冒号，中文冒号可能无法被成功解析。
-启用目录扩展
-启用该扩展，我们就可以使用相应的语法在某个位置插入我们文章的目录，具体的语法为
-[toc]
-注意着是一个固定的符号，不需要改变什么，只需要在我们想要插入目录的地方放上**[toc]**即可，例如
-
-上图最重要的就是坐上脚的[toc]指令，该指令自动生成了右边的整个目录！
-启用下标~sub~和上标^sup^句法
-一看到sub如果不小心就会认为这个是删除线，大错特错了，一定要明白两者的区别，删除线是左右都是两个波浪线，而这个只有一个波浪线，一定要搞清楚这个。下面我们看看这个插件的作用和用法。
-这两个插件的作用其实很简单，就是下标和上标，看例子应该就明白的
-
-启用术语表插件
-对于这个插件得先知道什么是术语表。所谓的术语表其实可以理解为一个定义的列表，很多专业的书籍的前面都会有术语表，因为它需要给出书中所用术语的定义和解释。还不懂？我们在Joplin中启用该插件，然后新建一个笔记，输入如下文字：
-Qdown
-
-:   Qdown是由lightzhan开发的全功能软件下载程序，这里是程序的介绍页哦:http://lightzhan.xyz/index.php/qdown/ 
-
-LightZhan
-
-:   计算机爱好一名，爱折腾哎生活，*欢迎知乎关注lightzhan哦*
-
-        可以嵌入一些代码
-
-    定义第三段 
-这些文字会被解析显示为：
-
-对比一下发现了什么没有？术语表的每一项由两个部分组成，第一部分是术语，第二部分是该术语的解释，多个术语及其解释组合在一起就组成了表，这就是术语表！需要特别注意的是术语表的书写格式是固定的，如果你想要快速上手，建议你拷贝上面我提供的示例进行修改，修改两下你就懂格式到底是怎么回事了！
-启用缩写句法
-这个插件很有意思，也很有用。你是否记得有些程序的按钮，当你把鼠标放上去的时候它会显示按钮的作用。不记得了？不存在，我们也使用例子来说明。下面我们启用缩写句法插件，然后新建笔记，在笔记里面输入：
-*[Qdown]: 由lightzhan开发
-*[LightZhan]:  欢迎知乎关注我哦
-Qdown 是由 LightZhan 开发的一款全协议下载器.
-该文本会被Joplin显示为
-
-这可能并不能完全显示出该插件的作用，因为截图的原因截不到，当我们把鼠标放在Qdown上面的时候，鼠标所在的位置处会弹出“由lightzhan”开发的提示。不理解的可以拷贝上面的代码到Joplin感受一下，记得要开启该插件哦！需要注意的是该句中对应的缩写词前后都要有空格，负责你可能看不到上面的效果。
-启用Markdown emoji
-该插件是用于在我们的笔记中插入表情的，这是一个简单的示例截图
-
-详细的表情和表情的代码，可以参考这里。
-启用++insert++句法
-这个插件很好理解，一试便知道作用和用法了
-
-说了那么多，就是在对应的文字下面显示一个下划线！
-Markdown是非常好用的笔记书写规范，记着，Markdown不是某一个软件，而是一个通用的笔记书写规范，通过使用该规范进行写作，解析器会按照规定的样式将其渲染显示出来，说得直白点就是用于文字排版的。
-Markdown的排版语法
-这里的讲解如果有不懂的可以参见下一节的示例：
-
-标题。markdown的标题使用“#”符号开头，一级标题一个”#”，二级标题两个“#”（也就是“##”），以此类推三级标题四级标题…….，不同级的标题会被渲染为不同的大小和样式（根据各个软件和相应的主题而定）；
-粗体。markdown的粗体字使用两个“**”包裹即可，比如 “你好”解析后变为“你好”；
-斜体。markdown的斜体使用“*”或者“_”包裹，比如“你好”解析显示为“你好”；
-引用。markdown的引用使用“&gt;”开头，大部分软件要求“&gt;”要和引用内容之间有一个空格；
-代码。对于程序员来说可能想要在文中插入代码，markdown是支持插入代码的，行间代码使用一个"`"符号包裹，注意这个符号是键盘左上角Esc下面的那个键，不是我们所谓的英文上一撇；
-数学公式。markdown的数学解析一般使用latex语法，行内公式使用一个$包裹即可，行间公式使用两个$包裹；
-markdown的列表分为有序列表和无序列表。有序列表就是有序号，无序列表就是 无序号，有序列表就是在数字后面一个点，然后空一格写正文，比如：1. xxxxxxx，第二点需要新起一行2. xxxxxx。无序列表是使用“*”或者“-”开始，后面跟一个空格写上正文。
-markdown的勾选框。markdown的勾选框使用- [ ]，注意字符之间都是有空格的。比如：第一行- [ ] A,第二行- [ ] B。这样对应的渲染结果就是勾选框和对应的选项。注意字符之间的空格！
-表格。markdown的表格非常易于理解，请看下面的示例。
-
-示例代码和渲染结果
-下面的示例左边是书写文字，右边是渲染结果，注意书写文字里面的标识符和内容之间的空格：
-
-
-
-需要说明的是上面的粗体显示为了橘红色的字体，这是我自己设置的格式，这个等大家熟悉了后可以使用CSS设计自己喜欢的样式。下面是表格的渲染结果 （其中左边的源代码不用那样对齐 ，横线的个数一处最少3个就行 ，右边是解析后的显示结果） ：
-
-额~，左边左下角那个是鼠标光标，不是文字内容哈。需要说明的是不同的软件的不同的主题可能显示的结果会不一样，但是书写的语法是不变的。
-启用 multimarkdown 表格扩展
-这个插件说高深也不高深，看名字应该就能知道这是一个增强Markdown表格功能的插件，大家记得Markdown的表格是怎么使用的吗？如果忘记的话赶紧看看这篇文章回顾一下，不然下面的内容可能体会不会那么深！
-好啦，我这里假设读者知道markdown的表格是怎么用的，然后我们开始讲解multimarkdown扩展。Markdown自带的表格功能是非常有限的，如果你使用过的话就会发现它能做出来的表格一定是规整的，行和列一定是划分均匀整齐的，但是有时候我们需要的表格可能是这样的：
-
-这种表格使用Markdown的表格是不可能做出来的，因为分组的效果和占用两个格子的效果是做不出来的，但是如果你启用了MultiMarkdown插件，你就可以使用下面的代码渲染出来：
-|             |          分组                 ||
-第一个表头     | 第二个表头     | 第三个表头      |
- ------------ | :-----------: | -----------:   |
-内容          |          占用两个格子           ||
-内容          |   **内容**     |         内容    |
-新的一部分     |     更多       |         更多    |
-更多          | 带有一个跳过的 '\|'              ||
-[LightZhan制作]
-你可以把上面的代码拷贝进Joplin编辑器研究一番就能理解MultiMardown表格扩展的用法了，下面我详细讲解一下。
-MultiMarkdown的表格扩展支持下面的功能：
-
-使得元素占据多个列（上面的示例中有）
-使得元素占据多个行
-在表格上面或者下面对表头进行分组（上面的例子中有）
-在表格的上面或者下面标注表格标题（上面的例子中有）
-在表格中包含分块元素（列表、代码、段落等等）
-表格不需要表头
-
-上面标注了“上面的例子中有”的我这里就不在讲了，因为代码一研究或者修改修改就知道咋回事的，下面我们主要讲讲上面的例子中没有涉及到的。
-1.使得表格占据多行。这个其实很好用，但是有两种情况。第一种情况是一个项目占据两格。这种情况要占据多行的话，在我们对应列的起始行写上内容，然后接下来要合并的行直接写“^^”。不明白不存在，我们来一个例子：
-
-上面对应的代码是什么呢？看下面：
-作者		| 信息			  | 信息		 |
-----:		| --------------:         | ---------:	         |
-LightZhan	| ligthzhan.xyz 				||
-^^		| 更多Joplin教程           | Qdown下载器	         |
-[LightZhan制作，允许规范转载]
-把上面的代码拷贝进编辑器改改试试，很容易明白里面的玄机的！
-第二种情况是我们添加块，看下面一点。
-2.**在表格中添加块元素。**这个不用多说，直接在表格的格子里面用Markdown语法写作，渲染成对应的Markdown格式！比如加粗、斜体、代码块等等。下面来一个简单的例子，需要注意的是下面的例子当中我们的内容有几行！
-|   Markdown   | 渲染结果       |
-|--------------|---------------|
-|    *斜体*    | *斜体*         | \
-|              |               |
-|    - 项目1   | - 项目1        | \
-|    - 项目2   | - 项目2        |
-|    ```python | ```python       \
-|    .1 + .2   | .1 + .2         \
-|    ```       | ```           |
-[LightZhan制作，允许规范转载]
-注意代码后面的”\”，这个符号是指定换行的，如果项目占据多行一定要写上。上面的代码复制黏贴进编辑器可以看到下面的渲染结果
-
-**3.表格不需要表头。**这个也很简单，直接不写表头即可。拷贝下面的代码进编辑器
-----:		| --------------: | ---------:	 |
-LightZhan	| lightzhan.xyz 	        ||
-^^		| 更多Joplin教程  | Qdown下载器	 |
-[LightZhan制作，允许规范转载]
-然后你就可以看到惊喜
-
-启用Fountain语法支持
-这个插件的目标人群非常少，Fountain语法是用来写电影剧本的，而且要是要细讲的话估计又是一篇文章，因为使用的人非常少，所以我这里就不讲这个了。
-Mermaid插件的作用
-Mermaid是一个用于画流程图、时序图、类图、状态图、甘特图、饼图的Markdown扩展，其中状态图是最新8.4版本的新功能。如果你不知道这些图是干什么的，不存在，下面的教程里面我会每个都给出例子。
-在Joplin里面使用Mermaid
-在Joplin里面如果想要使用Mermaid，那么你需要使用代码块，并且代码的类型填写mermaid，详细的格式如下：
-```mermaid
-graph TD
-    Start --&gt; Stop
-```
-在渲染区我们就能得到如下的结果
-
-Mermaid流程图
-下面我们讲解在Mermaid里面画流程图。上一节的示例便是流程图，我们把上一节的代码拿出来分析一下。首先我们看代码的第一行：graph TD，这一行代码有两个作用，graph表示我们图的类型，graph表示流程图，而第二个TD表示图的方向，可能的方向有如下几个
-
-TB：自顶向下
-BT：自底向上
-RL：从右到左
-LR：从左到右
-TD：和TB一样
-
-上面我们的例子使用的是TD，如果你对其它的方向不明白，可以把代码拷贝到编辑器里面修改方向参数就可以理解各个方向的意义了。
-上面的代码非常基础，因为如果要实现比较复杂的流程图，我们就需要使用一些比较高级的语法，比如定义节点。所谓的节点，你可以简单的理解为上面图片中的方框，但是如果我们要使用其它形状的节点怎么办呢？在上面的例子中我使用了默认的节点定义方法，也就是直接使用文本,这种方式定义节点的话id和显示文本是一样的，而且形状是固定的矩形。如果要定义不同的节点形状，或者使得id和显示文本不一样，可以使用下面的语法
-
-定义矩形形状的节点：id[text]
-定义圆角矩形的节点：id(text)
-定义椭圆形的节点：id([text])
-定义圆柱形的节点：id[(text)]
-定义圆形的节点：id((text))
-定义非对称图形的节点：id&gt;text]
-定义菱形的节点：id{text}
-定义六角形的节点：id
-定义平行四边形的节点(两个方向)：id[/text/]或者[\text]
-定义梯形的节点(两个方向)：id[/text] 或者 di[\text/]
-
-注意上面的id和text是需要我们自己定义替换的，如果同一个id有多个text，取最后一次的定义值！
-有了节点我们还需要将节点连接起来，也就是我们要使用线条或者箭头来进行节点的连接，Mermaid支持下面的方式：
-
-实线箭头：A–&gt;B
-实线无箭头：A–B
-无箭头实线上带文本：A–text–B
-实线箭头带文本：A–&gt;|text|B 或者 A–text–&gt;B
-虚线箭头：A-.-&gt;B
-虚线箭头带文本：A-.text.-&gt;B
-粗线箭头：A==&gt;B
-粗线箭头带箭头：Atext&gt;B
-
-最好的办法就是把上面的代码拷贝进编辑器看看，一看你应该就能理解各个图形的形状！
-上面我们讲解了节点和连线，下面我们说说图形的绘制。上面我使用的例子非常基础，下面来一个复杂点的例子供大家修改和研究
-```mermaid
-graph TD
-    light[LightZhan]
-    url[lightzhan.xyz]
-    QdownUrl[访问LightZhan博客Qdown页面]
-    Qdown((Qdown))
-    function[功能]
-    Qdown--&gt;|作者|light 
-    light--个人主页--&gt;url
-    Qdown--&gt;function
-    Qdown--&gt;QdownUrl
-    function1[极速下载]
-    function2[磁链/BT下载]
-    function3[迅雷下载]
-    function5[下载体验]
-    function4[Http/Https/FTP/SFTP]
-    function-.功能1.-&gt;function1
-    function-.功能2.-&gt;function2
-    function-.功能3.-&gt;function3
-    function-.功能4.-&gt;function4
-    function-.更多功能.-&gt;function5
-    annocement[本文首发于lightzhan.xyz,允许规范转载]
-
-```
-上面代码的渲染结果如下：
-
-如果不清楚，可以把上面的代码拷贝到编辑器进行修改和摸索！
-Mermaid时序图
-时序图是用于展示过程的方式和顺序的。举例来说，两个人之间的对话:
-A先问B：Qdown是啥？B回答：Qdown是全功能的下载软件！A又问：哪里可以下载呀？B回答： http://lightzhan.xyz/index.php/qdown/ 。我们使用mermaid绘制时序图来展示上面的对话过程：
-
-这样是不是看上去清晰了很多了呢？希望通过这个例子能让你深切地感受到时序图是干什么用的！好了，放上上面的时序图的代码供大家研究：
-```mermaid
-sequenceDiagram
-A-&gt;&gt;B:Qdown是啥？
-B--&gt;&gt;A:Qdown是全功能的下载软件！
-A-&gt;&gt;B:哪里可以下载呀？
-B--&gt;&gt;A:http://lightzhan.xyz/index.php/qdown/
-```
-让我们来简单分析一下上面的代码。你可能注意到了第一行的sequenceDiagram，这个就是告诉mermaid我们在这里绘制时序图，然后下面有箭头，在时序图里面，mermaid支持下面类型的箭头和线段：
-
-实线并且没有箭头：A-&gt;B:text
-虚线没有箭头：A–&gt;B:text
-实线带箭头：A-&gt;&gt;B:text
-虚线带箭头：A–&gt;&gt;B:text
-实线并且在终点带一个x：A-xB:text
-虚线并且在终点带一个x：A–xB:text
-
-上面的text就是要显示在箭头或线段上的文本，在mermaid的时序图里面被称为消息，线段或箭头类型如果有不清楚的可以拷贝到编辑器里面看看，一目了然！
-还记得上面我们在流程图里面的节点吗？在时序图里面不是定义节点，而是定义参与者，也就是上面的A和B。上面的代码中我们定义参与者的方式采用的是默认方式，也就是不显示定义，有时候我们的参与者的名字太长的话可以使用显示定义来定义别名：
-participant John
-participant Alice
-participant A as Alice
-participant J as John
-上面代码的第一二行仅仅是显式定义我们的参与者，第三四行给我们的参与者定义别名，定义了别名后我们在下面的使用中就可以直接使用A代替Alice，使用J代替John了，这样输入会方便很多！
-好了，时序图差不多就讲到这里，接下来的一些高级用法大部分我们都用不到，或者要使用的话不如使用专业的绘图软件使用插图的方式导入。
-使用Mermaid绘制类图
-类的定义
-在讲解如何绘制类图之前我们先了解一下什么是类图！如果你是计算机专业或者会计算机编程的话应该就懂面向对象编程，对象是类的实例，而这里要绘制的类图就和面向对象编程里面的类相关。
-对于编程人员来说，函数具有参数和返回值，属性具有变量类型，我们举一个例子来说一下：
-class BankAccount{
-  +String owner
-  +BigDecimal balance
-  +deposit(amount) bool
-  +withdrawl(amount)
-}
-上面的代码的渲染结果为：
-
-上面的代码是我直接从官方借鉴的，可以直观地看出对于银行账户（BankAccount），一共有两个属性和两个方法，属性都是具有对应的变量类型，而对于函数具有参数（amount），并且deposit函数还具有bool类型的返回值。你或许看到了前面的+号，这个是对应变量或属性的可见性，分别有：
-
-+ public
-– private
-# protected
-~ Package/Internal
-
-如果我们想要定义的函数是抽象函数咋办呢？在括号的后面添加*即可：
-someAbstractMethod()*
-在渲染过后抽象函数会使用斜体进行显示，这里就不截图展示了。对于静态函数，将后面的*换为$即可，在显示时静态函数会具有下划线。
-类之间的关系
-在编程中我们常常会用到的关系：
-
-
-
-&lt;|–
-继承（Inheritance）
-
-
-
-
-*–
-组成（Composition）
-
-
-o–
-聚集（Aggregation）
-
-
-–&gt;
-关联（Association）
-
-
-—
-实线（Link (Solid)）
-
-
-…&gt;
-依赖（Dependency）
-
-
-…|&gt;
-实现（Realization）
-
-
-…
-虚线（Link (Dashed)）
-
-
-
-下面我们举一个例子：“狗”继承自“动物”类别
-```mermaid
-classDiagram
-    class 动物{
-        特点1：能动
-        特点2：能叫
-    }
-    class 狗{
-        特点1：4条腿
-        特点2：会汪汪叫
-        特点3：可爱至极
-        汪汪叫(陌生人)
-    }
-    动物 &lt;|-- 狗
-```
-渲染结果为：
-
-结合代码和展示结果应该很好理解，这就是一个狗继承自动物的简单例子，我们还可以对关系结果打标签：
-```mermaid
-classDiagram
-    class 动物{
-        特点1：能动
-        特点2：能叫
-    }
-    class 狗{
-        特点1：4条腿
-        特点2：会汪汪叫
-        特点3：可爱至极
-        汪汪叫(陌生人)
-    }
-    动物 &lt;|-- 狗:属于（继承）
-```
-我们在关系指示后面加上冒号，然后后面加上关系说明，这样在渲染结果当中我们就可以看到箭头上出现了我们需要的标签说明：
-
-好了，使用mermaid绘制类图就讲到这里，还有一些用法不是很常用，我就不讲了。
-使用mermaid绘制饼图
-绘制饼图的需求比较多，很多数据展示需要我们绘制饼图，幸运的是mermaid给我们提供了绘制饼图的功能，使用方法极其简单：
-```mermaid
-pie
-    title LightZhan创作，允许规范转载（http://lightzhan.xyz）
-    "Joplin" : 42.96
-    "Qdown" : 50.05
-    " 黑科技" : 10.01
-    "其它" :  5
-
-```
-在上面的代码中，pie关键字指定我们要绘制饼图，然后tiltile指定我们的标题，后面是数据分布，注意，mermaid会将我们输入的数据进行计算，上面的数据加起来并不是100，所以我们看到在下面的渲染结果中数据对应不上。
-
-Joplin插件非常丰富，你能找到各种各样的功能，这里推荐一些插件使用，见下面这篇文章， Joplin插件推荐。
-参考：
-
-lightzhan.xyz
-
-系列教程
-全部文章RSS订阅
-笔记系列  Note分类RSS订阅
-
-完美笔记进化论
-
-
-经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
-
-pigo图床搭建与配置
-Joplin教程
-Snipaste截图工具
-Typora 作为Markdown编辑器最强
-
-
-
-Joplin入门指南&amp;实践方案
-
-
-
-Joplin和使用
-Joplin同步与备份
-Joplin导入与导出
-
-
-
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-
-
-
-Joplin安装使用，调用外部编辑器，网盘同步等等
-
-
-
-Joplin 插件以及其Markdown语法。All in One!
-
-
-
-Joplin简明教程
-markdown语法简明教程
-
-
-
-Joplin 插件使用推荐
-
-
-
-教你用各种插件打造一个强大的笔记工具。
-
-
-
-为知笔记私有化Docker部署
-
-
-
-如何部署自己私有的为知笔记。
-其实博主更推荐私有部署joplin
-
-
-Gitbook使用系列 Gitbook分类RSS订阅
-
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-
-
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-
-
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-
-Gitlab 使用系列  Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-Hexo系列  HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-
-Hexo Docker环境与Hexo基础配置篇
-
-
-hexo博客自定义修改篇
-
-
-hexo博客网络优化篇
-
-
-hexo博客增强部署篇
-
-
-hexo博客个性定制篇
-
-
-hexo博客常见问题篇
-
-
-Hexo Markdown以及各种插件功能测试
-
-
-
-
-markdown 各种其它语法插件
-latex公式支持
-mermaid图表
-plant uml图表
-URL卡片
-bilibili卡片
-github卡片
-豆瓣卡片
-插入音乐和视频
-插入脑图
-
-
-]]></content>
-      <categories>
-        <category>note</category>
-      </categories>
-      <tags>
-        <tag>markdown</tag>
-        <tag>joplin</tag>
-        <tag>note</tag>
-        <tag>mermaid</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>自动曝光原理</title>
     <url>/posts/509c7bd3/</url>
     <content><![CDATA[自动曝光的原理
@@ -11780,9 +11780,9 @@ Vim
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-YbewAmIEeEfChCZr").style.height=document.getElementById("mmedia-YbewAmIEeEfChCZr").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-wJveDNYuWHXYVNbs").style.height=document.getElementById("mmedia-wJveDNYuWHXYVNbs").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-YbewAmIEeEfChCZr").style.height=document.getElementById("mmedia-YbewAmIEeEfChCZr").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-wJveDNYuWHXYVNbs").style.height=document.getElementById("mmedia-wJveDNYuWHXYVNbs").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -16059,11 +16059,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var lRgoGsTOvbLzTHMW_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); lRgoGsTOvbLzTHMW_options.container = document.getElementById("mmedia-lRgoGsTOvbLzTHMW"); const ap_lRgoGsTOvbLzTHMW = new APlayer(lRgoGsTOvbLzTHMW_options); 
+ var QryLIrBxvmuNPUSi_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); QryLIrBxvmuNPUSi_options.container = document.getElementById("mmedia-QryLIrBxvmuNPUSi"); const ap_QryLIrBxvmuNPUSi = new APlayer(QryLIrBxvmuNPUSi_options); 
 
 - **列表**
 
- var rckIQCQjryjVyhCv_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); rckIQCQjryjVyhCv_options.container = document.getElementById("mmedia-rckIQCQjryjVyhCv"); const ap_rckIQCQjryjVyhCv = new APlayer(rckIQCQjryjVyhCv_options); 
+ var iNuhDFBUDfaxMNbw_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); iNuhDFBUDfaxMNbw_options.container = document.getElementById("mmedia-iNuhDFBUDfaxMNbw"); const ap_iNuhDFBUDfaxMNbw = new APlayer(iNuhDFBUDfaxMNbw_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -16315,21 +16315,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-IUZIVRnGQNaCiytC").style.height=document.getElementById("mmedia-IUZIVRnGQNaCiytC").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-fKPFlJecDFvofdHb").style.height=document.getElementById("mmedia-fKPFlJecDFvofdHb").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-IUZIVRnGQNaCiytC").style.height=document.getElementById("mmedia-IUZIVRnGQNaCiytC").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-fKPFlJecDFvofdHb").style.height=document.getElementById("mmedia-fKPFlJecDFvofdHb").scrollWidth*0.76+"px";
     }; 
 
 **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-cguAuECQdIBPXixt").style.height=document.getElementById("mmedia-cguAuECQdIBPXixt").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-uhefCNSGyEEFdVYb").style.height=document.getElementById("mmedia-uhefCNSGyEEFdVYb").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-cguAuECQdIBPXixt").style.height=document.getElementById("mmedia-cguAuECQdIBPXixt").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-uhefCNSGyEEFdVYb").style.height=document.getElementById("mmedia-uhefCNSGyEEFdVYb").scrollWidth*0.7+"px";
     }; 
 
 **artplayer**
 
- var fWmwZDcKrkJwCYyM_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); fWmwZDcKrkJwCYyM_options.container = "#mmedia-fWmwZDcKrkJwCYyM"; const art_fWmwZDcKrkJwCYyM = new Artplayer(fWmwZDcKrkJwCYyM_options); 
+ var BwwyVDsZYnCJdLum_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); BwwyVDsZYnCJdLum_options.container = "#mmedia-BwwyVDsZYnCJdLum"; const art_BwwyVDsZYnCJdLum = new Artplayer(BwwyVDsZYnCJdLum_options); 
 脑图
 
 原作者记录
@@ -16472,8 +16472,8 @@ Subsequent paragraphs are indented to show that they ↩︎
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>hexo</tag>
         <tag>mermaid</tag>
+        <tag>hexo</tag>
         <tag>plantuml</tag>
         <tag>mathjax</tag>
       </tags>
@@ -17483,11 +17483,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var OhYPBQOnFSrTfHEv_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); OhYPBQOnFSrTfHEv_options.container = document.getElementById("mmedia-OhYPBQOnFSrTfHEv"); const ap_OhYPBQOnFSrTfHEv = new APlayer(OhYPBQOnFSrTfHEv_options); 
+ var uutogmwbcAmTxEmy_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); uutogmwbcAmTxEmy_options.container = document.getElementById("mmedia-uutogmwbcAmTxEmy"); const ap_uutogmwbcAmTxEmy = new APlayer(uutogmwbcAmTxEmy_options); 
 
 
 
- var VChTBtyuryrqmwCM_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); VChTBtyuryrqmwCM_options.container = document.getElementById("mmedia-VChTBtyuryrqmwCM"); const ap_VChTBtyuryrqmwCM = new APlayer(VChTBtyuryrqmwCM_options); 
+ var iQUvsdMbEkmxmnRK_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); iQUvsdMbEkmxmnRK_options.container = document.getElementById("mmedia-iQUvsdMbEkmxmnRK"); const ap_iQUvsdMbEkmxmnRK = new APlayer(iQUvsdMbEkmxmnRK_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -17568,9 +17568,9 @@ Android支持
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-IMseCsCEALtPFSJU").style.height=document.getElementById("mmedia-IMseCsCEALtPFSJU").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-yAGdssXSoGRRFoiY").style.height=document.getElementById("mmedia-yAGdssXSoGRRFoiY").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-IMseCsCEALtPFSJU").style.height=document.getElementById("mmedia-IMseCsCEALtPFSJU").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-yAGdssXSoGRRFoiY").style.height=document.getElementById("mmedia-yAGdssXSoGRRFoiY").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -17579,7 +17579,7 @@ Android支持
 
 ## 中文翻唱
 
- var oGdsxnvAoTTziVJG_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); oGdsxnvAoTTziVJG_options.container = document.getElementById("mmedia-oGdsxnvAoTTziVJG"); const ap_oGdsxnvAoTTziVJG = new APlayer(oGdsxnvAoTTziVJG_options); 
+ var XhfdYHmMZXvOZohX_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); XhfdYHmMZXvOZohX_options.container = document.getElementById("mmedia-XhfdYHmMZXvOZohX"); const ap_XhfdYHmMZXvOZohX = new APlayer(XhfdYHmMZXvOZohX_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -32011,6 +32011,407 @@ Git book
         <tag>git</tag>
         <tag>devops</tag>
         <tag>drowio</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>QNAP添加man pages</title>
+    <url>/posts/ba4ef326/</url>
+    <content><![CDATA[
+默认QNAP是不带man命令的，但是，作为一个Linux重度用户怎么能忍？得想办法安装man啊！经过一番努力，最终成功安装man pages!
+
+
+需求
+默认QNAP是不带man命令的，但是，作为一个Linux重度用户怎么能忍？
+
+得想办法安装man啊！
+
+验证
+先试一下
+# man
+-sh: man: command not found
+基本可以死心了。
+看看busybox版本
+# /bin/busybox 
+BusyBox v1.24.1 (2022-03-24 03:13:07 CST) multi-call binary.
+BusyBox is copyrighted by many authors between 1998-2015.
+Licensed under GPLv2. See source distribution for detailed
+copyright notices.
+
+Usage: busybox [function [arguments]...]
+   or: busybox --list
+   or: function [arguments]...
+
+        BusyBox is a multi-call binary that combines many common Unix
+        utilities into a single executable.  Most people will create a
+        link to busybox for each function they wish to use and BusyBox
+        will act like whatever it was invoked as.
+
+Currently defined functions:
+        [, [[, addgroup, adduser, arping, ash, awk, base64, basename, bunzip2, bzcat, bzip2, cat, chattr, chgrp, chmod, chown,
+        chroot, chvt, cksum, clear, cmp, cp, cpio, crond, crontab, cut, date, dc, dd, deallocvt, delgroup, deluser, depmod, df,
+        diff, dirname, dmesg, dnsdomainname, dos2unix, du, echo, egrep, env, expr, false, fdisk, fgrep, find, free, fsync, getty,
+        grep, groups, gunzip, gzip, halt, hd, head, hexdump, hostname, hwclock, id, ifconfig, init, insmod, install, ip, ipaddr,
+        iplink, iproute, iprule, iptunnel, kill, killall, killall5, klogd, less, linuxrc, ln, logger, login, logread, ls, lsattr,
+        lsmod, lspci, md5sum, mkdir, mknod, mktemp, modprobe, more, mount, mv, nameif, netstat, nslookup, openvt, passwd, pidof,
+        ping, ping6, pivot_root, poweroff, printf, ps, pwd, rdate, readlink, realpath, reboot, renice, reset, resize, rm, rmdir,
+        rmmod, route, sed, seq, sh, sha1sum, sleep, sort, split, start-stop-daemon, stat, strings, swapoff, swapon, switch_root,
+        sync, sysctl, syslogd, tail, tar, taskset, tee, telnet, test, tftp, time, top, touch, tr, traceroute, traceroute6, true,
+        tty, umount, uname, uniq, unix2dos, unzip, uptime, usleep, vi, watch, wc, wget, which, whoami, xargs, yes, zcat
+可以看到内置busybox不支持man的。
+寻找解决方案
+去看看官方Busybox是否支持
+
+Busybox : https://busybox.net/downloads/BusyBox.html
+
+发现是支持man的，只是QNAP没有编译进去。
+解决思路
+
+给QNAP提需求单？ 是一个选择，但是太慢了，想官方内置，不知道等到猴年马月了。
+QNAP似乎开发了底层SDK，记得有下载过，还没有仔细研究怎么使用。不过记得有附带编译工具链，自己动手编译一个busybox版本替代系统内置的，应该也是可行的。
+
+去看看别人有啥解决方案？
+
+Optware has man but only for the optware installed packages (if supplied) and or manually added files in the man folder.
+https://forum.qnap.com/viewtopic.php?t=49961
+
+柳暗花明又一村， entware 支持man pages，可以直接安装了。
+
+插入entware安装方法：
+打开App Center，源选择刚添加的Qnapclub，点击搜索框输入entware，选Entware-std 1.03
+
+一条命令解决：
+opkg install man-db man-pages
+安装完之后验证：
+# man fopen
+FOPEN(3)                                            Linux Programmer's Manual                                            FOPEN(3)
+
+NAME
+       fopen, fdopen, freopen - stream open functions
+
+SYNOPSIS
+       #include &lt;stdio.h&gt;
+
+       FILE *fopen(const char *restrict pathname, const char *restrict mode);
+       FILE *fdopen(int fd, const char *mode);
+       FILE *freopen(const char *restrict pathname, const char *restrict mode,
+                     FILE *restrict stream);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       fdopen():
+           _POSIX_C_SOURCE
+
+DESCRIPTION
+       The fopen() function opens the file whose name is the string pointed to by pathname and associates a stream with it.
+
+       The  argument mode points to a string beginning with one of the following sequences (possibly followed by additional char‐
+       acters, as described below):
+
+       r      Open text file for reading.  The stream is positioned at the beginning of the file.
+
+       r+     Open for reading and writing.  The stream is positioned at the beginning of the file.
+
+       w      Truncate file to zero length or create text file for writing.  The stream is positioned at  the  beginning  of  the
+              file.
+
+       w+     Open  for reading and writing.  The file is created if it does not exist, otherwise it is truncated.  The stream is
+              positioned at the beginning of the file.
+问题就这么解决了。
+
+一个问题，我有很多其它手册，想要安装，怎么办？
+
+安装其它man手册
+已经有了man命令，只要把手册安装到entware man命令目录中就行了。
+找到enteware man手册目录。
+cd /share/CACHEDEV3_DATA/.qpkg/Entware
+find . -name "*man*"
+
+TIPS：CACHEDEV3_DATA/.qpkg这个是安装qpkg软件的磁盘。CACHEDEV3似乎是表示第三块插入机器的磁盘。
+
+结果输出：
+./bin/catman
+./bin/go/misc/chrome/gophertool/manifest.json
+./bin/go/pkg/linux_amd64/cmd/vendor/github.com/ianlancetaylor/demangle.a
+./bin/go/src/cmd/compile/internal/types2/testdata/manual.go2
+./bin/go/src/cmd/go/internal/modconv/testdata/dockerman.glide
+./bin/go/src/cmd/go/internal/modconv/testdata/dockerman.out
+./bin/go/src/cmd/go/internal/modconv/testdata/govmomi.vmanifest
+./bin/go/src/cmd/go/internal/modconv/vmanifest.go
+./bin/go/src/cmd/go/testdata/script/mod_convert_vendor_manifest.txt
+./bin/go/src/cmd/go/testdata/script/mod_list_command_line_arguments.txt
+./bin/go/src/cmd/go/testdata/script/mod_download_too_many_redirects.txt
+./bin/go/src/cmd/go/testdata/script/gccgo_mangle.txt
+./bin/go/src/cmd/vendor/github.com/google/pprof/internal/driver/commands.go
+./bin/go/src/cmd/vendor/github.com/ianlancetaylor/demangle
+./bin/go/src/cmd/vendor/github.com/ianlancetaylor/demangle/demangle.go
+./bin/go/src/compress/bzip2/huffman.go
+./bin/go/src/compress/flate/huffman_bit_writer.go
+./bin/go/src/compress/flate/huffman_bit_writer_test.go
+./bin/go/src/compress/flate/huffman_code.go
+./bin/go/src/compress/flate/testdata/huffman-null-max.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-null-max.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-null-max.golden
+./bin/go/src/compress/flate/testdata/huffman-null-max.in
+./bin/go/src/compress/flate/testdata/huffman-null-max.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-null-max.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-pi.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-pi.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-pi.golden
+./bin/go/src/compress/flate/testdata/huffman-pi.in
+./bin/go/src/compress/flate/testdata/huffman-pi.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-pi.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.golden
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.in
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.golden
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.in
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-rand-max.golden
+./bin/go/src/compress/flate/testdata/huffman-rand-max.in
+./bin/go/src/compress/flate/testdata/huffman-shifts.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-shifts.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-shifts.golden
+./bin/go/src/compress/flate/testdata/huffman-shifts.in
+./bin/go/src/compress/flate/testdata/huffman-shifts.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-shifts.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-text-shift.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-text-shift.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-text-shift.golden
+./bin/go/src/compress/flate/testdata/huffman-text-shift.in
+./bin/go/src/compress/flate/testdata/huffman-text-shift.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-text-shift.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-text.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-text.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-text.golden
+./bin/go/src/compress/flate/testdata/huffman-text.in
+./bin/go/src/compress/flate/testdata/huffman-text.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-text.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-zero.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-zero.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-zero.golden
+./bin/go/src/compress/flate/testdata/huffman-zero.in
+./bin/go/src/compress/flate/testdata/huffman-zero.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-zero.wb.expect-noinput
+./bin/go/src/go/parser/performance_test.go
+./bin/go/src/go/printer/performance_test.go
+./bin/go/src/go/types/testdata/manual.go2
+./bin/go/src/image/jpeg/huffman.go
+./bin/go/src/vendor/golang.org/x/net/http2/hpack/huffman.go
+./bin/go/test/bench/go1/mandel_test.go
+./bin/go/test/abi/many_int_input.go
+./bin/go/test/abi/many_int_input.out
+./bin/go/test/abi/many_intstar_input.go
+./bin/go/test/abi/many_intstar_input.out
+./bin/man
+./bin/mandb
+./bin/manpath
+./etc/man_db.conf
+./lib/opkg/info/man-db.conffiles
+./lib/opkg/info/man-db.control
+./lib/opkg/info/man-pages.list
+./lib/opkg/info/man-db.list
+./lib/opkg/info/man-pages.control
+./lib/opkg/info/man-pages.postinst
+./lib/python3.10/encodings/__pycache__/hp_roman8.cpython-310.opt-1.pyc
+./lib/python3.10/encodings/__pycache__/hp_roman8.cpython-310.opt-2.pyc
+./lib/python3.10/encodings/__pycache__/mac_roman.cpython-310.opt-2.pyc
+./lib/python3.10/encodings/__pycache__/mac_roman.cpython-310.pyc
+./lib/python3.10/encodings/__pycache__/hp_roman8.cpython-310.pyc
+./lib/python3.10/encodings/__pycache__/mac_romanian.cpython-310.pyc
+./lib/python3.10/encodings/__pycache__/mac_roman.cpython-310.opt-1.pyc
+./lib/python3.10/encodings/__pycache__/mac_romanian.cpython-310.opt-1.pyc
+./lib/python3.10/encodings/__pycache__/mac_romanian.cpython-310.opt-2.pyc
+./lib/python3.10/encodings/hp_roman8.pyc
+./lib/python3.10/encodings/mac_roman.pyc
+./lib/python3.10/encodings/mac_romanian.pyc
+./lib/tcl8.5/encoding/macRoman.enc
+./lib/tcl8.5/encoding/macRomania.enc
+./lib/groff/groffer/man.pl
+./lib/man-db
+./lib/man-db/libman-2.10.2.so
+./lib/man-db/libman.so
+./lib/man-db/libmandb-2.10.2.so
+./lib/man-db/libmandb.so
+./lib/man-db/manconv
+./share/zoneinfo/Asia/Amman
+./share/zoneinfo/Asia/Kathmandu
+./share/zoneinfo/Asia/Katmandu
+./share/doc/man-db
+./share/doc/man-db/man-db-manual.ps
+./share/doc/man-db/man-db-manual.txt
+./share/groff/1.22.4/tmac/man.tmac
+./share/groff/1.22.4/tmac/mandoc.tmac
+./share/groff/site-tmac/man.local
+./share/man
+./share/man/man1
+./share/man/man1/man-recode.1
+./share/man/man1/man.1
+./share/man/man1/manconv.1
+./share/man/man1/manpath.1
+./share/man/man5
+./share/man/man5/manpath.5
+./share/man/man8
+./share/man/man8/catman.8
+./share/man/man8/mandb.8
+./share/man/man2
+./share/man/man3
+./share/man/man4
+./share/man/man6
+./share/man/man7
+./share/man/man7/man-pages.7
+./share/man/man7/man.7
+./var/cache/man
+很显然，路径就在/share/CACHEDEV3_DATA/.qpkg/Entware/share//man/中了。
+那么，安装完entware之后，其它的man 手册放到 /share/CACHEDEV3_DATA/.qpkg/Entware/share/man这个目录中就行了。
+把gh git等手册放进去。再次验证
+man gh
+GH(1)                                                   GitHub CLI manual                                                   GH(1)
+
+NAME
+       gh - GitHub CLI
+
+SYNOPSIS
+       gh &lt;command&gt; &lt;subcommand&gt; [flags]
+
+DESCRIPTION
+       Work seamlessly with GitHub from the command line.
+
+CORE COMMANDS
+       gh-auth(1)
+              Authenticate gh and git with GitHub
+
+       gh-browse(1)
+              Open the repository in the browser
+
+       gh-codespace(1)
+              Connect to and manage your codespaces
+
+       gh-gist(1)
+              Manage gists
+
+       gh-issue(1)
+              Manage issues
+
+       gh-pr(1)
+              Manage pull requests
+
+       gh-release(1)
+              Manage releases
+
+       gh-repo(1)
+              Manage repositories
+
+ACTIONS COMMANDS
+完美收工！
+可能需要注意的地方，注意man手册的权限644，如果手册copy进去了，发现使用不了。运行下面命令。
+chmod 644 -R /share/CACHEDEV3_DATA/.qpkg/Entware/share/man
+安装更多的man pages
+
+
+Git手册下载地址： https://mirrors.edge.kernel.org/pub/software/scm/git/
+中文man手册： https://github.com/man-pages-zh/manpages-zh
+
+
+
+PS: 中文man手册有不少依赖需要解决，在Docker中已经可以查询中文man了，qnap中试了下，解决依赖搞得头大，暂时就docker中用中文man好了
+
+真正收工了！
+附录
+man介绍
+man命令并非仅仅能查看命令或者函数的介绍，在linux中，有丰富的帮助手册信息，并且每一个手册都有一个编号。编号和对应内容如下：
+
+
+
+编号
+代表内容
+
+
+
+
+1
+可执行程序或shell命令，如ls
+
+
+2
+系统调用，如chdir
+
+
+3
+库函数，如printf
+
+
+4
+设备或特殊文件，如tty
+
+
+5
+配置文件格式或约定
+
+
+6
+游戏
+
+
+7
+杂项
+
+
+8
+管理命令，通常只有root用户可以使用
+
+
+9
+内核例程
+
+
+n
+内置命令，如cd
+
+
+
+常用快捷键
+
+手册内容
+多数手册包含以下几部分内容：
+
+NAME 功能的简单描述
+SYNOPSIS 语法格式
+DESCRIPTION 描述
+OPTIONS 选项
+ERRORS 描述出错场景，这在排查错误时很有帮助
+NOTES 注意事项
+FILES 相关文件，例如对于man命令的FILES部分内容显示了它的配置文件位置等信息
+EXAMPLES 使用示例，会提供一些简单的示例
+BUGS 存在的bug，当遇到奇怪的问题时，不妨看看当前命令是否有已知的bug
+
+基本查看
+手册的查看和less查看文本类似，可以参考《文本查看篇》或查看less命令的使用，这里介绍基本操作：
+
+空格 向下翻页
+Home 回到第一页
+End 跳到最后一页
+/string 向前搜索string字符串
+?string 向后搜索string字符串
+n 下一个匹配字符
+N 上一个匹配字符
+q 退出
+
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>embeded</tag>
+        <tag>man</tag>
       </tags>
   </entry>
 </search>
