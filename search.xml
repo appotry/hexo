@@ -1,6 +1,150 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Github Pages + jekyll 全面介绍极简搭建个人网站和博客</title>
+    <url>/posts/1991789c/</url>
+    <content><![CDATA[利用github pages搭建个人博客。本文指导建立github工程，并配置github pages搭建博客的全过程。
+注意：图床使用github，图片显示问题自己解决
+第一步，建立Github仓库
+首先到这里Github，创建一个仓库。
+
+仓库名称有固定的格式： username.github.io，其中username必须是Github账户的用户名（我的是scottcgi），github.io是固定的，这个地址将会成为个人站点的网站地址。另外，我们可以勾选Initialize this repository with a README，让仓库自动创建一个README.md文件，我们用它来做站点的首页（当然也可以不创建，后面自行创建，或是建立index.html也行）。
+注意： username如果不是Github账户名，这个仓库就会成为username.github.io的子站点，比如访问地址会是：username.github.io/aaa.github.io。可见，username.github.io是github默认分配给你的域名，同名仓库即代表着默认网站内容。而username.github.io/仓库名称，是用来访问你的其它仓库的地址。
+第二步，设置仓库开启Github Pages
+进入仓库设置界面，如图。
+
+这里能够重新修改仓库的名称，比如这个仓库内容是fork别人的，就可以在这里修改成自己的username.github.io名称。
+
+在Setting页面下有Github Pages的设置选项。绿色表示部署成功，每次修改仓库内容，都会出发Github jekyll重新编译部署，需要1-2分钟的时间，更新才能体现。如果有编译错误，包括js，css，html，markdown语法问题，都会显示红色以及错误页面和行号，同时会发邮件通知。其中，Source有以下几个选项：
+gh-pages branch 是项目新建一个分支命名为这个，使用这个分支来做站点内容。
+master branch 是使用主分支也是默认的，来作为站点内容。
+master branch/docs folder 是使用主分支的docs文件夹来作为站点内容。
+None 就是禁用Github Pages。
+如果是username.github.io只能使用主分支，其它仓库项目可以选择其它两个。接下来Choose a theme是Github提供的内置的网站主题，选择即可应用无需其它设置。Custom domain是自定义域名，本文暂不讨论。
+第三步，使用Github内置主题
+选择好主题，过一会刷新网站地址就已经能看到效果了，而在Code页面仅有两个文件。
+
+编辑README.md文件的内容，就会默认显示在网站首页，_config.yml 是jekyll的全局配置文件，现在里面只有一句话，theme: jekyll-theme-modernist。我们可以手动修改这个theme主题配置，网站就会应用不同的主题。
+Github内置支持的几个主题，官方的仓库在这里：https://pages.github.com/themes，每个README.md里都有介绍如何设置。
+那么我们现在就有两种方法来使用这些主题：
+第一种，就是直接fork一个主题仓库，然后修改仓库名称为我们自己的，然后修改我们需要的部分。
+
+第二种，只是简单的Choose (Change) theme（或在_config.yml设置theme），然后我们对照着官方仓库的主题目录，需要改什么文件就按照同样的路径拷贝单独一个文件到自己的仓库来修改（保持路径一致），这样就可以保持自己仓库的简洁。（如果使用了github内置的主题，github就会把你仓库的内容和内置主题内容合并到一起编译成静态网页。）
+另外，更多主题可以参看这两个地址（不要挑花眼了）： jekyll themes 和 jekyll wiki site。
+第四步，jekyll的目录结构
+我们只需要关注几个核心的目录结构如下（可以自己创建）：
+- _layouts （存放页面模板，md或html文件的内容会填充模板）
+- _sass（存放样式表）
+- _includes （可以复用在其它页面被include的html页面）
+- _posts（博客文章页面）
+- assets（原生的资源文件）
+  - js
+  - css
+  - image
+- _config.yml （全局配置文件）
+- index.html, index.md, README.md （首页index.html优先级最高，如果没有index，默认启用README.md文件）
+- 自定义文件和目录
+  更多更详细的目录结构参看jekyll官网：https://jekyllrb.com/docs/structure
+第五步，jekyll的模板编程语言Liquid的使用
+
+
+变量  被嵌入在页面中，会在静态页面生成的时候被替换成具体的数值。常用的全局变量对象有：site 和 page。这两个对象有很多默认自带的属性，比如：，。更多的默认值参看：https://jekyllrb.com/docs/variables。
+
+
+site对象对应的就是网站范围，自定义变量放在_config.yml中，比如title:标题使用访问。
+
+
+page对象对应的是单个页面，自定义变量放在每个页面的最开头，比如：
+
+
+myNum:100
+ 
+myStr:我是字符串
+使用 和  访问。
+条件判断语句，更多详见：https://shopify.github.io/liquid/tags/control-flow
+
+循环迭代，更多详见：https://shopify.github.io/liquid/tags/iteration
+
+默认函数，可以对变量进行一些处理，比如大小写转化、数学运算、格式化、排序等等，在Liquid中叫做Filters。比如{{ "Hello World!" | downcase }}转换字符串为小写。更多内置函数详见：https://jekyllrb.com/docs/liquid/filters
+第六步，使用_config.yml文件设置jekyll
+如果不是fork别人的仓库，就需要自己创建一个这个文件。然后，我们就可以配置一些默认的属性来控制jekyll的编译过程。更多详细的内置属性详见：https://jekyllrb.com/docs/configuration/default
+同时我们可以自定变量，会自动绑定到site对象上，比如我们可以把导航配置到_config.yml中：
+
+
+当然，我们也可以把一些数据单独放入一个yml文件，然后放在固定的数据文件夹_data下，比如_data/navigation.yml，这样访问这个文件的数据对象就是site.data.navigation。
+第七步，_layouts模板配置
+_layouts文件夹存放的是页面模板，默认需要一个default.html，什么意思？就是说，layout提供一个页面的布局框架，这是固定的模式，包括样式、结构、布局、脚本控制等等。然后，我们在用其它md或html文件去动态填充这个框架，这样就形成了一个完整的页面。比如我的default.html页面如下：
+
+
+
+{% seo %} 是jekyll的一个插件提供的seo优化，详情在这里：https://github.com/jekyll/jekyll-seo-tag
+核心在于 content 这个变量是内置的，会用我们的md或html页面填充这部分内容。
+其它的，我们看到会大量使用变量和流程控制代码，来填充模板的方方面面。
+于是，填充模板的内容，一方面是来自读取配置文件的变量，一方面是来自_includes的页面，还有就是来自 content 对应的页面。
+当然，我们也可以不使用 content 来填充模板，而是使用_includes的页面来代替content  ，但这样不够灵活，因为使用content ，我们可以在每个页面单独设置对应的layout模板。
+
+第八步，md和html页面编写
+站点内容页面，可以使用markdown或html来编写，但markdown编写的md文件，在浏览器地址访问的时候依然使用html文件后缀。推荐使用markdown来书写内容，语法参见：Github md 示例 和 Github md 教程。比如下面这个About.md页面：
+---
+layout: default
+title: About
+---
+# About page
+ 
+This page tells you a little bit about me.
+ 
+layout: default 就是告诉jekyll这个页面使用哪个模板，即这个页面会放入哪个模板的content。当然，我们可以在_layouts文件夹下提供多个不同的模板，然后根据需要不同的页面使用不同的layout。
+页面可以放在任意位置和目录，访问的时候从站点域名开始，带上目录名称，再次注意需要使用html结尾。如果想要自定义浏览器的访问路径，可以参看详细设置：permalinks。
+md和html页面的区别：
+md有自己的语法，可以使用少量的html标签，最终会编译成html，侧重于内容编写。
+html可以随意使用html标签，可以使用liquid模板语言，侧重于页面模板和功能控制。
+至此，我们就可以在github上，新建md文件然后编辑提交，等待几分钟编译生成之后，就可以在浏览器里看到页面内容了。
+第九步，博客文章编写和管理
+我们自然可以新建目录，提交文章，然后添加一个文章列表页面。但我们也可以把这些交给jekyll的内置机制来完成，因为它提供了一些方便的内置文章管理功能。
+
+_posts文件夹是内置的放置文章的目录，我们可以将固定格式year-moth-day-name.md名称的md文件放到这里。比如新建一篇md的博客文章放到_posts目录下：
+
+---
+layout: post
+---
+这是一篇博客文章。
+
+
+接下来我们需要添加一个post的模板页面到_layouts文件夹下面。
+
+
+可见，模板页面本身也可以使用模板，这里post使用了default模板，而这里 content 就会填充_posts下面编写的页面（如果页面使用了layout: post模板）。
+最后，我们还需要编写一个博客文章列表的页面，用来展示所有的文章。比如在根目录新建blog.html页面：
+
+
+site.posts jekyll会自动生成_posts目录的对象。
+_post.url jekyll会自动会设置在_posts目录下的页面url。
+post.title 默认是md文件名称，但也可以在文章页面自定义title: 我的文章自定义名称。
+post.excerpt 默认是文章第一段的摘要文字。
+
+第十步，Github Pages的限制
+
+Github Pages 并不是无限存储和无限流量的静态站点服务，一些限制如下：
+内容存储不能超过1GB。
+每个月100GB流量带宽。
+每小时编译构建次数不超过10次。（在线修改重新编译并未发现这个限制）
+更多参看官方说明：usage-limits。
+
+总结
+在实际的使用过程中，我发现完全可以在Github网站上，编写md和html页面，修改js和css文件，来完成站点的设置和搭建。只不过每次修改都要触发Github jekyll的编译行为，有点慢（不知道是不是增量编译），没有在本地修改调试的速度快。
+更多jekyll详细的设置和功能，参看官方网站的文档：https://jekyllrb.com/docs。
+原文链接：https://blog.csdn.net/tom_221x/article/details/84630283
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>github</tag>
+        <tag>jekyll</tag>
+        <tag>blog</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Gitlab的安装及使用</title>
     <url>/posts/d08eb7b/</url>
     <content><![CDATA[Gitlab概述
@@ -484,150 +628,6 @@ Create a new Pull Request
         <tag>hardlink</tag>
         <tag>bt</tag>
         <tag>pt</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Github Pages + jekyll 全面介绍极简搭建个人网站和博客</title>
-    <url>/posts/1991789c/</url>
-    <content><![CDATA[利用github pages搭建个人博客。本文指导建立github工程，并配置github pages搭建博客的全过程。
-注意：图床使用github，图片显示问题自己解决
-第一步，建立Github仓库
-首先到这里Github，创建一个仓库。
-
-仓库名称有固定的格式： username.github.io，其中username必须是Github账户的用户名（我的是scottcgi），github.io是固定的，这个地址将会成为个人站点的网站地址。另外，我们可以勾选Initialize this repository with a README，让仓库自动创建一个README.md文件，我们用它来做站点的首页（当然也可以不创建，后面自行创建，或是建立index.html也行）。
-注意： username如果不是Github账户名，这个仓库就会成为username.github.io的子站点，比如访问地址会是：username.github.io/aaa.github.io。可见，username.github.io是github默认分配给你的域名，同名仓库即代表着默认网站内容。而username.github.io/仓库名称，是用来访问你的其它仓库的地址。
-第二步，设置仓库开启Github Pages
-进入仓库设置界面，如图。
-
-这里能够重新修改仓库的名称，比如这个仓库内容是fork别人的，就可以在这里修改成自己的username.github.io名称。
-
-在Setting页面下有Github Pages的设置选项。绿色表示部署成功，每次修改仓库内容，都会出发Github jekyll重新编译部署，需要1-2分钟的时间，更新才能体现。如果有编译错误，包括js，css，html，markdown语法问题，都会显示红色以及错误页面和行号，同时会发邮件通知。其中，Source有以下几个选项：
-gh-pages branch 是项目新建一个分支命名为这个，使用这个分支来做站点内容。
-master branch 是使用主分支也是默认的，来作为站点内容。
-master branch/docs folder 是使用主分支的docs文件夹来作为站点内容。
-None 就是禁用Github Pages。
-如果是username.github.io只能使用主分支，其它仓库项目可以选择其它两个。接下来Choose a theme是Github提供的内置的网站主题，选择即可应用无需其它设置。Custom domain是自定义域名，本文暂不讨论。
-第三步，使用Github内置主题
-选择好主题，过一会刷新网站地址就已经能看到效果了，而在Code页面仅有两个文件。
-
-编辑README.md文件的内容，就会默认显示在网站首页，_config.yml 是jekyll的全局配置文件，现在里面只有一句话，theme: jekyll-theme-modernist。我们可以手动修改这个theme主题配置，网站就会应用不同的主题。
-Github内置支持的几个主题，官方的仓库在这里：https://pages.github.com/themes，每个README.md里都有介绍如何设置。
-那么我们现在就有两种方法来使用这些主题：
-第一种，就是直接fork一个主题仓库，然后修改仓库名称为我们自己的，然后修改我们需要的部分。
-
-第二种，只是简单的Choose (Change) theme（或在_config.yml设置theme），然后我们对照着官方仓库的主题目录，需要改什么文件就按照同样的路径拷贝单独一个文件到自己的仓库来修改（保持路径一致），这样就可以保持自己仓库的简洁。（如果使用了github内置的主题，github就会把你仓库的内容和内置主题内容合并到一起编译成静态网页。）
-另外，更多主题可以参看这两个地址（不要挑花眼了）： jekyll themes 和 jekyll wiki site。
-第四步，jekyll的目录结构
-我们只需要关注几个核心的目录结构如下（可以自己创建）：
-- _layouts （存放页面模板，md或html文件的内容会填充模板）
-- _sass（存放样式表）
-- _includes （可以复用在其它页面被include的html页面）
-- _posts（博客文章页面）
-- assets（原生的资源文件）
-  - js
-  - css
-  - image
-- _config.yml （全局配置文件）
-- index.html, index.md, README.md （首页index.html优先级最高，如果没有index，默认启用README.md文件）
-- 自定义文件和目录
-  更多更详细的目录结构参看jekyll官网：https://jekyllrb.com/docs/structure
-第五步，jekyll的模板编程语言Liquid的使用
-
-
-变量  被嵌入在页面中，会在静态页面生成的时候被替换成具体的数值。常用的全局变量对象有：site 和 page。这两个对象有很多默认自带的属性，比如：，。更多的默认值参看：https://jekyllrb.com/docs/variables。
-
-
-site对象对应的就是网站范围，自定义变量放在_config.yml中，比如title:标题使用访问。
-
-
-page对象对应的是单个页面，自定义变量放在每个页面的最开头，比如：
-
-
-myNum:100
- 
-myStr:我是字符串
-使用 和  访问。
-条件判断语句，更多详见：https://shopify.github.io/liquid/tags/control-flow
-
-循环迭代，更多详见：https://shopify.github.io/liquid/tags/iteration
-
-默认函数，可以对变量进行一些处理，比如大小写转化、数学运算、格式化、排序等等，在Liquid中叫做Filters。比如{{ "Hello World!" | downcase }}转换字符串为小写。更多内置函数详见：https://jekyllrb.com/docs/liquid/filters
-第六步，使用_config.yml文件设置jekyll
-如果不是fork别人的仓库，就需要自己创建一个这个文件。然后，我们就可以配置一些默认的属性来控制jekyll的编译过程。更多详细的内置属性详见：https://jekyllrb.com/docs/configuration/default
-同时我们可以自定变量，会自动绑定到site对象上，比如我们可以把导航配置到_config.yml中：
-
-
-当然，我们也可以把一些数据单独放入一个yml文件，然后放在固定的数据文件夹_data下，比如_data/navigation.yml，这样访问这个文件的数据对象就是site.data.navigation。
-第七步，_layouts模板配置
-_layouts文件夹存放的是页面模板，默认需要一个default.html，什么意思？就是说，layout提供一个页面的布局框架，这是固定的模式，包括样式、结构、布局、脚本控制等等。然后，我们在用其它md或html文件去动态填充这个框架，这样就形成了一个完整的页面。比如我的default.html页面如下：
-
-
-
-{% seo %} 是jekyll的一个插件提供的seo优化，详情在这里：https://github.com/jekyll/jekyll-seo-tag
-核心在于 content 这个变量是内置的，会用我们的md或html页面填充这部分内容。
-其它的，我们看到会大量使用变量和流程控制代码，来填充模板的方方面面。
-于是，填充模板的内容，一方面是来自读取配置文件的变量，一方面是来自_includes的页面，还有就是来自 content 对应的页面。
-当然，我们也可以不使用 content 来填充模板，而是使用_includes的页面来代替content  ，但这样不够灵活，因为使用content ，我们可以在每个页面单独设置对应的layout模板。
-
-第八步，md和html页面编写
-站点内容页面，可以使用markdown或html来编写，但markdown编写的md文件，在浏览器地址访问的时候依然使用html文件后缀。推荐使用markdown来书写内容，语法参见：Github md 示例 和 Github md 教程。比如下面这个About.md页面：
----
-layout: default
-title: About
----
-# About page
- 
-This page tells you a little bit about me.
- 
-layout: default 就是告诉jekyll这个页面使用哪个模板，即这个页面会放入哪个模板的content。当然，我们可以在_layouts文件夹下提供多个不同的模板，然后根据需要不同的页面使用不同的layout。
-页面可以放在任意位置和目录，访问的时候从站点域名开始，带上目录名称，再次注意需要使用html结尾。如果想要自定义浏览器的访问路径，可以参看详细设置：permalinks。
-md和html页面的区别：
-md有自己的语法，可以使用少量的html标签，最终会编译成html，侧重于内容编写。
-html可以随意使用html标签，可以使用liquid模板语言，侧重于页面模板和功能控制。
-至此，我们就可以在github上，新建md文件然后编辑提交，等待几分钟编译生成之后，就可以在浏览器里看到页面内容了。
-第九步，博客文章编写和管理
-我们自然可以新建目录，提交文章，然后添加一个文章列表页面。但我们也可以把这些交给jekyll的内置机制来完成，因为它提供了一些方便的内置文章管理功能。
-
-_posts文件夹是内置的放置文章的目录，我们可以将固定格式year-moth-day-name.md名称的md文件放到这里。比如新建一篇md的博客文章放到_posts目录下：
-
----
-layout: post
----
-这是一篇博客文章。
-
-
-接下来我们需要添加一个post的模板页面到_layouts文件夹下面。
-
-
-可见，模板页面本身也可以使用模板，这里post使用了default模板，而这里 content 就会填充_posts下面编写的页面（如果页面使用了layout: post模板）。
-最后，我们还需要编写一个博客文章列表的页面，用来展示所有的文章。比如在根目录新建blog.html页面：
-
-
-site.posts jekyll会自动生成_posts目录的对象。
-_post.url jekyll会自动会设置在_posts目录下的页面url。
-post.title 默认是md文件名称，但也可以在文章页面自定义title: 我的文章自定义名称。
-post.excerpt 默认是文章第一段的摘要文字。
-
-第十步，Github Pages的限制
-
-Github Pages 并不是无限存储和无限流量的静态站点服务，一些限制如下：
-内容存储不能超过1GB。
-每个月100GB流量带宽。
-每小时编译构建次数不超过10次。（在线修改重新编译并未发现这个限制）
-更多参看官方说明：usage-limits。
-
-总结
-在实际的使用过程中，我发现完全可以在Github网站上，编写md和html页面，修改js和css文件，来完成站点的设置和搭建。只不过每次修改都要触发Github jekyll的编译行为，有点慢（不知道是不是增量编译），没有在本地修改调试的速度快。
-更多jekyll详细的设置和功能，参看官方网站的文档：https://jekyllrb.com/docs。
-原文链接：https://blog.csdn.net/tom_221x/article/details/84630283
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>github</tag>
-        <tag>jekyll</tag>
-        <tag>blog</tag>
       </tags>
   </entry>
   <entry>
@@ -4832,243 +4832,6 @@ Earthly 一个更加强大的镜像构建工具
         <tag>qnap</tag>
         <tag>nas</tag>
         <tag>qbittorrent</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>transmission 使用及其配置</title>
-    <url>/posts/8f76d9dd/</url>
-    <content><![CDATA[安装
-qnapclub
-
-docker
-docker hub
-
-version: "2.1"
-services:
-  transmission:
-    image: ghcr.io/linuxserver/transmission
-    container_name: transmission
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/London
-      - TRANSMISSION_WEB_HOME=/combustion-release/ #optional
-      - USER=username #optional
-      - PASS=password #optional
-      - WHITELIST=iplist #optional
-      - HOST_WHITELIST=dnsnane list #optional
-    volumes:
-      - &lt;path to data&gt;:/config
-      - &lt;path to downloads&gt;:/downloads
-      - &lt;path to watch folder&gt;:/watch
-    ports:
-      - 9091:9091
-      - 51413:51413
-      - 51413:51413/udp
-    restart: unless-stopped
-
-控制脚本
-/etc/init.d/QTransmission.sh start
-/etc/init.d/QTransmission.sh stop
-Transmission 配置详解
-vi /share/CACHEDEV1_DATA/.qpkg/QTransmission/etc/settings.json
-"alt-speed-up": 500, # 限速时段上传限速值
-"alt-speed-down": 500, # 限速时段下载限速值
-"alt-speed-enabled": false,
-"alt-speed-time-begin": 540,
-"alt-speed-time-day": 127, # 时段限速日期（星期几），127 表示每天，更复杂配置参考官网。用 7 位二进制数表示，然后转换成十进制数，0000001 表示周日，1000000 表示周六，0000010 表示周一，0000100 表示周二。如果你只要在周末限速，该数应该 1000001，转换为十进制就是 65
-"alt-speed-time-enabled": true, # 启用限速，为 false 时，以上计划配置则不生效，生效时会自动禁用 alt-speed-enabled 配置，二者只能选一个
-"alt-speed-time-end": 420, # 限速时段结束时间，这个配置表示的是凌晨零点到开始时间的分钟数，比如 7:00 就是 7*60=420。需要注意的是，该时间是用的 GMT 时间，即北京时间 -8 小时。比如你计划北京时间 7 点 30 分开始，这个数字应该是（7-8+24）*60+30=1410
-"bind-address-ipv4": "0.0.0.0", # IPv4 地址绑定，一般不要改动
-"bind-address-ipv6": "::", #IPv6 地址绑定，一般不要改动
-"blocklist-enabled": true, # 启动白名单，默认不启动，需要启动改为 true
-"blocklist-updates-enabled": false,
-"blocklist-url": "http://www.example.com/blocklist",
-"cache-size-mb": 4, #缓存大小，以 MB 为单位，建议设大一些，避免频繁读写硬盘而伤硬盘，建议设为内存大小的 1/6～1/4
-"compact-view": false,
-"dht-enabled": false, #关闭 DHT（不通过 tracker 寻找节点）功能，不少 PT 站的要求，但 BT 下载设置为 true 会使得下载更好
-"download-dir": "/share/Downloads", #下载的内容存放的目录
-"download-queue-enabled": true,  # 下载队列开关
-"download-queue-size": 5, # 下载队列数量
-"encryption": 1, # 加密。指定节点的加密模式，默认 1。0 表示关闭 , 0= 不加密，1= 优先加密，2= 必须加密
-"lazy-bitfield-enabled": true, # 默认为 true，设置为 true 时可以避免某些 ISP 通过查询完整位段来屏蔽 BT，从而破解部分 ISP 对 BT 的封杀，当然不一定完全有效
-"idle-seeding-limit": 30,
-"idle-seeding-limit-enabled": false,
-"incomplete-dir": "/share/Downloads",  # 临时文件路径
-"incomplete-dir-enabled": false,
-"inhibit-desktop-hibernation": true,
-"lpd-enabled": false, #禁用 LDP（本地节点发现，用于在本地网络寻找节点）, 不少 PT 站的要求
-"main-window-height": 500,
-"main-window-is-maximized": 0,
-"main-window-width": 615,
-"main-window-x": 337,
-"main-window-y": 211,
-"message-level": 2,
-"open-dialog-dir": "/share/Download",  # 网页对话框打开的根目录
-"peer-congestion-algorithm": "",
-"peer-limit-global": 240, # 全局连接数
-"peer-limit-per-torrent": 60, # 每个种子最多的连接数
-"peer-port": 51413, # 传入端口，预设的 port 口
-"peer-port-random-high": 65535, # 传入端口随机值范围上限
-"peer-port-random-low": 49152, # 传入端口随机值范围下限
-"peer-port-random-on-start": false, # 启用随机端口，默认关闭，不建议改为 true
-"peer-socket-tos": "default",
-"pex-enabled": false, # 是否启用用户交换，默认为 true，关于 PEX，有兴趣的朋友可参考 http://en.wikipedia.org/wiki/Peer_exchange，对于只用 PT 的朋友，可以设为 false, 禁用 PEX（节点交换，用于同已与您相连接的节点交换节点名单）, 不少 PT 站的要求
-"port-forwarding-enabled": true, # 启用端口转发（uPnP），如果路由支持并且也开启了 uPnP，则路由会自动做端口映射，但是需要注意的是如果内网有几台机器同时使用 transmission，就必须更改 peer-port 值为不一样
-"preallocation": 1, # 预分配文件磁盘空间，0= 关闭，1= 快速，2= 完全。建议取 1 开启该功能，防止下载大半了才发现磁盘不够。取 2 时，可以减少磁盘碎片，但速度较慢。
-"prefetch-enabled": 1,
-"queue-stalled-enabled": true,
-"queue-stalled-minutes": 30,
-"ratio-limit": 2, # 分享率限制
-"ratio-limit-enabled": false, # 启用分享率限制，默认不启用
-"rename-partial-files": true, #在未完成的文件名后添加后缀.part,false= 禁用
-"rpc-authentication-required": true, # 远程控制需要验证，默认为需要
-"rpc-bind-address": "0.0.0.0", # 远程控制地址绑定，允许 IP 通过 RPC 访问，默认值表示任何地址都可以访问
-"rpc-enabled": true, # 启用远程控制，默认启用
-"rpc-host-whitelist-enabled": true, # 是否开启主机白名单
-"rpc-host-whitelist": "", # 白名单，如果需要远程访问，最好配置
-"rpc-password": "{cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaE", #web-ui 的密码，可直接修改，重新运行或者 reload 服务的时候密码会自动 HASH 增加安全性
-"rpc-port": 9091, # 默认 web-ui 的 port 口，也是远程控制端口，可自行更改
-"rpc-url": "/transmission/",
-"rpc-username": "transmission", #默认登入名称，也是远程控制用户名
-"rpc-whitelist": "127.0.0.1", # 远程控制白名单，默认值为所有地址，支持通配符*，如 192.168.2.*
-"rpc-whitelist-enabled": true, # 启用远程控制白名单，如果启用，则仅仅上面列出的地址可以远程连接
-"scrape-paused-torrents-enabled": true,
-"script-torrent-done-enabled": false,
-"script-torrent-done-filename": "/home/",
-"seed-queue-enabled": false,
-"seed-queue-size": 10,
-"show-backup-trackers": true,
-"show-extra-peer-details": false,
-"show-filterbar": true,
-"show-notification-area-icon": false,
-"show-options-window": true,
-"show-statusbar": true,
-"show-toolbar": true,
-"show-tracker-scrapes": true,
-"sort-mode": "sort-by-age",
-"sort-reversed": false,
-"speed-limit-down": 300, #平时的下载限速
-"speed-limit-down-enabled": true, #启用平时下载限速
-"speed-limit-up": 30, #平时上传限速
-"speed-limit-up-enabled": true, #启用平时上传限速
-"start-added-torrents": false,
-"statusbar-stats": "total-ratio",
-"torrent-added-notification-enabled": true,
-"torrent-complete-notification-enabled": true,
-"torrent-complete-sound-enabled": true,
-"trash-can-enabled": true,
-"trash-original-torrent-files": false,
-"umask": 18,
-"upload-slots-per-torrent": 14
-"utp-enabled": true, #启用μTP 协议
-"watch-dir": "/share/bt",  # 监听文件夹目录
-"watch-dir-enabled": false # 是否监听文件夹
-Q：TR提示FILE NAME TOO LONG
-A：TR最大文件名MAX_PATH ,260个字符
-方法1：改路径和保存路径的文件夹名字，越短越好，在web control种子上面右键，修改种子文件或目录名称。次选方法，不勾选下载文件名过长的文件
-方法2：遇到个名字特长的，一直下载失败，使用软连接进一步缩短路径名长度
-#cd /
-#ln -s  /share/CACHEDEV1_DATA/Download/ DL
-方法3：
-上面两种还是不行，换QBittorrent吧
-不过，最近有好消息，这个bug我去看了下源代码，找到原来有人试图修复过它，但是并没有合并到最新版本。发个post提醒bug没有修复，居然有回复了。这个bug将在3.0版本修复，见下图。
-
-Q: transmission 如何修改登陆密码
-A: 第一种方式
-qnap 中，transmission3.0的配置文件路径如下
-/share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
- 
-cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
-vim settings.json
-找到”rpc-password”:
-后面引号内就是经过加密的密码，不要管他怎么加密的，直接把引号内的内容修改为你的新密码就可以了，比如”rpc-password”:”xxorg.com”
-然后按“ESC”键，输入:wq 保存退出，然后重启tr即可
-第二种方式：
-# 1、控制台输入，-u后边是用户名，-v后边跟着的是登陆密码
-transmission-daemon --paused -t -u admin -v 123456
-# 将会把生成的密码保存到：~/.config/transmission-daemon/settings.json
-# 其实是生成配置文件并保存到当前登陆用户的家目录下
-# 2、打开~/.config/transmission-daemon/settings.json并复制加密的密码
-# 3、将加密的密码粘贴到/media/AiCard_01/transmission/config/settings.json
-# 替换掉内容为：rpc-password 后面的密码
-# 4、重启Transmission
-ps:通过ps定位transmission位置
-ps aux | grep trans
-# cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/bin
-# ./transmission-daemon --paused -t -u [name] -v [password]
-# cd ~/.config/transmission-daemon
-[~/.config/transmission-daemon] # vi settings.json
-复制生成的密码到前面的配置文件里面。
-Q: 为Transmission增加种子目录监控，实现自动下载
-/share/CACHEDEV3_DATA/.qpkg/QTransmission3/etc
-改/var/packages/transmission/target/var/settings.json 在最后面增加2行。
-"upload-slots-per-torrent": 14,（原文件最后一行，注意添加个逗号，不添加transmission好像不能启动） 
-"watch-dir": "/XXXXX/XXXXX", （修改成自己nas上的同步目录） 
-"watch-dir-enabled": true（无逗号）
-保存，退出。
-启动Transmission  等待1-2分钟，就好了。
-    "speed-limit-up-enabled": false,
-    "start-added-torrents": true,
-    "trash-original-torrent-files": false,
-    "umask": 18,
-    "upload-slots-per-torrent": 14,
-    "utp-enabled": true,
-    "watch-dir": "/share/Download/Seed/complete",
-    "watch-dir-enabled": true
-}
-Q: Nas 上面 Transmission 如何做种？
-A:
-注意，此方法仅适用于开启了ssh的机器
-可以看到可执行文件目录下有这么几个文件，每个人的安装目录都不一样，自行查找，或用
-我的文件位置是在/volume1/@appstore/transmission/bin，用到的命令是 transmission-create
-方法也很简单，写一个范例
-./transmission-create -p -o /volume1/data/Wi
-kiLeaks-Year-Zero-2017-v1.torrent -t https://announce.XXXXXXXXXX.cc/announce.php -s 2048 /volume1/da
-ta/WikiLeaks-Year-Zero-2017-v1.7z &amp;
-参数
--p 表示这是私用的种子，这个必须要加上
--o 生成的种子输出位置，不要忘记把名字打上
--t tracker的地址，我用的家园的做范本，大家自行修改
--s 每个文件块的大小，单位是KB，我设置的是2M，也就是2048KB
-最后空一格写源文件的位置，也就是文件的存放位置，可以是一个文件或者一整个目录
-最后可以空一行加一个&amp;，这样即使关掉窗口也可以在后台运行
-填完，回车，种子就在制作了
-种子已经躺在这了
-[/opt/QTransmission3/bin] # ./transmission-create -p -o /share/CACHEDEV1_DATA/Download/Seed/海贼王\ \(1999\).torrent -t https://announce.XXXXXXXX.video/announce.php -s 2048 /share/CACHEDEV1_DATA/Download/海贼王\ \(1999\)/ &amp;
-系列教程
-全部文章RSS订阅
-Nas系列 Nas 分类 RSS 订阅
-
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>bt</tag>
-        <tag>pt</tag>
-        <tag>qnap</tag>
-        <tag>nas</tag>
-        <tag>transmission</tag>
       </tags>
   </entry>
   <entry>
@@ -9501,6 +9264,243 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
+    <title>transmission 使用及其配置</title>
+    <url>/posts/8f76d9dd/</url>
+    <content><![CDATA[安装
+qnapclub
+
+docker
+docker hub
+
+version: "2.1"
+services:
+  transmission:
+    image: ghcr.io/linuxserver/transmission
+    container_name: transmission
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+      - TRANSMISSION_WEB_HOME=/combustion-release/ #optional
+      - USER=username #optional
+      - PASS=password #optional
+      - WHITELIST=iplist #optional
+      - HOST_WHITELIST=dnsnane list #optional
+    volumes:
+      - &lt;path to data&gt;:/config
+      - &lt;path to downloads&gt;:/downloads
+      - &lt;path to watch folder&gt;:/watch
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped
+
+控制脚本
+/etc/init.d/QTransmission.sh start
+/etc/init.d/QTransmission.sh stop
+Transmission 配置详解
+vi /share/CACHEDEV1_DATA/.qpkg/QTransmission/etc/settings.json
+"alt-speed-up": 500, # 限速时段上传限速值
+"alt-speed-down": 500, # 限速时段下载限速值
+"alt-speed-enabled": false,
+"alt-speed-time-begin": 540,
+"alt-speed-time-day": 127, # 时段限速日期（星期几），127 表示每天，更复杂配置参考官网。用 7 位二进制数表示，然后转换成十进制数，0000001 表示周日，1000000 表示周六，0000010 表示周一，0000100 表示周二。如果你只要在周末限速，该数应该 1000001，转换为十进制就是 65
+"alt-speed-time-enabled": true, # 启用限速，为 false 时，以上计划配置则不生效，生效时会自动禁用 alt-speed-enabled 配置，二者只能选一个
+"alt-speed-time-end": 420, # 限速时段结束时间，这个配置表示的是凌晨零点到开始时间的分钟数，比如 7:00 就是 7*60=420。需要注意的是，该时间是用的 GMT 时间，即北京时间 -8 小时。比如你计划北京时间 7 点 30 分开始，这个数字应该是（7-8+24）*60+30=1410
+"bind-address-ipv4": "0.0.0.0", # IPv4 地址绑定，一般不要改动
+"bind-address-ipv6": "::", #IPv6 地址绑定，一般不要改动
+"blocklist-enabled": true, # 启动白名单，默认不启动，需要启动改为 true
+"blocklist-updates-enabled": false,
+"blocklist-url": "http://www.example.com/blocklist",
+"cache-size-mb": 4, #缓存大小，以 MB 为单位，建议设大一些，避免频繁读写硬盘而伤硬盘，建议设为内存大小的 1/6～1/4
+"compact-view": false,
+"dht-enabled": false, #关闭 DHT（不通过 tracker 寻找节点）功能，不少 PT 站的要求，但 BT 下载设置为 true 会使得下载更好
+"download-dir": "/share/Downloads", #下载的内容存放的目录
+"download-queue-enabled": true,  # 下载队列开关
+"download-queue-size": 5, # 下载队列数量
+"encryption": 1, # 加密。指定节点的加密模式，默认 1。0 表示关闭 , 0= 不加密，1= 优先加密，2= 必须加密
+"lazy-bitfield-enabled": true, # 默认为 true，设置为 true 时可以避免某些 ISP 通过查询完整位段来屏蔽 BT，从而破解部分 ISP 对 BT 的封杀，当然不一定完全有效
+"idle-seeding-limit": 30,
+"idle-seeding-limit-enabled": false,
+"incomplete-dir": "/share/Downloads",  # 临时文件路径
+"incomplete-dir-enabled": false,
+"inhibit-desktop-hibernation": true,
+"lpd-enabled": false, #禁用 LDP（本地节点发现，用于在本地网络寻找节点）, 不少 PT 站的要求
+"main-window-height": 500,
+"main-window-is-maximized": 0,
+"main-window-width": 615,
+"main-window-x": 337,
+"main-window-y": 211,
+"message-level": 2,
+"open-dialog-dir": "/share/Download",  # 网页对话框打开的根目录
+"peer-congestion-algorithm": "",
+"peer-limit-global": 240, # 全局连接数
+"peer-limit-per-torrent": 60, # 每个种子最多的连接数
+"peer-port": 51413, # 传入端口，预设的 port 口
+"peer-port-random-high": 65535, # 传入端口随机值范围上限
+"peer-port-random-low": 49152, # 传入端口随机值范围下限
+"peer-port-random-on-start": false, # 启用随机端口，默认关闭，不建议改为 true
+"peer-socket-tos": "default",
+"pex-enabled": false, # 是否启用用户交换，默认为 true，关于 PEX，有兴趣的朋友可参考 http://en.wikipedia.org/wiki/Peer_exchange，对于只用 PT 的朋友，可以设为 false, 禁用 PEX（节点交换，用于同已与您相连接的节点交换节点名单）, 不少 PT 站的要求
+"port-forwarding-enabled": true, # 启用端口转发（uPnP），如果路由支持并且也开启了 uPnP，则路由会自动做端口映射，但是需要注意的是如果内网有几台机器同时使用 transmission，就必须更改 peer-port 值为不一样
+"preallocation": 1, # 预分配文件磁盘空间，0= 关闭，1= 快速，2= 完全。建议取 1 开启该功能，防止下载大半了才发现磁盘不够。取 2 时，可以减少磁盘碎片，但速度较慢。
+"prefetch-enabled": 1,
+"queue-stalled-enabled": true,
+"queue-stalled-minutes": 30,
+"ratio-limit": 2, # 分享率限制
+"ratio-limit-enabled": false, # 启用分享率限制，默认不启用
+"rename-partial-files": true, #在未完成的文件名后添加后缀.part,false= 禁用
+"rpc-authentication-required": true, # 远程控制需要验证，默认为需要
+"rpc-bind-address": "0.0.0.0", # 远程控制地址绑定，允许 IP 通过 RPC 访问，默认值表示任何地址都可以访问
+"rpc-enabled": true, # 启用远程控制，默认启用
+"rpc-host-whitelist-enabled": true, # 是否开启主机白名单
+"rpc-host-whitelist": "", # 白名单，如果需要远程访问，最好配置
+"rpc-password": "{cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaE", #web-ui 的密码，可直接修改，重新运行或者 reload 服务的时候密码会自动 HASH 增加安全性
+"rpc-port": 9091, # 默认 web-ui 的 port 口，也是远程控制端口，可自行更改
+"rpc-url": "/transmission/",
+"rpc-username": "transmission", #默认登入名称，也是远程控制用户名
+"rpc-whitelist": "127.0.0.1", # 远程控制白名单，默认值为所有地址，支持通配符*，如 192.168.2.*
+"rpc-whitelist-enabled": true, # 启用远程控制白名单，如果启用，则仅仅上面列出的地址可以远程连接
+"scrape-paused-torrents-enabled": true,
+"script-torrent-done-enabled": false,
+"script-torrent-done-filename": "/home/",
+"seed-queue-enabled": false,
+"seed-queue-size": 10,
+"show-backup-trackers": true,
+"show-extra-peer-details": false,
+"show-filterbar": true,
+"show-notification-area-icon": false,
+"show-options-window": true,
+"show-statusbar": true,
+"show-toolbar": true,
+"show-tracker-scrapes": true,
+"sort-mode": "sort-by-age",
+"sort-reversed": false,
+"speed-limit-down": 300, #平时的下载限速
+"speed-limit-down-enabled": true, #启用平时下载限速
+"speed-limit-up": 30, #平时上传限速
+"speed-limit-up-enabled": true, #启用平时上传限速
+"start-added-torrents": false,
+"statusbar-stats": "total-ratio",
+"torrent-added-notification-enabled": true,
+"torrent-complete-notification-enabled": true,
+"torrent-complete-sound-enabled": true,
+"trash-can-enabled": true,
+"trash-original-torrent-files": false,
+"umask": 18,
+"upload-slots-per-torrent": 14
+"utp-enabled": true, #启用μTP 协议
+"watch-dir": "/share/bt",  # 监听文件夹目录
+"watch-dir-enabled": false # 是否监听文件夹
+Q：TR提示FILE NAME TOO LONG
+A：TR最大文件名MAX_PATH ,260个字符
+方法1：改路径和保存路径的文件夹名字，越短越好，在web control种子上面右键，修改种子文件或目录名称。次选方法，不勾选下载文件名过长的文件
+方法2：遇到个名字特长的，一直下载失败，使用软连接进一步缩短路径名长度
+#cd /
+#ln -s  /share/CACHEDEV1_DATA/Download/ DL
+方法3：
+上面两种还是不行，换QBittorrent吧
+不过，最近有好消息，这个bug我去看了下源代码，找到原来有人试图修复过它，但是并没有合并到最新版本。发个post提醒bug没有修复，居然有回复了。这个bug将在3.0版本修复，见下图。
+
+Q: transmission 如何修改登陆密码
+A: 第一种方式
+qnap 中，transmission3.0的配置文件路径如下
+/share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
+ 
+cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
+vim settings.json
+找到”rpc-password”:
+后面引号内就是经过加密的密码，不要管他怎么加密的，直接把引号内的内容修改为你的新密码就可以了，比如”rpc-password”:”xxorg.com”
+然后按“ESC”键，输入:wq 保存退出，然后重启tr即可
+第二种方式：
+# 1、控制台输入，-u后边是用户名，-v后边跟着的是登陆密码
+transmission-daemon --paused -t -u admin -v 123456
+# 将会把生成的密码保存到：~/.config/transmission-daemon/settings.json
+# 其实是生成配置文件并保存到当前登陆用户的家目录下
+# 2、打开~/.config/transmission-daemon/settings.json并复制加密的密码
+# 3、将加密的密码粘贴到/media/AiCard_01/transmission/config/settings.json
+# 替换掉内容为：rpc-password 后面的密码
+# 4、重启Transmission
+ps:通过ps定位transmission位置
+ps aux | grep trans
+# cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/bin
+# ./transmission-daemon --paused -t -u [name] -v [password]
+# cd ~/.config/transmission-daemon
+[~/.config/transmission-daemon] # vi settings.json
+复制生成的密码到前面的配置文件里面。
+Q: 为Transmission增加种子目录监控，实现自动下载
+/share/CACHEDEV3_DATA/.qpkg/QTransmission3/etc
+改/var/packages/transmission/target/var/settings.json 在最后面增加2行。
+"upload-slots-per-torrent": 14,（原文件最后一行，注意添加个逗号，不添加transmission好像不能启动） 
+"watch-dir": "/XXXXX/XXXXX", （修改成自己nas上的同步目录） 
+"watch-dir-enabled": true（无逗号）
+保存，退出。
+启动Transmission  等待1-2分钟，就好了。
+    "speed-limit-up-enabled": false,
+    "start-added-torrents": true,
+    "trash-original-torrent-files": false,
+    "umask": 18,
+    "upload-slots-per-torrent": 14,
+    "utp-enabled": true,
+    "watch-dir": "/share/Download/Seed/complete",
+    "watch-dir-enabled": true
+}
+Q: Nas 上面 Transmission 如何做种？
+A:
+注意，此方法仅适用于开启了ssh的机器
+可以看到可执行文件目录下有这么几个文件，每个人的安装目录都不一样，自行查找，或用
+我的文件位置是在/volume1/@appstore/transmission/bin，用到的命令是 transmission-create
+方法也很简单，写一个范例
+./transmission-create -p -o /volume1/data/Wi
+kiLeaks-Year-Zero-2017-v1.torrent -t https://announce.XXXXXXXXXX.cc/announce.php -s 2048 /volume1/da
+ta/WikiLeaks-Year-Zero-2017-v1.7z &amp;
+参数
+-p 表示这是私用的种子，这个必须要加上
+-o 生成的种子输出位置，不要忘记把名字打上
+-t tracker的地址，我用的家园的做范本，大家自行修改
+-s 每个文件块的大小，单位是KB，我设置的是2M，也就是2048KB
+最后空一格写源文件的位置，也就是文件的存放位置，可以是一个文件或者一整个目录
+最后可以空一行加一个&amp;，这样即使关掉窗口也可以在后台运行
+填完，回车，种子就在制作了
+种子已经躺在这了
+[/opt/QTransmission3/bin] # ./transmission-create -p -o /share/CACHEDEV1_DATA/Download/Seed/海贼王\ \(1999\).torrent -t https://announce.XXXXXXXX.video/announce.php -s 2048 /share/CACHEDEV1_DATA/Download/海贼王\ \(1999\)/ &amp;
+系列教程
+全部文章RSS订阅
+Nas系列 Nas 分类 RSS 订阅
+
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>bt</tag>
+        <tag>pt</tag>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>transmission</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>浏览器的渲染过程</title>
     <url>/posts/69a052c9/</url>
     <content><![CDATA[
@@ -9988,258 +9988,6 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
         <tag>3a</tag>
         <tag>ae</tag>
         <tag>image</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>深度学习之视频人脸识别系列</title>
-    <url>/posts/a0f3c838/</url>
-    <content><![CDATA[系列1 简介
-出品 | 磐创AI技术团队
-【磐创AI导读】本文是深度学习之视频人脸识别系列的第一篇文章，介绍了人脸识别领域的一些基本概念，分析了深度学习在人脸识别的基本流程，并总结了近年来科研领域的研究进展，最后分析了静态数据与视频动态数据在人脸识别技术上的差异。欢迎大家点击上方篮子关注我们的公众号：磐创AI。
-一、基本概念
-1. 人脸识别（face identification）
-人脸识别是1对n的比对，给定一张人脸图片，如何在n张人脸图片中找到同一张人脸图片，相对于一个分类问题，将一张人脸划分到n张人脸中的一张。类似于管理人员进行的人脸识别门禁系统。
-2.人脸验证（face verification）
-人脸验证的1对1的比对，给定两张人脸图片，判断这两张人脸是否为同一人，类似于手机的人脸解锁系统，事先在手机在录入自己的脸部信息，然后在开锁时比对摄像头捕捉到的人脸是否与手机上录入的人脸为同一个人。
-3.人脸检测（face detection）
-人脸检测是在一张图片中把人脸检测出来，即在图片上把人脸用矩形框出来，并得到矩形的坐标，如下图所示。
-
-4. 人脸关键点检测
-根据输入的人脸图像，识别出面部关键特征点，如眼睛、鼻尖、嘴角点、眉毛以及人脸各部件轮廓点的坐标，如下图所示。
-
-5. 人脸矫正（人脸对齐）
-通过人脸关键点检测得到人脸的关键点坐标，然后根据人脸的关键点坐标调整人脸的角度，使人脸对齐，由于输入图像的尺寸是大小不一的，人脸区域大小也不相同，角度不一样，所以要通过坐标变换，对人脸图像进行归一化操作，如下图所示。
-
-二、基于深度学习的人脸识别算法基本流程
-随着神经网络的迅速发展和其对图像数据的强大的特征提取，深度学习运用于人脸识别也成为热点研究方向；2014年的开山之作DeepFace，第一个真正将大数据和深度学习结合应用于人脸识别与验证，确立人脸识别的常规流程：图片-&gt;人脸与关键点检测-&gt;人脸对齐-&gt;人脸表征（representation）-&gt;分类。首先将图片中的人脸检测处理并通过关键点进行对齐，如何输入到神经网络，得到特征向量，通过分类训练过程，该向量即为人脸的特征向量。要求出两张人脸的相似度即计算两个特征的向量度量之差，方法包括：SVM、SiameseNetwork、JointBayesian、L1距离、L2距离、cos距离等。
-三、科研领域近期进展
-科研领域近期进展主要集中于loss函数的研究，包括DeepId2（Contrastive Loss）、FaceNet（Triplet loss）、L-Softmax、SphereFace（A-Softmax）、Center Loss、L2-Softmax、NormFace、CosFace（AM-Softmax）、ArcFace（AA-Softmax）等。
-四、基于视频人脸识别和图片人脸识别的区别
-（该小结部分参考于博客园 - 米罗西http://www.cnblogs.com/zhehan54/p/6727631.html）
-相对于图片数据，目前视频人脸识别有很多挑战，包括：（1）视频数据一般为户外，视频图像质量比较差；（2）人脸图像比较小且模糊；（3）视频人脸识别对实时性要求更高。
-但是视频数据也有一些优越性，视频数据同时具有空间信息和时间信息，在时间和空间的联合空间中描述人脸和识别人脸会具有一定提升空间。在视频数据中人脸跟踪是一个提高识别的方法，首先检测出人脸，然后跟踪人脸特征随时间的变化。当捕捉到一帧比较好的图像时，再使用图片人脸识别算法进行识别。这类方法中跟踪和识别是单独进行的，时间信息只在跟踪阶段用到。
-【总结】：本期文章主要介绍了基于深度学习的人脸识别算法的一些基本入门知识，下一期我给大家介绍人脸识别中获取神经网络输入的算法，即关于人脸检测、人脸关键点检测与人脸对齐的一些重要算法和相关论文解析。
-系列2 人脸检测与对齐
-一、人脸检测与关键点检测
-1. 问题描述：
-人脸检测解决的问题为给定一张图片，输出图片中人脸的位置，即使用方框框住人脸，输出方框的左上角坐标和右下角坐标或者左上角坐标和长宽。算法难点包括：人脸大小差异、人脸遮挡、图片模糊、角度与姿态差异、表情差异等。而关键检测则是输出人脸关键点的坐标，如左眼（x1，y1）、右眼（x2，y2）、鼻子（x3，y3）、嘴巴左上角（x4，y4）、嘴巴右上角（x5，y5）等。
-2. 深度学习相关算法：
-（1）Cascade CNN
-Cascade CNN源于发表于2015年CVPR上的一篇论文A Convolutional Neural Network Cascade for Face Detection【2】，作者提出了一种级连的CNN网络结构用于人脸检测。算法主体框架是基于V-J的瀑布流思想【1】，是传统技术和深度网络相结合的一个代表，Cascade CNN包含了多个分类器，这些分类器使用级联结构进行组织，与V-J不同的地方在于Cascade CNN采用卷积网络作为每一级的分类器。整个网络的处理流程如下图所示：
-
-整个处理流程里包含了六个网络：12-net、12-calibration-net、24-net、24-calibration-net、48-net、48-calibration-net，其中三个二分类网络用于分类其是否为人脸，另外三个calibration网络用于矫正人脸框边界。其中第二个网络之后、第四个网络之后、第五个网络之后使用NMS算法过滤掉冗余的框。
-12-net，24-net和48-net的网络结构如下图所示：
-
-13-12-calibration-net，24-calibration-net，48-calibration-net的结构如下图所示：
-
-该算法结合了V-J框架构造了级连的CNN网络结构并设计边界矫正网络用来专门矫正人脸框边界，在AFW数据集上准确率达到97.97%。
-
-（2）Faceness-Net
-Faceness-Net源于论文A convolutional neural network cascade for face detection【3】，该算法基于DCNN网络【5】的人脸局部特征分类器，算法首先进行人脸局部特征的检测，使用多个基于DCNN网络的facial parts分类器对人脸进行评估，然后根据每个部件的得分进行规则分析得到Proposal的人脸区域，然后从局部到整体得到人脸候选区域，再对人脸候选区域进行人脸识别和矩形框坐标回归，该过程分为两个步骤。
-第一个步骤：每个人脸局部特征使用attribute-aware网络检测并生成人脸局部图，其中一共五个特征属性： 头发、眼睛、鼻子、嘴巴、胡子。然后通过人脸局部图根据评分构建人脸候选区域，具体如下图所示：
-
-第二个步骤：训练一个多任务的卷积网络来完成人脸二分类和矩形框坐标回归，进一步提升其效果，具体如下图所示：
-
-Faceness从脸部特征的角度来解决人脸检测中的遮挡和姿态角度问题，其整体性能在当时是非常好的，在AFW数据集上准确率可以达到98.05%。
-
-（3）MTCNN
-MTCNN源于论文Joint Face Detection and Alignment using Multi-task Cascaded Convolutional Networks【6】，是基于多任务级联卷积神经网络来解决人脸检测和对齐问题，同时输出图片的人脸矩阵框和关键点坐标（左眼、右眼、鼻子、嘴巴左上角、嘴巴右上角）。MTCNN为三阶的级联卷积神经网络，整体框架如下图所示：
-
-输入阶段：为应对目标多尺度问题，将原始图像resize到不同尺寸，构建图像金字塔，作为三阶级联架构的输入，这样处理可以更好地检测大小不一的人脸。
-第一阶段：通过一个全部由卷积层组成的CNN，取名P-Net，获取候选人脸框、关键点坐标和人脸分类（是人脸或不是），之后采用NMS过滤掉高重叠率的候选窗口。如下图所示：
-
-第二阶段：第一阶段输出的候选人脸框作为更为复杂的R-Net网络的输入，R-Net进一步筛除大量错误的候选人脸框，同样也通过NMS过滤掉高重叠率的候选窗口。如下图所示：
-
-第三阶段：与第二阶段类似，最终网络输出人脸框坐标、关键点坐标和人脸分类（是人脸或不是）。如下图所示：
-
-MTCNN通过三级的级联卷积神经网络对任务进行从粗到细的处理，还提出在线困难样本生成策略（online hard sample mining ）可以进一步提升性能。兼并了速度与准确率，速度在GPU上可以达到99FPS，在 FDDB数据集上可以达到95.04准确率，具体如下图所示：
-
-二、人脸对齐（部分参考于GraceDD的博客文章）
-人脸对齐通过人脸关键点检测得到人脸的关键点坐标，然后根据人脸的关键点坐标调整人脸的角度，使人脸对齐，由于输入图像的尺寸是大小不一的，人脸区域大小也不相同，角度不一样，所以要通过坐标变换，对人脸图像进行归一化操作。人脸关键点检测有很多算法可以使用包括：ASM、AAM、DCNN 、TCDCN 、MTCNN 、TCNN、TCNN等，这里就不详细介绍，主要说一下得到人脸关键点之后如何进行人脸对齐，是所有人脸达到归一化效果，该过程如下图所示：
-
-该过程涉及到图像的仿射变换，简单来说，“仿射变换”就是：“线性变换”+“平移”，即坐标的变换。假如我们希望人脸图片归一化为尺寸大小600600，左眼位置在（180，200），右眼位置在（420，200）。 这样人脸中心在图像高度的1/3位置，并且两个眼睛保持水平，所以我们选择左眼角位置为( 0.3width, height / 3 )，右眼角位置为（0.7*width , height / 3） 。
-利用这两个点计算图像的变换矩阵（similarity transform），该矩阵是一个2*3的矩阵，如下：
-
-如果我们想对一个矩形进行变换，其中x、y方向的缩放因为分别为sx，sy，同时旋转一个角度 ，然后再在x方向平移tx, 在y方向平移ty
-利用opencv的estimateRigidTransform方法，可以获得这样的变换矩阵，但遗憾的是，estimateRigidTransform至少需要三个点，所以我们需要构选第三个点，构造方法是用第三个点与已有的两个点构成等边三角形，这样第三个点的坐标为：
-
-代码如下：
-
-经过上一步的处理之后，所有的图像都变成一样大小，并且又三个关键点的位置是保持一致的，但因为除了三个点对齐了之外，其他点并没有对齐。所以根据得到的变换矩阵对剩下所有的点进行仿射变换，opencv代码如下所示：
-
-img为输入图像;
-warped为变换后图像，类型与src一致;
-M为变换矩阵，需要通过其它函数获得，当然也可以手动输入;
-Image_size为输出图像的大小;
-三、 总结
-本期文章主要介绍了人脸检测与对齐的相关算法，下一期我给大家介绍一下人脸表征的相关算法，即通过深度学习提取人脸特征，通过比较人脸特征进行人脸识别与验证。
-参考文献：
-
-【1】 S.Z.Li, L.Zhu, Z.Q.Zhang, A.Blake, H.J.Zhang, H.Y.Shum. Statistical learning of multi-view face detection. In: Proceedings of the 7-th European Conference on Computer Vision. Copenhagen, Denmark: Springer, 2002.67-81.
-【2】Li H, Lin Z, Shen X, et al. A convolutional neural network cascade for face detection[C]//Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition. 2015: 5325-5334.
-【3】Yang S, Luo P, Loy C C, et al. Faceness-Net: Face detection through deep facial part responses[J]. IEEE transactions on pattern analysis and machine intelligence, 2017.
-【4】Yang S, Luo P, Loy C C, et al. From facial parts responses to face detection: A deep learning approach[C]//Proceedings of the IEEE International Conference on Computer Vision. 2015: 3676-3684.
-【5】Sun Y, Wang X, Tang X. Deep convolutional network cascade for facial point detection[C]//Proceedings of the IEEE conference on computer vision and pattern recognition. 2013: 3476-3483.
-【6】Zhang K, Zhang Z, Li Z, et al. Joint face detection and alignment using multitask cascaded convolutional networks[J]. IEEE Signal Processing Letters, 2016, 23(10): 1499-1503.
-
-系列3：人脸表征
-一、人脸表征
-把人脸图像通过神经网络，得到一个特定维数的特征向量，该向量可以很好地表征人脸数据，使得不同人脸的两个特征向量距离尽可能大，同一张人脸的两个特征向量尽可能小，这样就可以通过特征向量来进行人脸识别。
-
-二、论文综述
-1. DeepFace：
-2014年论文DeepFace: Closing the Gap toHuman-Level Performance in Face Verification提出了DeepFace算法，第一个真正将大数据和深度学习神经网络结合应用于人脸识别与验证。在该人脸识别模型中分为四个阶段：人脸检测 =&gt; 人脸对齐 =&gt; 人脸表征 =&gt; 人脸分类，在LFW数据集中可以达到97.00%的准确率。
-（1）人脸检测与对齐：该模型使用3D模型来将人脸对齐，该方法过于繁琐，在实际应用中很少使用，经过3D对齐以后，形成的图像都是152×152的图像，具体步骤如下图。
-
-分为如下几步：
-a. 人脸检测，使用6个基点  b. 二维剪切，将人脸部分裁剪出来  c. 67个基点，然后Delaunay三角化，在轮廓处添加三角形来避免不连续  d. 将三角化后的人脸转换成3D形状  e. 三角化后的人脸变为有深度的3D三角网  f. 将三角网做偏转，使人脸的正面朝前。  g. 最后放正的人脸  h. 一个新角度的人脸（在论文中没有用到）
-（2）人脸表征：人脸表征使用了5个卷积层和1个最大池化层、1个全连接层，如下图所示。前三层的目的在于提取低层次的特征,为了网络保留更多图像信息只使用了一层池化层；后面三层都是使用参数不共享的卷积核，因为主要是因为人脸不同的区域的特征是不一样的，具有很大的区分性，比如鼻子和眼睛所表示的特征是不一样的，但是使用参数不共享的卷积核也增加了模型计算量以及需要更多的训练数据。最后输出的4096维向量进行L2归一化。
-
-a. Conv：32个11×11×3的卷积核
-b. max-pooling: 3×3， stride=2
-c. Conv: 16个9×9的卷积核
-d. Local-Conv: 16个9×9的卷积核，Local的意思是卷积核的参数不共享
-e. Local-Conv: 16个7×7的卷积核，参数不共享
-f. Local-Conv: 16个5×5的卷积核，参数不共享
-g. Fully-connected: 4096维
-h. Softmax: 4030维
-（3）分类：论文介绍了两种方法进行分类，加权的卡方距离和使用Siamese网络结构，设f1和f2为特征向量，上一个步骤的输出，则有：
-①加权卡方距离：计算公式如下，加权参数由线性SVM计算得到：
-
-②Siamese网络：网络结构是成对进行训练，得到的特征表示再使用如下公式进行计算距离：
-
-2. DeepID1：
-DeepID1 是2014年Deep LearningFace Representation from Predicting 10,000 Classes一文提出的，是DeepID三部曲的第一篇。DeepID1 使用softmax多分类训练，主要思想第一个是数据集的增大，包括训练集使用celebface，包含87628张图片，5436个人脸，增大了训练集；使用多尺寸输入，通过5个landmarks将每张人脸划分成10regions，每张图片提取60patches=10regions3scales2(RGB orgray)，第二个是网络结构，DeepID提取的人脸特征就是一个由连接第三层与第四层组成的全连接层特征，如下图所示，每个patches经过这个cnn网络，第四层的特征更加全局化（global），第三层的特征更加细节，因此DeepID连接了两者，以求同时包含全局，细节信息。
-
-60个patches使用60个CNN,每个CNN提取2*160=320维特征（与水平翻转一起输入），总网络模型如下图所示，最后分别使用联合贝叶斯算法与神经网络进行分类，并比较结果。
-
-模型最终以CelebFaces+中202,599图像作为训练集， patch数提升为100（10r10s2） ，特征数提升为1001602=32000 然后使用PCA降为150维 ，使用联合贝叶斯算法进行验证， 最终在LFW上达到97.20%的验证准确率。
-3. DeepID2：
-DeepID2是Deep Learning Face Representationby Joint Identification-Verification一文提出的，对DeepID1进行了进一步的改进，提出了contrastive loss，在分类任务，我们需要的是减少类内差距（同一人脸），增加类间差距（不同人脸），softmax loss分类的监督信号可以增大类间差距，但是却对类内差距影响不大，所以DeepID2加入了另一个loss，contrastive loss，从而增加验证的监督信号，就可以减少类内差距。
-网络结构类似DeepID1,不同之处在于使用了两种不同的损失函数，网络结构如下图所示。
-
-损失函数：
-①分类信号，Softmax loss。
-
-②验证信号，contrastiveloss，使用l2范数距离表示，m为阈值不参与训练，括号内的θve={m}，该损失函数可以让类间的距离给定一个限制margin，即m大小的距离。
-
-
-两loss的组合方式： 首先使用2个输入，计算Softmax loss和contrastive loss,总损失为二者通过λ加权求和，通过总损失来执行梯度下降更新卷积参数，通过Softmax loss来更新softmax层的参数。
-整个模型使用celebrate+数据集训练，每张图片使用了21 facial landmarks，分成200patches（20regions5scales2RGB&amp;Gray)，水平翻转后变为400patches，使用了200个卷积神经网络，提取400（2002）个Deepid2特征，使用贪婪算法降为25个Deepid2特征，使用PCA将25160Deepid2特征降为180维，最后使用联合贝叶斯算法进行验证，最终在LFW上得到的最终准确率是98.97%，使用7组25个Deepid2特征，SVM融合可得到准确率为99.15% 。DeepID2在2014 年是人脸领域非常有影响力的工作，也掀起了在人脸领域引进 MetricLearning 的浪潮。
-4. DeepID2+：
-DeepID2+源于论文Deeply learned facerepresentations are sparse, selective, and robust，DeepID2+是对DeepID2的改进。①卷积层在原来基础上再增加128维，第四层全连接层从160增加到512，训练数据增加了CelebFaces+ dataset，WDRef等，有12000个人脸的大约290,000张图片； ②每个卷积层的后面都加了一个512为的全连接层，并添加contrastive loss监督信号，而不仅在第四层全连接层上有 。网络结构如下图所示。
-
-最终在LFW数据集上准确率为99.47%。
-5. DeepID3：
-DeepID3源于2015年的Deepid3:Face recognition with very deep neural networks论文，该论文探究了复杂神经网络对人脸识别的作用。论文研究VGG与GoogleNet用于人脸识别的效果，论文在VGG和GooLeNet的基础上进行构建合适的结构，使得方便人脸识别。结果发现DeepID3的结果和DeepID2+相当，可能是由于数据集的瓶颈，需要更大的数据才能有更好的提升，两个网络结构如下图所示。
-
-网络输出使用PCA降维到300维的向量，使用联合贝叶斯算法进行验证，最终在LFW上得到的最终准确率是99.53%。
-6. FaceNet：
-FaceNet由论文Facenet: A unified embedding forface recognition and clustering提出，这篇 2015 年来自 Google 的 论文同样具有非常大的影响力，不仅仅成功应用了 TripletLoss 在 benchmark 上取得state-of-art 的结果，更因为他们提出了一个绝大部分人脸问题的统一解决框架，即：识别、验证、搜索等问题都可以放到特征空间里做，需要专注解决的仅仅是如何将人脸更好的映射到特征空间。FaceNet在DeepID的基础上，将 ContrastiveLoss 改进为 Triplet Loss，去掉softmaxloss。FaceNet实验了ZFNet类型网络和Inception类型网络，最终Inception类型网络效果更好，网络结构如下图所示。
-
-FaceNet没有使用PCA降维，而是在网络中直接训练输出128维的向量，用全连接层来完成降维，最后的128维的向量经过Triplet Loss。
-Triplet Loss输入不再是 Image Pair，而是三张图片（Triplet），分别为 Anchor Face（xa），Negative Face（xn）和 Positive Face（xp）。Anchor 与 Positive Face 为同一人，与 Negative Face 为不同人，在特征空间里 Anchor 与 Positive 的距离要小于 Anchor 与 Negative 的距离，且相差超过一个 Margin Alpha。
-loss的目标为：
-
-总loss公式为：
-
-Contrastive Loss与Triplet Loss的比较， Contrastive Loss目标是减少类内差距（两个蓝点），增加类间差距（蓝点与红点）；Triplet Loss则是输入三张图片，Anchor 与 Positive 的距离要小于 Anchor 与 Negative 的距离，且相差超过一个 Margin Alpha，即Triplet Loss同时约束了两个距离。
-
-最后FaceNet在LFW数据集上达到了99.63%的准确率。
-基于 ContrastiveLoss 和 Triplet Loss 的 MetricLearning 符合人的认知规律，在实际应用中也取得了不错的效果，但同时也有很多问题，由于ContrastiveLoss 和 Triplet Loss 的训练样本都基于pair 或者 triplet 的，可能的样本数是 O(N2) 或者 O (N3) 的，所以模型需要很久的计算才能拟合并且训练集需要足够大。
-三、总结
-本期文章主要介绍人脸表征相关算法和论文综述，主要是2014年到2016年的研究成果， ContrastiveLoss 和 Triplet Loss在实际应用中也取得了很好的效果，但是也有很多问题，由于Contrastive Loss 和 Triplet Loss 的训练样本都基于 pair 或者 triplet 的，可能的样本数是 O (N2) 或者 O (N3) 的，所以模型需要很久的计算才能拟合并且训练集要足够大，所以在之后的人脸识别研究中，大部分在于loss函数的研究，这部分将会在下一期给大家介绍。
-参考文献：
-
-【1】 Taigman Y, Yang M, Ranzato M A, et al.Deepface: Closing the gap to human-level performance in faceverification[C]//Proceedings of the IEEE conference on computer vision andpattern recognition. 2014: 1701-1708.
-【2】Sun Y, Wang X, Tang X. Deep learning facerepresentation from predicting 10,000 classes[C]//Proceedings of the IEEEconference on computer vision and pattern recognition. 2014: 1891-1898.
-【3】Sun Y, Chen Y, Wang X, et al. Deeplearning face representation by joint identification-verification[C]//Advancesin neural information processing systems. 2014: 1988-1996.
-【4】Sun Y, Liang D, Wang X, et al. Deepid3:Face recognition with very deep neural networks[J]. arXiv preprintarXiv:1502.00873, 2015.
-【5】Simonyan K, Zisserman A. Very deepconvolutional networks for large-scale image recognition[J]. arXiv preprintarXiv:1409.1556, 2014.
-【6】Szegedy C, Liu W, Jia Y, et al. Goingdeeper with convolutions[C]//Proceedings of the IEEE conference on computervision and pattern recognition. 2015: 1-9.
-【7】Sun Y, Wang X, Tang X. Deeply learned facerepresentations are sparse, selective, and robust[C]//Proceedings of the IEEEconference on computer vision and pattern recognition. 2015: 2892-2900.
-【8】Schroff F, Kalenichenko D, Philbin J.Facenet: A unified embedding for face recognition andclustering[C]//Proceedings of the IEEE conference on computer vision andpattern recognition. 2015: 815-823.
-
-系列4：人脸表征-续
-一、人脸表征
-把人脸图像通过神经网络，得到一个特定维数的特征向量，该向量可以很好地表征人脸数据，使得不同人脸的两个特征向量距离尽可能大，同一张人脸的两个特征向量尽可能小，这样就可以通过特征向量来进行人脸识别。
-
-二、论文综述
-1. L-Softmax：
-Softmax Loss函数被广泛应用于深度学习，较为简单实用，但是它并不能够明确引导神经网络学习区分性较高的特征。L-Softmax能够有效地引导网络学习使得样本类内距离较小、类间距离较大的特征，L-Softmax不但能够调节类间距离的间隔（margin）大小，而且能够防止过拟合。
-L-Softmax是对softmax loss的改进，softmax loss公式如下所示：
-
-其中 fj 表示最终全连接层的类别输出向量 f的第 j个元素, N为训练样本的个数，则 fyi可以表示为 fyi=WTyi xi，其中 0≤θj≤π，最终的损失函数可得：
-
-softmax的目的是使得WT1x&gt;WT2x，即 ∥W1∥∥x∥cos(θ1)&gt;∥W2∥∥x∥cos(θ2)，从而得到输入x（来自类别1）输出正确的分类结果。L-Softmax通过增加一个正整数变量m，从而产生一个决策余量，能够更加严格地约束上述不等式，即：
-
-其中0≤θ1&lt;π/m。如果W1和W2能够满足∥W1∥∥x∥cos(mθ1)&gt;∥W2∥∥x∥cos(θ2)，那么就必然满足∥W1∥∥x∥cos(θ1)&gt;∥W2∥∥x∥cos(θ2)，这样的约束对学习W1和W2的过程提出了更高的要求，在训练学习过程中，类间要比之前多了一个m的间隔，从而使得1类和2类有了更宽的分类决策边界。这种Margin Based Classification使得学习更加的困难，从而使类间距离增加了一个margin距离，L-Softmax loss的总公式如下：
-
-当m越大时，分类的边界越大，学习难度当然就越高。
-论文仅使用了WebFace数据集作为训练集和一个简单的卷积网络，就在LFW上达到了98.71%的正确率，证明了L-Softmax loss取得了比softmax loss更好的结果。
-2. SphereFace :
-SphereFace在MegaFace数据集上识别率在2017年排名第一，提出A-Softmax Loss使人脸识别达到不错的效果。A-Softmax Loss基于softmax loss和L-Softmax loss，在二分类模型中，softmax loss为：
-
-如果x为类别一，则希望p1&gt;p2,则二分类的划分函数为：
-
-权重归一化||w||为1，b为0，此时特征上的点映射到单位超球面上，则二分类的划分函数为：
-
-然后使用与L-Softmax loss相同的原理，使
-
-则A-Softmax Loss最终为：
-
-因此A-Softmax Loss是样本类别之间产生了角度距离，让决策函数更加严格并且更加具有可区分性。当m增大，角度距离也会增加。
-A-Softmax与L-Softmax的最大区别在于A-Softmax的权重归一化了，而L-Softmax则没有。A-Softmax权重的归一化导致特征上的点映射到单位超球面上，A-Softmax仅仅能从角度上划分类别，而L-Softmax是在角度与长度方向进行考量，两个方向如果划分不一就会收到干扰，导致精度下降。
-SphereFace使用的模型如下图所示：
-
-训练与测试过程如下图所示，在测试过程中使用余弦计算相似度：
-
-最终SphereFace在训练集较小的情况下，LFW数据集上准确率为99.42%。Sphereface效果很好，但是它不优美。在测试阶段，Sphereface通过特征间的余弦值来衡量相似性，即以角度为相似性的度量，在训练阶段，其实Sphereface的损失函数并不是在直接优化特征与类中心的角度，而是优化特征与类中心的角度在乘上一个特征的长度，这就造成了训练跟测试之间目标不一致。
-3. Normface :
-在优化人脸识别任务时，softmax本身优化的是没有归一化的内积结果，但是最后在预测的时候使用的一般是cosine距离或者欧式距离，这会导致优化目标和最终的距离度量其实并不一致。 Normface的核心思想是既然最后在特征对比的时候使用归一化的cosine距离，那么在训练的过程中把特征也做归一化处理，做了归一化之后，softmax的优化就变成了直接优化cosine距离了，归一化过程如下，其中e是为了防止除0的较小正数：
-
-相应的损失函数如下：
-
-其中 W 是归一化的权重，f_i 是归一化的特征，参数 s 的引入是因为保证梯度大小的合理性，去掉bias是因为softmax之前的fc有bias的情况下会使得有些类别在角度上没有区分性但是通过bias可以区分，在这种情况下如果对feature做normalize，会使得中间的那个小类别的feature变成一个单位球形并与其他的feature重叠在一起，所以在feature normalize的时候是不能加bias的。
-Normface使用了较小的模型使用多种loss训练，然后在LFW数据集上测试，证明了feature normalize的效果，结果如下：
-
-4. CosFace :
-Normface用特征归一化解决了Sphereface训练和测试不一致的问题。但是却没有了margin的惩罚，腾讯AI Lab的CosFace或者AM-softmax是在Normface的基础上引入了margin，损失函数为：
-
-其中特征与权值都做了归一化：
-
-分类决策为：
-
-，比之前增加了m的margin，m 是一个超参数，控制惩罚的力度，m 越大，惩罚越强。
-CosFace使用mtcnn进行人脸检测与对齐，人脸表征训练模型使用基于residual units 64层卷积网络的Sphere Face，在5M的训练集上训练，在LFW数据集上测试，精度达到99.73%。
-5. ArcFace :
-ArcFace源于论文Additive angular margin lossfor deep face recognition，也叫做InsightFace，论文基本介绍了近期较为流行的人脸识别模型，loss变化从softmax到AM-softmax，然后提出ArcFace，可以说起到了很好的综述作用，论文从三个方面探讨影响人脸识别模型精度的主要因素。
-（1）数据：数据方面，论文探讨了各个数据集的数据质量和优缺点，并对MS-Celeb-1M，MegaFace FaceScrub做了清洗，清洗后的数据公开。
-（2）网络：详细对比了不同的主流网络结构的性能，包括输入层尺寸大小、最后输出几层的不同结构、基本网络单元残差网络的不同结构、主干网络的不同模型。经过实验的证明，最后的网络结构：输入图片大小112x112；第一层convLayer 卷积核为33 stride 1时，网络输出77；主干网络使用ResNet100，并使用改进后的改进的残差网络结构，如下图；最后的几层输出层为最后一个卷积层后+BN-Dropout-FC-BN的结构。
-
-（3）损失函数：与 AM-softmax相比，区别在于Arcface引入margin的方式不同，损失函数为：
-
-Arcface的m是在余弦里面，AM-softmax的在外面，ArcFace更为直观并且在超球面维度上有更清晰的解释。Arcface在VGG2和MS-Celeb-1M数据集上训练，在LFW数据集上精度达到99.83%。
-三、总结
-本期文章主要介绍人脸表征相关算法和论文综述，人脸检测、对齐、特征提取等这些操作都可以在静态数据中完成，下一期将给大家介绍在视频数据中进行人脸识别的另一个重要的算法，视频人脸跟踪的概念与方法。
-参考文献：
-
-【1】 Liu W, Wen Y, Yu Z, et al. Large-MarginSoftmax Loss for Convolutional Neural Networks[C]//ICML. 2016: 507-516.1708.
-【2】Liu W, Wen Y, Yu Z, et al. Sphereface:Deep hypersphere embedding for face recognition[C]//The IEEE Conference onComputer Vision and Pattern Recognition (CVPR). 2017, 1: 1.
-【3】Wang F, Xiang X, Cheng J, et al. Normface:l 2 hypersphere embedding for face verification[C]//Proceedings of the 2017 ACMon Multimedia Conference. ACM, 2017: 1041-1049.
-【4】Wang F, Cheng J, Liu W, et al. Additivemargin softmax for face verification[J]. IEEE Signal Processing Letters, 2018,25(7): 926-930.
-【5】Wang H, Wang Y, Zhou Z, et al. CosFace:Large margin cosine loss for deep face recognition[J]. arXiv preprintarXiv:1801.09414, 2018.
-【6】Deng J, Guo J, Zafeiriou S. Arcface:Additive angular margin loss for deep face recognition[J]. arXiv preprintarXiv:1801.07698, 2018.
-
-From： https://cloud.tencent.com/developer/article/1160037?from=article.detail.1344438
-出品 | 磐创AI技术团队
-]]></content>
-      <categories>
-        <category>ai</category>
-      </categories>
-      <tags>
-        <tag>ai</tag>
-        <tag>face</tag>
       </tags>
   </entry>
   <entry>
@@ -11780,9 +11528,9 @@ Vim
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ruclFkCxxgCsyciN").style.height=document.getElementById("mmedia-ruclFkCxxgCsyciN").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-SqkXHBpEnsShuPTd").style.height=document.getElementById("mmedia-SqkXHBpEnsShuPTd").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-ruclFkCxxgCsyciN").style.height=document.getElementById("mmedia-ruclFkCxxgCsyciN").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-SqkXHBpEnsShuPTd").style.height=document.getElementById("mmedia-SqkXHBpEnsShuPTd").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -12342,6 +12090,258 @@ Earthly 一个更加强大的镜像构建工具
         <tag>tmm</tag>
         <tag>字幕</tag>
         <tag>plex</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>深度学习之视频人脸识别系列</title>
+    <url>/posts/a0f3c838/</url>
+    <content><![CDATA[系列1 简介
+出品 | 磐创AI技术团队
+【磐创AI导读】本文是深度学习之视频人脸识别系列的第一篇文章，介绍了人脸识别领域的一些基本概念，分析了深度学习在人脸识别的基本流程，并总结了近年来科研领域的研究进展，最后分析了静态数据与视频动态数据在人脸识别技术上的差异。欢迎大家点击上方篮子关注我们的公众号：磐创AI。
+一、基本概念
+1. 人脸识别（face identification）
+人脸识别是1对n的比对，给定一张人脸图片，如何在n张人脸图片中找到同一张人脸图片，相对于一个分类问题，将一张人脸划分到n张人脸中的一张。类似于管理人员进行的人脸识别门禁系统。
+2.人脸验证（face verification）
+人脸验证的1对1的比对，给定两张人脸图片，判断这两张人脸是否为同一人，类似于手机的人脸解锁系统，事先在手机在录入自己的脸部信息，然后在开锁时比对摄像头捕捉到的人脸是否与手机上录入的人脸为同一个人。
+3.人脸检测（face detection）
+人脸检测是在一张图片中把人脸检测出来，即在图片上把人脸用矩形框出来，并得到矩形的坐标，如下图所示。
+
+4. 人脸关键点检测
+根据输入的人脸图像，识别出面部关键特征点，如眼睛、鼻尖、嘴角点、眉毛以及人脸各部件轮廓点的坐标，如下图所示。
+
+5. 人脸矫正（人脸对齐）
+通过人脸关键点检测得到人脸的关键点坐标，然后根据人脸的关键点坐标调整人脸的角度，使人脸对齐，由于输入图像的尺寸是大小不一的，人脸区域大小也不相同，角度不一样，所以要通过坐标变换，对人脸图像进行归一化操作，如下图所示。
+
+二、基于深度学习的人脸识别算法基本流程
+随着神经网络的迅速发展和其对图像数据的强大的特征提取，深度学习运用于人脸识别也成为热点研究方向；2014年的开山之作DeepFace，第一个真正将大数据和深度学习结合应用于人脸识别与验证，确立人脸识别的常规流程：图片-&gt;人脸与关键点检测-&gt;人脸对齐-&gt;人脸表征（representation）-&gt;分类。首先将图片中的人脸检测处理并通过关键点进行对齐，如何输入到神经网络，得到特征向量，通过分类训练过程，该向量即为人脸的特征向量。要求出两张人脸的相似度即计算两个特征的向量度量之差，方法包括：SVM、SiameseNetwork、JointBayesian、L1距离、L2距离、cos距离等。
+三、科研领域近期进展
+科研领域近期进展主要集中于loss函数的研究，包括DeepId2（Contrastive Loss）、FaceNet（Triplet loss）、L-Softmax、SphereFace（A-Softmax）、Center Loss、L2-Softmax、NormFace、CosFace（AM-Softmax）、ArcFace（AA-Softmax）等。
+四、基于视频人脸识别和图片人脸识别的区别
+（该小结部分参考于博客园 - 米罗西http://www.cnblogs.com/zhehan54/p/6727631.html）
+相对于图片数据，目前视频人脸识别有很多挑战，包括：（1）视频数据一般为户外，视频图像质量比较差；（2）人脸图像比较小且模糊；（3）视频人脸识别对实时性要求更高。
+但是视频数据也有一些优越性，视频数据同时具有空间信息和时间信息，在时间和空间的联合空间中描述人脸和识别人脸会具有一定提升空间。在视频数据中人脸跟踪是一个提高识别的方法，首先检测出人脸，然后跟踪人脸特征随时间的变化。当捕捉到一帧比较好的图像时，再使用图片人脸识别算法进行识别。这类方法中跟踪和识别是单独进行的，时间信息只在跟踪阶段用到。
+【总结】：本期文章主要介绍了基于深度学习的人脸识别算法的一些基本入门知识，下一期我给大家介绍人脸识别中获取神经网络输入的算法，即关于人脸检测、人脸关键点检测与人脸对齐的一些重要算法和相关论文解析。
+系列2 人脸检测与对齐
+一、人脸检测与关键点检测
+1. 问题描述：
+人脸检测解决的问题为给定一张图片，输出图片中人脸的位置，即使用方框框住人脸，输出方框的左上角坐标和右下角坐标或者左上角坐标和长宽。算法难点包括：人脸大小差异、人脸遮挡、图片模糊、角度与姿态差异、表情差异等。而关键检测则是输出人脸关键点的坐标，如左眼（x1，y1）、右眼（x2，y2）、鼻子（x3，y3）、嘴巴左上角（x4，y4）、嘴巴右上角（x5，y5）等。
+2. 深度学习相关算法：
+（1）Cascade CNN
+Cascade CNN源于发表于2015年CVPR上的一篇论文A Convolutional Neural Network Cascade for Face Detection【2】，作者提出了一种级连的CNN网络结构用于人脸检测。算法主体框架是基于V-J的瀑布流思想【1】，是传统技术和深度网络相结合的一个代表，Cascade CNN包含了多个分类器，这些分类器使用级联结构进行组织，与V-J不同的地方在于Cascade CNN采用卷积网络作为每一级的分类器。整个网络的处理流程如下图所示：
+
+整个处理流程里包含了六个网络：12-net、12-calibration-net、24-net、24-calibration-net、48-net、48-calibration-net，其中三个二分类网络用于分类其是否为人脸，另外三个calibration网络用于矫正人脸框边界。其中第二个网络之后、第四个网络之后、第五个网络之后使用NMS算法过滤掉冗余的框。
+12-net，24-net和48-net的网络结构如下图所示：
+
+13-12-calibration-net，24-calibration-net，48-calibration-net的结构如下图所示：
+
+该算法结合了V-J框架构造了级连的CNN网络结构并设计边界矫正网络用来专门矫正人脸框边界，在AFW数据集上准确率达到97.97%。
+
+（2）Faceness-Net
+Faceness-Net源于论文A convolutional neural network cascade for face detection【3】，该算法基于DCNN网络【5】的人脸局部特征分类器，算法首先进行人脸局部特征的检测，使用多个基于DCNN网络的facial parts分类器对人脸进行评估，然后根据每个部件的得分进行规则分析得到Proposal的人脸区域，然后从局部到整体得到人脸候选区域，再对人脸候选区域进行人脸识别和矩形框坐标回归，该过程分为两个步骤。
+第一个步骤：每个人脸局部特征使用attribute-aware网络检测并生成人脸局部图，其中一共五个特征属性： 头发、眼睛、鼻子、嘴巴、胡子。然后通过人脸局部图根据评分构建人脸候选区域，具体如下图所示：
+
+第二个步骤：训练一个多任务的卷积网络来完成人脸二分类和矩形框坐标回归，进一步提升其效果，具体如下图所示：
+
+Faceness从脸部特征的角度来解决人脸检测中的遮挡和姿态角度问题，其整体性能在当时是非常好的，在AFW数据集上准确率可以达到98.05%。
+
+（3）MTCNN
+MTCNN源于论文Joint Face Detection and Alignment using Multi-task Cascaded Convolutional Networks【6】，是基于多任务级联卷积神经网络来解决人脸检测和对齐问题，同时输出图片的人脸矩阵框和关键点坐标（左眼、右眼、鼻子、嘴巴左上角、嘴巴右上角）。MTCNN为三阶的级联卷积神经网络，整体框架如下图所示：
+
+输入阶段：为应对目标多尺度问题，将原始图像resize到不同尺寸，构建图像金字塔，作为三阶级联架构的输入，这样处理可以更好地检测大小不一的人脸。
+第一阶段：通过一个全部由卷积层组成的CNN，取名P-Net，获取候选人脸框、关键点坐标和人脸分类（是人脸或不是），之后采用NMS过滤掉高重叠率的候选窗口。如下图所示：
+
+第二阶段：第一阶段输出的候选人脸框作为更为复杂的R-Net网络的输入，R-Net进一步筛除大量错误的候选人脸框，同样也通过NMS过滤掉高重叠率的候选窗口。如下图所示：
+
+第三阶段：与第二阶段类似，最终网络输出人脸框坐标、关键点坐标和人脸分类（是人脸或不是）。如下图所示：
+
+MTCNN通过三级的级联卷积神经网络对任务进行从粗到细的处理，还提出在线困难样本生成策略（online hard sample mining ）可以进一步提升性能。兼并了速度与准确率，速度在GPU上可以达到99FPS，在 FDDB数据集上可以达到95.04准确率，具体如下图所示：
+
+二、人脸对齐（部分参考于GraceDD的博客文章）
+人脸对齐通过人脸关键点检测得到人脸的关键点坐标，然后根据人脸的关键点坐标调整人脸的角度，使人脸对齐，由于输入图像的尺寸是大小不一的，人脸区域大小也不相同，角度不一样，所以要通过坐标变换，对人脸图像进行归一化操作。人脸关键点检测有很多算法可以使用包括：ASM、AAM、DCNN 、TCDCN 、MTCNN 、TCNN、TCNN等，这里就不详细介绍，主要说一下得到人脸关键点之后如何进行人脸对齐，是所有人脸达到归一化效果，该过程如下图所示：
+
+该过程涉及到图像的仿射变换，简单来说，“仿射变换”就是：“线性变换”+“平移”，即坐标的变换。假如我们希望人脸图片归一化为尺寸大小600600，左眼位置在（180，200），右眼位置在（420，200）。 这样人脸中心在图像高度的1/3位置，并且两个眼睛保持水平，所以我们选择左眼角位置为( 0.3width, height / 3 )，右眼角位置为（0.7*width , height / 3） 。
+利用这两个点计算图像的变换矩阵（similarity transform），该矩阵是一个2*3的矩阵，如下：
+
+如果我们想对一个矩形进行变换，其中x、y方向的缩放因为分别为sx，sy，同时旋转一个角度 ，然后再在x方向平移tx, 在y方向平移ty
+利用opencv的estimateRigidTransform方法，可以获得这样的变换矩阵，但遗憾的是，estimateRigidTransform至少需要三个点，所以我们需要构选第三个点，构造方法是用第三个点与已有的两个点构成等边三角形，这样第三个点的坐标为：
+
+代码如下：
+
+经过上一步的处理之后，所有的图像都变成一样大小，并且又三个关键点的位置是保持一致的，但因为除了三个点对齐了之外，其他点并没有对齐。所以根据得到的变换矩阵对剩下所有的点进行仿射变换，opencv代码如下所示：
+
+img为输入图像;
+warped为变换后图像，类型与src一致;
+M为变换矩阵，需要通过其它函数获得，当然也可以手动输入;
+Image_size为输出图像的大小;
+三、 总结
+本期文章主要介绍了人脸检测与对齐的相关算法，下一期我给大家介绍一下人脸表征的相关算法，即通过深度学习提取人脸特征，通过比较人脸特征进行人脸识别与验证。
+参考文献：
+
+【1】 S.Z.Li, L.Zhu, Z.Q.Zhang, A.Blake, H.J.Zhang, H.Y.Shum. Statistical learning of multi-view face detection. In: Proceedings of the 7-th European Conference on Computer Vision. Copenhagen, Denmark: Springer, 2002.67-81.
+【2】Li H, Lin Z, Shen X, et al. A convolutional neural network cascade for face detection[C]//Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition. 2015: 5325-5334.
+【3】Yang S, Luo P, Loy C C, et al. Faceness-Net: Face detection through deep facial part responses[J]. IEEE transactions on pattern analysis and machine intelligence, 2017.
+【4】Yang S, Luo P, Loy C C, et al. From facial parts responses to face detection: A deep learning approach[C]//Proceedings of the IEEE International Conference on Computer Vision. 2015: 3676-3684.
+【5】Sun Y, Wang X, Tang X. Deep convolutional network cascade for facial point detection[C]//Proceedings of the IEEE conference on computer vision and pattern recognition. 2013: 3476-3483.
+【6】Zhang K, Zhang Z, Li Z, et al. Joint face detection and alignment using multitask cascaded convolutional networks[J]. IEEE Signal Processing Letters, 2016, 23(10): 1499-1503.
+
+系列3：人脸表征
+一、人脸表征
+把人脸图像通过神经网络，得到一个特定维数的特征向量，该向量可以很好地表征人脸数据，使得不同人脸的两个特征向量距离尽可能大，同一张人脸的两个特征向量尽可能小，这样就可以通过特征向量来进行人脸识别。
+
+二、论文综述
+1. DeepFace：
+2014年论文DeepFace: Closing the Gap toHuman-Level Performance in Face Verification提出了DeepFace算法，第一个真正将大数据和深度学习神经网络结合应用于人脸识别与验证。在该人脸识别模型中分为四个阶段：人脸检测 =&gt; 人脸对齐 =&gt; 人脸表征 =&gt; 人脸分类，在LFW数据集中可以达到97.00%的准确率。
+（1）人脸检测与对齐：该模型使用3D模型来将人脸对齐，该方法过于繁琐，在实际应用中很少使用，经过3D对齐以后，形成的图像都是152×152的图像，具体步骤如下图。
+
+分为如下几步：
+a. 人脸检测，使用6个基点  b. 二维剪切，将人脸部分裁剪出来  c. 67个基点，然后Delaunay三角化，在轮廓处添加三角形来避免不连续  d. 将三角化后的人脸转换成3D形状  e. 三角化后的人脸变为有深度的3D三角网  f. 将三角网做偏转，使人脸的正面朝前。  g. 最后放正的人脸  h. 一个新角度的人脸（在论文中没有用到）
+（2）人脸表征：人脸表征使用了5个卷积层和1个最大池化层、1个全连接层，如下图所示。前三层的目的在于提取低层次的特征,为了网络保留更多图像信息只使用了一层池化层；后面三层都是使用参数不共享的卷积核，因为主要是因为人脸不同的区域的特征是不一样的，具有很大的区分性，比如鼻子和眼睛所表示的特征是不一样的，但是使用参数不共享的卷积核也增加了模型计算量以及需要更多的训练数据。最后输出的4096维向量进行L2归一化。
+
+a. Conv：32个11×11×3的卷积核
+b. max-pooling: 3×3， stride=2
+c. Conv: 16个9×9的卷积核
+d. Local-Conv: 16个9×9的卷积核，Local的意思是卷积核的参数不共享
+e. Local-Conv: 16个7×7的卷积核，参数不共享
+f. Local-Conv: 16个5×5的卷积核，参数不共享
+g. Fully-connected: 4096维
+h. Softmax: 4030维
+（3）分类：论文介绍了两种方法进行分类，加权的卡方距离和使用Siamese网络结构，设f1和f2为特征向量，上一个步骤的输出，则有：
+①加权卡方距离：计算公式如下，加权参数由线性SVM计算得到：
+
+②Siamese网络：网络结构是成对进行训练，得到的特征表示再使用如下公式进行计算距离：
+
+2. DeepID1：
+DeepID1 是2014年Deep LearningFace Representation from Predicting 10,000 Classes一文提出的，是DeepID三部曲的第一篇。DeepID1 使用softmax多分类训练，主要思想第一个是数据集的增大，包括训练集使用celebface，包含87628张图片，5436个人脸，增大了训练集；使用多尺寸输入，通过5个landmarks将每张人脸划分成10regions，每张图片提取60patches=10regions3scales2(RGB orgray)，第二个是网络结构，DeepID提取的人脸特征就是一个由连接第三层与第四层组成的全连接层特征，如下图所示，每个patches经过这个cnn网络，第四层的特征更加全局化（global），第三层的特征更加细节，因此DeepID连接了两者，以求同时包含全局，细节信息。
+
+60个patches使用60个CNN,每个CNN提取2*160=320维特征（与水平翻转一起输入），总网络模型如下图所示，最后分别使用联合贝叶斯算法与神经网络进行分类，并比较结果。
+
+模型最终以CelebFaces+中202,599图像作为训练集， patch数提升为100（10r10s2） ，特征数提升为1001602=32000 然后使用PCA降为150维 ，使用联合贝叶斯算法进行验证， 最终在LFW上达到97.20%的验证准确率。
+3. DeepID2：
+DeepID2是Deep Learning Face Representationby Joint Identification-Verification一文提出的，对DeepID1进行了进一步的改进，提出了contrastive loss，在分类任务，我们需要的是减少类内差距（同一人脸），增加类间差距（不同人脸），softmax loss分类的监督信号可以增大类间差距，但是却对类内差距影响不大，所以DeepID2加入了另一个loss，contrastive loss，从而增加验证的监督信号，就可以减少类内差距。
+网络结构类似DeepID1,不同之处在于使用了两种不同的损失函数，网络结构如下图所示。
+
+损失函数：
+①分类信号，Softmax loss。
+
+②验证信号，contrastiveloss，使用l2范数距离表示，m为阈值不参与训练，括号内的θve={m}，该损失函数可以让类间的距离给定一个限制margin，即m大小的距离。
+
+
+两loss的组合方式： 首先使用2个输入，计算Softmax loss和contrastive loss,总损失为二者通过λ加权求和，通过总损失来执行梯度下降更新卷积参数，通过Softmax loss来更新softmax层的参数。
+整个模型使用celebrate+数据集训练，每张图片使用了21 facial landmarks，分成200patches（20regions5scales2RGB&amp;Gray)，水平翻转后变为400patches，使用了200个卷积神经网络，提取400（2002）个Deepid2特征，使用贪婪算法降为25个Deepid2特征，使用PCA将25160Deepid2特征降为180维，最后使用联合贝叶斯算法进行验证，最终在LFW上得到的最终准确率是98.97%，使用7组25个Deepid2特征，SVM融合可得到准确率为99.15% 。DeepID2在2014 年是人脸领域非常有影响力的工作，也掀起了在人脸领域引进 MetricLearning 的浪潮。
+4. DeepID2+：
+DeepID2+源于论文Deeply learned facerepresentations are sparse, selective, and robust，DeepID2+是对DeepID2的改进。①卷积层在原来基础上再增加128维，第四层全连接层从160增加到512，训练数据增加了CelebFaces+ dataset，WDRef等，有12000个人脸的大约290,000张图片； ②每个卷积层的后面都加了一个512为的全连接层，并添加contrastive loss监督信号，而不仅在第四层全连接层上有 。网络结构如下图所示。
+
+最终在LFW数据集上准确率为99.47%。
+5. DeepID3：
+DeepID3源于2015年的Deepid3:Face recognition with very deep neural networks论文，该论文探究了复杂神经网络对人脸识别的作用。论文研究VGG与GoogleNet用于人脸识别的效果，论文在VGG和GooLeNet的基础上进行构建合适的结构，使得方便人脸识别。结果发现DeepID3的结果和DeepID2+相当，可能是由于数据集的瓶颈，需要更大的数据才能有更好的提升，两个网络结构如下图所示。
+
+网络输出使用PCA降维到300维的向量，使用联合贝叶斯算法进行验证，最终在LFW上得到的最终准确率是99.53%。
+6. FaceNet：
+FaceNet由论文Facenet: A unified embedding forface recognition and clustering提出，这篇 2015 年来自 Google 的 论文同样具有非常大的影响力，不仅仅成功应用了 TripletLoss 在 benchmark 上取得state-of-art 的结果，更因为他们提出了一个绝大部分人脸问题的统一解决框架，即：识别、验证、搜索等问题都可以放到特征空间里做，需要专注解决的仅仅是如何将人脸更好的映射到特征空间。FaceNet在DeepID的基础上，将 ContrastiveLoss 改进为 Triplet Loss，去掉softmaxloss。FaceNet实验了ZFNet类型网络和Inception类型网络，最终Inception类型网络效果更好，网络结构如下图所示。
+
+FaceNet没有使用PCA降维，而是在网络中直接训练输出128维的向量，用全连接层来完成降维，最后的128维的向量经过Triplet Loss。
+Triplet Loss输入不再是 Image Pair，而是三张图片（Triplet），分别为 Anchor Face（xa），Negative Face（xn）和 Positive Face（xp）。Anchor 与 Positive Face 为同一人，与 Negative Face 为不同人，在特征空间里 Anchor 与 Positive 的距离要小于 Anchor 与 Negative 的距离，且相差超过一个 Margin Alpha。
+loss的目标为：
+
+总loss公式为：
+
+Contrastive Loss与Triplet Loss的比较， Contrastive Loss目标是减少类内差距（两个蓝点），增加类间差距（蓝点与红点）；Triplet Loss则是输入三张图片，Anchor 与 Positive 的距离要小于 Anchor 与 Negative 的距离，且相差超过一个 Margin Alpha，即Triplet Loss同时约束了两个距离。
+
+最后FaceNet在LFW数据集上达到了99.63%的准确率。
+基于 ContrastiveLoss 和 Triplet Loss 的 MetricLearning 符合人的认知规律，在实际应用中也取得了不错的效果，但同时也有很多问题，由于ContrastiveLoss 和 Triplet Loss 的训练样本都基于pair 或者 triplet 的，可能的样本数是 O(N2) 或者 O (N3) 的，所以模型需要很久的计算才能拟合并且训练集需要足够大。
+三、总结
+本期文章主要介绍人脸表征相关算法和论文综述，主要是2014年到2016年的研究成果， ContrastiveLoss 和 Triplet Loss在实际应用中也取得了很好的效果，但是也有很多问题，由于Contrastive Loss 和 Triplet Loss 的训练样本都基于 pair 或者 triplet 的，可能的样本数是 O (N2) 或者 O (N3) 的，所以模型需要很久的计算才能拟合并且训练集要足够大，所以在之后的人脸识别研究中，大部分在于loss函数的研究，这部分将会在下一期给大家介绍。
+参考文献：
+
+【1】 Taigman Y, Yang M, Ranzato M A, et al.Deepface: Closing the gap to human-level performance in faceverification[C]//Proceedings of the IEEE conference on computer vision andpattern recognition. 2014: 1701-1708.
+【2】Sun Y, Wang X, Tang X. Deep learning facerepresentation from predicting 10,000 classes[C]//Proceedings of the IEEEconference on computer vision and pattern recognition. 2014: 1891-1898.
+【3】Sun Y, Chen Y, Wang X, et al. Deeplearning face representation by joint identification-verification[C]//Advancesin neural information processing systems. 2014: 1988-1996.
+【4】Sun Y, Liang D, Wang X, et al. Deepid3:Face recognition with very deep neural networks[J]. arXiv preprintarXiv:1502.00873, 2015.
+【5】Simonyan K, Zisserman A. Very deepconvolutional networks for large-scale image recognition[J]. arXiv preprintarXiv:1409.1556, 2014.
+【6】Szegedy C, Liu W, Jia Y, et al. Goingdeeper with convolutions[C]//Proceedings of the IEEE conference on computervision and pattern recognition. 2015: 1-9.
+【7】Sun Y, Wang X, Tang X. Deeply learned facerepresentations are sparse, selective, and robust[C]//Proceedings of the IEEEconference on computer vision and pattern recognition. 2015: 2892-2900.
+【8】Schroff F, Kalenichenko D, Philbin J.Facenet: A unified embedding for face recognition andclustering[C]//Proceedings of the IEEE conference on computer vision andpattern recognition. 2015: 815-823.
+
+系列4：人脸表征-续
+一、人脸表征
+把人脸图像通过神经网络，得到一个特定维数的特征向量，该向量可以很好地表征人脸数据，使得不同人脸的两个特征向量距离尽可能大，同一张人脸的两个特征向量尽可能小，这样就可以通过特征向量来进行人脸识别。
+
+二、论文综述
+1. L-Softmax：
+Softmax Loss函数被广泛应用于深度学习，较为简单实用，但是它并不能够明确引导神经网络学习区分性较高的特征。L-Softmax能够有效地引导网络学习使得样本类内距离较小、类间距离较大的特征，L-Softmax不但能够调节类间距离的间隔（margin）大小，而且能够防止过拟合。
+L-Softmax是对softmax loss的改进，softmax loss公式如下所示：
+
+其中 fj 表示最终全连接层的类别输出向量 f的第 j个元素, N为训练样本的个数，则 fyi可以表示为 fyi=WTyi xi，其中 0≤θj≤π，最终的损失函数可得：
+
+softmax的目的是使得WT1x&gt;WT2x，即 ∥W1∥∥x∥cos(θ1)&gt;∥W2∥∥x∥cos(θ2)，从而得到输入x（来自类别1）输出正确的分类结果。L-Softmax通过增加一个正整数变量m，从而产生一个决策余量，能够更加严格地约束上述不等式，即：
+
+其中0≤θ1&lt;π/m。如果W1和W2能够满足∥W1∥∥x∥cos(mθ1)&gt;∥W2∥∥x∥cos(θ2)，那么就必然满足∥W1∥∥x∥cos(θ1)&gt;∥W2∥∥x∥cos(θ2)，这样的约束对学习W1和W2的过程提出了更高的要求，在训练学习过程中，类间要比之前多了一个m的间隔，从而使得1类和2类有了更宽的分类决策边界。这种Margin Based Classification使得学习更加的困难，从而使类间距离增加了一个margin距离，L-Softmax loss的总公式如下：
+
+当m越大时，分类的边界越大，学习难度当然就越高。
+论文仅使用了WebFace数据集作为训练集和一个简单的卷积网络，就在LFW上达到了98.71%的正确率，证明了L-Softmax loss取得了比softmax loss更好的结果。
+2. SphereFace :
+SphereFace在MegaFace数据集上识别率在2017年排名第一，提出A-Softmax Loss使人脸识别达到不错的效果。A-Softmax Loss基于softmax loss和L-Softmax loss，在二分类模型中，softmax loss为：
+
+如果x为类别一，则希望p1&gt;p2,则二分类的划分函数为：
+
+权重归一化||w||为1，b为0，此时特征上的点映射到单位超球面上，则二分类的划分函数为：
+
+然后使用与L-Softmax loss相同的原理，使
+
+则A-Softmax Loss最终为：
+
+因此A-Softmax Loss是样本类别之间产生了角度距离，让决策函数更加严格并且更加具有可区分性。当m增大，角度距离也会增加。
+A-Softmax与L-Softmax的最大区别在于A-Softmax的权重归一化了，而L-Softmax则没有。A-Softmax权重的归一化导致特征上的点映射到单位超球面上，A-Softmax仅仅能从角度上划分类别，而L-Softmax是在角度与长度方向进行考量，两个方向如果划分不一就会收到干扰，导致精度下降。
+SphereFace使用的模型如下图所示：
+
+训练与测试过程如下图所示，在测试过程中使用余弦计算相似度：
+
+最终SphereFace在训练集较小的情况下，LFW数据集上准确率为99.42%。Sphereface效果很好，但是它不优美。在测试阶段，Sphereface通过特征间的余弦值来衡量相似性，即以角度为相似性的度量，在训练阶段，其实Sphereface的损失函数并不是在直接优化特征与类中心的角度，而是优化特征与类中心的角度在乘上一个特征的长度，这就造成了训练跟测试之间目标不一致。
+3. Normface :
+在优化人脸识别任务时，softmax本身优化的是没有归一化的内积结果，但是最后在预测的时候使用的一般是cosine距离或者欧式距离，这会导致优化目标和最终的距离度量其实并不一致。 Normface的核心思想是既然最后在特征对比的时候使用归一化的cosine距离，那么在训练的过程中把特征也做归一化处理，做了归一化之后，softmax的优化就变成了直接优化cosine距离了，归一化过程如下，其中e是为了防止除0的较小正数：
+
+相应的损失函数如下：
+
+其中 W 是归一化的权重，f_i 是归一化的特征，参数 s 的引入是因为保证梯度大小的合理性，去掉bias是因为softmax之前的fc有bias的情况下会使得有些类别在角度上没有区分性但是通过bias可以区分，在这种情况下如果对feature做normalize，会使得中间的那个小类别的feature变成一个单位球形并与其他的feature重叠在一起，所以在feature normalize的时候是不能加bias的。
+Normface使用了较小的模型使用多种loss训练，然后在LFW数据集上测试，证明了feature normalize的效果，结果如下：
+
+4. CosFace :
+Normface用特征归一化解决了Sphereface训练和测试不一致的问题。但是却没有了margin的惩罚，腾讯AI Lab的CosFace或者AM-softmax是在Normface的基础上引入了margin，损失函数为：
+
+其中特征与权值都做了归一化：
+
+分类决策为：
+
+，比之前增加了m的margin，m 是一个超参数，控制惩罚的力度，m 越大，惩罚越强。
+CosFace使用mtcnn进行人脸检测与对齐，人脸表征训练模型使用基于residual units 64层卷积网络的Sphere Face，在5M的训练集上训练，在LFW数据集上测试，精度达到99.73%。
+5. ArcFace :
+ArcFace源于论文Additive angular margin lossfor deep face recognition，也叫做InsightFace，论文基本介绍了近期较为流行的人脸识别模型，loss变化从softmax到AM-softmax，然后提出ArcFace，可以说起到了很好的综述作用，论文从三个方面探讨影响人脸识别模型精度的主要因素。
+（1）数据：数据方面，论文探讨了各个数据集的数据质量和优缺点，并对MS-Celeb-1M，MegaFace FaceScrub做了清洗，清洗后的数据公开。
+（2）网络：详细对比了不同的主流网络结构的性能，包括输入层尺寸大小、最后输出几层的不同结构、基本网络单元残差网络的不同结构、主干网络的不同模型。经过实验的证明，最后的网络结构：输入图片大小112x112；第一层convLayer 卷积核为33 stride 1时，网络输出77；主干网络使用ResNet100，并使用改进后的改进的残差网络结构，如下图；最后的几层输出层为最后一个卷积层后+BN-Dropout-FC-BN的结构。
+
+（3）损失函数：与 AM-softmax相比，区别在于Arcface引入margin的方式不同，损失函数为：
+
+Arcface的m是在余弦里面，AM-softmax的在外面，ArcFace更为直观并且在超球面维度上有更清晰的解释。Arcface在VGG2和MS-Celeb-1M数据集上训练，在LFW数据集上精度达到99.83%。
+三、总结
+本期文章主要介绍人脸表征相关算法和论文综述，人脸检测、对齐、特征提取等这些操作都可以在静态数据中完成，下一期将给大家介绍在视频数据中进行人脸识别的另一个重要的算法，视频人脸跟踪的概念与方法。
+参考文献：
+
+【1】 Liu W, Wen Y, Yu Z, et al. Large-MarginSoftmax Loss for Convolutional Neural Networks[C]//ICML. 2016: 507-516.1708.
+【2】Liu W, Wen Y, Yu Z, et al. Sphereface:Deep hypersphere embedding for face recognition[C]//The IEEE Conference onComputer Vision and Pattern Recognition (CVPR). 2017, 1: 1.
+【3】Wang F, Xiang X, Cheng J, et al. Normface:l 2 hypersphere embedding for face verification[C]//Proceedings of the 2017 ACMon Multimedia Conference. ACM, 2017: 1041-1049.
+【4】Wang F, Cheng J, Liu W, et al. Additivemargin softmax for face verification[J]. IEEE Signal Processing Letters, 2018,25(7): 926-930.
+【5】Wang H, Wang Y, Zhou Z, et al. CosFace:Large margin cosine loss for deep face recognition[J]. arXiv preprintarXiv:1801.09414, 2018.
+【6】Deng J, Guo J, Zafeiriou S. Arcface:Additive angular margin loss for deep face recognition[J]. arXiv preprintarXiv:1801.07698, 2018.
+
+From： https://cloud.tencent.com/developer/article/1160037?from=article.detail.1344438
+出品 | 磐创AI技术团队
+]]></content>
+      <categories>
+        <category>ai</category>
+      </categories>
+      <tags>
+        <tag>ai</tag>
+        <tag>face</tag>
       </tags>
   </entry>
   <entry>
@@ -16059,11 +16059,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var otPHrqpSsCKbfKnB_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); otPHrqpSsCKbfKnB_options.container = document.getElementById("mmedia-otPHrqpSsCKbfKnB"); const ap_otPHrqpSsCKbfKnB = new APlayer(otPHrqpSsCKbfKnB_options); 
+ var ggYJQfXdrwkRNase_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); ggYJQfXdrwkRNase_options.container = document.getElementById("mmedia-ggYJQfXdrwkRNase"); const ap_ggYJQfXdrwkRNase = new APlayer(ggYJQfXdrwkRNase_options); 
 
 - **列表**
 
- var GjbzeefIOdNgGUmW_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); GjbzeefIOdNgGUmW_options.container = document.getElementById("mmedia-GjbzeefIOdNgGUmW"); const ap_GjbzeefIOdNgGUmW = new APlayer(GjbzeefIOdNgGUmW_options); 
+ var atahXBGdfbswxnyg_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); atahXBGdfbswxnyg_options.container = document.getElementById("mmedia-atahXBGdfbswxnyg"); const ap_atahXBGdfbswxnyg = new APlayer(atahXBGdfbswxnyg_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -16315,21 +16315,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-MRsfprMPBmnpbHnJ").style.height=document.getElementById("mmedia-MRsfprMPBmnpbHnJ").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-QbvTLBYcDltCRcTg").style.height=document.getElementById("mmedia-QbvTLBYcDltCRcTg").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-MRsfprMPBmnpbHnJ").style.height=document.getElementById("mmedia-MRsfprMPBmnpbHnJ").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-QbvTLBYcDltCRcTg").style.height=document.getElementById("mmedia-QbvTLBYcDltCRcTg").scrollWidth*0.76+"px";
     }; 
 
 **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-awbGRHJhfhlFqmVi").style.height=document.getElementById("mmedia-awbGRHJhfhlFqmVi").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-WjTytxXYXtwDPwCP").style.height=document.getElementById("mmedia-WjTytxXYXtwDPwCP").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-awbGRHJhfhlFqmVi").style.height=document.getElementById("mmedia-awbGRHJhfhlFqmVi").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-WjTytxXYXtwDPwCP").style.height=document.getElementById("mmedia-WjTytxXYXtwDPwCP").scrollWidth*0.7+"px";
     }; 
 
 **artplayer**
 
- var AWKQbEzAwMFAVfuq_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); AWKQbEzAwMFAVfuq_options.container = "#mmedia-AWKQbEzAwMFAVfuq"; const art_AWKQbEzAwMFAVfuq = new Artplayer(AWKQbEzAwMFAVfuq_options); 
+ var CveSLbNJgVXeDNlC_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); CveSLbNJgVXeDNlC_options.container = "#mmedia-CveSLbNJgVXeDNlC"; const art_CveSLbNJgVXeDNlC = new Artplayer(CveSLbNJgVXeDNlC_options); 
 脑图
 
 原作者记录
@@ -17483,11 +17483,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var PTRvERxLaerjLAjW_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); PTRvERxLaerjLAjW_options.container = document.getElementById("mmedia-PTRvERxLaerjLAjW"); const ap_PTRvERxLaerjLAjW = new APlayer(PTRvERxLaerjLAjW_options); 
+ var YtkQicASszhBtuAr_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); YtkQicASszhBtuAr_options.container = document.getElementById("mmedia-YtkQicASszhBtuAr"); const ap_YtkQicASszhBtuAr = new APlayer(YtkQicASszhBtuAr_options); 
 
 
 
- var vkvPTOtZQfMaMzQC_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); vkvPTOtZQfMaMzQC_options.container = document.getElementById("mmedia-vkvPTOtZQfMaMzQC"); const ap_vkvPTOtZQfMaMzQC = new APlayer(vkvPTOtZQfMaMzQC_options); 
+ var FhPhTMEoGULtZpCX_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.flac\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); FhPhTMEoGULtZpCX_options.container = document.getElementById("mmedia-FhPhTMEoGULtZpCX"); const ap_FhPhTMEoGULtZpCX = new APlayer(FhPhTMEoGULtZpCX_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -17568,9 +17568,9 @@ Android支持
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-GgRSVCpuPfEEqlyU").style.height=document.getElementById("mmedia-GgRSVCpuPfEEqlyU").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-AsHehOdpKHWlyZVz").style.height=document.getElementById("mmedia-AsHehOdpKHWlyZVz").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-GgRSVCpuPfEEqlyU").style.height=document.getElementById("mmedia-GgRSVCpuPfEEqlyU").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-AsHehOdpKHWlyZVz").style.height=document.getElementById("mmedia-AsHehOdpKHWlyZVz").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -17579,7 +17579,7 @@ Android支持
 
 ## 中文翻唱
 
- var vchwaUKLxDAVDSZm_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); vchwaUKLxDAVDSZm_options.container = document.getElementById("mmedia-vchwaUKLxDAVDSZm"); const ap_vchwaUKLxDAVDSZm = new APlayer(vchwaUKLxDAVDSZm_options); 
+ var ZVMCZUpwkbGunUmL_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); ZVMCZUpwkbGunUmL_options.container = document.getElementById("mmedia-ZVMCZUpwkbGunUmL"); const ap_ZVMCZUpwkbGunUmL = new APlayer(ZVMCZUpwkbGunUmL_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
