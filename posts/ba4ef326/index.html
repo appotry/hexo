@@ -1,0 +1,343 @@
+<!DOCTYPE HTML><html lang="zh-CN"><head><link href="https://cdn.jsdelivr.net/npm/hexo-tag-common@0.0.5/css/index.css" rel="stylesheet"><meta charset="utf-8"><meta name="keywords" content="nas, qnap, man, embeded"><meta name="description" content="默认`QNAP`是不带`man`命令的，但是，作为一个`Linux`重度用户怎么能忍？得想办法安装man啊！经过一番努力，最终成功安装man pages!"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="renderer" content="webkit|ie-stand|ie-comp"><meta name="mobile-web-app-capable" content="yes"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="夜法之书"><meta name="theme-color" content="#7e9fc4"><meta name="msapplication-TileImage" content="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/medias_webp/icons/android-chrome-192x192.webp"><meta name="msapplication-TileColor" content="#7e9fc4"><link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/medias_webp/icons/apple-touch-icon.webp"><meta name="referrer" content="no-referrer-when-downgrade"><title>QNAP添加man pages | 夜法之书</title><link rel="manifest" href="/manifest.json"><link rel="icon" type="image/png" href="/favicon.png"><style>body{background-image:url(https://cdn.jsdelivr.net/gh/appotry/hexo@latest/medias_webp/sea.webp);background-repeat:no-repeat;background-size:100% 100%;background-attachment:fixed}</style><link rel="stylesheet preload" as="style" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/awesome/css/all.min.css"><link rel="preload" as="font" type="font/woff2" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/awesome/webfonts/fa-brands-400.woff2" crossorigin><link rel="preload" as="font" type="font/woff2" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/awesome/webfonts/fa-regular-400.woff2" crossorigin><link rel="preload" as="font" type="font/woff2" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/awesome/webfonts/fa-solid-900.woff2" crossorigin><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/jquery/jquery-ui.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/live2d/waifu.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/materialize/materialize.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/aos/aos.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/animate/animate.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/lightGallery/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/css/matery.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/css/my.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/css/dark.css" media="none" onload='"all"!=media&&(media="all")'><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/tocbot/tocbot.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/css/post.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/css/waline.css" media="none" onload='"all"!=media&&(media="all")'><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/css/reward.css"><link rel="alternate" type="application/atom+xml" title="所有订阅--夜法之书" href="https://blog.17lai.site/atom.xml"><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/jquery/jquery-3.6.0.min.js"></script><script>var supportsPassive=!1;try{var opts=Object.defineProperty({},"passive",{get:function(){supportsPassive=!0}});window.addEventListener("testpassive",null,opts),window.removeEventListener("testpassive",null,opts)}catch(s){}</script><meta name="generator" content="Hexo 6.1.0"><style>.github-emoji{position:relative;display:inline-block;width:1.2em;min-height:1.2em;overflow:hidden;vertical-align:top;color:transparent}.github-emoji>span{position:relative;z-index:10}.github-emoji .fancybox,.github-emoji img{margin:0!important;padding:0!important;border:none!important;outline:0!important;text-decoration:none!important;user-select:none!important;cursor:auto!important}.github-emoji img{height:1.2em!important;width:1.2em!important;position:absolute!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;user-select:none!important;cursor:auto!important}.github-emoji-fallback{color:inherit}.github-emoji-fallback img{opacity:0!important}</style></head><body><header class="navbar-fixed"><nav id="headNav" class="bg-color nav-transparent"><div id="navContainer" class="nav-wrapper container"><div class="brand-logo"><a href="/" class="waves-effect waves-light"><img src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/medias/logo.png" style="width:40px;height:45px" class="logo-img" alt="LOGO"> <span class="logo-span">夜法之书</span></a></div><a href="#" data-target="mobile-nav" class="sidenav-trigger button-collapse" aria-label="侧边菜单"><i class="fas fa-bars"></i></a><ul class="right nav-menu"><li class="hide-on-med-and-down nav-item menu-2d-home"><a href="/" class="waves-effect waves-light"><i class="fas fa-home" style="zoom:.6"></i> <span>首页</span></a></li><li class="hide-on-med-and-down nav-item menu-2d-nav"><a href="https://nav.17lai.site/" class="waves-effect waves-light"><i class="fas fa-suitcase" style="zoom:.6"></i> <span>导航</span></a></li><li class="hide-on-med-and-down nav-item menu-2d-media"><a href="#" class="waves-effect waves-light"><i class="fas fa-music" style="zoom:.6"></i> <span>多媒体</span> <i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li class="menu-2d-musics"><a href="/musics"><i class="fas fa-music" style="margin-top:-20px;zoom:.6"></i> <span>音乐</span></a></li><li class="menu-2d-galleries"><a href="/galleries"><i class="fas fa-image" style="margin-top:-20px;zoom:.6"></i> <span>相册</span></a></li><li class="menu-2d-movies"><a href="/movies"><i class="fas fa-film" style="margin-top:-20px;zoom:.6"></i> <span>视频</span></a></li><li class="menu-2d-musicplayer"><a href="https://musicplayer.17lai.site/"><i class="fas fa-music" style="margin-top:-20px;zoom:.6"></i> <span>在线云音乐</span></a></li><li class="menu-2d-music"><a href="https://music.17lai.site/"><i class="fas fa-music" style="margin-top:-20px;zoom:.6"></i> <span>音乐播放器</span></a></li></ul></li><li class="hide-on-med-and-down nav-item menu-2d-posts"><a href="#" class="waves-effect waves-light"><i class="fas fa-folder-plus" style="zoom:.6"></i> <span>文章</span> <i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li class="menu-2d-tags"><a href="/tags"><i class="fas fa-tags" style="margin-top:-20px;zoom:.6"></i> <span>标签</span></a></li><li class="menu-2d-categories"><a href="/categories"><i class="fas fa-bookmark" style="margin-top:-20px;zoom:.6"></i> <span>分类</span></a></li><li class="menu-2d-archives"><a href="/archives"><i class="fas fa-archive" style="margin-top:-20px;zoom:.6"></i> <span>归档</span></a></li></ul></li><li class="hide-on-med-and-down nav-item menu-2d-friends"><a href="/friends" class="waves-effect waves-light"><i class="fas fa-link" style="zoom:.6"></i> <span>友链</span></a></li><li class="hide-on-med-and-down nav-item menu-2d-cheatsheets"><a href="#" class="waves-effect waves-light"><i class="fas fa-code" style="zoom:.6"></i> <span>快查</span> <i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li class="menu-2d-cheatsheets"><a href="/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/"><i class="fab fa-vimeo-v" style="margin-top:-20px;zoom:.6"></i> <span>Vim快查表</span></a></li><li class="menu-2d-cheatsheets"><a href="/cheatsheets/Visual_Studio_Code.docset/Contents/Resources/Documents/"><i class="fas fa-code" style="margin-top:-20px;zoom:.6"></i> <span>VSCode快查表</span></a></li><li class="menu-2d-cheatsheets"><a href="/cheatsheets/Git.docset/Contents/Resources/Documents/"><i class="fab fa-git-square" style="margin-top:-20px;zoom:.6"></i> <span>Git快查表</span></a></li><li class="menu-2d-cheatsheets"><a href="/cheatsheets/SQLite.docset/Contents/Resources/Documents/"><i class="fas fa-database" style="margin-top:-20px;zoom:.6"></i> <span>SQLite快查表</span></a></li><li class="menu-2d-cheatsheets"><a href="/cheatsheets/tmux.docset/Contents/Resources/Documents/"><i class="fas fa-terminal" style="margin-top:-20px;zoom:.6"></i> <span>Tmux快查表</span></a></li><li class="menu-2d-cheatsheets"><a href="/cheatsheets/Bash_Shortcuts.docset/Contents/Resources/Documents/"><i class="fas fa-terminal" style="margin-top:-20px;zoom:.6"></i> <span>Bash快查表</span></a></li><li class="menu-2d-cheatsheets"><a href="/dash/"><i class="fas fa-laptop-code" style="margin-top:-20px;zoom:.6"></i> <span>更多快查表</span></a></li></ul></li><li class="hide-on-med-and-down nav-item menu-2d-toolbox"><a href="#" class="waves-effect waves-light"><i class="fas fa-toolbox" style="zoom:.6"></i> <span>工具</span> <i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li class="menu-2d-tg"><a href="https://t.me/joinchat/Sg3__qc4LBE2VsLO"><i class="fab fa-telegram-plane" style="margin-top:-20px;zoom:.6"></i> <span>TG群</span></a></li><li class="menu-2d-linuxtool"><a href="https://linux-command.17lai.site/"><i class="fas fa-terminal" style="margin-top:-20px;zoom:.6"></i> <span>Linux命令</span></a></li><li class="menu-2d-onebox"><a href="https://onebox.17lai.site/"><i class="fas fa-cloud" style="margin-top:-20px;zoom:.6"></i> <span>私人网盘</span></a></li><li class="menu-2d-encdec"><a href="http://encode.chahuo.com/"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>加密解密</span></a></li><li class="menu-2d-markmap"><a href="https://markmap.js.org/repl"><i class="fas fa-brain" style="margin-top:-20px;zoom:.6"></i> <span>思维导图</span></a></li><li class="menu-2d-aIcon"><a href="https://fontawesome.com/v5.15/icons"><i class="fab fa-font-awesome" style="margin-top:-20px;zoom:.6"></i> <span>Awesome</span></a></li><li class="menu-2d-zhanzhang"><a href="http://ping.chinaz.com/"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>站长工具</span></a></li><li class="menu-2d-toolport"><a href="http://tool.chinaz.com/port/"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>端口扫描</span></a></li><li class="menu-2d-saveso"><a href="https://so.17lai.site/"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>安全搜索</span></a></li><li class="menu-2d-staticnav"><a href="/nav"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>网址导航</span></a></li><li class="menu-2d-devbox"><a href="https://devtool.tech/"><i class="fas fa-tools" style="margin-top:-20px;zoom:.6"></i> <span>Devtools</span></a></li></ul></li><li class="hide-on-med-and-down nav-item menu-2d-about"><a href="#" class="waves-effect waves-light"><i class="fas fa-id-badge" style="zoom:.6"></i> <span>关于</span> <i class="fas fa-chevron-down" aria-hidden="true" style="zoom:.6"></i></a><ul class="sub-nav menus_item_child"><li class="site-author menu-2d-aboutme"><a href="/about"><i class="fas fa-user-circle" style="margin-top:-20px;zoom:.6"></i> <span>关于我</span></a></li><li class="menu-2d-abouttech"><a href="/myTeck"><i class="fas fa-address-card" style="margin-top:-20px;zoom:.6"></i> <span>我的技术</span></a></li><li class="menu-2d-aboutporj"><a href="/myProject"><i class="fas fa-laptop-code" style="margin-top:-20px;zoom:.6"></i> <span>我的项目</span></a></li><li class="menu-2d-aboutpost"><a href="/myPost"><i class="fas fa-pen-nib" style="margin-top:-20px;zoom:.6"></i> <span>我的文章</span></a></li><li class="menu-2d-aboutneed"><a href="/needtoread"><i class="fas fa-exclamation-circle" style="margin-top:-20px;zoom:.6"></i> <span>博客须知</span></a></li></ul></li><li class="menu-2d-search"><a href="#searchModal" class="modal-trigger waves-effect waves-light"><i id="searchIcon" class="fas fa-search" title="搜索" style="zoom:.85"></i></a></li><li class="menu-2d-dark"><a href="javascript:;" class="waves-effect waves-light" onclick="switchNightMode()" title="深色/浅色模式"><i id="sum-moon-icon" class="fas fa-sun" style="zoom:.85"></i></a></li></ul><div id="mobile-nav" class="side-nav sidenav"><div class="mobile-head bg-color"><div><img src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/medias/logo.png" style="width:45px;height:45px" class="logo-img circle responsive-img" alt="LOGO"><div class="logo-name">夜法之书</div><div class="logo-desc">~软件驱动世界~</div></div></div><ul class="menu-list mobile-menu-list"><li class="m-nav-item"><a href="/" class="waves-effect waves-light"><i class="fa-fw fas fa-home"></i> 首页</a></li><li class="m-nav-item"><a href="https://nav.17lai.site/" class="waves-effect waves-light"><i class="fa-fw fas fa-suitcase"></i> 导航</a></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-music"></i> 多媒体 <span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul><li><a href="/musics" style="margin-left:75px"><i class="fa fas fa-music" style="position:absolute;left:50px"></i> <span>音乐</span></a></li><li><a href="/galleries" style="margin-left:75px"><i class="fa fas fa-image" style="position:absolute;left:50px"></i> <span>相册</span></a></li><li><a href="/movies" style="margin-left:75px"><i class="fa fas fa-film" style="position:absolute;left:50px"></i> <span>视频</span></a></li><li><a href="https://musicplayer.17lai.site/" style="margin-left:75px"><i class="fa fas fa-music" style="position:absolute;left:50px"></i> <span>在线云音乐</span></a></li><li><a href="https://music.17lai.site/" style="margin-left:75px"><i class="fa fas fa-music" style="position:absolute;left:50px"></i> <span>音乐播放器</span></a></li></ul></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-folder-plus"></i> 文章 <span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul><li><a href="/tags" style="margin-left:75px"><i class="fa fas fa-tags" style="position:absolute;left:50px"></i> <span>标签</span></a></li><li><a href="/categories" style="margin-left:75px"><i class="fa fas fa-bookmark" style="position:absolute;left:50px"></i> <span>分类</span></a></li><li><a href="/archives" style="margin-left:75px"><i class="fa fas fa-archive" style="position:absolute;left:50px"></i> <span>归档</span></a></li></ul></li><li class="m-nav-item"><a href="/friends" class="waves-effect waves-light"><i class="fa-fw fas fa-link"></i> 友链</a></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-code"></i> 快查 <span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul><li><a href="/cheatsheets/Vim_CN.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fab fa-vimeo-v" style="position:absolute;left:50px"></i> <span>Vim快查表</span></a></li><li><a href="/cheatsheets/Visual_Studio_Code.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fas fa-code" style="position:absolute;left:50px"></i> <span>VSCode快查表</span></a></li><li><a href="/cheatsheets/Git.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fab fa-git-square" style="position:absolute;left:50px"></i> <span>Git快查表</span></a></li><li><a href="/cheatsheets/SQLite.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fas fa-database" style="position:absolute;left:50px"></i> <span>SQLite快查表</span></a></li><li><a href="/cheatsheets/tmux.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fas fa-terminal" style="position:absolute;left:50px"></i> <span>Tmux快查表</span></a></li><li><a href="/cheatsheets/Bash_Shortcuts.docset/Contents/Resources/Documents/" style="margin-left:75px"><i class="fa fas fa-terminal" style="position:absolute;left:50px"></i> <span>Bash快查表</span></a></li><li><a href="/dash/" style="margin-left:75px"><i class="fa fas fa-laptop-code" style="position:absolute;left:50px"></i> <span>更多快查表</span></a></li></ul></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-toolbox"></i> 工具 <span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul><li><a href="https://t.me/joinchat/Sg3__qc4LBE2VsLO" style="margin-left:75px"><i class="fa fab fa-telegram-plane" style="position:absolute;left:50px"></i> <span>TG群</span></a></li><li><a href="https://linux-command.17lai.site/" style="margin-left:75px"><i class="fa fas fa-terminal" style="position:absolute;left:50px"></i> <span>Linux命令</span></a></li><li><a href="https://onebox.17lai.site/" style="margin-left:75px"><i class="fa fas fa-cloud" style="position:absolute;left:50px"></i> <span>私人网盘</span></a></li><li><a href="http://encode.chahuo.com/" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>加密解密</span></a></li><li><a href="https://markmap.js.org/repl" style="margin-left:75px"><i class="fa fas fa-brain" style="position:absolute;left:50px"></i> <span>思维导图</span></a></li><li><a href="https://fontawesome.com/v5.15/icons" style="margin-left:75px"><i class="fa fab fa-font-awesome" style="position:absolute;left:50px"></i> <span>Awesome</span></a></li><li><a href="http://ping.chinaz.com/" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>站长工具</span></a></li><li><a href="http://tool.chinaz.com/port/" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>端口扫描</span></a></li><li><a href="https://so.17lai.site/" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>安全搜索</span></a></li><li><a href="/nav" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>网址导航</span></a></li><li><a href="https://devtool.tech/" style="margin-left:75px"><i class="fa fas fa-tools" style="position:absolute;left:50px"></i> <span>Devtools</span></a></li></ul></li><li class="m-nav-item"><a href="javascript:;"><i class="fa-fw fas fa-id-badge"></i> 关于 <span class="m-icon"><i class="fas fa-chevron-right"></i></span></a><ul><li><a href="/about" style="margin-left:75px"><i class="fa fas fa-user-circle" style="position:absolute;left:50px"></i> <span>关于我</span></a></li><li><a href="/myTeck" style="margin-left:75px"><i class="fa fas fa-address-card" style="position:absolute;left:50px"></i> <span>我的技术</span></a></li><li><a href="/myProject" style="margin-left:75px"><i class="fa fas fa-laptop-code" style="position:absolute;left:50px"></i> <span>我的项目</span></a></li><li><a href="/myPost" style="margin-left:75px"><i class="fa fas fa-pen-nib" style="position:absolute;left:50px"></i> <span>我的文章</span></a></li><li><a href="/needtoread" style="margin-left:75px"><i class="fa fas fa-exclamation-circle" style="position:absolute;left:50px"></i> <span>博客须知</span></a></li></ul></li></ul></div></div></nav></header><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/cryptojs/crypto-js.min.js"></script><script>(function() {
+        let pwd = '';
+        if (pwd && pwd.length > 0) {
+            if (pwd !== CryptoJS.SHA256(prompt('请输入访问本文章的密码')).toString(CryptoJS.enc.Hex)) {
+                alert('密码错误，将返回主页！');
+                location.href = '/';
+            }
+        }
+    })();</script><div class="bg-cover pd-header post-cover" style="background-image:url(https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/medias_webp/cover/shell.webp)"><div class="container" style="right:0;left:0"><div class="row"><div class="col s12 m12 l12"><div class="brand"><h1 class="description center-align post-title">QNAP添加man pages</h1></div></div></div></div></div><main class="post-container content"><div class="row"><div id="main-content" class="col s12 m12 l9"><div id="artDetail"><div class="card"><div class="card-content article-info"><div class="row tag-cate"><div class="col s7"><div class="article-tag"><a href="/tags/qnap/"><span class="chip bg-color">qnap</span> </a><a href="/tags/nas/"><span class="chip bg-color">nas</span> </a><a href="/tags/embeded/"><span class="chip bg-color">embeded</span> </a><a href="/tags/man/"><span class="chip bg-color">man</span></a></div></div><div class="col s5 right-align"><div class="post-cate"><i class="fas fa-bookmark fa-fw icon-category"></i> <a href="/categories/nas/" class="post-category">nas</a><link rel="alternate dns-prefetch" type="application/atom+xml" title="分类订阅--nas" href="https://blog.17lai.site/categories/nas/atom.xml"></div></div></div><div class="post-info"><div class="post-date info-break-policy"><i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp; 2022-04-21</div><div class="post-date info-break-policy"><i class="far fa-calendar-check fa-fw"></i>更新日期:&nbsp;&nbsp; 2022-04-21</div><div class="info-break-policy"><i class="far fa-file-word fa-fw"></i>文章字数:&nbsp;&nbsp; 2.7k</div><div class="info-break-policy"><i class="far fa-clock fa-fw"></i>阅读时长:&nbsp;&nbsp; 14 分</div><div id="busuanzi_container_page_pv" class="info-break-policy"><i class="far fa-eye fa-fw"></i>阅读次数:&nbsp;&nbsp; <span id="busuanzi_value_page_pv"></span></div></div></div><hr class="clearfix"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/prism/prism.css"><style>code[class*=language-],pre[class*=language-]{white-space:pre-wrap!important}</style><div class="card-content article-card-content"><div id="articleContent"><blockquote><p>默认<code>QNAP</code>是不带<code>man</code>命令的，但是，作为一个<code>Linux</code>重度用户怎么能忍？得想办法安装man啊！经过一番努力，最终成功安装man pages!</p></blockquote><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/04/2120220421192048.svg" alt=""></p><h2 id="需求">需求</h2><p>默认<code>QNAP</code>是不带<code>man</code>命令的，但是，作为一个<code>Linux</code>重度用户怎么能忍？</p><blockquote><p>得想办法安装man啊！</p></blockquote><h2 id="验证">验证</h2><p>先试一下</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># man</span>
+-sh: man: <span class="token builtin class-name">command</span> not found<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre><p>基本可以死心了。</p><p>看看busybox版本</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># /bin/busybox </span>
+BusyBox v1.24.1 <span class="token punctuation">(</span><span class="token number">2022</span>-03-24 03:13:07 CST<span class="token punctuation">)</span> multi-call binary.
+BusyBox is copyrighted by many authors between <span class="token number">1998</span>-2015.
+Licensed under GPLv2. See <span class="token builtin class-name">source</span> distribution <span class="token keyword">for</span> detailed
+copyright notices.
+
+Usage: busybox <span class="token punctuation">[</span>function <span class="token punctuation">[</span>arguments<span class="token punctuation">]</span><span class="token punctuation">..</span>.<span class="token punctuation">]</span>
+   or: busybox --list
+   or: <span class="token keyword">function</span> <span class="token punctuation">[</span>arguments<span class="token punctuation">]</span><span class="token punctuation">..</span>.
+
+        BusyBox is a multi-call binary that combines many common Unix
+        utilities into a single executable.  Most people will create a
+        <span class="token function">link</span> to busybox <span class="token keyword">for</span> each <span class="token keyword">function</span> they wish to use and BusyBox
+        will act like whatever it was invoked as.
+
+Currently defined functions:
+        <span class="token punctuation">[</span>, <span class="token punctuation">[</span><span class="token punctuation">[</span>, addgroup, adduser, arping, ash, awk, base64, basename, bunzip2, bzcat, bzip2, cat, chattr, chgrp, chmod, chown,
+        chroot, chvt, cksum, clear, cmp, cp, cpio, crond, crontab, cut, date, dc, dd, deallocvt, delgroup, deluser, depmod, df,
+        diff, dirname, dmesg, dnsdomainname, dos2unix, du, echo, egrep, env, expr, false, fdisk, fgrep, find, free, fsync, getty,
+        grep, groups, gunzip, gzip, halt, hd, head, hexdump, hostname, hwclock, id, ifconfig, init, insmod, install, ip, ipaddr,
+        iplink, iproute, iprule, iptunnel, kill, killall, killall5, klogd, less, linuxrc, ln, logger, login, logread, ls, lsattr,
+        lsmod, lspci, md5sum, mkdir, mknod, mktemp, modprobe, more, mount, mv, nameif, netstat, nslookup, openvt, passwd, pidof,
+        ping, ping6, pivot_root, poweroff, printf, ps, pwd, rdate, readlink, realpath, reboot, renice, reset, resize, rm, rmdir,
+        rmmod, route, sed, seq, sh, sha1sum, sleep, sort, split, start-stop-daemon, stat, strings, swapoff, swapon, switch_root,
+        sync, sysctl, syslogd, tail, tar, taskset, tee, telnet, test, tftp, time, top, touch, tr, traceroute, traceroute6, true,
+        tty, umount, uname, uniq, unix2dos, unzip, uptime, usleep, vi, watch, wc, wget, which, whoami, xargs, yes, zcat<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><p>可以看到内置<code>busybox</code>不支持<code>man</code>的。</p><h2 id="寻找解决方案">寻找解决方案</h2><p>去看看官方<code>Busybox</code>是否支持</p><blockquote><p><strong>Busybox</strong> : https://busybox.net/downloads/BusyBox.html</p></blockquote><p>发现是支持<code>man</code>的，只是<code>QNAP</code>没有编译进去。</p><h2 id="解决思路">解决思路</h2><ul><li>给<code>QNAP</code>提需求单？ 是一个选择，但是太慢了，想官方内置，不知道等到猴年马月了。</li><li><code>QNAP</code>似乎开发了底层SDK，记得有下载过，还没有仔细研究怎么使用。不过记得有附带编译工具链，自己动手编译一个<code>busybox</code>版本替代系统内置的，应该也是可行的。</li></ul><h2 id="去看看别人有啥解决方案？">去看看别人有啥解决方案？</h2><blockquote><p>Optware has man but only for the optware installed packages (if supplied) and or manually added files in the man folder.</p><p>https://forum.qnap.com/viewtopic.php?t=49961</p></blockquote><p>柳暗花明又一村， <code>entware</code> 支持<code>man pages</code>，可以直接安装了。</p><blockquote><p>插入<code>entware</code>安装方法：</p><p>打开<code>App Center</code>，源选择刚添加的<code>Qnapclub</code>，点击搜索框输入<code>entware</code>，选<code>Entware-std 1.03</code></p></blockquote><p>一条命令解决：</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">opkg <span class="token function">install</span> man-db man-pages<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>安装完之后验证：</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># man fopen</span>
+FOPEN<span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">)</span>                                            Linux Programmer's Manual                                            FOPEN<span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">)</span>
+
+NAME
+       fopen, fdopen, freopen - stream <span class="token function">open</span> functions
+
+SYNOPSIS
+       <span class="token comment">#include &lt;stdio.h&gt;</span>
+
+       FILE *fopen<span class="token punctuation">(</span>const char *restrict pathname, const char *restrict mode<span class="token punctuation">)</span><span class="token punctuation">;</span>
+       FILE *fdopen<span class="token punctuation">(</span>int fd, const char *mode<span class="token punctuation">)</span><span class="token punctuation">;</span>
+       FILE *freopen<span class="token punctuation">(</span>const char *restrict pathname, const char *restrict mode,
+                     FILE *restrict stream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+   Feature Test Macro Requirements <span class="token keyword">for</span> glibc <span class="token punctuation">(</span>see feature_test_macros<span class="token punctuation">(</span><span class="token number">7</span><span class="token punctuation">))</span>:
+
+       fdopen<span class="token punctuation">(</span><span class="token punctuation">)</span>:
+           _POSIX_C_SOURCE
+
+DESCRIPTION
+       The fopen<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">function</span> opens the <span class="token function">file</span> whose name is the string pointed to by pathname and associates a stream with it.
+
+       The  argument mode points to a string beginning with one of the following sequences <span class="token punctuation">(</span>possibly followed by additional char‐
+       acters, as described below<span class="token punctuation">)</span>:
+
+       r      Open text <span class="token function">file</span> <span class="token keyword">for</span> reading.  The stream is positioned at the beginning of the file.
+
+       r+     Open <span class="token keyword">for</span> reading and writing.  The stream is positioned at the beginning of the file.
+
+       w      Truncate <span class="token function">file</span> to zero length or create text <span class="token function">file</span> <span class="token keyword">for</span> writing.  The stream is positioned at  the  beginning  of  the
+              file.
+
+       w+     Open  <span class="token keyword">for</span> reading and writing.  The <span class="token function">file</span> is created <span class="token keyword">if</span> it does not exist, otherwise it is truncated.  The stream is
+              positioned at the beginning of the file.<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><p>问题就这么解决了。</p><blockquote><p>一个问题，我有很多其它手册，想要安装，怎么办？</p></blockquote><h2 id="安装其它man手册">安装其它<code>man</code>手册</h2><p>已经有了<code>man</code>命令，只要把手册安装到<code>entware man</code>命令目录中就行了。</p><p>找到<code>enteware man</code>手册目录。</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /share/CACHEDEV3_DATA/.qpkg/Entware
+<span class="token function">find</span> <span class="token builtin class-name">.</span> -name <span class="token string">"*man*"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre><blockquote><p>TIPS：<code>CACHEDEV3_DATA/.qpkg</code>这个是安装qpkg软件的磁盘。<code>CACHEDEV3</code>似乎是表示第三块插入机器的磁盘。</p></blockquote><p>结果输出：</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">./bin/catman
+./bin/go/misc/chrome/gophertool/manifest.json
+./bin/go/pkg/linux_amd64/cmd/vendor/github.com/ianlancetaylor/demangle.a
+./bin/go/src/cmd/compile/internal/types2/testdata/manual.go2
+./bin/go/src/cmd/go/internal/modconv/testdata/dockerman.glide
+./bin/go/src/cmd/go/internal/modconv/testdata/dockerman.out
+./bin/go/src/cmd/go/internal/modconv/testdata/govmomi.vmanifest
+./bin/go/src/cmd/go/internal/modconv/vmanifest.go
+./bin/go/src/cmd/go/testdata/script/mod_convert_vendor_manifest.txt
+./bin/go/src/cmd/go/testdata/script/mod_list_command_line_arguments.txt
+./bin/go/src/cmd/go/testdata/script/mod_download_too_many_redirects.txt
+./bin/go/src/cmd/go/testdata/script/gccgo_mangle.txt
+./bin/go/src/cmd/vendor/github.com/google/pprof/internal/driver/commands.go
+./bin/go/src/cmd/vendor/github.com/ianlancetaylor/demangle
+./bin/go/src/cmd/vendor/github.com/ianlancetaylor/demangle/demangle.go
+./bin/go/src/compress/bzip2/huffman.go
+./bin/go/src/compress/flate/huffman_bit_writer.go
+./bin/go/src/compress/flate/huffman_bit_writer_test.go
+./bin/go/src/compress/flate/huffman_code.go
+./bin/go/src/compress/flate/testdata/huffman-null-max.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-null-max.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-null-max.golden
+./bin/go/src/compress/flate/testdata/huffman-null-max.in
+./bin/go/src/compress/flate/testdata/huffman-null-max.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-null-max.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-pi.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-pi.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-pi.golden
+./bin/go/src/compress/flate/testdata/huffman-pi.in
+./bin/go/src/compress/flate/testdata/huffman-pi.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-pi.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.golden
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.in
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.golden
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.in
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-rand-max.golden
+./bin/go/src/compress/flate/testdata/huffman-rand-max.in
+./bin/go/src/compress/flate/testdata/huffman-shifts.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-shifts.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-shifts.golden
+./bin/go/src/compress/flate/testdata/huffman-shifts.in
+./bin/go/src/compress/flate/testdata/huffman-shifts.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-shifts.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-text-shift.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-text-shift.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-text-shift.golden
+./bin/go/src/compress/flate/testdata/huffman-text-shift.in
+./bin/go/src/compress/flate/testdata/huffman-text-shift.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-text-shift.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-text.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-text.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-text.golden
+./bin/go/src/compress/flate/testdata/huffman-text.in
+./bin/go/src/compress/flate/testdata/huffman-text.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-text.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-zero.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-zero.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-zero.golden
+./bin/go/src/compress/flate/testdata/huffman-zero.in
+./bin/go/src/compress/flate/testdata/huffman-zero.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-zero.wb.expect-noinput
+./bin/go/src/go/parser/performance_test.go
+./bin/go/src/go/printer/performance_test.go
+./bin/go/src/go/types/testdata/manual.go2
+./bin/go/src/image/jpeg/huffman.go
+./bin/go/src/vendor/golang.org/x/net/http2/hpack/huffman.go
+./bin/go/test/bench/go1/mandel_test.go
+./bin/go/test/abi/many_int_input.go
+./bin/go/test/abi/many_int_input.out
+./bin/go/test/abi/many_intstar_input.go
+./bin/go/test/abi/many_intstar_input.out
+./bin/man
+./bin/mandb
+./bin/manpath
+./etc/man_db.conf
+./lib/opkg/info/man-db.conffiles
+./lib/opkg/info/man-db.control
+./lib/opkg/info/man-pages.list
+./lib/opkg/info/man-db.list
+./lib/opkg/info/man-pages.control
+./lib/opkg/info/man-pages.postinst
+./lib/python3.10/encodings/__pycache__/hp_roman8.cpython-310.opt-1.pyc
+./lib/python3.10/encodings/__pycache__/hp_roman8.cpython-310.opt-2.pyc
+./lib/python3.10/encodings/__pycache__/mac_roman.cpython-310.opt-2.pyc
+./lib/python3.10/encodings/__pycache__/mac_roman.cpython-310.pyc
+./lib/python3.10/encodings/__pycache__/hp_roman8.cpython-310.pyc
+./lib/python3.10/encodings/__pycache__/mac_romanian.cpython-310.pyc
+./lib/python3.10/encodings/__pycache__/mac_roman.cpython-310.opt-1.pyc
+./lib/python3.10/encodings/__pycache__/mac_romanian.cpython-310.opt-1.pyc
+./lib/python3.10/encodings/__pycache__/mac_romanian.cpython-310.opt-2.pyc
+./lib/python3.10/encodings/hp_roman8.pyc
+./lib/python3.10/encodings/mac_roman.pyc
+./lib/python3.10/encodings/mac_romanian.pyc
+./lib/tcl8.5/encoding/macRoman.enc
+./lib/tcl8.5/encoding/macRomania.enc
+./lib/groff/groffer/man.pl
+./lib/man-db
+./lib/man-db/libman-2.10.2.so
+./lib/man-db/libman.so
+./lib/man-db/libmandb-2.10.2.so
+./lib/man-db/libmandb.so
+./lib/man-db/manconv
+./share/zoneinfo/Asia/Amman
+./share/zoneinfo/Asia/Kathmandu
+./share/zoneinfo/Asia/Katmandu
+./share/doc/man-db
+./share/doc/man-db/man-db-manual.ps
+./share/doc/man-db/man-db-manual.txt
+./share/groff/1.22.4/tmac/man.tmac
+./share/groff/1.22.4/tmac/mandoc.tmac
+./share/groff/site-tmac/man.local
+./share/man
+./share/man/man1
+./share/man/man1/man-recode.1
+./share/man/man1/man.1
+./share/man/man1/manconv.1
+./share/man/man1/manpath.1
+./share/man/man5
+./share/man/man5/manpath.5
+./share/man/man8
+./share/man/man8/catman.8
+./share/man/man8/mandb.8
+./share/man/man2
+./share/man/man3
+./share/man/man4
+./share/man/man6
+./share/man/man7
+./share/man/man7/man-pages.7
+./share/man/man7/man.7
+./var/cache/man<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><p>很显然，路径就在<code>/share/CACHEDEV3_DATA/.qpkg/Entware/share//man/</code>中了。</p><p>那么，安装完<code>entware</code>之后，其它的man 手册放到 <code>/share/CACHEDEV3_DATA/.qpkg/Entware/share/man</code>这个目录中就行了。</p><p>把<code>gh git</code>等手册放进去。再次验证</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">man</span> gh
+GH<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>                                                   GitHub CLI manual                                                   GH<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+
+NAME
+       gh - GitHub CLI
+
+SYNOPSIS
+       gh <span class="token operator">&lt;</span>command<span class="token operator">&gt;</span> <span class="token operator">&lt;</span>subcommand<span class="token operator">&gt;</span> <span class="token punctuation">[</span>flags<span class="token punctuation">]</span>
+
+DESCRIPTION
+       Work seamlessly with GitHub from the <span class="token builtin class-name">command</span> line.
+
+CORE COMMANDS
+       gh-auth<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+              Authenticate gh and <span class="token function">git</span> with GitHub
+
+       gh-browse<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+              Open the repository <span class="token keyword">in</span> the browser
+
+       gh-codespace<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+              Connect to and manage your codespaces
+
+       gh-gist<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+              Manage gists
+
+       gh-issue<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+              Manage issues
+
+       gh-pr<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+              Manage pull requests
+
+       gh-release<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+              Manage releases
+
+       gh-repo<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+              Manage repositories
+
+ACTIONS COMMANDS<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><p>完美收工！</p><p>可能需要注意的地方，注意<code>man</code>手册的权限<code>644</code>，如果手册copy进去了，发现使用不了。运行下面命令。</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">chmod</span> <span class="token number">644</span> -R /share/CACHEDEV3_DATA/.qpkg/Entware/share/man<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><h2 id="安装更多的man-pages">安装更多的<code>man pages</code></h2><blockquote><ul><li><code>Git</code>手册下载地址： https://mirrors.edge.kernel.org/pub/software/scm/git/</li><li>中文<code>man</code>手册： https://github.com/man-pages-zh/manpages-zh</li></ul></blockquote><blockquote><p>PS: 中文<code>man</code>手册有不少依赖需要解决，在<code>Docker</code>中已经可以查询中文<code>man</code>了，<code>qnap</code>中试了下，解决依赖搞得头大，暂时就<code>docker</code>中用中文<code>man</code>好了</p></blockquote><p>真正收工了！</p><h2 id="附录">附录</h2><h3 id="man介绍">man介绍</h3><p>man命令并非仅仅能查看命令或者函数的介绍，在linux中，有丰富的帮助手册信息，并且每一个手册都有一个编号。编号和对应内容如下：</p><table><thead><tr><th style="text-align:left">编号</th><th style="text-align:left">代表内容</th></tr></thead><tbody><tr><td style="text-align:left">1</td><td style="text-align:left">可执行程序或shell命令，如ls</td></tr><tr><td style="text-align:left">2</td><td style="text-align:left">系统调用，如chdir</td></tr><tr><td style="text-align:left">3</td><td style="text-align:left">库函数，如printf</td></tr><tr><td style="text-align:left">4</td><td style="text-align:left">设备或特殊文件，如tty</td></tr><tr><td style="text-align:left">5</td><td style="text-align:left">配置文件格式或约定</td></tr><tr><td style="text-align:left">6</td><td style="text-align:left">游戏</td></tr><tr><td style="text-align:left">7</td><td style="text-align:left">杂项</td></tr><tr><td style="text-align:left">8</td><td style="text-align:left">管理命令，通常只有root用户可以使用</td></tr><tr><td style="text-align:left">9</td><td style="text-align:left">内核例程</td></tr><tr><td style="text-align:left">n</td><td style="text-align:left">内置命令，如cd</td></tr></tbody></table><h3 id="常用快捷键">常用快捷键</h3><blockquote><p><strong>手册内容</strong></p><p>多数手册包含以下几部分内容：</p><ul><li>NAME 功能的简单描述</li><li>SYNOPSIS 语法格式</li><li>DESCRIPTION 描述</li><li>OPTIONS 选项</li><li>ERRORS 描述出错场景，<strong>这在排查错误时很有帮助</strong></li><li>NOTES 注意事项</li><li>FILES 相关文件，例如对于man命令的FILES部分内容显示了它的配置文件位置等信息</li><li>EXAMPLES 使用示例，会提供一些简单的示例</li><li>BUGS 存在的bug，<strong>当遇到奇怪的问题时，不妨看看当前命令是否有已知的bug</strong></li></ul><p><strong>基本查看</strong></p><p>手册的查看和less查看文本类似，可以参考《文本查看篇》或查看less命令的使用，这里介绍基本操作：</p><ul><li>空格 向下翻页</li><li>Home 回到第一页</li><li>End 跳到最后一页</li><li>/string 向前搜索string字符串</li><li>?string 向后搜索string字符串</li><li>n 下一个匹配字符</li><li>N 上一个匹配字符</li><li>q 退出</li></ul></blockquote><link rel="stylesheet" href="/css/bilicard.css"></div><hr><div class="reprint" id="reprint-statement"><div class="reprint__author"><span class="reprint-meta" style="font-weight:700"><i class="fas fa-user">文章作者: </i></span><span class="reprint-info"><a href="https://blog.17lai.site" rel="external nofollow noreferrer">夜法之书</a></span></div><div class="reprint__type"><span class="reprint-meta" style="font-weight:700"><i class="fas fa-link">文章链接: </i></span><span class="reprint-info"><a href="https://blog.17lai.site/posts/ba4ef326/">https://blog.17lai.site/posts/ba4ef326/</a></span></div><div class="reprint__notice"><span class="reprint-meta" style="font-weight:700"><i class="fas fa-copyright">版权声明: </i></span><span class="reprint-info">本博客所有文章除特別声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow noreferrer" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://blog.17lai.site" target="_blank">夜法之书</a> !</span></div></div><script>document.addEventListener("copy", function (e) {
+        let toastHTML = '<span>复制成功，请遵循本文的转载规则</span><button class="btn-flat toast-action" onclick="navToReprintStatement()" style="font-size: smaller">查看</a>';
+        M.toast({html: toastHTML})
+      });
+
+      function navToReprintStatement() {
+        $("html, body").animate({scrollTop: $("#reprint-statement").offset().top - 80}, 800);
+      }</script><div class="tag_share" style="display:block"><div class="post-meta__tag-list" style="display:inline-block"><div class="article-tag"><a href="/tags/qnap/"><span class="chip bg-color">qnap</span> </a><a href="/tags/nas/"><span class="chip bg-color">nas</span> </a><a href="/tags/embeded/"><span class="chip bg-color">embeded</span> </a><a href="/tags/man/"><span class="chip bg-color">man</span></a></div></div><div class="post_share" style="zoom:80%;width:fit-content;display:inline-block;float:right;margin:-.15rem 0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/share/css/share.min.css"><div id="article-share"><div class="social-share" data-sites="twitter,facebook,google,qq,qzone,wechat,weibo,douban,linkedin" data-wechat-qrcode-helper="<p>微信扫一扫即可分享！</p>"></div><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/share/js/social-share.min.js"></script></div></div></div><div id="reward"><a href="#rewardModal" class="reward-link modal-trigger btn-floating btn-medium waves-effect waves-light red">赏</a><div id="rewardModal" class="modal"><div class="modal-content"><a class="close modal-close" aria-label="打赏作者"><i class="fas fa-times"></i></a><h4 class="reward-title">码字辛苦，打赏作者！</h4><div class="reward-content"><div class="reward-tabs"><ul class="tabs row"><li class="tab col s6 alipay-tab waves-effect waves-light"><a href="#alipay">支付宝</a></li><li class="tab col s6 wechat-tab waves-effect waves-light"><a href="#wechat">微 信</a></li></ul><div id="alipay"><img src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/medias_webp/reward/alipay.webp" class="reward-img" alt="支付宝打赏二维码"></div><div id="wechat"><img src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/medias_webp/reward/wechat.webp" class="reward-img" alt="微信打赏二维码"></div></div></div></div></div></div><script>$(function(){$(".reward-tabs").tabs()})</script></div></div><div class="card waline-card" data-aos="fade-up"><div class="comment_headling" style="font-size:20px;font-weight:700;position:relative;padding-left:20px;top:15px;padding-bottom:5px"><i class="fas fa-comments fa-fw" aria-hidden="true"></i> <span>评论</span></div><div id="waline" class="card-content" style="display:grid"></div></div><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/waline/Waline.min.js"></script><script>new Waline({el:"#waline",serverURL:"waline.17lai.site",avatar:"mp",visitor:"true",lang:"zh-CN",dark:"auto",login:"enable",wordLimit:"5",pageSize:"10",highlight:"true",pageview:"true",comment:"true",imageUploader:"false",meta:["nick","mail","link"],requiredMeta:["nick","mail"],placeholder:"🤣一起来玩，留下你的足迹吧~。评论支持📧邮箱回复通知！\r\n 🚀昵称使用QQ号可以自动补全邮箱和显示头像昵称等信息呢 \r\n 💣请文明评论哦禁止恶意评论\r\n ⚠️公开网络空间，请不要发表任何包含个人或其他人的隐私信息",copyright:"false"})</script><div id="to_comment" class="comment-scroll"><a class="btn-floating btn-large waves-effect waves-light" href="#waline" title="直达评论"><i class="fas fa-comments"></i></a></div><article id="prenext-posts" class="prev-next articles"><div class="row article-row"><div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up"><div class="article-badge left-badge text-color"><i class="far fa-dot-circle"></i>&nbsp;本篇</div><div class="card"><a href="/posts/ba4ef326/"><div class="card-image card-image"><div class="box-content"><h3 class="title">阅读全文</h3><span class="post" style="width:180px">QNAP添加man pages</span></div><img src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/medias_webp/cover/shell.webp" class="responsive-img" alt="QNAP添加man pages"> <span class="card-title title-V">QNAP添加man pages</span></div></a><div class="card-content article-content"><div class="summary block-with-text">默认`QNAP`是不带`man`命令的，但是，作为一个`Linux`重度用户怎么能忍？得想办法安装man啊！经过一番努力，最终成功安装man pages!</div><div class="publish-info"><span class="publish-date"><i class="far fa-clock fa-fw icon-date"></i>2022-04-21 </span><span class="publish-author"><i class="fas fa-bookmark fa-fw icon-category"></i> <a href="/categories/nas/" class="post-category">nas</a></span></div></div><div class="card-action article-tags"><a href="/tags/qnap/"><span class="chip bg-color">qnap</span> </a><a href="/tags/nas/"><span class="chip bg-color">nas</span> </a><a href="/tags/embeded/"><span class="chip bg-color">embeded</span> </a><a href="/tags/man/"><span class="chip bg-color">man</span></a></div></div></div><div class="article col s12 m6" data-aos="fade-up"><div class="article-badge right-badge text-color">下一篇&nbsp;<i class="fas fa-chevron-right"></i></div><div class="card"><a href="/posts/d32a07a7/"><div class="card-image card-image-V"><div class="box-content"><h3 class="title">阅读全文</h3><span class="post" style="width:180px">Git介绍以及分支模型图解</span></div><img src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/medias_webp/cover/git.webp" class="responsive-img" alt="Git介绍以及分支模型图解"> <span class="card-title title-V">Git介绍以及分支模型图解</span></div></a><div class="card-content article-content"><div class="summary block-with-text">git是现在最流行的分布式版本管理工具，不牢牢掌握怎么行？这里图解介绍Git工具原理，提交模型，分支模型，以及介绍一种开发，特性，预发布，发布分支模型！</div><div class="publish-info"><span class="publish-date"><i class="far fa-clock fa-fw icon-date"></i>2022-04-19 </span><span class="publish-author"><i class="fas fa-bookmark fa-fw icon-category"></i> <a href="/categories/devops/" class="post-category">devops</a></span></div></div><div class="card-action article-tags"><a href="/tags/git/"><span class="chip bg-color">git</span> </a><a href="/tags/devops/"><span class="chip bg-color">devops</span> </a><a href="/tags/drowio/"><span class="chip bg-color">drowio</span></a></div></div></div></div></article></div><script>$("#articleContent").on("copy",function(e){if(void 0!==window.getSelection){var n=window.getSelection();if(!((""+n).length<Number.parseInt("100"))){var t=document.getElementsByTagName("body")[0],o=document.createElement("div");o.style.position="absolute",o.style.left="-99999px",t.appendChild(o),o.appendChild(n.getRangeAt(0).cloneContents()),"PRE"!==n.getRangeAt(0).commonAncestorContainer.nodeName&&"CODE"!==n.getRangeAt(0).commonAncestorContainer.nodeName||(o.innerHTML="<pre>"+o.innerHTML+"</pre>");var i=document.location.href;o.innerHTML+='<br />来源: 夜法之书<br />文章作者: 夜法之书<br />文章链接: <a href="'+i+'">'+i+"</a><br />本文章著作权归作者所有，任何形式的转载都请注明出处。",n.selectAllChildren(o),window.setTimeout(function(){t.removeChild(o)},200)}}})</script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/codeBlock/codeBlockFuction.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/codeBlock/codeLang.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/codeBlock/codeCopy.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/codeBlock/codeShrink.js"></script></div><div id="toc-aside" class="expanded col l3 hide-on-med-and-down"><div class="toc-widget card" style="background-color:#fff"><div class="toc-title"><i class="far fa-list-alt"></i>&nbsp;&nbsp;目录</div><div id="toc-content"></div></div></div></div><div id="floating-toc-btn" class="hide-on-med-and-down"><a class="btn-floating btn-large bg-color" href="javascript:;" title="显示/隐藏目录"><i class="fas fa-list-ul"></i></a></div><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/tocbot/tocbot.min.js"></script><script>$(function () {
+        tocbot.init({
+            tocSelector: '#toc-content',
+            contentSelector: '#articleContent',
+            headingsOffset: -($(window).height() * 0.4 - 45),
+            collapseDepth: Number('0'),
+            headingSelector: 'h2, h3, h4, h5, h6'
+        });
+
+        // Set scroll toc fixed.
+        let tocHeight = parseInt($(window).height() * 0.4 - 64);
+        let $tocWidget = $('.toc-widget');
+        $(window).scroll(function () {
+            let scroll = $(window).scrollTop();
+            /* add post toc fixed. */
+            if (scroll > tocHeight) {
+                $tocWidget.addClass('toc-fixed');
+            } else {
+                $tocWidget.removeClass('toc-fixed');
+            }
+        });
+
+        
+        /* 修复文章卡片 div 的宽度. */
+        let fixPostCardWidth = function (srcId, targetId) {
+            let srcDiv = $('#' + srcId);
+            if (srcDiv.length === 0) {
+                return;
+            }
+
+            let w = srcDiv.width();
+            if (w >= 450) {
+                w = w + 21;
+            } else if (w >= 350 && w < 450) {
+                w = w + 18;
+            } else if (w >= 300 && w < 350) {
+                w = w + 16;
+            } else {
+                w = w + 14;
+            }
+            $('#' + targetId).width(w);
+        };
+
+        // 切换TOC目录展开收缩的相关操作.
+        const expandedClass = 'expanded';
+        let $tocAside = $('#toc-aside');
+        let $mainContent = $('#main-content');
+        $('#floating-toc-btn .btn-floating').click(function () {
+            if ($tocAside.hasClass(expandedClass)) {
+                $tocAside.removeClass(expandedClass).hide();
+                $mainContent.removeClass('l9');
+            } else {
+                $tocAside.addClass(expandedClass).show();
+                $mainContent.addClass('l9');
+            }
+            fixPostCardWidth('artDetail', 'prenext-posts');
+        });
+        
+    });</script></main><footer class="page-footer bg-color"><div class="container row center-align" style="margin-bottom:15px!important"><div class="col s12 m8 l8 copy-right">Copyright&nbsp;&copy; <span id="year">2020-2022</span> <a href="/about" target="_blank">夜法之书</a> |&nbsp;Powered by&nbsp;<a href="https://hexo.io/" target="_blank">Hexo</a> |&nbsp;Theme&nbsp;<a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank">Matery</a><br>&nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color">316.9k</span> <span id="busuanzi_container_site_pv">&nbsp;|&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp; <span id="busuanzi_value_site_pv" class="white-color"></span> </span><span id="busuanzi_container_site_uv">&nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp; <span id="busuanzi_value_site_uv" class="white-color"></span></span><br><span id="sitetime">Loading ...</span><script>var calcSiteTime=function(){var e=new Date,t="2020",n=e.getFullYear(),i=e.getMonth()+1,a=e.getDate(),r=e.getHours(),s=e.getMinutes(),o=e.getSeconds(),g=Date.UTC(t,"6","28","0","0","0"),d=Date.UTC(n,i,a,r,s,o)-g,m=Math.floor(d/31536e6),l=Math.floor(d/864e5-365*m);if(t===String(n)){document.getElementById("year").innerHTML=n;var c="This site has been running for "+l+" days";c="本站已运行 "+l+" 天",document.getElementById("sitetime").innerHTML=c}else{document.getElementById("year").innerHTML=t+" - "+n;var u="This site has been running for "+m+" years and "+l+" days";u="本站已运行 "+m+" 年 "+l+" 天",document.getElementById("sitetime").innerHTML=u}};calcSiteTime()</script><br></div><div class="col s12 m4 l4 social-link social-statis"><a href="https://github.com/appotry" class="tooltipped" target="_blank" aria-label="访问我的GitHub" data-tooltip="访问我的GitHub" data-position="top" data-delay="50"><i class="fab fa-github"></i> </a><a href="https://hub.docker.com/u/bloodstar" class="tooltipped" target="_blank" aria-label="访问我的DockerHub" data-tooltip="访问我的DockerHub" data-position="top" data-delay="50"><i class="fab fa-docker"></i> </a><a href="mailto:andycrusoe@gmail.com" class="tooltipped" target="_blank" aria-label="邮件联系我" data-tooltip="邮件联系我" data-position="top" data-delay="50"><i class="fas fa-envelope-open"></i> </a><a href="https://twitter.com/firedingden" class="tooltipped" target="_blank" aria-label="关注我的Twitter" data-tooltip="关注我的Twitter: https://twitter.com/firedingden" data-position="top" data-delay="50"><i class="fab fa-twitter"></i> </a><a href="/atom.xml" class="tooltipped" target="_blank" aria-label="RSS 订阅" data-tooltip="RSS 订阅" data-position="top" data-delay="50"><i class="fas fa-rss"></i></a></div></div></footer><div class="progress-bar"></div><div id="searchModal" class="modal"><div class="modal-content"><div class="search-header"><span class="title"><i class="fas fa-search"></i>&nbsp;&nbsp;搜索</span> <input type="search" id="searchInput" name="s" placeholder="请输入搜索的关键字" class="search-input"></div><div id="searchResult"></div></div></div><script>$(function(){!function(t,s,a){"use strict";$.ajax({url:t,dataType:"xml",success:function(t){var e=$("entry",t).map(function(){return{title:$("title",this).text(),content:$("content",this).text(),url:$("url",this).text()}}).get(),r=document.getElementById(s),n=document.getElementById(a);r.addEventListener("input",function(){var f='<ul class="search-result-list">',m=this.value.trim().toLowerCase().split(/[\s\-]+/);n.innerHTML="",this.value.trim().length<=0||(e.forEach(function(t){var r=!0,n=t.title.trim().toLowerCase(),s=t.content.trim().replace(/<[^>]+>/g,"").toLowerCase(),e=t.url;e=0===e.indexOf("/")?t.url:"/"+e;var a=-1,i=-1,l=-1;if(""!==n&&""!==s&&m.forEach(function(t,e){a=n.indexOf(t),i=s.indexOf(t),a<0&&i<0?r=!1:(i<0&&(i=0),0===e&&(l=i))}),r){f+="<li><a href='"+e+"' class='search-result-title'>"+n+"</a>";var c=t.content.trim().replace(/<[^>]+>/g,"");if(0<=l){var u=l-20,o=l+80;u<0&&(u=0),0===u&&(o=100),o>c.length&&(o=c.length);var h=c.substr(u,o);m.forEach(function(t){var e=new RegExp(t,"gi");h=h.replace(e,'<em class="search-keyword">'+t+"</em>")}),f+='<p class="search-result">'+h+"...</p>"}f+="</li>"}}),f+="</ul>",n.innerHTML=f)})}})}("https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/search.xml","searchInput","searchResult")})</script><div class="stars-con"><div id="stars"></div><div id="stars2"></div><div id="stars3"></div></div><script>function switchNightMode(){$('<div class="Cuteen_DarkSky"><div class="Cuteen_DarkPlanet"></div></div>').appendTo($("body")),setTimeout(function(){$("body").hasClass("DarkMode")?($("body").removeClass("DarkMode"),localStorage.setItem("isDark","0"),$("#sum-moon-icon").removeClass("fa-sun").addClass("fa-moon")):($("body").addClass("DarkMode"),localStorage.setItem("isDark","1"),$("#sum-moon-icon").addClass("fa-sun").removeClass("fa-moon")),setTimeout(function(){$(".Cuteen_DarkSky").fadeOut(1e3,function(){$(this).remove()})},2e3)})}</script><div id="backTop" class="top-scroll"><a class="btn-floating btn-large waves-effect waves-light" href="#!" title="回到顶部"><i class="fas fa-arrow-up"></i></a></div><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/materialize/materialize.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/masonry/masonry.pkgd.min.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/aos/aos.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/scrollprogress/scrollProgress.min.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/lightGallery/js/lightgallery-all.min.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/js/matery.js"></script><script async src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/others/busuanzi.pure.mini.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/instantpage/instantpage.js" type="module"></script><script>"1"===localStorage.getItem("isDark")?(document.body.classList.add("DarkMode"),$("#sum-moon-icon").addClass("fa-sun").removeClass("fa-moon")):(document.body.classList.remove("DarkMode"),$("#sum-moon-icon").removeClass("fa-sun").addClass("fa-moon"))</script><script>// init PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker
+            .register('/sw.js')
+            .then(function () {
+                console.log("Service Worker Registered");
+            });
+        }
+        
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', function (e) {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            deferredPrompt = e;
+            showAddToHomeScreen();
+        });
+
+        function showAddToHomeScreen() {
+            let toastHTML = '<span>使<b> 夜法之书 </b>可以离线访问？</span><button class="btn-flat toast-action" onclick="addToHomeScreen()">Yes</button>';
+            M.toast({html: toastHTML});
+        }
+        
+        function addToHomeScreen() {
+            deferredPrompt.prompt();  // Wait for the user to respond to the prompt
+            deferredPrompt.userChoice
+            .then(function (choiceResult) {
+                if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the A2HS prompt');
+                } else {
+                console.log('User dismissed the A2HS prompt');
+                }
+                deferredPrompt = null;
+            });
+        }</script><div class="waifu"><div class="waifu-tips"></div><canvas id="live2d" class="live2d"></canvas><div class="waifu-tool"><span class="fa fa-lg fa-home"></span> <span class="fa fa-lg fa-comment"></span> <span class="fa fa-lg fa-user-circle"></span> <span class="fa fa-lg fa-street-view"></span> <span class="fa fa-lg fa-camera-retro"></span> <span class="fa fa-lg fa-info-circle"></span> <span class="fa fa-lg fa-times"></span></div></div><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/jquery/jquery-ui.min.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/live2d/waifu-tips.js"></script><script src="https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/live2d/live2d.js"></script><script>function startLive2d_onload(){live2d_settings.modelId=6,live2d_settings.modelTexturesId=1,live2d_settings.modelStorage=!0,live2d_settings.canCloseLive2d=!1,live2d_settings.canTurnToHomePage=!1,live2d_settings.waifuDraggable="axis-x",live2d_settings.waifuDraggableRevert=!0,initModel("https://cdn.jsdelivr.net/gh/appotry/hexo@3.17/libs/live2d/waifu-tips.json"),console.log("startLive2d_onload")}startLive2d_onload()</script><script src="https://cdn.jsdelivr.net/npm/hexo-tag-common@0.0.5/js/index.js"></script><script>!function(e,s,p,r){if(void 0===e.webpushr){e.webpushr=e.webpushr||function(){(e.webpushr.q=e.webpushr.q||[]).push(arguments)};var n,w=s.getElementsByTagName(p)[0];(n=s.createElement(p)).id="webpushr-jssdk",n.async=!1,n.src="https://cdn.webpushr.com/app.min.js",w.parentNode.appendChild(n)}}(window,document,"script"),webpushr("setup",{key:"BDHamjevXR9yPJrttxl80MjCYEwm3CKzwsi3rwMXxq4Lnbzhr2fNQARqXJVhfBn_ucmy9QHixa3qps8eEFXBwmw"})</script></body></html>
