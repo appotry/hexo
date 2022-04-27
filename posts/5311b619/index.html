@@ -6,94 +6,94 @@
                 location.href = '/';
             }
         }
-    })();</script><div class="bg-cover pd-header post-cover" style="background-image:url(https://cdn.jsdelivr.net/gh/appotry/hexo@3.26/medias_webp/cover/hexo.webp)"><div class="container" style="right:0;left:0"><div class="row"><div class="col s12 m12 l12"><div class="brand"><h1 class="description center-align post-title">基于Hexo的matery主题搭建博客增强部署篇4<span class="typed-cursor h2 typed-cursor--blink" aria-hidden="true">_</span></h1></div></div></div></div></div><main class="post-container content"><div class="row"><div id="main-content" class="col s12 m12 l9"><div id="artDetail"><div class="card"><div class="card-content article-info"><div class="row tag-cate"><div class="col s7"><div class="article-tag"><a href="/tags/github/"><span class="chip bg-color">github</span> </a><a href="/tags/hexo/"><span class="chip bg-color">hexo</span> </a><a href="/tags/matery/"><span class="chip bg-color">matery</span> </a><a href="/tags/cdn/"><span class="chip bg-color">cdn</span> </a><a href="/tags/seo/"><span class="chip bg-color">seo</span></a></div></div><div class="col s5 right-align"><div class="post-cate"><i class="fas fa-bookmark fa-fw icon-category"></i> <a href="/categories/hexo/" class="post-category">hexo</a><link rel="alternate dns-prefetch" type="application/atom+xml" title="分类订阅--hexo" href="https://blog.17lai.site/categories/hexo/atom.xml"></div></div></div><div class="post-info"><div class="post-date info-break-policy"><i class="far fa-calendar-minus fa-fw"></i>发布:&nbsp;&nbsp; 2022-03-27</div><div class="post-date info-break-policy"><i class="far fa-calendar-check fa-fw"></i>更新:&nbsp;&nbsp; 2022-04-18</div><div class="info-break-policy"><i class="far fa-file-word fa-fw"></i>字数:&nbsp;&nbsp; 3.5k</div><div class="info-break-policy"><i class="far fa-clock fa-fw"></i>阅时:&nbsp;&nbsp; 15 分</div><div id="busuanzi_container_page_pv" class="info-break-policy"><i class="far fa-eye fa-fw"></i>查阅:&nbsp;&nbsp; <span id="busuanzi_value_page_pv"></span></div><div id="waline_container_page_pv" class="info-break-policy" style="display:none"><i class="far fa-eye fa-fw"></i>查阅:&nbsp;&nbsp; <span class="waline-pageview-count" data-path="/posts/5311b619/"></span></div><div id="waline_container_comment_count" class="info-break-policy" style="display:none"><i class="far fa-comment fa-fw"></i>评论:&nbsp;&nbsp; <span class="waline-comment-count" data-path="/posts/5311b619/"></span>条</div></div></div><hr class="clearfix"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.26/libs/prism/prism.css"><style>code[class*=language-],pre[class*=language-]{white-space:pre-wrap!important}</style><div class="card-content article-card-content"><div id="articleContent"><h2 id="Hexo-Docker-本地部署">Hexo Docker 本地部署</h2><p>在最前面的篇章介绍了Hexo Docker 环境的使用方法。具体使用方法见本文系列[<strong>Hexo Docker 环境篇</strong>]。</p><p>优点：本地使用可定制化成都更高</p><p>缺点：必须要有Docker 环境。异地使用麻烦，除非ssh,vpn等远程链接方法。</p><h2 id="将Hexo部署到vps，实现自动发布">[将Hexo部署到vps，实现自动发布][]</h2><h3 id="搭建流程">搭建流程</h3><ol><li>服务器环境配置，安装Git、Nginx配置、创建git用户</li><li>本地hexo初始化</li><li>使用Git自动部署并发布博客</li></ol><h3 id="服务器环境搭建">服务器环境搭建</h3><ul><li><strong>安装Git和NodeJS(Centos环境)</strong></li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> <span class="token function">git</span>
-<span class="token comment"># 安装NodeJS </span>
-<span class="token function">curl</span> --silent --location https://rpm.nodesource.com/setup_5.x <span class="token operator">|</span> <span class="token function">bash</span> -<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre><ul><li><strong>创建git账号</strong></li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">adduser <span class="token function">git</span>
-<span class="token function">chmod</span> <span class="token number">740</span> /etc/sudoers
-<span class="token function">vim</span> /etc/sudoers<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre><ul><li>添加内容<br>找到</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment">## Allow root to run any commands anywhere</span>
-root    <span class="token assign-left variable">ALL</span><span class="token operator">=</span><span class="token punctuation">(</span>ALL<span class="token punctuation">)</span>     ALL<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre><ul><li>添加以下内容</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">git</span>     <span class="token assign-left variable">ALL</span><span class="token operator">=</span><span class="token punctuation">(</span>ALL<span class="token punctuation">)</span>     ALL<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><ul><li>保存退出并改回权限</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">chmod</span> <span class="token number">400</span> /etc/sudoers<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><ul><li>设置git账号密码</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">passwd</span> <span class="token function">git</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><ul><li>使用<code>su git</code>切换到git用户，再执行下列操作：</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 切换到git用户目录</span>
-<span class="token builtin class-name">cd</span> /home/git
-<span class="token comment"># 创建.ssh文件夹</span>
-<span class="token function">mkdir</span> ~/.ssh
-<span class="token comment"># 创建authorized_keys文件并编辑</span>
-<span class="token function">vim</span> ~/.ssh/authorized_keys
-<span class="token comment"># 如果你还没有生成公钥，那么首先在本地电脑中执行 cat ~/.ssh/id_rsa.pub | pbcopy生成公钥</span>
-<span class="token comment"># 再将公钥复制粘贴到authorized_keys</span>
-<span class="token comment"># 保存关闭authorized_keys后，修改相应权限</span>
-<span class="token function">chmod</span> <span class="token number">600</span> ~/.ssh/authorized_keys
-<span class="token function">chmod</span> <span class="token number">700</span> ~/.ssh<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><ul><li>然后可以通过本地Git Bash执行ssh命令测试是否可以免密登录</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">ssh</span> -v git@服务器ip地址<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>这样git用户就添加好了。</p><blockquote><p>Tips: 将公钥拷贝到服务器的~/.ssh/authorized_keys文件中方法有如下几种：</p><ol><li>将公钥通过scp拷贝到服务器上，然后追加到~/.ssh/authorized_keys文件中，这种方式比较麻烦。scp -P 22 ~/.ssh/id_rsa.pub user@host:~/。</li><li>通过ssh-copy-id程序，就是我演示的方法，ssh-copyid user@host即可</li><li>可以通过cat ~/.ssh/id_rsa.pub | ssh -p 22 user@host ‘cat &gt;&gt; ~/.ssh/authorized_keys’，这个也是比较常用的方法，因为可以更改端口号。</li></ol></blockquote><ul><li><strong>安装Nginx</strong></li><li>准备工作<br>首先由于nginx的一些模块依赖一些lib库，所以在安装nginx之前，必须先安装这些lib库，这些依赖库主要有g++、gcc、openssl-devel、pcre-devel和zlib-devel 所以执行如下命令安装</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum <span class="token function">install</span> gcc-c++
-yum <span class="token function">install</span> pcre pcre-devel
-yum <span class="token function">install</span> zlib zlib-devel
-yum <span class="token function">install</span> openssl openssl--devel<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre><p>Ubuntu系统安装命令如下：</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">apt-get</span> <span class="token function">install</span> libpcre3 libpcre3-dev
-<span class="token function">sudo</span> <span class="token function">apt-get</span> <span class="token function">install</span> zlib1g-dev
-<span class="token function">sudo</span> <span class="token function">apt-get</span> <span class="token function">install</span> openssl libssl-dev<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre><ul><li>安装Nginx<br>安装之前，最好检查一下是否已经安装有nginx</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">find</span> -name nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>如果系统已经安装了nginx，那么就先卸载</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum remove nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>然后开始安装<br>首先进入<code>/usr/local</code>目录</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /usr/local<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>从官网下载最新版的nginx</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wget</span> -c https://nginx.org/download/nginx-1.14.2.tar.gz <span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>（注：版本号可更改，去官网查看最新版本号修改即可）</p><p>解压nginx压缩包</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">tar</span> -zxvf nginx-1.14.2.tar.gz<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>会产生一个nginx-1.14.2 目录，这时进入nginx-1.14.2 目录</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span>  nginx-1.14.2<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>接下来安装，使用–prefix参数指定nginx安装的目录,make、make install安装</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">./configure<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>（默认安装在/usr/local/nginx，推荐使用默认设置）</p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1220210912163925.png" alt=""></p><pre class="line-numbers language-none"><code class="language-none">make<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1220210912163918.png" alt=""></p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">make</span> <span class="token function">install</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1220210912163522.png" alt=""></p><p>如果没有报错，顺利完成后，最好看一下nginx的安装目录</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">whereis</span> nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>（where和is要连这些，中间没有空格）</p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1220210912163515.png" alt=""></p><ul><li>启动和停止nginx</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /usr/local/nginx/sbin/
+    })();</script><div class="bg-cover pd-header post-cover" style="background-image:url(https://cdn.jsdelivr.net/gh/appotry/hexo@3.26/medias_webp/cover/hexo.webp)"><div class="container" style="right:0;left:0"><div class="row"><div class="col s12 m12 l12"><div class="brand"><h1 class="description center-align post-title">基于Hexo的matery主题搭建博客增强部署篇4<span class="typed-cursor h2 typed-cursor--blink" aria-hidden="true">_</span></h1></div></div></div></div></div><main class="post-container content"><div class="row"><div id="main-content" class="col s12 m12 l9"><div id="artDetail"><div class="card"><div class="card-content article-info"><div class="row tag-cate"><div class="col s7"><div class="article-tag"><a href="/tags/github/"><span class="chip bg-color">github</span> </a><a href="/tags/hexo/"><span class="chip bg-color">hexo</span> </a><a href="/tags/matery/"><span class="chip bg-color">matery</span> </a><a href="/tags/cdn/"><span class="chip bg-color">cdn</span> </a><a href="/tags/seo/"><span class="chip bg-color">seo</span></a></div></div><div class="col s5 right-align"><div class="post-cate"><i class="fas fa-bookmark fa-fw icon-category"></i> <a href="/categories/hexo/" class="post-category">hexo</a><link rel="alternate dns-prefetch" type="application/atom+xml" title="分类订阅--hexo" href="https://blog.17lai.site/categories/hexo/atom.xml"></div></div></div><div class="post-info"><div class="post-date info-break-policy"><i class="far fa-calendar-minus fa-fw"></i>发布:&nbsp;&nbsp; 2022-03-27</div><div class="post-date info-break-policy"><i class="far fa-calendar-check fa-fw"></i>更新:&nbsp;&nbsp; 2022-04-18</div><div class="info-break-policy"><i class="far fa-file-word fa-fw"></i>字数:&nbsp;&nbsp; 3.5k</div><div class="info-break-policy"><i class="far fa-clock fa-fw"></i>阅时:&nbsp;&nbsp; 15 分</div><div id="busuanzi_container_page_pv" class="info-break-policy"><i class="far fa-eye fa-fw"></i>查阅:&nbsp;&nbsp; <span id="busuanzi_value_page_pv"></span></div><div id="waline_container_page_pv" class="info-break-policy" style="display:none"><i class="far fa-eye fa-fw"></i>查阅:&nbsp;&nbsp; <span class="waline-pageview-count" data-path="/posts/5311b619/"></span></div><div id="waline_container_comment_count" class="info-break-policy" style="display:none"><i class="far fa-comment fa-fw"></i>评论:&nbsp;&nbsp; <span class="waline-comment-count" data-path="/posts/5311b619/"></span>条</div></div></div><hr class="clearfix"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/appotry/hexo@3.26/libs/prism/prism.css"><style>code[class*=language-],pre[class*=language-]{white-space:pre-wrap!important}</style><div class="card-content article-card-content"><div id="articleContent"><h2 id="Hexo-Docker-本地部署">Hexo Docker 本地部署</h2><p>在最前面的篇章介绍了Hexo Docker 环境的使用方法。具体使用方法见本文系列[<strong>Hexo Docker 环境篇</strong>]。</p><p>优点：本地使用可定制化成都更高</p><p>缺点：必须要有Docker 环境。异地使用麻烦，除非ssh,vpn等远程链接方法。</p><h2 id="将Hexo部署到vps，实现自动发布">[将Hexo部署到vps，实现自动发布][]</h2><h3 id="搭建流程">搭建流程</h3><ol><li>服务器环境配置，安装Git、Nginx配置、创建git用户</li><li>本地hexo初始化</li><li>使用Git自动部署并发布博客</li></ol><h3 id="服务器环境搭建">服务器环境搭建</h3><ul><li><strong>安装Git和NodeJS(Centos环境)</strong></li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum install git
+# 安装NodeJS 
+curl --silent --location https://rpm.nodesource.com/setup_5.x | bash -<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre><ul><li><strong>创建git账号</strong></li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">adduser git
+chmod 740 /etc/sudoers
+vim /etc/sudoers<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre><ul><li>添加内容<br>找到</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">## Allow root to run any commands anywhere
+root    ALL=(ALL)     ALL<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre><ul><li>添加以下内容</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">git     ALL=(ALL)     ALL<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><ul><li>保存退出并改回权限</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">chmod 400 /etc/sudoers<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><ul><li>设置git账号密码</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">sudo passwd git<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><ul><li>使用<code>su git</code>切换到git用户，再执行下列操作：</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 切换到git用户目录
+cd /home/git
+# 创建.ssh文件夹
+mkdir ~/.ssh
+# 创建authorized_keys文件并编辑
+vim ~/.ssh/authorized_keys
+# 如果你还没有生成公钥，那么首先在本地电脑中执行 cat ~/.ssh/id_rsa.pub | pbcopy生成公钥
+# 再将公钥复制粘贴到authorized_keys
+# 保存关闭authorized_keys后，修改相应权限
+chmod 600 ~/.ssh/authorized_keys
+chmod 700 ~/.ssh<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><ul><li>然后可以通过本地Git Bash执行ssh命令测试是否可以免密登录</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">ssh -v git@服务器ip地址<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>这样git用户就添加好了。</p><blockquote><p>Tips: 将公钥拷贝到服务器的~/.ssh/authorized_keys文件中方法有如下几种：</p><ol><li>将公钥通过scp拷贝到服务器上，然后追加到~/.ssh/authorized_keys文件中，这种方式比较麻烦。scp -P 22 ~/.ssh/id_rsa.pub user@host:~/。</li><li>通过ssh-copy-id程序，就是我演示的方法，ssh-copyid user@host即可</li><li>可以通过cat ~/.ssh/id_rsa.pub | ssh -p 22 user@host ‘cat &gt;&gt; ~/.ssh/authorized_keys’，这个也是比较常用的方法，因为可以更改端口号。</li></ol></blockquote><ul><li><strong>安装Nginx</strong></li><li>准备工作<br>首先由于nginx的一些模块依赖一些lib库，所以在安装nginx之前，必须先安装这些lib库，这些依赖库主要有g++、gcc、openssl-devel、pcre-devel和zlib-devel 所以执行如下命令安装</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum install gcc-c++
+yum install pcre pcre-devel
+yum install zlib zlib-devel
+yum install openssl openssl--devel<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre><p>Ubuntu系统安装命令如下：</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">sudo apt-get install libpcre3 libpcre3-dev
+sudo apt-get install zlib1g-dev
+sudo apt-get install openssl libssl-dev<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre><ul><li>安装Nginx<br>安装之前，最好检查一下是否已经安装有nginx</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">find -name nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>如果系统已经安装了nginx，那么就先卸载</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">yum remove nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>然后开始安装<br>首先进入<code>/usr/local</code>目录</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">cd /usr/local<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>从官网下载最新版的nginx</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">wget -c https://nginx.org/download/nginx-1.14.2.tar.gz <span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>（注：版本号可更改，去官网查看最新版本号修改即可）</p><p>解压nginx压缩包</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">tar -zxvf nginx-1.14.2.tar.gz<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>会产生一个nginx-1.14.2 目录，这时进入nginx-1.14.2 目录</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">cd  nginx-1.14.2<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>接下来安装，使用–prefix参数指定nginx安装的目录,make、make install安装</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">./configure<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>（默认安装在/usr/local/nginx，推荐使用默认设置）</p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1220210912163925.png" alt=""></p><pre class="line-numbers language-none"><code class="language-none">make<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1220210912163918.png" alt=""></p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">make install<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1220210912163522.png" alt=""></p><p>如果没有报错，顺利完成后，最好看一下nginx的安装目录</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">whereis nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>（where和is要连这些，中间没有空格）</p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1220210912163515.png" alt=""></p><ul><li>启动和停止nginx</li></ul><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">cd /usr/local/nginx/sbin/
 ./nginx 
 ./nginx -s stop
 ./nginx -s quit
 ./nginx -s reload
 ./nginx -s quit: 此方式停止步骤是待nginx进程处理任务完毕进行停止。
-./nginx -s stop: 此方式相当于先查出nginx进程id再使用kill命令强制杀掉进程。<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><p>查询nginx进程：</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">ps</span> aux <span class="token operator">|</span> <span class="token function">grep</span> nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1220210912163454.png" alt=""></p><ul><li>重启 nginx</li></ul><ol><li>先停止再启动（推荐）：<br>对 nginx 进行重启相当于先停止再启动，即先执行停止命令再执行启动命令。如下：</li></ol><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">./nginx -s quit
-./nginx<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre><ol start="2"><li>重新加载配置文件：<br>当 nginx 的配置文件 nginx.conf 修改后，要想让配置生效需要重启 nginx，使用 -s reload 不用先停止 nginx 再启动 nginx 即可将配置信息在 nginx 中生效，如下：</li></ol><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">./nginx -s reload<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>启动成功后，在浏览器可以看到如下页面：</p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1220210912163437.png" alt=""></p><ul><li>开机自启动</li></ul><p>即在rc.local增加启动代码就可以了。</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">vim</span> /etc/rc.local<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>增加一行</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">/usr/local/nginx/sbin/nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>到这里，nginx安装完毕，启动、停止、重启操作也都完成。</p><h3 id="建立git裸库">建立git裸库</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 回到git目录</span>
-<span class="token builtin class-name">cd</span> /home/git
-<span class="token comment"># 使用git用户创建git裸仓库，以blog.git为例</span>
-<span class="token function">git</span> init --bare blog.git<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre><h3 id="检查用户组权限">检查用户组权限</h3><p>我们的git裸仓库已经建立好了，离成功又近了一步。为了以防万一，我们要检查一下之前的blog.git、.ssh、blog目录的用户组权限是否都为<code>git:git</code></p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 还记得/var/www/吗？这是之前配置nginx时，我们自己选定的网站根目录，请依据你自己的设置更改，如果没有的话自己</span>
+./nginx -s stop: 此方式相当于先查出nginx进程id再使用kill命令强制杀掉进程。<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><p>查询nginx进程：</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">ps aux | grep nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1220210912163454.png" alt=""></p><ul><li>重启 nginx</li></ul><ol><li>先停止再启动（推荐）：<br>对 nginx 进行重启相当于先停止再启动，即先执行停止命令再执行启动命令。如下：</li></ol><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">./nginx -s quit
+./nginx<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre><ol start="2"><li>重新加载配置文件：<br>当 nginx 的配置文件 nginx.conf 修改后，要想让配置生效需要重启 nginx，使用 -s reload 不用先停止 nginx 再启动 nginx 即可将配置信息在 nginx 中生效，如下：</li></ol><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">./nginx -s reload<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>启动成功后，在浏览器可以看到如下页面：</p><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1220210912163437.png" alt=""></p><ul><li>开机自启动</li></ul><p>即在rc.local增加启动代码就可以了。</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">vim /etc/rc.local<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>增加一行</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">/usr/local/nginx/sbin/nginx<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>到这里，nginx安装完毕，启动、停止、重启操作也都完成。</p><h3 id="建立git裸库">建立git裸库</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 回到git目录
+cd /home/git
+# 使用git用户创建git裸仓库，以blog.git为例
+git init --bare blog.git<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre><h3 id="检查用户组权限">检查用户组权限</h3><p>我们的git裸仓库已经建立好了，离成功又近了一步。为了以防万一，我们要检查一下之前的blog.git、.ssh、blog目录的用户组权限是否都为<code>git:git</code></p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 还记得/var/www/吗？这是之前配置nginx时，我们自己选定的网站根目录，请依据你自己的设置更改，如果没有的话自己
 ll -a /www/wwwroot/hexo
-ll -a /home/git/<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre><p>如果有哪个不是，执行下面相应的命令后再查看</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">chown</span> -R git:git /www/wwwroot/hexo
-<span class="token function">sudo</span> <span class="token function">chmod</span> -R <span class="token number">755</span> /www/wwwroot/hexo
-<span class="token function">sudo</span> <span class="token function">chown</span> git:git -R /home/git/blog.git<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre><h3 id="使用git-hooks同步网站根目录">使用git-hooks同步网站根目录</h3><p>简单来说，我们使用一个钩子文件：post-receive，每当git仓库接收到内容的时候，就会自动调用这个钩子，把内容同步到网站根目录。<br>在git用户下执行：</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 新建一个post-receive文件并编辑</span>
-<span class="token function">vim</span> ~/blog.git/hooks/post-receive<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre><p>在里面输入以下内容，注意修改为自己的设置：</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
-<span class="token builtin class-name">set</span> -e
-<span class="token assign-left variable">GIT_REPO</span><span class="token operator">=</span>/home/git/blog.git
-<span class="token assign-left variable">TMP_GIT_CLONE</span><span class="token operator">=</span>/tmp/blog
-<span class="token assign-left variable">PUBLIC_WWW</span><span class="token operator">=</span>/www/wwwroot/hexo
-<span class="token function">rm</span> -rf <span class="token variable">${TMP_GIT_CLONE}</span>
-<span class="token function">git</span> clone -b main <span class="token variable">$GIT_REPO</span> <span class="token variable">$TMP_GIT_CLONE</span>
-<span class="token builtin class-name">cd</span> <span class="token variable">$TMP_GIT_CLONE</span>
-<span class="token comment">#for b in `git branch -r | grep -v -- '-&gt;'`; do git branch --track ${b##origin/} $b; done</span>
-<span class="token comment">#git checkout main</span>
-<span class="token function">rm</span> -rf <span class="token variable">${PUBLIC_WWW}</span>/*
-<span class="token function">cp</span> -rf <span class="token variable">${TMP_GIT_CLONE}</span>/* <span class="token variable">${PUBLIC_WWW}</span>
-<span class="token builtin class-name">echo</span> <span class="token string">"update web done!"</span>
-<span class="token comment">#ls -al ${PUBLIC_WWW}</span>
-<span class="token function">rm</span> -rf <span class="token variable">${TMP_GIT_CLONE}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><p>保存退出后，执行以下赋予这个文件可执行权限。</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">chown</span> -R git:git ~/blog.git/hooks/post-receive
-<span class="token function">chmod</span> +x ~/blog.git/hooks/post-receive<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre><p>好了，以上就是服务器端需要配置的内容。我们还差最后一步就可以完成整个部署了！</p><h3 id="修改配置文件nginx-conf">修改配置文件nginx.conf</h3><p>修改上面的配置文件：</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">vim</span> /usr/local/nginx/conf/nginx_config<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><h3 id="然后修改其中两个部分，如下所示：">然后修改其中两个部分，如下所示：</h3><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1220210912163900.jpeg" alt=""></p><p>然后<code>重启nginx</code>，方法见<code>nginx安装</code>部分。</p><h3 id="配置本地Hexo的-config-yml">配置本地Hexo的<code>_config.yml</code></h3><p>非常简单，只需要找到本地Hexo博客的站点配置文件<code>_config.yml</code>，找到以下内容并修改：</p><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">deploy</span><span class="token punctuation">:</span> 
-  <span class="token key atrule">type</span><span class="token punctuation">:</span> git
-  <span class="token key atrule">repo</span><span class="token punctuation">:</span> git@你的服务器IP<span class="token punctuation">:</span>/home/git/blog.git
-  <span class="token key atrule">branch</span><span class="token punctuation">:</span> master<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre><p>保存后，剩下的就是Hexo的日常操作了，这里就不赘述了，写完文章后，在你的本地博客根目录执行以下命令：</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">hexo c <span class="token operator">&amp;&amp;</span> hexo g -d<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>就可以实现线上博客的自动更新了！一切搞定！</p><h2 id="Rsync同步部署静态文件方法">Rsync同步部署静态文件方法</h2><blockquote><p>使用rsync同步</p></blockquote><p>本地生成静态文件后rsync同步到vps网页目录，lnap使用宝塔配置，这里只需要一个nginx。</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># rsync [options] from_dir to_dir</span>
-<span class="token comment"># 替换这里的ip为你的服务器ip</span>
-<span class="token function">rsync</span> -avzP  /home/17lai.blog  root@8.8.8.8:/www/wwwroot/hexo<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre><h2 id="Hexo-Github-Action-自动部署">Hexo Github Action 自动部署</h2><h3 id="准备">准备</h3><ol><li><code>Hexo</code> 博客源码的仓库，在 <code>GitHub</code> 上。</li><li><code>ssh</code> 密钥，参考文章：<a target="_blank" rel="noopener" href="https://sitoi.cn/posts/43508.html">Windows 下利用 Git 生成 SSH KEY 并配置到 GitHub</a></li></ol><h3 id="步骤">步骤</h3><ol><li>为需要部署的平台添加密钥</li><li>修改 <code>_config.yml</code> 中的 <code>deploy</code> 配置</li><li>在 GitHub 上设置 <code>Secrets</code></li><li>创建 GitHub Action</li></ol><h3 id="为需要部署的平台添加密钥">为需要部署的平台添加密钥</h3><p>按照之前的教程，只要你之前成功将 Hexo 的博客部署到 GitHub 上，那你电脑在 <code>~/.ssh</code> 目录下一定有以下三个文件：</p><ul><li><code>id_rsa</code>：私钥</li><li><code>id_rsa.pub</code>：公钥</li><li><code>known_hosts</code>：记录对所有用户都可信赖的远程主机的公钥</li></ul><p>将 <code>id_rsa.pub</code>（公钥）添加到不同平台中即可，参考文章：<a target="_blank" rel="noopener" href="https://sitoi.cn/posts/43508.html#%E6%9F%A5%E7%9C%8B-SSH-KEY">Windows 下利用 Git 生成 SSH KEY 并配置到 GitHub</a></p><p>下面是不同平台添加的地址：</p><ul><li><a target="_blank" rel="noopener" href="https://github.com/settings/ssh/new">GitHub</a></li><li><a target="_blank" rel="noopener" href="https://gitlab.com/profile/keys">GitLab</a></li><li><a target="_blank" rel="noopener" href="https://e.coding.net/">Coding</a></li><li><a target="_blank" rel="noopener" href="https://gitee.com/profile/sshkeys">Gitee</a></li></ul><h3 id="修改-config-yml-中的-deploy-配置">修改 <code>_config.yml</code> 中的 <code>deploy</code> 配置</h3><p>请使用 <code>ssh</code> (即以 <code>git@</code> 开头的 <code>clone</code> 链接) 的连接方式，根据直接的实际地址填写。</p><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">deploy</span><span class="token punctuation">:</span>
-  <span class="token punctuation">-</span> <span class="token key atrule">type</span><span class="token punctuation">:</span> git
-    <span class="token key atrule">repo</span><span class="token punctuation">:</span>
-      <span class="token key atrule">github</span><span class="token punctuation">:</span> git@github.com<span class="token punctuation">:</span>Sitoi/Sitoi.github.io.git
-      <span class="token key atrule">coding</span><span class="token punctuation">:</span> git@e.coding.net<span class="token punctuation">:</span>Sitoi/Sitoi.git
-      <span class="token key atrule">gitee</span><span class="token punctuation">:</span> git@gitee.com<span class="token punctuation">:</span>sitoi/sitoi.git
-      <span class="token key atrule">gitlab</span><span class="token punctuation">:</span> git@gitlab.com<span class="token punctuation">:</span>Sitoi/sitoi.gitlab.io.git
-    <span class="token key atrule">branch</span><span class="token punctuation">:</span> master<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><h3 id="在-GitHub-上设置-Secrets">在 GitHub 上设置 <code>Secrets</code></h3><ol><li><p>进入到你在 <code>GitHub</code> 上面的源码仓库</p></li><li><p>点击右上角的 <code>Settings</code></p></li></ol><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1220211012133009.png" alt="Settings"></p><p>Settings</p><ol start="3"><li><p>点击左侧的 <code>Secrets</code></p></li><li><p>点击右上角的 <code>New secret</code></p></li></ol><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1220211012133002.png" alt="New secret"></p><p>New secret</p><ol start="5"><li>在 <code>Name</code> 中输入 <code>HEXO_DEPLOY_PRI</code>，在 <code>Value</code> 中填入 <code>id_rsa</code>（私钥）的全部内容</li></ol><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1220211012132955.png" alt="Add secret"></p><p>Add secret</p><h3 id="创建-GitHub-Action">创建 GitHub Action</h3><ol><li>点击项目上方的 <code>Action</code> 按钮</li></ol><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1220211012132954.png" alt="Action"></p><p>Action</p><ol start="2"><li>点击 <code>set up a workflow yourself</code> 创建 <code>Workflow</code></li></ol><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1220211012132947.png" alt="Workflow"></p><p>Workflow</p><ol start="3"><li>修改 <code>main.yaml</code> 的内容</li></ol><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1220211012132940.png" alt="Create Workflow"></p><p>Create Workflow</p><blockquote><p>根据实际情况修改成你自己的内容</p></blockquote><ul><li>Git 推送使用的用户名：git config –global user.name ‘sitoi’：</li><li>Git 推送使用的邮箱：git config –global user.email ‘<a href="mailto:133397418@qq.com">133397418@qq.com</a>‘</li><li>Hexo 的版本：npm i <a href="mailto:hexo@4.1.1">hexo@4.1.1</a> -g</li></ul><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">name</span><span class="token punctuation">:</span> Hexo CI
+ll -a /home/git/<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre><p>如果有哪个不是，执行下面相应的命令后再查看</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">sudo chown -R git:git /www/wwwroot/hexo
+sudo chmod -R 755 /www/wwwroot/hexo
+sudo chown git:git -R /home/git/blog.git<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre><h3 id="使用git-hooks同步网站根目录">使用git-hooks同步网站根目录</h3><p>简单来说，我们使用一个钩子文件：post-receive，每当git仓库接收到内容的时候，就会自动调用这个钩子，把内容同步到网站根目录。<br>在git用户下执行：</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># 新建一个post-receive文件并编辑
+vim ~/blog.git/hooks/post-receive<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre><p>在里面输入以下内容，注意修改为自己的设置：</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">#!/bin/bash
+set -e
+GIT_REPO=/home/git/blog.git
+TMP_GIT_CLONE=/tmp/blog
+PUBLIC_WWW=/www/wwwroot/hexo
+rm -rf ${TMP_GIT_CLONE}
+git clone -b main $GIT_REPO $TMP_GIT_CLONE
+cd $TMP_GIT_CLONE
+#for b in `git branch -r | grep -v -- '-&gt;'`; do git branch --track ${b##origin/} $b; done
+#git checkout main
+rm -rf ${PUBLIC_WWW}/*
+cp -rf ${TMP_GIT_CLONE}/* ${PUBLIC_WWW}
+echo "update web done!"
+#ls -al ${PUBLIC_WWW}
+rm -rf ${TMP_GIT_CLONE}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><p>保存退出后，执行以下赋予这个文件可执行权限。</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">chown -R git:git ~/blog.git/hooks/post-receive
+chmod +x ~/blog.git/hooks/post-receive<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre><p>好了，以上就是服务器端需要配置的内容。我们还差最后一步就可以完成整个部署了！</p><h3 id="修改配置文件nginx-conf">修改配置文件nginx.conf</h3><p>修改上面的配置文件：</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">vim /usr/local/nginx/conf/nginx_config<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><h3 id="然后修改其中两个部分，如下所示：">然后修改其中两个部分，如下所示：</h3><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/09/1220210912163900.jpeg" alt=""></p><p>然后<code>重启nginx</code>，方法见<code>nginx安装</code>部分。</p><h3 id="配置本地Hexo的-config-yml">配置本地Hexo的<code>_config.yml</code></h3><p>非常简单，只需要找到本地Hexo博客的站点配置文件<code>_config.yml</code>，找到以下内容并修改：</p><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml">deploy: 
+  type: git
+  repo: git@你的服务器IP:/home/git/blog.git
+  branch: master<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre><p>保存后，剩下的就是Hexo的日常操作了，这里就不赘述了，写完文章后，在你的本地博客根目录执行以下命令：</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">hexo c &amp;&amp; hexo g -d<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>就可以实现线上博客的自动更新了！一切搞定！</p><h2 id="Rsync同步部署静态文件方法">Rsync同步部署静态文件方法</h2><blockquote><p>使用rsync同步</p></blockquote><p>本地生成静态文件后rsync同步到vps网页目录，lnap使用宝塔配置，这里只需要一个nginx。</p><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"># rsync [options] from_dir to_dir
+# 替换这里的ip为你的服务器ip
+rsync -avzP  /home/17lai.blog  root@8.8.8.8:/www/wwwroot/hexo<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre><h2 id="Hexo-Github-Action-自动部署">Hexo Github Action 自动部署</h2><h3 id="准备">准备</h3><ol><li><code>Hexo</code> 博客源码的仓库，在 <code>GitHub</code> 上。</li><li><code>ssh</code> 密钥，参考文章：<a target="_blank" rel="noopener" href="https://sitoi.cn/posts/43508.html">Windows 下利用 Git 生成 SSH KEY 并配置到 GitHub</a></li></ol><h3 id="步骤">步骤</h3><ol><li>为需要部署的平台添加密钥</li><li>修改 <code>_config.yml</code> 中的 <code>deploy</code> 配置</li><li>在 GitHub 上设置 <code>Secrets</code></li><li>创建 GitHub Action</li></ol><h3 id="为需要部署的平台添加密钥">为需要部署的平台添加密钥</h3><p>按照之前的教程，只要你之前成功将 Hexo 的博客部署到 GitHub 上，那你电脑在 <code>~/.ssh</code> 目录下一定有以下三个文件：</p><ul><li><code>id_rsa</code>：私钥</li><li><code>id_rsa.pub</code>：公钥</li><li><code>known_hosts</code>：记录对所有用户都可信赖的远程主机的公钥</li></ul><p>将 <code>id_rsa.pub</code>（公钥）添加到不同平台中即可，参考文章：<a target="_blank" rel="noopener" href="https://sitoi.cn/posts/43508.html#%E6%9F%A5%E7%9C%8B-SSH-KEY">Windows 下利用 Git 生成 SSH KEY 并配置到 GitHub</a></p><p>下面是不同平台添加的地址：</p><ul><li><a target="_blank" rel="noopener" href="https://github.com/settings/ssh/new">GitHub</a></li><li><a target="_blank" rel="noopener" href="https://gitlab.com/profile/keys">GitLab</a></li><li><a target="_blank" rel="noopener" href="https://e.coding.net/">Coding</a></li><li><a target="_blank" rel="noopener" href="https://gitee.com/profile/sshkeys">Gitee</a></li></ul><h3 id="修改-config-yml-中的-deploy-配置">修改 <code>_config.yml</code> 中的 <code>deploy</code> 配置</h3><p>请使用 <code>ssh</code> (即以 <code>git@</code> 开头的 <code>clone</code> 链接) 的连接方式，根据直接的实际地址填写。</p><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml">deploy:
+  - type: git
+    repo:
+      github: git@github.com:Sitoi/Sitoi.github.io.git
+      coding: git@e.coding.net:Sitoi/Sitoi.git
+      gitee: git@gitee.com:sitoi/sitoi.git
+      gitlab: git@gitlab.com:Sitoi/sitoi.gitlab.io.git
+    branch: master<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><h3 id="在-GitHub-上设置-Secrets">在 GitHub 上设置 <code>Secrets</code></h3><ol><li><p>进入到你在 <code>GitHub</code> 上面的源码仓库</p></li><li><p>点击右上角的 <code>Settings</code></p></li></ol><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1220211012133009.png" alt="Settings"></p><p>Settings</p><ol start="3"><li><p>点击左侧的 <code>Secrets</code></p></li><li><p>点击右上角的 <code>New secret</code></p></li></ol><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1220211012133002.png" alt="New secret"></p><p>New secret</p><ol start="5"><li>在 <code>Name</code> 中输入 <code>HEXO_DEPLOY_PRI</code>，在 <code>Value</code> 中填入 <code>id_rsa</code>（私钥）的全部内容</li></ol><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1220211012132955.png" alt="Add secret"></p><p>Add secret</p><h3 id="创建-GitHub-Action">创建 GitHub Action</h3><ol><li>点击项目上方的 <code>Action</code> 按钮</li></ol><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1220211012132954.png" alt="Action"></p><p>Action</p><ol start="2"><li>点击 <code>set up a workflow yourself</code> 创建 <code>Workflow</code></li></ol><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1220211012132947.png" alt="Workflow"></p><p>Workflow</p><ol start="3"><li>修改 <code>main.yaml</code> 的内容</li></ol><p><img src="https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2021/10/1220211012132940.png" alt="Create Workflow"></p><p>Create Workflow</p><blockquote><p>根据实际情况修改成你自己的内容</p></blockquote><ul><li>Git 推送使用的用户名：git config –global user.name ‘sitoi’：</li><li>Git 推送使用的邮箱：git config –global user.email ‘<a href="mailto:133397418@qq.com">133397418@qq.com</a>‘</li><li>Hexo 的版本：npm i <a href="mailto:hexo@4.1.1">hexo@4.1.1</a> -g</li></ul><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml">name: Hexo CI
 
-<span class="token key atrule">on</span><span class="token punctuation">:</span>
-  <span class="token key atrule">push</span><span class="token punctuation">:</span>
-    <span class="token key atrule">branches</span><span class="token punctuation">:</span>
-      <span class="token punctuation">-</span> butterfly
+on:
+  push:
+    branches:
+      - butterfly
 
-<span class="token key atrule">jobs</span><span class="token punctuation">:</span>
-  <span class="token key atrule">butterfly-build</span><span class="token punctuation">:</span>
+jobs:
+  butterfly-build:
 
-    <span class="token key atrule">runs-on</span><span class="token punctuation">:</span> ubuntu<span class="token punctuation">-</span>latest
+    runs-on: ubuntu-latest
 
-    <span class="token key atrule">strategy</span><span class="token punctuation">:</span>
-      <span class="token key atrule">matrix</span><span class="token punctuation">:</span>
-        <span class="token key atrule">node-version</span><span class="token punctuation">:</span> <span class="token punctuation">[</span>10.x<span class="token punctuation">]</span>
+    strategy:
+      matrix:
+        node-version: [10.x]
 
-    <span class="token key atrule">steps</span><span class="token punctuation">:</span>
-      <span class="token punctuation">-</span> <span class="token key atrule">uses</span><span class="token punctuation">:</span> actions/checkout@v1
-      <span class="token punctuation">-</span> <span class="token key atrule">name</span><span class="token punctuation">:</span> Use Node.js 10.x
-        <span class="token key atrule">uses</span><span class="token punctuation">:</span> actions/setup<span class="token punctuation">-</span>node@v1
-        <span class="token key atrule">with</span><span class="token punctuation">:</span>
-          <span class="token key atrule">node-version</span><span class="token punctuation">:</span> <span class="token string">'10.x'</span>
-      <span class="token punctuation">-</span> <span class="token key atrule">name</span><span class="token punctuation">:</span> env prepare
-        <span class="token key atrule">env</span><span class="token punctuation">:</span>
-          <span class="token key atrule">HEXO_DEPLOY_PRI</span><span class="token punctuation">:</span> $<span class="token punctuation">{</span><span class="token punctuation">{</span> secrets.HEXO_DEPLOY_PRI <span class="token punctuation">}</span><span class="token punctuation">}</span>
-        <span class="token key atrule">run</span><span class="token punctuation">:</span> <span class="token punctuation">|</span><span class="token scalar string">
+    steps:
+      - uses: actions/checkout@v1
+      - name: Use Node.js 10.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+      - name: env prepare
+        env:
+          HEXO_DEPLOY_PRI: ${{ secrets.HEXO_DEPLOY_PRI }}
+        run: |
           mkdir -p ~/.ssh/
           echo "$HEXO_DEPLOY_PRI" &gt; ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
@@ -104,102 +104,102 @@ ll -a /home/git/<span aria-hidden="true" class="line-numbers-rows"><span></span>
           git config --global user.name 'sito'
           git config --global user.email '133397418@qq.com'
           npm i
-          npm i hexo@4.1.1 -g</span>
-      <span class="token punctuation">-</span> <span class="token key atrule">name</span><span class="token punctuation">:</span> gen
-        <span class="token key atrule">run</span><span class="token punctuation">:</span> <span class="token punctuation">|</span><span class="token scalar string">
+          npm i hexo@4.1.1 -g
+      - name: gen
+        run: |
           hexo clean
           hexo generate
-          hexo deploy</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><ol start="4"><li>将你的源码推送到 <code>GitHub</code> 上，你的博客一会就会自动更新了。</li></ol><h2 id="以-token-方式部署到-Github">以 token 方式部署到 Github</h2><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">deploy</span><span class="token punctuation">:</span>
-  <span class="token key atrule">type</span><span class="token punctuation">:</span> git
-  <span class="token key atrule">repo</span><span class="token punctuation">:</span>
-    <span class="token key atrule">github</span><span class="token punctuation">:</span>
-      <span class="token key atrule">url</span><span class="token punctuation">:</span> &lt;repository url<span class="token punctuation">&gt;</span>
-      <span class="token key atrule">branch</span><span class="token punctuation">:</span> <span class="token punctuation">[</span>branch<span class="token punctuation">]</span>
-      <span class="token key atrule">token</span><span class="token punctuation">:</span> <span class="token string">''</span>
-  <span class="token key atrule">message</span><span class="token punctuation">:</span> <span class="token punctuation">[</span>message<span class="token punctuation">]</span>
-  <span class="token key atrule">name</span><span class="token punctuation">:</span> <span class="token punctuation">[</span>git user<span class="token punctuation">]</span>
-  <span class="token key atrule">email</span><span class="token punctuation">:</span> <span class="token punctuation">[</span>git email<span class="token punctuation">]</span>
-  <span class="token key atrule">extend_dirs</span><span class="token punctuation">:</span> <span class="token punctuation">[</span>extend directory<span class="token punctuation">]</span>
-  <span class="token key atrule">ignore_hidden</span><span class="token punctuation">:</span> <span class="token boolean important">false</span> <span class="token comment"># default is true</span>
-  <span class="token key atrule">ignore_pattern</span><span class="token punctuation">:</span> regexp  <span class="token comment"># whatever file that matches the </span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><h2 id="travis-自动部署配置">travis 自动部署配置</h2><blockquote><p>travis是第三方CICD服务，比action更加强大，下面只是参考，请查阅travis 文档，并结合自己的环境修改！</p></blockquote><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">sudo</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
-<span class="token key atrule">language</span><span class="token punctuation">:</span> node_js
-<span class="token key atrule">node_js</span><span class="token punctuation">:</span>
-<span class="token punctuation">-</span> 10.16.3
-<span class="token key atrule">cache</span><span class="token punctuation">:</span> npm
-<span class="token key atrule">branches</span><span class="token punctuation">:</span>
-  <span class="token key atrule">only</span><span class="token punctuation">:</span>
-  <span class="token punctuation">-</span> master <span class="token comment"># build master branch only</span>
+          hexo deploy<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><ol start="4"><li>将你的源码推送到 <code>GitHub</code> 上，你的博客一会就会自动更新了。</li></ol><h2 id="以-token-方式部署到-Github">以 token 方式部署到 Github</h2><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml">deploy:
+  type: git
+  repo:
+    github:
+      url: &lt;repository url&gt;
+      branch: [branch]
+      token: ''
+  message: [message]
+  name: [git user]
+  email: [git email]
+  extend_dirs: [extend directory]
+  ignore_hidden: false # default is true
+  ignore_pattern: regexp  # whatever file that matches the <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><h2 id="travis-自动部署配置">travis 自动部署配置</h2><blockquote><p>travis是第三方CICD服务，比action更加强大，下面只是参考，请查阅travis 文档，并结合自己的环境修改！</p></blockquote><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml">sudo: false
+language: node_js
+node_js:
+- 10.16.3
+cache: npm
+branches:
+  only:
+  - master # build master branch only
 
-<span class="token key atrule">env</span><span class="token punctuation">:</span>
-  <span class="token key atrule">global</span><span class="token punctuation">:</span>
-  <span class="token punctuation">-</span> <span class="token key atrule">GIT_USER</span><span class="token punctuation">:</span> appotry
-  <span class="token punctuation">-</span> <span class="token key atrule">HEXO_BACKUP_REPO</span><span class="token punctuation">:</span> github.com/appotry/hexo<span class="token punctuation">-</span>backup.git
-  <span class="token punctuation">-</span> <span class="token key atrule">HEXO_THEME_REPO</span><span class="token punctuation">:</span> github.com/appotry/hexo<span class="token punctuation">-</span>theme<span class="token punctuation">-</span>matery.git
-  <span class="token punctuation">-</span> <span class="token key atrule">GITHUB_PAGES_REPO</span><span class="token punctuation">:</span> github.com/appotry/hexo.github.io.git
-  <span class="token punctuation">-</span> <span class="token key atrule">APPOTRY_REPO</span><span class="token punctuation">:</span> github.com/appotry/hexo.git
+env:
+  global:
+  - GIT_USER: appotry
+  - HEXO_BACKUP_REPO: github.com/appotry/hexo-backup.git
+  - HEXO_THEME_REPO: github.com/appotry/hexo-theme-matery.git
+  - GITHUB_PAGES_REPO: github.com/appotry/hexo.github.io.git
+  - APPOTRY_REPO: github.com/appotry/hexo.git
 
-<span class="token key atrule">before_install</span><span class="token punctuation">:</span>
-<span class="token punctuation">-</span> export TZ='Asia/Shanghai'
-<span class="token punctuation">-</span> npm install hexo <span class="token punctuation">-</span>g
-<span class="token punctuation">-</span> npm install gulp<span class="token punctuation">-</span>cli <span class="token punctuation">-</span>g
+before_install:
+- export TZ='Asia/Shanghai'
+- npm install hexo -g
+- npm install gulp-cli -g
 
-<span class="token key atrule">install</span><span class="token punctuation">:</span>
-<span class="token punctuation">-</span> npm install
+install:
+- npm install
 
-<span class="token key atrule">script</span><span class="token punctuation">:</span>
-<span class="token punctuation">-</span> git clone https<span class="token punctuation">:</span>//$<span class="token punctuation">{</span>HEXO_THEME_REPO<span class="token punctuation">}</span> themes/next
-<span class="token punctuation">-</span> git clone https<span class="token punctuation">:</span>//$<span class="token punctuation">{</span>GIT_USER<span class="token punctuation">}</span><span class="token punctuation">:</span>$<span class="token punctuation">{</span>GITHUB_TOKEN<span class="token punctuation">}</span>@$<span class="token punctuation">{</span>HEXO_BACKUP_REPO<span class="token punctuation">}</span> hexo<span class="token punctuation">-</span>backup
-<span class="token punctuation">-</span> mv hexo<span class="token punctuation">-</span>backup/source .
-<span class="token punctuation">-</span> rm <span class="token punctuation">-</span>rf source/private
-<span class="token punctuation">-</span> npm run build
+script:
+- git clone https://${HEXO_THEME_REPO} themes/next
+- git clone https://${GIT_USER}:${GITHUB_TOKEN}@${HEXO_BACKUP_REPO} hexo-backup
+- mv hexo-backup/source .
+- rm -rf source/private
+- npm run build
 
-<span class="token key atrule">after_success</span><span class="token punctuation">:</span>
-<span class="token punctuation">-</span> git config <span class="token punctuation">-</span><span class="token punctuation">-</span>global user.name "appotry"
-<span class="token punctuation">-</span> git config <span class="token punctuation">-</span><span class="token punctuation">-</span>global user.email "email@qq.com"
-<span class="token punctuation">-</span> git clone https<span class="token punctuation">:</span>//$<span class="token punctuation">{</span>GIT_USER<span class="token punctuation">}</span><span class="token punctuation">:</span>$<span class="token punctuation">{</span>GITHUB_TOKEN<span class="token punctuation">}</span>@$<span class="token punctuation">{</span>GITHUB_PAGES_REPO<span class="token punctuation">}</span> voidking
-<span class="token punctuation">-</span> unalias cp
-<span class="token punctuation">-</span> cp <span class="token punctuation">-</span>rf public/. 17lai.blog
-<span class="token punctuation">-</span> cd 17lai.blog
-<span class="token punctuation">-</span> git add .
-<span class="token punctuation">-</span> git commit <span class="token punctuation">-</span>m "Travis CI Auto Builder"
-<span class="token punctuation">-</span> git push <span class="token punctuation">-</span><span class="token punctuation">-</span>force <span class="token punctuation">-</span><span class="token punctuation">-</span>quiet "https<span class="token punctuation">:</span>//$<span class="token punctuation">{</span>GIT_USER<span class="token punctuation">}</span><span class="token punctuation">:</span>$<span class="token punctuation">{</span>GITHUB_TOKEN<span class="token punctuation">}</span>@$<span class="token punctuation">{</span>GITHUB_PAGES_REPO<span class="token punctuation">}</span>" master<span class="token punctuation">:</span>master<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><h2 id="利用-GitLab-实现-Hexo-博客的-CI-CD">利用 GitLab 实现 Hexo 博客的 CI/CD</h2><p>Portainer 提供了对服务在线更新的 WebHook，所以基于 GitLab 自带的 CI/CD 功能实现 Hexo 博客的持续部署，就非常轻松了。</p><p>CI/CD 其实本质上是一套流程，流程规则可以自行定义。在本文研究的主题下，流程分为三步：第一步是编译 Hexo 博客并生成静态文件；第二步是将静态文件打包成可提供 Web 服务的镜像；第三步则是通过 Portainer 的钩子触发服务更新。</p><p><code>.gitlab-ci.yml</code></p><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">stages</span><span class="token punctuation">:</span>
-  <span class="token punctuation">-</span> compile
-  <span class="token punctuation">-</span> build
-  <span class="token punctuation">-</span> deploy
+after_success:
+- git config --global user.name "appotry"
+- git config --global user.email "email@qq.com"
+- git clone https://${GIT_USER}:${GITHUB_TOKEN}@${GITHUB_PAGES_REPO} voidking
+- unalias cp
+- cp -rf public/. 17lai.blog
+- cd 17lai.blog
+- git add .
+- git commit -m "Travis CI Auto Builder"
+- git push --force --quiet "https://${GIT_USER}:${GITHUB_TOKEN}@${GITHUB_PAGES_REPO}" master:master<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><h2 id="利用-GitLab-实现-Hexo-博客的-CI-CD">利用 GitLab 实现 Hexo 博客的 CI/CD</h2><p>Portainer 提供了对服务在线更新的 WebHook，所以基于 GitLab 自带的 CI/CD 功能实现 Hexo 博客的持续部署，就非常轻松了。</p><p>CI/CD 其实本质上是一套流程，流程规则可以自行定义。在本文研究的主题下，流程分为三步：第一步是编译 Hexo 博客并生成静态文件；第二步是将静态文件打包成可提供 Web 服务的镜像；第三步则是通过 Portainer 的钩子触发服务更新。</p><p><code>.gitlab-ci.yml</code></p><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml">stages:
+  - compile
+  - build
+  - deploy
 
-<span class="token comment"># CONTAINER_RELEASE_IMAGE 根据自己的仓库名修改</span>
-<span class="token key atrule">variables</span><span class="token punctuation">:</span>
-  <span class="token key atrule">DOCKER_HOST</span><span class="token punctuation">:</span> tcp<span class="token punctuation">:</span>//docker<span class="token punctuation">:</span><span class="token number">2375</span>
-  <span class="token key atrule">DOCKER_DRIVER</span><span class="token punctuation">:</span> overlay2
-  <span class="token key atrule">CONTAINER_RELEASE_IMAGE</span><span class="token punctuation">:</span> registry.gitlab.com/xxx/xxx<span class="token punctuation">:</span>latest
+# CONTAINER_RELEASE_IMAGE 根据自己的仓库名修改
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_DRIVER: overlay2
+  CONTAINER_RELEASE_IMAGE: registry.gitlab.com/xxx/xxx:latest
 
-<span class="token key atrule">compile</span><span class="token punctuation">:</span>
-  <span class="token key atrule">stage</span><span class="token punctuation">:</span> compile
-  <span class="token key atrule">image</span><span class="token punctuation">:</span> node<span class="token punctuation">:</span>lts<span class="token punctuation">-</span>alpine
-  <span class="token key atrule">script</span><span class="token punctuation">:</span>
-    <span class="token punctuation">-</span> npm install
-    <span class="token punctuation">-</span> ./node_modules/hexo/bin/hexo generate
-  <span class="token key atrule">artifacts</span><span class="token punctuation">:</span>
-    <span class="token key atrule">paths</span><span class="token punctuation">:</span>
-      <span class="token punctuation">-</span> public/
-    <span class="token key atrule">expire_in</span><span class="token punctuation">:</span> 20 minutes
+compile:
+  stage: compile
+  image: node:lts-alpine
+  script:
+    - npm install
+    - ./node_modules/hexo/bin/hexo generate
+  artifacts:
+    paths:
+      - public/
+    expire_in: 20 minutes
 
-<span class="token key atrule">build</span><span class="token punctuation">:</span>
-  <span class="token key atrule">stage</span><span class="token punctuation">:</span> build
-  <span class="token key atrule">image</span><span class="token punctuation">:</span> docker<span class="token punctuation">:</span>stable
-  <span class="token key atrule">services</span><span class="token punctuation">:</span>
-    <span class="token punctuation">-</span> docker<span class="token punctuation">:</span>dind
-  <span class="token key atrule">script</span><span class="token punctuation">:</span>
-    <span class="token punctuation">-</span> docker login <span class="token punctuation">-</span>u gitlab<span class="token punctuation">-</span>ci<span class="token punctuation">-</span>token <span class="token punctuation">-</span>p $CI_JOB_TOKEN registry.gitlab.com
-    <span class="token punctuation">-</span> docker info
-    <span class="token punctuation">-</span> docker build <span class="token punctuation">-</span>f ./Dockerfile <span class="token punctuation">-</span>t $CONTAINER_RELEASE_IMAGE public
-    <span class="token punctuation">-</span> docker push $CONTAINER_RELEASE_IMAGE
+build:
+  stage: build
+  image: docker:stable
+  services:
+    - docker:dind
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+    - docker info
+    - docker build -f ./Dockerfile -t $CONTAINER_RELEASE_IMAGE public
+    - docker push $CONTAINER_RELEASE_IMAGE
 
-<span class="token comment"># 根据自己的钩子修改下方的 URL</span>
-<span class="token key atrule">deploy</span><span class="token punctuation">:</span>
-  <span class="token key atrule">stage</span><span class="token punctuation">:</span> deploy
-  <span class="token key atrule">script</span><span class="token punctuation">:</span>
-    <span class="token punctuation">-</span> curl https<span class="token punctuation">:</span>//xxx.xxx.xxx/api/webhooks/xxx <span class="token punctuation">-</span>X POST
+# 根据自己的钩子修改下方的 URL
+deploy:
+  stage: deploy
+  script:
+    - curl https://xxx.xxx.xxx/api/webhooks/xxx -X POST
 <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><p>为了保证服务更新的成功率，可以在 <code>deploy</code> 环节加个错误判断和重试次数，具体的看 GitLab 官方文档即可。</p><p>下面给出我的 Dockerfile 文件，供参考。</p><pre class="line-numbers language-dockerfile" data-language="dockerfile"><code class="language-dockerfile">FROM nginx:alpine
 
 COPY . /usr/share/nginx/html

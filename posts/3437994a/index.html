@@ -12,126 +12,126 @@ LABEL name="home-finance-web-dev" version="1.0.0" author="hjw"
 COPY dist/ /usr/share/nginx/html/
 COPY nginx/nginx-dev.conf /etc/nginx/nginx.conf
 EXPOSE 80<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><h2 id="3-编写Jenkinsfile，放在项目根目录下">3.编写Jenkinsfile，放在项目根目录下</h2><pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml">//流水线脚本
-pipeline <span class="token punctuation">{</span>
+pipeline {
     agent any
-    environment <span class="token punctuation">{</span>
-        WS = "$<span class="token punctuation">{</span>WORKSPACE<span class="token punctuation">}</span>"
+    environment {
+        WS = "${WORKSPACE}"
         TOPIC = "测试"
         TITLE = "标题"
         CONTENT = "具体内容"
-    <span class="token punctuation">}</span>
+    }
 
     //定义流水线的加工流程
-    stages <span class="token punctuation">{</span>
-        stage('环境检查') <span class="token punctuation">{</span>
-            steps<span class="token punctuation">{</span>
+    stages {
+        stage('环境检查') {
+            steps{
                 sh 'printenv'
                 echo "正在检测基本信息"
-                sh 'git <span class="token punctuation">-</span><span class="token punctuation">-</span>version'
+                sh 'git --version'
                 sh 'docker version'
-            <span class="token punctuation">}</span>
-        <span class="token punctuation">}</span>
+            }
+        }
 
-        stage('编译') <span class="token punctuation">{</span>
+        stage('编译') {
             //jenkins不配置任何环境的情况下可以兼容任何场景
-            agent <span class="token punctuation">{</span>
-                docker <span class="token punctuation">{</span> image 'node<span class="token punctuation">:</span>14.17.6<span class="token punctuation">-</span>alpine3.13' <span class="token punctuation">}</span>
-            <span class="token punctuation">}</span>
-            steps<span class="token punctuation">{</span>
-                sh 'node <span class="token punctuation">-</span>v'
-                sh 'npm <span class="token punctuation">-</span>v'
-                sh 'pwd <span class="token important">&amp;&amp;</span> ls <span class="token punctuation">-</span>alh'
-                sh 'echo "默认的项目目录<span class="token punctuation">:</span>$<span class="token punctuation">{</span>WS<span class="token punctuation">}</span>"'
-                //注意<span class="token punctuation">:</span>cd $<span class="token punctuation">{</span>WS<span class="token punctuation">}</span> <span class="token important">&amp;&amp;</span> npm不能分开写，也不能直接用$<span class="token punctuation">{</span>WORKSPACE<span class="token punctuation">}</span>
-                sh 'cd $<span class="token punctuation">{</span>WS<span class="token punctuation">}</span>/fast<span class="token punctuation">-</span>ui <span class="token important">&amp;&amp;</span> npm config set registry=https<span class="token punctuation">:</span>//registry.npm.taobao.org <span class="token important">&amp;&amp;</span> npm install <span class="token punctuation">-</span>g cnpm <span class="token punctuation">-</span><span class="token punctuation">-</span>registry=https<span class="token punctuation">:</span>//registry.npm.taobao.org <span class="token important">&amp;&amp;</span> cnpm install <span class="token important">&amp;&amp;</span> cnpm run build'
-            <span class="token punctuation">}</span>
-        <span class="token punctuation">}</span>
+            agent {
+                docker { image 'node:14.17.6-alpine3.13' }
+            }
+            steps{
+                sh 'node -v'
+                sh 'npm -v'
+                sh 'pwd &amp;&amp; ls -alh'
+                sh 'echo "默认的项目目录:${WS}"'
+                //注意:cd ${WS} &amp;&amp; npm不能分开写，也不能直接用${WORKSPACE}
+                sh 'cd ${WS}/fast-ui &amp;&amp; npm config set registry=https://registry.npm.taobao.org &amp;&amp; npm install -g cnpm --registry=https://registry.npm.taobao.org &amp;&amp; cnpm install &amp;&amp; cnpm run build'
+            }
+        }
 
-        stage('生成镜像') <span class="token punctuation">{</span>
-            steps<span class="token punctuation">{</span>
-                sh 'pwd <span class="token important">&amp;&amp;</span> ls <span class="token punctuation">-</span>alh'
+        stage('生成镜像') {
+            steps{
+                sh 'pwd &amp;&amp; ls -alh'
                 echo '生成镜像'
                 sh 'docker version'
-                sh "echo 默认的项目目录<span class="token punctuation">:</span>$<span class="token punctuation">{</span>WS<span class="token punctuation">}</span>"
-                sh 'cd $<span class="token punctuation">{</span>WS<span class="token punctuation">}</span>/fast<span class="token punctuation">-</span>ui <span class="token important">&amp;&amp;</span> docker build <span class="token punctuation">-</span>t home<span class="token punctuation">-</span>finance<span class="token punctuation">-</span>web .'
-            <span class="token punctuation">}</span>
-        <span class="token punctuation">}</span>
+                sh "echo 默认的项目目录:${WS}"
+                sh 'cd ${WS}/fast-ui &amp;&amp; docker build -t home-finance-web .'
+            }
+        }
 
-        stage('部署') <span class="token punctuation">{</span>
-            steps<span class="token punctuation">{</span>
-                echo '部署<span class="token punctuation">...</span>.'
-                sh 'pwd <span class="token important">&amp;&amp;</span> ls <span class="token punctuation">-</span>alh'
-                sh 'pwd <span class="token important">&amp;&amp;</span> ls <span class="token punctuation">-</span>alh'
-                sh 'docker rm <span class="token punctuation">-</span>f home<span class="token punctuation">-</span>finance<span class="token punctuation">-</span>web'
-                sh 'docker run <span class="token punctuation">-</span>d <span class="token punctuation">-</span>p 8081<span class="token punctuation">:</span>80 <span class="token punctuation">-</span><span class="token punctuation">-</span>restart=always <span class="token punctuation">-</span><span class="token punctuation">-</span>name home<span class="token punctuation">-</span>finance<span class="token punctuation">-</span>web home<span class="token punctuation">-</span>finance<span class="token punctuation">-</span>web'
-            <span class="token punctuation">}</span>
-        <span class="token punctuation">}</span>
-    <span class="token punctuation">}</span>
-<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><h2 id="4-编写nginx-dev-conf-放在项目根目录下的nginx目录下">4.编写nginx-dev.conf,放在项目根目录下的nginx目录下</h2><pre class="line-numbers language-nginx" data-language="nginx"><code class="language-nginx"><span class="token directive"><span class="token keyword">user</span>  nginx</span><span class="token punctuation">;</span>
-<span class="token directive"><span class="token keyword">worker_processes</span>  <span class="token number">1</span></span><span class="token punctuation">;</span>
+        stage('部署') {
+            steps{
+                echo '部署....'
+                sh 'pwd &amp;&amp; ls -alh'
+                sh 'pwd &amp;&amp; ls -alh'
+                sh 'docker rm -f home-finance-web'
+                sh 'docker run -d -p 8081:80 --restart=always --name home-finance-web home-finance-web'
+            }
+        }
+    }
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><h2 id="4-编写nginx-dev-conf-放在项目根目录下的nginx目录下">4.编写nginx-dev.conf,放在项目根目录下的nginx目录下</h2><pre class="line-numbers language-nginx" data-language="nginx"><code class="language-nginx">user  nginx;
+worker_processes  1;
 
-<span class="token directive"><span class="token keyword">error_log</span>  /var/log/nginx/error.log warn</span><span class="token punctuation">;</span>
-<span class="token directive"><span class="token keyword">pid</span>        /var/run/nginx.pid</span><span class="token punctuation">;</span>
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
 
-<span class="token directive"><span class="token keyword">events</span></span> <span class="token punctuation">{</span>
-    <span class="token directive"><span class="token keyword">worker_connections</span>  <span class="token number">1024</span></span><span class="token punctuation">;</span>
-<span class="token punctuation">}</span>
+events {
+    worker_connections  1024;
+}
 
-<span class="token directive"><span class="token keyword">http</span></span> <span class="token punctuation">{</span>
-    <span class="token directive"><span class="token keyword">include</span>       /etc/nginx/mime.types</span><span class="token punctuation">;</span>
-    <span class="token directive"><span class="token keyword">default_type</span>  application/octet-stream</span><span class="token punctuation">;</span>
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
 
-    <span class="token directive"><span class="token keyword">log_format</span>  main  <span class="token string">'<span class="token variable">$remote_addr</span> - <span class="token variable">$remote_user</span> [<span class="token variable">$time_local]</span> "<span class="token variable">$request</span>" '</span>
-                      <span class="token string">'<span class="token variable">$status</span> <span class="token variable">$body_bytes_sent</span> "<span class="token variable">$http_referer</span>" '</span>
-                      <span class="token string">'"<span class="token variable">$http_user_agent</span>" "<span class="token variable">$http_x_forwarded_for</span>"'</span></span><span class="token punctuation">;</span>
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
 
-    <span class="token directive"><span class="token keyword">access_log</span>  /var/log/nginx/access.log  main</span><span class="token punctuation">;</span>
+    access_log  /var/log/nginx/access.log  main;
 
-    <span class="token directive"><span class="token keyword">sendfile</span>        <span class="token boolean">on</span></span><span class="token punctuation">;</span>
-    <span class="token comment">#tcp_nopush     on;</span>
+    sendfile        on;
+    #tcp_nopush     on;
 
-    <span class="token directive"><span class="token keyword">keepalive_timeout</span>  <span class="token number">65</span></span><span class="token punctuation">;</span>
+    keepalive_timeout  65;
 
-    <span class="token comment">#gzip  on;</span>
+    #gzip  on;
 
-    <span class="token comment"># include /etc/nginx/conf.d/*.conf;</span>
+    # include /etc/nginx/conf.d/*.conf;
 
-    <span class="token directive"><span class="token keyword">server</span></span> <span class="token punctuation">{</span>
-        <span class="token directive"><span class="token keyword">listen</span>       <span class="token number">80</span></span><span class="token punctuation">;</span>
-        <span class="token directive"><span class="token keyword">server_name</span>  101.43.159.8</span><span class="token punctuation">;</span> <span class="token comment"># 服务器地址或绑定域名</span>
+    server {
+        listen       80;
+        server_name  101.43.159.8; # 服务器地址或绑定域名
 
-        <span class="token comment">#charset koi8-r;</span>
-        <span class="token comment">#access_log  /var/log/nginx/host.access.log  main;</span>
+        #charset koi8-r;
+        #access_log  /var/log/nginx/host.access.log  main;
 
-        <span class="token comment"># =========================================================</span>
-        <span class="token comment"># ================== ↓↓↓↓↓↓ start ↓↓↓↓↓↓ ==================</span>
-        <span class="token comment"># =========================================================</span>
+        # =========================================================
+        # ================== ↓↓↓↓↓↓ start ↓↓↓↓↓↓ ==================
+        # =========================================================
 
-        <span class="token directive"><span class="token keyword">location</span> /</span> <span class="token punctuation">{</span>
-            <span class="token directive"><span class="token keyword">root</span>   /usr/share/nginx/html</span><span class="token punctuation">;</span>
-            <span class="token comment">#try_files $uri $uri/ @router;</span>
-            <span class="token directive"><span class="token keyword">index</span>  index.html index.htm</span><span class="token punctuation">;</span>
-            <span class="token directive"><span class="token keyword">try_files</span> <span class="token variable">$uri</span> <span class="token variable">$uri</span>/ /index.html</span><span class="token punctuation">;</span> <span class="token comment"># 解决页面刷新 404 问题</span>
-            <span class="token comment">#proxy_pass http://zhengqingya.gitee.io; # 代理的ip地址和端口号</span>
-            <span class="token comment">#proxy_connect_timeout 600; #代理的连接超时时间（单位：毫秒）</span>
-            <span class="token comment">#proxy_read_timeout 600; #代理的读取资源超时时间（单位：毫秒）</span>
-        <span class="token punctuation">}</span>
+        location / {
+            root   /usr/share/nginx/html;
+            #try_files $uri $uri/ @router;
+            index  index.html index.htm;
+            try_files $uri $uri/ /index.html; # 解决页面刷新 404 问题
+            #proxy_pass http://zhengqingya.gitee.io; # 代理的ip地址和端口号
+            #proxy_connect_timeout 600; #代理的连接超时时间（单位：毫秒）
+            #proxy_read_timeout 600; #代理的读取资源超时时间（单位：毫秒）
+        }
 
-        <span class="token comment"># =========================================================</span>
-        <span class="token comment"># ================== ↑↑↑↑↑↑ end ↑↑↑↑↑↑ ==================</span>
-        <span class="token comment"># =========================================================</span>
+        # =========================================================
+        # ================== ↑↑↑↑↑↑ end ↑↑↑↑↑↑ ==================
+        # =========================================================
 
-        <span class="token comment">#error_page  404              /404.html;</span>
+        #error_page  404              /404.html;
 
-        <span class="token comment"># redirect server error pages to the static page /50x.html</span>
-        <span class="token comment">#</span>
-        <span class="token directive"><span class="token keyword">error_page</span>   <span class="token number">500</span> <span class="token number">502</span> <span class="token number">503</span> <span class="token number">504</span>  /50x.html</span><span class="token punctuation">;</span>
-        <span class="token directive"><span class="token keyword">location</span> = /50x.html</span> <span class="token punctuation">{</span>
-            <span class="token directive"><span class="token keyword">root</span>   /usr/share/nginx/html</span><span class="token punctuation">;</span>
-        <span class="token punctuation">}</span>
+        # redirect server error pages to the static page /50x.html
+        #
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   /usr/share/nginx/html;
+        }
 
-    <span class="token punctuation">}</span>
-<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><p>编辑整理 <a target="_blank" rel="noopener" href="https://www.cnblogs.com/hujunwei/p/15957956.html">hujunwei</a></p><link rel="stylesheet" href="/css/bilicard.css"></div><hr><div class="reprint" id="reprint-statement"><div class="reprint__author"><span class="reprint-meta" style="font-weight:700"><i class="fas fa-user">文章作者: </i></span><span class="reprint-info"><a href="https://blog.17lai.site" rel="external nofollow noreferrer">夜法之书</a></span></div><div class="reprint__type"><span class="reprint-meta" style="font-weight:700"><i class="fas fa-link">文章链接: </i></span><span class="reprint-info"><a href="https://blog.17lai.site/posts/3437994a/">https://blog.17lai.site/posts/3437994a/</a></span></div><div class="reprint__notice"><span class="reprint-meta" style="font-weight:700"><i class="fas fa-copyright">版权声明: </i></span><span class="reprint-info">本博客所有文章除特別声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow noreferrer" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://blog.17lai.site" target="_blank">夜法之书</a> !</span></div></div><script>document.addEventListener("copy", function (e) {
+    }
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><p>编辑整理 <a target="_blank" rel="noopener" href="https://www.cnblogs.com/hujunwei/p/15957956.html">hujunwei</a></p><link rel="stylesheet" href="/css/bilicard.css"></div><hr><div class="reprint" id="reprint-statement"><div class="reprint__author"><span class="reprint-meta" style="font-weight:700"><i class="fas fa-user">文章作者: </i></span><span class="reprint-info"><a href="https://blog.17lai.site" rel="external nofollow noreferrer">夜法之书</a></span></div><div class="reprint__type"><span class="reprint-meta" style="font-weight:700"><i class="fas fa-link">文章链接: </i></span><span class="reprint-info"><a href="https://blog.17lai.site/posts/3437994a/">https://blog.17lai.site/posts/3437994a/</a></span></div><div class="reprint__notice"><span class="reprint-meta" style="font-weight:700"><i class="fas fa-copyright">版权声明: </i></span><span class="reprint-info">本博客所有文章除特別声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="external nofollow noreferrer" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://blog.17lai.site" target="_blank">夜法之书</a> !</span></div></div><script>document.addEventListener("copy", function (e) {
         let toastHTML = '<span>复制成功，请遵循本文的转载规则</span><button class="btn-flat toast-action" onclick="navToReprintStatement()" style="font-size: smaller">查看</a>';
         M.toast({html: toastHTML})
       });
