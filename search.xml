@@ -1454,6 +1454,914 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
       </tags>
   </entry>
   <entry>
+    <title>海思MPP&amp;UNF构架源代码级分析</title>
+    <url>/posts/13894dce/</url>
+    <content><![CDATA[
+
+文章写了好多年了，只在一个网站发布过PDF版本。行业内应该很多人看过这个。由于早期笔记使用Word格式，转换格式时有不少格式错误，笔者尽量修正。
+
+
+关于本blog，图床一般使用github，已经配置了CDN，如果图片还是未显示请自行代理解决
+
+
+原创声明警告，文章禁止转载，禁止发布到其它任何网站，可以接受约稿。
+
+
+前言：
+​    本文通过分析海思文档和代码，把海思SDK的MPI和UNF构架大概实现思想和构架进行了简略的分析。着重分析了内存管理，底层功能如何实现。
+​    前面章节简要分析了NVR芯片MPI构架及其内存管理机制，后面着重详细分析了3798M底层模块api和drv实现的细节过程及其方法流程。
+​    本文前面简略分析了DVR，MPI构架的大体实现机制。后面就具体分析3798M UNF构架的实现。
+本文不光分析了UNF构架，还使用了很多工具，辅助分析代码。这里从三个层面分析了UNF的实现。
+1: 应用层，驱动层的实现框架，使用source insight查看代码并着重分析了avplay等几个模块。
+2：静态分析函数调用。使用cflow，dot工具生成调用关系图
+3：动态追踪运行过程。Ltrace, strace, valgrind分析函数调用，perf动态分析内核调用。
+1:Hi35xx系列芯片MPP构架
+1.1 概述
+海思提供的媒体处理软件平台(Media Process Platform,简称 MPP)，可支持应用软件快速开发。该平台对应用软件屏蔽了芯片相关的复杂的底层处理，并对应用软件直接提供MPI（MPP Programe Interface）接口完成相应功能。该平台支持应用软件快速开发以下功能：输入视频捕获、H.264/MJPEG/JPEG/MPEG4 编码、H264/H.265/VC1/MPEG4/MPEG2/AVS 解码、视频输出显示、视频图像前处理（包括去噪、增强、锐化、Deinterlace） 、编码码流叠加 OSD、视频侦测分析、智能分析、音频捕获及输出、音频编解码等功能。
+1.2 整体软硬件构架
+
+MPP 平台支持的典型的系统层次如上图所示，主要分为以下层次：
+硬件层
+硬件层由 Hi35xx 芯片加上必要的外围器件构成。外围器件包括 Flash、DDR
+（Double Data-Rate） 、视频 Sensor 或 AD、音频 AD 等。
+操作系统层
+基于 Linux 3.10.y 的 OS 系统。
+媒体处理平台
+基于操作系统层，控制芯片完成相应的媒体处理功能。它对应用层屏蔽了硬件处理细节，并为应用层提供 API 接口完成相应功能。
+其他驱动
+除媒体处理平台外,海思为 Hi35xx 芯片的其他相关硬件处理单元提供了相应的驱动,
+包括 GMAC、SDIO、I2C、USB、SSP 等驱动。
+应用层
+基于海思媒体处理平台及其他驱动，由用户开发的应用软件系统。
+1.3 海思媒体处理平台架构
+海思媒体处理平台的主要内部处理流程如上图所示，主要分为视频输入（VI） 、视频处理（VPSS） 、视频编码（VENC） 、视频解码（VDEC） 、视频输出(VO)、视频侦测分析(VDA)、音频输入(AI)、音频输出(AO)、音频编码（AENC） 、音频解码（ADEC） 、区域管理（REGION）等模块。主要的处理流程介绍如下
+
+
+
+VI 模块捕获视频图像，可对其做剪切、缩放、镜像等处理，并输出多路不同分辨
+率的图像数据。
+
+
+解码模块对编码后的视频码流进行解码，并将解析后的图像数据送 VPSS 进行图
+像处理或直接送 VO 显示。可对 H.264/H.265/VC1/MPEG4/MPEG2/AVS 格式的视
+频码流进行解码。
+
+
+VPSS 模块接收 VI 和解码模块发送过来的图像，可对图像进行去噪、图像增强、
+锐化等处理，并实现同源输出多路不同分辨率的图像数据用于编码、预览或抓
+拍。
+
+
+编码模块接收 VI 捕获并经 VPSS 处理后输出的图像数据，可叠加用户通过 Region
+模块设置的 OSD 图像，然后按不同协议进行编码并输出相应码流。
+VDA 模块接收 VI 的输出图像，并进行移动侦测和遮挡侦测，最后输出侦测分析
+结果。
+
+
+VO 模块接收 VPSS 处理后的输出图像，可进行播放控制等处理，最后按用户配置
+的输出协议输出给外围视频设备。
+
+
+AI 模块捕获音频数据，然后 AENC 模块支持按多种音频协议对其进行编码，最后
+输出音频码流。
+
+
+用户从网络或外围存储设备获取的音频码流可直接送给 ADEC 模块，ADEC 支持
+
+
+1.4 MMZ与模块绑定
+
+MPP 提供系统绑定接口（HI_MPI_SYS_Bind） ，即通过数据接收者绑定数据源来建立
+两者之间的关联关系（只允许数据接收者绑定数据源） 。绑定后，数据源生成的数据将
+自动发送给接收者。
+Uboot环境变量中定义linux内核使用的内存大小
+setenv 'mem=288M console=ttyAMA0,115200 root=/dev/mtdblock2 rootfstype=jffs2 mtdparts=hi_sfc:768K(boot),2304K(sdr021000),13M(rootfs)'
+加载内核模块分配MMZ内存大小
+insmod mmz.ko mmz=anonymous,0,0x8E000000,792M anony=1
+例如512M的DDR
+DDR:
+DDR:                                                          
+-----------|----------|  0x80000000   # Memory managed by OS.             
+   64M     |   OS     |                                                
+           |          |                                                
+-----------|----------|  0x84000000   # Memory managed by MMZ block anonymous.         
+   448M    |    MMZ   |                                                
+           |          |                                                
+-----------|----------|  0xA0000000   # Memory managed by MMZ block jpeg.                      
+1.5 HiMPP 支持的绑定关系
+
+
+
+数据源
+数据接收者
+
+
+
+
+VI
+VO
+
+
+
+VENC
+
+
+
+VDA
+
+
+
+VPSS
+
+
+
+PCIV
+
+
+VPSS
+VO
+
+
+
+VENC
+
+
+
+VDA
+
+
+
+VPSS
+
+
+
+PCIV
+
+
+VDEC
+VPSS
+
+
+
+VO（只能是标清设备或 single 模式分割）
+
+
+
+VDA
+
+
+
+PCIV
+
+
+vo(WBC)
+VO
+
+
+
+VENC
+
+
+
+VPSS
+
+
+
+PCIV
+
+
+AI
+AENC
+
+
+
+AO
+
+
+ADEC
+AO
+
+
+
+1.6 函数约定说明
+
+
+Open/Close
+Open/Close 操作用来打开、关闭那些可枚举的设备。
+
+
+Create/ Destroy
+Create/ Destroy 操作用来创建、销毁那些不可枚举的设备。
+
+
+Handle
+Handle 用来标识一个“不可枚举”类型的设备。Handle 只在本进程内有效，也就是说 Handle 不可以跨进程传递Handle 是一个 32bit 的数据，其低 8bit 表示设备的 ID，高 16bit 表示模块 ID。比如0x00110000 表示模块 ID 为 0x11 的第 0 个设备。
+
+
+Attach /Detach
+Attach/Detach 用来绑定、解绑定两个设备直接的关联。
+
+
+Attach 后，目的设备将自动处于 Start/Enable 状态； Detach 后，目的设备将自动处于Stop/Disable 状态。
+对于多级绑定，要求从最后一个设备逐级向前绑定，解绑定的顺序则相反，要求逐级向后。**
+** 当绑定在一起的多个设备可以设置相同属性时，必须通过最后一个设备进行设置。
+
+
+Get/Put
+Get/Put 用来往某个模块输入数据。
+
+
+Acquire/Release
+Acquire/Release 用来从某个模块获取数据。
+
+
+Get/Put和Acquire/Release推荐成对使用
+
+1.7 MPP优缺点
+1.7.1 MPP优点
+​    内存VB管理和模块绑定子系统，proc运行时调试信息是MPP构架节约用户时间最大的设计。
+​    大部分外围接口都封装好，用户调用接口直接使用，快速，方便。
+1.7.2 MPP缺点
+​    没有相应子系统的源代码。出了问题，有bug必须需要海思查看，解决。
+​    MPI接口和标准linux接口差异非常大，构架也不一样。有问题需要找海思。中间时间成本。
+不利于研发技术积累。
+2:  MPP和UNF对比
+从函数命名，参数，使用方法来看。UNF和MPP分开比较早，UNF构架在上面函数约定说明基础上的MPI接口封装了一层，UNF-&gt;MPI调用，UNF开发支持更多的模块接口。MPP的模块接口比较固定，比UNF少得多，增强了MMZ内存，VB管理功能，模块绑定功能。
+MPP由HI_MPI_SYS_Bind来绑定两个模块，而UNF还是使用Hi_XXX_Attach来绑定两个模块。
+MPP内存管理MMZ，VB也比UNF更细致，强大。
+UNF支持更多的外设模块。如TUNER（广播电视），CIPHER（芯片内部加密），Subtitle（字幕），PDM（低功耗），SCI（智能卡），GPU等。
+UNF开源。在一些模块的实现中，也使用了一些开源项目，如FFmpeg，Alsa，wpa_supplicant等。
+3:  3798芯片UNF处理构架
+3.1 应用架构
+海思媒体处理平台（ MSP）实现了对海思高清机顶盒解决方案处理器中媒体、图形以
+及外设的屏蔽和封装，对应用软件直接提供 API（ Application Program Interface）接口
+完成相应功能。典型的应用架构如下图所示
+
+3798比35xx多了一个UNF层，它在MPI基础上进行了一层封装
+软件架构主要包含以下 4 层：
+
+
+UNF层
+媒体处理平台（ MSP）对外统一的应用开发接口。
+
+
+MPI层
+处理器各模块硬件能力实现层的用户态部分。
+
+
+DRV层
+处理器各模块硬件能力实现层的内核态部分。
+
+
+HAL层
+处理器各模块的硬件抽象层。
+
+
+3.2 3798SDK 概览（功能介绍）
+媒体处理平台（ MSP）中所有模块按照功能可以分为媒体处理，图形处理，外设处理 3
+类：
+
+
+媒体处理
+DEMUX、 AVPLAY、 SOUND、 DISPLAY、 VO、 HDMI、 PVR、 VDEC、 VENC、
+ADEC、 AENC、 VI、 AI
+
+
+图形处理
+HIFB、 HIGO、 TDE、 JPEG、 JPGE、 GPU
+
+
+外设处理
+Cipher、 OTP、 PMOC、 Frontend、 I2C、 SCI、 KEYLED、 GPIO、 IR、 WDG、 C51
+
+
+3.3 3798内存管理
+3.3.1 Mmz内存
+3798的mmz内存在uboot bootargs环境变量中分配，在内核中大块连续内存使用dma_alloc_from_contiguous（drv/mmz/drv_media_mem_v2.c）来分配内存， 小块内存使用kmalloc分配，并且使用内核链表标记管理。和应用层交互使用mamp，umamp，并使用内核链表管理内存。这点和35xx DVR芯片有很大区别，DVR芯片模块内存和linux内核使用内存不再一个地方，应该是通过物理地址往虚拟地址映射来使用的。
+# cat /proc/cmdline
+mem=1G console=ttyAMA0,115200 root=/dev/romblock3 rootfstype=squashfs mtdparts=hinand:5M(boot),1M(baseparam),7M(kernel),18M(rootfs),64M(appfs),16M(qte),4M(config),12M(log),1M(logo) mmz=ddr,0,0,500M
+具体就是在bootargs中配置mem=1G mmz=ddr,0,0,435M
+查看内存使用情况跟监控相同，通过cat /proc/media-mem
+
+3.3.2 解码vid内存
+关于码流解码过程中视频缓冲buffer u32VidBufSize配置：
+创建avplay时，可以指定视频es buf大小，参考如下代码
+Ret = HI_UNF_AVPLAY_GetDefaultConfig(&amp;AvplayAttr, HI_UNF_AVPLAY_STREAM_TYPE_ES);
+AvplayAttr.stStreamAttr.u32VidBufSize = 2*1024*1024;
+Ret |= HI_UNF_AVPLAY_Create(&amp;AvplayAttr, &amp;hAvplay[i]);
+Es buf的作用存储码流原始es流。
+这个buffer的大小跟码流分辨率、码率都有关系，一般情况下，D1/720P/1080P/4K 码流的配置为 2M/3M/5M/16M 即可，特殊码流除外。
+3.4 3798模块
+DEMUX：
+​	数据输入模块。IF，TSI，RAM。
+​	NVR使用的是RAM接口输入ES码流。
+VI:
+虚拟VI
+VDEC
+​	解码器模块提供一组函数指针，供解码使用。目前有264，mpeg4两个。
+视频解码的简单流程是：
+步骤 1 VDEC 从 Demux 或 ES buffer 获取 ES 数据送 Firmware 进行解码（ Firmware: StreamInput(VDEC-&gt;Firmware)）。
+步骤 2 Firmware 将解码完的 1D 或者 2D 帧存放在帧 buffer 中。
+步骤 3 VDEC 从帧 buffer 中获取（ Firmware: Frame Output(Firmware-&gt;VDEC)）视频帧放入其帧队列中。
+步骤 4 VPSS 在线程中从 VDEC 的帧队列中取帧做解码后处理（ Frame Output(VDEC-&gt;VPSS)）。
+步骤 5 AVPLAY 向 VDEC 获取视频帧， VDEC 从 VPSS 获取视频帧返回给 AVPLAY。
+SYNC：
+音视频同步工具
+DISPLAY：显示设备
+WINDOW：显示通道
+msp 目录下的“ windowXXYY”节点的中的 XX 为显示通道的编号， YY 为 window 序号。比如 window0100， bit[15:8]的 01 表示该 window 基于 DISPLAY1 创建， bit[7:0]的00 表示 window 序号为 0。有支持3D显示
+DISP（ Display）模块接收 WINDOW 提供的视频图像、 Frame Buffer 提供的图形画
+面，进行图像叠加处理和图像色彩调节，并将叠加后图像通过多种视频输出端口输出
+给显示设备；此外， DISP 支持获取视频输出端口上的包含视频和图形的完整图像。
+窗口类型
+
+Display：独立显示窗口
+Virtual：虚拟窗口
+Main：同源显示主窗口
+Slave：同源显示从窗口
+
+
+
+SO（ Subtitle Output）
+PDM
+
+PDM(Product Data Manager)模块用于管理与产品相关的数据，包括基本参数、开机画
+面参数及数据、瞬播参数及数据的管理
+
+用户通过镜像制作工具制作基本参数镜像与瞬播镜像，通过烧写工具烧写至 FLASH，PDM 模块在 BOOT 下将基本参数及瞬播数据读入内存，并传递至 KERNEL。 KERNEL下瞬播从 PDM 模块获取参数及数据，调用 DEMUX、 VDEC、 VO 等模块驱动，完成瞬播播放
+demux
+
+DEMUX 模块接收 DEMOD 或内存中的 TS 流，按客户应用程序（下简称 APP）的设
+置提取出其中的 SEC 数据、 PES 数据、 TS 数据、音频数据和视频数据。 APP 获取
+SEC 数据、 PES 数据和 TS 数据进行处理。 AVPLAY 获取音频数据进行处理， VDEC 获
+取视频数据进行处理。
+
+AVPLAY 主要依赖 ADEC/VDEC/DEMUX 等模块，其向应用或中间件播放器提供基本
+的播放业务相关接口。
+
+3.5 3798和NVR模块使用方面区别：
+3798模块中vpss，sync等模块是其它模块自动创建，自动绑定处理的。这点和NVR系列芯片差别很大，nvr中vi，vpss，vo都需要用户自己绑定，设置属性，而3798中vpss，vo创建，属性设置是在上层模块中自动处理的（少量设置属性上层传递下去）。
+​    简单来说，MPP接口只实现了基本的功能接口，没有封装或很少封装。
+UNF 应用层实现了很多业务接口，对底层驱动进行了多层封装，并且实现了一些常用的业务。
+4: 3798代码祥看
+4.1 分析方法
+4.1.1：查看代码，静态分析应用层，驱动层实现方法
+​    使用Source insight分析kernel，msp代码。
+4.1.2：图示静态分析函数调用关系
+​    使用cflow， tree2dotx，和dot生成函数静态调用图。
+4.1.3：图示动态分析函数调用关系：库函数，系统调用，内核调用
+
+​    使用ltrace分析系统库函数
+​    strace分析系统调用流程
+​    使用Ftrace，valgrind，gprof2dot生成运行时调用图。
+​    Perf分析内核空间调用。发现一些依赖库在ubuntu12.04里面不可用。
+
+这一步实现了valgrind动态分析，其它的几个工具需要交叉编译，TODO。使用Perf可能需要换更新的linux版本。
+其它还有time(大概运行时间)，gconv（覆盖率统计）等分析方式。
+4.2 基础模块：hi_media hi_mmz hi_common
+
+​    可以从lsmod中很清晰的看出来hi_media hi_mmz hi_common这几个模块的基础地位。hi_media基础模块管理，hi_mmz提供内存管理，hi_common提供proc，log等基础功能，符号导出供其他海思模块使用。
+Common
+
+COMMON 模块是 SDK 的基础模块，提供的 API 主要供 SDK 的其他模块调用。
+COMMON 模块现在主要有以下功能：
+
+系统初始化和去初始化；
+版本信息获取；
+获取时间戳；
+寄存器读写、映射功能；
+MMZ 内存使用；
+调试信息控制；
+Flash 操作。
+
+
+
+4.2.1 基本通用模块应用层接口common/api
+HiSTBLinuxFS/source/common/api
+mpi_mem.c
+MEM_POOL_Init 应用层的内存池，重复利用。
+mpi_memmap.c
+映射使用链表区分。管理mmap映射
+ 
+ 
+mpi_module.c
+HI_MODULE_Init中有打开内存操作，内存统一管理。
+模块id，名称注册，相互查找。
+ 
+mpi_stat.c
+线程时间归零，等相关处理
+ 
+hi_common.c
+proc，sys一些路径目录增删提供了用户层接口，mmz内存管理用户层接口
+ 
+mpi_userproc
+用户层提供线程 通用proc接口，proc读写是在其它模块内部实现的，函数指针形式
+ 
+ 
+注：himedia 相关模块是海思自己实现的内核子系统。有自己实现的总线，驱动，设备模型结构体。也是在标准linux模型基础上封装的。
+ 
+4.2.2 基本通用模块驱动接口common/dev
+HiSTBLinuxFS/source/common/dev
+drv_dev_ext_k.c 重要
+HI_DRV_DEV_Init 所有模块宏定义在这里，注册模块结构体在这里
+himedia.c himedia_bash.c     模块注册，注销基础函数
+#define DYNAMIC_MINORS 128 /* like dynamic majors */            himedia主设备号218
+static unsigned char himedia_minors[DYNAMIC_MINORS / 8];
+ 
+typedef struct tagPM_BASEDEV_S{
+    HI_S32        id;
+    const HI_S8    * name;
+    struct device    dev;
+}PM_BASEDEV_S;
+ 
+#define TO_PM_BASEDEV(x) container_of((x), PM_BASEDEV_S, dev)
+ 
+typedef struct tagPM_BASEOPS_S {
+    HI_S32  (*probe)(PM_BASEDEV_S *);
+    HI_S32  (*remove)(PM_BASEDEV_S *);
+    HI_VOID (*shutdown)(PM_BASEDEV_S *);
+    HI_S32  (*prepare)(PM_BASEDEV_S *);
+    HI_VOID (*complete)(PM_BASEDEV_S *);
+    HI_S32  (*suspend)(PM_BASEDEV_S *, pm_message_t state);
+    HI_S32  (*suspend_late)(PM_BASEDEV_S *, pm_message_t state);
+    HI_S32  (*resume_early)(PM_BASEDEV_S *);
+    HI_S32  (*resume)(PM_BASEDEV_S *);
+}PM_BASEOPS_S;
+ 
+ 
+typedef struct tagPM_BASEDRV_S {
+    HI_S32  (*probe) (PM_BASEDEV_S *);
+    HI_S32  (*remove)(PM_BASEDEV_S *);
+    HI_VOID (*shutdown)(PM_BASEDEV_S *);
+    HI_S32  (*suspend)(PM_BASEDEV_S *, pm_message_t state);
+    HI_S32  (*suspend_late)(PM_BASEDEV_S *, pm_message_t state);
+    HI_S32  (*resume_early)(PM_BASEDEV_S *);
+    HI_S32  (*resume)(PM_BASEDEV_S *);
+    struct device_driver driver;
+}PM_BASEDRV_S;
+ 
+typedef struct tagPM_DEVICE_S  {
+    HI_S32 minor;
+    const HI_S8 *name;
+    struct module *owner;
+    const struct file_operations *app_ops;
+    PM_BASEOPS_S *base_ops;
+    struct list_head list;
+    struct device *app_device;
+    PM_BASEDEV_S *base_device;
+    PM_BASEDRV_S *base_driver;
+}PM_DEVICE_S;
+ 
+static struct class *himedia_class;
+static struct file_operations himedia_fops = {
+    .owner        = THIS_MODULE,
+    .open        = himedia_open,
+};
+ 
+设备模型结构体
+struct himedia_devobj {
+    PM_BASEDEV_S pdev;
+    char name[1];
+};
+ 
+typedef struct tagPM_BASEDEV_S{
+    HI_S32        id;
+    const HI_S8    * name;
+    struct device    dev;
+}PM_BASEDEV_S;
+ 
+海思模块顶层总线himedia_bus
+struct device himedia_bus = {
+         .init_name        = "himediaBusDev",
+         .release    = himedia_bus_release
+};  /*top level bus, parent and bus member are both NULL*//*CNcomment:这是顶层总线，parent 和 bus 成员为 NULL*/
+struct bus_type himedia_bus_type = {
+         .name                = "himediaBus",
+         .dev_attrs        = himedia_dev_attrs,
+         .match               = himedia_match,
+         .uevent              = himedia_uevent,
+         .pm                     = HIMEDIA_PM_OPS_PTR,
+};
+定义HIMEDIA_PM_OPS_PTR
+                            static struct dev_pm_ops himedia_dev_pm_ops = {
+                                     .prepare        = himedia_pm_prepare,
+                                     .complete       = himedia_pm_complete,
+                                     .suspend        = himedia_pm_suspend,
+                                     .resume         = himedia_pm_resume,
+                                     .freeze         = himedia_pm_freeze,
+                                     .thaw           = himedia_pm_thaw,
+                                     .poweroff       = himedia_pm_poweroff,
+                                     .restore        = himedia_pm_restore,
+                                     .suspend_noirq  = himedia_pm_suspend_noirq,
+                                     .resume_noirq   = himedia_pm_resume_noirq,
+                                     .freeze_noirq   = himedia_pm_freeze_noirq,
+                                     .thaw_noirq     = himedia_pm_thaw_noirq,
+                                     .poweroff_noirq = himedia_pm_poweroff_noirq,
+                                     .restore_noirq  = himedia_pm_restore_noirq,
+                            };
+                            #define HIMEDIA_PM_OPS_PTR     (&amp;himedia_dev_pm_ops)
+
+
+内核到用户往用户空间写文件调试
+drv_file_ext.c 提供内核空间创建，读写用户空间文件函数，/mnt文件存储路径。提供了内核数据导出到用户空间的方法。
+应该是echo * &gt; /proc/msp/** 这种调试方式的实现方式
+内核log日志
+drv_log_ioctl.h  打印日志相关。  这里日志位置可选0:串口 1:网络 2:U盘
+/*structure of mode log level */
+/*CNcomment: 模块打印级别控制信息结构 */
+typedef struct hiLOG_CONFIG_INFO_S
+{
+    HI_U8 ModName[16+12];     /*mode name 16 + '_' 1 + pid 10 */
+    HI_U8 u8LogLevel;         /*log level*//*CNcomment:  模块打印级别控制 */
+    HI_U8 u8LogPrintPos;      /*log output location, 0:serial port; 1:network;2:u-disk*//*CNcomment:  模块打印位置控制 0:串口 1:网络 2:U盘 */
+    HI_U8 u8UdiskFlag;        /* u-disk log flag */
+}LOG_CONFIG_INFO_S;
+ 
+ 
+hi_debug.h    log调试级别
+/**Default level of the output debugging information*/
+/**CNcomment: 默认的调试信息输出级别*/
+#define HI_LOG_LEVEL_DEFAULT HI_LOG_LEVEL_ERROR
+ 
+/**Level of the output debugging information*/
+/**CNcomment: 调试信息输出级别*/
+typedef enum hiLOG_LEVEL_E
+{
+    HI_LOG_LEVEL_FATAL   = 0,     /**&lt;Fatal error. It indicates that a critical problem occurs in the system. Therefore, you must pay attention to it.*/
+                                  /**&lt;CNcomment: 致命错误, 此类错误需要特别关注，一般出现此类错误代表系统出现了重大问题 */
+    HI_LOG_LEVEL_ERROR   = 1,     /**&lt;Major error. It indicates that a major problem occurs in the system and the system cannot run.*/
+                                  /**&lt;CNcomment: 一般错误, 一般出现此类错误代表系统出现了比较大的问题，不能再正常运行 */
+    HI_LOG_LEVEL_WARNING = 2,     /**&lt;Warning. It indicates that a minor problem occurs in the system, but the system still can run properly.*/
+                                  /**&lt;CNcomment: 告警信息, 一般出现此类信息代表系统可能出现问题，但是还能继续运行 */
+    HI_LOG_LEVEL_INFO    = 3,     /**&lt;Message. It is used to prompt users. Users can open the message when locating problems. It is recommended to disable this message in general.*/
+                                  /**&lt;CNcomment: 提示信息, 一般是为提醒用户而输出，在定位问题的时候可以打开，一般情况下建议关闭 */
+    HI_LOG_LEVEL_DBG     = 4,     /**&lt;Debug. It is used to prompt developers. Developers can open the message when locating problems. It is recommended to disable this message in general.*/
+                                  /**&lt;CNcomment: 提示信息, 一般是为开发人员调试问题而设定的打印级别，一般情况下建议关闭 */
+ 
+    HI_LOG_LEVEL_BUTT
+} HI_LOG_LEVEL_E;
+ 
+drv_media_mem_v2.c    实现了cat /proc/media-mem
+ 
+drv_mem_ext.c 实现了 KMEM_POOL_S 的管理，
+ 
+ 
+内核模块管理
+drv_module_ext.c
+
+COMMON_DRV_ModInit
+
+         MMNGR_DRV_ModInit
+
+        
+
+    s32Ret = HI_DRV_MODULE_Register(HI_ID_SYS,    "HI_SYS",      HI_NULL);
+
+    s32Ret |= HI_DRV_MODULE_Register(HI_ID_MODULE, "HI_MODULE",   HI_NULL);
+
+    s32Ret |= HI_DRV_MODULE_Register(HI_ID_LOG,    "HI_LOG",      HI_NULL);
+
+    s32Ret |= HI_DRV_MODULE_Register(HI_ID_PROC,   "HI_PROC",     HI_NULL);
+
+    s32Ret |= HI_DRV_MODULE_Register(HI_ID_STAT,   "HI_STAT",     HI_NULL);
+
+    s32Ret |= HI_DRV_MODULE_Register(HI_ID_MEM,    "HI_MEM",      HI_NULL);
+
+ 
+
+drv_media_mem.c  使用dma_alloc_from_contiguous来分配
+
+HI_DRV_MMZ_Init 这里根据bootargs传递的mmz参数分配内存大小。 mmz分配时的参数：&lt;mmz_name&gt;,&lt;gfp&gt;,&lt;phys_start_addr&gt;,&lt;size&gt;,&lt;alloc_type&gt;"
+
+内核Proc的实现
+drv_proc_ext.c
+HI_DRV_PROC_Init 实现cat /proc/hisi/msp/
+    proc_mkdir("graphics", g_pHisi_proc);
+    proc_symlink("msp", NULL, "hisi/msp");
+    proc_symlink("graphics", NULL, "hisi/graphics");
+drv_userproc.c    proc使用红黑树管理目录路径
+​    创建销毁目录，路径在这里实现，具体每一个不同模块的proc文件读写在每个模块内部实现，使用函数指针。
+4.2.3 业务模块应用层通用组件source/component
+/home/andy/HiSTBLinuxFS/source/component  这个目录里面很多目录只有.so .a库，没有源代码。
+/source/component/hiplayer 没有源码。
+hi_debug.h   各种调试宏定义，不同级别调试定义
+HI_MALLOC   内存分配使用了内核链表管理
+内存在一个模块内分配，往用户空间传递物理地址，其它模块使用这个物理地址映射到虚拟地址，这样来共享内存
+​    海思这里大多数模块都只提供了编译后的库
+4.3 海思专用组件
+4.3.1 海思MSP模块应用层接口source/msp/api
+Avplay分析
+HI_MPI_AVPLAY_Create
+         AVPLAY_FrcCreate  帧率控制？    
+         HI_MPI_SYNC_Create     音视频同步
+         AVPLAY_CreateThread
+​     
+上图插图的是svg格式图片，可以使用IE，firefox打开，最好使用专门的看图软件打开。
+HI_MPI_VDEC_AllocChan
+         VPSS_Control(pstVdec-&gt;hVdec,VPSS_CMD_CREATEVPSS,&amp;(pstVdec-&gt;hVpss))
+        
+UNF调用一般过程，最终采用ioctl调用驱动   
+HI_UNF_AVPLAY_GetBuf
+         HI_MPI_AVPLAY_GetBuf
+                   HI_MPI_VDEC_ChanGetBuffer
+                            VDEC_GetStreamBuf                /* If get but not put, return last address */    这里有对不对称调用特殊处理
+                                     ioctl(s_stVdecAdpParam.s32DevFd, UMAPC_VDEC_GETBUF, &amp;stBufParam);     
+                                    
+HI_MPI_AVPLAY_Start
+         AVPLAY_StartVidChn
+                   HI_MPI_SYNC_Start
+                   HI_MPI_VDEC_ChanStart
+                             ioctl(g_SyncDevFd, CMD_SYNC_START_SYNC, &amp;SyncId);
+         HI_MPI_SYNC_Play 结构体状态改变
+         AVPLAY_Play             结构体状态控制
+         HI_MPI_STAT_Event                                   
+ 
+HI_MPI_AVPLAY_Stop
+         AVPLAY_StopVidChn
+                   HI_MPI_VDEC_ChanStop
+                            VDEC_ChanStop      这里调用函数指针
+                   HI_MPI_VDEC_ResetChan
+                            VDEC_ResetStreamBuf
+                            VDEC_VPSSCMD(hVdec, VPSS_CMD_RESETVPSS, HI_NULL);         调用函数指针，指向VPSS_Control
+                   AVPLAY_ResetWindow
+                   HI_MPI_SYNC_Stop
+         HI_MPI_STAT_Event(STAT_EVENT_VSTOP, 0);
+ 
+VDEC使用函数指针集来支持多种解码方式，内部vfmw。mjpeg，内部硬件265协处理器
+mpi_vdec_vpu.c
+HI_MPI_VDEC_Init
+         HI_CODEC_Register(VDEC_MJPEG_Codec());
+         HI_CODEC_Register(VDEC_VFMW_Codec());
+ 
+static HI_CODEC_S hi_codecVPU_entry =
+{
+    .pszName                  = "VPU",
+    .unVersion                 = {.stVersion = {1, 0, 0, 0}},
+    .pszDescription = "Hisilicon H265 codec",
+ 
+    .GetCap                      = HI_VPU_GetCap,
+    .Create                       = HI_VPU_Create,
+    .Destroy            = HI_VPU_Destroy,
+    .Start                           = HI_VPU_Start,
+    .Stop                            = HI_VPU_Stop,
+    .Reset                         = HI_VPU_Reset,
+    .SetAttr             = HI_VPU_SetAttr,
+    .GetAttr            = HI_VPU_GetAttr,
+    .DecodeFrame          = HI_VPU_DecodeFrame,
+    .EncodeFrame = HI_NULL,
+    .RegFrameBuffer = HI_VPU_RegFrameBuffer,
+    .GetStreamInfo        = HI_VPU_GetStreamInfo,
+    .Control             = HI_VPU_Control,
+};
+ 
+avplay，vi和 vo之间使用vpss关联。
+HI_UNF_VO_DetachWindow
+         HI_MPI_AVPLAY_DetachWindow
+                   HI_MPI_VDEC_DestroyPort
+         HI_MPI_VI_Detach(hSrc, hWindow);
+                   VI_DetachFromVpss
+        
+HI_MPI_AVPLAY_ChnClose
+         AVPLAY_FreeVidChn
+                   HI_MPI_VDEC_ChanBufferDeInit
+                            VDEC_VFMWSpecCMD(hVdec, VFMW_CMD_DETACHBUF, HI_NULL);
+                            VDEC_DestroyStreamBuf(pstVdec-&gt;hStreamBuf);                   ummap内存块，ioctl通知内核vdec销毁内存
+                   AVPLAY_FreeVdec
+                            HI_MPI_VDEC_FreeChan
+                                     VPSS_Control(pstVdec-&gt;hVdec,VPSS_CMD_DESTORYVPSS,&amp;(pstVdec-&gt;hVpss));
+                                     VDEC_DestroyCodec(pstVdec);
+ 
+HI_UNF_AVPLAY_Destroy
+         HI_MPI_AVPLAY_Destroy
+                   HI_MPI_SYNC_Destroy(pAvplay-&gt;hSync);
+                   ioctl(g_AvplayDevFd, CMD_AVPLAY_DESTROY, &amp;AvplayUsrAddr.AvplayId);
+                  
+avplay内部的线程
+    (HI_VOID)pthread_join(pAvplay-&gt;AvplayDataThdInst, HI_NULL);
+#ifdef AVPLAY_VID_THREAD
+    (HI_VOID)pthread_join(pAvplay-&gt;AvplayVidDataThdInst, HI_NULL);
+#endif
+    (HI_VOID)pthread_join(pAvplay-&gt;AvplayStatThdInst, HI_NULL);          
+4.3.2 海思MSP模块驱动层接口source/msp/drv/
+VENC
+
+VENC 模块的具体工作原理如上图所示，注意图中褐色箭头，是 VENC 调用到VPSS 模块，来对帧信息做缩放处理后编码的数据流，该处理只用于外部用户送帧的模式。若在绑定情况下出现帧信息分辨率与编码分辨率不匹配， VENC 模块会通知绑定的前级模块进行缩放处理，而不会自行调用 VPSS 模块缩放。
+VENC_DRV_ModInit
+         VENC_DRV_Init
+                   HI_DRV_MODULE_Register(HI_ID_VENC, "HI_VENC", (HI_VOID*)&amp;s_VencExportFuncs);
+                            MODULE_DRV_Register
+                                     ModuleMgr_Link_AddNode(g_pstKModuleHeader, &amp;stModule); 链表管理
+                                     LOGAddModule((HI_PCHAR)pu8ModuleName, (HI_MOD_ID_E)u32ModuleID);  在log模块中注册
+         HI_DRV_DEV_Register(&amp;g_VencRegisterData)
+                   HI_DRV_PM_Register     海思模块管理非常重要的模块，了解这个函数实现过程就大概明白海思内核模块实现思想了
+         VENC_DRV_BoardDeinit();      一些寄存器配置，reset，clock操作。
+         venc调用硬件协处理器，涉及263,264，mpeg4，
+    snprintf(g_VencRegisterData.devfs_name, 64, "%s", UMAP_DEVNAME_VENC);
+    g_VencRegisterData.fops   = &amp;VENC_FOPS;
+    g_VencRegisterData.minor  = UMAP_MIN_MINOR_VENC;
+    g_VencRegisterData.owner  = THIS_MODULE;
+    g_VencRegisterData.drvops = &amp;venc_drvops;      
+avplay
+
+
+AVPLAY 主要由以下三部分组成：
+
+音视频解码器
+同步播放控制模块
+命令与状态管理模块
+
+
+
+主要负责响应外部控制命令的执行、状态查询上报、使解码后的帧数据通过同步控制
+模块输出
+avplay初始化分析
+AVPLAY_DRV_ModInit
+​    HI_DRV_MODULE_Register
+​         HI_DRV_MODULE_Register(HI_ID_AVPLAY, AVPLAY_NAME, HI_NULL);
+​             ModuleMgr_Link_AddNode  内核模块管理
+​             KMODULE_MEM_POOL_AddModule
+​                 KMODULE_MEM_POOL_FindNode    找到空的没有使用的节点
+​                 KMODULE_MEM_POOL_MALLOC 分配内存，然后放到链表
+​             LOGAddModule                    日志
+​    HI_DRV_DEV_Register(&amp;g_AvplayRegisterData)
+​         HI_DRV_PM_Register(&amp;s_umap_devs[i]);   himedia封装处理
+​             himedia_device_alloc(himedia-&gt;name, -1);
+​             himedia_device_add(bdev);
+​                 dev_set_name(&amp;pdev-&gt;dev, "%s.%d", pdev-&gt;name, pdev-&gt;id);
+​                 device_add(&amp;pdev-&gt;dev);
+​             device_create(himedia_class, &amp;(bdev-&gt;dev), dev, NULL, "%s", himedia-&gt;name);
+​             himedia_driver_alloc(himedia-&gt;name, himedia-&gt;owner, himedia-&gt;base_ops);
+​             himedia_driver_register(bdrv);
+​                 driver_register(&amp;drv-&gt;driver);
+​   
+ 
+  g_AvplayRegisterData.fops = &amp;AVPLAY_FOPS;
+  g_AvplayRegisterData.minor = UMAP_MIN_MINOR_AVPLAY;
+  g_AvplayRegisterData.owner = THIS_MODULE;
+  g_AvplayRegisterData.drvops = &amp;AVPLAY_DRVOPS;  
+ 
+  s_umap_devs[i].minor = umapd-&gt;minor;
+  s_umap_devs[i].name = umapd-&gt;devfs_name;
+  s_umap_devs[i].owner = umapd-&gt;owner;
+  s_umap_devs[i].app_ops = umapd-&gt;fops;
+  s_umap_devs[i].base_ops = umapd-&gt;drvops;
+IOCTL实现分析 基于avplay
+在HI_DRV_DEV_Register中注册
+static struct file_operations AVPLAY_FOPS =
+{
+    .owner          =  THIS_MODULE,
+    .open           =  AVPLAY_DRV_Open,
+    .unlocked_ioctl =  AVPLAY_DRV_Ioctl,
+    .release        =  AVPLAY_DRV_Close,
+};      
+AVPLAY_DRV_Ioctl
+         HI_DRV_UserCopy(ffile-&gt;f_dentry-&gt;d_inode, ffile, cmd, arg, AVPLAY_Ioctl);
+                   func(inode, file, cmd, (parg));           这里对ioctl进行了一层封装，copy_from_user，copy_to_user的自动化处理
+AVPLAY_Ioctl(struct inode *inode, struct file *file, unsigned int cmd, HI_VOID *arg)  
+                   CMD_AVPLAY_CREATE            
+                            AVPLAY_Create
+                                     HI_DRV_MMZ_AllocAndMap(BufName, MMZ_OTHERS, 0x2000, 0, &amp;MemBuf);
+                                     HI_DRV_PROC_AddModule(ProcName, HI_NULL, HI_NULL);                 这里实现了proc目录的生成，下面是读写proc
+                                pProcItem-&gt;read = AVPLAY_ProcRead;
+                                pProcItem-&gt;write = AVPLAY_ProcWrite;
+avplay 多个实例如何找到对应实例
+AVPLAY_GET_INST_AND_LOCK();
+         AVPLAY_CheckHandle
+                   pAvplayUsrAddr-&gt;AvplayId = hAvplay &amp; 0xff;
+                   ioctl(g_AvplayDevFd, CMD_AVPLAY_CHECK_ID, pAvplayUsrAddr);
+drv中的实现
+AVPLAY_Ioctl            
+         AVPLAY_CheckId              
+                   pAvplayUsrAddr-&gt;AvplayUsrAddr = g_AvplayGlobalState.AvplayInfo[pAvplayUsrAddr-&gt;AvplayId].AvplayUsrAddr;
+VPSS
+
+    g_VpssRegisterData.fops   = &amp;s_VpssFileOps;
+    g_VpssRegisterData.minor  = UMAP_MIN_MINOR_VPSS;
+    g_VpssRegisterData.owner  = THIS_MODULE;
+g_VpssRegisterData.drvops = &amp;s_VpssBasicOps;
+VPSS_DRV_Init
+VPSS_CTRL_Init
+         VPSS_CTRL_RegistISR     注册中断
+         VPSS_CTRL_InitInstList((VPSS_IP_E)i)     管理vpss实例链表初始化
+         VPSS_HAL_Init                   内存，寄存器配置
+         VPSS_CTRL_CreateThread      内核线程
+                   VPSS_CTRL_ThreadProc
+                            VPSS_CTRL_CreateTask           创建任务
+                            VPSS_CTRL_StartTask               开始任务
+VDEC
+
+
+Avplay解码ES流过程
+步骤 1 初始化并配置相关设备，如 DISPLAY、 VO、 SOUND、 DEMUX 设备等。
+步骤 2 调用 HI_UNF_AVPLAY_Init 接口初始化 AVPLAY 设备。
+步骤 3 调用 HI_UNF_AVPLAY_GetDefaultConfig 接口获取缺省的 AVPLAY 配置，注意选择HI_UNF_AVPLAY_STREAM_TYPE_ES 模式。
+步骤 4 根据应用需要，修改码流属性参数。
+步骤 5 调用 HI_UNF_AVPLAY_Create 接口创建 AVPLAY 播放器。
+步骤 6 调用 HI_UNF_AVPLAY_ChnOpen 接口打开音频或视频通道。
+步骤 7 调用 HI_UNF_AVPLAY_SetAttr 接口设置音频解码器或视频解码器属性，同步设置为自由播放。
+步骤 8 调用 HI_UNF_SND_CreateTrack 创建 Track。
+步骤 9 调用 HI_UNF_SND_Attach 接口将音频播放器与 Track 绑定。
+步骤 10 调用 HI_UNF_VO_AttachWindow 接口将视频播放器与 VO 的窗口绑定。
+步骤 11 调用 HI_UNF_VO_SetWindowEnable 接口使能窗口。
+步骤 12 调用 HI_UNF_AVPLAY_Start 接口发送 Start 命令，开始播放音频或视频。
+步骤 13 调用 HI_UNF_AVPLAY_GetBuf 接口申请存放音频或视频的缓冲区。
+步骤 14 通过内存拷贝或文件读取等方式，将音频或视频数据直接写到缓冲区中。
+步骤 15 调用 HI_UNF_AVPLAY_PutBuf 接口更新音视频缓冲区中的读写指针。
+步骤 16 播放任务结束后，首先调用 HI_UNF_AVPLAY_Stop 接口停止 AVPLAY，再调用HI_UNF_AVPLAY_Destroy 接口销毁 AVPLAY，释放相关资源。
+步骤 17 关闭相关设备，如 DISPLAY 设备、 VO 设备、 SOUND 设备、 DEMUX 设备和AVPLAY
+
+MCE实现了启动过程画面的平滑切换
+IR
+
+驱动层
+负责完成红外模块的中断处理，在底半部中遍历所有协议并调用 match 函数来判定当前收到的红外帧属于哪种协议。如果没有匹配，则丢弃当前帧。完成最顶层的错误处理：如果当前帧当前时刻还不能被解析，则会等待大约 200ms 之后再次尝试，如果失败，则丢弃当前帧。
+协议适配层
+完成各个协议的初始化工作，向上提供遍历协议的接口，向下提供容纳协议描述符的存储空间。
+协议处理层
+协议处理层完成判定：由从某个 symbol 开始的一连串 symbol 是不是符合本协议的一
+帧。在判定某一帧符合本协议的前提条件下，完成一帧 symbol 的解析，将对应的键值解析出来。如果在解析过程中出错，或者判定是本协议的帧，但无法解析时，完成错误处理。
+
+​    
+
+
+
+4.4 Sample_mosaic分析
+应用层调用
+
+上图是部分截图，完整大的原图见目录中svg文件
+valgrind --tool=callgrind ./sample_mosaic 1080P.h264 h264
+
+系统调用
+Strace分析
+
+5:小结：
+海思MPI驱动其实就是在标准linux驱动基础之上封装了一层，增加了log，proc，内存管理（映射，链表）功能。MPI是在标准linux驱动基础上封装了DVR常用外围逻辑接口，并且统一并简化了接口操作方式，原来各个外围子系统操作方式差别很大，不同实现框架，实现方式使用方法也不一样（如VI，VO，AI/AO，VPSS，如果自己用标准linux子系统实现要复杂得多）。
+应用层MPI接口是在MPI驱动基础上再次封装了一层，封装了驱动的调用，配置等操作，在驱动功能的基础上进一步封装完成了一些简单的业务功能接口，方便了用户的使用。UNF就是在MPI基础上增加了业务逻辑封装，把常用的业务逻辑封装成接口，大大方便用户的应用程序开发。
+5.1 UNF相对标准内核模块区别
+5.1.1 Proc读写调试。
+实时查询运行状态，修改设置。通用的proc目录、文件创建销毁有通用接口。读写proc文件在每个内核模块中有单独实现。
+5.1.2 内核空间往应用空间写文件
+方便调试，Dump内核数据到用户控件方便定位Bug。
+HI_DRV_FILE_Open
+filp_open
+HI_DRV_FILE_Close
+​    filp_close
+HI_DRV_FILE_Read
+​    pFile-&gt;f_op-&gt;read
+HI_DRV_FILE_Write
+​    pFile-&gt;f_op-&gt;write
+HI_DRV_FILE_Lseek
+​    vfs_llseek
+5.1.3Log管理
+日志打印分级，实时修改。如何实现的见前面章节。
+5.1.4内存映射
+物理地址，虚拟地址映射关系管理，小块内存使用kmalloc申请，大块内存使用dma_alloc_from_contiguous申请。
+使用内核链表管理。
+打印到proc，log模块中，实时查看运行状态，内存。
+方便查找，打印。
+在多个内核共享数据也是这样实现的。
+5.2代码分析方法
+5.2.1 查看代码，静态分析应用层，驱动层实现方法
+5.2.2 图示静态分析函数调用关系.
+Cflow, dot
+5.2.3 图示动态分析函数调用关系：库函数，系统调用，内核调用
+​    Ltrace, strace, valgrind, perf
+具体分析方法，使用工具见前面章节。
+参考文档：
+
+03-HMS 开发指南.pdf
+HiSTBAndroidV600R001C00SPC060_cn\document\01-Development Guide
+HiMPP V3.0 媒体处理软件开发参考.pdf
+HiSTBAndroidV600R001C00SPC060_cn\document\01-Development Guide
+3798m SDK 代码
+HMS API Development Reference.chm
+HiSTBAndroidV600R001C00SPC060_cn\document\01-Development Guide\09-API Reference
+
+系列教程
+全部文章RSS订阅
+Embeded系列 Embeded 分类 RSS 订阅
+
+海思MPP&amp;UNF构架源代码级分析
+3G,4G,Wifi选型需求分析及技术简介
+自动曝光原理
+ISP 数字图像处理 算法概述、工作原理、架构、处理流程
+
+]]></content>
+      <categories>
+        <category>embeded</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>embeded</tag>
+        <tag>hisilicon</tag>
+        <tag>driver</tag>
+        <tag>3798m</tag>
+        <tag>mpp</tag>
+        <tag>unf</tag>
+        <tag>kernel</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>宝塔linux面板重启、重置等命令整合</title>
     <url>/posts/7b4e434c/</url>
     <content><![CDATA[宝塔linux面板重启、重置等命令整合
@@ -1642,6 +2550,223 @@ Memcached服务管理
         <tag>nginx</tag>
         <tag>apache</tag>
         <tag>mysql</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>docker使用简明教程</title>
+    <url>/posts/42b6a86d/</url>
+    <content><![CDATA[关于docker安装，查看，镜像管理，以及一个实用Dockerfile， LAMP，PHP，LTMJ。
+
+关于本blog，图床一般使用github，已经配置了CDN，如果图片还是未显示请自行代理解决
+
+一、Docker安装
+
+在Ubuntu系统下安装：
+
+apt-get install docker
+
+在Fedora/CentOS系统下安装：
+
+yum install docker
+dnf install docker # Fedora 25+
+
+在SUSE系统下安装：
+
+zypper install docker
+二、Docker容器
+
+首先启动Docker
+
+# 启动Docker
+systemctl start docker
+# 设置开机自启动，可选
+systemctl enable docker
+
+启动Docker测试容器
+
+docker run "hello-world"
+
+在启动容器时，如果使用的镜像在本地不存在，会尝试从网络上获取。
+在一般情况下，启动Web服务的容器，使用以下命令：
+
+# -d：daemon，使容器在后台运行
+# -p：port，指定容器的端口，这里是将容器的80端口映射到主机的8001端口
+docker run -d -p 8001:80 "image_name"
+
+查看容器运行情况
+
+docker ps
+
+Docker会为容器分配一个Container ID和一个Container Name，Name可以在运行时通过-name自行指定，这两个可以用来标识容器。
+需要停止容器时，使用以下命令：
+
+docker stop "container_name"
+# 或使用ID查找
+docker stop "container_id"
+# 重启
+docker restart "container_id"
+三、Docker镜像
+Dokerfile编译镜像
+
+Docker容器是运行的Docker镜像实例，一般情况下，我们需要制作自己的Docker镜像。
+Docker镜像的制作依赖于Dockerfile，我们稍后在讨论Dockerfile的编写，这里假定我们有一个编写好的Dockerfile。
+下面的命令将在当前路径查找Dockerfile并构建一个名为“image_name”的镜像。
+
+docker build -t "image_name" ./
+查看本地所有镜像
+
+在构建过程中需要在网络上下载来源镜像，可能需要一段时间。
+如果Dockerfile中的命令都正确结束（Exit code 0），那么Docker镜像的构建也将顺利完成，我们可以通过下面的命令查看我们的所有镜像：
+
+docker images
+导出备份已有镜像文件
+
+我们还可以导出我们制作好的Docker镜像，下面的命令将image_name镜像导出为image_name.tar
+
+docker save "image_name" &gt; image_name.tar
+导入已有镜像备份
+
+在另一台机器上，我们不需要网络就可以导入并使用该镜像：
+
+docker load &lt; image_name.tar
+四、Dockerfile
+
+Dockerfile本质上是一组命令集合，用于自动化构建镜像，下面以几个实例来说明Dockerfile的编写方法：
+
+实例一：LAMP（Linux+Apache+MySQL+PHP）环境配置
+# 来源镜像，一般可以使用标准的系统或者带有各种环境的系统
+# 显然这里使用的是标准的Ubuntu 14.04系统
+FROM ubuntu:14.04
+# 镜像作者
+MAINTAINER wrlu
+# 刷新日期
+ENV REFRESHED_AT 2018-08-05
+# 设定字符集
+ENV LANG C.UTF-8
+# RUN命令用于执行系统命令
+# 因为需要自动化安装，所以最好通过-y命令跳过确认
+# 更新APT软件源
+RUN apt-get update -y
+# 安装MySQL
+RUN apt-get -y install mysql-server
+# 安装Apache
+RUN apt-get -y install apache2
+# 安装PHP5
+RUN apt-get -y install php5 libapache2-mod-php5
+RUN apt-get install -yqq php5-mysql php5-curl php5-gd php5-intl php-pear php5-imagick php5-imap php5-mcrypt php5-memcache php5-ming php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl
+# 删除Apache2列出目录配置
+RUN sed -i 's/Options Indexes FollowSymLinks/Options None/' /etc/apache2/apache2.conf
+# COPY命令可以复制文件，但是似乎不能递归复制文件
+COPY IncludeAirline/* /var/www/html/
+COPY IncludeAirline/airlines/* /var/www/html/airlines/
+# 删除默认的主页
+RUN rm /var/www/html/index.html
+# 复制启动脚本
+COPY start.sh /root/start.sh
+RUN chmod +x /root/start.sh
+# 设置启动目录以及启动脚本
+ENTRYPOINT cd /root; ./start.sh
+# 设置需要暴露的端口
+EXPOSE 80,3306 
+
+本例中还有一个启动脚本start.sh，用于导入数据库，编写如下：
+
+#!/bin/bash
+# 启动后延时
+sleep 1
+# 启动Apache服务器
+/etc/init.d/apache2 start
+# 启动MySQL数据库
+find /var/lib/mysql -type f -exec touch {} ; &amp;&amp; service mysql start
+# 定义SQL文件路径
+sqlfile=/var/www/html/includeAirline.sql
+if [ -f $flagfile ]; then
+	# 修改MySQL的密码
+    mysqladmin -u root password "root"
+    # 登录MySQL并导入SQL文件执行
+    mysql -uroot -proot &lt; $sqlfile
+    # 删除SQL文件
+    rm -f $sqlfile
+fi
+# 此处注意，如果命令执行完后脚本退出
+# 则Docker容器也会因为没有前台应用运行而中止
+# 所以这里使用一个前台命令来保活Docker容器
+tail -f /var/log/apache2/error.log
+实例二：PHP环境配置：
+# 来源镜像，自带Apache+PHP环境
+FROM php:7.0-apache
+MAINTAINER tl
+ENV REFRESHED_AT 2018‐08‐03
+ENV LANG C.UTF‐8
+# ADD命令在COPY命令的基础上，具有自动解包tar的功能
+ADD web_tired.tar /var/www/html/
+EXPOSE 80
+实例三：LTMJ（Linux+Tomcat+MySQL+JSP）环境配置
+FROM ubuntu:16.04
+MAINTAINER wrlu
+ENV REFRESHED_AT 2018-08-05
+ENV LANG C.UTF-8
+RUN apt-get update -y
+RUN apt-get -y install mysql-server
+# 安装wget，因为Docker提供的镜像是最小镜像，所以用到的其他工具需要自行安装
+RUN apt-get -y install wget
+# 安装Java 8
+RUN apt-get -y install openjdk-8-jre
+# 下载Tomcat 8服务器
+RUN wget http://mirrors.hust.edu.cn/apache/tomcat/tomcat-8/v8.5.32/bin/apache-tomcat-8.5.32.tar.gz
+# 解压tar.gz
+RUN tar -xzf apache-tomcat-8.5.32.tar.gz -C /root
+RUN mv /root/apache-tomcat-8.5.32 /root/tomcat
+# 删除默认页面
+RUN rm -rf /root/tomcat/webapps/*
+# 拷贝war文件
+COPY CAAC-SQL-Injection.war /root/tomcat/webapps/
+COPY wafwtf.sql /root/
+COPY start.sh /root/start.sh
+RUN chmod +x /root/start.sh
+ENTRYPOINT cd /root; ./start.sh
+# Tomcat使用8080端口，不同于Apache
+EXPOSE 8080
+
+启动脚本如下：
+
+#!/bin/bash
+sleep 1
+find /var/lib/mysql -type f -exec touch {} ; &amp;&amp; service mysql start
+chmod +x /root/tomcat/bin/startup.sh
+# 启动Tomcat服务器
+/root/tomcat/bin/startup.sh
+sqlfile=/root/wafwtf.sql
+if [ -f $flagfile ]; then
+    mysqladmin -u root password "root"
+    mysql -uroot -proot &lt; $sqlfile
+    rm -f $sqlfile
+fi
+# 容器保活
+tail -f /root/tomcat/conf/server.xml
+系列教程
+全部文章RSS订阅
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>docker</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>mysql</tag>
+        <tag>docker</tag>
+        <tag>lamp</tag>
+        <tag>php</tag>
+        <tag>tomcat</tag>
       </tags>
   </entry>
   <entry>
@@ -3464,11 +4589,11 @@ network.protocol-handler.app.ed2k
         <category>linux</category>
       </categories>
       <tags>
+        <tag>driver</tag>
         <tag>debian</tag>
         <tag>laptop</tag>
         <tag>ed2k</tag>
         <tag>ati</tag>
-        <tag>driver</tag>
       </tags>
   </entry>
   <entry>
@@ -4722,220 +5847,264 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
-    <title>docker使用简明教程</title>
-    <url>/posts/42b6a86d/</url>
-    <content><![CDATA[关于docker安装，查看，镜像管理，以及一个实用Dockerfile， LAMP，PHP，LTMJ。
+    <title>【Gitbook】GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</title>
+    <url>/posts/7fe86002/</url>
+    <content><![CDATA[随着工作时间越来越久，项目越做越多，很多时候，手里面的技术文档都是零散的技术点。最近一直在着手把项目的技术开发文档(Technical Document)系统地整理一下。正好看到了非常棒的 GitBook 工具，又顺带研究了如何借助 Gitlab 的 CI/CD 功能实现自动部署。
+正好开个简短的教程，介绍一下 GitBook + GitLab怎样来撰写并发布文档。
+第一部分先来介绍一下 GitBook。
+系统环境
+惯例列出来我们的环境以及用到的工具。
 
-关于本blog，图床一般使用github，已经配置了CDN，如果图片还是未显示请自行代理解决
+MacOS 10.12
+Node.js (版本 &gt; 4.0.0)
+Atom/MWebLite
 
-一、Docker安装
+其实 Gitbook 有官方的编辑器，但是似乎对中文的支持不是很好，而且会有 bug，虽然最新版本做了优化，Mardown 格式的文字有些会自动显示成最终样式，而我个人还是比较喜欢原生的 markdown，所以我个人就没有用官方的编辑器。
+如果读者注册了 gitbook，并且打算文章都发布到 gitbook 官网上的话，还是建议可以使用官方的编辑器。因为我的目标是发布到公司内网的 gitlab 上，所以这里就用 atom 或者 MWebLite 来编写文档。
+其实这篇文章过后，大家对 Gitbook 的工作机制就很清楚了，完全可以自由地创作了。
+基本使用
+安装
+安装过程非常简单
+npm install gitbook-cli -g
+新建book
+安装成功后，我们就可以开始用gitbook 的命令来进行各种操作了。如果熟悉hexo的同学会发现，其实大同小异，只不过一个用来写blog，一个用来写 book。
+$ mkdir myBook
+$ cd myBook
+$ gitbook init
+初始化后，我们能在myBook目录下看到两个 markdown 文f件。这两个文件就是我们写一本书唯二必须要用的文件了。
 
-在Ubuntu系统下安装：
+预览book
+先不做任何变动，模拟一下我们发布之后的页面的成品吧。
+$ gitbook serve
 
-apt-get install docker
+我们打开浏览器，在浏览器中输入0.0.0.0:4000就可以在本地预览了。
 
-在Fedora/CentOS系统下安装：
+可以看到，左侧是我们的菜单栏，自带一个搜索栏，右侧就是我们的 book 的内容了，右上角有默认的诸如 twitter,facebook 等分享快捷方式。基本上和其他人用 gitbook 写出来的页面是一样的。
 
-yum install docker
-dnf install docker # Fedora 25+
+注：
 
-在SUSE系统下安装：
+gitbook 新版本提供了本地预览功能的热更新，也就是说本地预览的页面会随着我们写书的内容变化而自动更新，这着实是一个很使用的功能。
+在命令行ctrl+c可以关闭本地服务器，即预览页面。
 
-zypper install docker
-二、Docker容器
 
-首先启动Docker
+我们可以尝试修改一下书的内容，看一下页面的变化。打开README.md文件，修改成如下内容：
+# Introduction
+ 
+Hello World!
+再回头看一眼我们的预览页面，是不是自动变成了下面的样子。
 
-# 启动Docker
-systemctl start docker
-# 设置开机自启动，可选
-systemctl enable docker
+关于 gitbook 自建的 README.md 文件我就不做过多的介绍了，都是一些 Markdown 的基本语法，相信使用 gitbook 的各位一定是对 markdown 语法非常熟悉的了。
+目录
+现在我们把注意力放到 gitbook 为我们创建的第二个文件SUMMARY.md上，这个文件决定了我们的目录结构。 一个比较简单的目录结构如下：
+# Summary
+ 
+* [前言](README.md)
+* [第一章](xx.md)
+* [第二章](xx.md)
+* [第三章](xx.md)
+xx.md就是我们每个章节独立的 markdown 文件，所以用 gitbook 写一本书真的非常方便，一个目录文件，和若干个你的书的内容就好了。
 
-启动Docker测试容器
+目录分层
+简单的目录有一个小的问题就是我们目录都只有一级，如果想要分层，比如第一章有1，2，3个小节，该怎么办呢？ 这里有两种方式：
+标题区分
+我们把SUMMARY.md文件修改成如下内容
+# Summary
+ 
+## 前言
+* [前言](README.md)
+ 
+## 第一章
+* [1.1小节]()
+* [1.2小节]()
+ 
+## 第二章
+* [2.1小节]()
+* [2.2小节]()
+ 
+## 第三章
+* [3.1小节]()
+* [3.2小节]()
+最终的样式如下：
 
-docker run "hello-world"
+缩进区分
+我们还可以用缩进的方式对目录进行级别的区分
+# Summary
+ 
+* [前言](README.md)
+* [第一章]()
+    * [1.1小节]()
+    * [1.2小节]()
+* [第二章]()
+    * [2.1小节]()
+    * [2.2小节]()
+* [第三章]()
+    * [3.1小节]()
+    * [3.2小节]()
+最终的样式如下：
 
-在启动容器时，如果使用的镜像在本地不存在，会尝试从网络上获取。
-在一般情况下，启动Web服务的容器，使用以下命令：
+大家可以根据自己的喜好选择不同的样式，也可以把这两者结合起来一起用，as you wish.
+打包发布
+通过预览模式，我们可以随时掌握书籍的更新内容。当你完成了部分章节或者全书的编写后，我们需要把写好的内容打包并发布。
+$ gitbook build
+执行完上面的命令后，我们会发现在根目录下出现了_build文件夹，里面的文件就是我们需要发布的内容，你可以把所有的内容放到你的网站目录下，或者 gitlab/github 的 page页面，就实现了 gitbook 的线上发布了~
+进阶技巧
+看完上面的章节，你已经可以独立完成一本书的编写和发布，接下来的章节，我们提供一些进阶的技巧，你可以安装一些插件、更直观地规划你的目录结构等等。
+插件
+和众多开源的软件一样，gitbook 也有一些插件，这些插件可以让你的书更加完美。这里我仅附上我个人觉得比较有用的几个插件，更多的插件，可以访问社区来获取。
+插件的引入和修改都是在配置文件中完成的，那我们可以在根目录下创建book.json文件来修改当前书的一些配置，因为是 json 格式的，所以诸如书的标题、作者、内容等都可以在配置文件中完成，我们重点来说插件。
+{
+     "plugins": [
+          "-lunr",
+          "-search",
+          "search-plus",
+          "splitter",
+          "copy-code-button",
+          "expandable-chapters-small"
+     ]
+}
+以上是我的book.json配置文件，只有一个关于插件的配置项，其实总共就4个
 
-# -d：daemon，使容器在后台运行
-# -p：port，指定容器的端口，这里是将容器的80端口映射到主机的8001端口
-docker run -d -p 8001:80 "image_name"
+search-plus 让搜索支持中文，注意需要先把默认的两个插件lunr和serach禁用掉，禁用的方式就是在前面加上-号
+spliter 菜单栏宽度可调节
+copy-code-button 代码可以一键 copy
+expandable-chapters-small 菜单栏可以折叠
 
-查看容器运行情况
 
-docker ps
+注：
+如果引入了新的插件，需要通过gitbook install 命令来安装新的插件，否则在打包发布的时候会提示错误。
 
-Docker会为容器分配一个Container ID和一个Container Name，Name可以在运行时通过-name自行指定，这两个可以用来标识容器。
-需要停止容器时，使用以下命令：
+目录结构
+一个基本的目录结构是这样的
+.
+├── _book/
+├── book.json
+├── README.md
+├── SUMMARY.md
+├── xx1.md
+├── xx2.md
+├── xx3.md
+├── xx4.md
+├── ...
+不过为了我们自己方便，个人建议的目录结构如下
+.
+├── _book/
+├── node_modules/
+├── .gitlab-ci.yml
+├── book.json
+├── SUMMARY.md
+├── content/
+|   ├── chapter1/
+|       ├── README.md
+|       └── something.md
+|   ├── chapter2/
+|       ├── README.md
+|       └── something.md
+├── res/
+|   ├── 1.png
+|   └── 2.jpg
+|   └── 3.jpeg
+|   └── ...
+说明：
 
-docker stop "container_name"
-# 或使用ID查找
-docker stop "container_id"
-# 重启
-docker restart "container_id"
-三、Docker镜像
-Dokerfile编译镜像
+_book 目录是我们打包后要发布的文件目录
+node_modules 目录是我们安装插件后默认生成的目录
+.gitlab-ci.yml这个是 gitlab 要用的 ci 配置文件，下一章节我们马上就会用到
+book.json 是我们的配置文件
+content目录是我们的书的内容，所有章节都可以分类继续整理，方便自己查看
+res目录是我们要用到的一些图片资源文件夹，除了用到床图，我们可以把其他本地图片资源也包含进来
 
-Docker容器是运行的Docker镜像实例，一般情况下，我们需要制作自己的Docker镜像。
-Docker镜像的制作依赖于Dockerfile，我们稍后在讨论Dockerfile的编写，这里假定我们有一个编写好的Dockerfile。
-下面的命令将在当前路径查找Dockerfile并构建一个名为“image_name”的镜像。
+参考&amp;致谢
 
-docker build -t "image_name" ./
-查看本地所有镜像
+Gitbook 简要介绍
+GitBook 学习笔记
 
-在构建过程中需要在网络上下载来源镜像，可能需要一段时间。
-如果Dockerfile中的命令都正确结束（Exit code 0），那么Docker镜像的构建也将顺利完成，我们可以通过下面的命令查看我们的所有镜像：
-
-docker images
-导出备份已有镜像文件
-
-我们还可以导出我们制作好的Docker镜像，下面的命令将image_name镜像导出为image_name.tar
-
-docker save "image_name" &gt; image_name.tar
-导入已有镜像备份
-
-在另一台机器上，我们不需要网络就可以导入并使用该镜像：
-
-docker load &lt; image_name.tar
-四、Dockerfile
-
-Dockerfile本质上是一组命令集合，用于自动化构建镜像，下面以几个实例来说明Dockerfile的编写方法：
-
-实例一：LAMP（Linux+Apache+MySQL+PHP）环境配置
-# 来源镜像，一般可以使用标准的系统或者带有各种环境的系统
-# 显然这里使用的是标准的Ubuntu 14.04系统
-FROM ubuntu:14.04
-# 镜像作者
-MAINTAINER wrlu
-# 刷新日期
-ENV REFRESHED_AT 2018-08-05
-# 设定字符集
-ENV LANG C.UTF-8
-# RUN命令用于执行系统命令
-# 因为需要自动化安装，所以最好通过-y命令跳过确认
-# 更新APT软件源
-RUN apt-get update -y
-# 安装MySQL
-RUN apt-get -y install mysql-server
-# 安装Apache
-RUN apt-get -y install apache2
-# 安装PHP5
-RUN apt-get -y install php5 libapache2-mod-php5
-RUN apt-get install -yqq php5-mysql php5-curl php5-gd php5-intl php-pear php5-imagick php5-imap php5-mcrypt php5-memcache php5-ming php5-ps php5-pspell php5-recode php5-snmp php5-sqlite php5-tidy php5-xmlrpc php5-xsl
-# 删除Apache2列出目录配置
-RUN sed -i 's/Options Indexes FollowSymLinks/Options None/' /etc/apache2/apache2.conf
-# COPY命令可以复制文件，但是似乎不能递归复制文件
-COPY IncludeAirline/* /var/www/html/
-COPY IncludeAirline/airlines/* /var/www/html/airlines/
-# 删除默认的主页
-RUN rm /var/www/html/index.html
-# 复制启动脚本
-COPY start.sh /root/start.sh
-RUN chmod +x /root/start.sh
-# 设置启动目录以及启动脚本
-ENTRYPOINT cd /root; ./start.sh
-# 设置需要暴露的端口
-EXPOSE 80,3306 
-
-本例中还有一个启动脚本start.sh，用于导入数据库，编写如下：
-
-#!/bin/bash
-# 启动后延时
-sleep 1
-# 启动Apache服务器
-/etc/init.d/apache2 start
-# 启动MySQL数据库
-find /var/lib/mysql -type f -exec touch {} ; &amp;&amp; service mysql start
-# 定义SQL文件路径
-sqlfile=/var/www/html/includeAirline.sql
-if [ -f $flagfile ]; then
-	# 修改MySQL的密码
-    mysqladmin -u root password "root"
-    # 登录MySQL并导入SQL文件执行
-    mysql -uroot -proot &lt; $sqlfile
-    # 删除SQL文件
-    rm -f $sqlfile
-fi
-# 此处注意，如果命令执行完后脚本退出
-# 则Docker容器也会因为没有前台应用运行而中止
-# 所以这里使用一个前台命令来保活Docker容器
-tail -f /var/log/apache2/error.log
-实例二：PHP环境配置：
-# 来源镜像，自带Apache+PHP环境
-FROM php:7.0-apache
-MAINTAINER tl
-ENV REFRESHED_AT 2018‐08‐03
-ENV LANG C.UTF‐8
-# ADD命令在COPY命令的基础上，具有自动解包tar的功能
-ADD web_tired.tar /var/www/html/
-EXPOSE 80
-实例三：LTMJ（Linux+Tomcat+MySQL+JSP）环境配置
-FROM ubuntu:16.04
-MAINTAINER wrlu
-ENV REFRESHED_AT 2018-08-05
-ENV LANG C.UTF-8
-RUN apt-get update -y
-RUN apt-get -y install mysql-server
-# 安装wget，因为Docker提供的镜像是最小镜像，所以用到的其他工具需要自行安装
-RUN apt-get -y install wget
-# 安装Java 8
-RUN apt-get -y install openjdk-8-jre
-# 下载Tomcat 8服务器
-RUN wget http://mirrors.hust.edu.cn/apache/tomcat/tomcat-8/v8.5.32/bin/apache-tomcat-8.5.32.tar.gz
-# 解压tar.gz
-RUN tar -xzf apache-tomcat-8.5.32.tar.gz -C /root
-RUN mv /root/apache-tomcat-8.5.32 /root/tomcat
-# 删除默认页面
-RUN rm -rf /root/tomcat/webapps/*
-# 拷贝war文件
-COPY CAAC-SQL-Injection.war /root/tomcat/webapps/
-COPY wafwtf.sql /root/
-COPY start.sh /root/start.sh
-RUN chmod +x /root/start.sh
-ENTRYPOINT cd /root; ./start.sh
-# Tomcat使用8080端口，不同于Apache
-EXPOSE 8080
-
-启动脚本如下：
-
-#!/bin/bash
-sleep 1
-find /var/lib/mysql -type f -exec touch {} ; &amp;&amp; service mysql start
-chmod +x /root/tomcat/bin/startup.sh
-# 启动Tomcat服务器
-/root/tomcat/bin/startup.sh
-sqlfile=/root/wafwtf.sql
-if [ -f $flagfile ]; then
-    mysqladmin -u root password "root"
-    mysql -uroot -proot &lt; $sqlfile
-    rm -f $sqlfile
-fi
-# 容器保活
-tail -f /root/tomcat/conf/server.xml
+From: lipeng1667
 系列教程
 全部文章RSS订阅
-Docker系列 Docker 分类 RSS 订阅
+Gitbook使用系列 Gitbook分类RSS订阅
 
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+
+
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+
+
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+
+笔记系列  Note分类RSS订阅
+
+完美笔记进化论
+
+
+经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
+
+pigo图床搭建与配置
+Joplin教程
+Snipaste截图工具
+Typora 作为Markdown编辑器最强
+
+
+
+Joplin入门指南&amp;实践方案
+
+
+
+Joplin和使用
+Joplin同步与备份
+Joplin导入与导出
+
+
+
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+
+
+
+Joplin安装使用，调用外部编辑器，网盘同步等等
+
+
+
+Joplin 插件以及其Markdown语法。All in One!
+
+
+
+Joplin简明教程
+markdown语法简明教程
+
+
+
+Joplin 插件使用推荐
+
+
+
+教你用各种插件打造一个强大的笔记工具。
+
+
+
 为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
+
+
+
+如何部署自己私有的为知笔记。
+其实博主更推荐私有部署joplin
+
+
+Gitlab 使用系列  Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
 
 ]]></content>
       <categories>
-        <category>docker</category>
+        <category>gitbook</category>
       </categories>
       <tags>
+        <tag>git</tag>
         <tag>linux</tag>
-        <tag>mysql</tag>
-        <tag>docker</tag>
-        <tag>lamp</tag>
-        <tag>php</tag>
-        <tag>tomcat</tag>
+        <tag>gitbook</tag>
       </tags>
   </entry>
   <entry>
@@ -8560,1226 +9729,6 @@ https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&a
       </tags>
   </entry>
   <entry>
-    <title>海思MPP&amp;UNF构架源代码级分析</title>
-    <url>/posts/13894dce/</url>
-    <content><![CDATA[
-
-文章写了好多年了，只在一个网站发布过PDF版本。行业内应该很多人看过这个。由于早期笔记使用Word格式，转换格式时有不少格式错误，笔者尽量修正。
-
-
-关于本blog，图床一般使用github，已经配置了CDN，如果图片还是未显示请自行代理解决
-
-
-原创声明警告，文章禁止转载，禁止发布到其它任何网站，可以接受约稿。
-
-
-前言：
-​    本文通过分析海思文档和代码，把海思SDK的MPI和UNF构架大概实现思想和构架进行了简略的分析。着重分析了内存管理，底层功能如何实现。
-​    前面章节简要分析了NVR芯片MPI构架及其内存管理机制，后面着重详细分析了3798M底层模块api和drv实现的细节过程及其方法流程。
-​    本文前面简略分析了DVR，MPI构架的大体实现机制。后面就具体分析3798M UNF构架的实现。
-本文不光分析了UNF构架，还使用了很多工具，辅助分析代码。这里从三个层面分析了UNF的实现。
-1: 应用层，驱动层的实现框架，使用source insight查看代码并着重分析了avplay等几个模块。
-2：静态分析函数调用。使用cflow，dot工具生成调用关系图
-3：动态追踪运行过程。Ltrace, strace, valgrind分析函数调用，perf动态分析内核调用。
-1:Hi35xx系列芯片MPP构架
-1.1 概述
-海思提供的媒体处理软件平台(Media Process Platform,简称 MPP)，可支持应用软件快速开发。该平台对应用软件屏蔽了芯片相关的复杂的底层处理，并对应用软件直接提供MPI（MPP Programe Interface）接口完成相应功能。该平台支持应用软件快速开发以下功能：输入视频捕获、H.264/MJPEG/JPEG/MPEG4 编码、H264/H.265/VC1/MPEG4/MPEG2/AVS 解码、视频输出显示、视频图像前处理（包括去噪、增强、锐化、Deinterlace） 、编码码流叠加 OSD、视频侦测分析、智能分析、音频捕获及输出、音频编解码等功能。
-1.2 整体软硬件构架
-
-MPP 平台支持的典型的系统层次如上图所示，主要分为以下层次：
-硬件层
-硬件层由 Hi35xx 芯片加上必要的外围器件构成。外围器件包括 Flash、DDR
-（Double Data-Rate） 、视频 Sensor 或 AD、音频 AD 等。
-操作系统层
-基于 Linux 3.10.y 的 OS 系统。
-媒体处理平台
-基于操作系统层，控制芯片完成相应的媒体处理功能。它对应用层屏蔽了硬件处理细节，并为应用层提供 API 接口完成相应功能。
-其他驱动
-除媒体处理平台外,海思为 Hi35xx 芯片的其他相关硬件处理单元提供了相应的驱动,
-包括 GMAC、SDIO、I2C、USB、SSP 等驱动。
-应用层
-基于海思媒体处理平台及其他驱动，由用户开发的应用软件系统。
-1.3 海思媒体处理平台架构
-海思媒体处理平台的主要内部处理流程如上图所示，主要分为视频输入（VI） 、视频处理（VPSS） 、视频编码（VENC） 、视频解码（VDEC） 、视频输出(VO)、视频侦测分析(VDA)、音频输入(AI)、音频输出(AO)、音频编码（AENC） 、音频解码（ADEC） 、区域管理（REGION）等模块。主要的处理流程介绍如下
-
-
-
-VI 模块捕获视频图像，可对其做剪切、缩放、镜像等处理，并输出多路不同分辨
-率的图像数据。
-
-
-解码模块对编码后的视频码流进行解码，并将解析后的图像数据送 VPSS 进行图
-像处理或直接送 VO 显示。可对 H.264/H.265/VC1/MPEG4/MPEG2/AVS 格式的视
-频码流进行解码。
-
-
-VPSS 模块接收 VI 和解码模块发送过来的图像，可对图像进行去噪、图像增强、
-锐化等处理，并实现同源输出多路不同分辨率的图像数据用于编码、预览或抓
-拍。
-
-
-编码模块接收 VI 捕获并经 VPSS 处理后输出的图像数据，可叠加用户通过 Region
-模块设置的 OSD 图像，然后按不同协议进行编码并输出相应码流。
-VDA 模块接收 VI 的输出图像，并进行移动侦测和遮挡侦测，最后输出侦测分析
-结果。
-
-
-VO 模块接收 VPSS 处理后的输出图像，可进行播放控制等处理，最后按用户配置
-的输出协议输出给外围视频设备。
-
-
-AI 模块捕获音频数据，然后 AENC 模块支持按多种音频协议对其进行编码，最后
-输出音频码流。
-
-
-用户从网络或外围存储设备获取的音频码流可直接送给 ADEC 模块，ADEC 支持
-
-
-1.4 MMZ与模块绑定
-
-MPP 提供系统绑定接口（HI_MPI_SYS_Bind） ，即通过数据接收者绑定数据源来建立
-两者之间的关联关系（只允许数据接收者绑定数据源） 。绑定后，数据源生成的数据将
-自动发送给接收者。
-Uboot环境变量中定义linux内核使用的内存大小
-setenv 'mem=288M console=ttyAMA0,115200 root=/dev/mtdblock2 rootfstype=jffs2 mtdparts=hi_sfc:768K(boot),2304K(sdr021000),13M(rootfs)'
-加载内核模块分配MMZ内存大小
-insmod mmz.ko mmz=anonymous,0,0x8E000000,792M anony=1
-例如512M的DDR
-DDR:
-DDR:                                                          
------------|----------|  0x80000000   # Memory managed by OS.             
-   64M     |   OS     |                                                
-           |          |                                                
------------|----------|  0x84000000   # Memory managed by MMZ block anonymous.         
-   448M    |    MMZ   |                                                
-           |          |                                                
------------|----------|  0xA0000000   # Memory managed by MMZ block jpeg.                      
-1.5 HiMPP 支持的绑定关系
-
-
-
-数据源
-数据接收者
-
-
-
-
-VI
-VO
-
-
-
-VENC
-
-
-
-VDA
-
-
-
-VPSS
-
-
-
-PCIV
-
-
-VPSS
-VO
-
-
-
-VENC
-
-
-
-VDA
-
-
-
-VPSS
-
-
-
-PCIV
-
-
-VDEC
-VPSS
-
-
-
-VO（只能是标清设备或 single 模式分割）
-
-
-
-VDA
-
-
-
-PCIV
-
-
-vo(WBC)
-VO
-
-
-
-VENC
-
-
-
-VPSS
-
-
-
-PCIV
-
-
-AI
-AENC
-
-
-
-AO
-
-
-ADEC
-AO
-
-
-
-1.6 函数约定说明
-
-
-Open/Close
-Open/Close 操作用来打开、关闭那些可枚举的设备。
-
-
-Create/ Destroy
-Create/ Destroy 操作用来创建、销毁那些不可枚举的设备。
-
-
-Handle
-Handle 用来标识一个“不可枚举”类型的设备。Handle 只在本进程内有效，也就是说 Handle 不可以跨进程传递Handle 是一个 32bit 的数据，其低 8bit 表示设备的 ID，高 16bit 表示模块 ID。比如0x00110000 表示模块 ID 为 0x11 的第 0 个设备。
-
-
-Attach /Detach
-Attach/Detach 用来绑定、解绑定两个设备直接的关联。
-
-
-Attach 后，目的设备将自动处于 Start/Enable 状态； Detach 后，目的设备将自动处于Stop/Disable 状态。
-对于多级绑定，要求从最后一个设备逐级向前绑定，解绑定的顺序则相反，要求逐级向后。**
-** 当绑定在一起的多个设备可以设置相同属性时，必须通过最后一个设备进行设置。
-
-
-Get/Put
-Get/Put 用来往某个模块输入数据。
-
-
-Acquire/Release
-Acquire/Release 用来从某个模块获取数据。
-
-
-Get/Put和Acquire/Release推荐成对使用
-
-1.7 MPP优缺点
-1.7.1 MPP优点
-​    内存VB管理和模块绑定子系统，proc运行时调试信息是MPP构架节约用户时间最大的设计。
-​    大部分外围接口都封装好，用户调用接口直接使用，快速，方便。
-1.7.2 MPP缺点
-​    没有相应子系统的源代码。出了问题，有bug必须需要海思查看，解决。
-​    MPI接口和标准linux接口差异非常大，构架也不一样。有问题需要找海思。中间时间成本。
-不利于研发技术积累。
-2:  MPP和UNF对比
-从函数命名，参数，使用方法来看。UNF和MPP分开比较早，UNF构架在上面函数约定说明基础上的MPI接口封装了一层，UNF-&gt;MPI调用，UNF开发支持更多的模块接口。MPP的模块接口比较固定，比UNF少得多，增强了MMZ内存，VB管理功能，模块绑定功能。
-MPP由HI_MPI_SYS_Bind来绑定两个模块，而UNF还是使用Hi_XXX_Attach来绑定两个模块。
-MPP内存管理MMZ，VB也比UNF更细致，强大。
-UNF支持更多的外设模块。如TUNER（广播电视），CIPHER（芯片内部加密），Subtitle（字幕），PDM（低功耗），SCI（智能卡），GPU等。
-UNF开源。在一些模块的实现中，也使用了一些开源项目，如FFmpeg，Alsa，wpa_supplicant等。
-3:  3798芯片UNF处理构架
-3.1 应用架构
-海思媒体处理平台（ MSP）实现了对海思高清机顶盒解决方案处理器中媒体、图形以
-及外设的屏蔽和封装，对应用软件直接提供 API（ Application Program Interface）接口
-完成相应功能。典型的应用架构如下图所示
-
-3798比35xx多了一个UNF层，它在MPI基础上进行了一层封装
-软件架构主要包含以下 4 层：
-
-
-UNF层
-媒体处理平台（ MSP）对外统一的应用开发接口。
-
-
-MPI层
-处理器各模块硬件能力实现层的用户态部分。
-
-
-DRV层
-处理器各模块硬件能力实现层的内核态部分。
-
-
-HAL层
-处理器各模块的硬件抽象层。
-
-
-3.2 3798SDK 概览（功能介绍）
-媒体处理平台（ MSP）中所有模块按照功能可以分为媒体处理，图形处理，外设处理 3
-类：
-
-
-媒体处理
-DEMUX、 AVPLAY、 SOUND、 DISPLAY、 VO、 HDMI、 PVR、 VDEC、 VENC、
-ADEC、 AENC、 VI、 AI
-
-
-图形处理
-HIFB、 HIGO、 TDE、 JPEG、 JPGE、 GPU
-
-
-外设处理
-Cipher、 OTP、 PMOC、 Frontend、 I2C、 SCI、 KEYLED、 GPIO、 IR、 WDG、 C51
-
-
-3.3 3798内存管理
-3.3.1 Mmz内存
-3798的mmz内存在uboot bootargs环境变量中分配，在内核中大块连续内存使用dma_alloc_from_contiguous（drv/mmz/drv_media_mem_v2.c）来分配内存， 小块内存使用kmalloc分配，并且使用内核链表标记管理。和应用层交互使用mamp，umamp，并使用内核链表管理内存。这点和35xx DVR芯片有很大区别，DVR芯片模块内存和linux内核使用内存不再一个地方，应该是通过物理地址往虚拟地址映射来使用的。
-# cat /proc/cmdline
-mem=1G console=ttyAMA0,115200 root=/dev/romblock3 rootfstype=squashfs mtdparts=hinand:5M(boot),1M(baseparam),7M(kernel),18M(rootfs),64M(appfs),16M(qte),4M(config),12M(log),1M(logo) mmz=ddr,0,0,500M
-具体就是在bootargs中配置mem=1G mmz=ddr,0,0,435M
-查看内存使用情况跟监控相同，通过cat /proc/media-mem
-
-3.3.2 解码vid内存
-关于码流解码过程中视频缓冲buffer u32VidBufSize配置：
-创建avplay时，可以指定视频es buf大小，参考如下代码
-Ret = HI_UNF_AVPLAY_GetDefaultConfig(&amp;AvplayAttr, HI_UNF_AVPLAY_STREAM_TYPE_ES);
-AvplayAttr.stStreamAttr.u32VidBufSize = 2*1024*1024;
-Ret |= HI_UNF_AVPLAY_Create(&amp;AvplayAttr, &amp;hAvplay[i]);
-Es buf的作用存储码流原始es流。
-这个buffer的大小跟码流分辨率、码率都有关系，一般情况下，D1/720P/1080P/4K 码流的配置为 2M/3M/5M/16M 即可，特殊码流除外。
-3.4 3798模块
-DEMUX：
-​	数据输入模块。IF，TSI，RAM。
-​	NVR使用的是RAM接口输入ES码流。
-VI:
-虚拟VI
-VDEC
-​	解码器模块提供一组函数指针，供解码使用。目前有264，mpeg4两个。
-视频解码的简单流程是：
-步骤 1 VDEC 从 Demux 或 ES buffer 获取 ES 数据送 Firmware 进行解码（ Firmware: StreamInput(VDEC-&gt;Firmware)）。
-步骤 2 Firmware 将解码完的 1D 或者 2D 帧存放在帧 buffer 中。
-步骤 3 VDEC 从帧 buffer 中获取（ Firmware: Frame Output(Firmware-&gt;VDEC)）视频帧放入其帧队列中。
-步骤 4 VPSS 在线程中从 VDEC 的帧队列中取帧做解码后处理（ Frame Output(VDEC-&gt;VPSS)）。
-步骤 5 AVPLAY 向 VDEC 获取视频帧， VDEC 从 VPSS 获取视频帧返回给 AVPLAY。
-SYNC：
-音视频同步工具
-DISPLAY：显示设备
-WINDOW：显示通道
-msp 目录下的“ windowXXYY”节点的中的 XX 为显示通道的编号， YY 为 window 序号。比如 window0100， bit[15:8]的 01 表示该 window 基于 DISPLAY1 创建， bit[7:0]的00 表示 window 序号为 0。有支持3D显示
-DISP（ Display）模块接收 WINDOW 提供的视频图像、 Frame Buffer 提供的图形画
-面，进行图像叠加处理和图像色彩调节，并将叠加后图像通过多种视频输出端口输出
-给显示设备；此外， DISP 支持获取视频输出端口上的包含视频和图形的完整图像。
-窗口类型
-
-Display：独立显示窗口
-Virtual：虚拟窗口
-Main：同源显示主窗口
-Slave：同源显示从窗口
-
-
-
-SO（ Subtitle Output）
-PDM
-
-PDM(Product Data Manager)模块用于管理与产品相关的数据，包括基本参数、开机画
-面参数及数据、瞬播参数及数据的管理
-
-用户通过镜像制作工具制作基本参数镜像与瞬播镜像，通过烧写工具烧写至 FLASH，PDM 模块在 BOOT 下将基本参数及瞬播数据读入内存，并传递至 KERNEL。 KERNEL下瞬播从 PDM 模块获取参数及数据，调用 DEMUX、 VDEC、 VO 等模块驱动，完成瞬播播放
-demux
-
-DEMUX 模块接收 DEMOD 或内存中的 TS 流，按客户应用程序（下简称 APP）的设
-置提取出其中的 SEC 数据、 PES 数据、 TS 数据、音频数据和视频数据。 APP 获取
-SEC 数据、 PES 数据和 TS 数据进行处理。 AVPLAY 获取音频数据进行处理， VDEC 获
-取视频数据进行处理。
-
-AVPLAY 主要依赖 ADEC/VDEC/DEMUX 等模块，其向应用或中间件播放器提供基本
-的播放业务相关接口。
-
-3.5 3798和NVR模块使用方面区别：
-3798模块中vpss，sync等模块是其它模块自动创建，自动绑定处理的。这点和NVR系列芯片差别很大，nvr中vi，vpss，vo都需要用户自己绑定，设置属性，而3798中vpss，vo创建，属性设置是在上层模块中自动处理的（少量设置属性上层传递下去）。
-​    简单来说，MPP接口只实现了基本的功能接口，没有封装或很少封装。
-UNF 应用层实现了很多业务接口，对底层驱动进行了多层封装，并且实现了一些常用的业务。
-4: 3798代码祥看
-4.1 分析方法
-4.1.1：查看代码，静态分析应用层，驱动层实现方法
-​    使用Source insight分析kernel，msp代码。
-4.1.2：图示静态分析函数调用关系
-​    使用cflow， tree2dotx，和dot生成函数静态调用图。
-4.1.3：图示动态分析函数调用关系：库函数，系统调用，内核调用
-
-​    使用ltrace分析系统库函数
-​    strace分析系统调用流程
-​    使用Ftrace，valgrind，gprof2dot生成运行时调用图。
-​    Perf分析内核空间调用。发现一些依赖库在ubuntu12.04里面不可用。
-
-这一步实现了valgrind动态分析，其它的几个工具需要交叉编译，TODO。使用Perf可能需要换更新的linux版本。
-其它还有time(大概运行时间)，gconv（覆盖率统计）等分析方式。
-4.2 基础模块：hi_media hi_mmz hi_common
-
-​    可以从lsmod中很清晰的看出来hi_media hi_mmz hi_common这几个模块的基础地位。hi_media基础模块管理，hi_mmz提供内存管理，hi_common提供proc，log等基础功能，符号导出供其他海思模块使用。
-Common
-
-COMMON 模块是 SDK 的基础模块，提供的 API 主要供 SDK 的其他模块调用。
-COMMON 模块现在主要有以下功能：
-
-系统初始化和去初始化；
-版本信息获取；
-获取时间戳；
-寄存器读写、映射功能；
-MMZ 内存使用；
-调试信息控制；
-Flash 操作。
-
-
-
-4.2.1 基本通用模块应用层接口common/api
-HiSTBLinuxFS/source/common/api
-mpi_mem.c
-MEM_POOL_Init 应用层的内存池，重复利用。
-mpi_memmap.c
-映射使用链表区分。管理mmap映射
- 
- 
-mpi_module.c
-HI_MODULE_Init中有打开内存操作，内存统一管理。
-模块id，名称注册，相互查找。
- 
-mpi_stat.c
-线程时间归零，等相关处理
- 
-hi_common.c
-proc，sys一些路径目录增删提供了用户层接口，mmz内存管理用户层接口
- 
-mpi_userproc
-用户层提供线程 通用proc接口，proc读写是在其它模块内部实现的，函数指针形式
- 
- 
-注：himedia 相关模块是海思自己实现的内核子系统。有自己实现的总线，驱动，设备模型结构体。也是在标准linux模型基础上封装的。
- 
-4.2.2 基本通用模块驱动接口common/dev
-HiSTBLinuxFS/source/common/dev
-drv_dev_ext_k.c 重要
-HI_DRV_DEV_Init 所有模块宏定义在这里，注册模块结构体在这里
-himedia.c himedia_bash.c     模块注册，注销基础函数
-#define DYNAMIC_MINORS 128 /* like dynamic majors */            himedia主设备号218
-static unsigned char himedia_minors[DYNAMIC_MINORS / 8];
- 
-typedef struct tagPM_BASEDEV_S{
-    HI_S32        id;
-    const HI_S8    * name;
-    struct device    dev;
-}PM_BASEDEV_S;
- 
-#define TO_PM_BASEDEV(x) container_of((x), PM_BASEDEV_S, dev)
- 
-typedef struct tagPM_BASEOPS_S {
-    HI_S32  (*probe)(PM_BASEDEV_S *);
-    HI_S32  (*remove)(PM_BASEDEV_S *);
-    HI_VOID (*shutdown)(PM_BASEDEV_S *);
-    HI_S32  (*prepare)(PM_BASEDEV_S *);
-    HI_VOID (*complete)(PM_BASEDEV_S *);
-    HI_S32  (*suspend)(PM_BASEDEV_S *, pm_message_t state);
-    HI_S32  (*suspend_late)(PM_BASEDEV_S *, pm_message_t state);
-    HI_S32  (*resume_early)(PM_BASEDEV_S *);
-    HI_S32  (*resume)(PM_BASEDEV_S *);
-}PM_BASEOPS_S;
- 
- 
-typedef struct tagPM_BASEDRV_S {
-    HI_S32  (*probe) (PM_BASEDEV_S *);
-    HI_S32  (*remove)(PM_BASEDEV_S *);
-    HI_VOID (*shutdown)(PM_BASEDEV_S *);
-    HI_S32  (*suspend)(PM_BASEDEV_S *, pm_message_t state);
-    HI_S32  (*suspend_late)(PM_BASEDEV_S *, pm_message_t state);
-    HI_S32  (*resume_early)(PM_BASEDEV_S *);
-    HI_S32  (*resume)(PM_BASEDEV_S *);
-    struct device_driver driver;
-}PM_BASEDRV_S;
- 
-typedef struct tagPM_DEVICE_S  {
-    HI_S32 minor;
-    const HI_S8 *name;
-    struct module *owner;
-    const struct file_operations *app_ops;
-    PM_BASEOPS_S *base_ops;
-    struct list_head list;
-    struct device *app_device;
-    PM_BASEDEV_S *base_device;
-    PM_BASEDRV_S *base_driver;
-}PM_DEVICE_S;
- 
-static struct class *himedia_class;
-static struct file_operations himedia_fops = {
-    .owner        = THIS_MODULE,
-    .open        = himedia_open,
-};
- 
-设备模型结构体
-struct himedia_devobj {
-    PM_BASEDEV_S pdev;
-    char name[1];
-};
- 
-typedef struct tagPM_BASEDEV_S{
-    HI_S32        id;
-    const HI_S8    * name;
-    struct device    dev;
-}PM_BASEDEV_S;
- 
-海思模块顶层总线himedia_bus
-struct device himedia_bus = {
-         .init_name        = "himediaBusDev",
-         .release    = himedia_bus_release
-};  /*top level bus, parent and bus member are both NULL*//*CNcomment:这是顶层总线，parent 和 bus 成员为 NULL*/
-struct bus_type himedia_bus_type = {
-         .name                = "himediaBus",
-         .dev_attrs        = himedia_dev_attrs,
-         .match               = himedia_match,
-         .uevent              = himedia_uevent,
-         .pm                     = HIMEDIA_PM_OPS_PTR,
-};
-定义HIMEDIA_PM_OPS_PTR
-                            static struct dev_pm_ops himedia_dev_pm_ops = {
-                                     .prepare        = himedia_pm_prepare,
-                                     .complete       = himedia_pm_complete,
-                                     .suspend        = himedia_pm_suspend,
-                                     .resume         = himedia_pm_resume,
-                                     .freeze         = himedia_pm_freeze,
-                                     .thaw           = himedia_pm_thaw,
-                                     .poweroff       = himedia_pm_poweroff,
-                                     .restore        = himedia_pm_restore,
-                                     .suspend_noirq  = himedia_pm_suspend_noirq,
-                                     .resume_noirq   = himedia_pm_resume_noirq,
-                                     .freeze_noirq   = himedia_pm_freeze_noirq,
-                                     .thaw_noirq     = himedia_pm_thaw_noirq,
-                                     .poweroff_noirq = himedia_pm_poweroff_noirq,
-                                     .restore_noirq  = himedia_pm_restore_noirq,
-                            };
-                            #define HIMEDIA_PM_OPS_PTR     (&amp;himedia_dev_pm_ops)
-
-
-内核到用户往用户空间写文件调试
-drv_file_ext.c 提供内核空间创建，读写用户空间文件函数，/mnt文件存储路径。提供了内核数据导出到用户空间的方法。
-应该是echo * &gt; /proc/msp/** 这种调试方式的实现方式
-内核log日志
-drv_log_ioctl.h  打印日志相关。  这里日志位置可选0:串口 1:网络 2:U盘
-/*structure of mode log level */
-/*CNcomment: 模块打印级别控制信息结构 */
-typedef struct hiLOG_CONFIG_INFO_S
-{
-    HI_U8 ModName[16+12];     /*mode name 16 + '_' 1 + pid 10 */
-    HI_U8 u8LogLevel;         /*log level*//*CNcomment:  模块打印级别控制 */
-    HI_U8 u8LogPrintPos;      /*log output location, 0:serial port; 1:network;2:u-disk*//*CNcomment:  模块打印位置控制 0:串口 1:网络 2:U盘 */
-    HI_U8 u8UdiskFlag;        /* u-disk log flag */
-}LOG_CONFIG_INFO_S;
- 
- 
-hi_debug.h    log调试级别
-/**Default level of the output debugging information*/
-/**CNcomment: 默认的调试信息输出级别*/
-#define HI_LOG_LEVEL_DEFAULT HI_LOG_LEVEL_ERROR
- 
-/**Level of the output debugging information*/
-/**CNcomment: 调试信息输出级别*/
-typedef enum hiLOG_LEVEL_E
-{
-    HI_LOG_LEVEL_FATAL   = 0,     /**&lt;Fatal error. It indicates that a critical problem occurs in the system. Therefore, you must pay attention to it.*/
-                                  /**&lt;CNcomment: 致命错误, 此类错误需要特别关注，一般出现此类错误代表系统出现了重大问题 */
-    HI_LOG_LEVEL_ERROR   = 1,     /**&lt;Major error. It indicates that a major problem occurs in the system and the system cannot run.*/
-                                  /**&lt;CNcomment: 一般错误, 一般出现此类错误代表系统出现了比较大的问题，不能再正常运行 */
-    HI_LOG_LEVEL_WARNING = 2,     /**&lt;Warning. It indicates that a minor problem occurs in the system, but the system still can run properly.*/
-                                  /**&lt;CNcomment: 告警信息, 一般出现此类信息代表系统可能出现问题，但是还能继续运行 */
-    HI_LOG_LEVEL_INFO    = 3,     /**&lt;Message. It is used to prompt users. Users can open the message when locating problems. It is recommended to disable this message in general.*/
-                                  /**&lt;CNcomment: 提示信息, 一般是为提醒用户而输出，在定位问题的时候可以打开，一般情况下建议关闭 */
-    HI_LOG_LEVEL_DBG     = 4,     /**&lt;Debug. It is used to prompt developers. Developers can open the message when locating problems. It is recommended to disable this message in general.*/
-                                  /**&lt;CNcomment: 提示信息, 一般是为开发人员调试问题而设定的打印级别，一般情况下建议关闭 */
- 
-    HI_LOG_LEVEL_BUTT
-} HI_LOG_LEVEL_E;
- 
-drv_media_mem_v2.c    实现了cat /proc/media-mem
- 
-drv_mem_ext.c 实现了 KMEM_POOL_S 的管理，
- 
- 
-内核模块管理
-drv_module_ext.c
-
-COMMON_DRV_ModInit
-
-         MMNGR_DRV_ModInit
-
-        
-
-    s32Ret = HI_DRV_MODULE_Register(HI_ID_SYS,    "HI_SYS",      HI_NULL);
-
-    s32Ret |= HI_DRV_MODULE_Register(HI_ID_MODULE, "HI_MODULE",   HI_NULL);
-
-    s32Ret |= HI_DRV_MODULE_Register(HI_ID_LOG,    "HI_LOG",      HI_NULL);
-
-    s32Ret |= HI_DRV_MODULE_Register(HI_ID_PROC,   "HI_PROC",     HI_NULL);
-
-    s32Ret |= HI_DRV_MODULE_Register(HI_ID_STAT,   "HI_STAT",     HI_NULL);
-
-    s32Ret |= HI_DRV_MODULE_Register(HI_ID_MEM,    "HI_MEM",      HI_NULL);
-
- 
-
-drv_media_mem.c  使用dma_alloc_from_contiguous来分配
-
-HI_DRV_MMZ_Init 这里根据bootargs传递的mmz参数分配内存大小。 mmz分配时的参数：&lt;mmz_name&gt;,&lt;gfp&gt;,&lt;phys_start_addr&gt;,&lt;size&gt;,&lt;alloc_type&gt;"
-
-内核Proc的实现
-drv_proc_ext.c
-HI_DRV_PROC_Init 实现cat /proc/hisi/msp/
-    proc_mkdir("graphics", g_pHisi_proc);
-    proc_symlink("msp", NULL, "hisi/msp");
-    proc_symlink("graphics", NULL, "hisi/graphics");
-drv_userproc.c    proc使用红黑树管理目录路径
-​    创建销毁目录，路径在这里实现，具体每一个不同模块的proc文件读写在每个模块内部实现，使用函数指针。
-4.2.3 业务模块应用层通用组件source/component
-/home/andy/HiSTBLinuxFS/source/component  这个目录里面很多目录只有.so .a库，没有源代码。
-/source/component/hiplayer 没有源码。
-hi_debug.h   各种调试宏定义，不同级别调试定义
-HI_MALLOC   内存分配使用了内核链表管理
-内存在一个模块内分配，往用户空间传递物理地址，其它模块使用这个物理地址映射到虚拟地址，这样来共享内存
-​    海思这里大多数模块都只提供了编译后的库
-4.3 海思专用组件
-4.3.1 海思MSP模块应用层接口source/msp/api
-Avplay分析
-HI_MPI_AVPLAY_Create
-         AVPLAY_FrcCreate  帧率控制？    
-         HI_MPI_SYNC_Create     音视频同步
-         AVPLAY_CreateThread
-​     
-上图插图的是svg格式图片，可以使用IE，firefox打开，最好使用专门的看图软件打开。
-HI_MPI_VDEC_AllocChan
-         VPSS_Control(pstVdec-&gt;hVdec,VPSS_CMD_CREATEVPSS,&amp;(pstVdec-&gt;hVpss))
-        
-UNF调用一般过程，最终采用ioctl调用驱动   
-HI_UNF_AVPLAY_GetBuf
-         HI_MPI_AVPLAY_GetBuf
-                   HI_MPI_VDEC_ChanGetBuffer
-                            VDEC_GetStreamBuf                /* If get but not put, return last address */    这里有对不对称调用特殊处理
-                                     ioctl(s_stVdecAdpParam.s32DevFd, UMAPC_VDEC_GETBUF, &amp;stBufParam);     
-                                    
-HI_MPI_AVPLAY_Start
-         AVPLAY_StartVidChn
-                   HI_MPI_SYNC_Start
-                   HI_MPI_VDEC_ChanStart
-                             ioctl(g_SyncDevFd, CMD_SYNC_START_SYNC, &amp;SyncId);
-         HI_MPI_SYNC_Play 结构体状态改变
-         AVPLAY_Play             结构体状态控制
-         HI_MPI_STAT_Event                                   
- 
-HI_MPI_AVPLAY_Stop
-         AVPLAY_StopVidChn
-                   HI_MPI_VDEC_ChanStop
-                            VDEC_ChanStop      这里调用函数指针
-                   HI_MPI_VDEC_ResetChan
-                            VDEC_ResetStreamBuf
-                            VDEC_VPSSCMD(hVdec, VPSS_CMD_RESETVPSS, HI_NULL);         调用函数指针，指向VPSS_Control
-                   AVPLAY_ResetWindow
-                   HI_MPI_SYNC_Stop
-         HI_MPI_STAT_Event(STAT_EVENT_VSTOP, 0);
- 
-VDEC使用函数指针集来支持多种解码方式，内部vfmw。mjpeg，内部硬件265协处理器
-mpi_vdec_vpu.c
-HI_MPI_VDEC_Init
-         HI_CODEC_Register(VDEC_MJPEG_Codec());
-         HI_CODEC_Register(VDEC_VFMW_Codec());
- 
-static HI_CODEC_S hi_codecVPU_entry =
-{
-    .pszName                  = "VPU",
-    .unVersion                 = {.stVersion = {1, 0, 0, 0}},
-    .pszDescription = "Hisilicon H265 codec",
- 
-    .GetCap                      = HI_VPU_GetCap,
-    .Create                       = HI_VPU_Create,
-    .Destroy            = HI_VPU_Destroy,
-    .Start                           = HI_VPU_Start,
-    .Stop                            = HI_VPU_Stop,
-    .Reset                         = HI_VPU_Reset,
-    .SetAttr             = HI_VPU_SetAttr,
-    .GetAttr            = HI_VPU_GetAttr,
-    .DecodeFrame          = HI_VPU_DecodeFrame,
-    .EncodeFrame = HI_NULL,
-    .RegFrameBuffer = HI_VPU_RegFrameBuffer,
-    .GetStreamInfo        = HI_VPU_GetStreamInfo,
-    .Control             = HI_VPU_Control,
-};
- 
-avplay，vi和 vo之间使用vpss关联。
-HI_UNF_VO_DetachWindow
-         HI_MPI_AVPLAY_DetachWindow
-                   HI_MPI_VDEC_DestroyPort
-         HI_MPI_VI_Detach(hSrc, hWindow);
-                   VI_DetachFromVpss
-        
-HI_MPI_AVPLAY_ChnClose
-         AVPLAY_FreeVidChn
-                   HI_MPI_VDEC_ChanBufferDeInit
-                            VDEC_VFMWSpecCMD(hVdec, VFMW_CMD_DETACHBUF, HI_NULL);
-                            VDEC_DestroyStreamBuf(pstVdec-&gt;hStreamBuf);                   ummap内存块，ioctl通知内核vdec销毁内存
-                   AVPLAY_FreeVdec
-                            HI_MPI_VDEC_FreeChan
-                                     VPSS_Control(pstVdec-&gt;hVdec,VPSS_CMD_DESTORYVPSS,&amp;(pstVdec-&gt;hVpss));
-                                     VDEC_DestroyCodec(pstVdec);
- 
-HI_UNF_AVPLAY_Destroy
-         HI_MPI_AVPLAY_Destroy
-                   HI_MPI_SYNC_Destroy(pAvplay-&gt;hSync);
-                   ioctl(g_AvplayDevFd, CMD_AVPLAY_DESTROY, &amp;AvplayUsrAddr.AvplayId);
-                  
-avplay内部的线程
-    (HI_VOID)pthread_join(pAvplay-&gt;AvplayDataThdInst, HI_NULL);
-#ifdef AVPLAY_VID_THREAD
-    (HI_VOID)pthread_join(pAvplay-&gt;AvplayVidDataThdInst, HI_NULL);
-#endif
-    (HI_VOID)pthread_join(pAvplay-&gt;AvplayStatThdInst, HI_NULL);          
-4.3.2 海思MSP模块驱动层接口source/msp/drv/
-VENC
-
-VENC 模块的具体工作原理如上图所示，注意图中褐色箭头，是 VENC 调用到VPSS 模块，来对帧信息做缩放处理后编码的数据流，该处理只用于外部用户送帧的模式。若在绑定情况下出现帧信息分辨率与编码分辨率不匹配， VENC 模块会通知绑定的前级模块进行缩放处理，而不会自行调用 VPSS 模块缩放。
-VENC_DRV_ModInit
-         VENC_DRV_Init
-                   HI_DRV_MODULE_Register(HI_ID_VENC, "HI_VENC", (HI_VOID*)&amp;s_VencExportFuncs);
-                            MODULE_DRV_Register
-                                     ModuleMgr_Link_AddNode(g_pstKModuleHeader, &amp;stModule); 链表管理
-                                     LOGAddModule((HI_PCHAR)pu8ModuleName, (HI_MOD_ID_E)u32ModuleID);  在log模块中注册
-         HI_DRV_DEV_Register(&amp;g_VencRegisterData)
-                   HI_DRV_PM_Register     海思模块管理非常重要的模块，了解这个函数实现过程就大概明白海思内核模块实现思想了
-         VENC_DRV_BoardDeinit();      一些寄存器配置，reset，clock操作。
-         venc调用硬件协处理器，涉及263,264，mpeg4，
-    snprintf(g_VencRegisterData.devfs_name, 64, "%s", UMAP_DEVNAME_VENC);
-    g_VencRegisterData.fops   = &amp;VENC_FOPS;
-    g_VencRegisterData.minor  = UMAP_MIN_MINOR_VENC;
-    g_VencRegisterData.owner  = THIS_MODULE;
-    g_VencRegisterData.drvops = &amp;venc_drvops;      
-avplay
-
-
-AVPLAY 主要由以下三部分组成：
-
-音视频解码器
-同步播放控制模块
-命令与状态管理模块
-
-
-
-主要负责响应外部控制命令的执行、状态查询上报、使解码后的帧数据通过同步控制
-模块输出
-avplay初始化分析
-AVPLAY_DRV_ModInit
-​    HI_DRV_MODULE_Register
-​         HI_DRV_MODULE_Register(HI_ID_AVPLAY, AVPLAY_NAME, HI_NULL);
-​             ModuleMgr_Link_AddNode  内核模块管理
-​             KMODULE_MEM_POOL_AddModule
-​                 KMODULE_MEM_POOL_FindNode    找到空的没有使用的节点
-​                 KMODULE_MEM_POOL_MALLOC 分配内存，然后放到链表
-​             LOGAddModule                    日志
-​    HI_DRV_DEV_Register(&amp;g_AvplayRegisterData)
-​         HI_DRV_PM_Register(&amp;s_umap_devs[i]);   himedia封装处理
-​             himedia_device_alloc(himedia-&gt;name, -1);
-​             himedia_device_add(bdev);
-​                 dev_set_name(&amp;pdev-&gt;dev, "%s.%d", pdev-&gt;name, pdev-&gt;id);
-​                 device_add(&amp;pdev-&gt;dev);
-​             device_create(himedia_class, &amp;(bdev-&gt;dev), dev, NULL, "%s", himedia-&gt;name);
-​             himedia_driver_alloc(himedia-&gt;name, himedia-&gt;owner, himedia-&gt;base_ops);
-​             himedia_driver_register(bdrv);
-​                 driver_register(&amp;drv-&gt;driver);
-​   
- 
-  g_AvplayRegisterData.fops = &amp;AVPLAY_FOPS;
-  g_AvplayRegisterData.minor = UMAP_MIN_MINOR_AVPLAY;
-  g_AvplayRegisterData.owner = THIS_MODULE;
-  g_AvplayRegisterData.drvops = &amp;AVPLAY_DRVOPS;  
- 
-  s_umap_devs[i].minor = umapd-&gt;minor;
-  s_umap_devs[i].name = umapd-&gt;devfs_name;
-  s_umap_devs[i].owner = umapd-&gt;owner;
-  s_umap_devs[i].app_ops = umapd-&gt;fops;
-  s_umap_devs[i].base_ops = umapd-&gt;drvops;
-IOCTL实现分析 基于avplay
-在HI_DRV_DEV_Register中注册
-static struct file_operations AVPLAY_FOPS =
-{
-    .owner          =  THIS_MODULE,
-    .open           =  AVPLAY_DRV_Open,
-    .unlocked_ioctl =  AVPLAY_DRV_Ioctl,
-    .release        =  AVPLAY_DRV_Close,
-};      
-AVPLAY_DRV_Ioctl
-         HI_DRV_UserCopy(ffile-&gt;f_dentry-&gt;d_inode, ffile, cmd, arg, AVPLAY_Ioctl);
-                   func(inode, file, cmd, (parg));           这里对ioctl进行了一层封装，copy_from_user，copy_to_user的自动化处理
-AVPLAY_Ioctl(struct inode *inode, struct file *file, unsigned int cmd, HI_VOID *arg)  
-                   CMD_AVPLAY_CREATE            
-                            AVPLAY_Create
-                                     HI_DRV_MMZ_AllocAndMap(BufName, MMZ_OTHERS, 0x2000, 0, &amp;MemBuf);
-                                     HI_DRV_PROC_AddModule(ProcName, HI_NULL, HI_NULL);                 这里实现了proc目录的生成，下面是读写proc
-                                pProcItem-&gt;read = AVPLAY_ProcRead;
-                                pProcItem-&gt;write = AVPLAY_ProcWrite;
-avplay 多个实例如何找到对应实例
-AVPLAY_GET_INST_AND_LOCK();
-         AVPLAY_CheckHandle
-                   pAvplayUsrAddr-&gt;AvplayId = hAvplay &amp; 0xff;
-                   ioctl(g_AvplayDevFd, CMD_AVPLAY_CHECK_ID, pAvplayUsrAddr);
-drv中的实现
-AVPLAY_Ioctl            
-         AVPLAY_CheckId              
-                   pAvplayUsrAddr-&gt;AvplayUsrAddr = g_AvplayGlobalState.AvplayInfo[pAvplayUsrAddr-&gt;AvplayId].AvplayUsrAddr;
-VPSS
-
-    g_VpssRegisterData.fops   = &amp;s_VpssFileOps;
-    g_VpssRegisterData.minor  = UMAP_MIN_MINOR_VPSS;
-    g_VpssRegisterData.owner  = THIS_MODULE;
-g_VpssRegisterData.drvops = &amp;s_VpssBasicOps;
-VPSS_DRV_Init
-VPSS_CTRL_Init
-         VPSS_CTRL_RegistISR     注册中断
-         VPSS_CTRL_InitInstList((VPSS_IP_E)i)     管理vpss实例链表初始化
-         VPSS_HAL_Init                   内存，寄存器配置
-         VPSS_CTRL_CreateThread      内核线程
-                   VPSS_CTRL_ThreadProc
-                            VPSS_CTRL_CreateTask           创建任务
-                            VPSS_CTRL_StartTask               开始任务
-VDEC
-
-
-Avplay解码ES流过程
-步骤 1 初始化并配置相关设备，如 DISPLAY、 VO、 SOUND、 DEMUX 设备等。
-步骤 2 调用 HI_UNF_AVPLAY_Init 接口初始化 AVPLAY 设备。
-步骤 3 调用 HI_UNF_AVPLAY_GetDefaultConfig 接口获取缺省的 AVPLAY 配置，注意选择HI_UNF_AVPLAY_STREAM_TYPE_ES 模式。
-步骤 4 根据应用需要，修改码流属性参数。
-步骤 5 调用 HI_UNF_AVPLAY_Create 接口创建 AVPLAY 播放器。
-步骤 6 调用 HI_UNF_AVPLAY_ChnOpen 接口打开音频或视频通道。
-步骤 7 调用 HI_UNF_AVPLAY_SetAttr 接口设置音频解码器或视频解码器属性，同步设置为自由播放。
-步骤 8 调用 HI_UNF_SND_CreateTrack 创建 Track。
-步骤 9 调用 HI_UNF_SND_Attach 接口将音频播放器与 Track 绑定。
-步骤 10 调用 HI_UNF_VO_AttachWindow 接口将视频播放器与 VO 的窗口绑定。
-步骤 11 调用 HI_UNF_VO_SetWindowEnable 接口使能窗口。
-步骤 12 调用 HI_UNF_AVPLAY_Start 接口发送 Start 命令，开始播放音频或视频。
-步骤 13 调用 HI_UNF_AVPLAY_GetBuf 接口申请存放音频或视频的缓冲区。
-步骤 14 通过内存拷贝或文件读取等方式，将音频或视频数据直接写到缓冲区中。
-步骤 15 调用 HI_UNF_AVPLAY_PutBuf 接口更新音视频缓冲区中的读写指针。
-步骤 16 播放任务结束后，首先调用 HI_UNF_AVPLAY_Stop 接口停止 AVPLAY，再调用HI_UNF_AVPLAY_Destroy 接口销毁 AVPLAY，释放相关资源。
-步骤 17 关闭相关设备，如 DISPLAY 设备、 VO 设备、 SOUND 设备、 DEMUX 设备和AVPLAY
-
-MCE实现了启动过程画面的平滑切换
-IR
-
-驱动层
-负责完成红外模块的中断处理，在底半部中遍历所有协议并调用 match 函数来判定当前收到的红外帧属于哪种协议。如果没有匹配，则丢弃当前帧。完成最顶层的错误处理：如果当前帧当前时刻还不能被解析，则会等待大约 200ms 之后再次尝试，如果失败，则丢弃当前帧。
-协议适配层
-完成各个协议的初始化工作，向上提供遍历协议的接口，向下提供容纳协议描述符的存储空间。
-协议处理层
-协议处理层完成判定：由从某个 symbol 开始的一连串 symbol 是不是符合本协议的一
-帧。在判定某一帧符合本协议的前提条件下，完成一帧 symbol 的解析，将对应的键值解析出来。如果在解析过程中出错，或者判定是本协议的帧，但无法解析时，完成错误处理。
-
-​    
-
-
-
-4.4 Sample_mosaic分析
-应用层调用
-
-上图是部分截图，完整大的原图见目录中svg文件
-valgrind --tool=callgrind ./sample_mosaic 1080P.h264 h264
-
-系统调用
-Strace分析
-
-5:小结：
-海思MPI驱动其实就是在标准linux驱动基础之上封装了一层，增加了log，proc，内存管理（映射，链表）功能。MPI是在标准linux驱动基础上封装了DVR常用外围逻辑接口，并且统一并简化了接口操作方式，原来各个外围子系统操作方式差别很大，不同实现框架，实现方式使用方法也不一样（如VI，VO，AI/AO，VPSS，如果自己用标准linux子系统实现要复杂得多）。
-应用层MPI接口是在MPI驱动基础上再次封装了一层，封装了驱动的调用，配置等操作，在驱动功能的基础上进一步封装完成了一些简单的业务功能接口，方便了用户的使用。UNF就是在MPI基础上增加了业务逻辑封装，把常用的业务逻辑封装成接口，大大方便用户的应用程序开发。
-5.1 UNF相对标准内核模块区别
-5.1.1 Proc读写调试。
-实时查询运行状态，修改设置。通用的proc目录、文件创建销毁有通用接口。读写proc文件在每个内核模块中有单独实现。
-5.1.2 内核空间往应用空间写文件
-方便调试，Dump内核数据到用户控件方便定位Bug。
-HI_DRV_FILE_Open
-filp_open
-HI_DRV_FILE_Close
-​    filp_close
-HI_DRV_FILE_Read
-​    pFile-&gt;f_op-&gt;read
-HI_DRV_FILE_Write
-​    pFile-&gt;f_op-&gt;write
-HI_DRV_FILE_Lseek
-​    vfs_llseek
-5.1.3Log管理
-日志打印分级，实时修改。如何实现的见前面章节。
-5.1.4内存映射
-物理地址，虚拟地址映射关系管理，小块内存使用kmalloc申请，大块内存使用dma_alloc_from_contiguous申请。
-使用内核链表管理。
-打印到proc，log模块中，实时查看运行状态，内存。
-方便查找，打印。
-在多个内核共享数据也是这样实现的。
-5.2代码分析方法
-5.2.1 查看代码，静态分析应用层，驱动层实现方法
-5.2.2 图示静态分析函数调用关系.
-Cflow, dot
-5.2.3 图示动态分析函数调用关系：库函数，系统调用，内核调用
-​    Ltrace, strace, valgrind, perf
-具体分析方法，使用工具见前面章节。
-参考文档：
-
-03-HMS 开发指南.pdf
-HiSTBAndroidV600R001C00SPC060_cn\document\01-Development Guide
-HiMPP V3.0 媒体处理软件开发参考.pdf
-HiSTBAndroidV600R001C00SPC060_cn\document\01-Development Guide
-3798m SDK 代码
-HMS API Development Reference.chm
-HiSTBAndroidV600R001C00SPC060_cn\document\01-Development Guide\09-API Reference
-
-系列教程
-全部文章RSS订阅
-Embeded系列 Embeded 分类 RSS 订阅
-
-海思MPP&amp;UNF构架源代码级分析
-3G,4G,Wifi选型需求分析及技术简介
-自动曝光原理
-ISP 数字图像处理 算法概述、工作原理、架构、处理流程
-
-]]></content>
-      <categories>
-        <category>embeded</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>embeded</tag>
-        <tag>driver</tag>
-        <tag>hisilicon</tag>
-        <tag>3798m</tag>
-        <tag>mpp</tag>
-        <tag>unf</tag>
-        <tag>kernel</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>【Gitbook】GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</title>
-    <url>/posts/7fe86002/</url>
-    <content><![CDATA[随着工作时间越来越久，项目越做越多，很多时候，手里面的技术文档都是零散的技术点。最近一直在着手把项目的技术开发文档(Technical Document)系统地整理一下。正好看到了非常棒的 GitBook 工具，又顺带研究了如何借助 Gitlab 的 CI/CD 功能实现自动部署。
-正好开个简短的教程，介绍一下 GitBook + GitLab怎样来撰写并发布文档。
-第一部分先来介绍一下 GitBook。
-系统环境
-惯例列出来我们的环境以及用到的工具。
-
-MacOS 10.12
-Node.js (版本 &gt; 4.0.0)
-Atom/MWebLite
-
-其实 Gitbook 有官方的编辑器，但是似乎对中文的支持不是很好，而且会有 bug，虽然最新版本做了优化，Mardown 格式的文字有些会自动显示成最终样式，而我个人还是比较喜欢原生的 markdown，所以我个人就没有用官方的编辑器。
-如果读者注册了 gitbook，并且打算文章都发布到 gitbook 官网上的话，还是建议可以使用官方的编辑器。因为我的目标是发布到公司内网的 gitlab 上，所以这里就用 atom 或者 MWebLite 来编写文档。
-其实这篇文章过后，大家对 Gitbook 的工作机制就很清楚了，完全可以自由地创作了。
-基本使用
-安装
-安装过程非常简单
-npm install gitbook-cli -g
-新建book
-安装成功后，我们就可以开始用gitbook 的命令来进行各种操作了。如果熟悉hexo的同学会发现，其实大同小异，只不过一个用来写blog，一个用来写 book。
-$ mkdir myBook
-$ cd myBook
-$ gitbook init
-初始化后，我们能在myBook目录下看到两个 markdown 文f件。这两个文件就是我们写一本书唯二必须要用的文件了。
-
-预览book
-先不做任何变动，模拟一下我们发布之后的页面的成品吧。
-$ gitbook serve
-
-我们打开浏览器，在浏览器中输入0.0.0.0:4000就可以在本地预览了。
-
-可以看到，左侧是我们的菜单栏，自带一个搜索栏，右侧就是我们的 book 的内容了，右上角有默认的诸如 twitter,facebook 等分享快捷方式。基本上和其他人用 gitbook 写出来的页面是一样的。
-
-注：
-
-gitbook 新版本提供了本地预览功能的热更新，也就是说本地预览的页面会随着我们写书的内容变化而自动更新，这着实是一个很使用的功能。
-在命令行ctrl+c可以关闭本地服务器，即预览页面。
-
-
-我们可以尝试修改一下书的内容，看一下页面的变化。打开README.md文件，修改成如下内容：
-# Introduction
- 
-Hello World!
-再回头看一眼我们的预览页面，是不是自动变成了下面的样子。
-
-关于 gitbook 自建的 README.md 文件我就不做过多的介绍了，都是一些 Markdown 的基本语法，相信使用 gitbook 的各位一定是对 markdown 语法非常熟悉的了。
-目录
-现在我们把注意力放到 gitbook 为我们创建的第二个文件SUMMARY.md上，这个文件决定了我们的目录结构。 一个比较简单的目录结构如下：
-# Summary
- 
-* [前言](README.md)
-* [第一章](xx.md)
-* [第二章](xx.md)
-* [第三章](xx.md)
-xx.md就是我们每个章节独立的 markdown 文件，所以用 gitbook 写一本书真的非常方便，一个目录文件，和若干个你的书的内容就好了。
-
-目录分层
-简单的目录有一个小的问题就是我们目录都只有一级，如果想要分层，比如第一章有1，2，3个小节，该怎么办呢？ 这里有两种方式：
-标题区分
-我们把SUMMARY.md文件修改成如下内容
-# Summary
- 
-## 前言
-* [前言](README.md)
- 
-## 第一章
-* [1.1小节]()
-* [1.2小节]()
- 
-## 第二章
-* [2.1小节]()
-* [2.2小节]()
- 
-## 第三章
-* [3.1小节]()
-* [3.2小节]()
-最终的样式如下：
-
-缩进区分
-我们还可以用缩进的方式对目录进行级别的区分
-# Summary
- 
-* [前言](README.md)
-* [第一章]()
-    * [1.1小节]()
-    * [1.2小节]()
-* [第二章]()
-    * [2.1小节]()
-    * [2.2小节]()
-* [第三章]()
-    * [3.1小节]()
-    * [3.2小节]()
-最终的样式如下：
-
-大家可以根据自己的喜好选择不同的样式，也可以把这两者结合起来一起用，as you wish.
-打包发布
-通过预览模式，我们可以随时掌握书籍的更新内容。当你完成了部分章节或者全书的编写后，我们需要把写好的内容打包并发布。
-$ gitbook build
-执行完上面的命令后，我们会发现在根目录下出现了_build文件夹，里面的文件就是我们需要发布的内容，你可以把所有的内容放到你的网站目录下，或者 gitlab/github 的 page页面，就实现了 gitbook 的线上发布了~
-进阶技巧
-看完上面的章节，你已经可以独立完成一本书的编写和发布，接下来的章节，我们提供一些进阶的技巧，你可以安装一些插件、更直观地规划你的目录结构等等。
-插件
-和众多开源的软件一样，gitbook 也有一些插件，这些插件可以让你的书更加完美。这里我仅附上我个人觉得比较有用的几个插件，更多的插件，可以访问社区来获取。
-插件的引入和修改都是在配置文件中完成的，那我们可以在根目录下创建book.json文件来修改当前书的一些配置，因为是 json 格式的，所以诸如书的标题、作者、内容等都可以在配置文件中完成，我们重点来说插件。
-{
-     "plugins": [
-          "-lunr",
-          "-search",
-          "search-plus",
-          "splitter",
-          "copy-code-button",
-          "expandable-chapters-small"
-     ]
-}
-以上是我的book.json配置文件，只有一个关于插件的配置项，其实总共就4个
-
-search-plus 让搜索支持中文，注意需要先把默认的两个插件lunr和serach禁用掉，禁用的方式就是在前面加上-号
-spliter 菜单栏宽度可调节
-copy-code-button 代码可以一键 copy
-expandable-chapters-small 菜单栏可以折叠
-
-
-注：
-如果引入了新的插件，需要通过gitbook install 命令来安装新的插件，否则在打包发布的时候会提示错误。
-
-目录结构
-一个基本的目录结构是这样的
-.
-├── _book/
-├── book.json
-├── README.md
-├── SUMMARY.md
-├── xx1.md
-├── xx2.md
-├── xx3.md
-├── xx4.md
-├── ...
-不过为了我们自己方便，个人建议的目录结构如下
-.
-├── _book/
-├── node_modules/
-├── .gitlab-ci.yml
-├── book.json
-├── SUMMARY.md
-├── content/
-|   ├── chapter1/
-|       ├── README.md
-|       └── something.md
-|   ├── chapter2/
-|       ├── README.md
-|       └── something.md
-├── res/
-|   ├── 1.png
-|   └── 2.jpg
-|   └── 3.jpeg
-|   └── ...
-说明：
-
-_book 目录是我们打包后要发布的文件目录
-node_modules 目录是我们安装插件后默认生成的目录
-.gitlab-ci.yml这个是 gitlab 要用的 ci 配置文件，下一章节我们马上就会用到
-book.json 是我们的配置文件
-content目录是我们的书的内容，所有章节都可以分类继续整理，方便自己查看
-res目录是我们要用到的一些图片资源文件夹，除了用到床图，我们可以把其他本地图片资源也包含进来
-
-参考&amp;致谢
-
-Gitbook 简要介绍
-GitBook 学习笔记
-
-From: lipeng1667
-系列教程
-全部文章RSS订阅
-Gitbook使用系列 Gitbook分类RSS订阅
-
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-
-
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-
-
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-
-笔记系列  Note分类RSS订阅
-
-完美笔记进化论
-
-
-经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
-
-pigo图床搭建与配置
-Joplin教程
-Snipaste截图工具
-Typora 作为Markdown编辑器最强
-
-
-
-Joplin入门指南&amp;实践方案
-
-
-
-Joplin和使用
-Joplin同步与备份
-Joplin导入与导出
-
-
-
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-
-
-
-Joplin安装使用，调用外部编辑器，网盘同步等等
-
-
-
-Joplin 插件以及其Markdown语法。All in One!
-
-
-
-Joplin简明教程
-markdown语法简明教程
-
-
-
-Joplin 插件使用推荐
-
-
-
-教你用各种插件打造一个强大的笔记工具。
-
-
-
-为知笔记私有化Docker部署
-
-
-
-如何部署自己私有的为知笔记。
-其实博主更推荐私有部署joplin
-
-
-Gitlab 使用系列  Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-]]></content>
-      <categories>
-        <category>gitbook</category>
-      </categories>
-      <tags>
-        <tag>git</tag>
-        <tag>linux</tag>
-        <tag>gitbook</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>自动曝光原理</title>
-    <url>/posts/509c7bd3/</url>
-    <content><![CDATA[自动曝光的原理
-曝光是摄影中十分重要的一个环节，它决定了一张图片的明暗，如下图所示，第一张图片太暗，而第三种图片太亮。
-
-曝光由什么来决定
-使用过数码相机的人都知道曝光由光圈、曝光时间、ISO三者共同决定，详细的关系就不赘述。
-光圈：控制进光量；
-曝光时间：光到达的时间长度；
-ISO：增益；
-但是对于手机以及其他电子产品使用的微型摄像头，光圈大小是固定的，所以手机拍照的曝光由曝光时间和**增益(ISO)**来控制。
-什么是自动曝光
-数码相机中有一种手动模式，可手动设置光圈、曝光时间、ISO来控制曝光，该模式的使用对摄影师的要求会比较高。另外 数码相机的全自动模式、光圈优先模式、快门优先模式以及手机等电子产品的曝光都属于自动曝光。
-自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。
-自动曝光的标准
-在此之前需要了解物体的亮度与色彩是由物体对光线的反射率来决定的。例如纯黑色的放射率是0，纯白色的反射率是100%，处于中间的灰度的反射率是18%，这就是18%中间灰度。
-
-具有一定反射率的物体在最终的图像中被还原到了其相应的灰度级，这就意味着达到了正确的曝光。例如摄影师们通常在拍摄之前使用中性灰卡测试曝光是否正常。
-但是相机在各种场景下无法识别物体的反射率，因此采用了一个简单粗暴而又行之有效的方法，统一将图像整体平均亮度设置为中性灰的亮度。该方法基于**科学家认为自然界的平均反射率是18%**这一理论。当然，这个方法也不是走遍天下都不怕，比如拍摄雪景时需要增加曝光补偿，不然会偏暗，因为雪景的亮度远远大于中性灰度。这也就是摄影中的一句口诀的由来“白增黑减”。
-自动曝光算法
-上面已经讲了自动曝光的标准，也就确立了曝光目标，要达到这一目标还要自动曝光算法来实现。
-目前比较常见的算法有平均亮度法、权重均值法、亮度直方图等。其中最普遍的就是平均亮度法。平均亮度法就是对图像所以像素亮度求平均值，通过不断调整曝光参数最终达到目标亮度。而权重均值法是对图像不同区域设置不同权重来计算图像亮度，例如相机中的各种测光模式的选择就是改变不同区域的权重。亮度直方图法是通过为直方图中峰值分配不同权重来计算图像亮度。
-自动曝光实现的过程：
-第一步：对当前图像进行亮度统计；
-第二步：根据当前图像亮度确定曝光值；
-第三步：计算新的曝光参数，曝光时间、光圈、增益；
-第四步：将新的曝光参数应用到相机；
-第五步：重复步骤一到四，直到亮度满足要求。
-曝光参数调整_曝光表
-前面留下两个问题：“第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。” 第一个问题在前面有过解释，第二个问题也就是自动曝光实现步骤的第三步，曝光值由光圈、曝光时间、增益沟通决定，当计算出一个曝光量，曝光三要素有很多种组合方式。一般情况下有曝光曲线，每个曝光量对应一组参数。手机中曝光曲线可以通过Tuning调整。
-From: 积极的悲观主义者
-系列教程
-全部文章RSS订阅
-Embeded系列 Embeded 分类 RSS 订阅
-
-海思MPP&amp;UNF构架源代码级分析
-3G,4G,Wifi选型需求分析及技术简介
-自动曝光原理
-ISP 数字图像处理 算法概述、工作原理、架构、处理流程
-
-]]></content>
-      <categories>
-        <category>embeded</category>
-      </categories>
-      <tags>
-        <tag>3a</tag>
-        <tag>ae</tag>
-        <tag>image</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>在浏览器输入 URL 回车之后发生了什么</title>
     <url>/posts/656a0abb/</url>
     <content><![CDATA[前言
@@ -10070,6 +10019,57 @@ From: 4ark.me
       </tags>
   </entry>
   <entry>
+    <title>自动曝光原理</title>
+    <url>/posts/509c7bd3/</url>
+    <content><![CDATA[自动曝光的原理
+曝光是摄影中十分重要的一个环节，它决定了一张图片的明暗，如下图所示，第一张图片太暗，而第三种图片太亮。
+
+曝光由什么来决定
+使用过数码相机的人都知道曝光由光圈、曝光时间、ISO三者共同决定，详细的关系就不赘述。
+光圈：控制进光量；
+曝光时间：光到达的时间长度；
+ISO：增益；
+但是对于手机以及其他电子产品使用的微型摄像头，光圈大小是固定的，所以手机拍照的曝光由曝光时间和**增益(ISO)**来控制。
+什么是自动曝光
+数码相机中有一种手动模式，可手动设置光圈、曝光时间、ISO来控制曝光，该模式的使用对摄影师的要求会比较高。另外 数码相机的全自动模式、光圈优先模式、快门优先模式以及手机等电子产品的曝光都属于自动曝光。
+自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。
+自动曝光的标准
+在此之前需要了解物体的亮度与色彩是由物体对光线的反射率来决定的。例如纯黑色的放射率是0，纯白色的反射率是100%，处于中间的灰度的反射率是18%，这就是18%中间灰度。
+
+具有一定反射率的物体在最终的图像中被还原到了其相应的灰度级，这就意味着达到了正确的曝光。例如摄影师们通常在拍摄之前使用中性灰卡测试曝光是否正常。
+但是相机在各种场景下无法识别物体的反射率，因此采用了一个简单粗暴而又行之有效的方法，统一将图像整体平均亮度设置为中性灰的亮度。该方法基于**科学家认为自然界的平均反射率是18%**这一理论。当然，这个方法也不是走遍天下都不怕，比如拍摄雪景时需要增加曝光补偿，不然会偏暗，因为雪景的亮度远远大于中性灰度。这也就是摄影中的一句口诀的由来“白增黑减”。
+自动曝光算法
+上面已经讲了自动曝光的标准，也就确立了曝光目标，要达到这一目标还要自动曝光算法来实现。
+目前比较常见的算法有平均亮度法、权重均值法、亮度直方图等。其中最普遍的就是平均亮度法。平均亮度法就是对图像所以像素亮度求平均值，通过不断调整曝光参数最终达到目标亮度。而权重均值法是对图像不同区域设置不同权重来计算图像亮度，例如相机中的各种测光模式的选择就是改变不同区域的权重。亮度直方图法是通过为直方图中峰值分配不同权重来计算图像亮度。
+自动曝光实现的过程：
+第一步：对当前图像进行亮度统计；
+第二步：根据当前图像亮度确定曝光值；
+第三步：计算新的曝光参数，曝光时间、光圈、增益；
+第四步：将新的曝光参数应用到相机；
+第五步：重复步骤一到四，直到亮度满足要求。
+曝光参数调整_曝光表
+前面留下两个问题：“第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。” 第一个问题在前面有过解释，第二个问题也就是自动曝光实现步骤的第三步，曝光值由光圈、曝光时间、增益沟通决定，当计算出一个曝光量，曝光三要素有很多种组合方式。一般情况下有曝光曲线，每个曝光量对应一组参数。手机中曝光曲线可以通过Tuning调整。
+From: 积极的悲观主义者
+系列教程
+全部文章RSS订阅
+Embeded系列 Embeded 分类 RSS 订阅
+
+海思MPP&amp;UNF构架源代码级分析
+3G,4G,Wifi选型需求分析及技术简介
+自动曝光原理
+ISP 数字图像处理 算法概述、工作原理、架构、处理流程
+
+]]></content>
+      <categories>
+        <category>embeded</category>
+      </categories>
+      <tags>
+        <tag>3a</tag>
+        <tag>ae</tag>
+        <tag>image</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>深度学习之视频人脸识别系列</title>
     <url>/posts/a0f3c838/</url>
     <content><![CDATA[系列1 简介
@@ -10319,219 +10319,6 @@ From： https://cloud.tencent.com/developer/article/1160037?from=article.detail.
       <tags>
         <tag>ai</tag>
         <tag>face</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>从文学的角度，分析韩红的《天亮了》</title>
-    <url>/posts/cb623532/</url>
-    <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-CceiTPpzKPQjwhJB").style.height=document.getElementById("mmedia-CceiTPpzKPQjwhJB").scrollWidth*0.76+"px";
-    window.onresize = function(){
-      document.getElementById("mmedia-CceiTPpzKPQjwhJB").style.height=document.getElementById("mmedia-CceiTPpzKPQjwhJB").scrollWidth*0.76+"px";
-    }; 
-
-精品分析： 原作：石晶兰 短文吧
-再做个传送门： 天亮了，听歌时，关灯，准备纸巾。
-
-先分析结构。
-看歌词。
-那是一个秋天，风儿那么缠绵，
-让我想起他们那双无助的眼。
-就在那美丽风景相伴的地方，
-我听到一声巨响震彻山谷。
-就是那个秋天，再看不到爸爸的脸。
-他用他的双肩，托起我重生的起点。
-黑暗中泪水沾满了双眼，
-不要离开不要伤害。
-共八行，等于两个四行。
-两个四行一一对应，前三行，旋律基本是相同的。只有最后一行，为了与后面衔接，所以不同。
-两个四行的布置，等于是一种重复。
-这样的重要，在文学结构上，常见于起承。
-但歌，相当于诗。囿于篇幅，在结构上，通常会有所缺失。起承两者，一般缺失的，都是起。那样的做法，也就是直接叙事，存在让受众猝不及防的弊病。
-然后，《天亮了》并不是。
-“那是一个秋天，风儿那么缠绵”和“就是那个秋天”分明是起。
-所以，《天亮了》并没有进行文学结构上的省略。
-“那是一个秋天，风儿那么缠绵”是起，接紧着的三行歌词，自然就是承了。
-那么，第五行“就是那个秋天”怎么又来一个起呢？
-自然是因为篇幅太短，叙事不够（前面承得不够），所以，还需要再承一下。
-不能够不要第五行的起，直接往下写吗？
-真要说的话，其实也能。不过，再加四行承，真的就能把事情说清楚吗？
-显然，韩红想要表达的东西很多，她认为，不能。
-仅靠精练语言，明显是不够的，还需要换角度陈述。
-第五行的再起，实际上，就是为后面的换角度承，打基础的。
-这种写法，也是有先例的。请看邓丽君《相见在明天》歌词：
-记得我俩初相见，
-风吹花儿飞满天。
-你说我的笑容像花朵，
-比那花儿更娇艳。
-我还记得那一天，
-送你送到小河边。
-手牵着手呀心里有千言，
-相对却无言。
-跟《天亮了》一样，《相见在明天》也是两个四行，也是起承起承。
-并且，两起两承，还跟诗词的押韵一样，其重复，不仅有加深印象的作用，更有共鸣回旋的作用，正是唐陈子昂所说的“音情顿挫”的顿挫，极大的提升了作品的美感，让受众的接受度大大提高，
-继续看《天亮了》歌词：
-我看到爸爸妈妈就这么走远，
-留下我在这陌生的人世间。
-不知道未来还会有什么风险。
-我想要紧紧抓住他的手。
-妈妈告诉我希望还会有。
-看到太阳出来妈妈笑了。
-天亮了。
-六行都是转。具体在这里，自然不是转折，而是高那个潮。
-此处值得一说的是合，只有三个字“天亮了”。
-这三个字，正好也是这首歌的歌名。
-但是这三个字表达的，到底是什么意思、什么情感呢？
-题都城南庄/唐/崔护
-去年今日此门中，人面桃花相映红。
-人面不知何处去，桃花依旧笑春风。
-不难看出，最后一句“桃花依旧笑春风”跟前面三句的叙述，是接不上的。
-去年这儿，有人面有桃花。今年这儿人面没有了，接下来说的通常是：还真是让人怀念啊。
-俗吗？的确俗。并且，还不仅仅是俗，还存在因为什么而怀念那个姑娘的严重问题。
-动机不纯的话，写出来就会玷污那个姑娘。动机纯粹，只是单纯的对美好事物的欣赏，写出来的话，又有自夸之嫌。
-还真是不好写啊。
-不好写，干脆就不写，另起一笔：“桃花依旧笑春风”。究竟表达的是什么样的滋味，让受众自己去想。
-《天亮了》末尾的合“天亮了”，就是“桃花依旧笑春风”这种表现手法。太多的感情，千言万语，加总在一起，实在难以挽上疙瘩。于是，就另起一行，来了句看似关系不大的“天亮了”，让一切，尽在无言中。
-不同的受众，会有不同的感受。因而这种让受众自己去想的结尾，总是余味无穷。
-文学结构分析，就到这儿。第二段的结构跟第一段相同，就不讲了。
-下面进行逐句评讲。
-“那是一个秋天，风儿那么缠绵，”没毛病。“那是”开头，虽然不出彩，但是很自然，容易被人接受，接着往下听。
-“让我想起他们那双无助的眼。”这里，“他们”是两个人；“那双”眼睛虽然是复数，但落实到人，却是单数。因此，这是一个小错误。
-很显然，用相同性质的词语直接替换是不行的，譬如“四只”。四，数量较多，会分散受众的注意力，让受众去思考为什么是四。因而，如果硬要改的话，只能用其它性质的词语去替换，譬如“彷徨”。
-但“彷徨无助”，又稍显生僻，会影响听者的接受速度，形成不怎么大的接受障碍。而如果也用“无”的话，无什么呢？无神？听上去，岂不是比“彷徨无助”更不容易分辨。
-所以，实在要改，就只能把“他们”二字挪到这儿。
-那样一来，“让我想起”就要掺进两个水字了，譬如“风儿让我想起”。
-是不是太水了？
-于是，我最终感觉，还是不改为好。
-小错误嘛，存在也无妨。这就像文豪写书法一样，多一点少一点，多一笔少一笑，根本不算错误，关键是，那个字不能被错认为是别的字。
-“那双无助的眼”也一样，虽然存在小错误，但由于不影响表达内容，听者一听，就知道是怎么回事。由于没有影响信息传递，所以不改也是行的。
-“就在那美丽风景相伴的地方，我听到一声巨响震彻山谷。”这两小句，没有基础毛病。
-值得注意的是，这两小句，存在一个对比：一个美丽的地方，一件悲惨的事。颇有一种把美好的事情撕烂了给读者看的悲剧色彩。
-“就是那个秋天，再看不到爸爸的脸。”
-为什么提到爸爸没提到妈妈？爸爸妈妈，可以一起提，也可以先后提。这里，实际上是先后提。先提爸爸，后面会提到妈妈。
-先提爸爸，又比先提妈妈要好。这是因为，时至今日，最不令人怀疑的，是父女情。虽然背景事件中，那是个儿子，但韩红是女的，唱出来的声音又带有明显的女性特征。女声，提到爸爸，无形中，就相当于女儿提到爸爸。其中的感情，就往父女情的方向靠近了那么一点，让听者一下就能接受，丝毫没有怀疑。
-“他用他的双肩，托起我重生的起点。”
-背景事件的具体经过，可能生还的当事人都已经记不清楚了。这一句，属于带有归纳性、比拟性的描述。因而不需要因为“用”“双肩托起”，去询问是不是父亲从洪水中救起了儿子那样的细节。
-“黑暗中泪水沾满了双眼，”
-“黑暗中”很妙。只描述了环境，没有指明时间。那其实表达的是，若干个“黑暗中”。包括当时，也包括事后。并且，“黑暗”有天然的，也有人为的。天然的，譬如天黑加停电；人为的，譬如钻进被窝里。这些，都被包括了进去。
-“不要离开、不要伤害。”这句，就有些难度了。
-“不要离开”好理解。可以是儿子对父母的呼唤。但“不要伤害”呢？
-“不要伤害”，到底是谁对谁发出的呐喊，后面再讲。
-“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。不知道未来还会有什么风险。”
-三小句，基础上没毛病。直接看上去，字面意思表达能力似乎稍弱。真是不是，后面再说。
-“我想要紧紧抓住他的手”中的“他”，指父亲，也可以指母亲。
-“妈妈告诉我希望还会有。看到太阳出来妈妈笑了。”这是绝望中的回忆。这一家人，以前也是经受过苦难的。在曾经难熬的岁月中，妈妈曾经多次鼓励过儿子。鼓励的时候，有直述“告诉我希望还会有”，也有以身作则“看到太阳出来，妈妈笑了”。
-“天亮了。”尽在不言中，就不再讲了。
-“这是一个夜晚天上宿星点点，我在梦里看见我的妈妈。”
-继“那是”之后，此处出现了“这是”。表示已经是事后，灾难之后。
-“一个人在世上要学会坚强”，很明显，这不是儿子对父母能够说出的话。
-结合前一小句“我在梦里看见我的妈妈”，可以发现，这是妈妈对儿子说的话。并且还是死去之后的妈妈对儿子所说的话。
-“我在梦里看见我的妈妈。一个人在世上要学会坚强”紧接着的两句，主语变了。前一句是“我”，后一句是“妈妈”。同时，又因为死去的人继续说话这一违反科学常理的设定，使得后一句主语“妈妈”变得有些难以理解。
-其实，受众的心，也是强大的。多听两遍，也还是能够理解的。
-这两句主语的变化，从玄学的角度看，简单。但从文学的角度看，跳跃就非常大了。
-唐/李白有句：“千里江陵一日还”。“千里江陵”说的是千里之外的江陵。站在什么地方能够说出此话，自然是白帝城。“还”，指回来，站在什么地方能够说“还”，当然只能是江陵。就这么一句，视角就从白帝城跳到了江陵。
-《天亮了》中，这两句紧挨着的歌词的主语跳跃，其实跟“千里江陵一日还”的视角跳跃，是相似的类型。
-“你不要离开不要伤害”上一段出现过，就不讲了。
-“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。”
-比较上一段，区别的，是第三小句。此处的第三小句，从陈述中跳脱出来了，相当于插入了一个事后的心愿。
-“我想要紧紧抓住他的手。妈妈告诉我希望还会有，看到太阳出来、天亮了。”
-比较上一段，区别的仍然是第三小句。“妈妈笑了”变成“天亮了”。但此处的“天亮了”，跟前面不一样，并不是起承转合的合，不是收尾，而就是一个简单的陈述，其实质，就相当于“妈妈笑了”。
-“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。
-“我想要紧紧抓住他的手。妈妈告诉我希望还会有。看到太阳出来，他们笑了。”
-重复，强调，加倍。略有不同的，就是“妈妈笑了”变成“他们笑了”。由“妈妈”变成“他们”，实际上也在告诉受众，马上就要收尾了。
-以什么收尾，收到哪里呢？依然还是“天亮了”，尽在不言中，让受众自己去想，
-不知道是哪年哪天了，无意中，我就这么偶然听到了这首歌。
-一听，就感受很好听。
-一听，就听出来了，里面讲述了一场事故。因为有“我听到一声巨响震彻山谷”、“再看不到爸爸的脸”。
-另外，还听出了事故中，父母对孩子的救助。因为有“他用他的双肩托起我重生的起点”。
-很明显，事故是悲惨的，事故中的父母是可歌可泣的，事故之后的儿子或女儿（从歌词中听不出孩子的性别）是可怜的。
-但是，就这么算了么？
-这么好听的歌，最后一句“天亮了”到底表述的是怎样的感情？
-没弄清楚，怎么能算完。
-生活中，有各种各样的事故。最常见的，恐怕应该是车祸。
-车祸事故，几乎每天都能够在地方新闻上看到。
-看到车祸事故的新闻，心中有什么感受？
-悲伤么？自然没有。
-一般来说，亲人，才会悲伤。陌生人，通常只是略带同情、怜悯。
-此处说的是，同样的事，因为自身角度的不同，感受大不相同。
-那么，《天亮了》应该站在什么样的角度去欣赏呢？
-最容易想到的角度，有两个。
-一是生还的儿子或女儿。但是，站在这个角度欣赏，“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间，不知道未来还会有什么风险。”真的弱爆了。
-另一个角度，则是富有同情心的旁观善良人士。这个角度的存在，是因为韩红。因为，就这么看过去，韩红，对于此次事故，似乎就是富有同情心的旁观善良人士。
-但这个角度还是不行。“黑暗中泪水沾满了双眼”，没什么感觉。
-于是乎，就剩下了不常见的角度——死去父母的角度！
-我试着想象了这样的角度，再听《天亮了》，眼泪一下子就出来了。
-我是在这之后，才搜索得知了《天亮了》的创作背景。
-是的，韩红，把自己当作那个孩子的父母，并且还把自己当作了孩子死去的父母。《天亮了》这首歌，表达的是死者对生者的寄托！
-重新再看歌词。“黑暗中泪水沾满了双眼”，所指的，就不仅仅是事后孩子多次在被窝里痛哭，并且还指死去的父母在地狱中带泪含悲。
-“不要离开”，只是孩子对父母的呼唤么？已然不是。以父母为参照物，生存的孩子，又何尝不是一种离开。
-当然不是说想要孩子一起死，否则就不会用双肩托起重生的起点了。
-“不要伤害”的答案，此时就出来了。那就是死去的父母发出的呐喊。呐喊的对象是天地——老天爷，不要伤害我们的孩子！
-“一个人在世上要学会坚强”不再是父母对自己的叮嘱，而是自己，对自己幸存的子女的叮嘱。
-于是乎，最后一句合中的“天亮了”，就表达了深深的无奈。
-天亮了，通常指清晨，代表的是希望。但是，对于死者来说，天亮了，就代表魂魄状态的死者必须离开。
-这是自然规律，死者必须离开。不想离开，也必须离开。因为——天亮了。
-难怪韩红唱这三个字的时候，泣不成声。
-题外话又冒出来了。
-我曾经进行过无数次评论。有那么一个人，曾经对于我的少部分评论非常不服。那就是，关于李白的诗的评论。
-他认为，一件事物，可以从好坏两方面去说。他认为，李白的诗，就像打油诗，水平并不高。只是因为我的评论，才变得水平绝高了。
-具体的说法就是，我先假定李诗水平绝高，然后往去往绝高的方向分析。
-我的确也是这样做的。
-但是，别人的诗，也可以假定为水平绝高啊，难道说真的就能分析出水平绝高来吗？
-譬如杜甫的“三顾频烦天下计”。“顾频烦”三字的“页”旁，看不见吗？不擅书法，才会视而不见，所以杜甫不擅书法。是“频烦天下计”么？明明就只烦了一次。次数相对较多的，反而是“顾”，顾了三次。于是这句应该读成“三顾频、烦天下计”。这水平还怎么绝高呢？
-相似的例子还有很多。无论是谁的作品，都能事先假定为水平绝高。但只有李白的诗，才会真的分析出水平绝高的答案出来。
-所以，李诗的水平，是真的绝高。
-这番题外话，表达的是，前面关于《天亮了》的评论，或许韩红自己并没那么想，或者韩红没想那么多，或许《天亮了》就仅仅是韩红的偶然之得。
-我要说的是，《天亮了》既然已经成为作品，那么它就脱离了作者韩红，变成了一种独立的存在。不能因为韩红的文学水平不够高，而去否认《天亮了》的文学成就。
-我的确是抱着欣赏的态度，先假定《天亮了》文学水平很高，然后真往极高文学水平的方向去分析的。但是很幸运，我得出了《天亮了》文学水平果然很高的结论。
-换首别的歌，行吗？
-谁说行，谁上。
-最后，我还要说的是，文学水平，所指的，并不仅仅是文字方面的能力。
-在打基础的时候，在斟酌字词句，在训练表达力、说服力的阶段，的确单指文字方面。
-但是，在跨入感染力阶段之后，就不是了。
-更多的，是提高心性。
-心性高了，视角就不同了，感受也随之不同了，不管是写出来的作品，还是唱出来的歌，那都是不同的。
-很多人说邓丽君的演唱水平并不高，那是不对的。应该说，邓丽君的演唱水平，其实很多人都达到过。个别的，譬如韩红，偶尔还超越过。
-但是，为什么邓丽君流传下来的歌曲就那么多呢？其他歌者流传下来的歌就那么少呢？
-就是因为心性。
-心性与感染力关系，最容易明白的例子，就是翻唱。
-《何日君在来》、《船歌》在邓丽君翻唱之前，并不好听，结果邓丽君一唱，就化腐朽为神奇了。
-恰好，韩红也有过化腐朽为神奇的表现，譬如《妹妹找哥泪花流》、《天之大》（可搜）。
-心性如此之高的韩红，偶得《天亮了》极高文学水准的作品，就是正常的了。
-（全文完）
-]]></content>
-      <categories>
-        <category>music</category>
-      </categories>
-      <tags>
-        <tag>music</tag>
-        <tag>韩红</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>解决Thinkpad笔记本喇叭破音问题！</title>
-    <url>/posts/c945eae1/</url>
-    <content><![CDATA[问题
-主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。
-分析
-从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。
-解决方案
-如是，网购了一个新喇叭，拆机，换上，完美解决问题！
-喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。
-
-
-
-这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。
-型号：Thinkpad T4X0S
-
-]]></content>
-      <categories>
-        <category>life</category>
-      </categories>
-      <tags>
-        <tag>thinkpad</tag>
-        <tag>sound</tag>
-        <tag>speaker</tag>
       </tags>
   </entry>
   <entry>
@@ -11988,6 +11775,300 @@ From https://mp.weixin.qq.com/s/UtYENocSsl0R10h8fww7Iw
       </tags>
   </entry>
   <entry>
+    <title>Vim IDE Docker 以及中文指南</title>
+    <url>/posts/647e6265/</url>
+    <content><![CDATA[
+Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！
+
+Vim Docker
+
+docker pull bloodstar/vim
+alias edit='docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim' 
+edit some.file 
+alias edit_update="docker pull bloodstar/vim:latest"
+Vim IDE Docker
+
+What's inside:
+
+Alpine Linux
+Vim + a ton of awesome plugins see bloodstar/vim:latest
+Good support of Golang development with bloodstar/go-tools container
+tmux
+powerline
+Mosh
+OpenSSH, Bash, OMF, Python, etc.
+
+how to start the daemon(and all containers)
+docker create -v '/usr/lib/go' --name go-tools \
+'bloodstar/go-tools' '/bin/true'
+
+docker run -v $('pwd'):/home/developer/workspace \
+--volumes-from go-tools \
+-v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
+-v /etc/localtime:/etc/localtime:ro \
+-d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
+--name drop-in bloodstar/drop-in
+-v /etc/localtime:/etc/localtime:ro - makes tmux display local time
+how to connect:
+mosh --ssh="ssh -p 62222" -- developer@$&lt;ip&gt; tmux -u
+or without host identity check:
+mosh --ssh="ssh -o StrictHostKeyChecking=no -p 62222" -- developer@$&lt;ip&gt; tmux -u
+Useful Bash scripts
+Connect
+#!/bin/bash
+ip=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' drop-in)
+mosh --ssh="ssh -p 62222" -- developer@$ip tmux -u
+start the daemon(and all containers)
+#!/bin/bash
+dtc_id=$(docker ps -a -q --filter 'name=vim-go-tools')
+if [[ -z "${dtc_id}" ]]; then
+ echo 'vim-go-tools container not found. Creating...'
+ docker create -v '/usr/lib/go' --name 'vim-go-tools' \
+   'bloodstar/go-tools' '/bin/true'
+ echo 'Done!'
+fi
+echo 'starting daemon...'
+docker run -v $('pwd'):/home/developer/workspace \
+  --volumes-from vim-go-tools \
+  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
+  -v /etc/localtime:/etc/localtime:ro \
+  -e "GEMAIL=&lt;github email&gt;" \
+  -e "GNAME=&lt;github name&gt;" \
+  -d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
+  --name drop-in bloodstar/drop-in
+echo 'Done!'
+Vim 中文快查表   &lt;= 戳这里
+
+Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！
+快去看看吧。
+
+Vim
+
+]]></content>
+      <categories>
+        <category>tools</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>docker</tag>
+        <tag>vim</tag>
+        <tag>ide</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>从文学的角度，分析韩红的《天亮了》</title>
+    <url>/posts/cb623532/</url>
+    <content><![CDATA[现场MV
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-zJGTfHLvcLHXxjqK").style.height=document.getElementById("mmedia-zJGTfHLvcLHXxjqK").scrollWidth*0.76+"px";
+    window.onresize = function(){
+      document.getElementById("mmedia-zJGTfHLvcLHXxjqK").style.height=document.getElementById("mmedia-zJGTfHLvcLHXxjqK").scrollWidth*0.76+"px";
+    }; 
+
+精品分析： 原作：石晶兰 短文吧
+再做个传送门： 天亮了，听歌时，关灯，准备纸巾。
+
+先分析结构。
+看歌词。
+那是一个秋天，风儿那么缠绵，
+让我想起他们那双无助的眼。
+就在那美丽风景相伴的地方，
+我听到一声巨响震彻山谷。
+就是那个秋天，再看不到爸爸的脸。
+他用他的双肩，托起我重生的起点。
+黑暗中泪水沾满了双眼，
+不要离开不要伤害。
+共八行，等于两个四行。
+两个四行一一对应，前三行，旋律基本是相同的。只有最后一行，为了与后面衔接，所以不同。
+两个四行的布置，等于是一种重复。
+这样的重要，在文学结构上，常见于起承。
+但歌，相当于诗。囿于篇幅，在结构上，通常会有所缺失。起承两者，一般缺失的，都是起。那样的做法，也就是直接叙事，存在让受众猝不及防的弊病。
+然后，《天亮了》并不是。
+“那是一个秋天，风儿那么缠绵”和“就是那个秋天”分明是起。
+所以，《天亮了》并没有进行文学结构上的省略。
+“那是一个秋天，风儿那么缠绵”是起，接紧着的三行歌词，自然就是承了。
+那么，第五行“就是那个秋天”怎么又来一个起呢？
+自然是因为篇幅太短，叙事不够（前面承得不够），所以，还需要再承一下。
+不能够不要第五行的起，直接往下写吗？
+真要说的话，其实也能。不过，再加四行承，真的就能把事情说清楚吗？
+显然，韩红想要表达的东西很多，她认为，不能。
+仅靠精练语言，明显是不够的，还需要换角度陈述。
+第五行的再起，实际上，就是为后面的换角度承，打基础的。
+这种写法，也是有先例的。请看邓丽君《相见在明天》歌词：
+记得我俩初相见，
+风吹花儿飞满天。
+你说我的笑容像花朵，
+比那花儿更娇艳。
+我还记得那一天，
+送你送到小河边。
+手牵着手呀心里有千言，
+相对却无言。
+跟《天亮了》一样，《相见在明天》也是两个四行，也是起承起承。
+并且，两起两承，还跟诗词的押韵一样，其重复，不仅有加深印象的作用，更有共鸣回旋的作用，正是唐陈子昂所说的“音情顿挫”的顿挫，极大的提升了作品的美感，让受众的接受度大大提高，
+继续看《天亮了》歌词：
+我看到爸爸妈妈就这么走远，
+留下我在这陌生的人世间。
+不知道未来还会有什么风险。
+我想要紧紧抓住他的手。
+妈妈告诉我希望还会有。
+看到太阳出来妈妈笑了。
+天亮了。
+六行都是转。具体在这里，自然不是转折，而是高那个潮。
+此处值得一说的是合，只有三个字“天亮了”。
+这三个字，正好也是这首歌的歌名。
+但是这三个字表达的，到底是什么意思、什么情感呢？
+题都城南庄/唐/崔护
+去年今日此门中，人面桃花相映红。
+人面不知何处去，桃花依旧笑春风。
+不难看出，最后一句“桃花依旧笑春风”跟前面三句的叙述，是接不上的。
+去年这儿，有人面有桃花。今年这儿人面没有了，接下来说的通常是：还真是让人怀念啊。
+俗吗？的确俗。并且，还不仅仅是俗，还存在因为什么而怀念那个姑娘的严重问题。
+动机不纯的话，写出来就会玷污那个姑娘。动机纯粹，只是单纯的对美好事物的欣赏，写出来的话，又有自夸之嫌。
+还真是不好写啊。
+不好写，干脆就不写，另起一笔：“桃花依旧笑春风”。究竟表达的是什么样的滋味，让受众自己去想。
+《天亮了》末尾的合“天亮了”，就是“桃花依旧笑春风”这种表现手法。太多的感情，千言万语，加总在一起，实在难以挽上疙瘩。于是，就另起一行，来了句看似关系不大的“天亮了”，让一切，尽在无言中。
+不同的受众，会有不同的感受。因而这种让受众自己去想的结尾，总是余味无穷。
+文学结构分析，就到这儿。第二段的结构跟第一段相同，就不讲了。
+下面进行逐句评讲。
+“那是一个秋天，风儿那么缠绵，”没毛病。“那是”开头，虽然不出彩，但是很自然，容易被人接受，接着往下听。
+“让我想起他们那双无助的眼。”这里，“他们”是两个人；“那双”眼睛虽然是复数，但落实到人，却是单数。因此，这是一个小错误。
+很显然，用相同性质的词语直接替换是不行的，譬如“四只”。四，数量较多，会分散受众的注意力，让受众去思考为什么是四。因而，如果硬要改的话，只能用其它性质的词语去替换，譬如“彷徨”。
+但“彷徨无助”，又稍显生僻，会影响听者的接受速度，形成不怎么大的接受障碍。而如果也用“无”的话，无什么呢？无神？听上去，岂不是比“彷徨无助”更不容易分辨。
+所以，实在要改，就只能把“他们”二字挪到这儿。
+那样一来，“让我想起”就要掺进两个水字了，譬如“风儿让我想起”。
+是不是太水了？
+于是，我最终感觉，还是不改为好。
+小错误嘛，存在也无妨。这就像文豪写书法一样，多一点少一点，多一笔少一笑，根本不算错误，关键是，那个字不能被错认为是别的字。
+“那双无助的眼”也一样，虽然存在小错误，但由于不影响表达内容，听者一听，就知道是怎么回事。由于没有影响信息传递，所以不改也是行的。
+“就在那美丽风景相伴的地方，我听到一声巨响震彻山谷。”这两小句，没有基础毛病。
+值得注意的是，这两小句，存在一个对比：一个美丽的地方，一件悲惨的事。颇有一种把美好的事情撕烂了给读者看的悲剧色彩。
+“就是那个秋天，再看不到爸爸的脸。”
+为什么提到爸爸没提到妈妈？爸爸妈妈，可以一起提，也可以先后提。这里，实际上是先后提。先提爸爸，后面会提到妈妈。
+先提爸爸，又比先提妈妈要好。这是因为，时至今日，最不令人怀疑的，是父女情。虽然背景事件中，那是个儿子，但韩红是女的，唱出来的声音又带有明显的女性特征。女声，提到爸爸，无形中，就相当于女儿提到爸爸。其中的感情，就往父女情的方向靠近了那么一点，让听者一下就能接受，丝毫没有怀疑。
+“他用他的双肩，托起我重生的起点。”
+背景事件的具体经过，可能生还的当事人都已经记不清楚了。这一句，属于带有归纳性、比拟性的描述。因而不需要因为“用”“双肩托起”，去询问是不是父亲从洪水中救起了儿子那样的细节。
+“黑暗中泪水沾满了双眼，”
+“黑暗中”很妙。只描述了环境，没有指明时间。那其实表达的是，若干个“黑暗中”。包括当时，也包括事后。并且，“黑暗”有天然的，也有人为的。天然的，譬如天黑加停电；人为的，譬如钻进被窝里。这些，都被包括了进去。
+“不要离开、不要伤害。”这句，就有些难度了。
+“不要离开”好理解。可以是儿子对父母的呼唤。但“不要伤害”呢？
+“不要伤害”，到底是谁对谁发出的呐喊，后面再讲。
+“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。不知道未来还会有什么风险。”
+三小句，基础上没毛病。直接看上去，字面意思表达能力似乎稍弱。真是不是，后面再说。
+“我想要紧紧抓住他的手”中的“他”，指父亲，也可以指母亲。
+“妈妈告诉我希望还会有。看到太阳出来妈妈笑了。”这是绝望中的回忆。这一家人，以前也是经受过苦难的。在曾经难熬的岁月中，妈妈曾经多次鼓励过儿子。鼓励的时候，有直述“告诉我希望还会有”，也有以身作则“看到太阳出来，妈妈笑了”。
+“天亮了。”尽在不言中，就不再讲了。
+“这是一个夜晚天上宿星点点，我在梦里看见我的妈妈。”
+继“那是”之后，此处出现了“这是”。表示已经是事后，灾难之后。
+“一个人在世上要学会坚强”，很明显，这不是儿子对父母能够说出的话。
+结合前一小句“我在梦里看见我的妈妈”，可以发现，这是妈妈对儿子说的话。并且还是死去之后的妈妈对儿子所说的话。
+“我在梦里看见我的妈妈。一个人在世上要学会坚强”紧接着的两句，主语变了。前一句是“我”，后一句是“妈妈”。同时，又因为死去的人继续说话这一违反科学常理的设定，使得后一句主语“妈妈”变得有些难以理解。
+其实，受众的心，也是强大的。多听两遍，也还是能够理解的。
+这两句主语的变化，从玄学的角度看，简单。但从文学的角度看，跳跃就非常大了。
+唐/李白有句：“千里江陵一日还”。“千里江陵”说的是千里之外的江陵。站在什么地方能够说出此话，自然是白帝城。“还”，指回来，站在什么地方能够说“还”，当然只能是江陵。就这么一句，视角就从白帝城跳到了江陵。
+《天亮了》中，这两句紧挨着的歌词的主语跳跃，其实跟“千里江陵一日还”的视角跳跃，是相似的类型。
+“你不要离开不要伤害”上一段出现过，就不讲了。
+“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。”
+比较上一段，区别的，是第三小句。此处的第三小句，从陈述中跳脱出来了，相当于插入了一个事后的心愿。
+“我想要紧紧抓住他的手。妈妈告诉我希望还会有，看到太阳出来、天亮了。”
+比较上一段，区别的仍然是第三小句。“妈妈笑了”变成“天亮了”。但此处的“天亮了”，跟前面不一样，并不是起承转合的合，不是收尾，而就是一个简单的陈述，其实质，就相当于“妈妈笑了”。
+“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间。我愿为他建造一个美丽的花园。
+“我想要紧紧抓住他的手。妈妈告诉我希望还会有。看到太阳出来，他们笑了。”
+重复，强调，加倍。略有不同的，就是“妈妈笑了”变成“他们笑了”。由“妈妈”变成“他们”，实际上也在告诉受众，马上就要收尾了。
+以什么收尾，收到哪里呢？依然还是“天亮了”，尽在不言中，让受众自己去想，
+不知道是哪年哪天了，无意中，我就这么偶然听到了这首歌。
+一听，就感受很好听。
+一听，就听出来了，里面讲述了一场事故。因为有“我听到一声巨响震彻山谷”、“再看不到爸爸的脸”。
+另外，还听出了事故中，父母对孩子的救助。因为有“他用他的双肩托起我重生的起点”。
+很明显，事故是悲惨的，事故中的父母是可歌可泣的，事故之后的儿子或女儿（从歌词中听不出孩子的性别）是可怜的。
+但是，就这么算了么？
+这么好听的歌，最后一句“天亮了”到底表述的是怎样的感情？
+没弄清楚，怎么能算完。
+生活中，有各种各样的事故。最常见的，恐怕应该是车祸。
+车祸事故，几乎每天都能够在地方新闻上看到。
+看到车祸事故的新闻，心中有什么感受？
+悲伤么？自然没有。
+一般来说，亲人，才会悲伤。陌生人，通常只是略带同情、怜悯。
+此处说的是，同样的事，因为自身角度的不同，感受大不相同。
+那么，《天亮了》应该站在什么样的角度去欣赏呢？
+最容易想到的角度，有两个。
+一是生还的儿子或女儿。但是，站在这个角度欣赏，“我看到爸爸妈妈就这么走远，留下我在这陌生的人世间，不知道未来还会有什么风险。”真的弱爆了。
+另一个角度，则是富有同情心的旁观善良人士。这个角度的存在，是因为韩红。因为，就这么看过去，韩红，对于此次事故，似乎就是富有同情心的旁观善良人士。
+但这个角度还是不行。“黑暗中泪水沾满了双眼”，没什么感觉。
+于是乎，就剩下了不常见的角度——死去父母的角度！
+我试着想象了这样的角度，再听《天亮了》，眼泪一下子就出来了。
+我是在这之后，才搜索得知了《天亮了》的创作背景。
+是的，韩红，把自己当作那个孩子的父母，并且还把自己当作了孩子死去的父母。《天亮了》这首歌，表达的是死者对生者的寄托！
+重新再看歌词。“黑暗中泪水沾满了双眼”，所指的，就不仅仅是事后孩子多次在被窝里痛哭，并且还指死去的父母在地狱中带泪含悲。
+“不要离开”，只是孩子对父母的呼唤么？已然不是。以父母为参照物，生存的孩子，又何尝不是一种离开。
+当然不是说想要孩子一起死，否则就不会用双肩托起重生的起点了。
+“不要伤害”的答案，此时就出来了。那就是死去的父母发出的呐喊。呐喊的对象是天地——老天爷，不要伤害我们的孩子！
+“一个人在世上要学会坚强”不再是父母对自己的叮嘱，而是自己，对自己幸存的子女的叮嘱。
+于是乎，最后一句合中的“天亮了”，就表达了深深的无奈。
+天亮了，通常指清晨，代表的是希望。但是，对于死者来说，天亮了，就代表魂魄状态的死者必须离开。
+这是自然规律，死者必须离开。不想离开，也必须离开。因为——天亮了。
+难怪韩红唱这三个字的时候，泣不成声。
+题外话又冒出来了。
+我曾经进行过无数次评论。有那么一个人，曾经对于我的少部分评论非常不服。那就是，关于李白的诗的评论。
+他认为，一件事物，可以从好坏两方面去说。他认为，李白的诗，就像打油诗，水平并不高。只是因为我的评论，才变得水平绝高了。
+具体的说法就是，我先假定李诗水平绝高，然后往去往绝高的方向分析。
+我的确也是这样做的。
+但是，别人的诗，也可以假定为水平绝高啊，难道说真的就能分析出水平绝高来吗？
+譬如杜甫的“三顾频烦天下计”。“顾频烦”三字的“页”旁，看不见吗？不擅书法，才会视而不见，所以杜甫不擅书法。是“频烦天下计”么？明明就只烦了一次。次数相对较多的，反而是“顾”，顾了三次。于是这句应该读成“三顾频、烦天下计”。这水平还怎么绝高呢？
+相似的例子还有很多。无论是谁的作品，都能事先假定为水平绝高。但只有李白的诗，才会真的分析出水平绝高的答案出来。
+所以，李诗的水平，是真的绝高。
+这番题外话，表达的是，前面关于《天亮了》的评论，或许韩红自己并没那么想，或者韩红没想那么多，或许《天亮了》就仅仅是韩红的偶然之得。
+我要说的是，《天亮了》既然已经成为作品，那么它就脱离了作者韩红，变成了一种独立的存在。不能因为韩红的文学水平不够高，而去否认《天亮了》的文学成就。
+我的确是抱着欣赏的态度，先假定《天亮了》文学水平很高，然后真往极高文学水平的方向去分析的。但是很幸运，我得出了《天亮了》文学水平果然很高的结论。
+换首别的歌，行吗？
+谁说行，谁上。
+最后，我还要说的是，文学水平，所指的，并不仅仅是文字方面的能力。
+在打基础的时候，在斟酌字词句，在训练表达力、说服力的阶段，的确单指文字方面。
+但是，在跨入感染力阶段之后，就不是了。
+更多的，是提高心性。
+心性高了，视角就不同了，感受也随之不同了，不管是写出来的作品，还是唱出来的歌，那都是不同的。
+很多人说邓丽君的演唱水平并不高，那是不对的。应该说，邓丽君的演唱水平，其实很多人都达到过。个别的，譬如韩红，偶尔还超越过。
+但是，为什么邓丽君流传下来的歌曲就那么多呢？其他歌者流传下来的歌就那么少呢？
+就是因为心性。
+心性与感染力关系，最容易明白的例子，就是翻唱。
+《何日君在来》、《船歌》在邓丽君翻唱之前，并不好听，结果邓丽君一唱，就化腐朽为神奇了。
+恰好，韩红也有过化腐朽为神奇的表现，譬如《妹妹找哥泪花流》、《天之大》（可搜）。
+心性如此之高的韩红，偶得《天亮了》极高文学水准的作品，就是正常的了。
+（全文完）
+]]></content>
+      <categories>
+        <category>music</category>
+      </categories>
+      <tags>
+        <tag>music</tag>
+        <tag>韩红</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>解决Thinkpad笔记本喇叭破音问题！</title>
+    <url>/posts/c945eae1/</url>
+    <content><![CDATA[问题
+主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。
+分析
+从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。
+解决方案
+如是，网购了一个新喇叭，拆机，换上，完美解决问题！
+喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。
+
+
+
+这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。
+型号：Thinkpad T4X0S
+
+]]></content>
+      <categories>
+        <category>life</category>
+      </categories>
+      <tags>
+        <tag>thinkpad</tag>
+        <tag>sound</tag>
+        <tag>speaker</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>http 错误代码表</title>
     <url>/posts/80906b88/</url>
     <content><![CDATA[所有 HTTP 状态代码及其定义。
@@ -12286,84 +12367,339 @@ MusicBrainz Picard使用教程：
       </tags>
   </entry>
   <entry>
-    <title>Vim IDE Docker 以及中文指南</title>
-    <url>/posts/647e6265/</url>
+    <title>如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕</title>
+    <url>/posts/e6d40157/</url>
     <content><![CDATA[
-Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！
+注意使用V3版本，V4版本收费！
+所以升级V3版本即可，不要升级到V4版本！不要升级到V4版本！不要升级到V4版本！
 
-Vim Docker
 
-docker pull bloodstar/vim
-alias edit='docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim' 
-edit some.file 
-alias edit_update="docker pull bloodstar/vim:latest"
-Vim IDE Docker
+Plex是一款很好用的个人媒体中心软件，但是因为国内网络的原因，使用默认的TMDB刮削器挂出来的效果并不好，要么就是影片信息不正确，要么就是海报不正常显示，实在让人头疼。
+tinyMediaManager是一款电影信息刮削和整理的软件，正好可以和plex配合，完美的解决这一问题。tinyMediaManager在刮削影片的过程中会把影片的海报、演员表、背景图片等等都保存到影片所在文件夹，自动生成电影的nfo信息文件，并对文件和文件夹进行重新命名的操作。在plex设置刮削代理的时候，需要用一款插件可以直接读取nfo的信息，完成刮削，下面把使用方法分享给大家，
 
-What's inside:
+下载和安装tinyMediaManager
+官网下载地址：https://www.tinymediamanager.org/download/
 
-Alpine Linux
-Vim + a ton of awesome plugins see bloodstar/vim:latest
-Good support of Golang development with bloodstar/go-tools container
-tmux
-powerline
-Mosh
-OpenSSH, Bash, OMF, Python, etc.
+tmm下载
+下载后直接解压文件夹
+客户端需要java支持，先在电脑安装java
+客户端下载后是一个压缩包，解压之后就可以用
 
-how to start the daemon(and all containers)
-docker create -v '/usr/lib/go' --name go-tools \
-'bloodstar/go-tools' '/bin/true'
+解压之后打开tinyMediaManager.exe
 
-docker run -v $('pwd'):/home/developer/workspace \
---volumes-from go-tools \
--v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
--v /etc/localtime:/etc/localtime:ro \
--d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
---name drop-in bloodstar/drop-in
--v /etc/localtime:/etc/localtime:ro - makes tmux display local time
-how to connect:
-mosh --ssh="ssh -p 62222" -- developer@$&lt;ip&gt; tmux -u
-or without host identity check:
-mosh --ssh="ssh -o StrictHostKeyChecking=no -p 62222" -- developer@$&lt;ip&gt; tmux -u
-Useful Bash scripts
-Connect
-#!/bin/bash
-ip=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' drop-in)
-mosh --ssh="ssh -p 62222" -- developer@$ip tmux -u
-start the daemon(and all containers)
-#!/bin/bash
-dtc_id=$(docker ps -a -q --filter 'name=vim-go-tools')
-if [[ -z "${dtc_id}" ]]; then
- echo 'vim-go-tools container not found. Creating...'
- docker create -v '/usr/lib/go' --name 'vim-go-tools' \
-   'bloodstar/go-tools' '/bin/true'
- echo 'Done!'
-fi
-echo 'starting daemon...'
-docker run -v $('pwd'):/home/developer/workspace \
-  --volumes-from vim-go-tools \
-  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
-  -v /etc/localtime:/etc/localtime:ro \
-  -e "GEMAIL=&lt;github email&gt;" \
-  -e "GNAME=&lt;github name&gt;" \
-  -d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
-  --name drop-in bloodstar/drop-in
-echo 'Done!'
-Vim 中文快查表   &lt;= 戳这里
+TMM设置
+TMM代理设置
 
-Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！
-快去看看吧。
+重要：很多源都需要代理才能访问。这里正确的配置才能正确的刮削！
+可以调整这里使用的内存，大内存可以极大加速刮削速度。
 
-Vim
+
+电影刮削设置
+进行相关设置。Tmm可以对电影和电视剧的刮削进行分别设置，打开设置后选择电影选项，可以选择分级标准、自动重命名等选项。
+
+电影信息选项
+点击侧边栏媒体库目录，添加电影目录
+刮削器设置
+
+选择电影刮削器
+
+刮削器选项
+
+nfo选项，建议选择生成两种命名放视的nfo
+图片刮削器选择全选，图片文件名建议两边都选上，会分别生成两组命名格式不同的图片，为了保证plex能读取
+
+图片命名选项
+Tmm还可以自动下载预告片，字幕。字幕下载时可以输入opensubtitles账户
+
+字幕下载选项
+重命名规则
+这里重点讲一下重命名规则，刮削完后可以选择对电影文件和文件夹进行重命名，可能对于pt用户重命名可能会影响资源上传，可以不进行重命名操作。
+一般情况下电影刮削出来的信息，title是电影的中文标题名称，originaltitle是电影的原标题名称，一般是英文名称。软件默认的设置是文件和文件夹都命名成title，也就是中文标题，但是我发现这样在后期使用的时候有弊端。英文电影在检索字幕时会用文件名来检索，而用中文名称很多情况下检索不出来，所以这里把文件的命名规则改一下，改成originaltitle，并去掉年份信息的括号，中间连接符改成点，文件名设置成{- ,edition,}.{videoFormat}.${audioCodec}的格式。
+
+电影文件重命名选项
+
+刮削完的文件夹内文件信息
+
+刮削完的电影文件夹目录
+电视节目刮削设置类似，如果挂不出来可以用the tvdb来刮削。
+tmm有时候会出现网络不稳定，刮不到的情况，可以修改host解决
+改host 在host文件最后加一行13.224.161.90 http://api.themoviedb.org
+退出设置，开始刮削
+
+更新电影源
+
+选中要刮削的电影自动匹配
+电影手动刮削
+
+
+电视剧&amp;动画手动刮削
+电视剧元数据刮削
+
+
+季和集元数据刮削前整理
+
+刮削季元素
+整理好正确的季和集之后，才能正确的刮削季元素
+
+TMM整理完效果
+
+这里用海贼王做展示，一个季和集都特别多的剧。
+
+
+TMM目录重命名整理
+
+刮削完后，可以重命名视频文件，并进行目录整理。
+
+方法1
+
+方法2
+
+等所有电影的信息刮削完后，选择重命名和清理，这样就完成了刮削的操作。以后下载了新电影，直接打开tmm,更新源之后直接选择搜索未刮削过的电影完成刮削。刮削出来的信息kodi，emby等软件也都能用。
+Plex设置
+plex插件的安装和设置
+下载plex的插件
+插件XBMCnfoMoviesImporter和XBMCnfoTVImporter分别是刮削电影和电视剧的插件
+下载地址：https://github.com/gboudreau/XBMCnfoMoviesImporter.bundle
+如果不能下载的话可以联系我获取，还有几个很好用的plex插件
+下载完插件后就需要把插件解压到plex的插件目录：C:\Users\用户名\AppData\Local\Plex Media Server\Plug-ins
+
+plex插件目录
+注意解压后要把文件夹名后边的master去掉。
+plex代理设置
+Plex的代理设置就是选择刮削电影所用的刮削器及优先级。
+装好插件后重启plex，进行plex的设置。在代理设置中选择XBMCnfoMoviesImporter，把它的优先级调到最高，第二个可以设置成字幕插件。
+
+设置电影资料库的刮削器代理
+点击设置界面下方管理里边的资料库，选择电影资料夹的高级设置，设置如下
+
+
+plex代理设置
+
+刷新电影源数据资料
+设置完成后就可以在plex主页对电影文件夹刷新元数据了。等待刷新完后就可以载入所有的电影信息了。
+
+管理资料库-刷新电影元数据
+
+更新后的电影信息
+采用类似的设置，电视剧信息也能刮削。
+
+电视剧更新后的信息
+Emby设置
+
+Emby内置刮削工具，但是速度较慢。下面设置基于外部刮削工具TMM，所以没有勾选Emby刮削源！
+
+最终效果演示
+
+
+开始设置
+
+新增媒体库
+
+已有媒体库属性设置
+
+
+
+
+
+Emby字幕设置
+字幕下载设置，字幕下载工具见后面的[字幕下载]章节
+
+字幕下载
+想要较好的自动下载字幕，最好用前面介绍的tmm刮削改名之后再使用下面工具。
+subfinder 自动下载字幕
+
+Docker： superng6/subfinder
+
+下载完成，刮削后的目录，挂载到subfinder的media目录，就会自动下载字幕。
+字幕下载对电影，英文剧集支持较好。对于一些tv，动画手动下载字幕会更好一些。
+注意：官方的配置文件有问题，时效问题。修改URL到最新即可。
+chinesesubfinder
+
+Docker： allanpk716/chinesesubfinder
+新开发的中文字幕查找工具，上面那个很久没更新了，这个刚出来。使用nfo里面刮削出来的文件名来匹配字幕。所以就原理来说，这个字幕匹配更准确。
+
+bazarr
+
+Docker：linuxserver/bazarr
+字幕下载管理，配合sonarr, radarr 使用效果更好。对于英文剧集命名规范的支持较好，比如[name]S01E01
+
+参考
+
+利用tinyMediaManager刮削影片，解决家用nas软件plex电影墙的问题
+
+图书、音乐、视频三剑客！
+
+结构化自己的图书，音乐，和视频！
+
+
+
+.vkr-url-wrapper {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid;
+    border-color: #eee #ddd #bbb;
+    box-shadow: rgba(0,0,0,.14) 0 1px 3px;
+    margin-bottom: 10px;
+    display: flex;
+}
+.vkr-url-wrapper .desc-wrapper > hr {
+    margin: 10px 0;
+    height: 1px;
+}
+.vkr-url-wrapper .avatar {
+    width: 100px;
+    height: 100px;
+    border: solid 1px #eee;
+    box-shadow: none!important;
+    margin: 0;
+    margin-right: 10px;
+}
+.vkr-url-wrapper h2 {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+.vkr-url-wrapper .desc-wrapper {
+    flex: 1;
+}
+.vkr-url-wrapper .desc-wrapper a {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+    
+        
+    
+    
+        如何建立自己的私人图书馆
+        
+        图书管理员似乎是个非常有前途的职业，远的有孔子，游学之前当图书管理员，近的有本朝开国毛教员，也当了很长时间图书管理员。我们也可以自己做个私人电子图书馆，单个管理员，说不定很有前途？
+    
+
+
+
+.vkr-url-wrapper {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid;
+    border-color: #eee #ddd #bbb;
+    box-shadow: rgba(0,0,0,.14) 0 1px 3px;
+    margin-bottom: 10px;
+    display: flex;
+}
+.vkr-url-wrapper .desc-wrapper > hr {
+    margin: 10px 0;
+    height: 1px;
+}
+.vkr-url-wrapper .avatar {
+    width: 100px;
+    height: 100px;
+    border: solid 1px #eee;
+    box-shadow: none!important;
+    margin: 0;
+    margin-right: 10px;
+}
+.vkr-url-wrapper h2 {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+.vkr-url-wrapper .desc-wrapper {
+    flex: 1;
+}
+.vkr-url-wrapper .desc-wrapper a {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+    
+        
+    
+    
+        如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库
+        
+        音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。
+    
+
+
+
+.vkr-url-wrapper {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid;
+    border-color: #eee #ddd #bbb;
+    box-shadow: rgba(0,0,0,.14) 0 1px 3px;
+    margin-bottom: 10px;
+    display: flex;
+}
+.vkr-url-wrapper .desc-wrapper > hr {
+    margin: 10px 0;
+    height: 1px;
+}
+.vkr-url-wrapper .avatar {
+    width: 100px;
+    height: 100px;
+    border: solid 1px #eee;
+    box-shadow: none!important;
+    margin: 0;
+    margin-right: 10px;
+}
+.vkr-url-wrapper h2 {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+.vkr-url-wrapper .desc-wrapper {
+    flex: 1;
+}
+.vkr-url-wrapper .desc-wrapper a {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+    
+        
+    
+    
+        如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+        
+        tinyMediaManager是最好用的视频刮削工具，可以刮削电影，动画，电视剧。使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息，配合Emby，Plex使用体验绝佳
+    
+
+系列教程
+全部文章RSS订阅
+Nas系列 Nas 分类 RSS 订阅
+
+音视频图书和音乐自动化管理框架图解
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
 
 ]]></content>
       <categories>
-        <category>tools</category>
+        <category>nas</category>
       </categories>
       <tags>
-        <tag>linux</tag>
-        <tag>docker</tag>
-        <tag>vim</tag>
-        <tag>ide</tag>
+        <tag>emby</tag>
+        <tag>刮削</tag>
+        <tag>tmm</tag>
+        <tag>字幕</tag>
+        <tag>plex</tag>
       </tags>
   </entry>
   <entry>
@@ -14677,6 +15013,245 @@ markdown-it-imsize
 ![test](https://cimg1.17lai.site/data/2021/10/1220211012022352.png =100x200)
 
 
+hexo-tag-common
+
+更多参考这里
+
+Usage
+{% tabs Unique name, [index] %}
+&lt;!-- tab [Tab caption] [@icon] --&gt;
+Any content (support inline tags too).
+&lt;!-- endtab --&gt;
+{% endtabs %}
+
+Unique name : Unique name of tabs block tag without comma.
+Will be used in #id's as prefix for each tab with their index numbers.
+If there are whitespaces in name, for generate #id all whitespaces will replaced by dashes.
+Only for current url of post/page must be unique!
+[index] : Index number of active tab.
+If not specified, first tab (1) will be selected.
+If index is -1, no tab will be selected. It's will be something like spoiler.
+Optional parameter.
+[Tab caption] : Caption of current tab.
+If not caption specified, unique name with tab index suffix will be used as caption of tab.
+If not caption specified, but specified icon, caption will empty.
+Optional parameter.
+[@icon] : Font Awesome icon name.
+Can be specified with or without space; e.g. 'Tab caption @icon' is the same as 'Tab caption@icon'.
+Optional parameter.
+
+Example
+First unique name 1First unique name 2First unique name 3This is Tab 1.This is Tab 2.This is Tab 3.
+{% tabs First unique name %}
+
+&lt;!-- tab --&gt;
+
+**This is Tab 1.**
+
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+
+**This is Tab 2.**
+
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+
+**This is Tab 3.**
+
+&lt;!-- endtab --&gt;
+
+{% endtabs %}
+Tabs with 3rd tab selected
+Second unique name 1Second unique name 2Second unique name 3This is Tab 1.This is Tab 2.This is Tab 3.
+{% tabs Second unique name, 3 %}
+&lt;!-- tab --&gt;
+**This is Tab 1.**
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+**This is Tab 2.**
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+**This is Tab 3.**
+&lt;!-- endtab --&gt;
+{% endtabs %}
+Tabs with no tab selected
+Third unique name 1Third unique name 2Third unique name 3This is Tab 1.This is Tab 2.This is Tab 3.
+{% tabs Third unique name, -1 %}
+&lt;!-- tab --&gt;
+**This is Tab 1.**
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+**This is Tab 2.**
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+**This is Tab 3.**
+&lt;!-- endtab --&gt;
+{% endtabs %}
+Tabs with custom labels
+Solution 1Solution 2Solution 3This is Tab 1.This is Tab 2.This is Tab 3.
+{% tabs Fourth unique name %}
+&lt;!-- tab Solution 1 --&gt;
+**This is Tab 1.**
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab Solution 2 --&gt;
+**This is Tab 2.**
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab Solution 3 --&gt;
+**This is Tab 3.**
+&lt;!-- endtab --&gt;
+{% endtabs %}
+Tabs with icons and labels
+Solution 1Solution 2Solution 3This is Tab 1.This is Tab 2.This is Tab 3.
+{% tabs Sixth unique name %}
+&lt;!-- tab Solution 1@text-width --&gt;
+**This is Tab 1.**
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab Solution 2@font --&gt;
+**This is Tab 2.**
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab Solution 3@bold --&gt;
+**This is Tab 3.**
+&lt;!-- endtab --&gt;
+{% endtabs %}
+Tabs permalinks test
+Permalink for &gt; Tab one.
+Permalink for &gt; Tab one 1.
+Permalink for &gt; Tab one 2.
+Permalink for &gt; Tab one 3.
+Permalink for &gt; Tab two.
+Permalink for &gt; Tab two 1.
+Permalink for &gt; Tab two 2.
+Permalink for &gt; Tab two 3.
+Tab one 1Tab one 2Tab one 3This is Tab 1.This is Tab 2.This is Tab 3.
+Tab two 1Tab two 2Tab two 3This is Tab 1.This is Tab 2.This is Tab 3.
+Permalink for &gt; [Tab one](#tab-one).
+Permalink for &gt; [Tab one 1](#tab-one-1).
+Permalink for &gt; [Tab one 2](#tab-one-2).
+Permalink for &gt; [Tab one 3](#tab-one-3).
+
+Permalink for &gt; [Tab two](#tab-two).
+Permalink for &gt; [Tab two 1](#tab-two-1).
+Permalink for &gt; [Tab two 2](#tab-two-2).
+Permalink for &gt; [Tab two 3](#tab-two-3).
+
+{% tabs Tab one %}
+&lt;!-- tab --&gt;
+**This is Tab 1.**
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+**This is Tab 2.**
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+**This is Tab 3.**
+&lt;!-- endtab --&gt;
+{% endtabs %}
+
+{% tabs Tab two %}
+&lt;!-- tab --&gt;
+**This is Tab 1.**
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+**This is Tab 2.**
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+**This is Tab 3.**
+&lt;!-- endtab --&gt;
+{% endtabs %}
+Tabs with other tags
+Tags 1Tags 2Tags 3This is Tab 1.
+
+One
+Two
+Three
+
+code tag
+code tag
+code tagThis is Tab 2.
+
+Five
+Six
+Seven
+This is Tab 3.
+Sub Tabs 1Sub Tabs 2Sub Tabs 3This is Sub Tab 1.This is Sub Tab 2.This is Sub Tab 3.
+Sub-Sub Tabs 1Sub-Sub Tabs 2Sub-Sub Tabs 3This is Sub-Sub Tab 1 of Sub Tab 3.This is Sub-Sub Tab 2 of Sub Tab 3.This is Sub-Sub Tab 3 of Sub Tab 3.
+{% tabs Tags %}
+&lt;!-- tab --&gt;
+**This is Tab 1.**
+
+1. One
+2. Two
+3. Three
+
+{% code %}
+code tag
+code tag
+code tag
+{% endcode %}
+
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+**This is Tab 2.**
+
+* Five
+* Six
+* Seven
+
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+**This is Tab 3.**
+
+{% subtabs Sub Tabs %}
+&lt;!-- tab --&gt;
+**This is Sub Tab 1.**
+
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+**This is Sub Tab 2.**
+
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+**This is Sub Tab 3.**
+
+{% subtabs Sub-Sub Tabs %}
+&lt;!-- tab --&gt;
+**This is Sub-Sub Tab 1 of Sub Tab 3.**
+
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+**This is Sub-Sub Tab 2 of Sub Tab 3.**
+
+&lt;!-- endtab --&gt;
+
+&lt;!-- tab --&gt;
+**This is Sub-Sub Tab 3 of Sub Tab 3.**
+
+&lt;!-- endtab --&gt;
+{% endsubtabs %}
+
+&lt;!-- endtab --&gt;
+{% endsubtabs %}
+
+&lt;!-- endtab --&gt;
+{% endtabs %}
 公式测试
 
 采用**markdown-it-latex2img**
@@ -16081,11 +16656,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var odqCmVUiFwJByWPb_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); odqCmVUiFwJByWPb_options.container = document.getElementById("mmedia-odqCmVUiFwJByWPb"); const ap_odqCmVUiFwJByWPb = new APlayer(odqCmVUiFwJByWPb_options); 
+ var VSHXHSmvYbkpFXqB_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); VSHXHSmvYbkpFXqB_options.container = document.getElementById("mmedia-VSHXHSmvYbkpFXqB"); const ap_VSHXHSmvYbkpFXqB = new APlayer(VSHXHSmvYbkpFXqB_options); 
 
 - **列表**
 
- var sgudhDuhUjtzVbLZ_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); sgudhDuhUjtzVbLZ_options.container = document.getElementById("mmedia-sgudhDuhUjtzVbLZ"); const ap_sgudhDuhUjtzVbLZ = new APlayer(sgudhDuhUjtzVbLZ_options); 
+ var YskjZzAeuIbMvZtm_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); YskjZzAeuIbMvZtm_options.container = document.getElementById("mmedia-YskjZzAeuIbMvZtm"); const ap_YskjZzAeuIbMvZtm = new APlayer(YskjZzAeuIbMvZtm_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -16337,21 +16912,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-XdVHcpURCXyjgSMV").style.height=document.getElementById("mmedia-XdVHcpURCXyjgSMV").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-dmTpIocZklfZGFOl").style.height=document.getElementById("mmedia-dmTpIocZklfZGFOl").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-XdVHcpURCXyjgSMV").style.height=document.getElementById("mmedia-XdVHcpURCXyjgSMV").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-dmTpIocZklfZGFOl").style.height=document.getElementById("mmedia-dmTpIocZklfZGFOl").scrollWidth*0.76+"px";
     }; 
 
 **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-hlmqDYmAHPYnAfjv").style.height=document.getElementById("mmedia-hlmqDYmAHPYnAfjv").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-IlBclIOGeIlNVBAz").style.height=document.getElementById("mmedia-IlBclIOGeIlNVBAz").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-hlmqDYmAHPYnAfjv").style.height=document.getElementById("mmedia-hlmqDYmAHPYnAfjv").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-IlBclIOGeIlNVBAz").style.height=document.getElementById("mmedia-IlBclIOGeIlNVBAz").scrollWidth*0.7+"px";
     }; 
 
 **artplayer**
 
- var BQxXYNNkcHDyNfpV_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); BQxXYNNkcHDyNfpV_options.container = "#mmedia-BQxXYNNkcHDyNfpV"; const art_BQxXYNNkcHDyNfpV = new Artplayer(BQxXYNNkcHDyNfpV_options); 
+ var WinyQxkbjRruobUA_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); WinyQxkbjRruobUA_options.container = "#mmedia-WinyQxkbjRruobUA"; const art_WinyQxkbjRruobUA = new Artplayer(WinyQxkbjRruobUA_options); 
 脑图
 
 原作者记录
@@ -16496,342 +17071,6 @@ Subsequent paragraphs are indented to show that they ↩︎
         <tag>hexo</tag>
         <tag>plantuml</tag>
         <tag>mathjax</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕</title>
-    <url>/posts/e6d40157/</url>
-    <content><![CDATA[
-注意使用V3版本，V4版本收费！
-所以升级V3版本即可，不要升级到V4版本！不要升级到V4版本！不要升级到V4版本！
-
-
-Plex是一款很好用的个人媒体中心软件，但是因为国内网络的原因，使用默认的TMDB刮削器挂出来的效果并不好，要么就是影片信息不正确，要么就是海报不正常显示，实在让人头疼。
-tinyMediaManager是一款电影信息刮削和整理的软件，正好可以和plex配合，完美的解决这一问题。tinyMediaManager在刮削影片的过程中会把影片的海报、演员表、背景图片等等都保存到影片所在文件夹，自动生成电影的nfo信息文件，并对文件和文件夹进行重新命名的操作。在plex设置刮削代理的时候，需要用一款插件可以直接读取nfo的信息，完成刮削，下面把使用方法分享给大家，
-
-下载和安装tinyMediaManager
-官网下载地址：https://www.tinymediamanager.org/download/
-
-tmm下载
-下载后直接解压文件夹
-客户端需要java支持，先在电脑安装java
-客户端下载后是一个压缩包，解压之后就可以用
-
-解压之后打开tinyMediaManager.exe
-
-TMM设置
-TMM代理设置
-
-重要：很多源都需要代理才能访问。这里正确的配置才能正确的刮削！
-可以调整这里使用的内存，大内存可以极大加速刮削速度。
-
-
-电影刮削设置
-进行相关设置。Tmm可以对电影和电视剧的刮削进行分别设置，打开设置后选择电影选项，可以选择分级标准、自动重命名等选项。
-
-电影信息选项
-点击侧边栏媒体库目录，添加电影目录
-刮削器设置
-
-选择电影刮削器
-
-刮削器选项
-
-nfo选项，建议选择生成两种命名放视的nfo
-图片刮削器选择全选，图片文件名建议两边都选上，会分别生成两组命名格式不同的图片，为了保证plex能读取
-
-图片命名选项
-Tmm还可以自动下载预告片，字幕。字幕下载时可以输入opensubtitles账户
-
-字幕下载选项
-重命名规则
-这里重点讲一下重命名规则，刮削完后可以选择对电影文件和文件夹进行重命名，可能对于pt用户重命名可能会影响资源上传，可以不进行重命名操作。
-一般情况下电影刮削出来的信息，title是电影的中文标题名称，originaltitle是电影的原标题名称，一般是英文名称。软件默认的设置是文件和文件夹都命名成title，也就是中文标题，但是我发现这样在后期使用的时候有弊端。英文电影在检索字幕时会用文件名来检索，而用中文名称很多情况下检索不出来，所以这里把文件的命名规则改一下，改成originaltitle，并去掉年份信息的括号，中间连接符改成点，文件名设置成{- ,edition,}.{videoFormat}.${audioCodec}的格式。
-
-电影文件重命名选项
-
-刮削完的文件夹内文件信息
-
-刮削完的电影文件夹目录
-电视节目刮削设置类似，如果挂不出来可以用the tvdb来刮削。
-tmm有时候会出现网络不稳定，刮不到的情况，可以修改host解决
-改host 在host文件最后加一行13.224.161.90 http://api.themoviedb.org
-退出设置，开始刮削
-
-更新电影源
-
-选中要刮削的电影自动匹配
-电影手动刮削
-
-
-电视剧&amp;动画手动刮削
-电视剧元数据刮削
-
-
-季和集元数据刮削前整理
-
-刮削季元素
-整理好正确的季和集之后，才能正确的刮削季元素
-
-TMM整理完效果
-
-这里用海贼王做展示，一个季和集都特别多的剧。
-
-
-TMM目录重命名整理
-
-刮削完后，可以重命名视频文件，并进行目录整理。
-
-方法1
-
-方法2
-
-等所有电影的信息刮削完后，选择重命名和清理，这样就完成了刮削的操作。以后下载了新电影，直接打开tmm,更新源之后直接选择搜索未刮削过的电影完成刮削。刮削出来的信息kodi，emby等软件也都能用。
-Plex设置
-plex插件的安装和设置
-下载plex的插件
-插件XBMCnfoMoviesImporter和XBMCnfoTVImporter分别是刮削电影和电视剧的插件
-下载地址：https://github.com/gboudreau/XBMCnfoMoviesImporter.bundle
-如果不能下载的话可以联系我获取，还有几个很好用的plex插件
-下载完插件后就需要把插件解压到plex的插件目录：C:\Users\用户名\AppData\Local\Plex Media Server\Plug-ins
-
-plex插件目录
-注意解压后要把文件夹名后边的master去掉。
-plex代理设置
-Plex的代理设置就是选择刮削电影所用的刮削器及优先级。
-装好插件后重启plex，进行plex的设置。在代理设置中选择XBMCnfoMoviesImporter，把它的优先级调到最高，第二个可以设置成字幕插件。
-
-设置电影资料库的刮削器代理
-点击设置界面下方管理里边的资料库，选择电影资料夹的高级设置，设置如下
-
-
-plex代理设置
-
-刷新电影源数据资料
-设置完成后就可以在plex主页对电影文件夹刷新元数据了。等待刷新完后就可以载入所有的电影信息了。
-
-管理资料库-刷新电影元数据
-
-更新后的电影信息
-采用类似的设置，电视剧信息也能刮削。
-
-电视剧更新后的信息
-Emby设置
-
-Emby内置刮削工具，但是速度较慢。下面设置基于外部刮削工具TMM，所以没有勾选Emby刮削源！
-
-最终效果演示
-
-
-开始设置
-
-新增媒体库
-
-已有媒体库属性设置
-
-
-
-
-
-Emby字幕设置
-字幕下载设置，字幕下载工具见后面的[字幕下载]章节
-
-字幕下载
-想要较好的自动下载字幕，最好用前面介绍的tmm刮削改名之后再使用下面工具。
-subfinder 自动下载字幕
-
-Docker： superng6/subfinder
-
-下载完成，刮削后的目录，挂载到subfinder的media目录，就会自动下载字幕。
-字幕下载对电影，英文剧集支持较好。对于一些tv，动画手动下载字幕会更好一些。
-注意：官方的配置文件有问题，时效问题。修改URL到最新即可。
-chinesesubfinder
-
-Docker： allanpk716/chinesesubfinder
-新开发的中文字幕查找工具，上面那个很久没更新了，这个刚出来。使用nfo里面刮削出来的文件名来匹配字幕。所以就原理来说，这个字幕匹配更准确。
-
-bazarr
-
-Docker：linuxserver/bazarr
-字幕下载管理，配合sonarr, radarr 使用效果更好。对于英文剧集命名规范的支持较好，比如[name]S01E01
-
-参考
-
-利用tinyMediaManager刮削影片，解决家用nas软件plex电影墙的问题
-
-图书、音乐、视频三剑客！
-
-结构化自己的图书，音乐，和视频！
-
-
-
-.vkr-url-wrapper {
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid;
-    border-color: #eee #ddd #bbb;
-    box-shadow: rgba(0,0,0,.14) 0 1px 3px;
-    margin-bottom: 10px;
-    display: flex;
-}
-.vkr-url-wrapper .desc-wrapper > hr {
-    margin: 10px 0;
-    height: 1px;
-}
-.vkr-url-wrapper .avatar {
-    width: 100px;
-    height: 100px;
-    border: solid 1px #eee;
-    box-shadow: none!important;
-    margin: 0;
-    margin-right: 10px;
-}
-.vkr-url-wrapper h2 {
-    border: none;
-    margin: 0;
-    padding: 0;
-}
-.vkr-url-wrapper .desc-wrapper {
-    flex: 1;
-}
-.vkr-url-wrapper .desc-wrapper a {
-    font-size: 22px;
-    font-weight: 700;
-}
-
-    
-        
-    
-    
-        如何建立自己的私人图书馆
-        
-        图书管理员似乎是个非常有前途的职业，远的有孔子，游学之前当图书管理员，近的有本朝开国毛教员，也当了很长时间图书管理员。我们也可以自己做个私人电子图书馆，单个管理员，说不定很有前途？
-    
-
-
-
-.vkr-url-wrapper {
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid;
-    border-color: #eee #ddd #bbb;
-    box-shadow: rgba(0,0,0,.14) 0 1px 3px;
-    margin-bottom: 10px;
-    display: flex;
-}
-.vkr-url-wrapper .desc-wrapper > hr {
-    margin: 10px 0;
-    height: 1px;
-}
-.vkr-url-wrapper .avatar {
-    width: 100px;
-    height: 100px;
-    border: solid 1px #eee;
-    box-shadow: none!important;
-    margin: 0;
-    margin-right: 10px;
-}
-.vkr-url-wrapper h2 {
-    border: none;
-    margin: 0;
-    padding: 0;
-}
-.vkr-url-wrapper .desc-wrapper {
-    flex: 1;
-}
-.vkr-url-wrapper .desc-wrapper a {
-    font-size: 22px;
-    font-weight: 700;
-}
-
-    
-        
-    
-    
-        如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库
-        
-        音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。
-    
-
-
-
-.vkr-url-wrapper {
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid;
-    border-color: #eee #ddd #bbb;
-    box-shadow: rgba(0,0,0,.14) 0 1px 3px;
-    margin-bottom: 10px;
-    display: flex;
-}
-.vkr-url-wrapper .desc-wrapper > hr {
-    margin: 10px 0;
-    height: 1px;
-}
-.vkr-url-wrapper .avatar {
-    width: 100px;
-    height: 100px;
-    border: solid 1px #eee;
-    box-shadow: none!important;
-    margin: 0;
-    margin-right: 10px;
-}
-.vkr-url-wrapper h2 {
-    border: none;
-    margin: 0;
-    padding: 0;
-}
-.vkr-url-wrapper .desc-wrapper {
-    flex: 1;
-}
-.vkr-url-wrapper .desc-wrapper a {
-    font-size: 22px;
-    font-weight: 700;
-}
-
-    
-        
-    
-    
-        如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-        
-        tinyMediaManager是最好用的视频刮削工具，可以刮削电影，动画，电视剧。使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息，配合Emby，Plex使用体验绝佳
-    
-
-系列教程
-全部文章RSS订阅
-Nas系列 Nas 分类 RSS 订阅
-
-音视频图书和音乐自动化管理框架图解
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>emby</tag>
-        <tag>刮削</tag>
-        <tag>tmm</tag>
-        <tag>字幕</tag>
-        <tag>plex</tag>
       </tags>
   </entry>
   <entry>
@@ -17839,11 +18078,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var ejOyLGFCOMPBcPpU_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); ejOyLGFCOMPBcPpU_options.container = document.getElementById("mmedia-ejOyLGFCOMPBcPpU"); const ap_ejOyLGFCOMPBcPpU = new APlayer(ejOyLGFCOMPBcPpU_options); 
+ var puswLuZUSUQJPMdE_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); puswLuZUSUQJPMdE_options.container = document.getElementById("mmedia-puswLuZUSUQJPMdE"); const ap_puswLuZUSUQJPMdE = new APlayer(puswLuZUSUQJPMdE_options); 
 
 
 
- var FQaIVtpjbvaYHhbz_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); FQaIVtpjbvaYHhbz_options.container = document.getElementById("mmedia-FQaIVtpjbvaYHhbz"); const ap_FQaIVtpjbvaYHhbz = new APlayer(FQaIVtpjbvaYHhbz_options); 
+ var SpeEYAevoILhDjHH_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); SpeEYAevoILhDjHH_options.container = document.getElementById("mmedia-SpeEYAevoILhDjHH"); const ap_SpeEYAevoILhDjHH = new APlayer(SpeEYAevoILhDjHH_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -17924,9 +18163,9 @@ Android支持
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ejFuFGMyUEQKRQjm").style.height=document.getElementById("mmedia-ejFuFGMyUEQKRQjm").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-XfdBhmUHeiMPsYbL").style.height=document.getElementById("mmedia-XfdBhmUHeiMPsYbL").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-ejFuFGMyUEQKRQjm").style.height=document.getElementById("mmedia-ejFuFGMyUEQKRQjm").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-XfdBhmUHeiMPsYbL").style.height=document.getElementById("mmedia-XfdBhmUHeiMPsYbL").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -17935,7 +18174,7 @@ Android支持
 
 ## 中文翻唱
 
- var wMXUSmHDJBoMlYqL_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); wMXUSmHDJBoMlYqL_options.container = document.getElementById("mmedia-wMXUSmHDJBoMlYqL"); const ap_wMXUSmHDJBoMlYqL = new APlayer(wMXUSmHDJBoMlYqL_options); 
+ var nyprkCjlStbzOQSI_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); nyprkCjlStbzOQSI_options.container = document.getElementById("mmedia-nyprkCjlStbzOQSI"); const ap_nyprkCjlStbzOQSI = new APlayer(nyprkCjlStbzOQSI_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -18374,6 +18613,49 @@ jenkins 创建项目
         <tag>ci/cd</tag>
         <tag>node</tag>
         <tag>jenkins</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>winrar去广告和破解</title>
+    <url>/posts/3b296307/</url>
+    <content><![CDATA[
+WinRAR 是一款不错的解压缩软件，但还是收费软件，广告不少，今天就总结了一下网上的各路教程。
+
+
+crack winrar
+首先通过特殊方式获取软件许可：
+新建一个文本文档
+
+在这个文本文档里输入内容：
+RAR registration data``Federal Agency ``for` `Education``1000000 PC usage license``UID=b621cca9a84bc5deffbf``6412612250ffbf533df6db2dfe8ccc3aae5362c06d54762105357d``5e3b1489e751c76bf6e0640001014be50a52303fed29664b074145``7e567d04159ad8defc3fb6edf32831fd1966f72c21c0c53c02fbbb``2f91cfca671d9c482b11b8ac3281cb21378e85606494da349941fa``e9ee328f12dc73e90b6356b921fbfb8522d6562a6a4b97e8ef6c9f``fb866be1e3826b5aa126a4d2bfe9336ad63003fc0e71c307fc2c60``64416495d4c55a0cc82d402110498da970812063934815d81470829275
+
+然后将文件名改为：rarreg.key
+
+再将这个文件导入WinRAR的安装文件夹
+
+
+这时点开关于WinRAR，已经获取许可。
+
+去除广告
+接下来使用Resource Hacker软件打开winrar.exe
+
+进入字串表，找到“80”，删除“1267”和“1277”行
+点击绿色三角形按钮，编译。
+
+然后：文件→另存为，进行保存。
+
+然后对源文件：winrar.exe进行替换,注意，要关闭winrar软件
+
+至此，已经完成破解和去广告了。
+参考来源 52pojie
+]]></content>
+      <categories>
+        <category>tools</category>
+      </categories>
+      <tags>
+        <tag>crack</tag>
+        <tag>tools</tag>
+        <tag>winrar</tag>
       </tags>
   </entry>
   <entry>
@@ -19378,49 +19660,6 @@ hello to data1 volume from ubuntu16.04
         <tag>linux</tag>
         <tag>docker</tag>
         <tag>shell</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>winrar去广告和破解</title>
-    <url>/posts/3b296307/</url>
-    <content><![CDATA[
-WinRAR 是一款不错的解压缩软件，但还是收费软件，广告不少，今天就总结了一下网上的各路教程。
-
-
-crack winrar
-首先通过特殊方式获取软件许可：
-新建一个文本文档
-
-在这个文本文档里输入内容：
-RAR registration data``Federal Agency ``for` `Education``1000000 PC usage license``UID=b621cca9a84bc5deffbf``6412612250ffbf533df6db2dfe8ccc3aae5362c06d54762105357d``5e3b1489e751c76bf6e0640001014be50a52303fed29664b074145``7e567d04159ad8defc3fb6edf32831fd1966f72c21c0c53c02fbbb``2f91cfca671d9c482b11b8ac3281cb21378e85606494da349941fa``e9ee328f12dc73e90b6356b921fbfb8522d6562a6a4b97e8ef6c9f``fb866be1e3826b5aa126a4d2bfe9336ad63003fc0e71c307fc2c60``64416495d4c55a0cc82d402110498da970812063934815d81470829275
-
-然后将文件名改为：rarreg.key
-
-再将这个文件导入WinRAR的安装文件夹
-
-
-这时点开关于WinRAR，已经获取许可。
-
-去除广告
-接下来使用Resource Hacker软件打开winrar.exe
-
-进入字串表，找到“80”，删除“1267”和“1277”行
-点击绿色三角形按钮，编译。
-
-然后：文件→另存为，进行保存。
-
-然后对源文件：winrar.exe进行替换,注意，要关闭winrar软件
-
-至此，已经完成破解和去广告了。
-参考来源 52pojie
-]]></content>
-      <categories>
-        <category>tools</category>
-      </categories>
-      <tags>
-        <tag>crack</tag>
-        <tag>tools</tag>
-        <tag>winrar</tag>
       </tags>
   </entry>
   <entry>
@@ -32939,9 +33178,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-kfKEwqEftsboRuYr").style.height=document.getElementById("mmedia-kfKEwqEftsboRuYr").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-XRAiLcJPzypxqiCi").style.height=document.getElementById("mmedia-XRAiLcJPzypxqiCi").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-kfKEwqEftsboRuYr").style.height=document.getElementById("mmedia-kfKEwqEftsboRuYr").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-XRAiLcJPzypxqiCi").style.height=document.getElementById("mmedia-XRAiLcJPzypxqiCi").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 calibre:
