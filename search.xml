@@ -1,6 +1,150 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Github Pages + jekyll 全面介绍极简搭建个人网站和博客</title>
+    <url>/posts/1991789c/</url>
+    <content><![CDATA[利用github pages搭建个人博客。本文指导建立github工程，并配置github pages搭建博客的全过程。
+注意：图床使用github，图片显示问题自己解决
+第一步，建立Github仓库
+首先到这里Github，创建一个仓库。
+
+仓库名称有固定的格式： username.github.io，其中username必须是Github账户的用户名（我的是scottcgi），github.io是固定的，这个地址将会成为个人站点的网站地址。另外，我们可以勾选Initialize this repository with a README，让仓库自动创建一个README.md文件，我们用它来做站点的首页（当然也可以不创建，后面自行创建，或是建立index.html也行）。
+注意： username如果不是Github账户名，这个仓库就会成为username.github.io的子站点，比如访问地址会是：username.github.io/aaa.github.io。可见，username.github.io是github默认分配给你的域名，同名仓库即代表着默认网站内容。而username.github.io/仓库名称，是用来访问你的其它仓库的地址。
+第二步，设置仓库开启Github Pages
+进入仓库设置界面，如图。
+
+这里能够重新修改仓库的名称，比如这个仓库内容是fork别人的，就可以在这里修改成自己的username.github.io名称。
+
+在Setting页面下有Github Pages的设置选项。绿色表示部署成功，每次修改仓库内容，都会出发Github jekyll重新编译部署，需要1-2分钟的时间，更新才能体现。如果有编译错误，包括js，css，html，markdown语法问题，都会显示红色以及错误页面和行号，同时会发邮件通知。其中，Source有以下几个选项：
+gh-pages branch 是项目新建一个分支命名为这个，使用这个分支来做站点内容。
+master branch 是使用主分支也是默认的，来作为站点内容。
+master branch/docs folder 是使用主分支的docs文件夹来作为站点内容。
+None 就是禁用Github Pages。
+如果是username.github.io只能使用主分支，其它仓库项目可以选择其它两个。接下来Choose a theme是Github提供的内置的网站主题，选择即可应用无需其它设置。Custom domain是自定义域名，本文暂不讨论。
+第三步，使用Github内置主题
+选择好主题，过一会刷新网站地址就已经能看到效果了，而在Code页面仅有两个文件。
+
+编辑README.md文件的内容，就会默认显示在网站首页，_config.yml 是jekyll的全局配置文件，现在里面只有一句话，theme: jekyll-theme-modernist。我们可以手动修改这个theme主题配置，网站就会应用不同的主题。
+Github内置支持的几个主题，官方的仓库在这里：https://pages.github.com/themes，每个README.md里都有介绍如何设置。
+那么我们现在就有两种方法来使用这些主题：
+第一种，就是直接fork一个主题仓库，然后修改仓库名称为我们自己的，然后修改我们需要的部分。
+
+第二种，只是简单的Choose (Change) theme（或在_config.yml设置theme），然后我们对照着官方仓库的主题目录，需要改什么文件就按照同样的路径拷贝单独一个文件到自己的仓库来修改（保持路径一致），这样就可以保持自己仓库的简洁。（如果使用了github内置的主题，github就会把你仓库的内容和内置主题内容合并到一起编译成静态网页。）
+另外，更多主题可以参看这两个地址（不要挑花眼了）： jekyll themes 和 jekyll wiki site。
+第四步，jekyll的目录结构
+我们只需要关注几个核心的目录结构如下（可以自己创建）：
+- _layouts （存放页面模板，md或html文件的内容会填充模板）
+- _sass（存放样式表）
+- _includes （可以复用在其它页面被include的html页面）
+- _posts（博客文章页面）
+- assets（原生的资源文件）
+  - js
+  - css
+  - image
+- _config.yml （全局配置文件）
+- index.html, index.md, README.md （首页index.html优先级最高，如果没有index，默认启用README.md文件）
+- 自定义文件和目录
+  更多更详细的目录结构参看jekyll官网：https://jekyllrb.com/docs/structure
+第五步，jekyll的模板编程语言Liquid的使用
+
+
+变量  被嵌入在页面中，会在静态页面生成的时候被替换成具体的数值。常用的全局变量对象有：site 和 page。这两个对象有很多默认自带的属性，比如：，。更多的默认值参看：https://jekyllrb.com/docs/variables。
+
+
+site对象对应的就是网站范围，自定义变量放在_config.yml中，比如title:标题使用访问。
+
+
+page对象对应的是单个页面，自定义变量放在每个页面的最开头，比如：
+
+
+myNum:100
+ 
+myStr:我是字符串
+使用 和  访问。
+条件判断语句，更多详见：https://shopify.github.io/liquid/tags/control-flow
+
+循环迭代，更多详见：https://shopify.github.io/liquid/tags/iteration
+
+默认函数，可以对变量进行一些处理，比如大小写转化、数学运算、格式化、排序等等，在Liquid中叫做Filters。比如{{ "Hello World!" | downcase }}转换字符串为小写。更多内置函数详见：https://jekyllrb.com/docs/liquid/filters
+第六步，使用_config.yml文件设置jekyll
+如果不是fork别人的仓库，就需要自己创建一个这个文件。然后，我们就可以配置一些默认的属性来控制jekyll的编译过程。更多详细的内置属性详见：https://jekyllrb.com/docs/configuration/default
+同时我们可以自定变量，会自动绑定到site对象上，比如我们可以把导航配置到_config.yml中：
+
+
+当然，我们也可以把一些数据单独放入一个yml文件，然后放在固定的数据文件夹_data下，比如_data/navigation.yml，这样访问这个文件的数据对象就是site.data.navigation。
+第七步，_layouts模板配置
+_layouts文件夹存放的是页面模板，默认需要一个default.html，什么意思？就是说，layout提供一个页面的布局框架，这是固定的模式，包括样式、结构、布局、脚本控制等等。然后，我们在用其它md或html文件去动态填充这个框架，这样就形成了一个完整的页面。比如我的default.html页面如下：
+
+
+
+{% seo %} 是jekyll的一个插件提供的seo优化，详情在这里：https://github.com/jekyll/jekyll-seo-tag
+核心在于 content 这个变量是内置的，会用我们的md或html页面填充这部分内容。
+其它的，我们看到会大量使用变量和流程控制代码，来填充模板的方方面面。
+于是，填充模板的内容，一方面是来自读取配置文件的变量，一方面是来自_includes的页面，还有就是来自 content 对应的页面。
+当然，我们也可以不使用 content 来填充模板，而是使用_includes的页面来代替content  ，但这样不够灵活，因为使用content ，我们可以在每个页面单独设置对应的layout模板。
+
+第八步，md和html页面编写
+站点内容页面，可以使用markdown或html来编写，但markdown编写的md文件，在浏览器地址访问的时候依然使用html文件后缀。推荐使用markdown来书写内容，语法参见：Github md 示例 和 Github md 教程。比如下面这个About.md页面：
+---
+layout: default
+title: About
+---
+# About page
+ 
+This page tells you a little bit about me.
+ 
+layout: default 就是告诉jekyll这个页面使用哪个模板，即这个页面会放入哪个模板的content。当然，我们可以在_layouts文件夹下提供多个不同的模板，然后根据需要不同的页面使用不同的layout。
+页面可以放在任意位置和目录，访问的时候从站点域名开始，带上目录名称，再次注意需要使用html结尾。如果想要自定义浏览器的访问路径，可以参看详细设置：permalinks。
+md和html页面的区别：
+md有自己的语法，可以使用少量的html标签，最终会编译成html，侧重于内容编写。
+html可以随意使用html标签，可以使用liquid模板语言，侧重于页面模板和功能控制。
+至此，我们就可以在github上，新建md文件然后编辑提交，等待几分钟编译生成之后，就可以在浏览器里看到页面内容了。
+第九步，博客文章编写和管理
+我们自然可以新建目录，提交文章，然后添加一个文章列表页面。但我们也可以把这些交给jekyll的内置机制来完成，因为它提供了一些方便的内置文章管理功能。
+
+_posts文件夹是内置的放置文章的目录，我们可以将固定格式year-moth-day-name.md名称的md文件放到这里。比如新建一篇md的博客文章放到_posts目录下：
+
+---
+layout: post
+---
+这是一篇博客文章。
+
+
+接下来我们需要添加一个post的模板页面到_layouts文件夹下面。
+
+
+可见，模板页面本身也可以使用模板，这里post使用了default模板，而这里 content 就会填充_posts下面编写的页面（如果页面使用了layout: post模板）。
+最后，我们还需要编写一个博客文章列表的页面，用来展示所有的文章。比如在根目录新建blog.html页面：
+
+
+site.posts jekyll会自动生成_posts目录的对象。
+_post.url jekyll会自动会设置在_posts目录下的页面url。
+post.title 默认是md文件名称，但也可以在文章页面自定义title: 我的文章自定义名称。
+post.excerpt 默认是文章第一段的摘要文字。
+
+第十步，Github Pages的限制
+
+Github Pages 并不是无限存储和无限流量的静态站点服务，一些限制如下：
+内容存储不能超过1GB。
+每个月100GB流量带宽。
+每小时编译构建次数不超过10次。（在线修改重新编译并未发现这个限制）
+更多参看官方说明：usage-limits。
+
+总结
+在实际的使用过程中，我发现完全可以在Github网站上，编写md和html页面，修改js和css文件，来完成站点的设置和搭建。只不过每次修改都要触发Github jekyll的编译行为，有点慢（不知道是不是增量编译），没有在本地修改调试的速度快。
+更多jekyll详细的设置和功能，参看官方网站的文档：https://jekyllrb.com/docs。
+原文链接：https://blog.csdn.net/tom_221x/article/details/84630283
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>github</tag>
+        <tag>jekyll</tag>
+        <tag>blog</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Gitlab的安装及使用</title>
     <url>/posts/d08eb7b/</url>
     <content><![CDATA[Gitlab概述
@@ -373,150 +517,6 @@ Gitlab的安装及使用
         <tag>gitlab</tag>
         <tag>git</tag>
         <tag>crack</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Github Pages + jekyll 全面介绍极简搭建个人网站和博客</title>
-    <url>/posts/1991789c/</url>
-    <content><![CDATA[利用github pages搭建个人博客。本文指导建立github工程，并配置github pages搭建博客的全过程。
-注意：图床使用github，图片显示问题自己解决
-第一步，建立Github仓库
-首先到这里Github，创建一个仓库。
-
-仓库名称有固定的格式： username.github.io，其中username必须是Github账户的用户名（我的是scottcgi），github.io是固定的，这个地址将会成为个人站点的网站地址。另外，我们可以勾选Initialize this repository with a README，让仓库自动创建一个README.md文件，我们用它来做站点的首页（当然也可以不创建，后面自行创建，或是建立index.html也行）。
-注意： username如果不是Github账户名，这个仓库就会成为username.github.io的子站点，比如访问地址会是：username.github.io/aaa.github.io。可见，username.github.io是github默认分配给你的域名，同名仓库即代表着默认网站内容。而username.github.io/仓库名称，是用来访问你的其它仓库的地址。
-第二步，设置仓库开启Github Pages
-进入仓库设置界面，如图。
-
-这里能够重新修改仓库的名称，比如这个仓库内容是fork别人的，就可以在这里修改成自己的username.github.io名称。
-
-在Setting页面下有Github Pages的设置选项。绿色表示部署成功，每次修改仓库内容，都会出发Github jekyll重新编译部署，需要1-2分钟的时间，更新才能体现。如果有编译错误，包括js，css，html，markdown语法问题，都会显示红色以及错误页面和行号，同时会发邮件通知。其中，Source有以下几个选项：
-gh-pages branch 是项目新建一个分支命名为这个，使用这个分支来做站点内容。
-master branch 是使用主分支也是默认的，来作为站点内容。
-master branch/docs folder 是使用主分支的docs文件夹来作为站点内容。
-None 就是禁用Github Pages。
-如果是username.github.io只能使用主分支，其它仓库项目可以选择其它两个。接下来Choose a theme是Github提供的内置的网站主题，选择即可应用无需其它设置。Custom domain是自定义域名，本文暂不讨论。
-第三步，使用Github内置主题
-选择好主题，过一会刷新网站地址就已经能看到效果了，而在Code页面仅有两个文件。
-
-编辑README.md文件的内容，就会默认显示在网站首页，_config.yml 是jekyll的全局配置文件，现在里面只有一句话，theme: jekyll-theme-modernist。我们可以手动修改这个theme主题配置，网站就会应用不同的主题。
-Github内置支持的几个主题，官方的仓库在这里：https://pages.github.com/themes，每个README.md里都有介绍如何设置。
-那么我们现在就有两种方法来使用这些主题：
-第一种，就是直接fork一个主题仓库，然后修改仓库名称为我们自己的，然后修改我们需要的部分。
-
-第二种，只是简单的Choose (Change) theme（或在_config.yml设置theme），然后我们对照着官方仓库的主题目录，需要改什么文件就按照同样的路径拷贝单独一个文件到自己的仓库来修改（保持路径一致），这样就可以保持自己仓库的简洁。（如果使用了github内置的主题，github就会把你仓库的内容和内置主题内容合并到一起编译成静态网页。）
-另外，更多主题可以参看这两个地址（不要挑花眼了）： jekyll themes 和 jekyll wiki site。
-第四步，jekyll的目录结构
-我们只需要关注几个核心的目录结构如下（可以自己创建）：
-- _layouts （存放页面模板，md或html文件的内容会填充模板）
-- _sass（存放样式表）
-- _includes （可以复用在其它页面被include的html页面）
-- _posts（博客文章页面）
-- assets（原生的资源文件）
-  - js
-  - css
-  - image
-- _config.yml （全局配置文件）
-- index.html, index.md, README.md （首页index.html优先级最高，如果没有index，默认启用README.md文件）
-- 自定义文件和目录
-  更多更详细的目录结构参看jekyll官网：https://jekyllrb.com/docs/structure
-第五步，jekyll的模板编程语言Liquid的使用
-
-
-变量  被嵌入在页面中，会在静态页面生成的时候被替换成具体的数值。常用的全局变量对象有：site 和 page。这两个对象有很多默认自带的属性，比如：，。更多的默认值参看：https://jekyllrb.com/docs/variables。
-
-
-site对象对应的就是网站范围，自定义变量放在_config.yml中，比如title:标题使用访问。
-
-
-page对象对应的是单个页面，自定义变量放在每个页面的最开头，比如：
-
-
-myNum:100
- 
-myStr:我是字符串
-使用 和  访问。
-条件判断语句，更多详见：https://shopify.github.io/liquid/tags/control-flow
-
-循环迭代，更多详见：https://shopify.github.io/liquid/tags/iteration
-
-默认函数，可以对变量进行一些处理，比如大小写转化、数学运算、格式化、排序等等，在Liquid中叫做Filters。比如{{ "Hello World!" | downcase }}转换字符串为小写。更多内置函数详见：https://jekyllrb.com/docs/liquid/filters
-第六步，使用_config.yml文件设置jekyll
-如果不是fork别人的仓库，就需要自己创建一个这个文件。然后，我们就可以配置一些默认的属性来控制jekyll的编译过程。更多详细的内置属性详见：https://jekyllrb.com/docs/configuration/default
-同时我们可以自定变量，会自动绑定到site对象上，比如我们可以把导航配置到_config.yml中：
-
-
-当然，我们也可以把一些数据单独放入一个yml文件，然后放在固定的数据文件夹_data下，比如_data/navigation.yml，这样访问这个文件的数据对象就是site.data.navigation。
-第七步，_layouts模板配置
-_layouts文件夹存放的是页面模板，默认需要一个default.html，什么意思？就是说，layout提供一个页面的布局框架，这是固定的模式，包括样式、结构、布局、脚本控制等等。然后，我们在用其它md或html文件去动态填充这个框架，这样就形成了一个完整的页面。比如我的default.html页面如下：
-
-
-
-{% seo %} 是jekyll的一个插件提供的seo优化，详情在这里：https://github.com/jekyll/jekyll-seo-tag
-核心在于 content 这个变量是内置的，会用我们的md或html页面填充这部分内容。
-其它的，我们看到会大量使用变量和流程控制代码，来填充模板的方方面面。
-于是，填充模板的内容，一方面是来自读取配置文件的变量，一方面是来自_includes的页面，还有就是来自 content 对应的页面。
-当然，我们也可以不使用 content 来填充模板，而是使用_includes的页面来代替content  ，但这样不够灵活，因为使用content ，我们可以在每个页面单独设置对应的layout模板。
-
-第八步，md和html页面编写
-站点内容页面，可以使用markdown或html来编写，但markdown编写的md文件，在浏览器地址访问的时候依然使用html文件后缀。推荐使用markdown来书写内容，语法参见：Github md 示例 和 Github md 教程。比如下面这个About.md页面：
----
-layout: default
-title: About
----
-# About page
- 
-This page tells you a little bit about me.
- 
-layout: default 就是告诉jekyll这个页面使用哪个模板，即这个页面会放入哪个模板的content。当然，我们可以在_layouts文件夹下提供多个不同的模板，然后根据需要不同的页面使用不同的layout。
-页面可以放在任意位置和目录，访问的时候从站点域名开始，带上目录名称，再次注意需要使用html结尾。如果想要自定义浏览器的访问路径，可以参看详细设置：permalinks。
-md和html页面的区别：
-md有自己的语法，可以使用少量的html标签，最终会编译成html，侧重于内容编写。
-html可以随意使用html标签，可以使用liquid模板语言，侧重于页面模板和功能控制。
-至此，我们就可以在github上，新建md文件然后编辑提交，等待几分钟编译生成之后，就可以在浏览器里看到页面内容了。
-第九步，博客文章编写和管理
-我们自然可以新建目录，提交文章，然后添加一个文章列表页面。但我们也可以把这些交给jekyll的内置机制来完成，因为它提供了一些方便的内置文章管理功能。
-
-_posts文件夹是内置的放置文章的目录，我们可以将固定格式year-moth-day-name.md名称的md文件放到这里。比如新建一篇md的博客文章放到_posts目录下：
-
----
-layout: post
----
-这是一篇博客文章。
-
-
-接下来我们需要添加一个post的模板页面到_layouts文件夹下面。
-
-
-可见，模板页面本身也可以使用模板，这里post使用了default模板，而这里 content 就会填充_posts下面编写的页面（如果页面使用了layout: post模板）。
-最后，我们还需要编写一个博客文章列表的页面，用来展示所有的文章。比如在根目录新建blog.html页面：
-
-
-site.posts jekyll会自动生成_posts目录的对象。
-_post.url jekyll会自动会设置在_posts目录下的页面url。
-post.title 默认是md文件名称，但也可以在文章页面自定义title: 我的文章自定义名称。
-post.excerpt 默认是文章第一段的摘要文字。
-
-第十步，Github Pages的限制
-
-Github Pages 并不是无限存储和无限流量的静态站点服务，一些限制如下：
-内容存储不能超过1GB。
-每个月100GB流量带宽。
-每小时编译构建次数不超过10次。（在线修改重新编译并未发现这个限制）
-更多参看官方说明：usage-limits。
-
-总结
-在实际的使用过程中，我发现完全可以在Github网站上，编写md和html页面，修改js和css文件，来完成站点的设置和搭建。只不过每次修改都要触发Github jekyll的编译行为，有点慢（不知道是不是增量编译），没有在本地修改调试的速度快。
-更多jekyll详细的设置和功能，参看官方网站的文档：https://jekyllrb.com/docs。
-原文链接：https://blog.csdn.net/tom_221x/article/details/84630283
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>github</tag>
-        <tag>jekyll</tag>
-        <tag>blog</tag>
       </tags>
   </entry>
   <entry>
@@ -5600,6 +5600,66 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
+    <title>通过宝塔面板实现MySQL性能简单调优</title>
+    <url>/posts/d5f56dd0/</url>
+    <content><![CDATA[
+在PHP+MYSQL架构网站运行过程中，往往会遇到各种性能问题影响，如MySQL、PHP、CPU、磁盘IO、缓存等，其中MySQL瓶颈就是最常见也最难解决的一种影响网站性能的因素；通常，我们会使用redis、memcached等缓存软件来缓存内容，这确实是最优的解决方案之一，但这需要网站程序的支持，然而多数常用网站程序并不支持或者不能完美支持这些缓存软件，今天我们就来谈谈如何通过MySQL自身的配置调整来优化MySQL性能，以缓解MySQL瓶颈问题。
+
+准备：
+
+​    1、宝塔Linux面板 正式版 5.2.0+ (2017/09/20发布)  测试版5.2.4+
+​    2、MySQL 5.x
+
+通常MySQL调优我们分以下几部分：
+
+​    1、MySQL配置参数调优 (需要根据网站运行情况调整)
+​    2、数据表索引调优 (效果明显，但通常优秀的开源程序都不需要调整)
+​    3、SQL语句调优 (这是程序员或DBA干的事)
+
+今天我们主要谈谈如果配合宝塔面板的新功能来进行MySQL配置参数调优，我们先来看两张图片：
+(图1)
+
+(图2)
+
+很明显，(图1)显示的是MySQL当前的运行状态，(图2)显示的是MySQL主要配置参数
+下面我们就来解读一下这两张图：
+1、活动/峰值连接数
+​      (图1)中当前活动的连接为1个，自MySQL服务启动以来，最高连接数为54；当最高连接数接近或等于(图2)中的max_connections时，应适当增加max_connections，需要注意的是，不要一下子增加过多，建议每次增加50，观察一段时间，不够再继续增加。
+2、线程缓存命中率
+​      (图1)中线程缓存命中率为99.78%，若这个值小于90%，建议适当增加(图2)中的thread_cache_size，建议每次增加8。
+3、索引命中率
+​      (图1)中索引命中率为99.50%，若这个值小于95%，建议适当增加(图2)中的key_buffer_size，建议每次增加64，需要说明的是，若您的数据库使用的是Innodb引擎，可忽略这个选项
+4、Innodb索引命中率
+(图1)中Innodb索引命中率为100%，若这个值小于95%，建议适当增加(图2)中的innodb_buffer_pool_size，建议每次增加64，需要说明的是，若您的数据库没有使用Innodb引擎，可忽略这个选项
+5、查询缓存命中率
+​      MySQL查询缓存是个比较受争议的功能，个人建议当你有在使用redis、memcached等缓存软件时，在(图2)中将query_cache_size设为0可以将其关闭，当你没有使用缓存软件，有多余的内存使用，且数据库瓶颈明显存在时，可以尝试开启查询缓存，这是个非常依赖数据表结构及SQL语句优化的功能，若数据表结构和SQL语句都针对查询缓存进行过优化，它的效果还是很不错的。
+6、创建临时表到磁盘
+​      (图1)中创建临时表到磁盘的比例是0.42%，这说明大部分临时表创建到内存了，不会过多增加磁盘IO的开销，建议，当比例大于2%时适当增加(图1)中的tmp_cache_size，建议每次增加32，当比例大于60%时，放弃吧，有些开源程序并没有专门优化过SQL语句，所以在运行过程中会开启大量临时表，加多少缓存都是不够用的。
+7、已打开的表
+​      当(图1)中的已打开的表接近或等于(图2)中的table_open_cache时，可以适当增加table_open_cache，但若设置过大可能导致您的程序频繁中断MySQL连接，建议在1024以内，最大不要超过2048。
+8、没有使用索引的量、没有使用索引的JOIN量
+​      若不为0，就检查下数据表索引吧，其实只要没有疯涨，比如一天增涨几千，一般可以忽略，必竟优化索引还是程序员或DBA去干比较合适。
+9、排序后的合并次数
+​      如果这个值在缓慢增张，建议适当增加(图2)中的sort_buffer_size，建议每次增加512，但最大不要超过8192，如果这个值一直在疯涨，增加sort_buffer_size也没用，就放弃这个选项吧，这个锅还是给程序开发者背。
+10、锁表次数
+​      如果服务器CPU开销不大的情况下，疯狂锁表，建议你将所有数据表转换成innodb，记得转换前备份哦。
+11、优化方案
+​      这个是我们根据内存大小给的一个推荐优化方案，仅是建议仅用于基础参考值，还是要根据实据情况来调整每一个配置项。
+注意：保存参数配置后不会立即生效，记得要重启MySQL服务。
+写在最后：
+因我本人并不是专业DBA，难免有错误或遗漏的地方，还请大家给予指正，另外，可能面板提供的参考数据及调整选项还不够丰富，我们在往后的更新中会根据需要考虑继续增加更多的调整选项，谢谢大家的支持。
+来自网络整理。
+]]></content>
+      <categories>
+        <category>mysql</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>mysql</tag>
+        <tag>优化</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>ESNI和加密DNS - 保护信息隐私的最后一块拼图</title>
     <url>/posts/ec2cad2/</url>
     <content><![CDATA[随着TLS1.3的发布，让该协议成为有史以来最安全、也是最复杂的TLS协议。在该协议之中，有很多的对于以往协议安全漏洞的修复，包括废弃RSA启用新的秘钥交换机制PSK等等。而Encrypted SNI作为一个TLS1.3的扩展协议用来防止传统的HTTPS流量受到ISP或者陌生网络环境的窥探以及一些网络审查。在过去，由于HTTPS协议之中Server Name Indication - SNI的使用，我们的HTTPS流量经常被窥探我们所访问站点的域名
@@ -5683,66 +5743,6 @@ From: hackerchai
         <tag>tls</tag>
         <tag>隐私</tag>
         <tag>安全</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>通过宝塔面板实现MySQL性能简单调优</title>
-    <url>/posts/d5f56dd0/</url>
-    <content><![CDATA[
-在PHP+MYSQL架构网站运行过程中，往往会遇到各种性能问题影响，如MySQL、PHP、CPU、磁盘IO、缓存等，其中MySQL瓶颈就是最常见也最难解决的一种影响网站性能的因素；通常，我们会使用redis、memcached等缓存软件来缓存内容，这确实是最优的解决方案之一，但这需要网站程序的支持，然而多数常用网站程序并不支持或者不能完美支持这些缓存软件，今天我们就来谈谈如何通过MySQL自身的配置调整来优化MySQL性能，以缓解MySQL瓶颈问题。
-
-准备：
-
-​    1、宝塔Linux面板 正式版 5.2.0+ (2017/09/20发布)  测试版5.2.4+
-​    2、MySQL 5.x
-
-通常MySQL调优我们分以下几部分：
-
-​    1、MySQL配置参数调优 (需要根据网站运行情况调整)
-​    2、数据表索引调优 (效果明显，但通常优秀的开源程序都不需要调整)
-​    3、SQL语句调优 (这是程序员或DBA干的事)
-
-今天我们主要谈谈如果配合宝塔面板的新功能来进行MySQL配置参数调优，我们先来看两张图片：
-(图1)
-
-(图2)
-
-很明显，(图1)显示的是MySQL当前的运行状态，(图2)显示的是MySQL主要配置参数
-下面我们就来解读一下这两张图：
-1、活动/峰值连接数
-​      (图1)中当前活动的连接为1个，自MySQL服务启动以来，最高连接数为54；当最高连接数接近或等于(图2)中的max_connections时，应适当增加max_connections，需要注意的是，不要一下子增加过多，建议每次增加50，观察一段时间，不够再继续增加。
-2、线程缓存命中率
-​      (图1)中线程缓存命中率为99.78%，若这个值小于90%，建议适当增加(图2)中的thread_cache_size，建议每次增加8。
-3、索引命中率
-​      (图1)中索引命中率为99.50%，若这个值小于95%，建议适当增加(图2)中的key_buffer_size，建议每次增加64，需要说明的是，若您的数据库使用的是Innodb引擎，可忽略这个选项
-4、Innodb索引命中率
-(图1)中Innodb索引命中率为100%，若这个值小于95%，建议适当增加(图2)中的innodb_buffer_pool_size，建议每次增加64，需要说明的是，若您的数据库没有使用Innodb引擎，可忽略这个选项
-5、查询缓存命中率
-​      MySQL查询缓存是个比较受争议的功能，个人建议当你有在使用redis、memcached等缓存软件时，在(图2)中将query_cache_size设为0可以将其关闭，当你没有使用缓存软件，有多余的内存使用，且数据库瓶颈明显存在时，可以尝试开启查询缓存，这是个非常依赖数据表结构及SQL语句优化的功能，若数据表结构和SQL语句都针对查询缓存进行过优化，它的效果还是很不错的。
-6、创建临时表到磁盘
-​      (图1)中创建临时表到磁盘的比例是0.42%，这说明大部分临时表创建到内存了，不会过多增加磁盘IO的开销，建议，当比例大于2%时适当增加(图1)中的tmp_cache_size，建议每次增加32，当比例大于60%时，放弃吧，有些开源程序并没有专门优化过SQL语句，所以在运行过程中会开启大量临时表，加多少缓存都是不够用的。
-7、已打开的表
-​      当(图1)中的已打开的表接近或等于(图2)中的table_open_cache时，可以适当增加table_open_cache，但若设置过大可能导致您的程序频繁中断MySQL连接，建议在1024以内，最大不要超过2048。
-8、没有使用索引的量、没有使用索引的JOIN量
-​      若不为0，就检查下数据表索引吧，其实只要没有疯涨，比如一天增涨几千，一般可以忽略，必竟优化索引还是程序员或DBA去干比较合适。
-9、排序后的合并次数
-​      如果这个值在缓慢增张，建议适当增加(图2)中的sort_buffer_size，建议每次增加512，但最大不要超过8192，如果这个值一直在疯涨，增加sort_buffer_size也没用，就放弃这个选项吧，这个锅还是给程序开发者背。
-10、锁表次数
-​      如果服务器CPU开销不大的情况下，疯狂锁表，建议你将所有数据表转换成innodb，记得转换前备份哦。
-11、优化方案
-​      这个是我们根据内存大小给的一个推荐优化方案，仅是建议仅用于基础参考值，还是要根据实据情况来调整每一个配置项。
-注意：保存参数配置后不会立即生效，记得要重启MySQL服务。
-写在最后：
-因我本人并不是专业DBA，难免有错误或遗漏的地方，还请大家给予指正，另外，可能面板提供的参考数据及调整选项还不够丰富，我们在往后的更新中会根据需要考虑继续增加更多的调整选项，谢谢大家的支持。
-来自网络整理。
-]]></content>
-      <categories>
-        <category>mysql</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>mysql</tag>
-        <tag>优化</tag>
       </tags>
   </entry>
   <entry>
@@ -12011,9 +12011,9 @@ Vim
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-oLxkBENVPDlZKtDX").style.height=document.getElementById("mmedia-oLxkBENVPDlZKtDX").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-TWUxdEmjBcEewkFr").style.height=document.getElementById("mmedia-TWUxdEmjBcEewkFr").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-oLxkBENVPDlZKtDX").style.height=document.getElementById("mmedia-oLxkBENVPDlZKtDX").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-TWUxdEmjBcEewkFr").style.height=document.getElementById("mmedia-TWUxdEmjBcEewkFr").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -17314,11 +17314,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var EtdDmvowDmEMNEKs_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); EtdDmvowDmEMNEKs_options.container = document.getElementById("mmedia-EtdDmvowDmEMNEKs"); const ap_EtdDmvowDmEMNEKs = new APlayer(EtdDmvowDmEMNEKs_options); 
+ var cVYoEZPorsRANlGf_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); cVYoEZPorsRANlGf_options.container = document.getElementById("mmedia-cVYoEZPorsRANlGf"); const ap_cVYoEZPorsRANlGf = new APlayer(cVYoEZPorsRANlGf_options); 
 
 - **列表**
 
- var ocdWnisHpmMntjVq_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); ocdWnisHpmMntjVq_options.container = document.getElementById("mmedia-ocdWnisHpmMntjVq"); const ap_ocdWnisHpmMntjVq = new APlayer(ocdWnisHpmMntjVq_options); 
+ var JeSLLJlQNfseGkny_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); JeSLLJlQNfseGkny_options.container = document.getElementById("mmedia-JeSLLJlQNfseGkny"); const ap_JeSLLJlQNfseGkny = new APlayer(JeSLLJlQNfseGkny_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -17570,21 +17570,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-WpcQbTjFWPtBaxyC").style.height=document.getElementById("mmedia-WpcQbTjFWPtBaxyC").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-uAPxPbgrrlpWqzIk").style.height=document.getElementById("mmedia-uAPxPbgrrlpWqzIk").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-WpcQbTjFWPtBaxyC").style.height=document.getElementById("mmedia-WpcQbTjFWPtBaxyC").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-uAPxPbgrrlpWqzIk").style.height=document.getElementById("mmedia-uAPxPbgrrlpWqzIk").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-URBGrguPcLlMtitQ").style.height=document.getElementById("mmedia-URBGrguPcLlMtitQ").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-XZYiHGNJeLZMKmOh").style.height=document.getElementById("mmedia-XZYiHGNJeLZMKmOh").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-URBGrguPcLlMtitQ").style.height=document.getElementById("mmedia-URBGrguPcLlMtitQ").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-XZYiHGNJeLZMKmOh").style.height=document.getElementById("mmedia-XZYiHGNJeLZMKmOh").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var OFoDzTEMfiJMLENF_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); OFoDzTEMfiJMLENF_options.container = "#mmedia-OFoDzTEMfiJMLENF"; const art_OFoDzTEMfiJMLENF = new Artplayer(OFoDzTEMfiJMLENF_options); 
+ var IuAsJcTSbaRjLdVF_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); IuAsJcTSbaRjLdVF_options.container = "#mmedia-IuAsJcTSbaRjLdVF"; const art_IuAsJcTSbaRjLdVF = new Artplayer(IuAsJcTSbaRjLdVF_options); 
 脑图
 
 原作者记录
@@ -18728,11 +18728,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var VdgDkDlGKtMAZYAJ_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); VdgDkDlGKtMAZYAJ_options.container = document.getElementById("mmedia-VdgDkDlGKtMAZYAJ"); const ap_VdgDkDlGKtMAZYAJ = new APlayer(VdgDkDlGKtMAZYAJ_options); 
+ var hjWYuLdGJhZycbjJ_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); hjWYuLdGJhZycbjJ_options.container = document.getElementById("mmedia-hjWYuLdGJhZycbjJ"); const ap_hjWYuLdGJhZycbjJ = new APlayer(hjWYuLdGJhZycbjJ_options); 
 
 
 
- var KMpgXtWDsSjBuDug_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); KMpgXtWDsSjBuDug_options.container = document.getElementById("mmedia-KMpgXtWDsSjBuDug"); const ap_KMpgXtWDsSjBuDug = new APlayer(KMpgXtWDsSjBuDug_options); 
+ var eROMQMcZhoZCORGz_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); eROMQMcZhoZCORGz_options.container = document.getElementById("mmedia-eROMQMcZhoZCORGz"); const ap_eROMQMcZhoZCORGz = new APlayer(eROMQMcZhoZCORGz_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -18870,9 +18870,9 @@ docker run -d \
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ryoPZtrVtSVnVyBy").style.height=document.getElementById("mmedia-ryoPZtrVtSVnVyBy").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-CMKVAhIwCMzevoGF").style.height=document.getElementById("mmedia-CMKVAhIwCMzevoGF").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-ryoPZtrVtSVnVyBy").style.height=document.getElementById("mmedia-ryoPZtrVtSVnVyBy").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-CMKVAhIwCMzevoGF").style.height=document.getElementById("mmedia-CMKVAhIwCMzevoGF").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -18881,7 +18881,7 @@ docker run -d \
 
 ## 中文翻唱
 
- var QYXaeZQZIsIBiGFX_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); QYXaeZQZIsIBiGFX_options.container = document.getElementById("mmedia-QYXaeZQZIsIBiGFX"); const ap_QYXaeZQZIsIBiGFX = new APlayer(QYXaeZQZIsIBiGFX_options); 
+ var BuywkVqnJBLowXtH_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); BuywkVqnJBLowXtH_options.container = document.getElementById("mmedia-BuywkVqnJBLowXtH"); const ap_BuywkVqnJBLowXtH = new APlayer(BuywkVqnJBLowXtH_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -34123,9 +34123,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-tesJZLyuFQsQKXHy").style.height=document.getElementById("mmedia-tesJZLyuFQsQKXHy").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-fhMQxRzHQVvVbHQv").style.height=document.getElementById("mmedia-fhMQxRzHQVvVbHQv").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-tesJZLyuFQsQKXHy").style.height=document.getElementById("mmedia-tesJZLyuFQsQKXHy").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-fhMQxRzHQVvVbHQv").style.height=document.getElementById("mmedia-fhMQxRzHQVvVbHQv").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 calibre:
@@ -37104,7 +37104,7 @@ shell,编辑器，浏览器
             书名: 自制搜索引擎
             作者: [日]山田浩之
             出版年份: 2016-1
-            评分: 7.8
+            评分: 7.6
         
     
 
@@ -38039,800 +38039,6 @@ Linux kernel
       <tags>
         <tag>os</tag>
         <tag>自制</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>如何编写Linux驱动？</title>
-    <url>/posts/ed364362/</url>
-    <content><![CDATA[
-本文介绍了编写驱动必备基础知识，编写驱动的难点之处。并从按键驱动到Sensor驱动简单介绍示范了驱动编写过程。并给出了驱动学习方法！
-
-
-
-驱动学习
-•整个内核70%以上是各种驱动代码
-•每一个你日常使用的小功能背后都有复杂的实现！
-
-•Linux 驱动程序设计模式（40%） char，block，net，input，pci，usb，Platform（bus，device，driver），kset，kobject，proc，sysfs，ioctl，mmap，miscdevice, softirq，tasklet，workqueue， console，
-•内核相关知识（30%）：内核目录结构，内存访问，ipc，锁，内核数据结构，不通内核版本api，热拔插netlink，内核线程,中断处理（注册，共享），设备树，
-•硬件相关知识（30%）： 总线，协议（I2C，I2S，SPI，USB，PCI，sensor，bt1120，bt656，LCD），各种CPU、传感器（ADC，sensor，temperature etc）工作原理
-
-
-前置基础知识
-
-
-模拟电路，数字电路
-
-
-硬件总线协议，各种RFC文档；
-
-
-了解硬件电路设计，能看懂电路图。示波器等工具的使用
-
-
-对C语言了如指掌，各种特殊宏的用法，对内核基本数据结构了解。
-
-
-熟悉C系统编程，应用层编程
-
-
-内核软件子系统，各种软件框架
-
-
-
-上述知识你都有了一定了解之后，你才能开始尝试去开发驱动了！
-学习曲线非常陡峭，必须一次性踏上台阶，否则后续又得重新攀爬。
-
-编写驱动困难之处
-
-
-
-打怪升级困难。要有硬件项目才能给你升级涨经验！一个公司硬件项目周期极长，可能几年都做不了几个新硬件项目
-
-
-新手与熟手完成同样任务时间差异极大！强者越强，你有经验，有难度的活都给你，你没经验，练手的机会都不会给你
-
-
-一切都是以懵懂中开始的。内核代码量太大，你不可能都熟悉之后再开始动手修改。内核版本之间接口一直变动，没有稳定的软件方法。接口总线RFC文档太长，一般至少几千页的英文文档，你不可能都看完才开始动手。硬件设计可能有漏洞，不是官方设计出错，而是现实情况是当初设计RFC标准的人就没有考虑到这种异常情况
-
-
-不同总线接口调试方法和工具差异极大，和医院不同科室使用不同工具差不多，你会不会某种工具，可能使你的效率差异几十倍
-
-
-软件开发，你有一台电脑就足够了。硬件驱动开发，必须有对应的硬件开发板，调试工具Jtag，PC端调试工具一整套才能开始工作
-
-
-
-写驱动好比挖隧道
-
-不知道隧道下面什么地质情况，什么岩层结构，是否好施工
-是否有地下水，多大的地下水没法确定
-是否能完工没法确定
-完工时间多久没法确定
-在你完工之前，你不知道还需要多长时间才能完工，是否能完工都不清楚
-等等
-
-
-写驱动，就是给你一个垃圾场，要你组装出来一个能走动的钟表！
-
-不知道是否缺少零件，你要对整个软硬件构架了如指掌，比硬件更熟悉硬件
-零件是否损坏，有可能多个零件，这个损坏，哪个没有损坏，你换一个同样的零件，说不定可行，也可能不可行
-零件是否符合设计规范性能，有可能这个设计错误，根本就是不可能成功的
-这个零件的说明书和零件是否匹配，给错了没有？外行连给到手的资料判断是否正确资料的能力都没有
-零件是否完好，是否工作正常
-在你组装好，能走动之前，你不知道能否组装好手表
-组成的钟表走时快慢是否正常，能够走动起来，说明零件大抵不差了，是驱动飙血决定性进展
-钟表能走动了，后续就是走时准确的调整。性能优化，续航优化，软件框架优化，内存优化，稳定性优化，电磁兼容等等
-
-
-从一堆垃圾零件，组装出来一个能走的钟表！从上图到下图的过程！
-
-实现出来
-组装好，把驱动跑起来是第一步
-性能优化
-对于访问外设emmc，不同时序参数访问性能差距很大。对跑分影响很大！
-续航优化
-不用外设时，可以关闭对应外设电源，或者根据负载动态调节
-内存优化
-内存占用，Zero Copy，指针传递
-稳定性优化
-稳定性，眼图，高速性能
-电磁兼容
-电磁兼容测试，各种标准
-
-驱动开发深入下去，是一座又一座高山需要攀爬，但基本的驱动开发还是不难的。
-
-驱动案例
-
-每一个外设都有复杂的物理，材料，结构，光学，工艺，版本等等各种复杂因素需要研究，考虑。当然不是每个外设都这么复杂，复杂的摄像头子系统涉及的知识技术几年就研究不完！
-每一款芯片构架差异都很大，会有不同的内核软件构架，德州仪器TI一份完整的芯片手册就有3000多页，至少看完前四章（几百页英文文档）才能说对芯片有基本了解。
-
-简单的按键
-
-按键硬件设计方法常用的就有3、4种。每种硬件设计，内核就要好几种软件框架可以实现它。
-学习驱动可以从它开始。万里长征第一步，后面慢慢学习I2C，SPI, NAND等外设驱动。
-
-摄像头驱动介绍
-
-可以说是整个手机最复杂的外设驱动！研究两年只能说刚入门。
-3A算法是核心： AWB 启动白平衡，AE自动曝光，AF自动对焦
-理论上就没有完善的解决方案，只有近似解决方案。技术理论发展很快，经常有新技术和方法出来。
-感觉这个很复杂？很正常，整套软件系统自己搞定就需要几十人的团队，一般也就是需要修改整套系统种的某一部分。Sensor驱动，ISP tunning等。
-
-下面简单图解ISP驱动相关知识
-
-
-
-
-
-
-涉及到Sensor专有知识点有
-
-黑电平与线性化
-Green Imbalance
-坏点消除
-Vignetting 与 Color shading
-SNR 与 Raw Denoise
-Dynamic Range 与 Tone Mapping
-MTF 与 Demosaic
-色彩空间与色彩重建
-Color Correction Matrix 与 3D LUT
-Gamma与对比度增强
-Sharpening
-Color Space Conversion
-空域降噪
-时域降噪
-Color Aberrance Corrention and Depurple
-闪光灯
-HDR
-Exif 与 DNG
-图像防抖
-编解码知识 H264 H265等
-
-
-Sensor子系统涉及到的知识大概有如上，个人做过的最复杂的子系统就这个了。
-会写简单驱动，到会写sensor驱动，到会写ISP系统，中间都隔了几年时间差距。
-
-驱动的技术级别
-要做好驱动，要熟悉硬件，总线协议，要会怀疑每一处地方，其它每个人给的信息都可能是错误的，如何定位这个错误就是驱动的工作。成功的路径只有一个，而失败的路径千千万万,驱动的的工作就是找到这条成功的路。
-必备：入门水平
-必备：入门水平，能在别人指导下完成一些简单驱动开发。在一些深入，系统学习后进入下一阶段。
-
-
-基本的数电模电基础。
-
-
-熟悉一些常用开发工具。
-
-
-熟悉linux 内核基本驱动框架。懂得基本内核原理。
-
-
-独立实现过char字符设备。
-
-
-调试过一些常见总线接口设备。比如常见的I2C，SPI设备。
-
-
-中等水平
-中等水平：能够按照指示完成任务，需要大量的时间和大量产品开发慢慢积累经验，完成本阶段进阶。
-熟练使用各种开发工具。
-对linux驱动绝大部分常用框架都有研究。
-能够进行ip core外围器件级别的移植。
-熟悉内核锁的使用，了解中断上下文。
-能够分析定位解决时序问题。
-用gpio模拟实现过I2C，SPI等总线驱动。
-对oops定位分析，驱动调试熟悉。
-对proc，sys，debugfs熟悉或者做过。
-能够在现有驱动基础上修改，阅读datasheet对接新硬件。
-在一些行业应用领域能够在fae帮助下完成外围设备驱动。
-了解arm硬件构架，懂得基本arm汇编指令。基本c程序优化。
-懂得基本pcb升级，打板贴片流程。
-能够解决大部分硬件异常问题。
-高手进阶
-高手进阶：能够独当一面，带领团队。
-工具什么的无所谓，有自己一套最高效的配置工具。
-能够进行ip core级别的移植。
-熟悉并懂得使用各种内核锁，能用内核线程实现一些复杂需求，中断上下文实现都有做过。
-对应用层构架各种技术方法也都非常熟悉。
-知道单核、多核同构、异构构架的内核、驱动、应用层设计差异及处理方法，优化方法。
-熟悉arm构架，arm指令集。懂得怎么根据硬件构架，芯片指令集优化程序。
-知道怎么使用汇编，cache优化。知道cache一致性原理及其实现。
-深入研究过linux内核实现机制。
-熟悉编译，汇编，链接原理。能够定位一些复杂问题，知道怎么通过编译器，链接器实现一些非标准的功能。
-独立实现过绝大部分外围驱动。
-能够独立从头开始实现一些复杂框架驱动。例如网络设备，视频设备等。
-在一些具体应用业务上研究的非常深入，达到行业一流水平。
-深入研究过绝大部分总线接口。比如音视频接口，编解码，usb，网络等业务。
-画过pcb，或者至少了解pcb设计，绘制，打板过程中的各种问题。
-能够熟练协助硬件定位解决各种问题。
-超一流高手进阶
-超一流高手进阶：技术方面基本没有什么可以难倒你的了。
-自己去实现基本的uboot，内核。
-能够自己设计实现全新的内核框架。
-开始一些具体应用的结构，物理，数学，光学等方面深入研究。
-一些问题能否解决，怎么解决，更多的从数学角度分析。
-参与主线linux kernel开发。
-对hdl，Verilog深入了解，自己设计芯片ip core。
-
-以上都是个人见解，仅供参考！
-
-参考
-相关书籍
-Linux内核完全注释
-
-    
-        
-        
-        
-            
-            
-            见字如晤
-        
-        
-            书名: Linux内核完全注释
-            作者: 赵炯
-            出版年份: 2005-8
-            评分: 8.5
-        
-    
-
-
-    .douban-card-block {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    max-height: 400px;
-}
-
-.douban-card {
-    display: flex;
-    margin: 30px 10px;
-    padding: 15px;
-    border-radius: 15px;
-    position: relative;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    color: antiquewhite;
-    text-decoration: none;
-}
-
-.douban-card:hover {
-    text-decoration: none;
-}
-
-.douban-card-bgimg {
-    position: absolute;
-    width: 115%;
-    height: 115%;
-    filter: blur(15px) brightness(0.6);
-    background-size: 100%;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-.douban-card-img {
-    position: relative;
-    height: 130px;
-    width: 80px;
-    background-size: 100%;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-.douban-card-left:hover .douban-card-img {
-    filter: blur(5px) brightness(0.6);
-    transform: perspective(800px) rotateX(180deg);
-}
-
-.douban-card-left .douban-card-img {
-    transition: all 500ms ease;
-}
-
-.douban-card-left {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.douban-card-left .douban-card-status {
-    height: 130px;
-    width: 80px;
-    text-align: center;
-    font-weight: bold;
-    position: absolute;
-    left: 0;
-    top: 30%;
-    transform: rotateX(180deg);
-    backface-visibility: hidden;
-    transition: all 500ms ease;
-}
-
-.douban-card-left:hover .douban-card-status {
-    transform: perspective(800px) rotateX(0deg);
-}
-
-.douban-card-right {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    margin-left: 12px;
-    font-size: 16px;
-    font-family: "Courier New", Courier, monospace;
-    line-height: 1.3;
-    color: antiquewhite;
-}
-
-.douban-card-item {
-    margin-top: 4px;
-}
-
-
-Linux设备驱动程序
-
-    
-        
-        
-        
-            
-            
-            
-        我读过这本书
-      
-        
-        
-            书名: Linux设备驱动程序
-            作者: 科波特
-            出版年份: 2006-1-1
-            评分: 8.7
-        
-    
-
-
-    .douban-card-block {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    max-height: 400px;
-}
-
-.douban-card {
-    display: flex;
-    margin: 30px 10px;
-    padding: 15px;
-    border-radius: 15px;
-    position: relative;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    color: antiquewhite;
-    text-decoration: none;
-}
-
-.douban-card:hover {
-    text-decoration: none;
-}
-
-.douban-card-bgimg {
-    position: absolute;
-    width: 115%;
-    height: 115%;
-    filter: blur(15px) brightness(0.6);
-    background-size: 100%;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-.douban-card-img {
-    position: relative;
-    height: 130px;
-    width: 80px;
-    background-size: 100%;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-.douban-card-left:hover .douban-card-img {
-    filter: blur(5px) brightness(0.6);
-    transform: perspective(800px) rotateX(180deg);
-}
-
-.douban-card-left .douban-card-img {
-    transition: all 500ms ease;
-}
-
-.douban-card-left {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.douban-card-left .douban-card-status {
-    height: 130px;
-    width: 80px;
-    text-align: center;
-    font-weight: bold;
-    position: absolute;
-    left: 0;
-    top: 30%;
-    transform: rotateX(180deg);
-    backface-visibility: hidden;
-    transition: all 500ms ease;
-}
-
-.douban-card-left:hover .douban-card-status {
-    transform: perspective(800px) rotateX(0deg);
-}
-
-.douban-card-right {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    margin-left: 12px;
-    font-size: 16px;
-    font-family: "Courier New", Courier, monospace;
-    line-height: 1.3;
-    color: antiquewhite;
-}
-
-.douban-card-item {
-    margin-top: 4px;
-}
-
-
-Linux设备驱动开发详解
-
-    
-        
-        
-        
-            
-            
-            见字如晤
-        
-        
-            书名: Linux设备驱动开发详解
-            作者: 宋宝华
-            出版年份: 2008-2
-            评分: 8.2
-        
-    
-
-
-    .douban-card-block {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    max-height: 400px;
-}
-
-.douban-card {
-    display: flex;
-    margin: 30px 10px;
-    padding: 15px;
-    border-radius: 15px;
-    position: relative;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    color: antiquewhite;
-    text-decoration: none;
-}
-
-.douban-card:hover {
-    text-decoration: none;
-}
-
-.douban-card-bgimg {
-    position: absolute;
-    width: 115%;
-    height: 115%;
-    filter: blur(15px) brightness(0.6);
-    background-size: 100%;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-.douban-card-img {
-    position: relative;
-    height: 130px;
-    width: 80px;
-    background-size: 100%;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-.douban-card-left:hover .douban-card-img {
-    filter: blur(5px) brightness(0.6);
-    transform: perspective(800px) rotateX(180deg);
-}
-
-.douban-card-left .douban-card-img {
-    transition: all 500ms ease;
-}
-
-.douban-card-left {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.douban-card-left .douban-card-status {
-    height: 130px;
-    width: 80px;
-    text-align: center;
-    font-weight: bold;
-    position: absolute;
-    left: 0;
-    top: 30%;
-    transform: rotateX(180deg);
-    backface-visibility: hidden;
-    transition: all 500ms ease;
-}
-
-.douban-card-left:hover .douban-card-status {
-    transform: perspective(800px) rotateX(0deg);
-}
-
-.douban-card-right {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    margin-left: 12px;
-    font-size: 16px;
-    font-family: "Courier New", Courier, monospace;
-    line-height: 1.3;
-    color: antiquewhite;
-}
-
-.douban-card-item {
-    margin-top: 4px;
-}
-
-
-
-上面两本是介绍Linux kernel软件驱动框架的
-
-Link and loader
-
-    
-        
-        
-        
-            
-            
-            见字如晤
-        
-        
-            书名: LinkersandLoaders
-            作者: JohnR.Levine
-            出版年份: October1999
-            评分: 8.9
-        
-    
-
-
-    .douban-card-block {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    max-height: 400px;
-}
-
-.douban-card {
-    display: flex;
-    margin: 30px 10px;
-    padding: 15px;
-    border-radius: 15px;
-    position: relative;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    color: antiquewhite;
-    text-decoration: none;
-}
-
-.douban-card:hover {
-    text-decoration: none;
-}
-
-.douban-card-bgimg {
-    position: absolute;
-    width: 115%;
-    height: 115%;
-    filter: blur(15px) brightness(0.6);
-    background-size: 100%;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-.douban-card-img {
-    position: relative;
-    height: 130px;
-    width: 80px;
-    background-size: 100%;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-.douban-card-left:hover .douban-card-img {
-    filter: blur(5px) brightness(0.6);
-    transform: perspective(800px) rotateX(180deg);
-}
-
-.douban-card-left .douban-card-img {
-    transition: all 500ms ease;
-}
-
-.douban-card-left {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.douban-card-left .douban-card-status {
-    height: 130px;
-    width: 80px;
-    text-align: center;
-    font-weight: bold;
-    position: absolute;
-    left: 0;
-    top: 30%;
-    transform: rotateX(180deg);
-    backface-visibility: hidden;
-    transition: all 500ms ease;
-}
-
-.douban-card-left:hover .douban-card-status {
-    transform: perspective(800px) rotateX(0deg);
-}
-
-.douban-card-right {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    margin-left: 12px;
-    font-size: 16px;
-    font-family: "Courier New", Courier, monospace;
-    line-height: 1.3;
-    color: antiquewhite;
-}
-
-.douban-card-item {
-    margin-top: 4px;
-}
-
-
-Linux内核源代码情景分析（上册）
-
-    
-        
-        
-        
-            
-            
-            见字如晤
-        
-        
-            书名: Linux内核源代码情景分析（上册）
-            作者: 毛德操
-            出版年份: 2001-9
-            评分: 8.6
-        
-    
-
-
-    .douban-card-block {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    max-height: 400px;
-}
-
-.douban-card {
-    display: flex;
-    margin: 30px 10px;
-    padding: 15px;
-    border-radius: 15px;
-    position: relative;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    color: antiquewhite;
-    text-decoration: none;
-}
-
-.douban-card:hover {
-    text-decoration: none;
-}
-
-.douban-card-bgimg {
-    position: absolute;
-    width: 115%;
-    height: 115%;
-    filter: blur(15px) brightness(0.6);
-    background-size: 100%;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-.douban-card-img {
-    position: relative;
-    height: 130px;
-    width: 80px;
-    background-size: 100%;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
-.douban-card-left:hover .douban-card-img {
-    filter: blur(5px) brightness(0.6);
-    transform: perspective(800px) rotateX(180deg);
-}
-
-.douban-card-left .douban-card-img {
-    transition: all 500ms ease;
-}
-
-.douban-card-left {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.douban-card-left .douban-card-status {
-    height: 130px;
-    width: 80px;
-    text-align: center;
-    font-weight: bold;
-    position: absolute;
-    left: 0;
-    top: 30%;
-    transform: rotateX(180deg);
-    backface-visibility: hidden;
-    transition: all 500ms ease;
-}
-
-.douban-card-left:hover .douban-card-status {
-    transform: perspective(800px) rotateX(0deg);
-}
-
-.douban-card-right {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    margin-left: 12px;
-    font-size: 16px;
-    font-family: "Courier New", Courier, monospace;
-    line-height: 1.3;
-    color: antiquewhite;
-}
-
-.douban-card-item {
-    margin-top: 4px;
-}
-
-
-]]></content>
-      <categories>
-        <category>driver</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>driver</tag>
-        <tag>驱动</tag>
-        <tag>sensor</tag>
       </tags>
   </entry>
   <entry>
@@ -41234,7 +40440,7 @@ Github write-a-C-interpreter
             书名: 自制搜索引擎
             作者: [日]山田浩之
             出版年份: 2016-1
-            评分: 7.8
+            评分: 7.6
         
     
 
@@ -42036,6 +41242,800 @@ Linux内核完全注释
         <tag>编译器</tag>
         <tag>C</tag>
         <tag>compiler</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>如何编写Linux驱动？</title>
+    <url>/posts/ed364362/</url>
+    <content><![CDATA[
+本文介绍了编写驱动必备基础知识，编写驱动的难点之处。并从按键驱动到Sensor驱动简单介绍示范了驱动编写过程。并给出了驱动学习方法！
+
+
+
+驱动学习
+•整个内核70%以上是各种驱动代码
+•每一个你日常使用的小功能背后都有复杂的实现！
+
+•Linux 驱动程序设计模式（40%） char，block，net，input，pci，usb，Platform（bus，device，driver），kset，kobject，proc，sysfs，ioctl，mmap，miscdevice, softirq，tasklet，workqueue， console，
+•内核相关知识（30%）：内核目录结构，内存访问，ipc，锁，内核数据结构，不通内核版本api，热拔插netlink，内核线程,中断处理（注册，共享），设备树，
+•硬件相关知识（30%）： 总线，协议（I2C，I2S，SPI，USB，PCI，sensor，bt1120，bt656，LCD），各种CPU、传感器（ADC，sensor，temperature etc）工作原理
+
+
+前置基础知识
+
+
+模拟电路，数字电路
+
+
+硬件总线协议，各种RFC文档；
+
+
+了解硬件电路设计，能看懂电路图。示波器等工具的使用
+
+
+对C语言了如指掌，各种特殊宏的用法，对内核基本数据结构了解。
+
+
+熟悉C系统编程，应用层编程
+
+
+内核软件子系统，各种软件框架
+
+
+
+上述知识你都有了一定了解之后，你才能开始尝试去开发驱动了！
+学习曲线非常陡峭，必须一次性踏上台阶，否则后续又得重新攀爬。
+
+编写驱动困难之处
+
+
+
+打怪升级困难。要有硬件项目才能给你升级涨经验！一个公司硬件项目周期极长，可能几年都做不了几个新硬件项目
+
+
+新手与熟手完成同样任务时间差异极大！强者越强，你有经验，有难度的活都给你，你没经验，练手的机会都不会给你
+
+
+一切都是以懵懂中开始的。内核代码量太大，你不可能都熟悉之后再开始动手修改。内核版本之间接口一直变动，没有稳定的软件方法。接口总线RFC文档太长，一般至少几千页的英文文档，你不可能都看完才开始动手。硬件设计可能有漏洞，不是官方设计出错，而是现实情况是当初设计RFC标准的人就没有考虑到这种异常情况
+
+
+不同总线接口调试方法和工具差异极大，和医院不同科室使用不同工具差不多，你会不会某种工具，可能使你的效率差异几十倍
+
+
+软件开发，你有一台电脑就足够了。硬件驱动开发，必须有对应的硬件开发板，调试工具Jtag，PC端调试工具一整套才能开始工作
+
+
+
+写驱动好比挖隧道
+
+不知道隧道下面什么地质情况，什么岩层结构，是否好施工
+是否有地下水，多大的地下水没法确定
+是否能完工没法确定
+完工时间多久没法确定
+在你完工之前，你不知道还需要多长时间才能完工，是否能完工都不清楚
+等等
+
+
+写驱动，就是给你一个垃圾场，要你组装出来一个能走动的钟表！
+
+不知道是否缺少零件，你要对整个软硬件构架了如指掌，比硬件更熟悉硬件
+零件是否损坏，有可能多个零件，这个损坏，哪个没有损坏，你换一个同样的零件，说不定可行，也可能不可行
+零件是否符合设计规范性能，有可能这个设计错误，根本就是不可能成功的
+这个零件的说明书和零件是否匹配，给错了没有？外行连给到手的资料判断是否正确资料的能力都没有
+零件是否完好，是否工作正常
+在你组装好，能走动之前，你不知道能否组装好手表
+组成的钟表走时快慢是否正常，能够走动起来，说明零件大抵不差了，是驱动飙血决定性进展
+钟表能走动了，后续就是走时准确的调整。性能优化，续航优化，软件框架优化，内存优化，稳定性优化，电磁兼容等等
+
+
+从一堆垃圾零件，组装出来一个能走的钟表！从上图到下图的过程！
+
+实现出来
+组装好，把驱动跑起来是第一步
+性能优化
+对于访问外设emmc，不同时序参数访问性能差距很大。对跑分影响很大！
+续航优化
+不用外设时，可以关闭对应外设电源，或者根据负载动态调节
+内存优化
+内存占用，Zero Copy，指针传递
+稳定性优化
+稳定性，眼图，高速性能
+电磁兼容
+电磁兼容测试，各种标准
+
+驱动开发深入下去，是一座又一座高山需要攀爬，但基本的驱动开发还是不难的。
+
+驱动案例
+
+每一个外设都有复杂的物理，材料，结构，光学，工艺，版本等等各种复杂因素需要研究，考虑。当然不是每个外设都这么复杂，复杂的摄像头子系统涉及的知识技术几年就研究不完！
+每一款芯片构架差异都很大，会有不同的内核软件构架，德州仪器TI一份完整的芯片手册就有3000多页，至少看完前四章（几百页英文文档）才能说对芯片有基本了解。
+
+简单的按键
+
+按键硬件设计方法常用的就有3、4种。每种硬件设计，内核就要好几种软件框架可以实现它。
+学习驱动可以从它开始。万里长征第一步，后面慢慢学习I2C，SPI, NAND等外设驱动。
+
+摄像头驱动介绍
+
+可以说是整个手机最复杂的外设驱动！研究两年只能说刚入门。
+3A算法是核心： AWB 启动白平衡，AE自动曝光，AF自动对焦
+理论上就没有完善的解决方案，只有近似解决方案。技术理论发展很快，经常有新技术和方法出来。
+感觉这个很复杂？很正常，整套软件系统自己搞定就需要几十人的团队，一般也就是需要修改整套系统种的某一部分。Sensor驱动，ISP tunning等。
+
+下面简单图解ISP驱动相关知识
+
+
+
+
+
+
+涉及到Sensor专有知识点有
+
+黑电平与线性化
+Green Imbalance
+坏点消除
+Vignetting 与 Color shading
+SNR 与 Raw Denoise
+Dynamic Range 与 Tone Mapping
+MTF 与 Demosaic
+色彩空间与色彩重建
+Color Correction Matrix 与 3D LUT
+Gamma与对比度增强
+Sharpening
+Color Space Conversion
+空域降噪
+时域降噪
+Color Aberrance Corrention and Depurple
+闪光灯
+HDR
+Exif 与 DNG
+图像防抖
+编解码知识 H264 H265等
+
+
+Sensor子系统涉及到的知识大概有如上，个人做过的最复杂的子系统就这个了。
+会写简单驱动，到会写sensor驱动，到会写ISP系统，中间都隔了几年时间差距。
+
+驱动的技术级别
+要做好驱动，要熟悉硬件，总线协议，要会怀疑每一处地方，其它每个人给的信息都可能是错误的，如何定位这个错误就是驱动的工作。成功的路径只有一个，而失败的路径千千万万,驱动的的工作就是找到这条成功的路。
+必备：入门水平
+必备：入门水平，能在别人指导下完成一些简单驱动开发。在一些深入，系统学习后进入下一阶段。
+
+
+基本的数电模电基础。
+
+
+熟悉一些常用开发工具。
+
+
+熟悉linux 内核基本驱动框架。懂得基本内核原理。
+
+
+独立实现过char字符设备。
+
+
+调试过一些常见总线接口设备。比如常见的I2C，SPI设备。
+
+
+中等水平
+中等水平：能够按照指示完成任务，需要大量的时间和大量产品开发慢慢积累经验，完成本阶段进阶。
+熟练使用各种开发工具。
+对linux驱动绝大部分常用框架都有研究。
+能够进行ip core外围器件级别的移植。
+熟悉内核锁的使用，了解中断上下文。
+能够分析定位解决时序问题。
+用gpio模拟实现过I2C，SPI等总线驱动。
+对oops定位分析，驱动调试熟悉。
+对proc，sys，debugfs熟悉或者做过。
+能够在现有驱动基础上修改，阅读datasheet对接新硬件。
+在一些行业应用领域能够在fae帮助下完成外围设备驱动。
+了解arm硬件构架，懂得基本arm汇编指令。基本c程序优化。
+懂得基本pcb升级，打板贴片流程。
+能够解决大部分硬件异常问题。
+高手进阶
+高手进阶：能够独当一面，带领团队。
+工具什么的无所谓，有自己一套最高效的配置工具。
+能够进行ip core级别的移植。
+熟悉并懂得使用各种内核锁，能用内核线程实现一些复杂需求，中断上下文实现都有做过。
+对应用层构架各种技术方法也都非常熟悉。
+知道单核、多核同构、异构构架的内核、驱动、应用层设计差异及处理方法，优化方法。
+熟悉arm构架，arm指令集。懂得怎么根据硬件构架，芯片指令集优化程序。
+知道怎么使用汇编，cache优化。知道cache一致性原理及其实现。
+深入研究过linux内核实现机制。
+熟悉编译，汇编，链接原理。能够定位一些复杂问题，知道怎么通过编译器，链接器实现一些非标准的功能。
+独立实现过绝大部分外围驱动。
+能够独立从头开始实现一些复杂框架驱动。例如网络设备，视频设备等。
+在一些具体应用业务上研究的非常深入，达到行业一流水平。
+深入研究过绝大部分总线接口。比如音视频接口，编解码，usb，网络等业务。
+画过pcb，或者至少了解pcb设计，绘制，打板过程中的各种问题。
+能够熟练协助硬件定位解决各种问题。
+超一流高手进阶
+超一流高手进阶：技术方面基本没有什么可以难倒你的了。
+自己去实现基本的uboot，内核。
+能够自己设计实现全新的内核框架。
+开始一些具体应用的结构，物理，数学，光学等方面深入研究。
+一些问题能否解决，怎么解决，更多的从数学角度分析。
+参与主线linux kernel开发。
+对hdl，Verilog深入了解，自己设计芯片ip core。
+
+以上都是个人见解，仅供参考！
+
+参考
+相关书籍
+Linux内核完全注释
+
+    
+        
+        
+        
+            
+            
+            见字如晤
+        
+        
+            书名: Linux内核完全注释
+            作者: 赵炯
+            出版年份: 2005-8
+            评分: 8.5
+        
+    
+
+
+    .douban-card-block {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-height: 400px;
+}
+
+.douban-card {
+    display: flex;
+    margin: 30px 10px;
+    padding: 15px;
+    border-radius: 15px;
+    position: relative;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    color: antiquewhite;
+    text-decoration: none;
+}
+
+.douban-card:hover {
+    text-decoration: none;
+}
+
+.douban-card-bgimg {
+    position: absolute;
+    width: 115%;
+    height: 115%;
+    filter: blur(15px) brightness(0.6);
+    background-size: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.douban-card-img {
+    position: relative;
+    height: 130px;
+    width: 80px;
+    background-size: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.douban-card-left:hover .douban-card-img {
+    filter: blur(5px) brightness(0.6);
+    transform: perspective(800px) rotateX(180deg);
+}
+
+.douban-card-left .douban-card-img {
+    transition: all 500ms ease;
+}
+
+.douban-card-left {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.douban-card-left .douban-card-status {
+    height: 130px;
+    width: 80px;
+    text-align: center;
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+    top: 30%;
+    transform: rotateX(180deg);
+    backface-visibility: hidden;
+    transition: all 500ms ease;
+}
+
+.douban-card-left:hover .douban-card-status {
+    transform: perspective(800px) rotateX(0deg);
+}
+
+.douban-card-right {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin-left: 12px;
+    font-size: 16px;
+    font-family: "Courier New", Courier, monospace;
+    line-height: 1.3;
+    color: antiquewhite;
+}
+
+.douban-card-item {
+    margin-top: 4px;
+}
+
+
+Linux设备驱动程序
+
+    
+        
+        
+        
+            
+            
+            
+        我读过这本书
+      
+        
+        
+            书名: Linux设备驱动程序
+            作者: 科波特
+            出版年份: 2006-1-1
+            评分: 8.7
+        
+    
+
+
+    .douban-card-block {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-height: 400px;
+}
+
+.douban-card {
+    display: flex;
+    margin: 30px 10px;
+    padding: 15px;
+    border-radius: 15px;
+    position: relative;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    color: antiquewhite;
+    text-decoration: none;
+}
+
+.douban-card:hover {
+    text-decoration: none;
+}
+
+.douban-card-bgimg {
+    position: absolute;
+    width: 115%;
+    height: 115%;
+    filter: blur(15px) brightness(0.6);
+    background-size: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.douban-card-img {
+    position: relative;
+    height: 130px;
+    width: 80px;
+    background-size: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.douban-card-left:hover .douban-card-img {
+    filter: blur(5px) brightness(0.6);
+    transform: perspective(800px) rotateX(180deg);
+}
+
+.douban-card-left .douban-card-img {
+    transition: all 500ms ease;
+}
+
+.douban-card-left {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.douban-card-left .douban-card-status {
+    height: 130px;
+    width: 80px;
+    text-align: center;
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+    top: 30%;
+    transform: rotateX(180deg);
+    backface-visibility: hidden;
+    transition: all 500ms ease;
+}
+
+.douban-card-left:hover .douban-card-status {
+    transform: perspective(800px) rotateX(0deg);
+}
+
+.douban-card-right {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin-left: 12px;
+    font-size: 16px;
+    font-family: "Courier New", Courier, monospace;
+    line-height: 1.3;
+    color: antiquewhite;
+}
+
+.douban-card-item {
+    margin-top: 4px;
+}
+
+
+Linux设备驱动开发详解
+
+    
+        
+        
+        
+            
+            
+            见字如晤
+        
+        
+            书名: Linux设备驱动开发详解
+            作者: 宋宝华
+            出版年份: 2008-2
+            评分: 8.2
+        
+    
+
+
+    .douban-card-block {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-height: 400px;
+}
+
+.douban-card {
+    display: flex;
+    margin: 30px 10px;
+    padding: 15px;
+    border-radius: 15px;
+    position: relative;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    color: antiquewhite;
+    text-decoration: none;
+}
+
+.douban-card:hover {
+    text-decoration: none;
+}
+
+.douban-card-bgimg {
+    position: absolute;
+    width: 115%;
+    height: 115%;
+    filter: blur(15px) brightness(0.6);
+    background-size: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.douban-card-img {
+    position: relative;
+    height: 130px;
+    width: 80px;
+    background-size: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.douban-card-left:hover .douban-card-img {
+    filter: blur(5px) brightness(0.6);
+    transform: perspective(800px) rotateX(180deg);
+}
+
+.douban-card-left .douban-card-img {
+    transition: all 500ms ease;
+}
+
+.douban-card-left {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.douban-card-left .douban-card-status {
+    height: 130px;
+    width: 80px;
+    text-align: center;
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+    top: 30%;
+    transform: rotateX(180deg);
+    backface-visibility: hidden;
+    transition: all 500ms ease;
+}
+
+.douban-card-left:hover .douban-card-status {
+    transform: perspective(800px) rotateX(0deg);
+}
+
+.douban-card-right {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin-left: 12px;
+    font-size: 16px;
+    font-family: "Courier New", Courier, monospace;
+    line-height: 1.3;
+    color: antiquewhite;
+}
+
+.douban-card-item {
+    margin-top: 4px;
+}
+
+
+
+上面两本是介绍Linux kernel软件驱动框架的
+
+Link and loader
+
+    
+        
+        
+        
+            
+            
+            见字如晤
+        
+        
+            书名: LinkersandLoaders
+            作者: JohnR.Levine
+            出版年份: October1999
+            评分: 8.9
+        
+    
+
+
+    .douban-card-block {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-height: 400px;
+}
+
+.douban-card {
+    display: flex;
+    margin: 30px 10px;
+    padding: 15px;
+    border-radius: 15px;
+    position: relative;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    color: antiquewhite;
+    text-decoration: none;
+}
+
+.douban-card:hover {
+    text-decoration: none;
+}
+
+.douban-card-bgimg {
+    position: absolute;
+    width: 115%;
+    height: 115%;
+    filter: blur(15px) brightness(0.6);
+    background-size: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.douban-card-img {
+    position: relative;
+    height: 130px;
+    width: 80px;
+    background-size: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.douban-card-left:hover .douban-card-img {
+    filter: blur(5px) brightness(0.6);
+    transform: perspective(800px) rotateX(180deg);
+}
+
+.douban-card-left .douban-card-img {
+    transition: all 500ms ease;
+}
+
+.douban-card-left {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.douban-card-left .douban-card-status {
+    height: 130px;
+    width: 80px;
+    text-align: center;
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+    top: 30%;
+    transform: rotateX(180deg);
+    backface-visibility: hidden;
+    transition: all 500ms ease;
+}
+
+.douban-card-left:hover .douban-card-status {
+    transform: perspective(800px) rotateX(0deg);
+}
+
+.douban-card-right {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin-left: 12px;
+    font-size: 16px;
+    font-family: "Courier New", Courier, monospace;
+    line-height: 1.3;
+    color: antiquewhite;
+}
+
+.douban-card-item {
+    margin-top: 4px;
+}
+
+
+Linux内核源代码情景分析（上册）
+
+    
+        
+        
+        
+            
+            
+            见字如晤
+        
+        
+            书名: Linux内核源代码情景分析（上册）
+            作者: 毛德操
+            出版年份: 2001-9
+            评分: 8.6
+        
+    
+
+
+    .douban-card-block {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-height: 400px;
+}
+
+.douban-card {
+    display: flex;
+    margin: 30px 10px;
+    padding: 15px;
+    border-radius: 15px;
+    position: relative;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    color: antiquewhite;
+    text-decoration: none;
+}
+
+.douban-card:hover {
+    text-decoration: none;
+}
+
+.douban-card-bgimg {
+    position: absolute;
+    width: 115%;
+    height: 115%;
+    filter: blur(15px) brightness(0.6);
+    background-size: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.douban-card-img {
+    position: relative;
+    height: 130px;
+    width: 80px;
+    background-size: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.douban-card-left:hover .douban-card-img {
+    filter: blur(5px) brightness(0.6);
+    transform: perspective(800px) rotateX(180deg);
+}
+
+.douban-card-left .douban-card-img {
+    transition: all 500ms ease;
+}
+
+.douban-card-left {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.douban-card-left .douban-card-status {
+    height: 130px;
+    width: 80px;
+    text-align: center;
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+    top: 30%;
+    transform: rotateX(180deg);
+    backface-visibility: hidden;
+    transition: all 500ms ease;
+}
+
+.douban-card-left:hover .douban-card-status {
+    transform: perspective(800px) rotateX(0deg);
+}
+
+.douban-card-right {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin-left: 12px;
+    font-size: 16px;
+    font-family: "Courier New", Courier, monospace;
+    line-height: 1.3;
+    color: antiquewhite;
+}
+
+.douban-card-item {
+    margin-top: 4px;
+}
+
+
+]]></content>
+      <categories>
+        <category>driver</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>driver</tag>
+        <tag>驱动</tag>
+        <tag>sensor</tag>
       </tags>
   </entry>
 </search>
