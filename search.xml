@@ -653,6 +653,164 @@ Create a new Pull Request
       </tags>
   </entry>
   <entry>
+    <title>破解Gitlab EE</title>
+    <url>/posts/29a820b3/</url>
+    <content><![CDATA[
+由于需要一些镜像等 gitlab 高级功能，所有破解gitlab ee版本。
+你能信么？ 这些破解方法来自官方自己的文档！
+
+安装ruby
+安装完gitlab ee之后
+安装ruby：yum install ruby
+ruby版本需要2.3或以上。
+生成许可证
+gem install gitlab-license
+创建一个rb文件
+license.rb
+
+require "openssl"
+require "gitlab/license"
+ 
+key_pair = OpenSSL::PKey::RSA.generate(2048)
+File.open("license_key", "w") { |f| f.write(key_pair.to_pem) }
+ 
+public_key = key_pair.public_key
+File.open("license_key.pub", "w") { |f| f.write(public_key.to_pem) }
+ 
+private_key = OpenSSL::PKey::RSA.new File.read("license_key")
+Gitlab::License.encryption_key = private_key
+ 
+license = Gitlab::License.new
+license.licensee = {
+  "Name" =&gt; "none",
+  "Company" =&gt; "none",
+  "Email" =&gt; "example@test.com",
+}
+license.starts_at = Date.new(2020, 1, 1) # 开始时间
+license.expires_at = Date.new(2050, 1, 1) # 结束时间
+license.notify_admins_at = Date.new(2049, 12, 1)
+license.notify_users_at = Date.new(2049, 12, 1)
+license.block_changes_at = Date.new(2050, 1, 1)
+license.restrictions = {
+  active_user_count: 10000,
+}
+ 
+puts "License:"
+puts license
+ 
+data = license.export
+puts "Exported license:"
+puts data
+File.open("GitLabBV.gitlab-license", "w") { |f| f.write(data) }
+ 
+public_key = OpenSSL::PKey::RSA.new File.read("license_key.pub")
+Gitlab::License.encryption_key = public_key
+ 
+data = File.read("GitLabBV.gitlab-license")
+$license = Gitlab::License.import(data)
+ 
+puts "Imported license:"
+puts $license
+ 
+unless $license
+  raise "The license is invalid."
+end
+ 
+if $license.restricted?(:active_user_count)
+  active_user_count = 10000
+  if active_user_count &gt; $license.restrictions[:active_user_count]
+    raise "The active user count exceeds the allowed amount!"
+  end
+end
+ 
+if $license.notify_admins?
+  puts "The license is due to expire on #{$license.expires_at}."
+end
+ 
+if $license.notify_users?
+  puts "The license is due to expire on #{$license.expires_at}."
+end
+ 
+module Gitlab
+  class GitAccess
+    def check(cmd, changes = nil)
+      if $license.block_changes?
+        return build_status_object(false, "License expired")
+      end
+    end
+  end
+end
+ 
+puts "This instance of GitLab Enterprise Edition is licensed to:"
+$license.licensee.each do |key, value|
+  puts "#{key}: #{value}"
+end
+ 
+if $license.expired?
+  puts "The license expired on #{$license.expires_at}"
+elsif $license.will_expire?
+  puts "The license will expire on #{$license.expires_at}"
+else
+  puts "The license will never expire."
+end
+ 
+
+ruby license.rb
+生成 GitLabBV.gitlab-license license_key license_key.pub 这三个文件。
+使用许可证
+用 license_key.pub 文件替换 /opt/gitlab/embedded/service/gitlab-rails/.license_encryption_key.pub。
+GitLabBV.gitlab-license 即是许可证，填入 ${address}/admin/license 地址并重启 gitlab-ctl restart 。
+修改等级
+--- /opt/gitlab/embedded/service/gitlab-rails/ee/app/models/license.rb
++++ /opt/gitlab/embedded/service/gitlab-rails/ee/app/models/license.rb
+@@ -458,7 +458,7 @@
+  end
+ 
+  def plan
+-    restricted_attr(:plan).presence || STARTER_PLAN
++    restricted_attr(:plan).presence || ULTIMATE_PLAN
+  end
+ 
+  def edition
+ 
+Gitlab添加许可证
+14.x Gitlab之前添加许可证位置
+
+菜单-&gt;管理员-&gt;订阅-&gt;许可证上传
+
+新版Gitlab添加许可证的位置在
+
+菜单-&gt;管理员-&gt;设置-&gt;通用-&gt;添加许可证处点击展开-&gt;点击上传
+
+修改完成后使用 gitlab-ctl restart 重新加载配置。
+
+菜单-&gt;管理员-&gt;订阅
+在这里可以看到激活状态，上面操作没问题的话，这里可以看到激活成功！
+
+参考
+
+https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md
+
+系列教程
+全部文章RSS订阅
+Gitlab 使用系列  Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+]]></content>
+      <categories>
+        <category>gitlab</category>
+      </categories>
+      <tags>
+        <tag>gitlab</tag>
+        <tag>git</tag>
+        <tag>crack</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>完美笔记进化论</title>
     <url>/posts/a8535f26/</url>
     <content><![CDATA[前言：
@@ -979,164 +1137,6 @@ Earthly 一个更加强大的镜像构建工具
         <tag>qnap</tag>
         <tag>硬盘</tag>
         <tag>nas</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>破解Gitlab EE</title>
-    <url>/posts/29a820b3/</url>
-    <content><![CDATA[
-由于需要一些镜像等 gitlab 高级功能，所有破解gitlab ee版本。
-你能信么？ 这些破解方法来自官方自己的文档！
-
-安装ruby
-安装完gitlab ee之后
-安装ruby：yum install ruby
-ruby版本需要2.3或以上。
-生成许可证
-gem install gitlab-license
-创建一个rb文件
-license.rb
-
-require "openssl"
-require "gitlab/license"
- 
-key_pair = OpenSSL::PKey::RSA.generate(2048)
-File.open("license_key", "w") { |f| f.write(key_pair.to_pem) }
- 
-public_key = key_pair.public_key
-File.open("license_key.pub", "w") { |f| f.write(public_key.to_pem) }
- 
-private_key = OpenSSL::PKey::RSA.new File.read("license_key")
-Gitlab::License.encryption_key = private_key
- 
-license = Gitlab::License.new
-license.licensee = {
-  "Name" =&gt; "none",
-  "Company" =&gt; "none",
-  "Email" =&gt; "example@test.com",
-}
-license.starts_at = Date.new(2020, 1, 1) # 开始时间
-license.expires_at = Date.new(2050, 1, 1) # 结束时间
-license.notify_admins_at = Date.new(2049, 12, 1)
-license.notify_users_at = Date.new(2049, 12, 1)
-license.block_changes_at = Date.new(2050, 1, 1)
-license.restrictions = {
-  active_user_count: 10000,
-}
- 
-puts "License:"
-puts license
- 
-data = license.export
-puts "Exported license:"
-puts data
-File.open("GitLabBV.gitlab-license", "w") { |f| f.write(data) }
- 
-public_key = OpenSSL::PKey::RSA.new File.read("license_key.pub")
-Gitlab::License.encryption_key = public_key
- 
-data = File.read("GitLabBV.gitlab-license")
-$license = Gitlab::License.import(data)
- 
-puts "Imported license:"
-puts $license
- 
-unless $license
-  raise "The license is invalid."
-end
- 
-if $license.restricted?(:active_user_count)
-  active_user_count = 10000
-  if active_user_count &gt; $license.restrictions[:active_user_count]
-    raise "The active user count exceeds the allowed amount!"
-  end
-end
- 
-if $license.notify_admins?
-  puts "The license is due to expire on #{$license.expires_at}."
-end
- 
-if $license.notify_users?
-  puts "The license is due to expire on #{$license.expires_at}."
-end
- 
-module Gitlab
-  class GitAccess
-    def check(cmd, changes = nil)
-      if $license.block_changes?
-        return build_status_object(false, "License expired")
-      end
-    end
-  end
-end
- 
-puts "This instance of GitLab Enterprise Edition is licensed to:"
-$license.licensee.each do |key, value|
-  puts "#{key}: #{value}"
-end
- 
-if $license.expired?
-  puts "The license expired on #{$license.expires_at}"
-elsif $license.will_expire?
-  puts "The license will expire on #{$license.expires_at}"
-else
-  puts "The license will never expire."
-end
- 
-
-ruby license.rb
-生成 GitLabBV.gitlab-license license_key license_key.pub 这三个文件。
-使用许可证
-用 license_key.pub 文件替换 /opt/gitlab/embedded/service/gitlab-rails/.license_encryption_key.pub。
-GitLabBV.gitlab-license 即是许可证，填入 ${address}/admin/license 地址并重启 gitlab-ctl restart 。
-修改等级
---- /opt/gitlab/embedded/service/gitlab-rails/ee/app/models/license.rb
-+++ /opt/gitlab/embedded/service/gitlab-rails/ee/app/models/license.rb
-@@ -458,7 +458,7 @@
-  end
- 
-  def plan
--    restricted_attr(:plan).presence || STARTER_PLAN
-+    restricted_attr(:plan).presence || ULTIMATE_PLAN
-  end
- 
-  def edition
- 
-Gitlab添加许可证
-14.x Gitlab之前添加许可证位置
-
-菜单-&gt;管理员-&gt;订阅-&gt;许可证上传
-
-新版Gitlab添加许可证的位置在
-
-菜单-&gt;管理员-&gt;设置-&gt;通用-&gt;添加许可证处点击展开-&gt;点击上传
-
-修改完成后使用 gitlab-ctl restart 重新加载配置。
-
-菜单-&gt;管理员-&gt;订阅
-在这里可以看到激活状态，上面操作没问题的话，这里可以看到激活成功！
-
-参考
-
-https://www.rubydoc.info/gems/gitlab-license/1.0.0/file/README.md
-
-系列教程
-全部文章RSS订阅
-Gitlab 使用系列  Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-]]></content>
-      <categories>
-        <category>gitlab</category>
-      </categories>
-      <tags>
-        <tag>gitlab</tag>
-        <tag>git</tag>
-        <tag>crack</tag>
       </tags>
   </entry>
   <entry>
@@ -4043,327 +4043,6 @@ Gitlab的安装及使用
       </tags>
   </entry>
   <entry>
-    <title>qnap IO 错误消除</title>
-    <url>/posts/5b1993ac/</url>
-    <content><![CDATA[问题
-[Storage &amp; Snapshots] Failed to check file system of volume "SYS". Storage pool: 1. Volume could not be unmounted.
-检测问题
-检测问题可选命令有
-md_checker
-
-pvdisplay
-
-vgdisplay
-
-lvdisplay
-处理步骤
-备份
-先备份数据，rsync比HBS3好用多了。
-如果没有坏块
-如果没有坏块，就在下图位置扫描坏块，扫描完，自动清除异常标志
-
-如果有坏块
-坏块修复
-如果有坏块，可以使用 “DiskGenius”扫描修复
-
-
-强制消除异常标志
-
-
-開啟SSH
-登入 console
-# sed -i '/pd_err_wwn_/d' /mnt/HDA_ROOT/.conf
-重啟 NAS.
-
-
-The Solution
-
-
-Change the “/etc/lvm/lvm.conf” as described above
-
-
-In general one should configure the LVM to filter out all sd* devices and only see the /dev/emcpower* or /dev/mapper/* devices. If there are other non-mutipathed SCSI devices LVM volumes, e.g: /dev/cciss/*, then set the filter accordingly, for example:
-
-
-filter = [ "r/sd.*/" "a/dev/cciss/*/" "a/dev/emcpower.*/" "a/dev/mapper/*/" ]
-With this setting, the ‘lvmdiskscan’ and ‘pvscan’ commands should only find the /dev/ccisss/, /dev/emcpower and /dev/mapper/* devices.
-
-
-Stop any applications/services that access LVM managed devices/filesystems.
-
-
-Unmount all LVM-based filesystems.
-
-
-Deactivate all Volume Groups.
-
-
-# vgchange -an
-
-Rescan Volume Groups.
-
-# vgscan
-
-Re-activate Volume Groups.
-
-# vgchange -ay
-\8. Mount any LVM-based filesystems.
-
-Start any applications/services requring access to LVM managed devices/filesystems.
-
-总结：
-为了安全和稳定性，有坏块后，备份数据，使用DiskGenius修复坏块，（只能修复逻辑坏块，不能修复物理坏块），然后最好全盘格式化再使用。
-SDD可以使用低级格式化，但会全盘减少一次写寿命。尽量少用。
-进入维护模式，在进行修复，有可能解决问题！
-参考
-
-[I always get a failed to check Filesystem message](https://forum.qnap.com/viewtopic.php?t=162182)
-Duplicate PV Warnings for Multipathed Devices
-‘Found duplicate PV’ warnings when using LVM with multipath storage in RHEL/CentOS
-pvdisplay shows "Found duplicate PV" on multipath device
-
-系列教程
-全部文章RSS订阅
-Nas系列 Nas 分类 RSS 订阅
-
-音视频图书和音乐自动化管理框架图解
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>qnap</tag>
-        <tag>nas</tag>
-        <tag>ssd</tag>
-        <tag>hdd</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>几种常用管理模型和方法</title>
-    <url>/posts/ca630feb/</url>
-    <content><![CDATA[这些只是基本的工具，你需要了解。但是，和行业相关的知识更重要。就像做数学题，把一堆错综复杂的线索中归纳总结出来问题，提出解决方法，这中间需要丰富的行业知识，这个没法速成。总结完后，执行阶段，就像数学加减乘除一样，这些是基本的工具和方法。
-
-PDCA原则意义
-Plan：制定目标与计划；
-Do：任务展开，组织实施；
-Check：对过程中的关键点和最终结果进行检查；
-Action：纠正偏差，对成果进行标准化，并确定新的目标，制定下一轮计划。
-意义：每一项工作，都是一个pdca循环，都需要计划、实施、检查结果，并进一步进行改进，同时进入下一个循环，只有在日积月累的渐进改善中，才可能会有质的飞跃，才可能取得完善每一项工作，完善自己的人生。
-
-
-PDCA原则的八大步骤
-
-
-
-5W2H分析法的意义
-What：工作的内容和达成的目标；
-Why：做这项工作的原因；
-Who：参加这项工作的具体人员，以及负责人；
-When：在什么时间、什么时间段进行工作；
-Where：工作发生的地点 ；
-Which：哪一种方法或途径；
-How：用什么方法进行；
-How much：需要多少成本？
-意义：做任何工作都应该从6W2H来思考，这有助于我们的思路的条理化，杜绝盲目性。我们的汇报也应该用6W2H，能节约写报告及看报告的时间。
-
-
-5W2H分析法的内容
-
-
-
-SMART原则的意义
-Specific 具体的；
-Measurable 可测量的；
-Attainable 可达到的；
-Relevant 相关的；
-Time based 时间的；
-意义：人们在制定工作目标或者任务目标时，考虑一下目标与计划是不是SMART化的。只有具备SMART化的计划才是具有良好可实施性的，也才能指导保证计划得以实现。
-有的又如此解释此原则：
-——S代表具体(Specific)，指绩效考核要切中特定的工作指标，不能笼统；
-——M代表可度量(Measurable)，指绩效指标是数量化或者行为化的，验证这些绩效指标的数据或者信息是可以获得的；
-——A代表可实现(Attainable)，指绩效指标在付出努力的情况下可以实现，避免设立过高或过低的目标；
-——R代表现实性(realistic)，指绩效指标是实实在在的，可以证明和观察；
-——T代表有时限(time bound)，注重完成绩效指标的特定期限。
-
-
-SMART原则实施要领
-
-
-
-STAR法则的意义
-
-
-STAR法则的内容
-
-
-
-SWOT分析模型的意义
-Strengths：优势
-Weaknesses：劣势
-Opportunities：机会
-Threats：威胁
-意义：帮您清晰地把握全局，分析自己在资源方面的优势与劣势，把握环境提供的机会，防范可能存在的风险与威胁，对我们的成功有非常重要的意义。
-
-
-SWOT分析模型组合
-
-
-
-GROW教练模型的意义
-
-
-GROW教练模型的内容
-
-
-时间管理-重要与紧急
-A、重要且紧急
-紧急状况
-迫切的问题
-限期完成的工作
-你不做其他人也不能做
-B、重要不紧急
-准备工作
-预防措施
-价值观的澄清
-计划
-人际关系的建立
-真正的再创造
-增进自己的能力
-C、紧急不重要
-造成干扰的事、电话、
-信件、报告
-会议
-许多迫在眉捷的急事
-符合别人期望的事
-D、不重要不紧急
-忙碌琐碎的事
-广告函件
-电话
-逃避性活动
-等待时间
-优先顺序=重要性*紧迫性在进行时间安排时，应权衡各种事情的优先顺序，要学会“弹钢琴”；对工作要有前瞻能力，防患于未然，如果总是在忙于救火，那将使我们的工作永远处理被动之中。
-
-任务分解法[WBS]
-即Work Breakdown Structure，如何进行WBS分解：目标→任务→工作→活动
-WBS分解的原则：
-将主体目标逐步细化分解，最底层的任务活动可直接分派到个人去完成；每个任务原则上要求分解到不能再细分为止。
-WBS分解的方法：
-至上而下与至下而上的充分沟通；
-一对一个别交流；
-小组讨论。
-WBS分解的标准：
-分解后的活动结构清晰；
-逻辑上形成一个大的活动；
-集成了所有的关键因素包含临时的里程碑和监控点；
-所有活动全部定义清楚。
-意义：学会分解任务，只有将任务分解得足够细，您才能心里有数，您才能有条不紊地工作，您才能统筹安排您的时间表。
-OKR，目标与关键结果
-OKR 实施过程中起草制定好目标和关键结果是非常重要的一环，有效的 OKR 制定需要满足 SMART 原则——明确的、可衡量的、可实现的、有相关性和有时限性。
-目标（O）回答的是“我们想做什么”的问题，是定性的，要求能够鼓舞人心，激发团队共鸣。
-关键结果（KR）回答的是“我们如何知道自己是否达成了目标要求”的问题，是定量的，设计 KR 最具挑战的部分是如何把目标中定性的描述抽象为定量的表示。
-最后：只有掌握了正确科学的工作方法，才可能在未来的工作中，做到事半功倍的效果，才能更加从容且有重点的开展工作。好的工作方法，是成功的一半！
-]]></content>
-      <categories>
-        <category>管理</category>
-      </categories>
-      <tags>
-        <tag>pdca</tag>
-        <tag>5w2h</tag>
-        <tag>smart</tag>
-        <tag>swot</tag>
-        <tag>grow</tag>
-        <tag>okr</tag>
-        <tag>wbs</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>qBittorrent 参数详细设置教程</title>
-    <url>/posts/f6b32521/</url>
-    <content><![CDATA[全文将以目前的最新版v4.2.1为例，进行参数设置，老版本某些功能不太一致，请知悉。特别鸣谢 原创者：Evine！
-
-更多参数，官方说明 libtorrent 参数设置说明
-
-行为参数
-
-下载参数
-
-连接参数
-
-速度参数
-
-BT参数
-
-RSS设置
-
-web参数
-
-高级参数
-
-关于磁盘缓存的补充说明：
-经常有人吐槽qB特别吃内存，个人猜测应该是磁盘缓存设置不正确导致的。磁盘缓存设置过小，磁盘缓存到期间隔过长，先下载的文件块来不及写入硬盘，新的文件块又到了，可能就会导致内存爆掉甚至磁盘I/O错误。个人建议：在进行高速下载时，适当将磁盘缓存调高，磁盘缓存到期间隔调低（下载时间隔越低写入越频繁，自己根据电脑的资源占用情况调整最适合自己的值）。实在不知道怎么调的，就干脆把磁盘缓存设置为-1（自动）好了，还不行，就把磁盘缓存到期间隔再调低一些。举一个例子，比如设置2048MiB磁盘缓存、300s磁盘缓存到期间隔时，当下载速度为50MiB/s的时候，300s的时间总共可以下载15000MiB，早就远远超过2048MiB了，不爆内存、不I/O错误才怪。所以当达到这个下载速度的时候，在磁盘缓存不变的情况下，根据简单的除法（磁盘缓存除以下载速度）可知，磁盘缓存到期间隔就应该设置到40s以下了。
-qB在正常运行后，其占用的内存会比你所设置的磁盘缓存多几百M。所有的参数没有标准答案，一切都得根据你机子的本身属性以及实际的使用场景（比如CPU性能、内存大小、硬盘写入速度、下载速度等）来设置，建议大家多试验。
-关于TCP、UTP的补充说明：
-TCP是Internet上最常用的协议，是一种面向连接的、可靠的、基于字节流的传输层通信协议。TCP的优势在于双向互动机制兼顾数据传输的完整性、可控制性和可靠性，但复杂的校验与控制机制也使其没有UDP传输效率高。
-UDP协议与TCP协议一样用于处理数据包，是一种无连接的协议。UDP的缺点是不提供数据包分组、组装和不能对数据包进行排序的缺点，也就是说，当报文发送之后，是无法得知其是否安全完整到达的。UDP优势在于带宽占用小、传输效率和连接成功率高，有益于内网用户（如通过UDP内网穿透UDP Hole Punching连接），但UDP与TCP协议相比也存在无反向确认机制、无流量和序列控制等弊端。
-uTP(Micro Transport Protocol)是一种正在标准化的开放式BT协议，主要功能是提高宽带使用效率、减少网络问题。在减缓网络延迟和拥堵的同时最大化网络吞吐量、克服多数防火墙和NAT的阻碍，增强网络穿透和传输效率，同时增益流量控制，这对BT用户和ISP都是互利的。uTP虽基于UDP协议但有所不同，uTP通过拥堵控制算法（Ledbat）可限制延时，当延时不严重时可最大限度利用带宽，并能通过uTP提供的信息用于选择TCP连接的传输率，即使在不作限速设置的情况下，也能减少网络拥堵产生，当用户端之间都启用uTP时，可见明显的传输速率提升。内网无法实现端口映射的用户启用uTP，可以改善与网外用户的连接。
-使用uTP进行连接的用户，其标志将包含“P”。
-系列教程
-全部文章RSS订阅
-Nas系列 Nas 分类 RSS 订阅
-
-音视频图书和音乐自动化管理框架图解
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>bt</tag>
-        <tag>pt</tag>
-        <tag>qnap</tag>
-        <tag>nas</tag>
-        <tag>qbittorrent</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Debian Lenny Laptop安装记录</title>
     <url>/posts/b1fe1bb8/</url>
     <content><![CDATA[Debian Lenny Laptop安装记录
@@ -5172,6 +4851,327 @@ network.protocol-handler.app.ed2k
         <tag>laptop</tag>
         <tag>ed2k</tag>
         <tag>ati</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>qnap IO 错误消除</title>
+    <url>/posts/5b1993ac/</url>
+    <content><![CDATA[问题
+[Storage &amp; Snapshots] Failed to check file system of volume "SYS". Storage pool: 1. Volume could not be unmounted.
+检测问题
+检测问题可选命令有
+md_checker
+
+pvdisplay
+
+vgdisplay
+
+lvdisplay
+处理步骤
+备份
+先备份数据，rsync比HBS3好用多了。
+如果没有坏块
+如果没有坏块，就在下图位置扫描坏块，扫描完，自动清除异常标志
+
+如果有坏块
+坏块修复
+如果有坏块，可以使用 “DiskGenius”扫描修复
+
+
+强制消除异常标志
+
+
+開啟SSH
+登入 console
+# sed -i '/pd_err_wwn_/d' /mnt/HDA_ROOT/.conf
+重啟 NAS.
+
+
+The Solution
+
+
+Change the “/etc/lvm/lvm.conf” as described above
+
+
+In general one should configure the LVM to filter out all sd* devices and only see the /dev/emcpower* or /dev/mapper/* devices. If there are other non-mutipathed SCSI devices LVM volumes, e.g: /dev/cciss/*, then set the filter accordingly, for example:
+
+
+filter = [ "r/sd.*/" "a/dev/cciss/*/" "a/dev/emcpower.*/" "a/dev/mapper/*/" ]
+With this setting, the ‘lvmdiskscan’ and ‘pvscan’ commands should only find the /dev/ccisss/, /dev/emcpower and /dev/mapper/* devices.
+
+
+Stop any applications/services that access LVM managed devices/filesystems.
+
+
+Unmount all LVM-based filesystems.
+
+
+Deactivate all Volume Groups.
+
+
+# vgchange -an
+
+Rescan Volume Groups.
+
+# vgscan
+
+Re-activate Volume Groups.
+
+# vgchange -ay
+\8. Mount any LVM-based filesystems.
+
+Start any applications/services requring access to LVM managed devices/filesystems.
+
+总结：
+为了安全和稳定性，有坏块后，备份数据，使用DiskGenius修复坏块，（只能修复逻辑坏块，不能修复物理坏块），然后最好全盘格式化再使用。
+SDD可以使用低级格式化，但会全盘减少一次写寿命。尽量少用。
+进入维护模式，在进行修复，有可能解决问题！
+参考
+
+[I always get a failed to check Filesystem message](https://forum.qnap.com/viewtopic.php?t=162182)
+Duplicate PV Warnings for Multipathed Devices
+‘Found duplicate PV’ warnings when using LVM with multipath storage in RHEL/CentOS
+pvdisplay shows "Found duplicate PV" on multipath device
+
+系列教程
+全部文章RSS订阅
+Nas系列 Nas 分类 RSS 订阅
+
+音视频图书和音乐自动化管理框架图解
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>ssd</tag>
+        <tag>hdd</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>几种常用管理模型和方法</title>
+    <url>/posts/ca630feb/</url>
+    <content><![CDATA[这些只是基本的工具，你需要了解。但是，和行业相关的知识更重要。就像做数学题，把一堆错综复杂的线索中归纳总结出来问题，提出解决方法，这中间需要丰富的行业知识，这个没法速成。总结完后，执行阶段，就像数学加减乘除一样，这些是基本的工具和方法。
+
+PDCA原则意义
+Plan：制定目标与计划；
+Do：任务展开，组织实施；
+Check：对过程中的关键点和最终结果进行检查；
+Action：纠正偏差，对成果进行标准化，并确定新的目标，制定下一轮计划。
+意义：每一项工作，都是一个pdca循环，都需要计划、实施、检查结果，并进一步进行改进，同时进入下一个循环，只有在日积月累的渐进改善中，才可能会有质的飞跃，才可能取得完善每一项工作，完善自己的人生。
+
+
+PDCA原则的八大步骤
+
+
+
+5W2H分析法的意义
+What：工作的内容和达成的目标；
+Why：做这项工作的原因；
+Who：参加这项工作的具体人员，以及负责人；
+When：在什么时间、什么时间段进行工作；
+Where：工作发生的地点 ；
+Which：哪一种方法或途径；
+How：用什么方法进行；
+How much：需要多少成本？
+意义：做任何工作都应该从6W2H来思考，这有助于我们的思路的条理化，杜绝盲目性。我们的汇报也应该用6W2H，能节约写报告及看报告的时间。
+
+
+5W2H分析法的内容
+
+
+
+SMART原则的意义
+Specific 具体的；
+Measurable 可测量的；
+Attainable 可达到的；
+Relevant 相关的；
+Time based 时间的；
+意义：人们在制定工作目标或者任务目标时，考虑一下目标与计划是不是SMART化的。只有具备SMART化的计划才是具有良好可实施性的，也才能指导保证计划得以实现。
+有的又如此解释此原则：
+——S代表具体(Specific)，指绩效考核要切中特定的工作指标，不能笼统；
+——M代表可度量(Measurable)，指绩效指标是数量化或者行为化的，验证这些绩效指标的数据或者信息是可以获得的；
+——A代表可实现(Attainable)，指绩效指标在付出努力的情况下可以实现，避免设立过高或过低的目标；
+——R代表现实性(realistic)，指绩效指标是实实在在的，可以证明和观察；
+——T代表有时限(time bound)，注重完成绩效指标的特定期限。
+
+
+SMART原则实施要领
+
+
+
+STAR法则的意义
+
+
+STAR法则的内容
+
+
+
+SWOT分析模型的意义
+Strengths：优势
+Weaknesses：劣势
+Opportunities：机会
+Threats：威胁
+意义：帮您清晰地把握全局，分析自己在资源方面的优势与劣势，把握环境提供的机会，防范可能存在的风险与威胁，对我们的成功有非常重要的意义。
+
+
+SWOT分析模型组合
+
+
+
+GROW教练模型的意义
+
+
+GROW教练模型的内容
+
+
+时间管理-重要与紧急
+A、重要且紧急
+紧急状况
+迫切的问题
+限期完成的工作
+你不做其他人也不能做
+B、重要不紧急
+准备工作
+预防措施
+价值观的澄清
+计划
+人际关系的建立
+真正的再创造
+增进自己的能力
+C、紧急不重要
+造成干扰的事、电话、
+信件、报告
+会议
+许多迫在眉捷的急事
+符合别人期望的事
+D、不重要不紧急
+忙碌琐碎的事
+广告函件
+电话
+逃避性活动
+等待时间
+优先顺序=重要性*紧迫性在进行时间安排时，应权衡各种事情的优先顺序，要学会“弹钢琴”；对工作要有前瞻能力，防患于未然，如果总是在忙于救火，那将使我们的工作永远处理被动之中。
+
+任务分解法[WBS]
+即Work Breakdown Structure，如何进行WBS分解：目标→任务→工作→活动
+WBS分解的原则：
+将主体目标逐步细化分解，最底层的任务活动可直接分派到个人去完成；每个任务原则上要求分解到不能再细分为止。
+WBS分解的方法：
+至上而下与至下而上的充分沟通；
+一对一个别交流；
+小组讨论。
+WBS分解的标准：
+分解后的活动结构清晰；
+逻辑上形成一个大的活动；
+集成了所有的关键因素包含临时的里程碑和监控点；
+所有活动全部定义清楚。
+意义：学会分解任务，只有将任务分解得足够细，您才能心里有数，您才能有条不紊地工作，您才能统筹安排您的时间表。
+OKR，目标与关键结果
+OKR 实施过程中起草制定好目标和关键结果是非常重要的一环，有效的 OKR 制定需要满足 SMART 原则——明确的、可衡量的、可实现的、有相关性和有时限性。
+目标（O）回答的是“我们想做什么”的问题，是定性的，要求能够鼓舞人心，激发团队共鸣。
+关键结果（KR）回答的是“我们如何知道自己是否达成了目标要求”的问题，是定量的，设计 KR 最具挑战的部分是如何把目标中定性的描述抽象为定量的表示。
+最后：只有掌握了正确科学的工作方法，才可能在未来的工作中，做到事半功倍的效果，才能更加从容且有重点的开展工作。好的工作方法，是成功的一半！
+]]></content>
+      <categories>
+        <category>管理</category>
+      </categories>
+      <tags>
+        <tag>pdca</tag>
+        <tag>5w2h</tag>
+        <tag>smart</tag>
+        <tag>swot</tag>
+        <tag>grow</tag>
+        <tag>okr</tag>
+        <tag>wbs</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>qBittorrent 参数详细设置教程</title>
+    <url>/posts/f6b32521/</url>
+    <content><![CDATA[全文将以目前的最新版v4.2.1为例，进行参数设置，老版本某些功能不太一致，请知悉。特别鸣谢 原创者：Evine！
+
+更多参数，官方说明 libtorrent 参数设置说明
+
+行为参数
+
+下载参数
+
+连接参数
+
+速度参数
+
+BT参数
+
+RSS设置
+
+web参数
+
+高级参数
+
+关于磁盘缓存的补充说明：
+经常有人吐槽qB特别吃内存，个人猜测应该是磁盘缓存设置不正确导致的。磁盘缓存设置过小，磁盘缓存到期间隔过长，先下载的文件块来不及写入硬盘，新的文件块又到了，可能就会导致内存爆掉甚至磁盘I/O错误。个人建议：在进行高速下载时，适当将磁盘缓存调高，磁盘缓存到期间隔调低（下载时间隔越低写入越频繁，自己根据电脑的资源占用情况调整最适合自己的值）。实在不知道怎么调的，就干脆把磁盘缓存设置为-1（自动）好了，还不行，就把磁盘缓存到期间隔再调低一些。举一个例子，比如设置2048MiB磁盘缓存、300s磁盘缓存到期间隔时，当下载速度为50MiB/s的时候，300s的时间总共可以下载15000MiB，早就远远超过2048MiB了，不爆内存、不I/O错误才怪。所以当达到这个下载速度的时候，在磁盘缓存不变的情况下，根据简单的除法（磁盘缓存除以下载速度）可知，磁盘缓存到期间隔就应该设置到40s以下了。
+qB在正常运行后，其占用的内存会比你所设置的磁盘缓存多几百M。所有的参数没有标准答案，一切都得根据你机子的本身属性以及实际的使用场景（比如CPU性能、内存大小、硬盘写入速度、下载速度等）来设置，建议大家多试验。
+关于TCP、UTP的补充说明：
+TCP是Internet上最常用的协议，是一种面向连接的、可靠的、基于字节流的传输层通信协议。TCP的优势在于双向互动机制兼顾数据传输的完整性、可控制性和可靠性，但复杂的校验与控制机制也使其没有UDP传输效率高。
+UDP协议与TCP协议一样用于处理数据包，是一种无连接的协议。UDP的缺点是不提供数据包分组、组装和不能对数据包进行排序的缺点，也就是说，当报文发送之后，是无法得知其是否安全完整到达的。UDP优势在于带宽占用小、传输效率和连接成功率高，有益于内网用户（如通过UDP内网穿透UDP Hole Punching连接），但UDP与TCP协议相比也存在无反向确认机制、无流量和序列控制等弊端。
+uTP(Micro Transport Protocol)是一种正在标准化的开放式BT协议，主要功能是提高宽带使用效率、减少网络问题。在减缓网络延迟和拥堵的同时最大化网络吞吐量、克服多数防火墙和NAT的阻碍，增强网络穿透和传输效率，同时增益流量控制，这对BT用户和ISP都是互利的。uTP虽基于UDP协议但有所不同，uTP通过拥堵控制算法（Ledbat）可限制延时，当延时不严重时可最大限度利用带宽，并能通过uTP提供的信息用于选择TCP连接的传输率，即使在不作限速设置的情况下，也能减少网络拥堵产生，当用户端之间都启用uTP时，可见明显的传输速率提升。内网无法实现端口映射的用户启用uTP，可以改善与网外用户的连接。
+使用uTP进行连接的用户，其标志将包含“P”。
+系列教程
+全部文章RSS订阅
+Nas系列 Nas 分类 RSS 订阅
+
+音视频图书和音乐自动化管理框架图解
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>bt</tag>
+        <tag>pt</tag>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>qbittorrent</tag>
       </tags>
   </entry>
   <entry>
@@ -12694,9 +12694,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-svZQjIOMhZrkgpZL").style.height=document.getElementById("mmedia-svZQjIOMhZrkgpZL").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-iIbXoIGMfYZSMmlz").style.height=document.getElementById("mmedia-iIbXoIGMfYZSMmlz").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-svZQjIOMhZrkgpZL").style.height=document.getElementById("mmedia-svZQjIOMhZrkgpZL").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-iIbXoIGMfYZSMmlz").style.height=document.getElementById("mmedia-iIbXoIGMfYZSMmlz").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -18150,11 +18150,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var GFyUZBTkuGxhiORM_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); GFyUZBTkuGxhiORM_options.container = document.getElementById("mmedia-GFyUZBTkuGxhiORM"); const ap_GFyUZBTkuGxhiORM = new APlayer(GFyUZBTkuGxhiORM_options); 
+ var BiaQztplHHefwkVh_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); BiaQztplHHefwkVh_options.container = document.getElementById("mmedia-BiaQztplHHefwkVh"); const ap_BiaQztplHHefwkVh = new APlayer(BiaQztplHHefwkVh_options); 
 
 - **列表**
 
- var cypaJCuEbsGXqlbb_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); cypaJCuEbsGXqlbb_options.container = document.getElementById("mmedia-cypaJCuEbsGXqlbb"); const ap_cypaJCuEbsGXqlbb = new APlayer(cypaJCuEbsGXqlbb_options); 
+ var fwdrXUPwCShXRDIV_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); fwdrXUPwCShXRDIV_options.container = document.getElementById("mmedia-fwdrXUPwCShXRDIV"); const ap_fwdrXUPwCShXRDIV = new APlayer(fwdrXUPwCShXRDIV_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -18406,21 +18406,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-axvVvtsEEmgqZzEb").style.height=document.getElementById("mmedia-axvVvtsEEmgqZzEb").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-tXHNtnANckoHEIjA").style.height=document.getElementById("mmedia-tXHNtnANckoHEIjA").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-axvVvtsEEmgqZzEb").style.height=document.getElementById("mmedia-axvVvtsEEmgqZzEb").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-tXHNtnANckoHEIjA").style.height=document.getElementById("mmedia-tXHNtnANckoHEIjA").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ImhyzFtXXMFpqhvN").style.height=document.getElementById("mmedia-ImhyzFtXXMFpqhvN").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ThnLRrmGMOoNFVKm").style.height=document.getElementById("mmedia-ThnLRrmGMOoNFVKm").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-ImhyzFtXXMFpqhvN").style.height=document.getElementById("mmedia-ImhyzFtXXMFpqhvN").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-ThnLRrmGMOoNFVKm").style.height=document.getElementById("mmedia-ThnLRrmGMOoNFVKm").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var azDbkuPoUwrgBWEi_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); azDbkuPoUwrgBWEi_options.container = "#mmedia-azDbkuPoUwrgBWEi"; const art_azDbkuPoUwrgBWEi = new Artplayer(azDbkuPoUwrgBWEi_options); 
+ var DOIQTsDQpvNLhGxf_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); DOIQTsDQpvNLhGxf_options.container = "#mmedia-DOIQTsDQpvNLhGxf"; const art_DOIQTsDQpvNLhGxf = new Artplayer(DOIQTsDQpvNLhGxf_options); 
 脑图
 
 原作者记录
@@ -19574,11 +19574,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var wCktHmyuAMMEiGdG_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); wCktHmyuAMMEiGdG_options.container = document.getElementById("mmedia-wCktHmyuAMMEiGdG"); const ap_wCktHmyuAMMEiGdG = new APlayer(wCktHmyuAMMEiGdG_options); 
+ var spBCgXldMgKUgaBQ_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); spBCgXldMgKUgaBQ_options.container = document.getElementById("mmedia-spBCgXldMgKUgaBQ"); const ap_spBCgXldMgKUgaBQ = new APlayer(spBCgXldMgKUgaBQ_options); 
 
 
 
- var IzmKtjNcjwbRTgvY_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); IzmKtjNcjwbRTgvY_options.container = document.getElementById("mmedia-IzmKtjNcjwbRTgvY"); const ap_IzmKtjNcjwbRTgvY = new APlayer(IzmKtjNcjwbRTgvY_options); 
+ var jpOknTAOdcLtDnVV_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); jpOknTAOdcLtDnVV_options.container = document.getElementById("mmedia-jpOknTAOdcLtDnVV"); const ap_jpOknTAOdcLtDnVV = new APlayer(jpOknTAOdcLtDnVV_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -19716,9 +19716,9 @@ docker run -d \
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-UohxKlpceiXcvMxD").style.height=document.getElementById("mmedia-UohxKlpceiXcvMxD").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-BGFECljIYDyMoNyn").style.height=document.getElementById("mmedia-BGFECljIYDyMoNyn").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-UohxKlpceiXcvMxD").style.height=document.getElementById("mmedia-UohxKlpceiXcvMxD").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-BGFECljIYDyMoNyn").style.height=document.getElementById("mmedia-BGFECljIYDyMoNyn").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -19727,7 +19727,7 @@ docker run -d \
 
 ## 中文翻唱
 
- var qUqlOGRoohzyznql_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); qUqlOGRoohzyznql_options.container = document.getElementById("mmedia-qUqlOGRoohzyznql"); const ap_qUqlOGRoohzyznql = new APlayer(qUqlOGRoohzyznql_options); 
+ var HeeAWtSKbvbGDjeC_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); HeeAWtSKbvbGDjeC_options.container = document.getElementById("mmedia-HeeAWtSKbvbGDjeC"); const ap_HeeAWtSKbvbGDjeC = new APlayer(HeeAWtSKbvbGDjeC_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -35111,221 +35111,292 @@ q 退出
       </tags>
   </entry>
   <entry>
-    <title>自建全套开源Devops开发系统</title>
-    <url>/posts/ab63eb8f/</url>
+    <title>如何建立自己的私人电子图书馆</title>
+    <url>/posts/dc1c8194/</url>
     <content><![CDATA[
-国内的Devops云平台动辄封号，删库，屏蔽，还多次发生数据泄密，项目被云平台克隆事件，国内云平台devops已死！数据安全没法保证，自建私有Devops平台才靠谱。这里采用开源项目建立一个完善的低成本Devops系统，基本运行良好！
+继刮削音乐，刮削电影、电视剧、动画等视频之后的第三季，刮削图书！
+结构化自己的图书，方便自己随时查阅，是提高自己各种能力的重要辅助手段！把各方面知识都结构化，可以极大的扩展你的思维，放飞你的思想，让你以更清晰的目光看待这个世界!
+友情提示：中国法规是不允许私人做电子出版的！自用可以，公开访问是违法的！
 
 
-目标：单节点，以最低成本，最低消耗，使用开源软件实现一个可用的DevOps！满足中小企业的研发、测试、运维需求。并对后续如何扩展本套DevOps系统做了项目，成本，路线升级规划，可以一直扩展到业界最前沿最大系统。
-整套系统已经跑起来很长时间了！单节点Nas服务器，32G内存，共运行了约80个Docker，优化到平均负载10以下。
+操作指南
+Web界面的Calibre作为阅读界面，支持OPDS接口，可以手机访问！
+PC 版的Calibrez作为电子书导入，转移，和管理的工具更方便！
+注意不要同时在web和PC端操作数据库，很容易导致数据库出bug。
+虽然pc calibre有数据库恢复功能，大部分时间都可以成功恢复数据库，但是偶尔也有不能恢复的时候！
+安装Docker
+
+更多平台Docker安装介绍，请看这里
+Hexo Docker环境使用篇
+
+1、安装docker
+curl -fsSL https://get.docker.com | sh &amp;&amp; systemctl enable --now docker
+2、安装docker-compose
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -SL https://get.daocloud.io/docker/compose/releases/download/v2.1.1/docker-compose-`uname -s`-`uname -m` -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+3、运行bookstack
+docker compose up -d
+4、查看日志
+docker logs -f calibre
+CalibreWeb
 
 
-
-Devops框架图解
-
-下面系统大多可以做负载平衡，多节点备份，可以扩展为一个高可用，大中央平台。
-珍爱生命，使用Docker！
-
-
-开源云平台生死连问
-
-珍爱生命，不建议使用国内云平台。
-
-什么是大教堂？
-什么是集市？
-什么是信任链？
-什么是开源生态？
-为什么要做开源生态？
-怎么做开源生态？
-开源生态的土壤肥力维护如何做？
-这些问题没想明白，没想到如何做的是没法做开源的。
-国内平台连种子嫩芽都要收割，到处收费，动辄删库，屏蔽，封号，注定做不了开源生态。
-Consul自动负载均衡
-
-基于服务自动发现和注册的负载均衡，负载均衡的方式没有变，只是多了一些外围组件，当然这些组件对 Client 是不可见的，client 依然只能看到 Nginx 入口，访问方式也没变化。
-
-
-Github仓库备份
-
-最优秀的资源，大多只在短时间内出现！
-平时多备份你重要的仓库，以及你使用的仓库的重要上下游仓库！
+Github
+Dockerhub
+Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
+注意这个Docker安装需要访问Github下载相关文件！注意你的网络是否正常
 
 
 
-github-backup Githb
-github-backup Dockerhub
-
-
-githubback:
-  image: lnxd/github-backup
-  container_name: "githubback"
-  hostname: githubback
-  # ports:
-    # - "80:80"
+视频详细Calibre web讲解
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-zowLkhmqCFvLbVgS").style.height=document.getElementById("mmedia-zowLkhmqCFvLbVgS").scrollWidth*0.76+"px";
+    window.onresize = function(){
+      document.getElementById("mmedia-zowLkhmqCFvLbVgS").style.height=document.getElementById("mmedia-zowLkhmqCFvLbVgS").scrollWidth*0.76+"px";
+    }; 
+Compose 安装示例
+calibre:
+  image: technosoft2000/calibre-web
+  container_name: calibre
+  hostname: calibre
+  restart: always
   volumes:
-    - "${USERDIR}/githubback/data:/home/docker/backups:rw"
+    - ${USERDIR}/Calibre/web/config:/calibre-web/config
+    - ${USERDIR}/Calibre/web/kindlegen:/calibre-web/kindlegen
+    - ${USERDIR}/Calibre/web/app:/calibre-web/app
+    - ${USERDIR}/Calibre/books:/books
+
+  ports:
+   - 8283:8083
   env_file:
     - .env
   environment:
-    - HTTP_PROXY=http://[ip]:[port]
-    - HTTPS_PROXY=http://[ip]:[port]
+    - PUID=${PUID}
+    - PGID=${PGID}
+    - TZ=${TZ}
+    - USE_CONFIG_DIR=true
+    - SET_CONTAINER_TIMEZONE=true
+talebook
+
+
+
+Github
+
+
+Dockerhub
+
+
+Tips: 国人开发的，个人感觉更适合作为图书管理的界面
+
+
+
+
+Compose 安装示例
+talebook:
+  image: talebook/talebook
+  container_name: talebook
+  hostname: talebook
   restart: always
-配置要求
-个人Nas配置
+  ports:
+    - 90:80
+  volumes:
+    - ${USERDIR}/talebook/data:/data
+  environment:
+    - PUID=${PUID}
+    - PGID=${PGID}
+    - TZ=${TZ}
+  networks:
+    public_access:
+      aliases:
+        - talebook 
+Calibre
 
+Pc版的Calibre用来做数据库管理，有各种插件支持，是最方便的。
+主页：calibre-ebook
+下载：download
+
+
+刮削插件安装
+
+
+
+
+豆瓣刮削插件这里下载安装
+
+Github
+官方地址 Github 下载地址
+本站自建加速地址 onebox.17lai.site加速下载 更新到1.05 如果打不开，多刷新几次！
+
+
+添加书库
+
+
+图书刮削
+
+
+
+检查完毕就可以点击确认
+数据库转移
+
+
+
+这里最好建立一个临时书库作为转移和刮削预备用，防止意外崩溃导致数据库损坏或丢失！
+你可以和你的好友之间共享或者转移某个书库。
+图书太多，刮削太耗时间，合作刮削建立书库才是正途！
+
+Calibre数据库恢复
+
+图书、音乐、视频三剑客！
+
+结构化自己的图书，音乐，和视频！
+
+
+
+.vkr-url-wrapper {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid;
+    border-color: #eee #ddd #bbb;
+    box-shadow: rgba(0,0,0,.14) 0 1px 3px;
+    margin-bottom: 10px;
+    display: flex;
+}
+.vkr-url-wrapper .desc-wrapper > hr {
+    margin: 10px 0;
+    height: 1px;
+}
+.vkr-url-wrapper .avatar {
+    width: 100px;
+    height: 100px !important;
+    border: solid 1px #eee;
+    box-shadow: none!important;
+    margin: 0;
+    margin-right: 10px;
+}
+.vkr-url-wrapper h2 {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+.vkr-url-wrapper .desc-wrapper {
+    flex: 1;
+}
+.vkr-url-wrapper .desc-wrapper a {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+    
+        
+    
+    
+        如何建立自己的私人电子图书馆
+        
+        图书管理员似乎是个非常有前途的职业，远的有孔子，游学之前当图书管理员，近的有本朝开国毛教员，也当了很长时间图书管理员。我们也可以自己做个私人电子图书馆，当个图书管理员，说不定很有前途？
+    
+
+
+
+
+.vkr-url-wrapper {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid;
+    border-color: #eee #ddd #bbb;
+    box-shadow: rgba(0,0,0,.14) 0 1px 3px;
+    margin-bottom: 10px;
+    display: flex;
+}
+.vkr-url-wrapper .desc-wrapper > hr {
+    margin: 10px 0;
+    height: 1px;
+}
+.vkr-url-wrapper .avatar {
+    width: 100px;
+    height: 100px !important;
+    border: solid 1px #eee;
+    box-shadow: none!important;
+    margin: 0;
+    margin-right: 10px;
+}
+.vkr-url-wrapper h2 {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+.vkr-url-wrapper .desc-wrapper {
+    flex: 1;
+}
+.vkr-url-wrapper .desc-wrapper a {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+    
+        
+    
+    
+        如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库
+        
+        音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。
+    
+
+
+
+
+.vkr-url-wrapper {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid;
+    border-color: #eee #ddd #bbb;
+    box-shadow: rgba(0,0,0,.14) 0 1px 3px;
+    margin-bottom: 10px;
+    display: flex;
+}
+.vkr-url-wrapper .desc-wrapper > hr {
+    margin: 10px 0;
+    height: 1px;
+}
+.vkr-url-wrapper .avatar {
+    width: 100px;
+    height: 100px !important;
+    border: solid 1px #eee;
+    box-shadow: none!important;
+    margin: 0;
+    margin-right: 10px;
+}
+.vkr-url-wrapper h2 {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+.vkr-url-wrapper .desc-wrapper {
+    flex: 1;
+}
+.vkr-url-wrapper .desc-wrapper a {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+    
+        
+    
+    
+        如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+        
+        tinyMediaManager是最好用的视频刮削工具，可以刮削电影，动画，电视剧。使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息，配合Emby，Plex使用体验绝佳
+    
 
-cpu j4125 4 核 14nm 2.00 GHz ~2.70 GHz
-SSD sata 接口的 读写 500MB/S
-32G DDR4. 2x16G 双通道
-
-
-上图中介绍的系统都是上面配置的单服务器中可以运行的。
-如何以最低的配置，最少的内存运行起来最多的功能才是本文的追求，花费更多金钱去满足极少数情况的高压力是钱多的没处花。
-
-8G内存的nas 就可以运行 gitea + drone ，zentao 想用就用
-gitlab 要跑起来至少要2核 8G 内存，jenkins 也是内存 cpu 占用大户。大于 16G 内存时考虑上这个
-4核 32G 内存的nas，图片中介绍的可以全都跑起来！
-
-可靠性
-ELK集群监控对于单服务器来说完全多余，netdata监控也不错，portainer就够用了，以后为了节约资源，portainer说不定也会被干掉，大多数时候命令行监控就够了。少于200节点K8S就是多余的。
-数据安全
-
-云平台把数据交给别人，赌别人的道德不会私自偷拿你的数据？真是想多了。
-某垄断社交平台内部有专门的团队分析客户的数据，看有什么有价值的没有，是很多年前就爆出来的消息。
-自建DevOps成本其实相当的低！
-
-整套系统可以从少到多，从小到大，慢慢优化，扩展的。硬件成本也是随着需求变化而变化的，随着业务扩展而增加成本，一开始单节点单服务器就可以满足要求了，后面业务增加慢慢扩展为集群，k8s 等。
-数据，代码是公司核心资产与竞争力的公司，上云赌别人的人品就是找死。你注册账户的时候，就同意了，无论别人随意删除你的数据，或者窃取你的数据都是不用付任何责任的，再说，整个系统数据都在别人手上，你要维权也没有证据。
-备份
-
-UPS电源，防止意外断电
-rsync 备份，对于大多数人，已经够用了
-文件系统快照
-离线每日，或者每周冷备份
-大系统，多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群
-
-扩展性
-
-上面说的都可以单服务器搞定。多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群。
-多于200节点，大于3台服务器以后考虑上K8S。ELK监控之类的这时候可以上了。蓝鲸智云标准运维这时候也可以考虑了。
-再次扩大的时候可以考虑Proxmox VE（PVE） + ceph
-更大的系统，或者对外提供云平台服务的时候可以考虑上OpenStack
-
-项目介绍
-ELK
-
-消耗资源很多，至少上百节点以上再考虑上这个
-portainer -&gt; netdata -&gt; ELK，zabbix 
-
-
-cacti
-
-  
-
-
-
-
-  
-
-
-
-zabbix
-
-  
-
-
-
-
-  
-
-
-
-ansible
-
-  
-
-
-
-
-  
-
-
-
-CMDB
-
-  
-
-
-
-
-  
-
-
-
-PVE
-
-Proxmox VE（PVE）
-
-
-  
-
-
-
-CEPH
-
-  
-
-
-
-
-  
-
-
-
-OpenStack
-
-  
-
-
-
-
-  
-
-
-
-其它项目
-
-大家还有啥好项目建议？
-
-onedev
-onedev 是替代Gitlab的极佳候补，看文档介绍，潜力无限！
-
-  
-
-
-
-系列教程
-全部文章RSS订阅
-Devops系列 Devops 分类 RSS 订阅
-
-自建全套开源Devops开发系统
-Git介绍以及分支模型图解
-三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
-DevOps系列---【Jenkinsfile+Dockerfile+nginx+vue】
-项目开发管理工具推荐
-Gitlab的安装及使用教程完全版
-Gitlab的安装及使用
 
 ]]></content>
       <categories>
-        <category>devops</category>
+        <category>book</category>
       </categories>
       <tags>
-        <tag>docker</tag>
-        <tag>devops</tag>
-        <tag>框架</tag>
-        <tag>图解</tag>
+        <tag>刮削</tag>
+        <tag>calibre</tag>
+        <tag>douban</tag>
+        <tag>book</tag>
       </tags>
   </entry>
   <entry>
@@ -35684,292 +35755,221 @@ docker run -d \
       </tags>
   </entry>
   <entry>
-    <title>如何建立自己的私人电子图书馆</title>
-    <url>/posts/dc1c8194/</url>
+    <title>自建全套开源Devops开发系统</title>
+    <url>/posts/ab63eb8f/</url>
     <content><![CDATA[
-继刮削音乐，刮削电影、电视剧、动画等视频之后的第三季，刮削图书！
-结构化自己的图书，方便自己随时查阅，是提高自己各种能力的重要辅助手段！把各方面知识都结构化，可以极大的扩展你的思维，放飞你的思想，让你以更清晰的目光看待这个世界!
-友情提示：中国法规是不允许私人做电子出版的！自用可以，公开访问是违法的！
+国内的Devops云平台动辄封号，删库，屏蔽，还多次发生数据泄密，项目被云平台克隆事件，国内云平台devops已死！数据安全没法保证，自建私有Devops平台才靠谱。这里采用开源项目建立一个完善的低成本Devops系统，基本运行良好！
 
 
-操作指南
-Web界面的Calibre作为阅读界面，支持OPDS接口，可以手机访问！
-PC 版的Calibrez作为电子书导入，转移，和管理的工具更方便！
-注意不要同时在web和PC端操作数据库，很容易导致数据库出bug。
-虽然pc calibre有数据库恢复功能，大部分时间都可以成功恢复数据库，但是偶尔也有不能恢复的时候！
-安装Docker
-
-更多平台Docker安装介绍，请看这里
-Hexo Docker环境使用篇
-
-1、安装docker
-curl -fsSL https://get.docker.com | sh &amp;&amp; systemctl enable --now docker
-2、安装docker-compose
-mkdir -p /usr/local/lib/docker/cli-plugins
-curl -SL https://get.daocloud.io/docker/compose/releases/download/v2.1.1/docker-compose-`uname -s`-`uname -m` -o /usr/local/lib/docker/cli-plugins/docker-compose
-chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-3、运行bookstack
-docker compose up -d
-4、查看日志
-docker logs -f calibre
-CalibreWeb
-
-
-Github
-Dockerhub
-Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
-注意这个Docker安装需要访问Github下载相关文件！注意你的网络是否正常
+目标：单节点，以最低成本，最低消耗，使用开源软件实现一个可用的DevOps！满足中小企业的研发、测试、运维需求。并对后续如何扩展本套DevOps系统做了项目，成本，路线升级规划，可以一直扩展到业界最前沿最大系统。
+整套系统已经跑起来很长时间了！单节点Nas服务器，32G内存，共运行了约80个Docker，优化到平均负载10以下。
 
 
 
-视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-dVCYCvrdnqApMIPi").style.height=document.getElementById("mmedia-dVCYCvrdnqApMIPi").scrollWidth*0.76+"px";
-    window.onresize = function(){
-      document.getElementById("mmedia-dVCYCvrdnqApMIPi").style.height=document.getElementById("mmedia-dVCYCvrdnqApMIPi").scrollWidth*0.76+"px";
-    }; 
-Compose 安装示例
-calibre:
-  image: technosoft2000/calibre-web
-  container_name: calibre
-  hostname: calibre
-  restart: always
+Devops框架图解
+
+下面系统大多可以做负载平衡，多节点备份，可以扩展为一个高可用，大中央平台。
+珍爱生命，使用Docker！
+
+
+开源云平台生死连问
+
+珍爱生命，不建议使用国内云平台。
+
+什么是大教堂？
+什么是集市？
+什么是信任链？
+什么是开源生态？
+为什么要做开源生态？
+怎么做开源生态？
+开源生态的土壤肥力维护如何做？
+这些问题没想明白，没想到如何做的是没法做开源的。
+国内平台连种子嫩芽都要收割，到处收费，动辄删库，屏蔽，封号，注定做不了开源生态。
+Consul自动负载均衡
+
+基于服务自动发现和注册的负载均衡，负载均衡的方式没有变，只是多了一些外围组件，当然这些组件对 Client 是不可见的，client 依然只能看到 Nginx 入口，访问方式也没变化。
+
+
+Github仓库备份
+
+最优秀的资源，大多只在短时间内出现！
+平时多备份你重要的仓库，以及你使用的仓库的重要上下游仓库！
+
+
+
+github-backup Githb
+github-backup Dockerhub
+
+
+githubback:
+  image: lnxd/github-backup
+  container_name: "githubback"
+  hostname: githubback
+  # ports:
+    # - "80:80"
   volumes:
-    - ${USERDIR}/Calibre/web/config:/calibre-web/config
-    - ${USERDIR}/Calibre/web/kindlegen:/calibre-web/kindlegen
-    - ${USERDIR}/Calibre/web/app:/calibre-web/app
-    - ${USERDIR}/Calibre/books:/books
-
-  ports:
-   - 8283:8083
+    - "${USERDIR}/githubback/data:/home/docker/backups:rw"
   env_file:
     - .env
   environment:
-    - PUID=${PUID}
-    - PGID=${PGID}
-    - TZ=${TZ}
-    - USE_CONFIG_DIR=true
-    - SET_CONTAINER_TIMEZONE=true
-talebook
-
-
-
-Github
-
-
-Dockerhub
-
-
-Tips: 国人开发的，个人感觉更适合作为图书管理的界面
-
-
-
-
-Compose 安装示例
-talebook:
-  image: talebook/talebook
-  container_name: talebook
-  hostname: talebook
+    - HTTP_PROXY=http://[ip]:[port]
+    - HTTPS_PROXY=http://[ip]:[port]
   restart: always
-  ports:
-    - 90:80
-  volumes:
-    - ${USERDIR}/talebook/data:/data
-  environment:
-    - PUID=${PUID}
-    - PGID=${PGID}
-    - TZ=${TZ}
-  networks:
-    public_access:
-      aliases:
-        - talebook 
-Calibre
-
-Pc版的Calibre用来做数据库管理，有各种插件支持，是最方便的。
-主页：calibre-ebook
-下载：download
+配置要求
+个人Nas配置
 
 
-刮削插件安装
+cpu j4125 4 核 14nm 2.00 GHz ~2.70 GHz
+SSD sata 接口的 读写 500MB/S
+32G DDR4. 2x16G 双通道
 
 
+上图中介绍的系统都是上面配置的单服务器中可以运行的。
+如何以最低的配置，最少的内存运行起来最多的功能才是本文的追求，花费更多金钱去满足极少数情况的高压力是钱多的没处花。
+
+8G内存的nas 就可以运行 gitea + drone ，zentao 想用就用
+gitlab 要跑起来至少要2核 8G 内存，jenkins 也是内存 cpu 占用大户。大于 16G 内存时考虑上这个
+4核 32G 内存的nas，图片中介绍的可以全都跑起来！
+
+可靠性
+ELK集群监控对于单服务器来说完全多余，netdata监控也不错，portainer就够用了，以后为了节约资源，portainer说不定也会被干掉，大多数时候命令行监控就够了。少于200节点K8S就是多余的。
+数据安全
+
+云平台把数据交给别人，赌别人的道德不会私自偷拿你的数据？真是想多了。
+某垄断社交平台内部有专门的团队分析客户的数据，看有什么有价值的没有，是很多年前就爆出来的消息。
+自建DevOps成本其实相当的低！
+
+整套系统可以从少到多，从小到大，慢慢优化，扩展的。硬件成本也是随着需求变化而变化的，随着业务扩展而增加成本，一开始单节点单服务器就可以满足要求了，后面业务增加慢慢扩展为集群，k8s 等。
+数据，代码是公司核心资产与竞争力的公司，上云赌别人的人品就是找死。你注册账户的时候，就同意了，无论别人随意删除你的数据，或者窃取你的数据都是不用付任何责任的，再说，整个系统数据都在别人手上，你要维权也没有证据。
+备份
+
+UPS电源，防止意外断电
+rsync 备份，对于大多数人，已经够用了
+文件系统快照
+离线每日，或者每周冷备份
+大系统，多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群
+
+扩展性
+
+上面说的都可以单服务器搞定。多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群。
+多于200节点，大于3台服务器以后考虑上K8S。ELK监控之类的这时候可以上了。蓝鲸智云标准运维这时候也可以考虑了。
+再次扩大的时候可以考虑Proxmox VE（PVE） + ceph
+更大的系统，或者对外提供云平台服务的时候可以考虑上OpenStack
+
+项目介绍
+ELK
+
+消耗资源很多，至少上百节点以上再考虑上这个
+portainer -&gt; netdata -&gt; ELK，zabbix 
 
 
-豆瓣刮削插件这里下载安装
+cacti
 
-Github
-官方地址 Github 下载地址
-本站自建加速地址 onebox.17lai.site加速下载 更新到1.05 如果打不开，多刷新几次！
-
-
-添加书库
-
-
-图书刮削
-
-
-
-检查完毕就可以点击确认
-数据库转移
-
-
-
-这里最好建立一个临时书库作为转移和刮削预备用，防止意外崩溃导致数据库损坏或丢失！
-你可以和你的好友之间共享或者转移某个书库。
-图书太多，刮削太耗时间，合作刮削建立书库才是正途！
-
-Calibre数据库恢复
-
-图书、音乐、视频三剑客！
-
-结构化自己的图书，音乐，和视频！
-
-
-
-.vkr-url-wrapper {
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid;
-    border-color: #eee #ddd #bbb;
-    box-shadow: rgba(0,0,0,.14) 0 1px 3px;
-    margin-bottom: 10px;
-    display: flex;
-}
-.vkr-url-wrapper .desc-wrapper > hr {
-    margin: 10px 0;
-    height: 1px;
-}
-.vkr-url-wrapper .avatar {
-    width: 100px;
-    height: 100px !important;
-    border: solid 1px #eee;
-    box-shadow: none!important;
-    margin: 0;
-    margin-right: 10px;
-}
-.vkr-url-wrapper h2 {
-    border: none;
-    margin: 0;
-    padding: 0;
-}
-.vkr-url-wrapper .desc-wrapper {
-    flex: 1;
-}
-.vkr-url-wrapper .desc-wrapper a {
-    font-size: 22px;
-    font-weight: 700;
-}
-
-    
-        
-    
-    
-        如何建立自己的私人电子图书馆
-        
-        图书管理员似乎是个非常有前途的职业，远的有孔子，游学之前当图书管理员，近的有本朝开国毛教员，也当了很长时间图书管理员。我们也可以自己做个私人电子图书馆，当个图书管理员，说不定很有前途？
-    
+  
 
 
 
 
-.vkr-url-wrapper {
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid;
-    border-color: #eee #ddd #bbb;
-    box-shadow: rgba(0,0,0,.14) 0 1px 3px;
-    margin-bottom: 10px;
-    display: flex;
-}
-.vkr-url-wrapper .desc-wrapper > hr {
-    margin: 10px 0;
-    height: 1px;
-}
-.vkr-url-wrapper .avatar {
-    width: 100px;
-    height: 100px !important;
-    border: solid 1px #eee;
-    box-shadow: none!important;
-    margin: 0;
-    margin-right: 10px;
-}
-.vkr-url-wrapper h2 {
-    border: none;
-    margin: 0;
-    padding: 0;
-}
-.vkr-url-wrapper .desc-wrapper {
-    flex: 1;
-}
-.vkr-url-wrapper .desc-wrapper a {
-    font-size: 22px;
-    font-weight: 700;
-}
+  
 
-    
-        
-    
-    
-        如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库
-        
-        音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。
-    
+
+
+zabbix
+
+  
 
 
 
 
-.vkr-url-wrapper {
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid;
-    border-color: #eee #ddd #bbb;
-    box-shadow: rgba(0,0,0,.14) 0 1px 3px;
-    margin-bottom: 10px;
-    display: flex;
-}
-.vkr-url-wrapper .desc-wrapper > hr {
-    margin: 10px 0;
-    height: 1px;
-}
-.vkr-url-wrapper .avatar {
-    width: 100px;
-    height: 100px !important;
-    border: solid 1px #eee;
-    box-shadow: none!important;
-    margin: 0;
-    margin-right: 10px;
-}
-.vkr-url-wrapper h2 {
-    border: none;
-    margin: 0;
-    padding: 0;
-}
-.vkr-url-wrapper .desc-wrapper {
-    flex: 1;
-}
-.vkr-url-wrapper .desc-wrapper a {
-    font-size: 22px;
-    font-weight: 700;
-}
+  
 
-    
-        
-    
-    
-        如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-        
-        tinyMediaManager是最好用的视频刮削工具，可以刮削电影，动画，电视剧。使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息，配合Emby，Plex使用体验绝佳
-    
 
+
+ansible
+
+  
+
+
+
+
+  
+
+
+
+CMDB
+
+  
+
+
+
+
+  
+
+
+
+PVE
+
+Proxmox VE（PVE）
+
+
+  
+
+
+
+CEPH
+
+  
+
+
+
+
+  
+
+
+
+OpenStack
+
+  
+
+
+
+
+  
+
+
+
+其它项目
+
+大家还有啥好项目建议？
+
+onedev
+onedev 是替代Gitlab的极佳候补，看文档介绍，潜力无限！
+
+  
+
+
+
+系列教程
+全部文章RSS订阅
+Devops系列 Devops 分类 RSS 订阅
+
+自建全套开源Devops开发系统
+Git介绍以及分支模型图解
+三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
+DevOps系列---【Jenkinsfile+Dockerfile+nginx+vue】
+项目开发管理工具推荐
+Gitlab的安装及使用教程完全版
+Gitlab的安装及使用
 
 ]]></content>
       <categories>
-        <category>book</category>
+        <category>devops</category>
       </categories>
       <tags>
-        <tag>刮削</tag>
-        <tag>calibre</tag>
-        <tag>douban</tag>
-        <tag>book</tag>
+        <tag>docker</tag>
+        <tag>devops</tag>
+        <tag>框架</tag>
+        <tag>图解</tag>
       </tags>
   </entry>
   <entry>
@@ -44274,7 +44274,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts1172'));
+        var myChart = echarts.init(document.getElementById('echarts963'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44368,7 +44368,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts9569'));
+        var myChart = echarts.init(document.getElementById('echarts464'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44437,7 +44437,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts7133'));
+        var myChart = echarts.init(document.getElementById('echarts9663'));
 
         // 指定图表的配置项和数据
         var option = option = {
