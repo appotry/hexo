@@ -6790,6 +6790,427 @@ MySQL教程
       </tags>
   </entry>
   <entry>
+    <title>为知笔记私有化Docker部署</title>
+    <url>/posts/1802a8a7/</url>
+    <content><![CDATA[
+已经不建议使用！
+
+
+格式私有，不支持导出数据到其它类型笔记软件。数据进入后，基本只能用为知笔记编辑了，导出图片和PDF? what?
+
+
+收费吃相难看，VIP到期后，功能限制严重！
+
+
+不推荐任何不支持导入导出数据的笔记软件。推荐使用开放格式的 Joplin 软件
+
+
+
+登陆NAS，打开套件中心，搜索docker，并安装。
+搜索wiznote，找到wiznote/wizserver，双击下载
+
+在NAS中创建共享目录，用于存放笔记数据
+
+
+启动File Station
+
+
+在docker目录下创建文件夹：
+wiz
+
+
+在wiz文件夹下创建文件夹：data
+
+
+
+双击创建容器，启用资源限制，设置为内存限制4096MB，官方介绍说需要4G内存
+
+
+
+高级设置，启动自动重新启动
+
+
+卷设置，使用刚才我们创建的data目录进行配置，装载路径/wiz/storage，docker/wiz/config装载路径/wiz/app/wizserver/config
+
+
+
+网络设置不动，端口设置添加映射：8888映射80端口（8888可以随便设置，跟访问地址有关）
+
+
+
+
+
+设置环境变量
+
+SEARCH=true TZ=Asia/Shanghai
+
+
+直接应用，启动docker，然后就静静的等待吧，可以看看镜像的日志，看到这些基本上就差不多启动好了（最新的镜像在NAS上首次启动非常慢，本人等了一个多小时才完全启动完毕，在本地安装速度非常快）
+
+
+通过 http://NAS的IP:8888，进行访问，就可以看到已经启动完成
+
+
+
+
+默认管理员账号：admin@wiz.cn，密码：123456
+管理后台登陆地址：http://IP地址:端口/wapp/pages/admin
+
+NAS开启SSH
+首先在NAS上启动SSH
+登陆NAS，打开控制面板-终端机和SNMP，在启动SSH功能前打上勾
+打开命令行，输入
+ssh NAS管理员账号@NAS的IP地址 ssh端口号默认是22
+看到提示符，输入账号的密码，输入时不可见，输入完成按回车，看到命令行提示符变了，登陆成功。
+进入容器
+在命令行中输入
+sudo docker ps
+可能提示输入密码，就输入NAS管理员的密码即可，显示列表，查看到如下列表，找到其中运行了为知笔记的一行
+
+复制为知笔记的CONTAINER ID，然后再输入如下命令并回车：
+sudo docker exec -it 粘贴刚复制好的ID号 /bin/bash
+至此进入到容器中
+修改配置文件
+输入如下命令打开配置文件进行编辑：
+vi /wiz/app/wizserver/config/default.json
+vi命令的具体使用方法请自行百度，保存好后退出，重启容器生效。
+进入docker，修改文件/wiz/wizserver/app/config/default.json
+"as": {
+     "admin": ["admin@wiz.cn"],
+     "share": {
+       "admin": ["admin@wiz.cn"],
+       "enableHttps": false,
+       "enableSubDomain": false,
+       "appShareUrl": "127.0.0.1:5001"
+     },
+其中127.0.0.1:5001修改为自己的服务器访问地址，可以给docker做个端口映射（因为群晖NAS占用了5001端口），譬如映射8889端口到容器的5001端口，则设置为xxx.xxx.xxx.xxx:8889，分享后的链接即为该链接。
+在NAS上可以用反向代理来解决二级域名的问题。
+分享功能需要用户绑定手机，并完成认证，在docker中登陆数据库，并修改数据
+mysql -u root -p
+输入密码，密码在docker中/wiz/wizserver/app/config/default.json中查看
+"mysql": {
+  "as": {
+   "host": "127.0.0.1",
+   "user": "root",
+   "password": "******************",
+   "database": "wizasent",
+   "connectionLimit": 50,
+   "connectTimeout": 60000,
+   "aquireTimeout": 60000,
+   "waitForConnections": true
+  },
+其中password就是密码，进入mysql控制台后，执行以下命令：
+use wizasent;
+update wiz_user set MOBILE='你的手机号', MOBILE_VERIFY='1' where ID='1';
+web端登陆为知笔记，并修改默认账号后，修改后的账号无法登陆管理后台，需要做以下配置，修改文件/wiz/wizserver/app/config/default.json，找到以下代码：
+"as": {
+  "admin": ["admin@wiz.cn"],
+  "share": {
+    "admin": ["admin@wiz.cn"],
+    "enableHttps": false,
+    "enableSubDomain": false,
+    "appShareUrl": "127.0.0.1:5001"
+  },
+其中admin@wiz.cn修改为修改后的账号。
+登陆NAS，打开控制面板-应用程序门户-反向代理
+点击新增，然后输入如下：
+
+实际测试来源协议选择https时只有网页端可以登陆，客户端无法登陆，暂时还是选择http为好，也可以网页端通过https登陆，客户端通过http登陆，配置两个不同的端口（记得要在路由上配置端口映射）。
+修改default.json
+{
+  "debug": true,
+  "enableHttps": true,
+  "storage": {
+     "__comments": "oss|local|s3|cos",
+     "use": "local",
+     "oss": {
+       "bucket": "data_root",
+       "region": "test",
+       "accessKeyId": "test",
+       "accessKeySecret": "test",
+       "internal": false
+     },
+其中enableHttps配置成true
+重启服务
+cd /wiz/app/wizserver
+pm2 restart all
+删除/wiz/storage/index/.search文件和/wiz/storage/index/nodes目录
+重启容器
+链接数据库，执行下列SQL
+update wizksent.wiz_kb_stat set index_new_status=4
+进入容器，执行
+cd /wiz/app/wizserver
+pm2 start app.js --name="index2"  -f -- -c 1 -i 1 -t 2 -s index
+pm2 start app.js --name="index2"  -f --  -s copy
+查看日志
+pm2 logs index2
+下载官方插件，并安装到Chrome中
+http://www.wiz.cn/downloads-webclipperchrome.html
+在浏览器中输入chrome://extensions/打开插件列表，开启开发者模式
+
+看ID号，在浏览器中输入chrome://inspect/#extensions在打开的列表中找到WizClipper，点击inspect，开启调试窗口。
+选择Sources标签，并打开文件Scripts\wiz\WizConstant.js
+在代码中查看note.wiz.cn和api.wiz.cn的网址全部替换成自己私有云的地址，实测，登陆没问题，保存失败。
+
+管理功能
+
+
+增加重建索引功能，以备不时之需
+
+
+增加备份与恢复功能
+
+
+增加markdown语法扩展：
+flow（流程图）、sequence（时序图）、mermaid（流程图、时序图、甘特图）、LaTeX（公式）
+
+
+增加手动配置分享链接
+
+
+支持社交绑定的配置
+
+
+支持对象存储或webdav存储
+
+
+Web&amp;Mac客户端
+
+
+增加自定义模板
+
+
+增加偏好设置，自定义快捷键（主要是编辑和预览切换的快捷键非常不适应）
+
+
+增加同步预览模式，可以参考下Typora，Bear都不错
+
+
+增加https访问方式
+
+
+支持导出jpg、png、docx格式
+
+
+浏览器插件
+
+增加支持私有云登陆
+
+【部署环境】
+群晖DS1517+（DSM6.2.2）
+容器分配内存4G，CPU*2核
+【出现的问题】
+
+
+网页版上提示，自动保存失败，网络错误，请尽快保存（最后发现是时区不通道导致的，第8点解决了此问题）
+
+
+所有社交平台账号无法绑定
+
+
+mywiz邮箱不可修改
+
+
+绑定手机无法收到验证码，即无法绑定手机（通过修改数据库搞定）
+
+
+存储设置功能多余（因为已经本地化部署了），改成数据备份/恢复就好了
+
+
+支付信息是支付到为知去的，这个功能容易产生误解（如果多人使用的话）
+
+
+docker容器的时区与宿主机时区不同，添加环境变量解决，TZ=Asia/Shanghai
+
+
+数据导出
+
+方法很困难。
+
+ExportToMd
+
+最新版Wiznote测试这个插件已经不可用了。
+
+WizNotePlus
+
+第三方客户端导出，已在 v2.11 中初步实现，见如下issue链接。
+https://github.com/altairwei/WizNotePlus/issues/182
+
+Memocast客户端
+随后搜索到Memocast，是重写为知笔记的客户端。
+使用OpenAPI
+为知笔记提供了OpenAPI来查看和编辑笔记，Memocast也是类似方式，服务说明及登录和笔记接口介绍了如何登录获取Token，如何查询文件夹文档，下载html，下载资源(图片)等接口。
+
+对于为知笔记来说，所有的笔记保存为html，所以下载后需要做转换。
+
+通过Postman的接口测试发现完全可行，那么就可以编程导出了。具体的代码。html转md的库使用html-to-markdown，案例代码在这。
+如何使用？按照下面提示输入账户和密码，然后设置导出的文件夹即可。
+go install github.com/GalaIO/wiz_export@latest
+wiz_export --output './' --userId 'xx' --password 'xx' --folders '/日记/,/工作/'
+借助Pandoc转换到HTML再转换到Markdown
+For .html files within a directory
+for f in *.html ; do pandoc ${f} -f html -t markdown -s -o ${f}.md ; done
+or
+For recursive directory conversion with subfolders
+find . -name "*.ht*" | while read i; do pandoc -f html -t markdown "$i" -o "${i%.*}.md"; done
+wiz2joplin
+这个需要Mac环境，看提交记录时间，可行性很高。
+参考：
+
+大大木头 [为知社区]
+如何导出为知笔记？
+Importing notes from other notebook applications
+
+系列教程
+全部文章RSS订阅
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+笔记系列  Note分类RSS订阅
+
+完美笔记进化论
+
+
+经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
+
+pigo图床搭建与配置
+Joplin教程
+Snipaste截图工具
+Typora 作为Markdown编辑器最强
+
+
+
+Joplin入门指南&amp;实践方案
+
+
+
+Joplin和使用
+Joplin同步与备份
+Joplin导入与导出
+
+
+
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+
+
+
+Joplin安装使用，调用外部编辑器，网盘同步等等
+
+
+
+Joplin 插件以及其Markdown语法。All in One!
+
+
+
+Joplin简明教程
+markdown语法简明教程
+
+
+
+Joplin 插件使用推荐
+
+
+
+教你用各种插件打造一个强大的笔记工具。
+
+
+
+为知笔记私有化Docker部署
+
+
+
+如何部署自己私有的为知笔记。
+其实博主更推荐私有部署joplin
+
+
+Gitbook使用系列 Gitbook分类RSS订阅
+
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+
+
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+
+
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+
+Gitlab 使用系列  Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+Hexo系列  HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+
+Hexo Docker环境与Hexo基础配置篇
+
+
+hexo博客自定义修改篇
+
+
+hexo博客网络优化篇
+
+
+hexo博客增强部署篇
+
+
+hexo博客个性定制篇
+
+
+hexo博客常见问题篇
+
+
+Hexo Markdown以及各种插件功能测试
+
+
+
+
+markdown 各种其它语法插件
+latex公式支持
+mermaid图表
+plant uml图表
+URL卡片
+bilibili卡片
+github卡片
+豆瓣卡片
+插入音乐和视频
+插入脑图
+插入PDF
+嵌入iframe
+
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+
+
+使用nodeppt给hexo博客嵌入PPT演示
+
+
+]]></content>
+      <categories>
+        <category>docker</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>wiz</tag>
+        <tag>nas</tag>
+        <tag>docker</tag>
+        <tag>note</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Joplin 插件以及其Markdown语法。All in One!</title>
     <url>/posts/92d347d6/</url>
     <content><![CDATA[Joplin是一个以Markdown为主要语法的笔记程序，发展到今天增加了许多插件，这些插件也大大增强了它的功能，今天我们就讲讲Joplin的各个插件的作用和使用方法。
@@ -7290,427 +7711,6 @@ github卡片
         <tag>joplin</tag>
         <tag>note</tag>
         <tag>mermaid</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>为知笔记私有化Docker部署</title>
-    <url>/posts/1802a8a7/</url>
-    <content><![CDATA[
-已经不建议使用！
-
-
-格式私有，不支持导出数据到其它类型笔记软件。数据进入后，基本只能用为知笔记编辑了，导出图片和PDF? what?
-
-
-收费吃相难看，VIP到期后，功能限制严重！
-
-
-不推荐任何不支持导入导出数据的笔记软件。推荐使用开放格式的 Joplin 软件
-
-
-
-登陆NAS，打开套件中心，搜索docker，并安装。
-搜索wiznote，找到wiznote/wizserver，双击下载
-
-在NAS中创建共享目录，用于存放笔记数据
-
-
-启动File Station
-
-
-在docker目录下创建文件夹：
-wiz
-
-
-在wiz文件夹下创建文件夹：data
-
-
-
-双击创建容器，启用资源限制，设置为内存限制4096MB，官方介绍说需要4G内存
-
-
-
-高级设置，启动自动重新启动
-
-
-卷设置，使用刚才我们创建的data目录进行配置，装载路径/wiz/storage，docker/wiz/config装载路径/wiz/app/wizserver/config
-
-
-
-网络设置不动，端口设置添加映射：8888映射80端口（8888可以随便设置，跟访问地址有关）
-
-
-
-
-
-设置环境变量
-
-SEARCH=true TZ=Asia/Shanghai
-
-
-直接应用，启动docker，然后就静静的等待吧，可以看看镜像的日志，看到这些基本上就差不多启动好了（最新的镜像在NAS上首次启动非常慢，本人等了一个多小时才完全启动完毕，在本地安装速度非常快）
-
-
-通过 http://NAS的IP:8888，进行访问，就可以看到已经启动完成
-
-
-
-
-默认管理员账号：admin@wiz.cn，密码：123456
-管理后台登陆地址：http://IP地址:端口/wapp/pages/admin
-
-NAS开启SSH
-首先在NAS上启动SSH
-登陆NAS，打开控制面板-终端机和SNMP，在启动SSH功能前打上勾
-打开命令行，输入
-ssh NAS管理员账号@NAS的IP地址 ssh端口号默认是22
-看到提示符，输入账号的密码，输入时不可见，输入完成按回车，看到命令行提示符变了，登陆成功。
-进入容器
-在命令行中输入
-sudo docker ps
-可能提示输入密码，就输入NAS管理员的密码即可，显示列表，查看到如下列表，找到其中运行了为知笔记的一行
-
-复制为知笔记的CONTAINER ID，然后再输入如下命令并回车：
-sudo docker exec -it 粘贴刚复制好的ID号 /bin/bash
-至此进入到容器中
-修改配置文件
-输入如下命令打开配置文件进行编辑：
-vi /wiz/app/wizserver/config/default.json
-vi命令的具体使用方法请自行百度，保存好后退出，重启容器生效。
-进入docker，修改文件/wiz/wizserver/app/config/default.json
-"as": {
-     "admin": ["admin@wiz.cn"],
-     "share": {
-       "admin": ["admin@wiz.cn"],
-       "enableHttps": false,
-       "enableSubDomain": false,
-       "appShareUrl": "127.0.0.1:5001"
-     },
-其中127.0.0.1:5001修改为自己的服务器访问地址，可以给docker做个端口映射（因为群晖NAS占用了5001端口），譬如映射8889端口到容器的5001端口，则设置为xxx.xxx.xxx.xxx:8889，分享后的链接即为该链接。
-在NAS上可以用反向代理来解决二级域名的问题。
-分享功能需要用户绑定手机，并完成认证，在docker中登陆数据库，并修改数据
-mysql -u root -p
-输入密码，密码在docker中/wiz/wizserver/app/config/default.json中查看
-"mysql": {
-  "as": {
-   "host": "127.0.0.1",
-   "user": "root",
-   "password": "******************",
-   "database": "wizasent",
-   "connectionLimit": 50,
-   "connectTimeout": 60000,
-   "aquireTimeout": 60000,
-   "waitForConnections": true
-  },
-其中password就是密码，进入mysql控制台后，执行以下命令：
-use wizasent;
-update wiz_user set MOBILE='你的手机号', MOBILE_VERIFY='1' where ID='1';
-web端登陆为知笔记，并修改默认账号后，修改后的账号无法登陆管理后台，需要做以下配置，修改文件/wiz/wizserver/app/config/default.json，找到以下代码：
-"as": {
-  "admin": ["admin@wiz.cn"],
-  "share": {
-    "admin": ["admin@wiz.cn"],
-    "enableHttps": false,
-    "enableSubDomain": false,
-    "appShareUrl": "127.0.0.1:5001"
-  },
-其中admin@wiz.cn修改为修改后的账号。
-登陆NAS，打开控制面板-应用程序门户-反向代理
-点击新增，然后输入如下：
-
-实际测试来源协议选择https时只有网页端可以登陆，客户端无法登陆，暂时还是选择http为好，也可以网页端通过https登陆，客户端通过http登陆，配置两个不同的端口（记得要在路由上配置端口映射）。
-修改default.json
-{
-  "debug": true,
-  "enableHttps": true,
-  "storage": {
-     "__comments": "oss|local|s3|cos",
-     "use": "local",
-     "oss": {
-       "bucket": "data_root",
-       "region": "test",
-       "accessKeyId": "test",
-       "accessKeySecret": "test",
-       "internal": false
-     },
-其中enableHttps配置成true
-重启服务
-cd /wiz/app/wizserver
-pm2 restart all
-删除/wiz/storage/index/.search文件和/wiz/storage/index/nodes目录
-重启容器
-链接数据库，执行下列SQL
-update wizksent.wiz_kb_stat set index_new_status=4
-进入容器，执行
-cd /wiz/app/wizserver
-pm2 start app.js --name="index2"  -f -- -c 1 -i 1 -t 2 -s index
-pm2 start app.js --name="index2"  -f --  -s copy
-查看日志
-pm2 logs index2
-下载官方插件，并安装到Chrome中
-http://www.wiz.cn/downloads-webclipperchrome.html
-在浏览器中输入chrome://extensions/打开插件列表，开启开发者模式
-
-看ID号，在浏览器中输入chrome://inspect/#extensions在打开的列表中找到WizClipper，点击inspect，开启调试窗口。
-选择Sources标签，并打开文件Scripts\wiz\WizConstant.js
-在代码中查看note.wiz.cn和api.wiz.cn的网址全部替换成自己私有云的地址，实测，登陆没问题，保存失败。
-
-管理功能
-
-
-增加重建索引功能，以备不时之需
-
-
-增加备份与恢复功能
-
-
-增加markdown语法扩展：
-flow（流程图）、sequence（时序图）、mermaid（流程图、时序图、甘特图）、LaTeX（公式）
-
-
-增加手动配置分享链接
-
-
-支持社交绑定的配置
-
-
-支持对象存储或webdav存储
-
-
-Web&amp;Mac客户端
-
-
-增加自定义模板
-
-
-增加偏好设置，自定义快捷键（主要是编辑和预览切换的快捷键非常不适应）
-
-
-增加同步预览模式，可以参考下Typora，Bear都不错
-
-
-增加https访问方式
-
-
-支持导出jpg、png、docx格式
-
-
-浏览器插件
-
-增加支持私有云登陆
-
-【部署环境】
-群晖DS1517+（DSM6.2.2）
-容器分配内存4G，CPU*2核
-【出现的问题】
-
-
-网页版上提示，自动保存失败，网络错误，请尽快保存（最后发现是时区不通道导致的，第8点解决了此问题）
-
-
-所有社交平台账号无法绑定
-
-
-mywiz邮箱不可修改
-
-
-绑定手机无法收到验证码，即无法绑定手机（通过修改数据库搞定）
-
-
-存储设置功能多余（因为已经本地化部署了），改成数据备份/恢复就好了
-
-
-支付信息是支付到为知去的，这个功能容易产生误解（如果多人使用的话）
-
-
-docker容器的时区与宿主机时区不同，添加环境变量解决，TZ=Asia/Shanghai
-
-
-数据导出
-
-方法很困难。
-
-ExportToMd
-
-最新版Wiznote测试这个插件已经不可用了。
-
-WizNotePlus
-
-第三方客户端导出，已在 v2.11 中初步实现，见如下issue链接。
-https://github.com/altairwei/WizNotePlus/issues/182
-
-Memocast客户端
-随后搜索到Memocast，是重写为知笔记的客户端。
-使用OpenAPI
-为知笔记提供了OpenAPI来查看和编辑笔记，Memocast也是类似方式，服务说明及登录和笔记接口介绍了如何登录获取Token，如何查询文件夹文档，下载html，下载资源(图片)等接口。
-
-对于为知笔记来说，所有的笔记保存为html，所以下载后需要做转换。
-
-通过Postman的接口测试发现完全可行，那么就可以编程导出了。具体的代码。html转md的库使用html-to-markdown，案例代码在这。
-如何使用？按照下面提示输入账户和密码，然后设置导出的文件夹即可。
-go install github.com/GalaIO/wiz_export@latest
-wiz_export --output './' --userId 'xx' --password 'xx' --folders '/日记/,/工作/'
-借助Pandoc转换到HTML再转换到Markdown
-For .html files within a directory
-for f in *.html ; do pandoc ${f} -f html -t markdown -s -o ${f}.md ; done
-or
-For recursive directory conversion with subfolders
-find . -name "*.ht*" | while read i; do pandoc -f html -t markdown "$i" -o "${i%.*}.md"; done
-wiz2joplin
-这个需要Mac环境，看提交记录时间，可行性很高。
-参考：
-
-大大木头 [为知社区]
-如何导出为知笔记？
-Importing notes from other notebook applications
-
-系列教程
-全部文章RSS订阅
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-笔记系列  Note分类RSS订阅
-
-完美笔记进化论
-
-
-经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
-
-pigo图床搭建与配置
-Joplin教程
-Snipaste截图工具
-Typora 作为Markdown编辑器最强
-
-
-
-Joplin入门指南&amp;实践方案
-
-
-
-Joplin和使用
-Joplin同步与备份
-Joplin导入与导出
-
-
-
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-
-
-
-Joplin安装使用，调用外部编辑器，网盘同步等等
-
-
-
-Joplin 插件以及其Markdown语法。All in One!
-
-
-
-Joplin简明教程
-markdown语法简明教程
-
-
-
-Joplin 插件使用推荐
-
-
-
-教你用各种插件打造一个强大的笔记工具。
-
-
-
-为知笔记私有化Docker部署
-
-
-
-如何部署自己私有的为知笔记。
-其实博主更推荐私有部署joplin
-
-
-Gitbook使用系列 Gitbook分类RSS订阅
-
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-
-
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-
-
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-
-Gitlab 使用系列  Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-Hexo系列  HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-
-Hexo Docker环境与Hexo基础配置篇
-
-
-hexo博客自定义修改篇
-
-
-hexo博客网络优化篇
-
-
-hexo博客增强部署篇
-
-
-hexo博客个性定制篇
-
-
-hexo博客常见问题篇
-
-
-Hexo Markdown以及各种插件功能测试
-
-
-
-
-markdown 各种其它语法插件
-latex公式支持
-mermaid图表
-plant uml图表
-URL卡片
-bilibili卡片
-github卡片
-豆瓣卡片
-插入音乐和视频
-插入脑图
-插入PDF
-嵌入iframe
-
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-
-
-使用nodeppt给hexo博客嵌入PPT演示
-
-
-]]></content>
-      <categories>
-        <category>docker</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>wiz</tag>
-        <tag>nas</tag>
-        <tag>docker</tag>
-        <tag>note</tag>
       </tags>
   </entry>
   <entry>
@@ -12694,9 +12694,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-TSJRlAmdFISaRdWz").style.height=document.getElementById("mmedia-TSJRlAmdFISaRdWz").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-yvVewMHOakoMxryO").style.height=document.getElementById("mmedia-yvVewMHOakoMxryO").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-TSJRlAmdFISaRdWz").style.height=document.getElementById("mmedia-TSJRlAmdFISaRdWz").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-yvVewMHOakoMxryO").style.height=document.getElementById("mmedia-yvVewMHOakoMxryO").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -18150,11 +18150,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var LqCzPsAoGBPXZAkY_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); LqCzPsAoGBPXZAkY_options.container = document.getElementById("mmedia-LqCzPsAoGBPXZAkY"); const ap_LqCzPsAoGBPXZAkY = new APlayer(LqCzPsAoGBPXZAkY_options); 
+ var TxivUwOckCoIpgNa_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); TxivUwOckCoIpgNa_options.container = document.getElementById("mmedia-TxivUwOckCoIpgNa"); const ap_TxivUwOckCoIpgNa = new APlayer(TxivUwOckCoIpgNa_options); 
 
 - **列表**
 
- var oHOsYPgzreXnUSdx_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); oHOsYPgzreXnUSdx_options.container = document.getElementById("mmedia-oHOsYPgzreXnUSdx"); const ap_oHOsYPgzreXnUSdx = new APlayer(oHOsYPgzreXnUSdx_options); 
+ var NfeogvyHerebUUSg_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); NfeogvyHerebUUSg_options.container = document.getElementById("mmedia-NfeogvyHerebUUSg"); const ap_NfeogvyHerebUUSg = new APlayer(NfeogvyHerebUUSg_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -18406,21 +18406,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-hcNglHTbNGTBnbPF").style.height=document.getElementById("mmedia-hcNglHTbNGTBnbPF").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ljgTKNxFLbHuSgWn").style.height=document.getElementById("mmedia-ljgTKNxFLbHuSgWn").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-hcNglHTbNGTBnbPF").style.height=document.getElementById("mmedia-hcNglHTbNGTBnbPF").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-ljgTKNxFLbHuSgWn").style.height=document.getElementById("mmedia-ljgTKNxFLbHuSgWn").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-RnXOCJvKVRLrsLRe").style.height=document.getElementById("mmedia-RnXOCJvKVRLrsLRe").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-VfIhZOrTTTCeRvsO").style.height=document.getElementById("mmedia-VfIhZOrTTTCeRvsO").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-RnXOCJvKVRLrsLRe").style.height=document.getElementById("mmedia-RnXOCJvKVRLrsLRe").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-VfIhZOrTTTCeRvsO").style.height=document.getElementById("mmedia-VfIhZOrTTTCeRvsO").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var QYwYslHNUGxAgenm_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); QYwYslHNUGxAgenm_options.container = "#mmedia-QYwYslHNUGxAgenm"; const art_QYwYslHNUGxAgenm = new Artplayer(QYwYslHNUGxAgenm_options); 
+ var MvbeyCJeFdAoNjkp_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); MvbeyCJeFdAoNjkp_options.container = "#mmedia-MvbeyCJeFdAoNjkp"; const art_MvbeyCJeFdAoNjkp = new Artplayer(MvbeyCJeFdAoNjkp_options); 
 脑图
 
 原作者记录
@@ -19574,11 +19574,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var lIzJglhIsKaveOPg_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); lIzJglhIsKaveOPg_options.container = document.getElementById("mmedia-lIzJglhIsKaveOPg"); const ap_lIzJglhIsKaveOPg = new APlayer(lIzJglhIsKaveOPg_options); 
+ var pNDyAlBBdVCZNFmY_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); pNDyAlBBdVCZNFmY_options.container = document.getElementById("mmedia-pNDyAlBBdVCZNFmY"); const ap_pNDyAlBBdVCZNFmY = new APlayer(pNDyAlBBdVCZNFmY_options); 
 
 
 
- var psqSzmAHWgWkutpe_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); psqSzmAHWgWkutpe_options.container = document.getElementById("mmedia-psqSzmAHWgWkutpe"); const ap_psqSzmAHWgWkutpe = new APlayer(psqSzmAHWgWkutpe_options); 
+ var hwybsnPQhcOrjbsD_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); hwybsnPQhcOrjbsD_options.container = document.getElementById("mmedia-hwybsnPQhcOrjbsD"); const ap_hwybsnPQhcOrjbsD = new APlayer(hwybsnPQhcOrjbsD_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -19716,9 +19716,9 @@ docker run -d \
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-autaFiFQMTwCmhcA").style.height=document.getElementById("mmedia-autaFiFQMTwCmhcA").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-odZWtEgxuyMNXlMq").style.height=document.getElementById("mmedia-odZWtEgxuyMNXlMq").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-autaFiFQMTwCmhcA").style.height=document.getElementById("mmedia-autaFiFQMTwCmhcA").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-odZWtEgxuyMNXlMq").style.height=document.getElementById("mmedia-odZWtEgxuyMNXlMq").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -19727,7 +19727,7 @@ docker run -d \
 
 ## 中文翻唱
 
- var dRcNcNWqKAVbpTVK_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); dRcNcNWqKAVbpTVK_options.container = document.getElementById("mmedia-dRcNcNWqKAVbpTVK"); const ap_dRcNcNWqKAVbpTVK = new APlayer(dRcNcNWqKAVbpTVK_options); 
+ var xMsEKYKJdBLKWpDJ_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); xMsEKYKJdBLKWpDJ_options.container = document.getElementById("mmedia-xMsEKYKJdBLKWpDJ"); const ap_xMsEKYKJdBLKWpDJ = new APlayer(xMsEKYKJdBLKWpDJ_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -24476,6 +24476,7 @@ location.href=prtc + "://" + domain + target;
 hexo-theme-butterfly
 hexo-theme-next
 hexo-theme-fluid
+Hexo-Theme-MengD
 
 
 参照
@@ -35330,9 +35331,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-teuIDgebOPekanWF").style.height=document.getElementById("mmedia-teuIDgebOPekanWF").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-KiGaJAYKmytkaWha").style.height=document.getElementById("mmedia-KiGaJAYKmytkaWha").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-teuIDgebOPekanWF").style.height=document.getElementById("mmedia-teuIDgebOPekanWF").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-KiGaJAYKmytkaWha").style.height=document.getElementById("mmedia-KiGaJAYKmytkaWha").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 calibre:
@@ -44454,7 +44455,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts7108'));
+        var myChart = echarts.init(document.getElementById('echarts8166'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44548,7 +44549,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts6857'));
+        var myChart = echarts.init(document.getElementById('echarts6943'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44617,7 +44618,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts1689'));
+        var myChart = echarts.init(document.getElementById('echarts9821'));
 
         // 指定图表的配置项和数据
         var option = option = {
