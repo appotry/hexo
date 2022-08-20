@@ -1423,195 +1423,6 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
       </tags>
   </entry>
   <entry>
-    <title>宝塔linux面板重启、重置等命令整合</title>
-    <url>/posts/7b4e434c/</url>
-    <content><![CDATA[宝塔linux面板重启、重置等命令整合
-宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。
-来源于网络，原作已经不可考据，整理更新到目前最新版。
-现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、
-但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦
-Linux面板7.6.0安装命令：
-Centos安装命令：
-yum install -y wget &amp;&amp; wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; sh install.sh
-咨询离线安装版本
-试验性Centos/Ubuntu/Debian安装命令 独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中
-curl -sSO http://download.bt.cn/install/install_panel.sh &amp;&amp; bash install_panel.sh
-Ubuntu/Deepin安装命令：
-wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; sudo bash install.sh
-Debian安装命令：
-wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; bash install.sh
-Fedora安装命令:
-wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; bash install.sh
-Linux面板7.6.0升级命令：curl http://download.bt.cn/install/update6.sh|bash
-以上节点无法使用的情况下，请使用下面的备用节点：
-备用节点【香港】：
-（宝塔推荐使用CN2 双程GIA高品质，免备案的尊云zun.com香港云服务器安装）
-yum install -y wget &amp;&amp; wget -O install.sh http://103.224.251.67:5880/install/install_6.0.sh &amp;&amp; sh install.sh
-管理宝塔
-#停止
-/etc/init.d/bt stop
-#启动
-/etc/init.d/bt start
-#重启
-/etc/init.d/bt restart
-#卸载
-/etc/init.d/bt stop &amp;&amp; chkconfig --del bt &amp;&amp; rm -f /etc/init.d/bt &amp;&amp; rm -rf /www/server/panel
-#查看当前面板端口
-cat /www/server/panel/data/port.pl
-#修改面板端口，如要改成8881（centos 6  系统）
-echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
-iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 8881  -j ACCEPT
-service iptables save
-service iptables restart
-#修改面板端口，如要改成8881（centos 7  系统）
-echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
-firewall-cmd --permanent --zone=public  --add-port=8881/tcp
-firewall-cmd --reload
-#强制修改MySQL管理(root)密码，如要改成123456
-cd /www/server/panel &amp;&amp; python tools.pyc root 123456
-#修改面板密码，如要改成123456
-cd /www/server/panel &amp;&amp; python tools.pyc panel 123456
-#查看宝塔日志
-cat /tmp/panelBoot.pl
-#查看软件安装日志
-cat /tmp/panelExec.log
-#站点配置文件位置
-/www/server/panel/vhost
-#删除域名绑定面板
-rm -f /www/server/panel/data/domain.conf
-#清理登陆限制
-rm -f /www/server/panel/data/*.login
-#查看面板授权IP
-cat /www/server/panel/data/limitip.conf
-#关闭访问限制
-rm -f /www/server/panel/data/limitip.conf
-#查看许可域名
-cat /www/server/panel/data/domain.conf
-#关闭面板SSL
-rm -f /www/server/panel/data/ssl.pl &amp;&amp; /etc/init.d/bt restart
-#查看面板错误日志
-cat /tmp/panelBoot
-#查看数据库错误日志
-cat /www/server/data/*.err
-#站点配置文件目录(nginx)
-/www/server/panel/vhost/nginx
-#站点配置文件目录(apache)
-/www/server/panel/vhost/apache
-#站点默认目录
-/www/wwwroot
-#数据库备份目录
-/www/backup/database
-#站点备份目录
-/www/backup/site
-#站点日志
-/www/wwwlogs
-Nginx服务管理
-#nginx安装目录
-/www/server/nginx
-#启动
-/etc/init.d/nginx start
-#停止
-/etc/init.d/nginx stop
-#重启
-/etc/init.d/nginx restart
-#启载
-/etc/init.d/nginx reload
-#nginx配置文件
-/www/server/nginx/conf/nginx.conf
-Apache服务管理
-#apache安装目录
-/www/server/httpd
-#启动
-/etc/init.d/httpd start
-#停止
-/etc/init.d/httpd stop
-#重启
-/etc/init.d/httpd restart
-#启载
-/etc/init.d/httpd reload
-#apache配置文件
-/www/server/apache/conf/httpd.conf
-MySQL服务管理
-#mysql安装目录
-/www/server/mysql
-#phpmyadmin安装目录
-/www/server/phpmyadmin
-#数据存储目录
-/www/server/data
-#启动
-/etc/init.d/mysqld start
-#停止
-/etc/init.d/mysqld stop
-#重启
-/etc/init.d/mysqld restart
-#启载
-/etc/init.d/mysqld reload
-#mysql配置文件
-/etc/my.cnf
-FTP服务管理
-#ftp安装目录
-/www/server/pure-ftpd
-#启动
-/etc/init.d/pure-ftpd start
-#停止
-/etc/init.d/pure-ftpd stop
-#重启
-/etc/init.d/pure-ftpd restart
-#ftp配置文件
-/www/server/pure-ftpd/etc/pure-ftpd.conf
-PHP服务管理
-#php安装目录
-/www/server/php
-#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} start
-#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} stop
-#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} restart
-#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} reload
-#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)
-/www/server/php/{52|53|54|55|56|70|71}/etc/php.ini
-Redis服务管理
-#redis安装目录
-/www/server/redis
-#启动
-/etc/init.d/redis start
-#停止
-/etc/init.d/redis stop
-#redis配置文件
-/www/server/redis/redis.conf
-Memcached服务管理
-#memcached安装目录
-/usr/local/memcached
-#启动
-/etc/init.d/memcached start
-#停止
-/etc/init.d/memcached stop
-#重启
-/etc/init.d/memcached restart
-#启载
-/etc/init.d/memcached reload
-参考
-
-bt doc
-宝塔面板手册
-
-]]></content>
-      <categories>
-        <category>linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>宝塔</tag>
-        <tag>vps</tag>
-        <tag>建站</tag>
-        <tag>nginx</tag>
-        <tag>apache</tag>
-        <tag>mysql</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>海思MPP&amp;UNF构架源代码级分析</title>
     <url>/posts/13894dce/</url>
     <content><![CDATA[
@@ -2748,6 +2559,195 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
         <tag>mpp</tag>
         <tag>unf</tag>
         <tag>kernel</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>宝塔linux面板重启、重置等命令整合</title>
+    <url>/posts/7b4e434c/</url>
+    <content><![CDATA[宝塔linux面板重启、重置等命令整合
+宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。
+来源于网络，原作已经不可考据，整理更新到目前最新版。
+现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、
+但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦
+Linux面板7.6.0安装命令：
+Centos安装命令：
+yum install -y wget &amp;&amp; wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; sh install.sh
+咨询离线安装版本
+试验性Centos/Ubuntu/Debian安装命令 独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中
+curl -sSO http://download.bt.cn/install/install_panel.sh &amp;&amp; bash install_panel.sh
+Ubuntu/Deepin安装命令：
+wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; sudo bash install.sh
+Debian安装命令：
+wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; bash install.sh
+Fedora安装命令:
+wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; bash install.sh
+Linux面板7.6.0升级命令：curl http://download.bt.cn/install/update6.sh|bash
+以上节点无法使用的情况下，请使用下面的备用节点：
+备用节点【香港】：
+（宝塔推荐使用CN2 双程GIA高品质，免备案的尊云zun.com香港云服务器安装）
+yum install -y wget &amp;&amp; wget -O install.sh http://103.224.251.67:5880/install/install_6.0.sh &amp;&amp; sh install.sh
+管理宝塔
+#停止
+/etc/init.d/bt stop
+#启动
+/etc/init.d/bt start
+#重启
+/etc/init.d/bt restart
+#卸载
+/etc/init.d/bt stop &amp;&amp; chkconfig --del bt &amp;&amp; rm -f /etc/init.d/bt &amp;&amp; rm -rf /www/server/panel
+#查看当前面板端口
+cat /www/server/panel/data/port.pl
+#修改面板端口，如要改成8881（centos 6  系统）
+echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
+iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 8881  -j ACCEPT
+service iptables save
+service iptables restart
+#修改面板端口，如要改成8881（centos 7  系统）
+echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
+firewall-cmd --permanent --zone=public  --add-port=8881/tcp
+firewall-cmd --reload
+#强制修改MySQL管理(root)密码，如要改成123456
+cd /www/server/panel &amp;&amp; python tools.pyc root 123456
+#修改面板密码，如要改成123456
+cd /www/server/panel &amp;&amp; python tools.pyc panel 123456
+#查看宝塔日志
+cat /tmp/panelBoot.pl
+#查看软件安装日志
+cat /tmp/panelExec.log
+#站点配置文件位置
+/www/server/panel/vhost
+#删除域名绑定面板
+rm -f /www/server/panel/data/domain.conf
+#清理登陆限制
+rm -f /www/server/panel/data/*.login
+#查看面板授权IP
+cat /www/server/panel/data/limitip.conf
+#关闭访问限制
+rm -f /www/server/panel/data/limitip.conf
+#查看许可域名
+cat /www/server/panel/data/domain.conf
+#关闭面板SSL
+rm -f /www/server/panel/data/ssl.pl &amp;&amp; /etc/init.d/bt restart
+#查看面板错误日志
+cat /tmp/panelBoot
+#查看数据库错误日志
+cat /www/server/data/*.err
+#站点配置文件目录(nginx)
+/www/server/panel/vhost/nginx
+#站点配置文件目录(apache)
+/www/server/panel/vhost/apache
+#站点默认目录
+/www/wwwroot
+#数据库备份目录
+/www/backup/database
+#站点备份目录
+/www/backup/site
+#站点日志
+/www/wwwlogs
+Nginx服务管理
+#nginx安装目录
+/www/server/nginx
+#启动
+/etc/init.d/nginx start
+#停止
+/etc/init.d/nginx stop
+#重启
+/etc/init.d/nginx restart
+#启载
+/etc/init.d/nginx reload
+#nginx配置文件
+/www/server/nginx/conf/nginx.conf
+Apache服务管理
+#apache安装目录
+/www/server/httpd
+#启动
+/etc/init.d/httpd start
+#停止
+/etc/init.d/httpd stop
+#重启
+/etc/init.d/httpd restart
+#启载
+/etc/init.d/httpd reload
+#apache配置文件
+/www/server/apache/conf/httpd.conf
+MySQL服务管理
+#mysql安装目录
+/www/server/mysql
+#phpmyadmin安装目录
+/www/server/phpmyadmin
+#数据存储目录
+/www/server/data
+#启动
+/etc/init.d/mysqld start
+#停止
+/etc/init.d/mysqld stop
+#重启
+/etc/init.d/mysqld restart
+#启载
+/etc/init.d/mysqld reload
+#mysql配置文件
+/etc/my.cnf
+FTP服务管理
+#ftp安装目录
+/www/server/pure-ftpd
+#启动
+/etc/init.d/pure-ftpd start
+#停止
+/etc/init.d/pure-ftpd stop
+#重启
+/etc/init.d/pure-ftpd restart
+#ftp配置文件
+/www/server/pure-ftpd/etc/pure-ftpd.conf
+PHP服务管理
+#php安装目录
+/www/server/php
+#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} start
+#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} stop
+#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} restart
+#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} reload
+#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)
+/www/server/php/{52|53|54|55|56|70|71}/etc/php.ini
+Redis服务管理
+#redis安装目录
+/www/server/redis
+#启动
+/etc/init.d/redis start
+#停止
+/etc/init.d/redis stop
+#redis配置文件
+/www/server/redis/redis.conf
+Memcached服务管理
+#memcached安装目录
+/usr/local/memcached
+#启动
+/etc/init.d/memcached start
+#停止
+/etc/init.d/memcached stop
+#重启
+/etc/init.d/memcached restart
+#启载
+/etc/init.d/memcached reload
+参考
+
+bt doc
+宝塔面板手册
+
+]]></content>
+      <categories>
+        <category>linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>宝塔</tag>
+        <tag>vps</tag>
+        <tag>建站</tag>
+        <tag>nginx</tag>
+        <tag>apache</tag>
+        <tag>mysql</tag>
       </tags>
   </entry>
   <entry>
@@ -5049,6 +5049,73 @@ OKR 实施过程中起草制定好目标和关键结果是非常重要的一环�
       </tags>
   </entry>
   <entry>
+    <title>qBittorrent 参数详细设置教程</title>
+    <url>/posts/f6b32521/</url>
+    <content><![CDATA[全文将以目前的最新版v4.2.1为例，进行参数设置，老版本某些功能不太一致，请知悉。特别鸣谢 原创者：Evine！
+
+更多参数，官方说明 libtorrent 参数设置说明
+
+行为参数
+
+下载参数
+
+连接参数
+
+速度参数
+
+BT参数
+
+RSS设置
+
+web参数
+
+高级参数
+
+关于磁盘缓存的补充说明：
+经常有人吐槽qB特别吃内存，个人猜测应该是磁盘缓存设置不正确导致的。磁盘缓存设置过小，磁盘缓存到期间隔过长，先下载的文件块来不及写入硬盘，新的文件块又到了，可能就会导致内存爆掉甚至磁盘I/O错误。个人建议：在进行高速下载时，适当将磁盘缓存调高，磁盘缓存到期间隔调低（下载时间隔越低写入越频繁，自己根据电脑的资源占用情况调整最适合自己的值）。实在不知道怎么调的，就干脆把磁盘缓存设置为-1（自动）好了，还不行，就把磁盘缓存到期间隔再调低一些。举一个例子，比如设置2048MiB磁盘缓存、300s磁盘缓存到期间隔时，当下载速度为50MiB/s的时候，300s的时间总共可以下载15000MiB，早就远远超过2048MiB了，不爆内存、不I/O错误才怪。所以当达到这个下载速度的时候，在磁盘缓存不变的情况下，根据简单的除法（磁盘缓存除以下载速度）可知，磁盘缓存到期间隔就应该设置到40s以下了。
+qB在正常运行后，其占用的内存会比你所设置的磁盘缓存多几百M。所有的参数没有标准答案，一切都得根据你机子的本身属性以及实际的使用场景（比如CPU性能、内存大小、硬盘写入速度、下载速度等）来设置，建议大家多试验。
+关于TCP、UTP的补充说明：
+TCP是Internet上最常用的协议，是一种面向连接的、可靠的、基于字节流的传输层通信协议。TCP的优势在于双向互动机制兼顾数据传输的完整性、可控制性和可靠性，但复杂的校验与控制机制也使其没有UDP传输效率高。
+UDP协议与TCP协议一样用于处理数据包，是一种无连接的协议。UDP的缺点是不提供数据包分组、组装和不能对数据包进行排序的缺点，也就是说，当报文发送之后，是无法得知其是否安全完整到达的。UDP优势在于带宽占用小、传输效率和连接成功率高，有益于内网用户（如通过UDP内网穿透UDP Hole Punching连接），但UDP与TCP协议相比也存在无反向确认机制、无流量和序列控制等弊端。
+uTP(Micro Transport Protocol)是一种正在标准化的开放式BT协议，主要功能是提高宽带使用效率、减少网络问题。在减缓网络延迟和拥堵的同时最大化网络吞吐量、克服多数防火墙和NAT的阻碍，增强网络穿透和传输效率，同时增益流量控制，这对BT用户和ISP都是互利的。uTP虽基于UDP协议但有所不同，uTP通过拥堵控制算法（Ledbat）可限制延时，当延时不严重时可最大限度利用带宽，并能通过uTP提供的信息用于选择TCP连接的传输率，即使在不作限速设置的情况下，也能减少网络拥堵产生，当用户端之间都启用uTP时，可见明显的传输速率提升。内网无法实现端口映射的用户启用uTP，可以改善与网外用户的连接。
+使用uTP进行连接的用户，其标志将包含“P”。
+系列教程
+全部文章RSS订阅
+Nas系列 Nas 分类 RSS 订阅
+
+音视频图书和音乐自动化管理框架图解
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>bt</tag>
+        <tag>pt</tag>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>qbittorrent</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>transmission 使用及其配置</title>
     <url>/posts/8f76d9dd/</url>
     <content><![CDATA[安装
@@ -5712,73 +5779,6 @@ Earthly 一个更加强大的镜像构建工具
         <tag>qnap</tag>
         <tag>nas</tag>
         <tag>启动</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>qBittorrent 参数详细设置教程</title>
-    <url>/posts/f6b32521/</url>
-    <content><![CDATA[全文将以目前的最新版v4.2.1为例，进行参数设置，老版本某些功能不太一致，请知悉。特别鸣谢 原创者：Evine！
-
-更多参数，官方说明 libtorrent 参数设置说明
-
-行为参数
-
-下载参数
-
-连接参数
-
-速度参数
-
-BT参数
-
-RSS设置
-
-web参数
-
-高级参数
-
-关于磁盘缓存的补充说明：
-经常有人吐槽qB特别吃内存，个人猜测应该是磁盘缓存设置不正确导致的。磁盘缓存设置过小，磁盘缓存到期间隔过长，先下载的文件块来不及写入硬盘，新的文件块又到了，可能就会导致内存爆掉甚至磁盘I/O错误。个人建议：在进行高速下载时，适当将磁盘缓存调高，磁盘缓存到期间隔调低（下载时间隔越低写入越频繁，自己根据电脑的资源占用情况调整最适合自己的值）。实在不知道怎么调的，就干脆把磁盘缓存设置为-1（自动）好了，还不行，就把磁盘缓存到期间隔再调低一些。举一个例子，比如设置2048MiB磁盘缓存、300s磁盘缓存到期间隔时，当下载速度为50MiB/s的时候，300s的时间总共可以下载15000MiB，早就远远超过2048MiB了，不爆内存、不I/O错误才怪。所以当达到这个下载速度的时候，在磁盘缓存不变的情况下，根据简单的除法（磁盘缓存除以下载速度）可知，磁盘缓存到期间隔就应该设置到40s以下了。
-qB在正常运行后，其占用的内存会比你所设置的磁盘缓存多几百M。所有的参数没有标准答案，一切都得根据你机子的本身属性以及实际的使用场景（比如CPU性能、内存大小、硬盘写入速度、下载速度等）来设置，建议大家多试验。
-关于TCP、UTP的补充说明：
-TCP是Internet上最常用的协议，是一种面向连接的、可靠的、基于字节流的传输层通信协议。TCP的优势在于双向互动机制兼顾数据传输的完整性、可控制性和可靠性，但复杂的校验与控制机制也使其没有UDP传输效率高。
-UDP协议与TCP协议一样用于处理数据包，是一种无连接的协议。UDP的缺点是不提供数据包分组、组装和不能对数据包进行排序的缺点，也就是说，当报文发送之后，是无法得知其是否安全完整到达的。UDP优势在于带宽占用小、传输效率和连接成功率高，有益于内网用户（如通过UDP内网穿透UDP Hole Punching连接），但UDP与TCP协议相比也存在无反向确认机制、无流量和序列控制等弊端。
-uTP(Micro Transport Protocol)是一种正在标准化的开放式BT协议，主要功能是提高宽带使用效率、减少网络问题。在减缓网络延迟和拥堵的同时最大化网络吞吐量、克服多数防火墙和NAT的阻碍，增强网络穿透和传输效率，同时增益流量控制，这对BT用户和ISP都是互利的。uTP虽基于UDP协议但有所不同，uTP通过拥堵控制算法（Ledbat）可限制延时，当延时不严重时可最大限度利用带宽，并能通过uTP提供的信息用于选择TCP连接的传输率，即使在不作限速设置的情况下，也能减少网络拥堵产生，当用户端之间都启用uTP时，可见明显的传输速率提升。内网无法实现端口映射的用户启用uTP，可以改善与网外用户的连接。
-使用uTP进行连接的用户，其标志将包含“P”。
-系列教程
-全部文章RSS订阅
-Nas系列 Nas 分类 RSS 订阅
-
-音视频图书和音乐自动化管理框架图解
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>bt</tag>
-        <tag>pt</tag>
-        <tag>qnap</tag>
-        <tag>nas</tag>
-        <tag>qbittorrent</tag>
       </tags>
   </entry>
   <entry>
@@ -12231,9 +12231,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-KLvKIgNOszxrhcWz").style.height=document.getElementById("mmedia-KLvKIgNOszxrhcWz").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-XUZVeRMusLtWWZbz").style.height=document.getElementById("mmedia-XUZVeRMusLtWWZbz").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-KLvKIgNOszxrhcWz").style.height=document.getElementById("mmedia-KLvKIgNOszxrhcWz").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-XUZVeRMusLtWWZbz").style.height=document.getElementById("mmedia-XUZVeRMusLtWWZbz").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -17687,11 +17687,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var gsDDTLjpEUVCfWfM_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); gsDDTLjpEUVCfWfM_options.container = document.getElementById("mmedia-gsDDTLjpEUVCfWfM"); const ap_gsDDTLjpEUVCfWfM = new APlayer(gsDDTLjpEUVCfWfM_options); 
+ var bZgPdHJdhZXcqpqw_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); bZgPdHJdhZXcqpqw_options.container = document.getElementById("mmedia-bZgPdHJdhZXcqpqw"); const ap_bZgPdHJdhZXcqpqw = new APlayer(bZgPdHJdhZXcqpqw_options); 
 
 - **列表**
 
- var AjkPiLmCdQxFNoEN_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); AjkPiLmCdQxFNoEN_options.container = document.getElementById("mmedia-AjkPiLmCdQxFNoEN"); const ap_AjkPiLmCdQxFNoEN = new APlayer(AjkPiLmCdQxFNoEN_options); 
+ var xbnyrbBoTIzylLJd_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); xbnyrbBoTIzylLJd_options.container = document.getElementById("mmedia-xbnyrbBoTIzylLJd"); const ap_xbnyrbBoTIzylLJd = new APlayer(xbnyrbBoTIzylLJd_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -17943,21 +17943,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ocNlkCtkJUhZwJEJ").style.height=document.getElementById("mmedia-ocNlkCtkJUhZwJEJ").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-BYaCQCzxCiSXUjVK").style.height=document.getElementById("mmedia-BYaCQCzxCiSXUjVK").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-ocNlkCtkJUhZwJEJ").style.height=document.getElementById("mmedia-ocNlkCtkJUhZwJEJ").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-BYaCQCzxCiSXUjVK").style.height=document.getElementById("mmedia-BYaCQCzxCiSXUjVK").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-QNSywTFlVAJUnClf").style.height=document.getElementById("mmedia-QNSywTFlVAJUnClf").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-zEhLGRyfRVYgIgVj").style.height=document.getElementById("mmedia-zEhLGRyfRVYgIgVj").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-QNSywTFlVAJUnClf").style.height=document.getElementById("mmedia-QNSywTFlVAJUnClf").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-zEhLGRyfRVYgIgVj").style.height=document.getElementById("mmedia-zEhLGRyfRVYgIgVj").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var fosnCTqVCMbfOQhb_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); fosnCTqVCMbfOQhb_options.container = "#mmedia-fosnCTqVCMbfOQhb"; const art_fosnCTqVCMbfOQhb = new Artplayer(fosnCTqVCMbfOQhb_options); 
+ var BAkcjaeEhxpwFRDp_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); BAkcjaeEhxpwFRDp_options.container = "#mmedia-BAkcjaeEhxpwFRDp"; const art_BAkcjaeEhxpwFRDp = new Artplayer(BAkcjaeEhxpwFRDp_options); 
 脑图
 
 原作者记录
@@ -18663,174 +18663,6 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
-    <title>私人在线音乐服务器搭建与使用介绍</title>
-    <url>/posts/2b9325d0/</url>
-    <content><![CDATA[
-多种音乐播放实现方式
-
-页面内插入音乐列表。Aplayer实现
-单独页面音乐列表。Aplayer实现
-音乐Docker。在线云音乐
-
-
-
-原作者DMCA原因不再维护，如果你想自己部署，需要修改原作者docker内部代码。
-
-
-
-音乐Docker Mstream docker。
-音乐Docker Logitech Media Server。Github
-
-
-
-多用户音乐分享、播放，在线，分类等功能。
-
-
-
-
-Aplayer 在线音乐
-
-博文页面内插入音乐列表
-
- var HSTcnNgNpyjZgIDh_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); HSTcnNgNpyjZgIDh_options.container = document.getElementById("mmedia-HSTcnNgNpyjZgIDh"); const ap_HSTcnNgNpyjZgIDh = new APlayer(HSTcnNgNpyjZgIDh_options); 
-
-
-
- var pAIYLvOZPIpvKhUE_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); pAIYLvOZPIpvKhUE_options.container = document.getElementById("mmedia-pAIYLvOZPIpvKhUE"); const ap_pAIYLvOZPIpvKhUE = new APlayer(pAIYLvOZPIpvKhUE_options); 
-单独Aplayer音乐页面
-
-直接戳这里 -&gt; Musics
-
-
-在线云音乐
-私人云音乐
-研究学习使用
-不对外公开发布，研究学习用。
-
-用户名密码base64编码
-55So5oi35ZCN5a+G56CB6YO95pivMTdsYWk=
-base64解密: 在线加密解密
-入口
-
-
-公开在线云音乐服务网页版。
-可以与网易云音乐UID同步！
-DockerHub
-
-
-
-
-与网易云同步
-
-网易云UID在登陆 https://music.163.com/ 后 点击右上角图标的我的主页 https://music.163.com/#/user/home?id=617xxxxx0
-home?id= 后面的数字就是你的UID。登录后，可以同步个人列表！
-
-在线播放可以配合IDM下载各个平台的音乐，在放入后面介绍的Docker播放器中，如此，可搭建自己的音乐播放器！
-吐槽一下，QQ音乐在线版和这个神似，基本可以肯定就是抄袭这个的！
-
-私人音乐服务器
-入口
-
-
-所有音乐作者，专辑，演唱者元数据刮削。
-rclone挂载webdav网盘存储音乐文件。
-cloudflare parterner加速。
-私人使用，不对外公开。
-
-
-在线音乐播放 Mstream
-
-
-SelfHost 支持。Docker 部署！
-Github: Mstream docker。
-浏览器界面支持。
-
-
-
-支持DJ模式
-
-
-在音乐库中随机选择音乐播放。
-选择症患者救星。
-
-
-
-Android支持
-
-其它特性
-
-
-转码支持
-遥控器支持
-播放列表
-等等
-
-
-在线音乐播放 navidrome
-
-
-Dockerhub navidrome
-Github navidrome
-
-Docker compose
-# This is just an example. Customize it to your needs.
-
-version: "3"
-services:
-  navidrome:
-    image: deluan/navidrome:latest
-    ports:
-      - "4533:4533"
-    environment:
-      # Optional: put your config options customization here. Examples:
-      ND_SCANSCHEDULE: 1h
-      ND_LOGLEVEL: info  
-      ND_BASEURL: ""
-    volumes:
-      - "./data:/data"
-      - "/path/to/your/music/folder:/music:ro"
-在线Demo
-登录用户名和密码
-
-User: demo
-Password: demo
-
-
-
-Mstream文件路径管理更完善，Navidrome界面更现代化，有封面，更美观！
-目前博主使用中！
-
-Logitech Media Server
-
-Dockerhub LMS
-
-
-另一个音乐播放器，Docker管理音乐文件，音乐上传到指定目录。
-博主试用了一段时间后，感觉管理音乐文件不方便，就弃用了。
-
-docker run -d \
-           --name lms \
-           -p 9000:9000 \
-           -p 9090:9090 \
-           -p 3483:3483 \
-           -p 3483:3483/udp \
-           -v /etc/localtime:/etc/localtime:ro \
-           -v &lt;local-state-dir&gt;:/srv/squeezebox \
-           -v &lt;audio-dir&gt;:/srv/music \
-           apnar/logitech-media-server
-
-]]></content>
-      <categories>
-        <category>music</category>
-      </categories>
-      <tags>
-        <tag>docker</tag>
-        <tag>music</tag>
-        <tag>mstream</tag>
-        <tag>selfhost</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</title>
     <url>/posts/d6bad1e5/</url>
     <content><![CDATA[前言
@@ -19160,12 +18992,180 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
+    <title>私人在线音乐服务器搭建与使用介绍</title>
+    <url>/posts/2b9325d0/</url>
+    <content><![CDATA[
+多种音乐播放实现方式
+
+页面内插入音乐列表。Aplayer实现
+单独页面音乐列表。Aplayer实现
+音乐Docker。在线云音乐
+
+
+
+原作者DMCA原因不再维护，如果你想自己部署，需要修改原作者docker内部代码。
+
+
+
+音乐Docker Mstream docker。
+音乐Docker Logitech Media Server。Github
+
+
+
+多用户音乐分享、播放，在线，分类等功能。
+
+
+
+
+Aplayer 在线音乐
+
+博文页面内插入音乐列表
+
+ var QPJqhoCjlwAXksqL_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); QPJqhoCjlwAXksqL_options.container = document.getElementById("mmedia-QPJqhoCjlwAXksqL"); const ap_QPJqhoCjlwAXksqL = new APlayer(QPJqhoCjlwAXksqL_options); 
+
+
+
+ var fkKQQfzltlTpbqHU_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); fkKQQfzltlTpbqHU_options.container = document.getElementById("mmedia-fkKQQfzltlTpbqHU"); const ap_fkKQQfzltlTpbqHU = new APlayer(fkKQQfzltlTpbqHU_options); 
+单独Aplayer音乐页面
+
+直接戳这里 -&gt; Musics
+
+
+在线云音乐
+私人云音乐
+研究学习使用
+不对外公开发布，研究学习用。
+
+用户名密码base64编码
+55So5oi35ZCN5a+G56CB6YO95pivMTdsYWk=
+base64解密: 在线加密解密
+入口
+
+
+公开在线云音乐服务网页版。
+可以与网易云音乐UID同步！
+DockerHub
+
+
+
+
+与网易云同步
+
+网易云UID在登陆 https://music.163.com/ 后 点击右上角图标的我的主页 https://music.163.com/#/user/home?id=617xxxxx0
+home?id= 后面的数字就是你的UID。登录后，可以同步个人列表！
+
+在线播放可以配合IDM下载各个平台的音乐，在放入后面介绍的Docker播放器中，如此，可搭建自己的音乐播放器！
+吐槽一下，QQ音乐在线版和这个神似，基本可以肯定就是抄袭这个的！
+
+私人音乐服务器
+入口
+
+
+所有音乐作者，专辑，演唱者元数据刮削。
+rclone挂载webdav网盘存储音乐文件。
+cloudflare parterner加速。
+私人使用，不对外公开。
+
+
+在线音乐播放 Mstream
+
+
+SelfHost 支持。Docker 部署！
+Github: Mstream docker。
+浏览器界面支持。
+
+
+
+支持DJ模式
+
+
+在音乐库中随机选择音乐播放。
+选择症患者救星。
+
+
+
+Android支持
+
+其它特性
+
+
+转码支持
+遥控器支持
+播放列表
+等等
+
+
+在线音乐播放 navidrome
+
+
+Dockerhub navidrome
+Github navidrome
+
+Docker compose
+# This is just an example. Customize it to your needs.
+
+version: "3"
+services:
+  navidrome:
+    image: deluan/navidrome:latest
+    ports:
+      - "4533:4533"
+    environment:
+      # Optional: put your config options customization here. Examples:
+      ND_SCANSCHEDULE: 1h
+      ND_LOGLEVEL: info  
+      ND_BASEURL: ""
+    volumes:
+      - "./data:/data"
+      - "/path/to/your/music/folder:/music:ro"
+在线Demo
+登录用户名和密码
+
+User: demo
+Password: demo
+
+
+
+Mstream文件路径管理更完善，Navidrome界面更现代化，有封面，更美观！
+目前博主使用中！
+
+Logitech Media Server
+
+Dockerhub LMS
+
+
+另一个音乐播放器，Docker管理音乐文件，音乐上传到指定目录。
+博主试用了一段时间后，感觉管理音乐文件不方便，就弃用了。
+
+docker run -d \
+           --name lms \
+           -p 9000:9000 \
+           -p 9090:9090 \
+           -p 3483:3483 \
+           -p 3483:3483/udp \
+           -v /etc/localtime:/etc/localtime:ro \
+           -v &lt;local-state-dir&gt;:/srv/squeezebox \
+           -v &lt;audio-dir&gt;:/srv/music \
+           apnar/logitech-media-server
+
+]]></content>
+      <categories>
+        <category>music</category>
+      </categories>
+      <tags>
+        <tag>docker</tag>
+        <tag>music</tag>
+        <tag>mstream</tag>
+        <tag>selfhost</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-EteeRbZcQGLYkBLa").style.height=document.getElementById("mmedia-EteeRbZcQGLYkBLa").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-EBhBqbjjlzJQsuWF").style.height=document.getElementById("mmedia-EBhBqbjjlzJQsuWF").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-EteeRbZcQGLYkBLa").style.height=document.getElementById("mmedia-EteeRbZcQGLYkBLa").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-EBhBqbjjlzJQsuWF").style.height=document.getElementById("mmedia-EBhBqbjjlzJQsuWF").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -19174,7 +19174,7 @@ CI/CD与Git Flow与GitLab
 
 ## 中文翻唱
 
- var ahBkTghwHyeWwpkI_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); ahBkTghwHyeWwpkI_options.container = document.getElementById("mmedia-ahBkTghwHyeWwpkI"); const ap_ahBkTghwHyeWwpkI = new APlayer(ahBkTghwHyeWwpkI_options); 
+ var djgOYMCPivHCRYOI_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); djgOYMCPivHCRYOI_options.container = document.getElementById("mmedia-djgOYMCPivHCRYOI"); const ap_djgOYMCPivHCRYOI = new APlayer(djgOYMCPivHCRYOI_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -19608,8 +19608,8 @@ jenkins 创建项目
         <category>web</category>
       </categories>
       <tags>
-        <tag>web</tag>
         <tag>docker</tag>
+        <tag>web</tag>
         <tag>ci/cd</tag>
         <tag>node</tag>
         <tag>jenkins</tag>
@@ -34908,9 +34908,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-WTfOfLujpzjEFHae").style.height=document.getElementById("mmedia-WTfOfLujpzjEFHae").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-IbVzfBcUispKNDip").style.height=document.getElementById("mmedia-IbVzfBcUispKNDip").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-WTfOfLujpzjEFHae").style.height=document.getElementById("mmedia-WTfOfLujpzjEFHae").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-IbVzfBcUispKNDip").style.height=document.getElementById("mmedia-IbVzfBcUispKNDip").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 calibre:
@@ -44043,7 +44043,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts4558'));
+        var myChart = echarts.init(document.getElementById('echarts5631'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44137,7 +44137,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts182'));
+        var myChart = echarts.init(document.getElementById('echarts6841'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44206,7 +44206,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts9294'));
+        var myChart = echarts.init(document.getElementById('echarts2604'));
 
         // 指定图表的配置项和数据
         var option = option = {
