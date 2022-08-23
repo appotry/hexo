@@ -5602,6 +5602,66 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
+    <title>通过宝塔面板实现MySQL性能简单调优</title>
+    <url>/posts/d5f56dd0/</url>
+    <content><![CDATA[
+在PHP+MYSQL架构网站运行过程中，往往会遇到各种性能问题影响，如MySQL、PHP、CPU、磁盘IO、缓存等，其中MySQL瓶颈就是最常见也最难解决的一种影响网站性能的因素；通常，我们会使用redis、memcached等缓存软件来缓存内容，这确实是最优的解决方案之一，但这需要网站程序的支持，然而多数常用网站程序并不支持或者不能完美支持这些缓存软件，今天我们就来谈谈如何通过MySQL自身的配置调整来优化MySQL性能，以缓解MySQL瓶颈问题。
+
+准备：
+
+​    1、宝塔Linux面板 正式版 5.2.0+ (2017/09/20发布)  测试版5.2.4+
+​    2、MySQL 5.x
+
+通常MySQL调优我们分以下几部分：
+
+​    1、MySQL配置参数调优 (需要根据网站运行情况调整)
+​    2、数据表索引调优 (效果明显，但通常优秀的开源程序都不需要调整)
+​    3、SQL语句调优 (这是程序员或DBA干的事)
+
+今天我们主要谈谈如果配合宝塔面板的新功能来进行MySQL配置参数调优，我们先来看两张图片：
+(图1)
+
+(图2)
+
+很明显，(图1)显示的是MySQL当前的运行状态，(图2)显示的是MySQL主要配置参数
+下面我们就来解读一下这两张图：
+1、活动/峰值连接数
+​      (图1)中当前活动的连接为1个，自MySQL服务启动以来，最高连接数为54；当最高连接数接近或等于(图2)中的max_connections时，应适当增加max_connections，需要注意的是，不要一下子增加过多，建议每次增加50，观察一段时间，不够再继续增加。
+2、线程缓存命中率
+​      (图1)中线程缓存命中率为99.78%，若这个值小于90%，建议适当增加(图2)中的thread_cache_size，建议每次增加8。
+3、索引命中率
+​      (图1)中索引命中率为99.50%，若这个值小于95%，建议适当增加(图2)中的key_buffer_size，建议每次增加64，需要说明的是，若您的数据库使用的是Innodb引擎，可忽略这个选项
+4、Innodb索引命中率
+(图1)中Innodb索引命中率为100%，若这个值小于95%，建议适当增加(图2)中的innodb_buffer_pool_size，建议每次增加64，需要说明的是，若您的数据库没有使用Innodb引擎，可忽略这个选项
+5、查询缓存命中率
+​      MySQL查询缓存是个比较受争议的功能，个人建议当你有在使用redis、memcached等缓存软件时，在(图2)中将query_cache_size设为0可以将其关闭，当你没有使用缓存软件，有多余的内存使用，且数据库瓶颈明显存在时，可以尝试开启查询缓存，这是个非常依赖数据表结构及SQL语句优化的功能，若数据表结构和SQL语句都针对查询缓存进行过优化，它的效果还是很不错的。
+6、创建临时表到磁盘
+​      (图1)中创建临时表到磁盘的比例是0.42%，这说明大部分临时表创建到内存了，不会过多增加磁盘IO的开销，建议，当比例大于2%时适当增加(图1)中的tmp_cache_size，建议每次增加32，当比例大于60%时，放弃吧，有些开源程序并没有专门优化过SQL语句，所以在运行过程中会开启大量临时表，加多少缓存都是不够用的。
+7、已打开的表
+​      当(图1)中的已打开的表接近或等于(图2)中的table_open_cache时，可以适当增加table_open_cache，但若设置过大可能导致您的程序频繁中断MySQL连接，建议在1024以内，最大不要超过2048。
+8、没有使用索引的量、没有使用索引的JOIN量
+​      若不为0，就检查下数据表索引吧，其实只要没有疯涨，比如一天增涨几千，一般可以忽略，必竟优化索引还是程序员或DBA去干比较合适。
+9、排序后的合并次数
+​      如果这个值在缓慢增张，建议适当增加(图2)中的sort_buffer_size，建议每次增加512，但最大不要超过8192，如果这个值一直在疯涨，增加sort_buffer_size也没用，就放弃这个选项吧，这个锅还是给程序开发者背。
+10、锁表次数
+​      如果服务器CPU开销不大的情况下，疯狂锁表，建议你将所有数据表转换成innodb，记得转换前备份哦。
+11、优化方案
+​      这个是我们根据内存大小给的一个推荐优化方案，仅是建议仅用于基础参考值，还是要根据实据情况来调整每一个配置项。
+注意：保存参数配置后不会立即生效，记得要重启MySQL服务。
+写在最后：
+因我本人并不是专业DBA，难免有错误或遗漏的地方，还请大家给予指正，另外，可能面板提供的参考数据及调整选项还不够丰富，我们在往后的更新中会根据需要考虑继续增加更多的调整选项，谢谢大家的支持。
+来自网络整理。
+]]></content>
+      <categories>
+        <category>mysql</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>mysql</tag>
+        <tag>优化</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>ESNI和加密DNS - 保护信息隐私的最后一块拼图</title>
     <url>/posts/ec2cad2/</url>
     <content><![CDATA[随着TLS1.3的发布，让该协议成为有史以来最安全、也是最复杂的TLS协议。在该协议之中，有很多的对于以往协议安全漏洞的修复，包括废弃RSA启用新的秘钥交换机制PSK等等。而Encrypted SNI作为一个TLS1.3的扩展协议用来防止传统的HTTPS流量受到ISP或者陌生网络环境的窥探以及一些网络审查。在过去，由于HTTPS协议之中Server Name Indication - SNI的使用，我们的HTTPS流量经常被窥探我们所访问站点的域名
@@ -7971,445 +8031,6 @@ markdown 各种其它语法插件，latex公式支持，mermaid图表，plant um
       </tags>
   </entry>
   <entry>
-    <title>浏览器的渲染过程</title>
-    <url>/posts/69a052c9/</url>
-    <content><![CDATA[
-通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？
-
-首先，请先看一张大图
-浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：
-
-构建对象模型（DOM，CSSOM）
-构建渲染树（RenderTree）
-布局
-渲染
-
-在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：
-
-1.DOMTree的构建
-浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：
-
-
-第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符
-
-
-
-第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是开始标签，还是结束标签，或者文本标签等。
-
-
-
-第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的开始标签，结束标签，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。
-Node包含了这个节点的所有属性。例如&lt;img src="xxx.png" &gt;标签最终生成出的节点对象中会保存图片地址等信息。
-事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取深度遍历算法消耗Token来生成Node，如下图所示：
-图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出html Token,并消耗Token创建出html 节点对象，接着生成head Token并消耗Token创建出head节点对象......，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。
-
-
-这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？
-因为在上述的解析的过程中，如果碰到了script或者link标签，就会根据src对应的地址去加载资源，在script标签没有设置async/defer属性时，这个加载过程是下载并执行完全部的代码，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出找不到该DOM元素的错误。
-值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。
-2.CSSOMTree的构建
-DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：
-假设浏览器收到了下面这样一段css:
-body {font-size: 16px;}
-p {font-weight: bold;}
-p span {display:none;}
-span {color: red;}
-img {float: right;}
-最终会生成如下的CSSOMTree:
-
-从图中可以看出，最开始body有一个样式规则是font-size:16px，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如span又添加了一个样式规则color:red。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置。比如在上面的css代码基础上再添加一行代码p {font-size:12px}，那么之前设置的16px将会被覆盖成12px。
-下面是官方给的一种解释：
-
-未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。
-所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。
-
-那么回到上面生成DOM时提到的JS问题：在标签没有设置async/defer属性时，js会阻塞DOM的生成。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。
-同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在浏览器还未完成CSSOMTree的下载和构建时去操作CSS样式，浏览器会暂停脚本的运行和DOM的构建，直至浏览器完成了CSSOM的下载和构建。也就是说，JS脚本的出现会让CSSOM的构建阻塞DOM的构建。
-
-平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？
-
-举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个link标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：
-
-而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个script标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：
-
-那如果我们把css放到前面，js放到最后引入时，构建时间会变成：
-
-由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。
-简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：
-
-当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕
-JavaScript可以查询和修改DOMTree与CSSOMTree
-直至CSSOM构建完毕，JavaScript才会执行
-脚本在文档中的位置很重要
-
-3.渲染树的构建
-现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树
-
-接下来我们来谈几条概念
-
-
-Render 树上的每一个节点被称为：RenderObject。
-
-
-RenderObject跟 DOM 节点几乎是一一对应的，当一个可见的 DOM 节点被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。
-
-
-其中，可见的DOM节点不包括：
-
-
-一些不会体现在渲染输出中的节点（&lt;html&gt;&lt;script&gt;&lt;link&gt;….），会直接被忽略掉。
-
-
-通过CSS隐藏的节点。例如上图中的span节点，因为有一个CSS显式规则在该节点上设置了display:none属性，那么它在生成RenderObject时会被直接忽略掉。
-
-
-Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。
-
-
-此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？
-RenderObject and RenderLayer
-
-浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing等属性，浏览器需要生成另外一棵树：Layer树
-
-
-浏览器会为一些特定的RenderObject生成对应的RenderLayer，其中的规则是：
-
-是否是页面的根节点 It’s the root object for the page
-是否有css的一些布局属性（relative absolute or a transform) It has explicit CSS position properties (relative, absolute or a transform)
-是否透明 It is transparent
-是否有溢出 Has overflow, an alpha mask or reflection
-是否有css滤镜 Has a CSS filter
-是否包含一个canvas元素使得节点拥有视图上下文 Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context
-是否包含一个video元素 Corresponds to a video element
-
-当满足上面其中一个条件时，这个RrenderObject就会被浏览器选中生成对应的RenderLayer。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。
-浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个RenderLayer，再遍历从属于这个RenderLayer的 RrenderObject，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 RenderLayer 和 RrenderObject 一起就决定了网页在屏幕上最终呈现出来的内容。
-4.布局
-到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。
-布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。
-
-5.渲染
-最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。
-
-至此，我们就能够在浏览器上看到漂亮的网页了
-
-谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？
-
-我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~
-总结：
-
-经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。
-CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。
-同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用async/defer属性异步加载JavaScript。
-重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数
-
-参考文献：
-https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn
-https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn
-https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn
-https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
-        <tag>css</tag>
-        <tag>js</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>在浏览器输入 URL 回车之后发生了什么</title>
-    <url>/posts/656a0abb/</url>
-    <content><![CDATA[前言
-
-这个问题已经是老生常谈了，更是经常被作为面试的压轴题出现，网上也有很多文章，但最近闲的无聊，然后就自己做了一篇笔记，感觉比之前理解更透彻了。
-这篇笔记是我这两天看了数十篇文章总结出来的，所以相对全面一点，但由于我是做前端的，所以会比较重点分析浏览器渲染页面那一部分，至于其他部分我会罗列出关键词，感兴趣的可以自行查阅，
-**注意：**本文的步骤是建立在，请求的是一个简单的 HTTP 请求，没有 HTTPS、HTTP2、最简单的 DNS、没有代理、并且服务器没有任何问题的基础上，尽管这是不切实际的。
-大致流程
-
-URL 解析
-DNS 查询
-TCP 连接
-处理请求
-接受响应
-渲染页面
-
-一、URL 解析
-地址解析：
-首先判断你输入的是一个合法的 URL 还是一个待搜索的关键词，并且根据你输入的内容进行自动完成、字符编码等操作。
-HSTS
-由于安全隐患，会使用 HSTS 强制客户端使用 HTTPS 访问页面。详见：你所不知道的 HSTS (opens new window)。
-其他操作
-浏览器还会进行一些额外的操作，比如安全检查、访问限制（之前国产浏览器限制 996.icu）。
-检查缓存
-
-二、DNS 查询
-基本步骤
-
-1. 浏览器缓存
-浏览器会先检查是否在缓存中，没有则调用系统库函数进行查询。
-2. 操作系统缓存
-操作系统也有自己的 DNS 缓存，但在这之前，会向检查域名是否存在本地的 Hosts 文件里，没有则向 DNS 服务器发送查询请求。
-3. 路由器缓存
-路由器也有自己的缓存。
-4. ISP DNS 缓存
-ISP DNS 就是在客户端电脑上设置的首选 DNS 服务器，它们在大多数情况下都会有缓存。
-根域名服务器查询
-在前面所有步骤没有缓存的情况下，本地 DNS 服务器会将请求转发到互联网上的根域，下面这个图很好的诠释了整个流程：
-
-
-根域名服务器：维基百科 (opens new window)
-
-需要注意的点
-
-递归方式：一路查下去中间不返回，得到最终结果才返回信息（浏览器到本地 DNS 服务器的过程）
-迭代方式，就是本地 DNS 服务器到根域名服务器查询的方式。
-什么是 DNS 劫持
-前端 dns-prefetch 优化
-
-三、TCP 连接
-TCP/IP 分为四层，在发送数据时，每层都要对数据进行封装：
-
-1. 应用层：发送 HTTP 请求
-在前面的步骤我们已经得到服务器的 IP 地址，浏览器会开始构造一个 HTTP 报文，其中包括：
-
-请求报头（Request Header）：请求方法、目标地址、遵循的协议等等
-请求主体（其他参数）
-
-其中需要注意的点：
-
-浏览器只能发送 GET、POST 方法，而打开网页使用的是 GET 方法
-
-2. 传输层：TCP 传输报文
-传输层会发起一条到达服务器的 TCP 连接，为了方便传输，会对数据进行分割（以报文段为单位），并标记编号，方便服务器接受时能够准确地还原报文信息。
-在建立连接前，会先进行 TCP 三次握手。
-
-关于 TCP/IP 三次握手，网上已经有很多段子和图片生动地描述了。
-相关知识点：
-
-SYN 泛洪攻击
-
-
-3. 网络层：IP 协议查询 Mac 地址
-将数据段打包，并加入源及目标的 IP 地址，并且负责寻找传输路线。
-判断目标地址是否与当前地址处于同一网络中，是的话直接根据 Mac 地址发送，否则使用路由表查找下一跳地址，以及使用 ARP 协议查询它的 Mac 地址。
-
-注意：在 OSI 参考模型中 ARP 协议位于链路层，但在 TCP/IP 中，它位于网络层。
-
-4. 链路层：以太网协议
-以太网协议
-根据以太网协议将数据分为以“帧”为单位的数据包，每一帧分为两个部分：
-
-标头：数据包的发送者、接受者、数据类型
-数据：数据包具体内容
-
-Mac 地址
-以太网规定了连入网络的所有设备都必须具备“网卡”接口，数据包都是从一块网卡传递到另一块网卡，网卡的地址就是 Mac 地址。每一个 Mac 地址都是独一无二的，具备了一对一的能力。
-广播
-发送数据的方法很原始，直接把数据通过 ARP 协议，向本网络的所有机器发送，接收方根据标头信息与自身 Mac 地址比较，一致就接受，否则丢弃。
-注意：接收方回应是单播。
-
-相关知识点：
-
-ARP 攻击
-
-
-服务器接受请求
-接受过程就是把以上步骤逆转过来，参见上图。
-四、服务器处理请求
-大致流程
-
-HTTPD
-最常见的 HTTPD 有 Linux 上常用的 Apache 和 Nginx，以及 Windows 上的 IIS。
-它会监听得到的请求，然后开启一个子进程去处理这个请求。
-处理请求
-接受 TCP 报文后，会对连接进行处理，对 HTTP 协议进行解析（请求方法、域名、路径等），并且进行一些验证：
-
-验证是否配置虚拟主机
-验证虚拟主机是否接受此方法
-验证该用户可以使用该方法（根据 IP 地址、身份信息等）
-
-重定向
-假如服务器配置了 HTTP 重定向，就会返回一个 301永久重定向响应，浏览器就会根据响应，重新发送 HTTP 请求（重新执行上面的过程）。
-
-关于更多：详见这篇文章 (opens new window)
-
-URL 重写
-然后会查看 URL 重写规则，如果请求的文件是真实存在的，比如图片、html、css、js 文件等，则会直接把这个文件返回。
-否则服务器会按照规则把请求重写到 一个 REST 风格的 URL 上。
-然后根据动态语言的脚本，来决定调用什么类型的动态文件解释器来处理这个请求。
-以 PHP 语言的 MVC 框架举例，它首先会初始化一些环境的参数，根据 URL 由上到下地去匹配路由，然后让路由所定义的方法去处理请求。
-五、浏览器接受响应
-浏览器接收到来自服务器的响应资源后，会对资源进行分析。
-首先查看 Response header，根据不同状态码做不同的事（比如上面提到的重定向）。
-如果响应资源进行了压缩（比如 gzip），还需要进行解压。
-然后，对响应资源做缓存。
-接下来，根据响应资源里的 MIME (opens new window) 类型去解析响应内容（比如 HTML、Image 各有不同的解析方式）。
-六、渲染页面
-浏览器内核
-
-不同的浏览器内核，渲染过程也不完全相同，但大致流程都差不多。
-基本流程
-
-1. HTML 解析
-首先要知道浏览器解析是从上往下一行一行地解析的。
-解析的过程可以分为四个步骤：
-1. 解码（encoding）
-传输回来的其实都是一些二进制字节数据，浏览器需要根据文件指定编码（例如 UTF-8）转换成字符串，也就是 HTML 代码。
-2. 预解析（pre-parsing）
-预解析做的事情是提前加载资源，减少处理时间，它会识别一些会请求资源的属性，比如img标签的src属性，并将这个请求加到请求队列中。
-3. 符号化（Tokenization）
-符号化是词法分析的过程，将输入解析成符号，HTML 符号包括，开始标签、结束标签、属性名和属性值。
-它通过一个状态机去识别符号的状态，比如遇到&lt;，&gt;状态都会产生变化。
-4. 构建树（tree construction）
-
-注意：符号化和构建树是并行操作的，也就是说只要解析到一个开始标签，就会创建一个 DOM 节点。
-
-在上一步符号化中，解析器获得这些标记，然后以合适的方法创建DOM对象并把这些符号插入到DOM对象中。
-
-浏览器容错进制
-你从来没有在浏览器看过类似"语法无效"的错误，这是因为浏览器去纠正错误的语法，然后继续工作。
-事件
-当整个解析的过程完成以后，浏览器会通过DOMContentLoaded事件来通知DOM解析完成。
-2. CSS 解析
-一旦浏览器下载了 CSS，CSS 解析器就会处理它遇到的任何 CSS，根据语法规范 (opens new window)解析出所有的 CSS 并进行标记化，然后我们得到一个规则表。
-CSS 匹配规则
-在匹配一个节点对应的 CSS 规则时，是按照从右到左的顺序的，例如：div p { font-size :14px }会先寻找所有的p标签然后判断它的父元素是否为div。
-所以我们写 CSS 时，尽量用 id 和 class，千万不要过度层叠。
-3. 渲染树
-其实这就是一个 DOM 树和 CSS 规则树合并的过程。
-
-注意：渲染树会忽略那些不需要渲染的节点，比如设置了display:none的节点。
-
-计算
-通过计算让任何尺寸值都减少到三个可能之一：auto、百分比、px，比如把rem转化为px。
-级联
-浏览器需要一种方法来确定哪些样式才真正需要应用到对应元素，所以它使用一个叫做specificity的公式，这个公式会通过：
-
-标签名、class、id
-是否内联样式
-!important
-
-然后得出一个权重值，取最高的那个。
-渲染阻塞
-当遇到一个script标签时，DOM 构建会被暂停，直至脚本完成执行，然后继续构建 DOM 树。
-但如果 JS 依赖 CSS 样式，而它还没有被下载和构建时，浏览器就会延迟脚本执行，直至 CSS Rules 被构建。
-所有我们知道：
-
-CSS 会阻塞 JS 执行
-JS 会阻塞后面的 DOM 解析
-
-为了避免这种情况，应该以下原则：
-
-CSS 资源排在 JavaScript 资源前面
-JS 放在 HTML 最底部，也就是 &lt;/body&gt;前
-
-另外，如果要改变阻塞模式，可以使用 defer 与 async，详见：这篇文章 (opens new window)
-
-布局与绘制
-
-确定渲染树种所有节点的几何属性，比如：位置、大小等等，最后输入一个盒子模型，它能精准地捕获到每个元素在屏幕内的准确位置与大小。
-然后遍历渲染树，调用渲染器的 paint() 方法在屏幕上显示其内容。
-5. 合并渲染层
-把以上绘制的所有图片合并，最终输出一张图片。
-6. 回流与重绘
-回流(reflow)
-当浏览器发现某个部分发现变化影响了布局时，需要倒回去重新渲染，会从html标签开始递归往下，重新计算位置和大小。
-reflow 基本是无法避免的，因为当你滑动一下鼠标、resize 窗口，页面就会产生变化。
-重绘(repaint)
-改变了某个元素的背景色、文字颜色等等不会影响周围元素的位置变化时，就会发生重绘。
-每次重绘后，浏览器还需要合并渲染层并输出到屏幕上。
-回流的成本要比重绘高很多，所以我们应该尽量避免产生回流。
-比如：
-
-display:none 会触发回流，而 visibility:hidden 只会触发重绘。
-
-
-JavaScript 编译执行
-
-大致流程
-
-可以分为三个阶段：
-1. 词法分析
-JS 脚本加载完毕后，会首先进入语法分析阶段，它首先会分析代码块的语法是否正确，不正确则抛出“语法错误”，停止执行。
-几个步骤：
-
-分词，例如将var a = 2，，分成var、a、=、2这样的词法单元。
-解析，将词法单元转换成抽象语法树（AST）。
-代码生成，将抽象语法树转换成机器指令。
-
-2. 预编译
-JS 有三种运行环境：
-
-全局环境
-函数环境
-eval
-
-每进入一个不同的运行环境都会创建一个对应的执行上下文，根据不同的上下文环境，形成一个函数调用栈，栈底永远是全局执行上下文，栈顶则永远是当前执行上下文。
-创建执行上下文
-创建执行上下文的过程中，主要做了以下三件事：
-
-创建变量对象
-
-参数、函数、变量
-
-
-建立作用域链
-
-确认当前执行环境是否能访问变量
-
-
-确定 This 指向
-
-3. 执行
-JS 线程
-
-虽然 JS 是单线程的，但实际上参与工作的线程一共有四个：
-
-其中三个只是协助，只有 JS 引擎线程是真正执行的
-
-
-JS 引擎线程：也叫 JS 内核，负责解析执行 JS 脚本程序的主线程，例如 V8 引擎
-事件触发线程：属于浏览器内核线程，主要用于控制事件，例如鼠标、键盘等，当事件被触发时，就会把事件的处理函数推进事件队列，等待 JS 引擎线程执行
-定时器触发线程：主要控制setInterval和setTimeout，用来计时，计时完毕后，则把定时器的处理函数推进事件队列中，等待 JS 引擎线程。
-HTTP 异步请求线程：通过 XMLHttpRequest 连接后，通过浏览器新开的一个线程，监控 readyState 状态变更时，如果设置了该状态的回调函数，则将该状态的处理函数推进事件队列中，等待 JS 引擎线程执行。
-
-注：浏览器对同一域名的并发连接数是有限的，通常为 6 个。
-宏任务
-分为：
-
-同步任务：按照顺序执行，只有前一个任务完成后，才能执行后一个任务
-异步任务：不直接执行，只有满足触发条件时，相关的线程将该异步任务推进任务队列中，等待 JS 引擎主线程上的任务执行完毕时才开始执行，例如异步 Ajax、DOM 事件，setTimeout 等。
-
-微任务
-微任务是 ES6 和 Node 环境下的，主要 API 有：Promise，process.nextTick。
-微任务的执行在宏任务的同步任务之后，在异步任务之前。
-
-代码例子
-以上代码输出顺序为：1,3,5,4,2
-参考文档
-
-what-happens-when-zh_CN (opens new window)
-Tags to DOM (opens new window)
-彻底理解浏览器的缓存机制 (opens new window)
-浏览器的工作原理：新式网络浏览器幕后揭秘 (opens new window)
-深入浅出浏览器渲染原理 (opens new window)
-js 引擎的执行过程（一） (opens new window)
-还有一些找不到了。。。。。
-
-From: 4ark.me
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>[三万字教程]基于Hexo的matery主题搭建博客并深度优化一站式完全教程</title>
     <url>/posts/40300608/</url>
     <content><![CDATA[
@@ -9743,6 +9364,445 @@ CI/CD与Git Flow与GitLab
         <tag>hexo</tag>
         <tag>matery</tag>
         <tag>npm</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>浏览器的渲染过程</title>
+    <url>/posts/69a052c9/</url>
+    <content><![CDATA[
+通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？
+
+首先，请先看一张大图
+浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：
+
+构建对象模型（DOM，CSSOM）
+构建渲染树（RenderTree）
+布局
+渲染
+
+在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：
+
+1.DOMTree的构建
+浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：
+
+
+第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符
+
+
+
+第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是开始标签，还是结束标签，或者文本标签等。
+
+
+
+第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的开始标签，结束标签，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。
+Node包含了这个节点的所有属性。例如&lt;img src="xxx.png" &gt;标签最终生成出的节点对象中会保存图片地址等信息。
+事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取深度遍历算法消耗Token来生成Node，如下图所示：
+图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出html Token,并消耗Token创建出html 节点对象，接着生成head Token并消耗Token创建出head节点对象......，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。
+
+
+这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？
+因为在上述的解析的过程中，如果碰到了script或者link标签，就会根据src对应的地址去加载资源，在script标签没有设置async/defer属性时，这个加载过程是下载并执行完全部的代码，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出找不到该DOM元素的错误。
+值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。
+2.CSSOMTree的构建
+DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：
+假设浏览器收到了下面这样一段css:
+body {font-size: 16px;}
+p {font-weight: bold;}
+p span {display:none;}
+span {color: red;}
+img {float: right;}
+最终会生成如下的CSSOMTree:
+
+从图中可以看出，最开始body有一个样式规则是font-size:16px，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如span又添加了一个样式规则color:red。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置。比如在上面的css代码基础上再添加一行代码p {font-size:12px}，那么之前设置的16px将会被覆盖成12px。
+下面是官方给的一种解释：
+
+未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。
+所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。
+
+那么回到上面生成DOM时提到的JS问题：在标签没有设置async/defer属性时，js会阻塞DOM的生成。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。
+同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在浏览器还未完成CSSOMTree的下载和构建时去操作CSS样式，浏览器会暂停脚本的运行和DOM的构建，直至浏览器完成了CSSOM的下载和构建。也就是说，JS脚本的出现会让CSSOM的构建阻塞DOM的构建。
+
+平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？
+
+举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个link标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：
+
+而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个script标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：
+
+那如果我们把css放到前面，js放到最后引入时，构建时间会变成：
+
+由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。
+简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：
+
+当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕
+JavaScript可以查询和修改DOMTree与CSSOMTree
+直至CSSOM构建完毕，JavaScript才会执行
+脚本在文档中的位置很重要
+
+3.渲染树的构建
+现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树
+
+接下来我们来谈几条概念
+
+
+Render 树上的每一个节点被称为：RenderObject。
+
+
+RenderObject跟 DOM 节点几乎是一一对应的，当一个可见的 DOM 节点被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。
+
+
+其中，可见的DOM节点不包括：
+
+
+一些不会体现在渲染输出中的节点（&lt;html&gt;&lt;script&gt;&lt;link&gt;….），会直接被忽略掉。
+
+
+通过CSS隐藏的节点。例如上图中的span节点，因为有一个CSS显式规则在该节点上设置了display:none属性，那么它在生成RenderObject时会被直接忽略掉。
+
+
+Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。
+
+
+此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？
+RenderObject and RenderLayer
+
+浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing等属性，浏览器需要生成另外一棵树：Layer树
+
+
+浏览器会为一些特定的RenderObject生成对应的RenderLayer，其中的规则是：
+
+是否是页面的根节点 It’s the root object for the page
+是否有css的一些布局属性（relative absolute or a transform) It has explicit CSS position properties (relative, absolute or a transform)
+是否透明 It is transparent
+是否有溢出 Has overflow, an alpha mask or reflection
+是否有css滤镜 Has a CSS filter
+是否包含一个canvas元素使得节点拥有视图上下文 Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context
+是否包含一个video元素 Corresponds to a video element
+
+当满足上面其中一个条件时，这个RrenderObject就会被浏览器选中生成对应的RenderLayer。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。
+浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个RenderLayer，再遍历从属于这个RenderLayer的 RrenderObject，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 RenderLayer 和 RrenderObject 一起就决定了网页在屏幕上最终呈现出来的内容。
+4.布局
+到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。
+布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。
+
+5.渲染
+最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。
+
+至此，我们就能够在浏览器上看到漂亮的网页了
+
+谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？
+
+我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~
+总结：
+
+经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。
+CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。
+同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用async/defer属性异步加载JavaScript。
+重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数
+
+参考文献：
+https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn
+https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn
+https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn
+https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
+        <tag>css</tag>
+        <tag>js</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>在浏览器输入 URL 回车之后发生了什么</title>
+    <url>/posts/656a0abb/</url>
+    <content><![CDATA[前言
+
+这个问题已经是老生常谈了，更是经常被作为面试的压轴题出现，网上也有很多文章，但最近闲的无聊，然后就自己做了一篇笔记，感觉比之前理解更透彻了。
+这篇笔记是我这两天看了数十篇文章总结出来的，所以相对全面一点，但由于我是做前端的，所以会比较重点分析浏览器渲染页面那一部分，至于其他部分我会罗列出关键词，感兴趣的可以自行查阅，
+**注意：**本文的步骤是建立在，请求的是一个简单的 HTTP 请求，没有 HTTPS、HTTP2、最简单的 DNS、没有代理、并且服务器没有任何问题的基础上，尽管这是不切实际的。
+大致流程
+
+URL 解析
+DNS 查询
+TCP 连接
+处理请求
+接受响应
+渲染页面
+
+一、URL 解析
+地址解析：
+首先判断你输入的是一个合法的 URL 还是一个待搜索的关键词，并且根据你输入的内容进行自动完成、字符编码等操作。
+HSTS
+由于安全隐患，会使用 HSTS 强制客户端使用 HTTPS 访问页面。详见：你所不知道的 HSTS (opens new window)。
+其他操作
+浏览器还会进行一些额外的操作，比如安全检查、访问限制（之前国产浏览器限制 996.icu）。
+检查缓存
+
+二、DNS 查询
+基本步骤
+
+1. 浏览器缓存
+浏览器会先检查是否在缓存中，没有则调用系统库函数进行查询。
+2. 操作系统缓存
+操作系统也有自己的 DNS 缓存，但在这之前，会向检查域名是否存在本地的 Hosts 文件里，没有则向 DNS 服务器发送查询请求。
+3. 路由器缓存
+路由器也有自己的缓存。
+4. ISP DNS 缓存
+ISP DNS 就是在客户端电脑上设置的首选 DNS 服务器，它们在大多数情况下都会有缓存。
+根域名服务器查询
+在前面所有步骤没有缓存的情况下，本地 DNS 服务器会将请求转发到互联网上的根域，下面这个图很好的诠释了整个流程：
+
+
+根域名服务器：维基百科 (opens new window)
+
+需要注意的点
+
+递归方式：一路查下去中间不返回，得到最终结果才返回信息（浏览器到本地 DNS 服务器的过程）
+迭代方式，就是本地 DNS 服务器到根域名服务器查询的方式。
+什么是 DNS 劫持
+前端 dns-prefetch 优化
+
+三、TCP 连接
+TCP/IP 分为四层，在发送数据时，每层都要对数据进行封装：
+
+1. 应用层：发送 HTTP 请求
+在前面的步骤我们已经得到服务器的 IP 地址，浏览器会开始构造一个 HTTP 报文，其中包括：
+
+请求报头（Request Header）：请求方法、目标地址、遵循的协议等等
+请求主体（其他参数）
+
+其中需要注意的点：
+
+浏览器只能发送 GET、POST 方法，而打开网页使用的是 GET 方法
+
+2. 传输层：TCP 传输报文
+传输层会发起一条到达服务器的 TCP 连接，为了方便传输，会对数据进行分割（以报文段为单位），并标记编号，方便服务器接受时能够准确地还原报文信息。
+在建立连接前，会先进行 TCP 三次握手。
+
+关于 TCP/IP 三次握手，网上已经有很多段子和图片生动地描述了。
+相关知识点：
+
+SYN 泛洪攻击
+
+
+3. 网络层：IP 协议查询 Mac 地址
+将数据段打包，并加入源及目标的 IP 地址，并且负责寻找传输路线。
+判断目标地址是否与当前地址处于同一网络中，是的话直接根据 Mac 地址发送，否则使用路由表查找下一跳地址，以及使用 ARP 协议查询它的 Mac 地址。
+
+注意：在 OSI 参考模型中 ARP 协议位于链路层，但在 TCP/IP 中，它位于网络层。
+
+4. 链路层：以太网协议
+以太网协议
+根据以太网协议将数据分为以“帧”为单位的数据包，每一帧分为两个部分：
+
+标头：数据包的发送者、接受者、数据类型
+数据：数据包具体内容
+
+Mac 地址
+以太网规定了连入网络的所有设备都必须具备“网卡”接口，数据包都是从一块网卡传递到另一块网卡，网卡的地址就是 Mac 地址。每一个 Mac 地址都是独一无二的，具备了一对一的能力。
+广播
+发送数据的方法很原始，直接把数据通过 ARP 协议，向本网络的所有机器发送，接收方根据标头信息与自身 Mac 地址比较，一致就接受，否则丢弃。
+注意：接收方回应是单播。
+
+相关知识点：
+
+ARP 攻击
+
+
+服务器接受请求
+接受过程就是把以上步骤逆转过来，参见上图。
+四、服务器处理请求
+大致流程
+
+HTTPD
+最常见的 HTTPD 有 Linux 上常用的 Apache 和 Nginx，以及 Windows 上的 IIS。
+它会监听得到的请求，然后开启一个子进程去处理这个请求。
+处理请求
+接受 TCP 报文后，会对连接进行处理，对 HTTP 协议进行解析（请求方法、域名、路径等），并且进行一些验证：
+
+验证是否配置虚拟主机
+验证虚拟主机是否接受此方法
+验证该用户可以使用该方法（根据 IP 地址、身份信息等）
+
+重定向
+假如服务器配置了 HTTP 重定向，就会返回一个 301永久重定向响应，浏览器就会根据响应，重新发送 HTTP 请求（重新执行上面的过程）。
+
+关于更多：详见这篇文章 (opens new window)
+
+URL 重写
+然后会查看 URL 重写规则，如果请求的文件是真实存在的，比如图片、html、css、js 文件等，则会直接把这个文件返回。
+否则服务器会按照规则把请求重写到 一个 REST 风格的 URL 上。
+然后根据动态语言的脚本，来决定调用什么类型的动态文件解释器来处理这个请求。
+以 PHP 语言的 MVC 框架举例，它首先会初始化一些环境的参数，根据 URL 由上到下地去匹配路由，然后让路由所定义的方法去处理请求。
+五、浏览器接受响应
+浏览器接收到来自服务器的响应资源后，会对资源进行分析。
+首先查看 Response header，根据不同状态码做不同的事（比如上面提到的重定向）。
+如果响应资源进行了压缩（比如 gzip），还需要进行解压。
+然后，对响应资源做缓存。
+接下来，根据响应资源里的 MIME (opens new window) 类型去解析响应内容（比如 HTML、Image 各有不同的解析方式）。
+六、渲染页面
+浏览器内核
+
+不同的浏览器内核，渲染过程也不完全相同，但大致流程都差不多。
+基本流程
+
+1. HTML 解析
+首先要知道浏览器解析是从上往下一行一行地解析的。
+解析的过程可以分为四个步骤：
+1. 解码（encoding）
+传输回来的其实都是一些二进制字节数据，浏览器需要根据文件指定编码（例如 UTF-8）转换成字符串，也就是 HTML 代码。
+2. 预解析（pre-parsing）
+预解析做的事情是提前加载资源，减少处理时间，它会识别一些会请求资源的属性，比如img标签的src属性，并将这个请求加到请求队列中。
+3. 符号化（Tokenization）
+符号化是词法分析的过程，将输入解析成符号，HTML 符号包括，开始标签、结束标签、属性名和属性值。
+它通过一个状态机去识别符号的状态，比如遇到&lt;，&gt;状态都会产生变化。
+4. 构建树（tree construction）
+
+注意：符号化和构建树是并行操作的，也就是说只要解析到一个开始标签，就会创建一个 DOM 节点。
+
+在上一步符号化中，解析器获得这些标记，然后以合适的方法创建DOM对象并把这些符号插入到DOM对象中。
+
+浏览器容错进制
+你从来没有在浏览器看过类似"语法无效"的错误，这是因为浏览器去纠正错误的语法，然后继续工作。
+事件
+当整个解析的过程完成以后，浏览器会通过DOMContentLoaded事件来通知DOM解析完成。
+2. CSS 解析
+一旦浏览器下载了 CSS，CSS 解析器就会处理它遇到的任何 CSS，根据语法规范 (opens new window)解析出所有的 CSS 并进行标记化，然后我们得到一个规则表。
+CSS 匹配规则
+在匹配一个节点对应的 CSS 规则时，是按照从右到左的顺序的，例如：div p { font-size :14px }会先寻找所有的p标签然后判断它的父元素是否为div。
+所以我们写 CSS 时，尽量用 id 和 class，千万不要过度层叠。
+3. 渲染树
+其实这就是一个 DOM 树和 CSS 规则树合并的过程。
+
+注意：渲染树会忽略那些不需要渲染的节点，比如设置了display:none的节点。
+
+计算
+通过计算让任何尺寸值都减少到三个可能之一：auto、百分比、px，比如把rem转化为px。
+级联
+浏览器需要一种方法来确定哪些样式才真正需要应用到对应元素，所以它使用一个叫做specificity的公式，这个公式会通过：
+
+标签名、class、id
+是否内联样式
+!important
+
+然后得出一个权重值，取最高的那个。
+渲染阻塞
+当遇到一个script标签时，DOM 构建会被暂停，直至脚本完成执行，然后继续构建 DOM 树。
+但如果 JS 依赖 CSS 样式，而它还没有被下载和构建时，浏览器就会延迟脚本执行，直至 CSS Rules 被构建。
+所有我们知道：
+
+CSS 会阻塞 JS 执行
+JS 会阻塞后面的 DOM 解析
+
+为了避免这种情况，应该以下原则：
+
+CSS 资源排在 JavaScript 资源前面
+JS 放在 HTML 最底部，也就是 &lt;/body&gt;前
+
+另外，如果要改变阻塞模式，可以使用 defer 与 async，详见：这篇文章 (opens new window)
+
+布局与绘制
+
+确定渲染树种所有节点的几何属性，比如：位置、大小等等，最后输入一个盒子模型，它能精准地捕获到每个元素在屏幕内的准确位置与大小。
+然后遍历渲染树，调用渲染器的 paint() 方法在屏幕上显示其内容。
+5. 合并渲染层
+把以上绘制的所有图片合并，最终输出一张图片。
+6. 回流与重绘
+回流(reflow)
+当浏览器发现某个部分发现变化影响了布局时，需要倒回去重新渲染，会从html标签开始递归往下，重新计算位置和大小。
+reflow 基本是无法避免的，因为当你滑动一下鼠标、resize 窗口，页面就会产生变化。
+重绘(repaint)
+改变了某个元素的背景色、文字颜色等等不会影响周围元素的位置变化时，就会发生重绘。
+每次重绘后，浏览器还需要合并渲染层并输出到屏幕上。
+回流的成本要比重绘高很多，所以我们应该尽量避免产生回流。
+比如：
+
+display:none 会触发回流，而 visibility:hidden 只会触发重绘。
+
+
+JavaScript 编译执行
+
+大致流程
+
+可以分为三个阶段：
+1. 词法分析
+JS 脚本加载完毕后，会首先进入语法分析阶段，它首先会分析代码块的语法是否正确，不正确则抛出“语法错误”，停止执行。
+几个步骤：
+
+分词，例如将var a = 2，，分成var、a、=、2这样的词法单元。
+解析，将词法单元转换成抽象语法树（AST）。
+代码生成，将抽象语法树转换成机器指令。
+
+2. 预编译
+JS 有三种运行环境：
+
+全局环境
+函数环境
+eval
+
+每进入一个不同的运行环境都会创建一个对应的执行上下文，根据不同的上下文环境，形成一个函数调用栈，栈底永远是全局执行上下文，栈顶则永远是当前执行上下文。
+创建执行上下文
+创建执行上下文的过程中，主要做了以下三件事：
+
+创建变量对象
+
+参数、函数、变量
+
+
+建立作用域链
+
+确认当前执行环境是否能访问变量
+
+
+确定 This 指向
+
+3. 执行
+JS 线程
+
+虽然 JS 是单线程的，但实际上参与工作的线程一共有四个：
+
+其中三个只是协助，只有 JS 引擎线程是真正执行的
+
+
+JS 引擎线程：也叫 JS 内核，负责解析执行 JS 脚本程序的主线程，例如 V8 引擎
+事件触发线程：属于浏览器内核线程，主要用于控制事件，例如鼠标、键盘等，当事件被触发时，就会把事件的处理函数推进事件队列，等待 JS 引擎线程执行
+定时器触发线程：主要控制setInterval和setTimeout，用来计时，计时完毕后，则把定时器的处理函数推进事件队列中，等待 JS 引擎线程。
+HTTP 异步请求线程：通过 XMLHttpRequest 连接后，通过浏览器新开的一个线程，监控 readyState 状态变更时，如果设置了该状态的回调函数，则将该状态的处理函数推进事件队列中，等待 JS 引擎线程执行。
+
+注：浏览器对同一域名的并发连接数是有限的，通常为 6 个。
+宏任务
+分为：
+
+同步任务：按照顺序执行，只有前一个任务完成后，才能执行后一个任务
+异步任务：不直接执行，只有满足触发条件时，相关的线程将该异步任务推进任务队列中，等待 JS 引擎主线程上的任务执行完毕时才开始执行，例如异步 Ajax、DOM 事件，setTimeout 等。
+
+微任务
+微任务是 ES6 和 Node 环境下的，主要 API 有：Promise，process.nextTick。
+微任务的执行在宏任务的同步任务之后，在异步任务之前。
+
+代码例子
+以上代码输出顺序为：1,3,5,4,2
+参考文档
+
+what-happens-when-zh_CN (opens new window)
+Tags to DOM (opens new window)
+彻底理解浏览器的缓存机制 (opens new window)
+浏览器的工作原理：新式网络浏览器幕后揭秘 (opens new window)
+深入浅出浏览器渲染原理 (opens new window)
+js 引擎的执行过程（一） (opens new window)
+还有一些找不到了。。。。。
+
+From: 4ark.me
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
       </tags>
   </entry>
   <entry>
@@ -11991,9 +12051,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-WgzrmxDiBMzMekWB").style.height=document.getElementById("mmedia-WgzrmxDiBMzMekWB").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-aUztSFGyNAponiqG").style.height=document.getElementById("mmedia-aUztSFGyNAponiqG").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-WgzrmxDiBMzMekWB").style.height=document.getElementById("mmedia-WgzrmxDiBMzMekWB").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-aUztSFGyNAponiqG").style.height=document.getElementById("mmedia-aUztSFGyNAponiqG").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -17220,11 +17280,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var lRXFDzMmGMCITzFK_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); lRXFDzMmGMCITzFK_options.container = document.getElementById("mmedia-lRXFDzMmGMCITzFK"); const ap_lRXFDzMmGMCITzFK = new APlayer(lRXFDzMmGMCITzFK_options); 
+ var XmDnfpcvnwnmjFiW_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); XmDnfpcvnwnmjFiW_options.container = document.getElementById("mmedia-XmDnfpcvnwnmjFiW"); const ap_XmDnfpcvnwnmjFiW = new APlayer(XmDnfpcvnwnmjFiW_options); 
 
 - **列表**
 
- var AyjoUxPJHlQNitEt_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); AyjoUxPJHlQNitEt_options.container = document.getElementById("mmedia-AyjoUxPJHlQNitEt"); const ap_AyjoUxPJHlQNitEt = new APlayer(AyjoUxPJHlQNitEt_options); 
+ var vHbkfmNLtGYokDNp_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); vHbkfmNLtGYokDNp_options.container = document.getElementById("mmedia-vHbkfmNLtGYokDNp"); const ap_vHbkfmNLtGYokDNp = new APlayer(vHbkfmNLtGYokDNp_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -17476,21 +17536,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-CRxqTbtRDjOMrjLg").style.height=document.getElementById("mmedia-CRxqTbtRDjOMrjLg").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-JwassMKIRNuAjLoi").style.height=document.getElementById("mmedia-JwassMKIRNuAjLoi").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-CRxqTbtRDjOMrjLg").style.height=document.getElementById("mmedia-CRxqTbtRDjOMrjLg").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-JwassMKIRNuAjLoi").style.height=document.getElementById("mmedia-JwassMKIRNuAjLoi").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-AmjUveyzFwvwVpPM").style.height=document.getElementById("mmedia-AmjUveyzFwvwVpPM").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-mthONaLRVGjxvkcf").style.height=document.getElementById("mmedia-mthONaLRVGjxvkcf").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-AmjUveyzFwvwVpPM").style.height=document.getElementById("mmedia-AmjUveyzFwvwVpPM").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-mthONaLRVGjxvkcf").style.height=document.getElementById("mmedia-mthONaLRVGjxvkcf").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var IlvgrjCircxFgZDO_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); IlvgrjCircxFgZDO_options.container = "#mmedia-IlvgrjCircxFgZDO"; const art_IlvgrjCircxFgZDO = new Artplayer(IlvgrjCircxFgZDO_options); 
+ var sACYyZWHLrvggDfH_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); sACYyZWHLrvggDfH_options.container = "#mmedia-sACYyZWHLrvggDfH"; const art_sACYyZWHLrvggDfH = new Artplayer(sACYyZWHLrvggDfH_options); 
 脑图
 
 原作者记录
@@ -18525,66 +18585,6 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
-    <title>通过宝塔面板实现MySQL性能简单调优</title>
-    <url>/posts/d5f56dd0/</url>
-    <content><![CDATA[
-在PHP+MYSQL架构网站运行过程中，往往会遇到各种性能问题影响，如MySQL、PHP、CPU、磁盘IO、缓存等，其中MySQL瓶颈就是最常见也最难解决的一种影响网站性能的因素；通常，我们会使用redis、memcached等缓存软件来缓存内容，这确实是最优的解决方案之一，但这需要网站程序的支持，然而多数常用网站程序并不支持或者不能完美支持这些缓存软件，今天我们就来谈谈如何通过MySQL自身的配置调整来优化MySQL性能，以缓解MySQL瓶颈问题。
-
-准备：
-
-​    1、宝塔Linux面板 正式版 5.2.0+ (2017/09/20发布)  测试版5.2.4+
-​    2、MySQL 5.x
-
-通常MySQL调优我们分以下几部分：
-
-​    1、MySQL配置参数调优 (需要根据网站运行情况调整)
-​    2、数据表索引调优 (效果明显，但通常优秀的开源程序都不需要调整)
-​    3、SQL语句调优 (这是程序员或DBA干的事)
-
-今天我们主要谈谈如果配合宝塔面板的新功能来进行MySQL配置参数调优，我们先来看两张图片：
-(图1)
-
-(图2)
-
-很明显，(图1)显示的是MySQL当前的运行状态，(图2)显示的是MySQL主要配置参数
-下面我们就来解读一下这两张图：
-1、活动/峰值连接数
-​      (图1)中当前活动的连接为1个，自MySQL服务启动以来，最高连接数为54；当最高连接数接近或等于(图2)中的max_connections时，应适当增加max_connections，需要注意的是，不要一下子增加过多，建议每次增加50，观察一段时间，不够再继续增加。
-2、线程缓存命中率
-​      (图1)中线程缓存命中率为99.78%，若这个值小于90%，建议适当增加(图2)中的thread_cache_size，建议每次增加8。
-3、索引命中率
-​      (图1)中索引命中率为99.50%，若这个值小于95%，建议适当增加(图2)中的key_buffer_size，建议每次增加64，需要说明的是，若您的数据库使用的是Innodb引擎，可忽略这个选项
-4、Innodb索引命中率
-(图1)中Innodb索引命中率为100%，若这个值小于95%，建议适当增加(图2)中的innodb_buffer_pool_size，建议每次增加64，需要说明的是，若您的数据库没有使用Innodb引擎，可忽略这个选项
-5、查询缓存命中率
-​      MySQL查询缓存是个比较受争议的功能，个人建议当你有在使用redis、memcached等缓存软件时，在(图2)中将query_cache_size设为0可以将其关闭，当你没有使用缓存软件，有多余的内存使用，且数据库瓶颈明显存在时，可以尝试开启查询缓存，这是个非常依赖数据表结构及SQL语句优化的功能，若数据表结构和SQL语句都针对查询缓存进行过优化，它的效果还是很不错的。
-6、创建临时表到磁盘
-​      (图1)中创建临时表到磁盘的比例是0.42%，这说明大部分临时表创建到内存了，不会过多增加磁盘IO的开销，建议，当比例大于2%时适当增加(图1)中的tmp_cache_size，建议每次增加32，当比例大于60%时，放弃吧，有些开源程序并没有专门优化过SQL语句，所以在运行过程中会开启大量临时表，加多少缓存都是不够用的。
-7、已打开的表
-​      当(图1)中的已打开的表接近或等于(图2)中的table_open_cache时，可以适当增加table_open_cache，但若设置过大可能导致您的程序频繁中断MySQL连接，建议在1024以内，最大不要超过2048。
-8、没有使用索引的量、没有使用索引的JOIN量
-​      若不为0，就检查下数据表索引吧，其实只要没有疯涨，比如一天增涨几千，一般可以忽略，必竟优化索引还是程序员或DBA去干比较合适。
-9、排序后的合并次数
-​      如果这个值在缓慢增张，建议适当增加(图2)中的sort_buffer_size，建议每次增加512，但最大不要超过8192，如果这个值一直在疯涨，增加sort_buffer_size也没用，就放弃这个选项吧，这个锅还是给程序开发者背。
-10、锁表次数
-​      如果服务器CPU开销不大的情况下，疯狂锁表，建议你将所有数据表转换成innodb，记得转换前备份哦。
-11、优化方案
-​      这个是我们根据内存大小给的一个推荐优化方案，仅是建议仅用于基础参考值，还是要根据实据情况来调整每一个配置项。
-注意：保存参数配置后不会立即生效，记得要重启MySQL服务。
-写在最后：
-因我本人并不是专业DBA，难免有错误或遗漏的地方，还请大家给予指正，另外，可能面板提供的参考数据及调整选项还不够丰富，我们在往后的更新中会根据需要考虑继续增加更多的调整选项，谢谢大家的支持。
-来自网络整理。
-]]></content>
-      <categories>
-        <category>mysql</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>mysql</tag>
-        <tag>优化</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>私人在线音乐服务器搭建与使用介绍</title>
     <url>/posts/2b9325d0/</url>
     <content><![CDATA[
@@ -18614,11 +18614,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var rxwBXrJfonYGPzur_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); rxwBXrJfonYGPzur_options.container = document.getElementById("mmedia-rxwBXrJfonYGPzur"); const ap_rxwBXrJfonYGPzur = new APlayer(rxwBXrJfonYGPzur_options); 
+ var hbufWyEavaJEmnlh_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); hbufWyEavaJEmnlh_options.container = document.getElementById("mmedia-hbufWyEavaJEmnlh"); const ap_hbufWyEavaJEmnlh = new APlayer(hbufWyEavaJEmnlh_options); 
 
 
 
- var kfbBzcEvjuSSuIIP_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); kfbBzcEvjuSSuIIP_options.container = document.getElementById("mmedia-kfbBzcEvjuSSuIIP"); const ap_kfbBzcEvjuSSuIIP = new APlayer(kfbBzcEvjuSSuIIP_options); 
+ var KPiyCDQcyvzlHQyj_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); KPiyCDQcyvzlHQyj_options.container = document.getElementById("mmedia-KPiyCDQcyvzlHQyj"); const ap_KPiyCDQcyvzlHQyj = new APlayer(KPiyCDQcyvzlHQyj_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -18756,9 +18756,9 @@ docker run -d \
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-lxUQwsOXRozxWoaR").style.height=document.getElementById("mmedia-lxUQwsOXRozxWoaR").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-UKmaLkKHaUXMmmJT").style.height=document.getElementById("mmedia-UKmaLkKHaUXMmmJT").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-lxUQwsOXRozxWoaR").style.height=document.getElementById("mmedia-lxUQwsOXRozxWoaR").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-UKmaLkKHaUXMmmJT").style.height=document.getElementById("mmedia-UKmaLkKHaUXMmmJT").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -18767,7 +18767,7 @@ docker run -d \
 
 ## 中文翻唱
 
- var bTETvFoEhYgZpYTk_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); bTETvFoEhYgZpYTk_options.container = document.getElementById("mmedia-bTETvFoEhYgZpYTk"); const ap_bTETvFoEhYgZpYTk = new APlayer(bTETvFoEhYgZpYTk_options); 
+ var CEoeESPcRjHBTNDv_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); CEoeESPcRjHBTNDv_options.container = document.getElementById("mmedia-CEoeESPcRjHBTNDv"); const ap_CEoeESPcRjHBTNDv = new APlayer(CEoeESPcRjHBTNDv_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -20253,167 +20253,6 @@ RAR registration data``Federal Agency ``for` `Education``1000000 PC usage licens
         <tag>crack</tag>
         <tag>tools</tag>
         <tag>winrar</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>emoji表情符号</title>
-    <url>/posts/80938cfe/</url>
-    <content><![CDATA[
-emoji表情符号是非常流行的表情符号，几乎没有地方都会支持。这里列举出常用的emoji表情不好，方便大家使用与查阅。
-
-
-常用符号
-❤❥웃유♋☮✌☏☢☠✔☑♚▲♪✈✞÷↑↓◆◇⊙■□△▽¿─│♥❣♂♀☿Ⓐ✍✉☣☤✘☒♛▼♫⌘☪≈←→◈◎☉★☆⊿※¡━┃♡ღ ツ
-
-☼☁❅♒✎©®™Σ✪✯☭➳ 卐 √↖↗●◐Θ◤◥︻〖〗┄┆℃℉°✿ϟ☃☂✄¢€£∞✫★½✡×↙↘○◑⊕◣◢︼【】┅┇☽☾✚〓
-
-▂▃▄▅▆▇█▉▊▋▌▍▎▏↔↕☽☾ の•▸◂▴▾┈┊①②③④⑤⑥⑦⑧⑨⑩ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ ㍿ ▓♨♛❖♓☪✙
-
-┉┋☹☺☻ت ヅツッシ Üϡﭢ™℠℗©®♥❤❥❣❦❧♡۵웃유ღ♋♂♀☿☼☀☁☂☄☾☽❄☃☈⊙☉℃℉❅✺ϟ☇♤♧♡♢♠♣
-
-♥♦☜☞☝✍☚☛☟✌✽✾✿❁❃❋❀⚘☑✓✔√☐☒✗✘ ㄨ ✕✖✖⋆✢✣✤✥❋✦✧✩✰✪✫✬✭✮✯❂✡★✱✲✳✴✵✶✷✸✹✺✻✼❄❅❆❇❈❉❊†☨✞✝☥☦☓☩☯☧☬
-
-☸✡♁✙♆。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴々﹟#
-
-﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼☩☨☦✞✛✜✝✙✠✚†‡◉○◌◍◎●◐◑◒◓◔◕◖◗❂☢⊗⊙◘◙◍⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌
-
-≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱㊣㊎㊍㊌㊋㊏㊐㊊㊚㊛㊤㊥
-
-㊦㊧㊨㊒㊞㊑㊒㊓㊔㊕㊖㊗㊘㊜㊝㊟㊠㊡㊢㊩㊪㊫㊬㊭㊮㊯㊰㊙ ㉿ 囍 ♔♕♖♗♘♙♚♛♜♝♞♟ℂℍℕℙℚℝℤℬℰℯℱℊℋℎℐℒℓℳℴ℘ℛℭ℮ℌℑℜℨ♪♫♩♬♭♮♯°øⒶ☮✌☪✡☭✯ 卐 ✐✎✏
-
-✑✒✍✉✁✂✃✄✆✉☎☏➟➡➢➣➤➥➦➧➨➚➘➙➛➜➝➞➸♐➲➳⏎➴➵➶➷➸➹➺➻➼➽←↑→↓↔↕↖↗↘↙↚↛↜↝
-
-↞↟↠↡↢↣↤↥↦↧↨➫➬➩➪➭➮➯➱↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹↺↻↼↽↾↿⇀⇁⇂⇃⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇕
-
-⇖⇗⇘⇙⇚⇛⇜⇝⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪➀➁➂➃➄➅➆➇➈➉➊➋➌➍➎➏➐➑➒➓㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡ
-
-ⓢⓣⓤⓥⓦⓧⓨⓩ⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵ⅠⅡⅢⅣⅤ
-
-ⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹⅺⅻⅼⅽⅾⅿ┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫
-┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽
-┾┿╀╁╂╃╄╅╆╇╈╉╊╋╌╍╎╏
-═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬◤◥◄►▶◀◣◢▲
-
-▼◥▸◂▴▾△▽▷◁⊿▻◅▵▿▹◃❏❐❑❒▀▁▂▃▄▅▆▇▉▊▋█▌▍▎▏▐░▒▓▔▕■□▢▣▤▥▦▧
-
-▨▩▪▫▬▭▮▯ ㋀㋁㋂㋃㋄㋅㋆㋇㋈㋉㋊㋋㏠㏡㏢㏣㏤㏥㏦㏧㏨㏩㏪㏫㏬㏭㏮㏯㏰㏱㏲
-
-㏳㏴㏵㏶㏷㏸㏹㏺㏻㏼㏽㏾㍙㍚㍛㍜㍝㍞㍟㍠㍡㍢㍣㍤㍥㍦㍧㍨㍩㍪㍫㍬㍭㍮㍯㍰㍘
-
-☰☲☱☴☵☶☳☷☯
-特殊符号
-♠♣♧♡♥❤❥❣♂♀✲☀☼☾☽◐◑☺☻☎☏✿❀№↑↓←→√×÷★℃℉°◆◇⊙■□△▽¿½☯✡ ㍿卍卐 ♂♀✚〓㎡♪♫♩♬
-
-㊚㊛囍㊒㊖ Φ♀♂‖KaTeX parse error: Expected ‘EOF’, got ‘&amp;’ at position 3: @*&amp;̲#※卍卐 Ψ♫♬♭♩♪♯♮⌒¶∮…
-编号序号
-①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳⓪
-
-❶❷❸❹❺❻❼❽❾❿⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴
-
-㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉㈠㈡㈢㈣㈤㈥㈦㈧㈨㈩⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇
-
-⒈⒉⒊⒋⒌⒍⒎⒏⒐⒑⒒⒓⒔⒕⒖⒗⒘⒙⒚⒛
-
-ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹ
-
-ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ
-
-⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵
-数学符号
-﹢﹣×÷±/=≌∽≦≧≒ ﹤﹥ ≈≡≠=≤≥&lt;&gt;≮≯∷∶∫∮∝∞∧∨∑∏∪∩∈∵∴⊥∥∠⌒⊙√∟⊿㏒㏑%
-
-‰⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟
-
-≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱øØπ
-爱心符号
-♥❣ღ♠♡♤❤❥
-标点符号
-。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴
-
-々﹟#﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊
-
-（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】
-
-︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼❝❞
-单位符号
-°′″＄￥〒￠￡％＠℃℉ ﹩﹪‰﹫㎡㏕㎜㎝㎞㏎m³㎎㎏㏄º○¤%$º¹²³
-货币符号
-€£Ұ₴$₰¢₤¥₳₲₪₵ 元 ₣₱฿¤₡₮₭₩ރ 円 ₢₥₫₦zł﷼₠₧₯₨Kčर₹ƒ₸ ￠
-箭头符号（含推导&amp;转换符号）
-↑↓←→↖↗↘↙↔↕➻➼➽➸➳➺➻➴➵➶➷➹▶►▷◁◀◄«
-
-»➩➪➫➬➭➮➯➱⏎➲➾➔➘➙➚➛➜➝➞➟➠➡➢➣➤➥➦➧➨
-
-↚↛↜↝↞↟↠↠↡↢↣↤↤↥↦↧↨⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇖⇗⇘⇙
-
-⇜↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹☇☈↼↽↾↿⇀⇁⇂⇃⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪↺↻⇚⇛♐
-符号图案
-✐✎✏✑✒✍✉✁✂✃✄✆✉☎☏☑✓✔√☐☒✗✘ ㄨ ✕✖✖☢☠☣✈★☆✡ 囍㍿ ☯☰☲☱☴☵☶☳☷
-
-☜☞☝✍☚☛☟✌♤♧♡♢♠♣♥♦☀☁☂❄☃♨웃유❖☽☾☪✿♂♀✪✯☭➳ 卍卐 √×■◆●○◐◑✙☺☻
-
-❀⚘♔♕♖♗♘♙♚♛♜♝♞♟♧♡♂♀♠♣♥❤☜☞☎☏⊙◎☺☻☼▧▨♨◐◑↔↕▪▒◊◦▣▤▥▦▩◘◈◇
-
-♬♪♩♭♪ の ★☆→ あぃ￡ Ю〓§♤♥▶¤✲❈✿✲❈➹☀☂☁【】┱┲❣✚✪✣✤✥✦❉❥❦❧❃❂❁❀✄☪☣☢☠☭ღ▶▷◀◁
-
-☀☁☂☃☄★☆☇☈⊙☊☋☌☍ⓛⓞⓥⓔ╬『』∴☀♫♬♩♭♪☆∷﹌の ★◎▶☺☻►◄▧▨♨◐◑↔↕↘▀▄█▌
-
-◦☼♪ の ☆→♧ ぃ￡ ❤▒▬♦◊◦♠♣▣۰•❤•۰►◄▧▨♨◐◑↔↕▪▫☼♦⊙●○①⊕◎Θ⊙¤ ㊣ ★☆♀◆◇◣◢◥▲▼△▽⊿◤◥
-
-✐✌✍✡✓✔✕✖♂♀♥♡☜☞☎☏⊙◎☺☻►◄▧▨♨◐◑↔↕♥♡▪▫☼♦▀▄█▌▐░▒▬♦◊◘◙◦☼♠♣▣▤▥▦▩◘◙◈
-
-♫♬♪♩♭♪✄☪☣☢☠♯♩♪♫♬♭♮☎☏☪♈ºº₪¤큐«»™♂✿♥ 　 ◕‿-｡　｡◕‿◕｡
-希腊字母
-ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ
-
-αβγδεζνξοπρσηθικλμτυφχψω
-俄语字母
-АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвг
-
-деёжзийклмнопрстуфхцчшщъыьэюя
-汉语拼音
-āáǎàōóǒòēéěèīíǐìūúǔùǖǘǚǜüêɑńňɡ ㄅㄆㄇㄈㄉ
-
-ㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄚㄛㄜㄝㄞ
-
-ㄟㄠㄡㄢㄣㄤㄥㄦㄧㄨㄩ
-中文字符
-零壹贰叁肆伍陆柒捌玖拾佰仟万亿吉太拍艾分厘毫微
-
-卍卐卄巜弍弎弐朤氺曱甴囍兀々〆のぁ〡〢〣〤〥〦〧〨〩
-
-㊎㊍㊌㊋㊏㊚㊛㊐㊊㊣㊤㊥㊦㊧㊨㊒㊫㊑㊓㊔㊕㊖㊗㊘㊜㊝㊞㊟㊠㊡㊢㊩㊪㊬㊭㊮㊯㊰
-
-㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉
-日文符号
-ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてで
-
-とどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎ
-
-わゐゑをんゔゕゖァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタ
-
-ダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユ
-
-ョヨラリルレロヮワヰヱヲンヴヵヶヷヸヹヺ・ーヽヾヿ゠ㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇺㇻㇼㇽㇾㇿ
-制表符号
-─ ━│┃╌╍╎╏┄ ┅┆┇┈ ┉┊┋┌┍┎┏┐┑┒┓└ ┕┖┗ ┘┙┚┛├┝┞┟┠┡┢┣ ┤┥┦┧┨┩┪┫┬ ┭ ┮ ┯ ┰ ┱ ┲ ┳
-
-┴ ┵ ┶ ┷ ┸ ┹ ┺ ┻┼ ┽ ┾ ┿ ╀ ╁ ╂ ╃ ╄ ╅ ╆ ╇ ╈ ╉ ╊ ╋ ╪ ╫ ╬═║╒╓╔ ╕╖╗╘╙╚ ╛╜╝╞╟╠ ╡╢╣
-
-╤ ╥ ╦ ╧ ╨ ╩ ╳╔ ╗╝╚ ╬ ═ ╓ ╩ ┠ ┨┯ ┷┏ ┓┗ ┛┳ ⊥ ﹃ ﹄┌ ╮ ╭ ╯╰
-皇冠符号
-♚ 　 ♛ 　 ♝ 　 ♞ 　 ♜ 　 ♟ 　 ♔ 　 ♕ 　 ♗ 　 ♘ 　 ♖ 　 ♟
-彩色表情符号
-🌹🍀🍎💰📱🌙🍁🍂🍃🌷💎🔪🔫🏀⚽⚡👄👍🔥
-常用 emoji 符号
-😀😁😂😃😄😅😆😉😊😋😎😍😘😗😙😚☺😇😐😑😶😏😣😥😮😯😪😫😴😌😛😜😝😒😓😔😕😲😷😖😞😟😤😢😭😦😧😨😬😰😱😳😵😡😠😈👿👹👺💀👻👽👦👧👨👩👴👵👶👱👮👲👳👷👸💂🎅👰👼💆💇🙍🙎🙅🙆💁🙋🙇🙌🙏👤👥🚶🏃👯💃👫👬👭💏💑👪💪👈👉☝👆👇✌✋👌👍👎✊👊👋👏👐✍👣👀👂👃👅👄💋👓👔👕👖👗👘👙👚👛👜👝🎒💼👞👟👠👡👢👑👒🎩🎓💄💅💍🌂🙈🙉🙊🐵🐒🐶🐕🐩🐺🐱😺😸😹😻😼😽🙀😿😾🐈🐯🐅🐆🐴🐎🐮🐂🐃🐄🐷🐖🐗🐽🐏🐑🐐🐪🐫🐘🐭🐁🐀🐹🐰🐇🐻🐨🐼🐾🐔🐓🐣🐤🐥🐦🐧🐸🐊🐢🐍🐲🐉🐳🐋🐬🐟🐠🐡🐙🐚🐌🐛🐜🐝🐞🦋💐🌸💮🌹🌺🌻🌼🌷🌱🌲🌳🌴🌵🌾🌿🍀🍁🍂🍃🌍🌎🌏🌐🌑🌒🌓🌔🌕🌖🌗🌘🌙🌚🌛🌜☀🌝🌞⭐🌟🌠☁⛅☔⚡❄🔥💧🌊💩🍇🍈🍉🍊🍋🍌🍍🍎🍏🍐🍑🍒🍓🍅🍆🌽🍄🌰🍞🍖🍗🍔🍟🍕🍳🍲🍱🍘🍙🍚🍛🍜🍝🍠🍢🍣🍤🍥🍡🍦🍧🍨🍩🍪🎂🍰🍫🍬🍭🍮🍯🍼☕🍵🍶🍷🍸🍹🍺🍻🍴🎪🎭🎨🎰🚣🛀🎫🏆⚽⚾🏀🏈🏉🎾🎱🎳⛳🎣🎽🎿🏂🏄🏇🏊🚴🚵🎯🎮🎲🎷🎸🎺🎻🎬👾🌋🗻🏠🏡🏢🏣🏤🏥🏦🏨🏩🏪🏫🏬🏭🏯🏰💒🗼🗽⛪⛲🌁🌃🌆🌇🌉🌌🎠🎡🎢🚂🚃🚄🚅🚆🚇🚈🚉🚊🚝🚞🚋🚌🚍🚎🚏🚐🚑🚒🚓🚔🚕🚖🚗🚘🚚🚛🚜🚲⛽🚨🚥🚦🚧⚓⛵🚤🚢✈💺🚁🚟🚠🚡🚀🎑🗿🛂🛃🛄🛅💌💎🔪💈🚪🚽🚿🛁⌛⏳⌚⏰🎈🎉🎊🎎🎏🎐🎀🎁📯📻📱📲☎📞📟📠🔋🔌💻💽💾💿📀🎥📺📷📹📼🔍🔎🔬🔭📡💡🔦🏮📔📕📖📗📘📙📚📓📃📜📄📰📑🔖💰💴💵💶💷💸💳✉📧📨📩📤📥📦📫📪📬📭📮✏✒📝📁📂📅📆📇📈📉📊📋📌📍📎📏📐✂🔒🔓🔏🔐🔑🔨🔫🔧🔩🔗💉💊🚬🔮🚩🎌💦💨💣☠♠♥♦♣🀄🎴🔇🔈🔉🔊📢📣💤💢💬💭♨🌀🔔🔕✡✝🔯📛🔰🔱⭕✅☑✔✖❌❎➕➖➗➰➿〽✳✴❇‼⁉❓❔❕❗©®™🎦🔅🔆💯🔠🔡🔢🔣🔤🅰🆎🅱🆑🆒🆓ℹ🆔Ⓜ🆕🆖🅾🆗🅿🆘🆙🆚🈁🈂🈷🈶🈯 🉐 🈹🈚🈲 🉑 🈸🈴🈳 ㊗㊙ 🈺🈵▪▫◻◼◽◾⬛⬜🔶🔷🔸🔹🔺🔻💠🔲🔳⚪⚫🔴🔵♈♉♊♋♌♍♎♏♐♑♒♓⛎💘❤💓💔💕💖💗💙💚💛💜💝💞💟❣🌿🚧💒☎📟💽⬆↗➡↘⬇↙⬅↖↕↔↩↪⤴⤵🔃🔄🔙🔚🔛🔜🔝🔀🔁🔂▶⏩◀⏪🔼⏫🔽⏬📱📶📳📴♻🏧🚮🚰♿🚹🚺🚻🚼🚾⚠🚸⛔🚫🚳🚭🚯🚱🚷🔞
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>emoji</tag>
       </tags>
   </entry>
   <entry>
@@ -34602,9 +34441,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-WXFKvAIgaamTLMdF").style.height=document.getElementById("mmedia-WXFKvAIgaamTLMdF").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-nAmZgeEjXFDbLgso").style.height=document.getElementById("mmedia-nAmZgeEjXFDbLgso").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-WXFKvAIgaamTLMdF").style.height=document.getElementById("mmedia-WXFKvAIgaamTLMdF").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-nAmZgeEjXFDbLgso").style.height=document.getElementById("mmedia-nAmZgeEjXFDbLgso").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 calibre:
@@ -36567,6 +36406,167 @@ https://blinkfox.github.io/2018/10/09/ruan-jian-gong-ju/linux/chang-yong-bash-mi
         <tag>中医</tag>
         <tag>西医</tag>
         <tag>社会观察</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>emoji表情符号</title>
+    <url>/posts/80938cfe/</url>
+    <content><![CDATA[
+emoji表情符号是非常流行的表情符号，几乎没有地方都会支持。这里列举出常用的emoji表情不好，方便大家使用与查阅。
+
+
+常用符号
+❤❥웃유♋☮✌☏☢☠✔☑♚▲♪✈✞÷↑↓◆◇⊙■□△▽¿─│♥❣♂♀☿Ⓐ✍✉☣☤✘☒♛▼♫⌘☪≈←→◈◎☉★☆⊿※¡━┃♡ღ ツ
+
+☼☁❅♒✎©®™Σ✪✯☭➳ 卐 √↖↗●◐Θ◤◥︻〖〗┄┆℃℉°✿ϟ☃☂✄¢€£∞✫★½✡×↙↘○◑⊕◣◢︼【】┅┇☽☾✚〓
+
+▂▃▄▅▆▇█▉▊▋▌▍▎▏↔↕☽☾ の•▸◂▴▾┈┊①②③④⑤⑥⑦⑧⑨⑩ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ ㍿ ▓♨♛❖♓☪✙
+
+┉┋☹☺☻ت ヅツッシ Üϡﭢ™℠℗©®♥❤❥❣❦❧♡۵웃유ღ♋♂♀☿☼☀☁☂☄☾☽❄☃☈⊙☉℃℉❅✺ϟ☇♤♧♡♢♠♣
+
+♥♦☜☞☝✍☚☛☟✌✽✾✿❁❃❋❀⚘☑✓✔√☐☒✗✘ ㄨ ✕✖✖⋆✢✣✤✥❋✦✧✩✰✪✫✬✭✮✯❂✡★✱✲✳✴✵✶✷✸✹✺✻✼❄❅❆❇❈❉❊†☨✞✝☥☦☓☩☯☧☬
+
+☸✡♁✙♆。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴々﹟#
+
+﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼☩☨☦✞✛✜✝✙✠✚†‡◉○◌◍◎●◐◑◒◓◔◕◖◗❂☢⊗⊙◘◙◍⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌
+
+≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱㊣㊎㊍㊌㊋㊏㊐㊊㊚㊛㊤㊥
+
+㊦㊧㊨㊒㊞㊑㊒㊓㊔㊕㊖㊗㊘㊜㊝㊟㊠㊡㊢㊩㊪㊫㊬㊭㊮㊯㊰㊙ ㉿ 囍 ♔♕♖♗♘♙♚♛♜♝♞♟ℂℍℕℙℚℝℤℬℰℯℱℊℋℎℐℒℓℳℴ℘ℛℭ℮ℌℑℜℨ♪♫♩♬♭♮♯°øⒶ☮✌☪✡☭✯ 卐 ✐✎✏
+
+✑✒✍✉✁✂✃✄✆✉☎☏➟➡➢➣➤➥➦➧➨➚➘➙➛➜➝➞➸♐➲➳⏎➴➵➶➷➸➹➺➻➼➽←↑→↓↔↕↖↗↘↙↚↛↜↝
+
+↞↟↠↡↢↣↤↥↦↧↨➫➬➩➪➭➮➯➱↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹↺↻↼↽↾↿⇀⇁⇂⇃⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇕
+
+⇖⇗⇘⇙⇚⇛⇜⇝⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪➀➁➂➃➄➅➆➇➈➉➊➋➌➍➎➏➐➑➒➓㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡ
+
+ⓢⓣⓤⓥⓦⓧⓨⓩ⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵ⅠⅡⅢⅣⅤ
+
+ⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹⅺⅻⅼⅽⅾⅿ┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫
+┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽
+┾┿╀╁╂╃╄╅╆╇╈╉╊╋╌╍╎╏
+═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬◤◥◄►▶◀◣◢▲
+
+▼◥▸◂▴▾△▽▷◁⊿▻◅▵▿▹◃❏❐❑❒▀▁▂▃▄▅▆▇▉▊▋█▌▍▎▏▐░▒▓▔▕■□▢▣▤▥▦▧
+
+▨▩▪▫▬▭▮▯ ㋀㋁㋂㋃㋄㋅㋆㋇㋈㋉㋊㋋㏠㏡㏢㏣㏤㏥㏦㏧㏨㏩㏪㏫㏬㏭㏮㏯㏰㏱㏲
+
+㏳㏴㏵㏶㏷㏸㏹㏺㏻㏼㏽㏾㍙㍚㍛㍜㍝㍞㍟㍠㍡㍢㍣㍤㍥㍦㍧㍨㍩㍪㍫㍬㍭㍮㍯㍰㍘
+
+☰☲☱☴☵☶☳☷☯
+特殊符号
+♠♣♧♡♥❤❥❣♂♀✲☀☼☾☽◐◑☺☻☎☏✿❀№↑↓←→√×÷★℃℉°◆◇⊙■□△▽¿½☯✡ ㍿卍卐 ♂♀✚〓㎡♪♫♩♬
+
+㊚㊛囍㊒㊖ Φ♀♂‖KaTeX parse error: Expected ‘EOF’, got ‘&amp;’ at position 3: @*&amp;̲#※卍卐 Ψ♫♬♭♩♪♯♮⌒¶∮…
+编号序号
+①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳⓪
+
+❶❷❸❹❺❻❼❽❾❿⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴
+
+㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉㈠㈡㈢㈣㈤㈥㈦㈧㈨㈩⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇
+
+⒈⒉⒊⒋⒌⒍⒎⒏⒐⒑⒒⒓⒔⒕⒖⒗⒘⒙⒚⒛
+
+ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹ
+
+ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ
+
+⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵
+数学符号
+﹢﹣×÷±/=≌∽≦≧≒ ﹤﹥ ≈≡≠=≤≥&lt;&gt;≮≯∷∶∫∮∝∞∧∨∑∏∪∩∈∵∴⊥∥∠⌒⊙√∟⊿㏒㏑%
+
+‰⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟
+
+≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱øØπ
+爱心符号
+♥❣ღ♠♡♤❤❥
+标点符号
+。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴
+
+々﹟#﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊
+
+（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】
+
+︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼❝❞
+单位符号
+°′″＄￥〒￠￡％＠℃℉ ﹩﹪‰﹫㎡㏕㎜㎝㎞㏎m³㎎㎏㏄º○¤%$º¹²³
+货币符号
+€£Ұ₴$₰¢₤¥₳₲₪₵ 元 ₣₱฿¤₡₮₭₩ރ 円 ₢₥₫₦zł﷼₠₧₯₨Kčर₹ƒ₸ ￠
+箭头符号（含推导&amp;转换符号）
+↑↓←→↖↗↘↙↔↕➻➼➽➸➳➺➻➴➵➶➷➹▶►▷◁◀◄«
+
+»➩➪➫➬➭➮➯➱⏎➲➾➔➘➙➚➛➜➝➞➟➠➡➢➣➤➥➦➧➨
+
+↚↛↜↝↞↟↠↠↡↢↣↤↤↥↦↧↨⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇖⇗⇘⇙
+
+⇜↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹☇☈↼↽↾↿⇀⇁⇂⇃⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪↺↻⇚⇛♐
+符号图案
+✐✎✏✑✒✍✉✁✂✃✄✆✉☎☏☑✓✔√☐☒✗✘ ㄨ ✕✖✖☢☠☣✈★☆✡ 囍㍿ ☯☰☲☱☴☵☶☳☷
+
+☜☞☝✍☚☛☟✌♤♧♡♢♠♣♥♦☀☁☂❄☃♨웃유❖☽☾☪✿♂♀✪✯☭➳ 卍卐 √×■◆●○◐◑✙☺☻
+
+❀⚘♔♕♖♗♘♙♚♛♜♝♞♟♧♡♂♀♠♣♥❤☜☞☎☏⊙◎☺☻☼▧▨♨◐◑↔↕▪▒◊◦▣▤▥▦▩◘◈◇
+
+♬♪♩♭♪ の ★☆→ あぃ￡ Ю〓§♤♥▶¤✲❈✿✲❈➹☀☂☁【】┱┲❣✚✪✣✤✥✦❉❥❦❧❃❂❁❀✄☪☣☢☠☭ღ▶▷◀◁
+
+☀☁☂☃☄★☆☇☈⊙☊☋☌☍ⓛⓞⓥⓔ╬『』∴☀♫♬♩♭♪☆∷﹌の ★◎▶☺☻►◄▧▨♨◐◑↔↕↘▀▄█▌
+
+◦☼♪ の ☆→♧ ぃ￡ ❤▒▬♦◊◦♠♣▣۰•❤•۰►◄▧▨♨◐◑↔↕▪▫☼♦⊙●○①⊕◎Θ⊙¤ ㊣ ★☆♀◆◇◣◢◥▲▼△▽⊿◤◥
+
+✐✌✍✡✓✔✕✖♂♀♥♡☜☞☎☏⊙◎☺☻►◄▧▨♨◐◑↔↕♥♡▪▫☼♦▀▄█▌▐░▒▬♦◊◘◙◦☼♠♣▣▤▥▦▩◘◙◈
+
+♫♬♪♩♭♪✄☪☣☢☠♯♩♪♫♬♭♮☎☏☪♈ºº₪¤큐«»™♂✿♥ 　 ◕‿-｡　｡◕‿◕｡
+希腊字母
+ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ
+
+αβγδεζνξοπρσηθικλμτυφχψω
+俄语字母
+АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвг
+
+деёжзийклмнопрстуфхцчшщъыьэюя
+汉语拼音
+āáǎàōóǒòēéěèīíǐìūúǔùǖǘǚǜüêɑńňɡ ㄅㄆㄇㄈㄉ
+
+ㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄚㄛㄜㄝㄞ
+
+ㄟㄠㄡㄢㄣㄤㄥㄦㄧㄨㄩ
+中文字符
+零壹贰叁肆伍陆柒捌玖拾佰仟万亿吉太拍艾分厘毫微
+
+卍卐卄巜弍弎弐朤氺曱甴囍兀々〆のぁ〡〢〣〤〥〦〧〨〩
+
+㊎㊍㊌㊋㊏㊚㊛㊐㊊㊣㊤㊥㊦㊧㊨㊒㊫㊑㊓㊔㊕㊖㊗㊘㊜㊝㊞㊟㊠㊡㊢㊩㊪㊬㊭㊮㊯㊰
+
+㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉
+日文符号
+ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてで
+
+とどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎ
+
+わゐゑをんゔゕゖァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタ
+
+ダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユ
+
+ョヨラリルレロヮワヰヱヲンヴヵヶヷヸヹヺ・ーヽヾヿ゠ㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇺㇻㇼㇽㇾㇿ
+制表符号
+─ ━│┃╌╍╎╏┄ ┅┆┇┈ ┉┊┋┌┍┎┏┐┑┒┓└ ┕┖┗ ┘┙┚┛├┝┞┟┠┡┢┣ ┤┥┦┧┨┩┪┫┬ ┭ ┮ ┯ ┰ ┱ ┲ ┳
+
+┴ ┵ ┶ ┷ ┸ ┹ ┺ ┻┼ ┽ ┾ ┿ ╀ ╁ ╂ ╃ ╄ ╅ ╆ ╇ ╈ ╉ ╊ ╋ ╪ ╫ ╬═║╒╓╔ ╕╖╗╘╙╚ ╛╜╝╞╟╠ ╡╢╣
+
+╤ ╥ ╦ ╧ ╨ ╩ ╳╔ ╗╝╚ ╬ ═ ╓ ╩ ┠ ┨┯ ┷┏ ┓┗ ┛┳ ⊥ ﹃ ﹄┌ ╮ ╭ ╯╰
+皇冠符号
+♚ 　 ♛ 　 ♝ 　 ♞ 　 ♜ 　 ♟ 　 ♔ 　 ♕ 　 ♗ 　 ♘ 　 ♖ 　 ♟
+彩色表情符号
+🌹🍀🍎💰📱🌙🍁🍂🍃🌷💎🔪🔫🏀⚽⚡👄👍🔥
+常用 emoji 符号
+😀😁😂😃😄😅😆😉😊😋😎😍😘😗😙😚☺😇😐😑😶😏😣😥😮😯😪😫😴😌😛😜😝😒😓😔😕😲😷😖😞😟😤😢😭😦😧😨😬😰😱😳😵😡😠😈👿👹👺💀👻👽👦👧👨👩👴👵👶👱👮👲👳👷👸💂🎅👰👼💆💇🙍🙎🙅🙆💁🙋🙇🙌🙏👤👥🚶🏃👯💃👫👬👭💏💑👪💪👈👉☝👆👇✌✋👌👍👎✊👊👋👏👐✍👣👀👂👃👅👄💋👓👔👕👖👗👘👙👚👛👜👝🎒💼👞👟👠👡👢👑👒🎩🎓💄💅💍🌂🙈🙉🙊🐵🐒🐶🐕🐩🐺🐱😺😸😹😻😼😽🙀😿😾🐈🐯🐅🐆🐴🐎🐮🐂🐃🐄🐷🐖🐗🐽🐏🐑🐐🐪🐫🐘🐭🐁🐀🐹🐰🐇🐻🐨🐼🐾🐔🐓🐣🐤🐥🐦🐧🐸🐊🐢🐍🐲🐉🐳🐋🐬🐟🐠🐡🐙🐚🐌🐛🐜🐝🐞🦋💐🌸💮🌹🌺🌻🌼🌷🌱🌲🌳🌴🌵🌾🌿🍀🍁🍂🍃🌍🌎🌏🌐🌑🌒🌓🌔🌕🌖🌗🌘🌙🌚🌛🌜☀🌝🌞⭐🌟🌠☁⛅☔⚡❄🔥💧🌊💩🍇🍈🍉🍊🍋🍌🍍🍎🍏🍐🍑🍒🍓🍅🍆🌽🍄🌰🍞🍖🍗🍔🍟🍕🍳🍲🍱🍘🍙🍚🍛🍜🍝🍠🍢🍣🍤🍥🍡🍦🍧🍨🍩🍪🎂🍰🍫🍬🍭🍮🍯🍼☕🍵🍶🍷🍸🍹🍺🍻🍴🎪🎭🎨🎰🚣🛀🎫🏆⚽⚾🏀🏈🏉🎾🎱🎳⛳🎣🎽🎿🏂🏄🏇🏊🚴🚵🎯🎮🎲🎷🎸🎺🎻🎬👾🌋🗻🏠🏡🏢🏣🏤🏥🏦🏨🏩🏪🏫🏬🏭🏯🏰💒🗼🗽⛪⛲🌁🌃🌆🌇🌉🌌🎠🎡🎢🚂🚃🚄🚅🚆🚇🚈🚉🚊🚝🚞🚋🚌🚍🚎🚏🚐🚑🚒🚓🚔🚕🚖🚗🚘🚚🚛🚜🚲⛽🚨🚥🚦🚧⚓⛵🚤🚢✈💺🚁🚟🚠🚡🚀🎑🗿🛂🛃🛄🛅💌💎🔪💈🚪🚽🚿🛁⌛⏳⌚⏰🎈🎉🎊🎎🎏🎐🎀🎁📯📻📱📲☎📞📟📠🔋🔌💻💽💾💿📀🎥📺📷📹📼🔍🔎🔬🔭📡💡🔦🏮📔📕📖📗📘📙📚📓📃📜📄📰📑🔖💰💴💵💶💷💸💳✉📧📨📩📤📥📦📫📪📬📭📮✏✒📝📁📂📅📆📇📈📉📊📋📌📍📎📏📐✂🔒🔓🔏🔐🔑🔨🔫🔧🔩🔗💉💊🚬🔮🚩🎌💦💨💣☠♠♥♦♣🀄🎴🔇🔈🔉🔊📢📣💤💢💬💭♨🌀🔔🔕✡✝🔯📛🔰🔱⭕✅☑✔✖❌❎➕➖➗➰➿〽✳✴❇‼⁉❓❔❕❗©®™🎦🔅🔆💯🔠🔡🔢🔣🔤🅰🆎🅱🆑🆒🆓ℹ🆔Ⓜ🆕🆖🅾🆗🅿🆘🆙🆚🈁🈂🈷🈶🈯 🉐 🈹🈚🈲 🉑 🈸🈴🈳 ㊗㊙ 🈺🈵▪▫◻◼◽◾⬛⬜🔶🔷🔸🔹🔺🔻💠🔲🔳⚪⚫🔴🔵♈♉♊♋♌♍♎♏♐♑♒♓⛎💘❤💓💔💕💖💗💙💚💛💜💝💞💟❣🌿🚧💒☎📟💽⬆↗➡↘⬇↙⬅↖↕↔↩↪⤴⤵🔃🔄🔙🔚🔛🔜🔝🔀🔁🔂▶⏩◀⏪🔼⏫🔽⏬📱📶📳📴♻🏧🚮🚰♿🚹🚺🚻🚼🚾⚠🚸⛔🚫🚳🚭🚯🚱🚷🔞
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>emoji</tag>
       </tags>
   </entry>
   <entry>
@@ -42983,7 +42983,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts4039'));
+        var myChart = echarts.init(document.getElementById('echarts4334'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -43077,7 +43077,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts2970'));
+        var myChart = echarts.init(document.getElementById('echarts3156'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -43146,7 +43146,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts2310'));
+        var myChart = echarts.init(document.getElementById('echarts385'));
 
         // 指定图表的配置项和数据
         var option = option = {
