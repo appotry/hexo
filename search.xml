@@ -2382,195 +2382,6 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
       </tags>
   </entry>
   <entry>
-    <title>宝塔linux面板重启、重置等命令整合</title>
-    <url>/posts/7b4e434c/</url>
-    <content><![CDATA[宝塔linux面板重启、重置等命令整合
-宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。
-来源于网络，原作已经不可考据，整理更新到目前最新版。
-现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、
-但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦
-Linux面板7.6.0安装命令：
-Centos安装命令：
-yum install -y wget &amp;&amp; wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; sh install.sh
-咨询离线安装版本
-试验性Centos/Ubuntu/Debian安装命令 独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中
-curl -sSO http://download.bt.cn/install/install_panel.sh &amp;&amp; bash install_panel.sh
-Ubuntu/Deepin安装命令：
-wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; sudo bash install.sh
-Debian安装命令：
-wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; bash install.sh
-Fedora安装命令:
-wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; bash install.sh
-Linux面板7.6.0升级命令：curl http://download.bt.cn/install/update6.sh|bash
-以上节点无法使用的情况下，请使用下面的备用节点：
-备用节点【香港】：
-（宝塔推荐使用CN2 双程GIA高品质，免备案的尊云zun.com香港云服务器安装）
-yum install -y wget &amp;&amp; wget -O install.sh http://103.224.251.67:5880/install/install_6.0.sh &amp;&amp; sh install.sh
-管理宝塔
-#停止
-/etc/init.d/bt stop
-#启动
-/etc/init.d/bt start
-#重启
-/etc/init.d/bt restart
-#卸载
-/etc/init.d/bt stop &amp;&amp; chkconfig --del bt &amp;&amp; rm -f /etc/init.d/bt &amp;&amp; rm -rf /www/server/panel
-#查看当前面板端口
-cat /www/server/panel/data/port.pl
-#修改面板端口，如要改成8881（centos 6  系统）
-echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
-iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 8881  -j ACCEPT
-service iptables save
-service iptables restart
-#修改面板端口，如要改成8881（centos 7  系统）
-echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
-firewall-cmd --permanent --zone=public  --add-port=8881/tcp
-firewall-cmd --reload
-#强制修改MySQL管理(root)密码，如要改成123456
-cd /www/server/panel &amp;&amp; python tools.pyc root 123456
-#修改面板密码，如要改成123456
-cd /www/server/panel &amp;&amp; python tools.pyc panel 123456
-#查看宝塔日志
-cat /tmp/panelBoot.pl
-#查看软件安装日志
-cat /tmp/panelExec.log
-#站点配置文件位置
-/www/server/panel/vhost
-#删除域名绑定面板
-rm -f /www/server/panel/data/domain.conf
-#清理登陆限制
-rm -f /www/server/panel/data/*.login
-#查看面板授权IP
-cat /www/server/panel/data/limitip.conf
-#关闭访问限制
-rm -f /www/server/panel/data/limitip.conf
-#查看许可域名
-cat /www/server/panel/data/domain.conf
-#关闭面板SSL
-rm -f /www/server/panel/data/ssl.pl &amp;&amp; /etc/init.d/bt restart
-#查看面板错误日志
-cat /tmp/panelBoot
-#查看数据库错误日志
-cat /www/server/data/*.err
-#站点配置文件目录(nginx)
-/www/server/panel/vhost/nginx
-#站点配置文件目录(apache)
-/www/server/panel/vhost/apache
-#站点默认目录
-/www/wwwroot
-#数据库备份目录
-/www/backup/database
-#站点备份目录
-/www/backup/site
-#站点日志
-/www/wwwlogs
-Nginx服务管理
-#nginx安装目录
-/www/server/nginx
-#启动
-/etc/init.d/nginx start
-#停止
-/etc/init.d/nginx stop
-#重启
-/etc/init.d/nginx restart
-#启载
-/etc/init.d/nginx reload
-#nginx配置文件
-/www/server/nginx/conf/nginx.conf
-Apache服务管理
-#apache安装目录
-/www/server/httpd
-#启动
-/etc/init.d/httpd start
-#停止
-/etc/init.d/httpd stop
-#重启
-/etc/init.d/httpd restart
-#启载
-/etc/init.d/httpd reload
-#apache配置文件
-/www/server/apache/conf/httpd.conf
-MySQL服务管理
-#mysql安装目录
-/www/server/mysql
-#phpmyadmin安装目录
-/www/server/phpmyadmin
-#数据存储目录
-/www/server/data
-#启动
-/etc/init.d/mysqld start
-#停止
-/etc/init.d/mysqld stop
-#重启
-/etc/init.d/mysqld restart
-#启载
-/etc/init.d/mysqld reload
-#mysql配置文件
-/etc/my.cnf
-FTP服务管理
-#ftp安装目录
-/www/server/pure-ftpd
-#启动
-/etc/init.d/pure-ftpd start
-#停止
-/etc/init.d/pure-ftpd stop
-#重启
-/etc/init.d/pure-ftpd restart
-#ftp配置文件
-/www/server/pure-ftpd/etc/pure-ftpd.conf
-PHP服务管理
-#php安装目录
-/www/server/php
-#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} start
-#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} stop
-#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} restart
-#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} reload
-#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)
-/www/server/php/{52|53|54|55|56|70|71}/etc/php.ini
-Redis服务管理
-#redis安装目录
-/www/server/redis
-#启动
-/etc/init.d/redis start
-#停止
-/etc/init.d/redis stop
-#redis配置文件
-/www/server/redis/redis.conf
-Memcached服务管理
-#memcached安装目录
-/usr/local/memcached
-#启动
-/etc/init.d/memcached start
-#停止
-/etc/init.d/memcached stop
-#重启
-/etc/init.d/memcached restart
-#启载
-/etc/init.d/memcached reload
-参考
-
-bt doc
-宝塔面板手册
-
-]]></content>
-      <categories>
-        <category>linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>宝塔</tag>
-        <tag>vps</tag>
-        <tag>建站</tag>
-        <tag>nginx</tag>
-        <tag>apache</tag>
-        <tag>mysql</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>docker使用简明教程</title>
     <url>/posts/42b6a86d/</url>
     <content><![CDATA[关于docker安装，查看，镜像管理，以及一个实用Dockerfile， LAMP，PHP，LTMJ。
@@ -2780,11 +2591,200 @@ Earthly 一个更加强大的镜像构建工具
       </categories>
       <tags>
         <tag>linux</tag>
-        <tag>mysql</tag>
         <tag>docker</tag>
         <tag>lamp</tag>
         <tag>php</tag>
+        <tag>mysql</tag>
         <tag>tomcat</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>宝塔linux面板重启、重置等命令整合</title>
+    <url>/posts/7b4e434c/</url>
+    <content><![CDATA[宝塔linux面板重启、重置等命令整合
+宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。
+来源于网络，原作已经不可考据，整理更新到目前最新版。
+现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、
+但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦
+Linux面板7.6.0安装命令：
+Centos安装命令：
+yum install -y wget &amp;&amp; wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; sh install.sh
+咨询离线安装版本
+试验性Centos/Ubuntu/Debian安装命令 独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中
+curl -sSO http://download.bt.cn/install/install_panel.sh &amp;&amp; bash install_panel.sh
+Ubuntu/Deepin安装命令：
+wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; sudo bash install.sh
+Debian安装命令：
+wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; bash install.sh
+Fedora安装命令:
+wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; bash install.sh
+Linux面板7.6.0升级命令：curl http://download.bt.cn/install/update6.sh|bash
+以上节点无法使用的情况下，请使用下面的备用节点：
+备用节点【香港】：
+（宝塔推荐使用CN2 双程GIA高品质，免备案的尊云zun.com香港云服务器安装）
+yum install -y wget &amp;&amp; wget -O install.sh http://103.224.251.67:5880/install/install_6.0.sh &amp;&amp; sh install.sh
+管理宝塔
+#停止
+/etc/init.d/bt stop
+#启动
+/etc/init.d/bt start
+#重启
+/etc/init.d/bt restart
+#卸载
+/etc/init.d/bt stop &amp;&amp; chkconfig --del bt &amp;&amp; rm -f /etc/init.d/bt &amp;&amp; rm -rf /www/server/panel
+#查看当前面板端口
+cat /www/server/panel/data/port.pl
+#修改面板端口，如要改成8881（centos 6  系统）
+echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
+iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 8881  -j ACCEPT
+service iptables save
+service iptables restart
+#修改面板端口，如要改成8881（centos 7  系统）
+echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
+firewall-cmd --permanent --zone=public  --add-port=8881/tcp
+firewall-cmd --reload
+#强制修改MySQL管理(root)密码，如要改成123456
+cd /www/server/panel &amp;&amp; python tools.pyc root 123456
+#修改面板密码，如要改成123456
+cd /www/server/panel &amp;&amp; python tools.pyc panel 123456
+#查看宝塔日志
+cat /tmp/panelBoot.pl
+#查看软件安装日志
+cat /tmp/panelExec.log
+#站点配置文件位置
+/www/server/panel/vhost
+#删除域名绑定面板
+rm -f /www/server/panel/data/domain.conf
+#清理登陆限制
+rm -f /www/server/panel/data/*.login
+#查看面板授权IP
+cat /www/server/panel/data/limitip.conf
+#关闭访问限制
+rm -f /www/server/panel/data/limitip.conf
+#查看许可域名
+cat /www/server/panel/data/domain.conf
+#关闭面板SSL
+rm -f /www/server/panel/data/ssl.pl &amp;&amp; /etc/init.d/bt restart
+#查看面板错误日志
+cat /tmp/panelBoot
+#查看数据库错误日志
+cat /www/server/data/*.err
+#站点配置文件目录(nginx)
+/www/server/panel/vhost/nginx
+#站点配置文件目录(apache)
+/www/server/panel/vhost/apache
+#站点默认目录
+/www/wwwroot
+#数据库备份目录
+/www/backup/database
+#站点备份目录
+/www/backup/site
+#站点日志
+/www/wwwlogs
+Nginx服务管理
+#nginx安装目录
+/www/server/nginx
+#启动
+/etc/init.d/nginx start
+#停止
+/etc/init.d/nginx stop
+#重启
+/etc/init.d/nginx restart
+#启载
+/etc/init.d/nginx reload
+#nginx配置文件
+/www/server/nginx/conf/nginx.conf
+Apache服务管理
+#apache安装目录
+/www/server/httpd
+#启动
+/etc/init.d/httpd start
+#停止
+/etc/init.d/httpd stop
+#重启
+/etc/init.d/httpd restart
+#启载
+/etc/init.d/httpd reload
+#apache配置文件
+/www/server/apache/conf/httpd.conf
+MySQL服务管理
+#mysql安装目录
+/www/server/mysql
+#phpmyadmin安装目录
+/www/server/phpmyadmin
+#数据存储目录
+/www/server/data
+#启动
+/etc/init.d/mysqld start
+#停止
+/etc/init.d/mysqld stop
+#重启
+/etc/init.d/mysqld restart
+#启载
+/etc/init.d/mysqld reload
+#mysql配置文件
+/etc/my.cnf
+FTP服务管理
+#ftp安装目录
+/www/server/pure-ftpd
+#启动
+/etc/init.d/pure-ftpd start
+#停止
+/etc/init.d/pure-ftpd stop
+#重启
+/etc/init.d/pure-ftpd restart
+#ftp配置文件
+/www/server/pure-ftpd/etc/pure-ftpd.conf
+PHP服务管理
+#php安装目录
+/www/server/php
+#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} start
+#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} stop
+#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} restart
+#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} reload
+#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)
+/www/server/php/{52|53|54|55|56|70|71}/etc/php.ini
+Redis服务管理
+#redis安装目录
+/www/server/redis
+#启动
+/etc/init.d/redis start
+#停止
+/etc/init.d/redis stop
+#redis配置文件
+/www/server/redis/redis.conf
+Memcached服务管理
+#memcached安装目录
+/usr/local/memcached
+#启动
+/etc/init.d/memcached start
+#停止
+/etc/init.d/memcached stop
+#重启
+/etc/init.d/memcached restart
+#启载
+/etc/init.d/memcached reload
+参考
+
+bt doc
+宝塔面板手册
+
+]]></content>
+      <categories>
+        <category>linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>mysql</tag>
+        <tag>宝塔</tag>
+        <tag>vps</tag>
+        <tag>建站</tag>
+        <tag>nginx</tag>
+        <tag>apache</tag>
       </tags>
   </entry>
   <entry>
@@ -6479,8 +6479,8 @@ MySQL教程
       </categories>
       <tags>
         <tag>linux</tag>
-        <tag>mysql</tag>
         <tag>docker</tag>
+        <tag>mysql</tag>
         <tag>mariadb</tag>
       </tags>
   </entry>
@@ -10109,6 +10109,450 @@ From： https://cloud.tencent.com/developer/article/1160037?from=article.detail.
       </tags>
   </entry>
   <entry>
+    <title>Vim IDE Docker 以及中文指南</title>
+    <url>/posts/647e6265/</url>
+    <content><![CDATA[
+Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！
+
+Vim Docker
+
+docker pull bloodstar/vim
+alias edit='docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim' 
+edit some.file 
+alias edit_update="docker pull bloodstar/vim:latest"
+Vim IDE Docker
+
+What's inside:
+
+Alpine Linux
+Vim + a ton of awesome plugins see bloodstar/vim:latest
+Good support of Golang development with bloodstar/go-tools container
+tmux
+powerline
+Mosh
+OpenSSH, Bash, OMF, Python, etc.
+
+how to start the daemon(and all containers)
+docker create -v '/usr/lib/go' --name go-tools \
+'bloodstar/go-tools' '/bin/true'
+
+docker run -v $('pwd'):/home/developer/workspace \
+--volumes-from go-tools \
+-v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
+-v /etc/localtime:/etc/localtime:ro \
+-d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
+--name drop-in bloodstar/drop-in
+-v /etc/localtime:/etc/localtime:ro - makes tmux display local time
+how to connect:
+mosh --ssh="ssh -p 62222" -- developer@$&lt;ip&gt; tmux -u
+or without host identity check:
+mosh --ssh="ssh -o StrictHostKeyChecking=no -p 62222" -- developer@$&lt;ip&gt; tmux -u
+Useful Bash scripts
+Connect
+#!/bin/bash
+ip=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' drop-in)
+mosh --ssh="ssh -p 62222" -- developer@$ip tmux -u
+start the daemon(and all containers)
+#!/bin/bash
+dtc_id=$(docker ps -a -q --filter 'name=vim-go-tools')
+if [[ -z "${dtc_id}" ]]; then
+ echo 'vim-go-tools container not found. Creating...'
+ docker create -v '/usr/lib/go' --name 'vim-go-tools' \
+   'bloodstar/go-tools' '/bin/true'
+ echo 'Done!'
+fi
+echo 'starting daemon...'
+docker run -v $('pwd'):/home/developer/workspace \
+  --volumes-from vim-go-tools \
+  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
+  -v /etc/localtime:/etc/localtime:ro \
+  -e "GEMAIL=&lt;github email&gt;" \
+  -e "GNAME=&lt;github name&gt;" \
+  -d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
+  --name drop-in bloodstar/drop-in
+echo 'Done!'
+Vim 中文快查表   &lt;= 戳这里
+
+Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！
+快去看看吧。
+
+Vim
+
+Vim简明教程
+1. 键位图
+
+vi-vim-cheat-sheet-sch
+vi-vim-cheat-sheet-sch
+vim分为三种主要模式，分别是命令模式（Command mode），输入模式（Insert mode）和底线命令模式（Last line mode）
+2. 命令模式
+用户刚刚启动 vi/vim，便进入了命令模式。
+2.1. 光标移动
+
+
+
+按键
+动作
+
+
+
+
+h 或 向左箭头键(←)
+光标向 左 移动一个字符
+
+
+j 或 向下箭头键(↓) 或&lt;Enter&gt;
+光标向 下 移动一个字符
+
+
+k 或 向上箭头键(↑)
+光标向 上 移动一个字符
+
+
+l 或 向右箭头键(→) 或 &lt;space&gt;
+光标向 右 移动一个字符
+
+
+w/W
+移动到下一个单词，大写把标点符号当做单词的一部分
+
+
+e/E
+移动到词尾，大写把标点符号当做单词的一部分
+
+
+b/B
+移动到上一个单词，大写把标点符号当做单词的一部分
+
+
++
+光标移动到非空格符的下一行
+
+
+-
+光标移动到非空格符的上一行
+
+
+G
+移动到这个档案的最后一行
+
+
+gg
+移动到这个档案的第一行，相当于 1G
+
+
+[Ctrl] + f 或 [Page Down]
+屏幕『向下』移动一页
+
+
+[Ctrl] + b 或 [Page Up]
+屏幕『向上』移动一页
+
+
+[Ctrl] + d
+屏幕『向下』移动半页
+
+
+[Ctrl] + u
+屏幕『向上』移动半页
+
+
+0 或功能键[Home]
+数字『 0 』，移动到这一行的最前面字符处
+
+
+$ 或功能键[End]
+移动到这一行的最后面字符处
+
+
+H
+光标移动到这个屏幕的最上方那一行的第一个字符
+
+
+M
+光标移动到这个屏幕的中央那一行的第一个字符
+
+
+L
+光标移动到这个屏幕的最下方那一行的第一个字符
+
+
+
+2.2. 复制、粘贴
+
+
+
+按键
+动作
+
+
+
+
+y + 光标移动符
+复制光标所在到移动范围的内容，例如： yj：复制游标所在的那一整行 yG：复制光标所在到最后一行的内容 yw：复制光标所在到下一个单词的内容
+
+
+yy
+复制游标所在的那一行
+
+
+p
+在光标后粘贴，如果是单词级的粘贴，就会在光标后一位粘贴，如果是行级的粘贴，就会在光标下一行粘贴，下面的 P 粘贴时同理。
+
+
+P
+在光标前粘贴
+
+
+
+2.3. 文本修改
+
+
+
+按键
+动作
+
+
+
+
+x
+向 后 删除一个字符 ，相当于[del]
+
+
+X
+向 前 删除一个字符，相当于 [backspace]
+
+
+d + 光标移动符
+删除光标所在到移动范围的内容，例如： dj：删除游标所在的那一整行 dG：删除光标所在到最后一行的内容 dw：删除光标所在到下一个单词的内容
+
+
+dd
+删除游标所在的那一整行
+
+
+J
+将光标所在行与下一行的数据结合成同一行
+
+
+r + 「字符」
+替换光标处的单词为该字符
+
+
+R
+进入replace mode，直到接收到[Esc]按键信号退出该模式
+
+
+
+2.4. 重复动作
+
+
+
+按键
+动作
+
+
+
+
+u
+Undo，复原前一个动作。
+
+
+[Ctrl] + r
+重做上一个动作。
+
+
+.
+重复前一个动作。
+
+
+n
+向下重复前一个搜寻的动作。
+
+
+N
+向上重复前一个搜寻的动作。
+
+
+「n」+ 命令符
+「n」是数字，一般可以理解为重复n次该动作，例如： 10j 表示向下移动10行
+
+
+
+2.5. 可视模式（vim only）
+命令模式下按ctrl + v进入可视模式，这是一个比较特别地模式。
+这个模式可以移动光标，选择一大片区域，然后可以对这片区域进行操作。
+3. 输入模式
+在命令模式下按下i就进入了输入模式。
+在输入模式中，除了ESC键退出输入模式，其他按键和平常编辑模式是一样的。
+3.1. 进入输入模式
+
+
+
+按键
+动作
+
+
+
+
+i
+Insert，从当前光标前开始输入
+
+
+I
+Insert，在目前所在行的第一个非空格符处开始输入
+
+
+a
+Append，从当前光标后开始输入
+
+
+A
+Append，从光标所在行的最后一个字符处开始输入
+
+
+o
+在当前光标所在的下一行处输入新的一行
+
+
+O
+在当前光标所在处的上一行输入新的一行
+
+
+c + 光标移动符
+可以理解先按d + 光标移动符，然后再按a
+
+
+C
+可以理解先按dd，然后再按a
+
+
+
+4. 底线命令模式
+在命令模式下按下:、/、?键位就进入了底线命令模式。
+按ESC键退出底线命令模式。
+4.1. 查找替换
+
+
+
+语句
+动作
+
+
+
+
+/word
+向光标之下寻找一个名称为 word 的字符串。例如要在档案内搜寻 vbird 这个字符串，就输入 /vbird 即可！ (常用)
+
+
+?word
+向上搜索word字符串
+
+
+:n1,n2 s/word1/word2/g
+n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特别地，最后一行为$，
+
+
+:n1,n2 s#word1#word2#g
+效果同上，这个主要用于替换/符号，例如每一行行首添加//，可以这样操作： :1,$ s#^#//#g
+
+
+
+4.2. 文件操作
+
+
+
+按键
+动作
+
+
+
+
+:w [filename]
+将编辑的数据写入到filename文件中，如果不加参数，默认是当前文件
+
+
+:w!
+若文件属性为『只读』时，强制写入该档案，前提是得有文件的写权限。
+
+
+:q 或 ZQ
+退出vim，如果未保存的内容，该指令执行失败
+
+
+:q!
+若曾修改过档案，又不想储存，使用 ! 为强制离开不储存档案。
+
+
+:wq 或 ZZ
+储存后离开
+
+
+:wq!
+强制储存后离开
+
+
+:r [filename]
+在编辑的数据中，读入另一个档案的数据。亦即将 『filename』 这个档案内容加到游标所在行后面
+
+
+:n1,n2 w [filename]
+将 n1 到 n2 的内容储存成 filename 这个档案。
+
+
+:! command
+不退出vim执行command指令，多用于调试脚本。
+
+
+
+4.3. 其他功能
+
+
+
+按键
+动作
+
+
+
+
+:set nu
+显示行号
+
+
+:set nonu
+取消行号
+
+
+:sv
+当前界面打开文件，并呈纵向分布
+
+
+:vs
+当前界面打开文件，并呈横向分布
+
+
+:set fileformat=unix
+由Windows上传到linux的脚本文件，直接执行会报错，需要将其由dos文件格式改unix格式
+
+
+
+5. 扩展的vim功能
+当然，如果仅仅只有原生态的功能还不能让vim成为一个好用的ide，扩展功能才是vim的灵魂所在。
+参考
+
+菜鸟驿站的vim教程
+
+]]></content>
+      <categories>
+        <category>tools</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>docker</tag>
+        <tag>vim</tag>
+        <tag>ide</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>1.5 万字 CSS 基础拾遗（核心知识、常见需求）</title>
     <url>/posts/448f849b/</url>
     <content><![CDATA[1.5 万字 CSS 基础拾遗（核心知识、常见需求）
@@ -11604,456 +12048,12 @@ main {
       </tags>
   </entry>
   <entry>
-    <title>Vim IDE Docker 以及中文指南</title>
-    <url>/posts/647e6265/</url>
-    <content><![CDATA[
-Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！
-
-Vim Docker
-
-docker pull bloodstar/vim
-alias edit='docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim' 
-edit some.file 
-alias edit_update="docker pull bloodstar/vim:latest"
-Vim IDE Docker
-
-What's inside:
-
-Alpine Linux
-Vim + a ton of awesome plugins see bloodstar/vim:latest
-Good support of Golang development with bloodstar/go-tools container
-tmux
-powerline
-Mosh
-OpenSSH, Bash, OMF, Python, etc.
-
-how to start the daemon(and all containers)
-docker create -v '/usr/lib/go' --name go-tools \
-'bloodstar/go-tools' '/bin/true'
-
-docker run -v $('pwd'):/home/developer/workspace \
---volumes-from go-tools \
--v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
--v /etc/localtime:/etc/localtime:ro \
--d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
---name drop-in bloodstar/drop-in
--v /etc/localtime:/etc/localtime:ro - makes tmux display local time
-how to connect:
-mosh --ssh="ssh -p 62222" -- developer@$&lt;ip&gt; tmux -u
-or without host identity check:
-mosh --ssh="ssh -o StrictHostKeyChecking=no -p 62222" -- developer@$&lt;ip&gt; tmux -u
-Useful Bash scripts
-Connect
-#!/bin/bash
-ip=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' drop-in)
-mosh --ssh="ssh -p 62222" -- developer@$ip tmux -u
-start the daemon(and all containers)
-#!/bin/bash
-dtc_id=$(docker ps -a -q --filter 'name=vim-go-tools')
-if [[ -z "${dtc_id}" ]]; then
- echo 'vim-go-tools container not found. Creating...'
- docker create -v '/usr/lib/go' --name 'vim-go-tools' \
-   'bloodstar/go-tools' '/bin/true'
- echo 'Done!'
-fi
-echo 'starting daemon...'
-docker run -v $('pwd'):/home/developer/workspace \
-  --volumes-from vim-go-tools \
-  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
-  -v /etc/localtime:/etc/localtime:ro \
-  -e "GEMAIL=&lt;github email&gt;" \
-  -e "GNAME=&lt;github name&gt;" \
-  -d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
-  --name drop-in bloodstar/drop-in
-echo 'Done!'
-Vim 中文快查表   &lt;= 戳这里
-
-Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！
-快去看看吧。
-
-Vim
-
-Vim简明教程
-1. 键位图
-
-vi-vim-cheat-sheet-sch
-vi-vim-cheat-sheet-sch
-vim分为三种主要模式，分别是命令模式（Command mode），输入模式（Insert mode）和底线命令模式（Last line mode）
-2. 命令模式
-用户刚刚启动 vi/vim，便进入了命令模式。
-2.1. 光标移动
-
-
-
-按键
-动作
-
-
-
-
-h 或 向左箭头键(←)
-光标向 左 移动一个字符
-
-
-j 或 向下箭头键(↓) 或&lt;Enter&gt;
-光标向 下 移动一个字符
-
-
-k 或 向上箭头键(↑)
-光标向 上 移动一个字符
-
-
-l 或 向右箭头键(→) 或 &lt;space&gt;
-光标向 右 移动一个字符
-
-
-w/W
-移动到下一个单词，大写把标点符号当做单词的一部分
-
-
-e/E
-移动到词尾，大写把标点符号当做单词的一部分
-
-
-b/B
-移动到上一个单词，大写把标点符号当做单词的一部分
-
-
-+
-光标移动到非空格符的下一行
-
-
--
-光标移动到非空格符的上一行
-
-
-G
-移动到这个档案的最后一行
-
-
-gg
-移动到这个档案的第一行，相当于 1G
-
-
-[Ctrl] + f 或 [Page Down]
-屏幕『向下』移动一页
-
-
-[Ctrl] + b 或 [Page Up]
-屏幕『向上』移动一页
-
-
-[Ctrl] + d
-屏幕『向下』移动半页
-
-
-[Ctrl] + u
-屏幕『向上』移动半页
-
-
-0 或功能键[Home]
-数字『 0 』，移动到这一行的最前面字符处
-
-
-$ 或功能键[End]
-移动到这一行的最后面字符处
-
-
-H
-光标移动到这个屏幕的最上方那一行的第一个字符
-
-
-M
-光标移动到这个屏幕的中央那一行的第一个字符
-
-
-L
-光标移动到这个屏幕的最下方那一行的第一个字符
-
-
-
-2.2. 复制、粘贴
-
-
-
-按键
-动作
-
-
-
-
-y + 光标移动符
-复制光标所在到移动范围的内容，例如： yj：复制游标所在的那一整行 yG：复制光标所在到最后一行的内容 yw：复制光标所在到下一个单词的内容
-
-
-yy
-复制游标所在的那一行
-
-
-p
-在光标后粘贴，如果是单词级的粘贴，就会在光标后一位粘贴，如果是行级的粘贴，就会在光标下一行粘贴，下面的 P 粘贴时同理。
-
-
-P
-在光标前粘贴
-
-
-
-2.3. 文本修改
-
-
-
-按键
-动作
-
-
-
-
-x
-向 后 删除一个字符 ，相当于[del]
-
-
-X
-向 前 删除一个字符，相当于 [backspace]
-
-
-d + 光标移动符
-删除光标所在到移动范围的内容，例如： dj：删除游标所在的那一整行 dG：删除光标所在到最后一行的内容 dw：删除光标所在到下一个单词的内容
-
-
-dd
-删除游标所在的那一整行
-
-
-J
-将光标所在行与下一行的数据结合成同一行
-
-
-r + 「字符」
-替换光标处的单词为该字符
-
-
-R
-进入replace mode，直到接收到[Esc]按键信号退出该模式
-
-
-
-2.4. 重复动作
-
-
-
-按键
-动作
-
-
-
-
-u
-Undo，复原前一个动作。
-
-
-[Ctrl] + r
-重做上一个动作。
-
-
-.
-重复前一个动作。
-
-
-n
-向下重复前一个搜寻的动作。
-
-
-N
-向上重复前一个搜寻的动作。
-
-
-「n」+ 命令符
-「n」是数字，一般可以理解为重复n次该动作，例如： 10j 表示向下移动10行
-
-
-
-2.5. 可视模式（vim only）
-命令模式下按ctrl + v进入可视模式，这是一个比较特别地模式。
-这个模式可以移动光标，选择一大片区域，然后可以对这片区域进行操作。
-3. 输入模式
-在命令模式下按下i就进入了输入模式。
-在输入模式中，除了ESC键退出输入模式，其他按键和平常编辑模式是一样的。
-3.1. 进入输入模式
-
-
-
-按键
-动作
-
-
-
-
-i
-Insert，从当前光标前开始输入
-
-
-I
-Insert，在目前所在行的第一个非空格符处开始输入
-
-
-a
-Append，从当前光标后开始输入
-
-
-A
-Append，从光标所在行的最后一个字符处开始输入
-
-
-o
-在当前光标所在的下一行处输入新的一行
-
-
-O
-在当前光标所在处的上一行输入新的一行
-
-
-c + 光标移动符
-可以理解先按d + 光标移动符，然后再按a
-
-
-C
-可以理解先按dd，然后再按a
-
-
-
-4. 底线命令模式
-在命令模式下按下:、/、?键位就进入了底线命令模式。
-按ESC键退出底线命令模式。
-4.1. 查找替换
-
-
-
-语句
-动作
-
-
-
-
-/word
-向光标之下寻找一个名称为 word 的字符串。例如要在档案内搜寻 vbird 这个字符串，就输入 /vbird 即可！ (常用)
-
-
-?word
-向上搜索word字符串
-
-
-:n1,n2 s/word1/word2/g
-n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特别地，最后一行为$，
-
-
-:n1,n2 s#word1#word2#g
-效果同上，这个主要用于替换/符号，例如每一行行首添加//，可以这样操作： :1,$ s#^#//#g
-
-
-
-4.2. 文件操作
-
-
-
-按键
-动作
-
-
-
-
-:w [filename]
-将编辑的数据写入到filename文件中，如果不加参数，默认是当前文件
-
-
-:w!
-若文件属性为『只读』时，强制写入该档案，前提是得有文件的写权限。
-
-
-:q 或 ZQ
-退出vim，如果未保存的内容，该指令执行失败
-
-
-:q!
-若曾修改过档案，又不想储存，使用 ! 为强制离开不储存档案。
-
-
-:wq 或 ZZ
-储存后离开
-
-
-:wq!
-强制储存后离开
-
-
-:r [filename]
-在编辑的数据中，读入另一个档案的数据。亦即将 『filename』 这个档案内容加到游标所在行后面
-
-
-:n1,n2 w [filename]
-将 n1 到 n2 的内容储存成 filename 这个档案。
-
-
-:! command
-不退出vim执行command指令，多用于调试脚本。
-
-
-
-4.3. 其他功能
-
-
-
-按键
-动作
-
-
-
-
-:set nu
-显示行号
-
-
-:set nonu
-取消行号
-
-
-:sv
-当前界面打开文件，并呈纵向分布
-
-
-:vs
-当前界面打开文件，并呈横向分布
-
-
-:set fileformat=unix
-由Windows上传到linux的脚本文件，直接执行会报错，需要将其由dos文件格式改unix格式
-
-
-
-5. 扩展的vim功能
-当然，如果仅仅只有原生态的功能还不能让vim成为一个好用的ide，扩展功能才是vim的灵魂所在。
-参考
-
-菜鸟驿站的vim教程
-
-]]></content>
-      <categories>
-        <category>tools</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>docker</tag>
-        <tag>vim</tag>
-        <tag>ide</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ypWMqmBINHiRlSZN").style.height=document.getElementById("mmedia-ypWMqmBINHiRlSZN").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-buHhZGnrnWImqyVO").style.height=document.getElementById("mmedia-buHhZGnrnWImqyVO").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-ypWMqmBINHiRlSZN").style.height=document.getElementById("mmedia-ypWMqmBINHiRlSZN").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-buHhZGnrnWImqyVO").style.height=document.getElementById("mmedia-buHhZGnrnWImqyVO").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -17280,11 +17280,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var aRAseEETrWPKiFgT_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); aRAseEETrWPKiFgT_options.container = document.getElementById("mmedia-aRAseEETrWPKiFgT"); const ap_aRAseEETrWPKiFgT = new APlayer(aRAseEETrWPKiFgT_options); 
+ var dyizTsgarTrWpGXw_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); dyizTsgarTrWpGXw_options.container = document.getElementById("mmedia-dyizTsgarTrWpGXw"); const ap_dyizTsgarTrWpGXw = new APlayer(dyizTsgarTrWpGXw_options); 
 
 - **列表**
 
- var xJIrKktdKNmmnwui_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); xJIrKktdKNmmnwui_options.container = document.getElementById("mmedia-xJIrKktdKNmmnwui"); const ap_xJIrKktdKNmmnwui = new APlayer(xJIrKktdKNmmnwui_options); 
+ var zWhznWpcLwsIlqCz_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); zWhznWpcLwsIlqCz_options.container = document.getElementById("mmedia-zWhznWpcLwsIlqCz"); const ap_zWhznWpcLwsIlqCz = new APlayer(zWhznWpcLwsIlqCz_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -17536,21 +17536,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-oFErIQOEcgWoFtUx").style.height=document.getElementById("mmedia-oFErIQOEcgWoFtUx").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-wCcrlsadxbvxzxIP").style.height=document.getElementById("mmedia-wCcrlsadxbvxzxIP").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-oFErIQOEcgWoFtUx").style.height=document.getElementById("mmedia-oFErIQOEcgWoFtUx").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-wCcrlsadxbvxzxIP").style.height=document.getElementById("mmedia-wCcrlsadxbvxzxIP").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-vMBsPzgHIJpGlhZf").style.height=document.getElementById("mmedia-vMBsPzgHIJpGlhZf").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-dxIBDaQTuPHpRevJ").style.height=document.getElementById("mmedia-dxIBDaQTuPHpRevJ").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-vMBsPzgHIJpGlhZf").style.height=document.getElementById("mmedia-vMBsPzgHIJpGlhZf").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-dxIBDaQTuPHpRevJ").style.height=document.getElementById("mmedia-dxIBDaQTuPHpRevJ").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var rYlsXYzsKMPXVPqH_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); rYlsXYzsKMPXVPqH_options.container = "#mmedia-rYlsXYzsKMPXVPqH"; const art_rYlsXYzsKMPXVPqH = new Artplayer(rYlsXYzsKMPXVPqH_options); 
+ var BMsYNAuEaGprDjJP_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); BMsYNAuEaGprDjJP_options.container = "#mmedia-BMsYNAuEaGprDjJP"; const art_BMsYNAuEaGprDjJP = new Artplayer(BMsYNAuEaGprDjJP_options); 
 脑图
 
 原作者记录
@@ -17640,6 +17640,158 @@ Subsequent paragraphs are indented to show that they ↩︎
         <tag>hexo</tag>
         <tag>plantuml</tag>
         <tag>mathjax</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Earthly 一个更加强大的镜像构建工具</title>
+    <url>/posts/593cc323/</url>
+    <content><![CDATA[一、Earthly 介绍
+
+开局一张图，功能全靠吹。
+
+
+Earthly 是一个更加高级的 Docker 镜像构建工具，Earthly 通过自己定义的 Earthfile 来代替传统的 Dockerfile 完成镜像构建；Earthfile 就如同 Earthly 官方所描述:
+**Makefile + Dockerfile = Earthfile**
+在使用 Earthly 进行构建镜像时目前强依赖于 buildkit，Earthly 通过 buildkit 支持了一些 Dockerfile 的扩展语法，同时将 Dockerfile 与 Makefile 整合，使得多平台构建和代码化 Dockerfile 变得更加简单；使用 Earthly 可以更加方便的完成 Dockerfile 的代码复用以及更加友好的 CI 自动集成。
+二、快速开始
+2.1、安装依赖
+Earthly 目前依赖于 Docker 和 Git，所以安装 Earthly 前请确保机器已经安装了 Docker 和 Git。
+2.2、安装 Earthly
+Earthly 采用 Go 编写，所以主要就一个二进制文件，Linux 下安装可以直接参考官方的安装脚本:
+sudo /bin/sh -c 'wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly &amp;&amp; chmod +x /usr/local/bin/earthly &amp;&amp; /usr/local/bin/earthly bootstrap --with-autocomplete'Copy
+安装完成后 Earthly 将会启动一个 buildkitd 容器: earthly-buildkitd。
+2.3、语法高亮
+目前 Earthly 官方支持 VS Code、VIM 以及 Sublime Text 三种编辑器的语法高亮，具体如何安装请参考 官方文档。
+2.4、基本使用
+本示例源于官方 Basic 教程，以下示例以编译 Go 项目为样例:
+首先创建一个任意名称的目录，目录中存在项目源码文件以及一个 Earthfile 文件；
+main.go
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("hello world")
+}Copy
+Earthfile
+FROM golang:1.17-alpine
+WORKDIR /go-example
+
+build:
+    COPY main.go .
+    RUN go build -o build/go-example main.go
+    SAVE ARTIFACT build/go-example /go-example AS LOCAL build/go-example
+
+docker:
+    COPY +build/go-example .
+    ENTRYPOINT ["/go-example/go-example"]
+    SAVE IMAGE go-example:latestCopy
+有了 Earthfile 以后我们就可以使用 Earthly 将其打包为镜像；
+# 目录结构
+~/t/earthlytest ❯❯❯ tree
+.
+├── Earthfile
+└── main.go
+
+0 directories, 2 files
+
+# 通过 earthly 进行构建
+~/t/earthlytest ❯❯❯ earthly +dockerCopy
+
+构建完成后我们就可以直接从 docker 的 images 列表中查看刚刚构建的镜像，并运行:
+
+三、进阶使用
+3.1、多阶段构建
+Earthfile 中包含类似 Makefile 一样的 target，不同的 target 之间还可以通过特定语法进行引用，每个 target 都可以被单独执行，执行过程中 earthly 会自动解析这些依赖关系。
+这种多阶段构建时语法很弹性，我们可以在每个阶段运行独立的命令以及使用不同的基础镜像；从快速开始中可以看到，我们始终使用了一个基础镜像(golang:1.17-alpine)，对于 Go 这种编译后自带运行时不依赖其语言 SDK 的应用，我们事实上可以将 “发布物” 仅放在简单的运行时系统镜像内，从而减少最终镜像体积:
+
+由于使用了多个 target，所以我们可以单独的运行 build 这个 target 来验证我们的编译流程，这种多 target 的设计方便我们构建应用时对编译、打包步骤的细化拆分，同时也方便我们进行单独的验证。 例如我们单独执行 build 这个 target 来验证我们的编译流程是否正确:
+
+在其他阶段验证完成后，我们可以直接运行最终的 target，earthly 会自动识别到这种依赖关系从而自动运行其依赖的 target:
+
+3.2、扩展指令
+3.2.1、SAVE
+SAVE 指令是 Earthly 自己的一个扩展指令，实际上分为 SAVE ARTIFACT 和 SAVE IMAGE；其中 SAVE ARTIFACT 指令格式如下:
+SAVE ARTIFACT [--keep-ts] [--keep-own] [--if-exists] [--force] &lt;src&gt; [&lt;artifact-dest-path&gt;] [AS LOCAL &lt;local-path&gt;]Copy
+SAVE ARTIFACT 指令用于将文件或目录从 build 运行时环境保存到 target 的 artifact 环境；当保存到 artifact 环境后，可以通过 COPY 等命令在其他位置进行引用，类似于 Dockerfile 的 COPY --from... 语法；不同的是 SAVE ARTIFACT 支持 AS LOCAL &lt;local-path&gt; 附加参数，一但指定此参数后，earthly 会同时将文件或目录在宿主机复制一份，一般用于调试等目的。SAVE ARTIFACT 命令在上面的样例中已经展示了，在运行完 earthly +build 命令后实际上会在本地看到被 SAVE 出来的 ARTIFACT:
+
+而另一个 SAVE IMAGE 指令则主要用于将当前的 build 环境 SAVE 为一个 IMAGE，如果指定了 --push 选项，同时在执行 earthly +target 命令时也加入 --push 选项，该镜像将会自动被推送到目标 Registry 上。SAVE IMAGE 指令格式如下:
+SAVE IMAGE [--cache-from=&lt;cache-image&gt;] [--push] &lt;image-name&gt;...Copy
+
+3.2.2、GIT CLONE
+GIT CLONE 指令用于将指定 git 仓库 clone 到 build 环境中；与 RUN git clone... 命令不同的是，GIT CLONE 通过宿主机的 git 命令运行，它不依赖于容器内的 git 命令，同时还可以直接为 earthly 配置 git 认证，从而避免将这些安全信息泄漏到 build 环境中； 关于如何配置 earthly 的 git 认证请参考 官方文档；下面是 GIT CLONE 指令的样例
+
+3.2.3、COPY
+COPY 指令与标准的 Dockerfile COPY 指令类似，除了支持 Dockerfile 标准的 COPY 功能以外，earthly 中的 COPY 指令可以引用其他 target 环节产生的 artifact，在引用时会自动声明依赖关系；即当在 B target 中存在 COPY +A/xxxxx /path/to/copy 类似的指令时，如果只单纯的执行 earthly +B，那么 earthly 根据依赖分析会得出在 COPY 之前需要执行 target A。COPY 指令的语法格式如下:
+# 与 Dockerfile 相同的使用方式，从上下文复制
+COPY [options...] &lt;src&gt;... &lt;dest&gt;
+
+# 扩展支持的从 target 复制方式
+COPY [options...] &lt;src-artifact&gt;... &lt;dest&gt;Copy
+3.2.4、RUN
+RUN 指令在标准使用上与 Dockerfile 里保持一致，除此之外增加了更多的扩展选项，其指令格式如下:
+# shell 方式运行(/bin/sh -c)
+RUN [--push] [--entrypoint] [--privileged] [--secret &lt;env-var&gt;=&lt;secret-ref&gt;] [--ssh] [--mount &lt;mount-spec&gt;] [--] &lt;command&gt;
+
+# exec 方式运行
+RUN [[&lt;flags&gt;...], "&lt;executable&gt;", "&lt;arg1&gt;", "&lt;arg2&gt;", ...]Copy
+其中 --privileged 选项允许运行的命令使用 privileged capabilities，但是需要 earthly 在运行 target 时增加 --allow-privileged 选项；--interactive / --interactive-keep 选项用于交互式执行一些命令，在完成交互后 build 继续进行，在交互过程中进行的操作都会被持久化到 镜像中:
+
+限于篇幅原因，其他的具体指令请查阅官方文档 Earthfile reference。
+3.3、UDCS
+UDCs 全称 “User-defined commands”，即用户定义指令；通过 UDCs 我们可以将 Earthfile 中特定的命令剥离出来，从而实现更加通用和统一的代码复用；下面是一个定义 UDCs 指令的样例:
+# 定义一个 Command
+# ⚠️ 注意: 语法必须满足以下规则
+# 1、名称全大写
+# 2、名称下划线分割
+# 3、首个命令必须为 COMMAND(后面没有冒号)
+MY_COPY:
+    COMMAND
+    ARG src
+    ARG dest=./
+    ARG recursive=false
+    RUN cp $(if $recursive =  "true"; then printf -- -r; fi) "$src" "$dest"
+
+# target 中引用
+build:
+    FROM alpine:3.13
+    WORKDIR /udc-example
+    RUN echo "hello" &gt;./foo
+    # 通过 DO 关键字引用 UDCs
+    DO +MY_COPY --src=./foo --dest=./bar
+    RUN cat ./bar # prints "hello"Copy
+UDCs 不光可以定义在一个 Earthfile 中，UDCs 可以跨文件、跨目录引用:
+
+有了 UDCs 以后，我们可以通过这种方式将对基础镜像的版本统一控制、对特殊镜像的通用处理等操作全部抽象出来，然后每个 Earthfile 根据需要进行引用；关于 UDCs 的使用样例可以参考我的 autobuild 项目，其中的 udcs 目录定义了大量的通用 UDCs，这些 UDCs 被其他目标镜的 Earthfile 批量引用。
+3.4、多平台构建
+在以前使用 Dockerfile 的时候，我们需要自己配置然后开启 buildkit 来实现多平台构建；在配置过程中可能会很繁琐，现在使用 earthly 可以默认帮我们实现多平台的交叉编译，我们需要做的仅仅是在 Earthfile 中声明需要支持哪些平台而已:
+
+以上 Earthfile 在执行 earthly --push +all 构建时，将会自动构建四个平台的镜像，并保持单个 tag，同时由于使用了 --push 选项还会自动推送到 Docker Hub 上:
+
+四、总结
+Earthly 弥补了 Dockerfile 的很多不足，解决了很多痛点问题；但同样可能需要一些学习成本，但是如果已经熟悉了 Dockerfile 其实学习成本不高；所以目前还是比较推荐将 Dockerfile 切换为 Earthfile 进行统一和版本化管理的。本文由于篇幅所限(懒)很多地方没有讲，比如共享缓存等，所以关于 Earthly 更多的详细使用等最好还是仔细阅读一下官方文档。
+
+整理转载：the-best-image-build-tool-earthly
+
+系列教程
+全部文章RSS订阅
+Docker系列 Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>docker</category>
+      </categories>
+      <tags>
+        <tag>docker</tag>
+        <tag>earthly</tag>
       </tags>
   </entry>
   <entry>
@@ -18104,158 +18256,6 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
-    <title>Earthly 一个更加强大的镜像构建工具</title>
-    <url>/posts/593cc323/</url>
-    <content><![CDATA[一、Earthly 介绍
-
-开局一张图，功能全靠吹。
-
-
-Earthly 是一个更加高级的 Docker 镜像构建工具，Earthly 通过自己定义的 Earthfile 来代替传统的 Dockerfile 完成镜像构建；Earthfile 就如同 Earthly 官方所描述:
-**Makefile + Dockerfile = Earthfile**
-在使用 Earthly 进行构建镜像时目前强依赖于 buildkit，Earthly 通过 buildkit 支持了一些 Dockerfile 的扩展语法，同时将 Dockerfile 与 Makefile 整合，使得多平台构建和代码化 Dockerfile 变得更加简单；使用 Earthly 可以更加方便的完成 Dockerfile 的代码复用以及更加友好的 CI 自动集成。
-二、快速开始
-2.1、安装依赖
-Earthly 目前依赖于 Docker 和 Git，所以安装 Earthly 前请确保机器已经安装了 Docker 和 Git。
-2.2、安装 Earthly
-Earthly 采用 Go 编写，所以主要就一个二进制文件，Linux 下安装可以直接参考官方的安装脚本:
-sudo /bin/sh -c 'wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly &amp;&amp; chmod +x /usr/local/bin/earthly &amp;&amp; /usr/local/bin/earthly bootstrap --with-autocomplete'Copy
-安装完成后 Earthly 将会启动一个 buildkitd 容器: earthly-buildkitd。
-2.3、语法高亮
-目前 Earthly 官方支持 VS Code、VIM 以及 Sublime Text 三种编辑器的语法高亮，具体如何安装请参考 官方文档。
-2.4、基本使用
-本示例源于官方 Basic 教程，以下示例以编译 Go 项目为样例:
-首先创建一个任意名称的目录，目录中存在项目源码文件以及一个 Earthfile 文件；
-main.go
-package main
-
-import "fmt"
-
-func main() {
-    fmt.Println("hello world")
-}Copy
-Earthfile
-FROM golang:1.17-alpine
-WORKDIR /go-example
-
-build:
-    COPY main.go .
-    RUN go build -o build/go-example main.go
-    SAVE ARTIFACT build/go-example /go-example AS LOCAL build/go-example
-
-docker:
-    COPY +build/go-example .
-    ENTRYPOINT ["/go-example/go-example"]
-    SAVE IMAGE go-example:latestCopy
-有了 Earthfile 以后我们就可以使用 Earthly 将其打包为镜像；
-# 目录结构
-~/t/earthlytest ❯❯❯ tree
-.
-├── Earthfile
-└── main.go
-
-0 directories, 2 files
-
-# 通过 earthly 进行构建
-~/t/earthlytest ❯❯❯ earthly +dockerCopy
-
-构建完成后我们就可以直接从 docker 的 images 列表中查看刚刚构建的镜像，并运行:
-
-三、进阶使用
-3.1、多阶段构建
-Earthfile 中包含类似 Makefile 一样的 target，不同的 target 之间还可以通过特定语法进行引用，每个 target 都可以被单独执行，执行过程中 earthly 会自动解析这些依赖关系。
-这种多阶段构建时语法很弹性，我们可以在每个阶段运行独立的命令以及使用不同的基础镜像；从快速开始中可以看到，我们始终使用了一个基础镜像(golang:1.17-alpine)，对于 Go 这种编译后自带运行时不依赖其语言 SDK 的应用，我们事实上可以将 “发布物” 仅放在简单的运行时系统镜像内，从而减少最终镜像体积:
-
-由于使用了多个 target，所以我们可以单独的运行 build 这个 target 来验证我们的编译流程，这种多 target 的设计方便我们构建应用时对编译、打包步骤的细化拆分，同时也方便我们进行单独的验证。 例如我们单独执行 build 这个 target 来验证我们的编译流程是否正确:
-
-在其他阶段验证完成后，我们可以直接运行最终的 target，earthly 会自动识别到这种依赖关系从而自动运行其依赖的 target:
-
-3.2、扩展指令
-3.2.1、SAVE
-SAVE 指令是 Earthly 自己的一个扩展指令，实际上分为 SAVE ARTIFACT 和 SAVE IMAGE；其中 SAVE ARTIFACT 指令格式如下:
-SAVE ARTIFACT [--keep-ts] [--keep-own] [--if-exists] [--force] &lt;src&gt; [&lt;artifact-dest-path&gt;] [AS LOCAL &lt;local-path&gt;]Copy
-SAVE ARTIFACT 指令用于将文件或目录从 build 运行时环境保存到 target 的 artifact 环境；当保存到 artifact 环境后，可以通过 COPY 等命令在其他位置进行引用，类似于 Dockerfile 的 COPY --from... 语法；不同的是 SAVE ARTIFACT 支持 AS LOCAL &lt;local-path&gt; 附加参数，一但指定此参数后，earthly 会同时将文件或目录在宿主机复制一份，一般用于调试等目的。SAVE ARTIFACT 命令在上面的样例中已经展示了，在运行完 earthly +build 命令后实际上会在本地看到被 SAVE 出来的 ARTIFACT:
-
-而另一个 SAVE IMAGE 指令则主要用于将当前的 build 环境 SAVE 为一个 IMAGE，如果指定了 --push 选项，同时在执行 earthly +target 命令时也加入 --push 选项，该镜像将会自动被推送到目标 Registry 上。SAVE IMAGE 指令格式如下:
-SAVE IMAGE [--cache-from=&lt;cache-image&gt;] [--push] &lt;image-name&gt;...Copy
-
-3.2.2、GIT CLONE
-GIT CLONE 指令用于将指定 git 仓库 clone 到 build 环境中；与 RUN git clone... 命令不同的是，GIT CLONE 通过宿主机的 git 命令运行，它不依赖于容器内的 git 命令，同时还可以直接为 earthly 配置 git 认证，从而避免将这些安全信息泄漏到 build 环境中； 关于如何配置 earthly 的 git 认证请参考 官方文档；下面是 GIT CLONE 指令的样例
-
-3.2.3、COPY
-COPY 指令与标准的 Dockerfile COPY 指令类似，除了支持 Dockerfile 标准的 COPY 功能以外，earthly 中的 COPY 指令可以引用其他 target 环节产生的 artifact，在引用时会自动声明依赖关系；即当在 B target 中存在 COPY +A/xxxxx /path/to/copy 类似的指令时，如果只单纯的执行 earthly +B，那么 earthly 根据依赖分析会得出在 COPY 之前需要执行 target A。COPY 指令的语法格式如下:
-# 与 Dockerfile 相同的使用方式，从上下文复制
-COPY [options...] &lt;src&gt;... &lt;dest&gt;
-
-# 扩展支持的从 target 复制方式
-COPY [options...] &lt;src-artifact&gt;... &lt;dest&gt;Copy
-3.2.4、RUN
-RUN 指令在标准使用上与 Dockerfile 里保持一致，除此之外增加了更多的扩展选项，其指令格式如下:
-# shell 方式运行(/bin/sh -c)
-RUN [--push] [--entrypoint] [--privileged] [--secret &lt;env-var&gt;=&lt;secret-ref&gt;] [--ssh] [--mount &lt;mount-spec&gt;] [--] &lt;command&gt;
-
-# exec 方式运行
-RUN [[&lt;flags&gt;...], "&lt;executable&gt;", "&lt;arg1&gt;", "&lt;arg2&gt;", ...]Copy
-其中 --privileged 选项允许运行的命令使用 privileged capabilities，但是需要 earthly 在运行 target 时增加 --allow-privileged 选项；--interactive / --interactive-keep 选项用于交互式执行一些命令，在完成交互后 build 继续进行，在交互过程中进行的操作都会被持久化到 镜像中:
-
-限于篇幅原因，其他的具体指令请查阅官方文档 Earthfile reference。
-3.3、UDCS
-UDCs 全称 “User-defined commands”，即用户定义指令；通过 UDCs 我们可以将 Earthfile 中特定的命令剥离出来，从而实现更加通用和统一的代码复用；下面是一个定义 UDCs 指令的样例:
-# 定义一个 Command
-# ⚠️ 注意: 语法必须满足以下规则
-# 1、名称全大写
-# 2、名称下划线分割
-# 3、首个命令必须为 COMMAND(后面没有冒号)
-MY_COPY:
-    COMMAND
-    ARG src
-    ARG dest=./
-    ARG recursive=false
-    RUN cp $(if $recursive =  "true"; then printf -- -r; fi) "$src" "$dest"
-
-# target 中引用
-build:
-    FROM alpine:3.13
-    WORKDIR /udc-example
-    RUN echo "hello" &gt;./foo
-    # 通过 DO 关键字引用 UDCs
-    DO +MY_COPY --src=./foo --dest=./bar
-    RUN cat ./bar # prints "hello"Copy
-UDCs 不光可以定义在一个 Earthfile 中，UDCs 可以跨文件、跨目录引用:
-
-有了 UDCs 以后，我们可以通过这种方式将对基础镜像的版本统一控制、对特殊镜像的通用处理等操作全部抽象出来，然后每个 Earthfile 根据需要进行引用；关于 UDCs 的使用样例可以参考我的 autobuild 项目，其中的 udcs 目录定义了大量的通用 UDCs，这些 UDCs 被其他目标镜的 Earthfile 批量引用。
-3.4、多平台构建
-在以前使用 Dockerfile 的时候，我们需要自己配置然后开启 buildkit 来实现多平台构建；在配置过程中可能会很繁琐，现在使用 earthly 可以默认帮我们实现多平台的交叉编译，我们需要做的仅仅是在 Earthfile 中声明需要支持哪些平台而已:
-
-以上 Earthfile 在执行 earthly --push +all 构建时，将会自动构建四个平台的镜像，并保持单个 tag，同时由于使用了 --push 选项还会自动推送到 Docker Hub 上:
-
-四、总结
-Earthly 弥补了 Dockerfile 的很多不足，解决了很多痛点问题；但同样可能需要一些学习成本，但是如果已经熟悉了 Dockerfile 其实学习成本不高；所以目前还是比较推荐将 Dockerfile 切换为 Earthfile 进行统一和版本化管理的。本文由于篇幅所限(懒)很多地方没有讲，比如共享缓存等，所以关于 Earthly 更多的详细使用等最好还是仔细阅读一下官方文档。
-
-整理转载：the-best-image-build-tool-earthly
-
-系列教程
-全部文章RSS订阅
-Docker系列 Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>docker</category>
-      </categories>
-      <tags>
-        <tag>docker</tag>
-        <tag>earthly</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</title>
     <url>/posts/d6bad1e5/</url>
     <content><![CDATA[前言
@@ -18614,11 +18614,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var QYiYeVCrmjzajONg_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); QYiYeVCrmjzajONg_options.container = document.getElementById("mmedia-QYiYeVCrmjzajONg"); const ap_QYiYeVCrmjzajONg = new APlayer(QYiYeVCrmjzajONg_options); 
+ var AHQJeiZZOsSmDeZz_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); AHQJeiZZOsSmDeZz_options.container = document.getElementById("mmedia-AHQJeiZZOsSmDeZz"); const ap_AHQJeiZZOsSmDeZz = new APlayer(AHQJeiZZOsSmDeZz_options); 
 
 
 
- var WDoOdFksgUpxrcpL_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); WDoOdFksgUpxrcpL_options.container = document.getElementById("mmedia-WDoOdFksgUpxrcpL"); const ap_WDoOdFksgUpxrcpL = new APlayer(WDoOdFksgUpxrcpL_options); 
+ var QalqdcZyuKJtLdne_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); QalqdcZyuKJtLdne_options.container = document.getElementById("mmedia-QalqdcZyuKJtLdne"); const ap_QalqdcZyuKJtLdne = new APlayer(QalqdcZyuKJtLdne_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -18756,9 +18756,9 @@ docker run -d \
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-YLlyhDmHnIHNsamR").style.height=document.getElementById("mmedia-YLlyhDmHnIHNsamR").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-EWAnHxhINOXgYRAA").style.height=document.getElementById("mmedia-EWAnHxhINOXgYRAA").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-YLlyhDmHnIHNsamR").style.height=document.getElementById("mmedia-YLlyhDmHnIHNsamR").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-EWAnHxhINOXgYRAA").style.height=document.getElementById("mmedia-EWAnHxhINOXgYRAA").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -18767,7 +18767,7 @@ docker run -d \
 
 ## 中文翻唱
 
- var QNxcJrPNoKttiJGA_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); QNxcJrPNoKttiJGA_options.container = document.getElementById("mmedia-QNxcJrPNoKttiJGA"); const ap_QNxcJrPNoKttiJGA = new APlayer(QNxcJrPNoKttiJGA_options); 
+ var qRGFOrUptRqbyNrH_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); qRGFOrUptRqbyNrH_options.container = document.getElementById("mmedia-qRGFOrUptRqbyNrH"); const ap_qRGFOrUptRqbyNrH = new APlayer(qRGFOrUptRqbyNrH_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -34602,9 +34602,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-TYEdbTqSXkIFNHNU").style.height=document.getElementById("mmedia-TYEdbTqSXkIFNHNU").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-iSiBWroZISMCNrZi").style.height=document.getElementById("mmedia-iSiBWroZISMCNrZi").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-TYEdbTqSXkIFNHNU").style.height=document.getElementById("mmedia-TYEdbTqSXkIFNHNU").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-iSiBWroZISMCNrZi").style.height=document.getElementById("mmedia-iSiBWroZISMCNrZi").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 calibre:
@@ -35143,6 +35143,713 @@ docker run -d \
         <tag>nas</tag>
         <tag>docker</tag>
         <tag>emby</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Doxygen入门教程</title>
+    <url>/posts/1acb0edb/</url>
+    <content><![CDATA[
+Doxygen是API文档生成工具，可以根据代码注释生成文档的工具。支持HTML、CHM、PDF等格式。主要支持C语言、Python语言，其它C语系语言也支持（如C++、Java、C#等）。
+
+
+
+本教程的测试环境
+
+Ubuntu 18.04 LTS
+Doxygen 1.8.13
+C++
+Gitlab CI/CD
+windows
+
+什么是 Doxygen？
+Doxygen 是一个将文件的特定注释转化为文档的工具
+如何安装 Doxygen？
+$ sudo apt install graphviz
+$ sudo apt install doxygen
+如何使用 Doxygen？
+1. 查看你使用的语言 Doxygen 是否默认支持？
+Doxygen 默认支持的语言有：C，C++，C#，Objective-C，IDL，Java，VHDL，PHP，Python，Tcl，Fortran 和 D
+2. 生成配置文件
+$ ## 生成配置文件，默认配置文件名为：Doxyfile
+$ doxygen -g   &lt;config-file&gt;
+$
+$ ## 生成配置文件（不含注释）
+$ doxygen -s -g &lt;config-file&gt;
+$
+3. 修改配置文件
+## 常见配置选项
+
+## 设置项目编码，默认为 UTF-8
+DOXYFILE_ENCODING = UTF-8
+
+## 设置项目名称
+PROJECT_NAME = "project-name"
+
+## 设置项目版本号
+PROJECT_NUMBER = "1.0.0"
+
+## 设置项目的描述
+PROJECT_BRIEF = "这是项目描述"
+
+## 设置项目的 logo 
+PROJECT_LOGO = ""
+
+## 设置输入目录，如果未设置，则在当前目录查找
+INPUT = src
+
+## 设置要匹配的输入文件
+FILE_PATTERNS = *.cc *.h
+
+## 设置不需要处理的输入目录
+EXCLUDE =
+
+## 设置不需要匹配的输入文件
+EXCLUDE_PATTERNS =
+
+## 设置输入编码，默认为 UTF-8
+INPUT_ENCODING = UTF-8
+
+## 设置是否递归搜索输入目录，默认为 NO
+RECURSIVE = NO
+
+## 设置是否提取所有类，函数等（不包括类的私有成员和静态成员），默认为 NO
+EXTRACT_ALL = NO
+
+## 设置是否提取类的私有成员，默认为 NO
+EXTRACT_PRIVATE = NO
+
+## 设置是否提取类的静态成员，默认为 NO
+EXTRACT_STATIC = NO
+
+## 设置文档是否包含源文件，默认为 NO
+SOURCE_BROWSER = NO
+
+## 设置是否对每个类都链接到其所在的头文件中，默认值为 YES
+VERBATIM_HEADERS = YES
+
+## 设置文档的输出目录
+OUTPUT_DIRECTORY = doc
+
+## 设置是否支持 Markdown，默认值为 YES
+MARKDOWN_SUPPORT = YES
+
+## 设置文档的主界面
+USE_MDFILE_AS_MAINPAGE =
+
+## 设置文档的语言，默认为 English
+OUTPUT_LANGUAGE = Chinese         
+4. 给代码添加注释
+并不是所有的注释都会被收入文档，Doxygen 支持的常用的注释风格有：
+/**     注释的内容       */
+/*!     注释的内容       */
+
+## 在变量后 注释文件，类，结构体，共同体，枚举成员 或 函数参数
+int a; /**&lt;      注释的内容        */
+int a; /*!&lt;      注释的内容        */
+注意： 这里并不是所有的注释风格，更多注释风格见 官网
+Doxygen 常用的注释标记（标记以 / 或 @ 开头表示）：
+## 添加作者
+@author 作者1 作者2
+
+## 添加日期
+@date 日期
+
+## 添加文件名
+@file 文件名
+
+## 添加简单描述
+@brief 简要描述
+
+## 添加详细描述
+@details 详细描述
+
+## 添加类信息
+@class 类名 类所在的文件 类所在的文件（可包括路径） 
+
+## 添加结构体信息
+@class 结构体名 结构体所在的文件 结构体所在的文件（可包括路径）
+
+## 添加宏信息
+@enum 宏名
+
+## 添加函数信息
+@fn 函数信息
+
+## 添加参数说明
+@param [in]   输入参数名 说明
+@param [out] 输出参数名 说明
+
+## 添加返回说明
+@return 返回说明
+
+## 添加返回特定值说明
+@retval 特定值 特定返回值说明
+
+## 添加异常说明
+@exception 异常类型 异常说明
+
+## 添加代码
+@code
+...代码...
+@encode
+
+## 添加文件名说明
+@headfile 文件名 文件名（可包括路径） 
+
+## 添加版本号
+@version 版本号
+
+## 添加计划做的事儿
+@todo 计划做的事
+
+## 添加参考 
+@see 参加其它
+
+## 添加过时说明
+@deprecated 过时说明
+
+## 添加 bug 说明
+@bug "bug 说明"
+
+## 添加例子
+@example 例子文件名
+
+## 添加警告信息
+@warning 警告信息
+
+## 添加开始使用的版本
+@since 版本
+
+## 添加测试信息
+@test 测试
+
+## 添加主界面信息
+@mainpage 标题
+
+## 添加注意事项 
+@note 注意事项
+
+## 添加协议信息
+@copyright 协议信息
+为C/C++添加注释
+首先为函数添加注释信息，这是必须要做的。这里有个选择性问题，添加到哪里呢？.c文件？.h文件？
+一般来说：
+
+.h文件代表模块对外的接口最小信息，面向模块使用者
+.c文件代表模块的实现代码，面向的是开发者
+
+在实际编程中，事先约定各个模块间的接口，然后将不同的模块分配给不同的开发者，与此同时，测试人员根据接口要求，编写测试代码，这就完全保证了并发编程和白盒测试要求。
+这里我们可以看到，文档主要是用来描述接口信息的，所以，我对代码的注释规定如下：
+
+模块对外接口，仅在.h中提供注释信息
+模块内部辅助函数，全部用static设为私有函数，同时仅在.c中保留注释信息
+
+当然，您也可以同时为.c .h的接口函数编写两份完全一样的注释信息，但这么做，您会同时维护两份信息，出错的概率会更大些。
+确定了注释位置，下一步考虑一个函数需要哪些信息
+一般来说，需要函数功能，入口参数，返回值，注意事项，某些时候还需要说明上下文环境，从而保证函数能正确执行
+比如这个函数
+extern int Dev_PrintInt(int number); 
+它的功能就是打印一个整形数据，传入参数为整数，返回的是成功打印的数据长度（字节为单位），同时呢，我们在调用这个函数之前，必须要先初始化Dev设备
+ok，这就是所有接口信息，稍微规范一下，就变成了下面的样子
+// 函数功能：打印整数
+// 入口参数：number为一个整数类型
+// 返回结构：返回的是成功打印的数据长度（字节为单位）
+// 注意事项：
+//          1：在调用本函数前，请确保已经调用Dev_Init初始化设备
+//          2：请注意函数返回值，如果该值为0，则说明函数执行失败
+
+extern int Dev_PrintInt(int number); 
+用英文来书写呢，则变成下面的样子
+//***************************************************************************************
+//
+// brief  : Print Int number to terimal device.
+//
+// param  : number is the data you want to print.
+// retval : the number of print information, in bytes. return zero indicate print error !
+//
+// Note:
+//      * Be sure you have called \ref Dev_Init function before call this fuction.
+//      * Remember to check return value.
+//
+//***************************************************************************************
+extern int Dev_PrintInt(int number);
+注释信息写完了，一般来说，函数能达到这种信息程度就ok了，但既然要生成文档，就不得不考虑一个问题
+如果你是Doxygen作者，怎么从上面的注释里面提取信息呢，信息那么多，有*号，有各种文字信息。
+你可以将所有的注释信息都输出出来，但这么做，等于没有分类整理，同时也包含了杂乱信息，比如一排*
+另外一个解决方法是：设置某些特殊字符，比如function表示，一旦检测到这个特殊标记，则认为是接下来
+的一行是函数功能描述。但这么做，万一用户的注释里面出现很多个function，你怎么识别哪个是普通文本，
+哪个是特殊标记？
+也许你会说了，可以采用这种形式啊，恩，这么做是可行的，可以确保识别出来特殊标记
+接下来，还有一个问题，我们上面的注释中，有很多*号，仅仅起到美观和格式化的作用，当然不希望在
+输出文档中显示这些东西，问题是你怎么识别这些符号，并不显示呢？也许你会说，可以强制规定注释的
+格式，不让用户在代码中写很多*，ok，假设用户同意这么做。那接下来呢，如果我希望在代码中写某些话
+，但是不希望输出到文档中，比如“XX是2B”等等，你又该怎么做呢？
+正向思考遇到问题时，不妨反向考虑，这是谁的问题：是我设计思路的问题还是用户用法的问题？
+困难重重，肯定是设计思路的问题
+如果设计一个标记符，将普通注释和要生成的文档注释区分开来，就能解决问题了。
+Doxygen的用法，说白了，就是为了解决上面提到的两个问题：
+怎么区分普通注释和输出注释  
+怎么在输出注释里面，识别特殊标记和普通文本  
+ok，讲到这里，基本把Doxygen的机制给解释清楚了，如果您还不理解，最简单的方法就是把你假设为Doxygen
+作者，重新推演一遍。
+下面咱们看看Doxygen怎么解决这两个问题的
+区分普通注释和特殊注释
+对于C/C++语言来说，注释形式有两种
+//
+/* */
+Doxygen通过在这里增加*，/，!来作为特殊标记，比如
+对于/* */这种注释来说，正常注释为
+/*
+ * 正常注释
+ */
+Doxygen在注释第一个*后，设置*或!作为标志，如果检测到有这些，
+就将接下来的注释作为导出文档来解释
+/**
+ * 要输出成文档的注释
+ */
+
+ 或者
+
+/*!
+ * 要输出成文档的注释
+ */
+同时，中间的*号可以省略，像这样
+/**
+   要输出成文档的注释
+ */
+
+ 或者
+
+/*!
+   要输出成文档的注释
+ */
+对于//这种类型的注释，Doxygen在第二个/后，增加!或/作为区分标志，如果检测到有这些，
+就将接下来的注释作为导出文档来解释
+/// 要输出成文档的注释
+
+或者
+
+//! 要输出成文档的注释
+对于这种呢，有一个潜在的问题，很多时候，我们需要在把注释放到后面，比如下面这种
+#define DEV_ON      ((int)(1))      //! Simple device is power on.
+#define DEV_OFF     ((int)(0))      //! Simple device is power off.
+如果真要这么写的话，Doxygen会把//! Simple device is power on.当做DEV_OFF的注释，这
+当然不是我们所希望的! 怎么办呢，只好再加一个特殊标记了，Doxygen针对这种情况，需要在!后
+再增加一个&lt;标志符，如果检测到这个，则认为这个注释是为前面代码准备的，所以，上面的注释应该
+这么写
+#define DEV_ON      ((int)(1))      //!&lt; Simple device is power on.
+#define DEV_OFF     ((int)(0))      //!&lt; Simple device is power off.
+做到这里，Doxygen就可以正确区分普通注释和特殊注释了。
+**注：**提到特殊标记，其实吧，编程语言非常常用，比如HTML就是典型的markup语言，一堆一堆的括号，看着就头疼
+Doxygen采用\和@作为特殊标记符，当在特殊注释里面检测到了特殊标记符，则接下来检测紧跟单词是不是Doxygen
+事先规定好的，如果是，则将按照特定的规则来解释紧跟着的注释；如果不是呢，则将\和@解释为普通文本，聪明吧
+可能有点拗口，下面给你个例子
+//***************************************************************************************
+//
+//! \brief  Print Int number to terimal device.
+//!
+//! \param  [in] number is the data you want to print.
+//! \retval the number of print information, in bytes. return zero indicate print error !.
+//!
+//! \note
+//! * Be sure you have called \ref Dev_Init function before call this fuction.
+//! * Remember to check return value.
+//
+//***************************************************************************************
+extern int Dev_PrintInt(int number);
+看到了吧，这里的\brief和\param都是特殊符号，表示简要描述和参数。万一你小手一抖，把\param
+写成了\parame，那就悲剧了，因为Doxygen不认识parame，所以它会把这句话当做是普通文本来处理
+其实，上面的\换成@也是ok的，如下所示
+//***************************************************************************************
+//
+//! @brief  Print Int number to terimal device.
+//!
+//! @param  [in] number is the data you want to print.
+//! @retval the number of print information, in bytes. return zero indicate print error !.
+//!
+//! @note
+//! * Be sure you have called \ref Dev_Init function before call this fuction.
+//! * Remember to check return value.
+//
+//***************************************************************************************
+extern int Dev_PrintInt(int number);
+相信某些玩过ARM芯片的，对这类注释非常熟悉，官方库都是采用Doxygen语法规则注释的
+示例
+采用Doxygen语法为main.c dev.c dev.h添加注释信息，完成后的效果如下所示：
+main.c
+//***************************************************************************************
+//
+//! \file main.c 
+//! This is an simple example show developer how to use dev api to print int number.
+//!
+//! \author    Cedar
+//! \version   V1.0
+//! \date      2014-03-23
+//! \copyright GNU Public License V3.0
+//
+//***************************************************************************************
+
+#include "dev.h"
+
+#define CNT_MAX  10  //!&lt; The maxium number of print
+
+//! Simple device example.
+void DEV_Example(void)
+{
+	int i = 0;
+
+	Dev_Init();
+	
+	for (i = 0; i &lt; CNT_MAX; ++i)
+	{
+		Dev_PrintInt(i);
+	}
+
+	Dev_Close();
+}
+
+//! Application Entry
+int main(void)
+{
+
+	DEV_Example();
+
+	return 0;
+}
+dev.c
+//***************************************************************************************
+//
+//! \file dev.c 
+//! the implement of simple device.
+//!
+//! \author    Cedar
+//! \version   V1.0
+//! \date      2014-03-23
+//! \copyright GNU Public License V3.0
+//
+//***************************************************************************************
+
+//! Simple device status.
+//! 
+//! \warning This variable is designed for internal, user \b MUST \b NOT call it.
+static int __DevStatus = 0
+
+void Dev_Init(void)
+{
+	// Print debug information
+	printf("Dev Initialize OK!\r\n");
+}
+
+int Dev_PrintInt(int number)
+{
+	printf("Print IntType number: %d\r\n", number);
+}
+
+int Dev_StatusCheck(void)
+{
+	return 	(__DevStatus);
+}
+
+void Dev_Close(void)
+{
+	printf("Dev Close OK!\r\n");
+}
+dev.h
+//***************************************************************************************
+//
+//! \file dev.h
+//!  Simple device user API.
+//!
+//! \author    Cedar
+//! \version   V1.0
+//! \date      2014-03-23
+//! \copyright GNU Public License V3.0
+//
+//***************************************************************************************
+
+#include &lt;stdio.h&gt;
+
+
+//***************************************************************************************
+//
+//! \addtogroup Dev_Status  Simple device status information.
+//! @{
+//
+//***************************************************************************************
+
+#define DEV_ON      ((int)(1))      //!&lt; Simple device is power on.
+#define DEV_OFF     ((int)(0))      //!&lt; Simple device is power off.
+
+//***************************************************************************************
+//
+//! @}
+//
+//***************************************************************************************
+
+
+//***************************************************************************************
+//
+//! \addtogroup Dev_API  Simple device APIs list.
+//! @{
+//
+//***************************************************************************************
+
+//***************************************************************************************
+//
+//! \brief  Initialize simple device.
+//!
+//! \param  none.
+//! \retval none.
+//!
+//! \note   This function \b MUST be called first before others function.
+//
+//***************************************************************************************
+extern void Dev_Init(void);
+
+//***************************************************************************************
+//
+//! \brief  Print Int number to terimal device.
+//!
+//! \param  [in] number is the data you want to print.
+//! \retval the number of print information, in bytes. return zero indicate print error !.
+//!
+//! \note
+//! * Be sure you have called \ref Dev_Init function before call this fuction.
+//! * Remember to check return value.
+//
+//***************************************************************************************
+extern int Dev_PrintInt(int number);
+
+//***************************************************************************************
+//
+//! \brief  Check simple device status information.
+//!
+//! \param  none.
+//! \retval status information of simple device, which can be one of the following value:\n
+//!  - \ref DEV_ON
+//!  - \ref DEV_OFF
+//!  \n More information, please reference \ref Dev_Status.
+//
+//***************************************************************************************
+extern int Dev_StatusCheck(void);
+
+//***************************************************************************************
+//
+//! \brief  Close simple device.
+//!
+//! \param  none.
+//! \retval none.
+//
+//***************************************************************************************
+extern void Dev_Close(void);
+
+//***************************************************************************************
+//
+//! @}
+//
+//***************************************************************************************
+
+//***************************************************************************************
+//
+//! \example main.c
+//!  Show how to use simple device to print int number.
+//
+//***************************************************************************************
+4. 生成文档
+$ doxygen &lt;config-file&gt;
+Win 图形界面使用
+第1章 安装
+在Linux下可以通过apt install doxygen安装命令行工具，然后用apt install doxygen-gui安装图形界面。对Linux用户来说，命令行工具可以通过doxygen命令运行，而图形界面可以通过doxywizard命令运行。
+而Windows用户可以在这里下载，安装完毕后，直接双击就能运行图形界面。
+1.1 基本使用
+图形工具的基本使用如下图所示，有非常多的配置选项，这里我们只填入必要的配置，其它配置都用默认值。
+
+
+我们的工作目录如下：
+.
+├── out
+└── src
+    └── math.h
+其中math.h代码如下：
+/*! \file math.h */
+
+/*!
+    用于求一个角度的sin值，输入是字符串以便同时支持弧度制和角度制表示
+    \li 弧度制用pi表示，例如：2pi表示一圈、0.5pi表示直角
+    \li 角度制用d结尾，例如：360d表示一圈、90d表示直角
+    \li 输入也可以是数值，例如：输入3.14159大约表示180度
+
+    \param a 用弧度制或角度制表示都行，字符串必须用'\0'表示结束
+    \param[out] res 是输出参数，用于保存sin运算的结果
+
+    \return 错误码，0表示成功，其它表示失败
+
+    \todo 在xxx的情况下存在BUG，预计下一版本修复
+*/
+int sin(char *a, double *res);
+Doxygen生成的HTML会放到out目录下，生成的HTML如图1-3所示。
+
+1.2 保存配置
+在1.1节中我们配置了一些选项，也成功生成了HTML文档。我们希望下次代码改动后能够继续沿用上次配置，那么我们可以把这些配置保存成Doxyfile文件，见图1-4。
+
+1.3 命令行运行Doxygen
+有了配置文件后我们完全可以通过命令行来生成API文档，假设配置文件名为Doxyfile，那么我们只需要执行doxygen /path/to/Doxyfile即可生成API文档。
+通过命令行生成文档有许多好处，其中最主要的好处就是：能够集成到持续集成之类的自动化系统中。
+第2章 为代码编写注释
+2.1 什么样的注释会被Doxygen识别？
+Doxygen能识别这几种风格的注释：
+/**
+ * ... text ...
+ */
+
+/*!
+ * ... text ...
+ */
+
+///
+/// ... text ...
+///
+
+//!
+//!... text ...
+//!
+文件的开头必须有文件注释，否则该文件不会被识别：
+/*! \file math.h */
+2.2 注释怎么写
+这个自己看官网例子体会吧。
+第3章 为其它编程语言生成注释
+Doxygen主要支持C语言，其它语法跟C差不多的语言（如：C++/C#/PHP/Java）也能够支持，我们称这类语言为「C语系语言」。而哪些跟C语法差异较大的语言叫做「非C语系语言」。
+对于大多非C语系语言，Doxygen都是支持的，Doxygen原生支持这些语言：IDL、Java、Javascript、C#、C、C++、D、PHP、Objective-C、Python、Fortran、VHDL。
+万一项目需要的语言（例如：Lua）Doxygen官方并不支持，那么只能自行编写「第三方语言扩展」来支持了。
+3.1 Doxygen官方支持的语言
+见图3-1，文件名符合FILE_PATTERNS都会被处理。其中包括了.c、.h、.py等等。
+
+如果我们的扩展名并不在FILE_PATTERNS内，那么可以加上去。例如我们项目下的所有.ccc文件，其实是C语言代码（这很奇葩，举个例子而已）。那我们可以编辑Doxyfile配置文件满足这一需求，需要2个步骤。
+(1) 在FILE_PATTERNS中添加*.ccc，如图3-2
+
+(2) 在EXTENSION_MAPPING中添加映射规则ccc=C，如图3-3。语法是ext=language，其中language可以取的值有：IDL、Java、Javascript、C#、C、C++、D、PHP、Objective-C、Python、Fortran、VHDL。
+
+3.2 Doxygen官方不支持的语言
+以Lua语言为例，它的代码是长这样的：
+-- \file lmath.h
+
+--[[
+    用于求一个角度的sin值，输入是字符串以便同时支持弧度制和角度制表示
+    \li 弧度制用pi表示，例如：2pi表示一圈、0.5pi表示直角
+    \li 角度制用d结尾，例如：360d表示一圈、90d表示直角
+    \li 输入也可以是数值，例如：输入3.14159大约表示180度
+
+    \param a 字符串类型，表示角度，用弧度制或角度制表示都行
+
+    \return 返回sin运算的结果
+
+    \todo 在xxx的情况下存在BUG，预计下一版本修复
+--]]
+function sin(a)
+    return 1.123
+end
+可以看到Lua的语法既不像C也不像Python。本节以Lua为例，介绍如何为Doxygen编写Lua语言扩展。
+好吧，大多数人没有这种需求，这里就不介绍了。
+第4章 定制Doxygen的输出
+4.1 定制页面样式
+Doxygen输出的默认HTML比较难看，如图4-1。
+
+如果嫌生成的HTML不好看，可以自定义HTML页面头部、尾部以及页面整体CSS样式表。
+(1) 生成默认的风格的配置文件，敲这个命令：doxygen -w html header.html footer.html customdoxygen.css，可以生成header.html、footer.html、customdoxygen.css。
+(2) 根据自己的需求修改这三个文件。
+(3) 配置HTML_HEADER、HTML_FOOTER、HTML_STYLESHEET指向修改后的文件，如图4-2。
+
+Doxygen默认的页面主色调大约是天蓝色的，可以通过HTML_COLORSTYLE_HUE、HTML_COLORSTYLE_SAT、HTML_COLORSTYLE_GAMMA修改主色调，这3个配置分别对应色相、饱和度、Gamma校正，见图4-3。如果不太懂色相、饱和度是啥意思，请自行百度「色彩模式」或参考Photoshop相关教程。
+
+经过图4-3的修改，页面的主色调变为图4-4的样子。
+
+4.2 导航栏
+Doxygen中「导航栏」有两种展示方式：Treeview和Index，分别是竖向和横向的，如图4-5。
+
+可以配置DISABLE_INDEX和GENERATE_TREEVIEW来控制是否显示它们，如图4-6。
+
+4.3 自定义「导航栏」的目录结构
+我们已经知道Doxygen中「导航栏」有Treeview和Index两种了。这节介绍如何定制导航栏的目录结构。这需要三个步骤。
+(1) 执行doxygen -l，生成DoxygenLayout.xml文件
+(2) 编辑DoxygenLayout.xml文件，修改其中的布局
+(3) 修改LAYOUT_FILE配置，使其指向DoxygenLayout.xml文件，如图4-7
+(4) 运行Doxygen
+
+那么如何修改XML文件呢？默认的DoxygenLayout.xml代码如下：
+&lt;doxygenlayout version="1.0"&gt;
+  &lt;navindex&gt;
+    &lt;tab type="mainpage" visible="yes" title=""/&gt;
+    &lt;tab type="pages" visible="yes" title="" intro=""/&gt;
+    &lt;tab type="modules" visible="yes" title="" intro=""/&gt;
+    &lt;tab type="namespaces" visible="yes" title=""&gt;
+      &lt;tab type="namespacelist" visible="yes" title="" intro=""/&gt;
+      &lt;tab type="namespacemembers" visible="yes" title="" intro=""/&gt;
+    &lt;/tab&gt;
+    &lt;tab type="classes" visible="yes" title=""&gt;
+      &lt;tab type="classlist" visible="yes" title="" intro=""/&gt;
+      &lt;tab type="classindex" visible="$ALPHABETICAL_INDEX" title=""/&gt; 
+      &lt;tab type="hierarchy" visible="yes" title="" intro=""/&gt;
+      &lt;tab type="classmembers" visible="yes" title="" intro=""/&gt;
+    &lt;/tab&gt;
+    &lt;tab type="files" visible="yes" title=""&gt;
+      &lt;tab type="filelist" visible="yes" title="" intro=""/&gt;
+      &lt;tab type="globals" visible="yes" title="" intro=""/&gt;
+    &lt;/tab&gt;
+    &lt;tab type="examples" visible="yes" title="" intro=""/&gt;  
+  &lt;/navindex&gt;
+&lt;/doxygenlayout&gt;
+XML对应了导航栏的目录树结构，我们通过该文件改变布局。标签的type属性取值除了上面列出的这些预定义值以外，还可以是type="user"或type="usergroup"，我们只能通过这两个type自定义布局，例如下面这段代码，生成的效果如图4-8：
+&lt;doxygenlayout version="1.0"&gt;
+  &lt;navindex&gt;
+    &lt;tab type="usergroup" visible="yes" title="友情链接（演示如何外链）"&gt;
+      &lt;tab type="user" visible="yes" title="百度" url="http://www.baidu.com" /&gt;
+      &lt;tab type="user" visible="yes" title="163" url="http://www.163.com" /&gt;
+    &lt;/tab&gt;
+    &lt;tab type="usergroup" visible="yes" title="数学库（演示如何链接文件）"&gt;
+      &lt;tab type="user" visible="yes" url="@ref math.h" title="math" /&gt;
+      &lt;tab type="user" visible="yes" url="@ref math2.h" title="math2" /&gt;
+    &lt;/tab&gt;
+    &lt;tab type="usergroup" visible="yes" title="三角函数（演示链接函数、结构体）"&gt;
+      &lt;tab type="user" visible="yes" url="@ref sin" title="sin" /&gt;
+      &lt;tab type="user" visible="yes" url="@ref sin2" title="sin2" /&gt;
+    &lt;/tab&gt;
+  &lt;/navindex&gt;
+&lt;/doxygenlayout&gt;
+
+4.4 完全自定义
+如果Doxygen输出的界面实在不入你的法眼，4.1~4.3介绍的定制化功能也不能彻底满足你的需求。那么你需要根据Doxygen输出的XML数据自行生成界面了。
+(1) 将GENERATE_XML配置为YES
+(2) 去输出目录寻找生成的XML文件，XML文件包括了函数信息、注释信息等
+(3) 自己写程序读取XML文件，并生成漂亮的文档
+第5章 Markdown支持
+
+待补充完善
+
+Markdown在工业界是非常流行的文档格式，文件名以.md结尾，其简洁直观的语法深受广大程序员喜爱。对Markdown本身的介绍超出了本文范围，本章介绍Doxygen对Markdown的支持。
+5.1 为.md文件生成文档
+5.2 在代码注释中使用Markdown语法
+第6章 搜索功能
+Gitlab CI/CD使用
+
+https://gitlab.com/pages/doxygen
+结合Docker和Gitlab CI/CD使用案例
+
+
+参考资源
+
+Doxygen 官网
+官网注释例子
+Doxygen文档生成工具教程
+Doxygen 10 分钟入门教程
+Gitlab CI/CD doxygen
+
+]]></content>
+      <categories>
+        <category>tools</category>
+      </categories>
+      <tags>
+        <tag>tools</tag>
+        <tag>doxygen</tag>
       </tags>
   </entry>
   <entry>
@@ -35943,791 +36650,6 @@ Tips：友情提示，部分内容RSS输出获取不到，请跳转到源网页�
       </tags>
   </entry>
   <entry>
-    <title>Doxygen入门教程</title>
-    <url>/posts/1acb0edb/</url>
-    <content><![CDATA[
-Doxygen是API文档生成工具，可以根据代码注释生成文档的工具。支持HTML、CHM、PDF等格式。主要支持C语言、Python语言，其它C语系语言也支持（如C++、Java、C#等）。
-
-
-
-本教程的测试环境
-
-Ubuntu 18.04 LTS
-Doxygen 1.8.13
-C++
-Gitlab CI/CD
-windows
-
-什么是 Doxygen？
-Doxygen 是一个将文件的特定注释转化为文档的工具
-如何安装 Doxygen？
-$ sudo apt install graphviz
-$ sudo apt install doxygen
-如何使用 Doxygen？
-1. 查看你使用的语言 Doxygen 是否默认支持？
-Doxygen 默认支持的语言有：C，C++，C#，Objective-C，IDL，Java，VHDL，PHP，Python，Tcl，Fortran 和 D
-2. 生成配置文件
-$ ## 生成配置文件，默认配置文件名为：Doxyfile
-$ doxygen -g   &lt;config-file&gt;
-$
-$ ## 生成配置文件（不含注释）
-$ doxygen -s -g &lt;config-file&gt;
-$
-3. 修改配置文件
-## 常见配置选项
-
-## 设置项目编码，默认为 UTF-8
-DOXYFILE_ENCODING = UTF-8
-
-## 设置项目名称
-PROJECT_NAME = "project-name"
-
-## 设置项目版本号
-PROJECT_NUMBER = "1.0.0"
-
-## 设置项目的描述
-PROJECT_BRIEF = "这是项目描述"
-
-## 设置项目的 logo 
-PROJECT_LOGO = ""
-
-## 设置输入目录，如果未设置，则在当前目录查找
-INPUT = src
-
-## 设置要匹配的输入文件
-FILE_PATTERNS = *.cc *.h
-
-## 设置不需要处理的输入目录
-EXCLUDE =
-
-## 设置不需要匹配的输入文件
-EXCLUDE_PATTERNS =
-
-## 设置输入编码，默认为 UTF-8
-INPUT_ENCODING = UTF-8
-
-## 设置是否递归搜索输入目录，默认为 NO
-RECURSIVE = NO
-
-## 设置是否提取所有类，函数等（不包括类的私有成员和静态成员），默认为 NO
-EXTRACT_ALL = NO
-
-## 设置是否提取类的私有成员，默认为 NO
-EXTRACT_PRIVATE = NO
-
-## 设置是否提取类的静态成员，默认为 NO
-EXTRACT_STATIC = NO
-
-## 设置文档是否包含源文件，默认为 NO
-SOURCE_BROWSER = NO
-
-## 设置是否对每个类都链接到其所在的头文件中，默认值为 YES
-VERBATIM_HEADERS = YES
-
-## 设置文档的输出目录
-OUTPUT_DIRECTORY = doc
-
-## 设置是否支持 Markdown，默认值为 YES
-MARKDOWN_SUPPORT = YES
-
-## 设置文档的主界面
-USE_MDFILE_AS_MAINPAGE =
-
-## 设置文档的语言，默认为 English
-OUTPUT_LANGUAGE = Chinese         
-4. 给代码添加注释
-并不是所有的注释都会被收入文档，Doxygen 支持的常用的注释风格有：
-/**     注释的内容       */
-/*!     注释的内容       */
-
-## 在变量后 注释文件，类，结构体，共同体，枚举成员 或 函数参数
-int a; /**&lt;      注释的内容        */
-int a; /*!&lt;      注释的内容        */
-注意： 这里并不是所有的注释风格，更多注释风格见 官网
-Doxygen 常用的注释标记（标记以 / 或 @ 开头表示）：
-## 添加作者
-@author 作者1 作者2
-
-## 添加日期
-@date 日期
-
-## 添加文件名
-@file 文件名
-
-## 添加简单描述
-@brief 简要描述
-
-## 添加详细描述
-@details 详细描述
-
-## 添加类信息
-@class 类名 类所在的文件 类所在的文件（可包括路径） 
-
-## 添加结构体信息
-@class 结构体名 结构体所在的文件 结构体所在的文件（可包括路径）
-
-## 添加宏信息
-@enum 宏名
-
-## 添加函数信息
-@fn 函数信息
-
-## 添加参数说明
-@param [in]   输入参数名 说明
-@param [out] 输出参数名 说明
-
-## 添加返回说明
-@return 返回说明
-
-## 添加返回特定值说明
-@retval 特定值 特定返回值说明
-
-## 添加异常说明
-@exception 异常类型 异常说明
-
-## 添加代码
-@code
-...代码...
-@encode
-
-## 添加文件名说明
-@headfile 文件名 文件名（可包括路径） 
-
-## 添加版本号
-@version 版本号
-
-## 添加计划做的事儿
-@todo 计划做的事
-
-## 添加参考 
-@see 参加其它
-
-## 添加过时说明
-@deprecated 过时说明
-
-## 添加 bug 说明
-@bug "bug 说明"
-
-## 添加例子
-@example 例子文件名
-
-## 添加警告信息
-@warning 警告信息
-
-## 添加开始使用的版本
-@since 版本
-
-## 添加测试信息
-@test 测试
-
-## 添加主界面信息
-@mainpage 标题
-
-## 添加注意事项 
-@note 注意事项
-
-## 添加协议信息
-@copyright 协议信息
-为C/C++添加注释
-首先为函数添加注释信息，这是必须要做的。这里有个选择性问题，添加到哪里呢？.c文件？.h文件？
-一般来说：
-
-.h文件代表模块对外的接口最小信息，面向模块使用者
-.c文件代表模块的实现代码，面向的是开发者
-
-在实际编程中，事先约定各个模块间的接口，然后将不同的模块分配给不同的开发者，与此同时，测试人员根据接口要求，编写测试代码，这就完全保证了并发编程和白盒测试要求。
-这里我们可以看到，文档主要是用来描述接口信息的，所以，我对代码的注释规定如下：
-
-模块对外接口，仅在.h中提供注释信息
-模块内部辅助函数，全部用static设为私有函数，同时仅在.c中保留注释信息
-
-当然，您也可以同时为.c .h的接口函数编写两份完全一样的注释信息，但这么做，您会同时维护两份信息，出错的概率会更大些。
-确定了注释位置，下一步考虑一个函数需要哪些信息
-一般来说，需要函数功能，入口参数，返回值，注意事项，某些时候还需要说明上下文环境，从而保证函数能正确执行
-比如这个函数
-extern int Dev_PrintInt(int number); 
-它的功能就是打印一个整形数据，传入参数为整数，返回的是成功打印的数据长度（字节为单位），同时呢，我们在调用这个函数之前，必须要先初始化Dev设备
-ok，这就是所有接口信息，稍微规范一下，就变成了下面的样子
-// 函数功能：打印整数
-// 入口参数：number为一个整数类型
-// 返回结构：返回的是成功打印的数据长度（字节为单位）
-// 注意事项：
-//          1：在调用本函数前，请确保已经调用Dev_Init初始化设备
-//          2：请注意函数返回值，如果该值为0，则说明函数执行失败
-
-extern int Dev_PrintInt(int number); 
-用英文来书写呢，则变成下面的样子
-//***************************************************************************************
-//
-// brief  : Print Int number to terimal device.
-//
-// param  : number is the data you want to print.
-// retval : the number of print information, in bytes. return zero indicate print error !
-//
-// Note:
-//      * Be sure you have called \ref Dev_Init function before call this fuction.
-//      * Remember to check return value.
-//
-//***************************************************************************************
-extern int Dev_PrintInt(int number);
-注释信息写完了，一般来说，函数能达到这种信息程度就ok了，但既然要生成文档，就不得不考虑一个问题
-如果你是Doxygen作者，怎么从上面的注释里面提取信息呢，信息那么多，有*号，有各种文字信息。
-你可以将所有的注释信息都输出出来，但这么做，等于没有分类整理，同时也包含了杂乱信息，比如一排*
-另外一个解决方法是：设置某些特殊字符，比如function表示，一旦检测到这个特殊标记，则认为是接下来
-的一行是函数功能描述。但这么做，万一用户的注释里面出现很多个function，你怎么识别哪个是普通文本，
-哪个是特殊标记？
-也许你会说了，可以采用这种形式啊，恩，这么做是可行的，可以确保识别出来特殊标记
-接下来，还有一个问题，我们上面的注释中，有很多*号，仅仅起到美观和格式化的作用，当然不希望在
-输出文档中显示这些东西，问题是你怎么识别这些符号，并不显示呢？也许你会说，可以强制规定注释的
-格式，不让用户在代码中写很多*，ok，假设用户同意这么做。那接下来呢，如果我希望在代码中写某些话
-，但是不希望输出到文档中，比如“XX是2B”等等，你又该怎么做呢？
-正向思考遇到问题时，不妨反向考虑，这是谁的问题：是我设计思路的问题还是用户用法的问题？
-困难重重，肯定是设计思路的问题
-如果设计一个标记符，将普通注释和要生成的文档注释区分开来，就能解决问题了。
-Doxygen的用法，说白了，就是为了解决上面提到的两个问题：
-怎么区分普通注释和输出注释  
-怎么在输出注释里面，识别特殊标记和普通文本  
-ok，讲到这里，基本把Doxygen的机制给解释清楚了，如果您还不理解，最简单的方法就是把你假设为Doxygen
-作者，重新推演一遍。
-下面咱们看看Doxygen怎么解决这两个问题的
-区分普通注释和特殊注释
-对于C/C++语言来说，注释形式有两种
-//
-/* */
-Doxygen通过在这里增加*，/，!来作为特殊标记，比如
-对于/* */这种注释来说，正常注释为
-/*
- * 正常注释
- */
-Doxygen在注释第一个*后，设置*或!作为标志，如果检测到有这些，
-就将接下来的注释作为导出文档来解释
-/**
- * 要输出成文档的注释
- */
-
- 或者
-
-/*!
- * 要输出成文档的注释
- */
-同时，中间的*号可以省略，像这样
-/**
-   要输出成文档的注释
- */
-
- 或者
-
-/*!
-   要输出成文档的注释
- */
-对于//这种类型的注释，Doxygen在第二个/后，增加!或/作为区分标志，如果检测到有这些，
-就将接下来的注释作为导出文档来解释
-/// 要输出成文档的注释
-
-或者
-
-//! 要输出成文档的注释
-对于这种呢，有一个潜在的问题，很多时候，我们需要在把注释放到后面，比如下面这种
-#define DEV_ON      ((int)(1))      //! Simple device is power on.
-#define DEV_OFF     ((int)(0))      //! Simple device is power off.
-如果真要这么写的话，Doxygen会把//! Simple device is power on.当做DEV_OFF的注释，这
-当然不是我们所希望的! 怎么办呢，只好再加一个特殊标记了，Doxygen针对这种情况，需要在!后
-再增加一个&lt;标志符，如果检测到这个，则认为这个注释是为前面代码准备的，所以，上面的注释应该
-这么写
-#define DEV_ON      ((int)(1))      //!&lt; Simple device is power on.
-#define DEV_OFF     ((int)(0))      //!&lt; Simple device is power off.
-做到这里，Doxygen就可以正确区分普通注释和特殊注释了。
-**注：**提到特殊标记，其实吧，编程语言非常常用，比如HTML就是典型的markup语言，一堆一堆的括号，看着就头疼
-Doxygen采用\和@作为特殊标记符，当在特殊注释里面检测到了特殊标记符，则接下来检测紧跟单词是不是Doxygen
-事先规定好的，如果是，则将按照特定的规则来解释紧跟着的注释；如果不是呢，则将\和@解释为普通文本，聪明吧
-可能有点拗口，下面给你个例子
-//***************************************************************************************
-//
-//! \brief  Print Int number to terimal device.
-//!
-//! \param  [in] number is the data you want to print.
-//! \retval the number of print information, in bytes. return zero indicate print error !.
-//!
-//! \note
-//! * Be sure you have called \ref Dev_Init function before call this fuction.
-//! * Remember to check return value.
-//
-//***************************************************************************************
-extern int Dev_PrintInt(int number);
-看到了吧，这里的\brief和\param都是特殊符号，表示简要描述和参数。万一你小手一抖，把\param
-写成了\parame，那就悲剧了，因为Doxygen不认识parame，所以它会把这句话当做是普通文本来处理
-其实，上面的\换成@也是ok的，如下所示
-//***************************************************************************************
-//
-//! @brief  Print Int number to terimal device.
-//!
-//! @param  [in] number is the data you want to print.
-//! @retval the number of print information, in bytes. return zero indicate print error !.
-//!
-//! @note
-//! * Be sure you have called \ref Dev_Init function before call this fuction.
-//! * Remember to check return value.
-//
-//***************************************************************************************
-extern int Dev_PrintInt(int number);
-相信某些玩过ARM芯片的，对这类注释非常熟悉，官方库都是采用Doxygen语法规则注释的
-示例
-采用Doxygen语法为main.c dev.c dev.h添加注释信息，完成后的效果如下所示：
-main.c
-//***************************************************************************************
-//
-//! \file main.c 
-//! This is an simple example show developer how to use dev api to print int number.
-//!
-//! \author    Cedar
-//! \version   V1.0
-//! \date      2014-03-23
-//! \copyright GNU Public License V3.0
-//
-//***************************************************************************************
-
-#include "dev.h"
-
-#define CNT_MAX  10  //!&lt; The maxium number of print
-
-//! Simple device example.
-void DEV_Example(void)
-{
-	int i = 0;
-
-	Dev_Init();
-	
-	for (i = 0; i &lt; CNT_MAX; ++i)
-	{
-		Dev_PrintInt(i);
-	}
-
-	Dev_Close();
-}
-
-//! Application Entry
-int main(void)
-{
-
-	DEV_Example();
-
-	return 0;
-}
-dev.c
-//***************************************************************************************
-//
-//! \file dev.c 
-//! the implement of simple device.
-//!
-//! \author    Cedar
-//! \version   V1.0
-//! \date      2014-03-23
-//! \copyright GNU Public License V3.0
-//
-//***************************************************************************************
-
-//! Simple device status.
-//! 
-//! \warning This variable is designed for internal, user \b MUST \b NOT call it.
-static int __DevStatus = 0
-
-void Dev_Init(void)
-{
-	// Print debug information
-	printf("Dev Initialize OK!\r\n");
-}
-
-int Dev_PrintInt(int number)
-{
-	printf("Print IntType number: %d\r\n", number);
-}
-
-int Dev_StatusCheck(void)
-{
-	return 	(__DevStatus);
-}
-
-void Dev_Close(void)
-{
-	printf("Dev Close OK!\r\n");
-}
-dev.h
-//***************************************************************************************
-//
-//! \file dev.h
-//!  Simple device user API.
-//!
-//! \author    Cedar
-//! \version   V1.0
-//! \date      2014-03-23
-//! \copyright GNU Public License V3.0
-//
-//***************************************************************************************
-
-#include &lt;stdio.h&gt;
-
-
-//***************************************************************************************
-//
-//! \addtogroup Dev_Status  Simple device status information.
-//! @{
-//
-//***************************************************************************************
-
-#define DEV_ON      ((int)(1))      //!&lt; Simple device is power on.
-#define DEV_OFF     ((int)(0))      //!&lt; Simple device is power off.
-
-//***************************************************************************************
-//
-//! @}
-//
-//***************************************************************************************
-
-
-//***************************************************************************************
-//
-//! \addtogroup Dev_API  Simple device APIs list.
-//! @{
-//
-//***************************************************************************************
-
-//***************************************************************************************
-//
-//! \brief  Initialize simple device.
-//!
-//! \param  none.
-//! \retval none.
-//!
-//! \note   This function \b MUST be called first before others function.
-//
-//***************************************************************************************
-extern void Dev_Init(void);
-
-//***************************************************************************************
-//
-//! \brief  Print Int number to terimal device.
-//!
-//! \param  [in] number is the data you want to print.
-//! \retval the number of print information, in bytes. return zero indicate print error !.
-//!
-//! \note
-//! * Be sure you have called \ref Dev_Init function before call this fuction.
-//! * Remember to check return value.
-//
-//***************************************************************************************
-extern int Dev_PrintInt(int number);
-
-//***************************************************************************************
-//
-//! \brief  Check simple device status information.
-//!
-//! \param  none.
-//! \retval status information of simple device, which can be one of the following value:\n
-//!  - \ref DEV_ON
-//!  - \ref DEV_OFF
-//!  \n More information, please reference \ref Dev_Status.
-//
-//***************************************************************************************
-extern int Dev_StatusCheck(void);
-
-//***************************************************************************************
-//
-//! \brief  Close simple device.
-//!
-//! \param  none.
-//! \retval none.
-//
-//***************************************************************************************
-extern void Dev_Close(void);
-
-//***************************************************************************************
-//
-//! @}
-//
-//***************************************************************************************
-
-//***************************************************************************************
-//
-//! \example main.c
-//!  Show how to use simple device to print int number.
-//
-//***************************************************************************************
-4. 生成文档
-$ doxygen &lt;config-file&gt;
-Win 图形界面使用
-第1章 安装
-在Linux下可以通过apt install doxygen安装命令行工具，然后用apt install doxygen-gui安装图形界面。对Linux用户来说，命令行工具可以通过doxygen命令运行，而图形界面可以通过doxywizard命令运行。
-而Windows用户可以在这里下载，安装完毕后，直接双击就能运行图形界面。
-1.1 基本使用
-图形工具的基本使用如下图所示，有非常多的配置选项，这里我们只填入必要的配置，其它配置都用默认值。
-
-
-我们的工作目录如下：
-.
-├── out
-└── src
-    └── math.h
-其中math.h代码如下：
-/*! \file math.h */
-
-/*!
-    用于求一个角度的sin值，输入是字符串以便同时支持弧度制和角度制表示
-    \li 弧度制用pi表示，例如：2pi表示一圈、0.5pi表示直角
-    \li 角度制用d结尾，例如：360d表示一圈、90d表示直角
-    \li 输入也可以是数值，例如：输入3.14159大约表示180度
-
-    \param a 用弧度制或角度制表示都行，字符串必须用'\0'表示结束
-    \param[out] res 是输出参数，用于保存sin运算的结果
-
-    \return 错误码，0表示成功，其它表示失败
-
-    \todo 在xxx的情况下存在BUG，预计下一版本修复
-*/
-int sin(char *a, double *res);
-Doxygen生成的HTML会放到out目录下，生成的HTML如图1-3所示。
-
-1.2 保存配置
-在1.1节中我们配置了一些选项，也成功生成了HTML文档。我们希望下次代码改动后能够继续沿用上次配置，那么我们可以把这些配置保存成Doxyfile文件，见图1-4。
-
-1.3 命令行运行Doxygen
-有了配置文件后我们完全可以通过命令行来生成API文档，假设配置文件名为Doxyfile，那么我们只需要执行doxygen /path/to/Doxyfile即可生成API文档。
-通过命令行生成文档有许多好处，其中最主要的好处就是：能够集成到持续集成之类的自动化系统中。
-第2章 为代码编写注释
-2.1 什么样的注释会被Doxygen识别？
-Doxygen能识别这几种风格的注释：
-/**
- * ... text ...
- */
-
-/*!
- * ... text ...
- */
-
-///
-/// ... text ...
-///
-
-//!
-//!... text ...
-//!
-文件的开头必须有文件注释，否则该文件不会被识别：
-/*! \file math.h */
-2.2 注释怎么写
-这个自己看官网例子体会吧。
-第3章 为其它编程语言生成注释
-Doxygen主要支持C语言，其它语法跟C差不多的语言（如：C++/C#/PHP/Java）也能够支持，我们称这类语言为「C语系语言」。而哪些跟C语法差异较大的语言叫做「非C语系语言」。
-对于大多非C语系语言，Doxygen都是支持的，Doxygen原生支持这些语言：IDL、Java、Javascript、C#、C、C++、D、PHP、Objective-C、Python、Fortran、VHDL。
-万一项目需要的语言（例如：Lua）Doxygen官方并不支持，那么只能自行编写「第三方语言扩展」来支持了。
-3.1 Doxygen官方支持的语言
-见图3-1，文件名符合FILE_PATTERNS都会被处理。其中包括了.c、.h、.py等等。
-
-如果我们的扩展名并不在FILE_PATTERNS内，那么可以加上去。例如我们项目下的所有.ccc文件，其实是C语言代码（这很奇葩，举个例子而已）。那我们可以编辑Doxyfile配置文件满足这一需求，需要2个步骤。
-(1) 在FILE_PATTERNS中添加*.ccc，如图3-2
-
-(2) 在EXTENSION_MAPPING中添加映射规则ccc=C，如图3-3。语法是ext=language，其中language可以取的值有：IDL、Java、Javascript、C#、C、C++、D、PHP、Objective-C、Python、Fortran、VHDL。
-
-3.2 Doxygen官方不支持的语言
-以Lua语言为例，它的代码是长这样的：
--- \file lmath.h
-
---[[
-    用于求一个角度的sin值，输入是字符串以便同时支持弧度制和角度制表示
-    \li 弧度制用pi表示，例如：2pi表示一圈、0.5pi表示直角
-    \li 角度制用d结尾，例如：360d表示一圈、90d表示直角
-    \li 输入也可以是数值，例如：输入3.14159大约表示180度
-
-    \param a 字符串类型，表示角度，用弧度制或角度制表示都行
-
-    \return 返回sin运算的结果
-
-    \todo 在xxx的情况下存在BUG，预计下一版本修复
---]]
-function sin(a)
-    return 1.123
-end
-可以看到Lua的语法既不像C也不像Python。本节以Lua为例，介绍如何为Doxygen编写Lua语言扩展。
-好吧，大多数人没有这种需求，这里就不介绍了。
-第4章 定制Doxygen的输出
-4.1 定制页面样式
-Doxygen输出的默认HTML比较难看，如图4-1。
-
-如果嫌生成的HTML不好看，可以自定义HTML页面头部、尾部以及页面整体CSS样式表。
-(1) 生成默认的风格的配置文件，敲这个命令：doxygen -w html header.html footer.html customdoxygen.css，可以生成header.html、footer.html、customdoxygen.css。
-(2) 根据自己的需求修改这三个文件。
-(3) 配置HTML_HEADER、HTML_FOOTER、HTML_STYLESHEET指向修改后的文件，如图4-2。
-
-Doxygen默认的页面主色调大约是天蓝色的，可以通过HTML_COLORSTYLE_HUE、HTML_COLORSTYLE_SAT、HTML_COLORSTYLE_GAMMA修改主色调，这3个配置分别对应色相、饱和度、Gamma校正，见图4-3。如果不太懂色相、饱和度是啥意思，请自行百度「色彩模式」或参考Photoshop相关教程。
-
-经过图4-3的修改，页面的主色调变为图4-4的样子。
-
-4.2 导航栏
-Doxygen中「导航栏」有两种展示方式：Treeview和Index，分别是竖向和横向的，如图4-5。
-
-可以配置DISABLE_INDEX和GENERATE_TREEVIEW来控制是否显示它们，如图4-6。
-
-4.3 自定义「导航栏」的目录结构
-我们已经知道Doxygen中「导航栏」有Treeview和Index两种了。这节介绍如何定制导航栏的目录结构。这需要三个步骤。
-(1) 执行doxygen -l，生成DoxygenLayout.xml文件
-(2) 编辑DoxygenLayout.xml文件，修改其中的布局
-(3) 修改LAYOUT_FILE配置，使其指向DoxygenLayout.xml文件，如图4-7
-(4) 运行Doxygen
-
-那么如何修改XML文件呢？默认的DoxygenLayout.xml代码如下：
-&lt;doxygenlayout version="1.0"&gt;
-  &lt;navindex&gt;
-    &lt;tab type="mainpage" visible="yes" title=""/&gt;
-    &lt;tab type="pages" visible="yes" title="" intro=""/&gt;
-    &lt;tab type="modules" visible="yes" title="" intro=""/&gt;
-    &lt;tab type="namespaces" visible="yes" title=""&gt;
-      &lt;tab type="namespacelist" visible="yes" title="" intro=""/&gt;
-      &lt;tab type="namespacemembers" visible="yes" title="" intro=""/&gt;
-    &lt;/tab&gt;
-    &lt;tab type="classes" visible="yes" title=""&gt;
-      &lt;tab type="classlist" visible="yes" title="" intro=""/&gt;
-      &lt;tab type="classindex" visible="$ALPHABETICAL_INDEX" title=""/&gt; 
-      &lt;tab type="hierarchy" visible="yes" title="" intro=""/&gt;
-      &lt;tab type="classmembers" visible="yes" title="" intro=""/&gt;
-    &lt;/tab&gt;
-    &lt;tab type="files" visible="yes" title=""&gt;
-      &lt;tab type="filelist" visible="yes" title="" intro=""/&gt;
-      &lt;tab type="globals" visible="yes" title="" intro=""/&gt;
-    &lt;/tab&gt;
-    &lt;tab type="examples" visible="yes" title="" intro=""/&gt;  
-  &lt;/navindex&gt;
-&lt;/doxygenlayout&gt;
-XML对应了导航栏的目录树结构，我们通过该文件改变布局。标签的type属性取值除了上面列出的这些预定义值以外，还可以是type="user"或type="usergroup"，我们只能通过这两个type自定义布局，例如下面这段代码，生成的效果如图4-8：
-&lt;doxygenlayout version="1.0"&gt;
-  &lt;navindex&gt;
-    &lt;tab type="usergroup" visible="yes" title="友情链接（演示如何外链）"&gt;
-      &lt;tab type="user" visible="yes" title="百度" url="http://www.baidu.com" /&gt;
-      &lt;tab type="user" visible="yes" title="163" url="http://www.163.com" /&gt;
-    &lt;/tab&gt;
-    &lt;tab type="usergroup" visible="yes" title="数学库（演示如何链接文件）"&gt;
-      &lt;tab type="user" visible="yes" url="@ref math.h" title="math" /&gt;
-      &lt;tab type="user" visible="yes" url="@ref math2.h" title="math2" /&gt;
-    &lt;/tab&gt;
-    &lt;tab type="usergroup" visible="yes" title="三角函数（演示链接函数、结构体）"&gt;
-      &lt;tab type="user" visible="yes" url="@ref sin" title="sin" /&gt;
-      &lt;tab type="user" visible="yes" url="@ref sin2" title="sin2" /&gt;
-    &lt;/tab&gt;
-  &lt;/navindex&gt;
-&lt;/doxygenlayout&gt;
-
-4.4 完全自定义
-如果Doxygen输出的界面实在不入你的法眼，4.1~4.3介绍的定制化功能也不能彻底满足你的需求。那么你需要根据Doxygen输出的XML数据自行生成界面了。
-(1) 将GENERATE_XML配置为YES
-(2) 去输出目录寻找生成的XML文件，XML文件包括了函数信息、注释信息等
-(3) 自己写程序读取XML文件，并生成漂亮的文档
-第5章 Markdown支持
-
-待补充完善
-
-Markdown在工业界是非常流行的文档格式，文件名以.md结尾，其简洁直观的语法深受广大程序员喜爱。对Markdown本身的介绍超出了本文范围，本章介绍Doxygen对Markdown的支持。
-5.1 为.md文件生成文档
-5.2 在代码注释中使用Markdown语法
-第6章 搜索功能
-Gitlab CI/CD使用
-
-https://gitlab.com/pages/doxygen
-结合Docker和Gitlab CI/CD使用案例
-
-
-参考资源
-
-Doxygen 官网
-官网注释例子
-Doxygen文档生成工具教程
-Doxygen 10 分钟入门教程
-Gitlab CI/CD doxygen
-
-]]></content>
-      <categories>
-        <category>tools</category>
-      </categories>
-      <tags>
-        <tag>tools</tag>
-        <tag>doxygen</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>什么才是真正的知识与智慧？</title>
-    <url>/posts/ace8b709/</url>
-    <content><![CDATA[
-现代人都可以说是学富五车，阅读量远超孔子，那么是否现代人就比孔子聪明了？没那个傻缺敢这么吹吧！那么，什么才是真正的知识与智慧了？
-
-
-
-什么才是聪明？
-
-不好理解什么是聪明，那么，我们先来找个聪明人，看看聪明人有什么特点！
-
-
-老子，孔子可以说是聪明吧！
-他们有什么成果流传于世了？
-没错，就是《论语》《道德经》，能写出这种作品的人，没有那个大骗子敢说这两老爷子不聪明吧。
-知识与聪明
-
-很多人把技能，知识储量当作聪明，这其实是不对的。
-读书读到博士，只能说明知识储量高，但是智慧不一定高。
-
-一个受过基本教育的现代人，就阅读量，知识储备来说，知识量远不止学富五车，学富五十车，五百车都不止。
-但是，有谁能写出《论语》《道德经》这样的集智慧之大成做？
-学不出来这种作品，你能说比孔子，老子聪明？
-没那个骗子敢这么大言不惭吧！
-那么，什么才是真正的智慧了？到底什么才是聪明真正的评价标准？
-
-机器学习与聪明
-
-为了更好的理解和解释智慧，这里用机器学习三要素来类比聪明程度。
-
-
-
-
-机器学习评价
-聪明评价
-
-
-
-
-算力（cpu频率，某个特定算法专用硬件加速器，cache,内存大小等的综合评价。在某个算法算力高，在另一种算法算力低是很常见的。）
-个人精力，专注力，在某一特定学科领域处理速度的综合表现。一种综合概念，经过长时间学习，训练形成的在某一特定领域解决问题的能力，包括速度，准确性等。
-
-
-算法（解决问题的逻辑思路，不同算法自建性能，速度可以差距几个，甚至几十个数量级）
-智慧，处理各种知识，技能的能力。偏向哲学概念，天才真正是在这里突出。可以说是天分，后天很难增加。
-
-
-数据（被标注的数据）
-知识储量，技能数量。剋有后天学习积累，只要肯花时间，可以积累巨量的知识。知识量足够多，但是处理知识的智慧不够时，我们称呼这种人为书呆子！
-
-
-
-
-科学与聪明
-
-经过前一个章节的对比，我们可以知道，智慧更多的是一个哲学方面的概念。而科学更多的是一个对现实世界认识的知识量储备！
-
-科技发达，不代表智慧高！
-智慧高，也不代表科技发达！
-中国过去几千年，智慧成果有《道德经》《论语》《孙子兵法》等等，都是远超时代的智慧结晶，领先世界几千年！
-近代西方几百年，科学成果超越才超越中国，但论社会智慧成果，连两千多年前的中国都比不上。
-盎克鲁撒克逊国家只是海盗穿上了西服，但本质上还是海盗，几千年一直没变。
-
-教育的目的是培养技能工人，而不是教你赚钱！
-总结
-聪明，智慧，知识是三个不同角度的评判标准。
-知识储量 + 处理知识的技巧和方法 + 特定领域的专注钻研 才是真正的聪明！
-]]></content>
-      <categories>
-        <category>社会观察</category>
-      </categories>
-      <tags>
-        <tag>社会观察</tag>
-        <tag>知识</tag>
-        <tag>智慧</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>RSS的使用与Tiny Tiny RSS Selfhost自建</title>
     <url>/posts/f4926c88/</url>
     <content><![CDATA[
@@ -37006,6 +36928,84 @@ Installation Guide
         <tag>tools</tag>
         <tag>rss</tag>
         <tag>rsshub</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>什么才是真正的知识与智慧？</title>
+    <url>/posts/ace8b709/</url>
+    <content><![CDATA[
+现代人都可以说是学富五车，阅读量远超孔子，那么是否现代人就比孔子聪明了？没那个傻缺敢这么吹吧！那么，什么才是真正的知识与智慧了？
+
+
+
+什么才是聪明？
+
+不好理解什么是聪明，那么，我们先来找个聪明人，看看聪明人有什么特点！
+
+
+老子，孔子可以说是聪明吧！
+他们有什么成果流传于世了？
+没错，就是《论语》《道德经》，能写出这种作品的人，没有那个大骗子敢说这两老爷子不聪明吧。
+知识与聪明
+
+很多人把技能，知识储量当作聪明，这其实是不对的。
+读书读到博士，只能说明知识储量高，但是智慧不一定高。
+
+一个受过基本教育的现代人，就阅读量，知识储备来说，知识量远不止学富五车，学富五十车，五百车都不止。
+但是，有谁能写出《论语》《道德经》这样的集智慧之大成做？
+学不出来这种作品，你能说比孔子，老子聪明？
+没那个骗子敢这么大言不惭吧！
+那么，什么才是真正的智慧了？到底什么才是聪明真正的评价标准？
+
+机器学习与聪明
+
+为了更好的理解和解释智慧，这里用机器学习三要素来类比聪明程度。
+
+
+
+
+机器学习评价
+聪明评价
+
+
+
+
+算力（cpu频率，某个特定算法专用硬件加速器，cache,内存大小等的综合评价。在某个算法算力高，在另一种算法算力低是很常见的。）
+个人精力，专注力，在某一特定学科领域处理速度的综合表现。一种综合概念，经过长时间学习，训练形成的在某一特定领域解决问题的能力，包括速度，准确性等。
+
+
+算法（解决问题的逻辑思路，不同算法自建性能，速度可以差距几个，甚至几十个数量级）
+智慧，处理各种知识，技能的能力。偏向哲学概念，天才真正是在这里突出。可以说是天分，后天很难增加。
+
+
+数据（被标注的数据）
+知识储量，技能数量。剋有后天学习积累，只要肯花时间，可以积累巨量的知识。知识量足够多，但是处理知识的智慧不够时，我们称呼这种人为书呆子！
+
+
+
+
+科学与聪明
+
+经过前一个章节的对比，我们可以知道，智慧更多的是一个哲学方面的概念。而科学更多的是一个对现实世界认识的知识量储备！
+
+科技发达，不代表智慧高！
+智慧高，也不代表科技发达！
+中国过去几千年，智慧成果有《道德经》《论语》《孙子兵法》等等，都是远超时代的智慧结晶，领先世界几千年！
+近代西方几百年，科学成果超越才超越中国，但论社会智慧成果，连两千多年前的中国都比不上。
+盎克鲁撒克逊国家只是海盗穿上了西服，但本质上还是海盗，几千年一直没变。
+
+教育的目的是培养技能工人，而不是教你赚钱！
+总结
+聪明，智慧，知识是三个不同角度的评判标准。
+知识储量 + 处理知识的技巧和方法 + 特定领域的专注钻研 才是真正的聪明！
+]]></content>
+      <categories>
+        <category>社会观察</category>
+      </categories>
+      <tags>
+        <tag>社会观察</tag>
+        <tag>知识</tag>
+        <tag>智慧</tag>
       </tags>
   </entry>
   <entry>
@@ -42983,7 +42983,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts2340'));
+        var myChart = echarts.init(document.getElementById('echarts7797'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -43077,7 +43077,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts402'));
+        var myChart = echarts.init(document.getElementById('echarts9478'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -43146,7 +43146,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts221'));
+        var myChart = echarts.init(document.getElementById('echarts4239'));
 
         // 指定图表的配置项和数据
         var option = option = {
