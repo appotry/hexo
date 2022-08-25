@@ -2382,6 +2382,195 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
       </tags>
   </entry>
   <entry>
+    <title>宝塔linux面板重启、重置等命令整合</title>
+    <url>/posts/7b4e434c/</url>
+    <content><![CDATA[宝塔linux面板重启、重置等命令整合
+宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。
+来源于网络，原作已经不可考据，整理更新到目前最新版。
+现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、
+但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦
+Linux面板7.6.0安装命令：
+Centos安装命令：
+yum install -y wget &amp;&amp; wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; sh install.sh
+咨询离线安装版本
+试验性Centos/Ubuntu/Debian安装命令 独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中
+curl -sSO http://download.bt.cn/install/install_panel.sh &amp;&amp; bash install_panel.sh
+Ubuntu/Deepin安装命令：
+wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; sudo bash install.sh
+Debian安装命令：
+wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; bash install.sh
+Fedora安装命令:
+wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; bash install.sh
+Linux面板7.6.0升级命令：curl http://download.bt.cn/install/update6.sh|bash
+以上节点无法使用的情况下，请使用下面的备用节点：
+备用节点【香港】：
+（宝塔推荐使用CN2 双程GIA高品质，免备案的尊云zun.com香港云服务器安装）
+yum install -y wget &amp;&amp; wget -O install.sh http://103.224.251.67:5880/install/install_6.0.sh &amp;&amp; sh install.sh
+管理宝塔
+#停止
+/etc/init.d/bt stop
+#启动
+/etc/init.d/bt start
+#重启
+/etc/init.d/bt restart
+#卸载
+/etc/init.d/bt stop &amp;&amp; chkconfig --del bt &amp;&amp; rm -f /etc/init.d/bt &amp;&amp; rm -rf /www/server/panel
+#查看当前面板端口
+cat /www/server/panel/data/port.pl
+#修改面板端口，如要改成8881（centos 6  系统）
+echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
+iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 8881  -j ACCEPT
+service iptables save
+service iptables restart
+#修改面板端口，如要改成8881（centos 7  系统）
+echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
+firewall-cmd --permanent --zone=public  --add-port=8881/tcp
+firewall-cmd --reload
+#强制修改MySQL管理(root)密码，如要改成123456
+cd /www/server/panel &amp;&amp; python tools.pyc root 123456
+#修改面板密码，如要改成123456
+cd /www/server/panel &amp;&amp; python tools.pyc panel 123456
+#查看宝塔日志
+cat /tmp/panelBoot.pl
+#查看软件安装日志
+cat /tmp/panelExec.log
+#站点配置文件位置
+/www/server/panel/vhost
+#删除域名绑定面板
+rm -f /www/server/panel/data/domain.conf
+#清理登陆限制
+rm -f /www/server/panel/data/*.login
+#查看面板授权IP
+cat /www/server/panel/data/limitip.conf
+#关闭访问限制
+rm -f /www/server/panel/data/limitip.conf
+#查看许可域名
+cat /www/server/panel/data/domain.conf
+#关闭面板SSL
+rm -f /www/server/panel/data/ssl.pl &amp;&amp; /etc/init.d/bt restart
+#查看面板错误日志
+cat /tmp/panelBoot
+#查看数据库错误日志
+cat /www/server/data/*.err
+#站点配置文件目录(nginx)
+/www/server/panel/vhost/nginx
+#站点配置文件目录(apache)
+/www/server/panel/vhost/apache
+#站点默认目录
+/www/wwwroot
+#数据库备份目录
+/www/backup/database
+#站点备份目录
+/www/backup/site
+#站点日志
+/www/wwwlogs
+Nginx服务管理
+#nginx安装目录
+/www/server/nginx
+#启动
+/etc/init.d/nginx start
+#停止
+/etc/init.d/nginx stop
+#重启
+/etc/init.d/nginx restart
+#启载
+/etc/init.d/nginx reload
+#nginx配置文件
+/www/server/nginx/conf/nginx.conf
+Apache服务管理
+#apache安装目录
+/www/server/httpd
+#启动
+/etc/init.d/httpd start
+#停止
+/etc/init.d/httpd stop
+#重启
+/etc/init.d/httpd restart
+#启载
+/etc/init.d/httpd reload
+#apache配置文件
+/www/server/apache/conf/httpd.conf
+MySQL服务管理
+#mysql安装目录
+/www/server/mysql
+#phpmyadmin安装目录
+/www/server/phpmyadmin
+#数据存储目录
+/www/server/data
+#启动
+/etc/init.d/mysqld start
+#停止
+/etc/init.d/mysqld stop
+#重启
+/etc/init.d/mysqld restart
+#启载
+/etc/init.d/mysqld reload
+#mysql配置文件
+/etc/my.cnf
+FTP服务管理
+#ftp安装目录
+/www/server/pure-ftpd
+#启动
+/etc/init.d/pure-ftpd start
+#停止
+/etc/init.d/pure-ftpd stop
+#重启
+/etc/init.d/pure-ftpd restart
+#ftp配置文件
+/www/server/pure-ftpd/etc/pure-ftpd.conf
+PHP服务管理
+#php安装目录
+/www/server/php
+#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} start
+#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} stop
+#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} restart
+#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} reload
+#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)
+/www/server/php/{52|53|54|55|56|70|71}/etc/php.ini
+Redis服务管理
+#redis安装目录
+/www/server/redis
+#启动
+/etc/init.d/redis start
+#停止
+/etc/init.d/redis stop
+#redis配置文件
+/www/server/redis/redis.conf
+Memcached服务管理
+#memcached安装目录
+/usr/local/memcached
+#启动
+/etc/init.d/memcached start
+#停止
+/etc/init.d/memcached stop
+#重启
+/etc/init.d/memcached restart
+#启载
+/etc/init.d/memcached reload
+参考
+
+bt doc
+宝塔面板手册
+
+]]></content>
+      <categories>
+        <category>linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>宝塔</tag>
+        <tag>vps</tag>
+        <tag>建站</tag>
+        <tag>nginx</tag>
+        <tag>apache</tag>
+        <tag>mysql</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>docker使用简明教程</title>
     <url>/posts/42b6a86d/</url>
     <content><![CDATA[关于docker安装，查看，镜像管理，以及一个实用Dockerfile， LAMP，PHP，LTMJ。
@@ -2591,200 +2780,11 @@ Earthly 一个更加强大的镜像构建工具
       </categories>
       <tags>
         <tag>linux</tag>
+        <tag>mysql</tag>
         <tag>docker</tag>
         <tag>lamp</tag>
         <tag>php</tag>
-        <tag>mysql</tag>
         <tag>tomcat</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>宝塔linux面板重启、重置等命令整合</title>
-    <url>/posts/7b4e434c/</url>
-    <content><![CDATA[宝塔linux面板重启、重置等命令整合
-宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。
-来源于网络，原作已经不可考据，整理更新到目前最新版。
-现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、
-但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦
-Linux面板7.6.0安装命令：
-Centos安装命令：
-yum install -y wget &amp;&amp; wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; sh install.sh
-咨询离线安装版本
-试验性Centos/Ubuntu/Debian安装命令 独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中
-curl -sSO http://download.bt.cn/install/install_panel.sh &amp;&amp; bash install_panel.sh
-Ubuntu/Deepin安装命令：
-wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; sudo bash install.sh
-Debian安装命令：
-wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; bash install.sh
-Fedora安装命令:
-wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; bash install.sh
-Linux面板7.6.0升级命令：curl http://download.bt.cn/install/update6.sh|bash
-以上节点无法使用的情况下，请使用下面的备用节点：
-备用节点【香港】：
-（宝塔推荐使用CN2 双程GIA高品质，免备案的尊云zun.com香港云服务器安装）
-yum install -y wget &amp;&amp; wget -O install.sh http://103.224.251.67:5880/install/install_6.0.sh &amp;&amp; sh install.sh
-管理宝塔
-#停止
-/etc/init.d/bt stop
-#启动
-/etc/init.d/bt start
-#重启
-/etc/init.d/bt restart
-#卸载
-/etc/init.d/bt stop &amp;&amp; chkconfig --del bt &amp;&amp; rm -f /etc/init.d/bt &amp;&amp; rm -rf /www/server/panel
-#查看当前面板端口
-cat /www/server/panel/data/port.pl
-#修改面板端口，如要改成8881（centos 6  系统）
-echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
-iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 8881  -j ACCEPT
-service iptables save
-service iptables restart
-#修改面板端口，如要改成8881（centos 7  系统）
-echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
-firewall-cmd --permanent --zone=public  --add-port=8881/tcp
-firewall-cmd --reload
-#强制修改MySQL管理(root)密码，如要改成123456
-cd /www/server/panel &amp;&amp; python tools.pyc root 123456
-#修改面板密码，如要改成123456
-cd /www/server/panel &amp;&amp; python tools.pyc panel 123456
-#查看宝塔日志
-cat /tmp/panelBoot.pl
-#查看软件安装日志
-cat /tmp/panelExec.log
-#站点配置文件位置
-/www/server/panel/vhost
-#删除域名绑定面板
-rm -f /www/server/panel/data/domain.conf
-#清理登陆限制
-rm -f /www/server/panel/data/*.login
-#查看面板授权IP
-cat /www/server/panel/data/limitip.conf
-#关闭访问限制
-rm -f /www/server/panel/data/limitip.conf
-#查看许可域名
-cat /www/server/panel/data/domain.conf
-#关闭面板SSL
-rm -f /www/server/panel/data/ssl.pl &amp;&amp; /etc/init.d/bt restart
-#查看面板错误日志
-cat /tmp/panelBoot
-#查看数据库错误日志
-cat /www/server/data/*.err
-#站点配置文件目录(nginx)
-/www/server/panel/vhost/nginx
-#站点配置文件目录(apache)
-/www/server/panel/vhost/apache
-#站点默认目录
-/www/wwwroot
-#数据库备份目录
-/www/backup/database
-#站点备份目录
-/www/backup/site
-#站点日志
-/www/wwwlogs
-Nginx服务管理
-#nginx安装目录
-/www/server/nginx
-#启动
-/etc/init.d/nginx start
-#停止
-/etc/init.d/nginx stop
-#重启
-/etc/init.d/nginx restart
-#启载
-/etc/init.d/nginx reload
-#nginx配置文件
-/www/server/nginx/conf/nginx.conf
-Apache服务管理
-#apache安装目录
-/www/server/httpd
-#启动
-/etc/init.d/httpd start
-#停止
-/etc/init.d/httpd stop
-#重启
-/etc/init.d/httpd restart
-#启载
-/etc/init.d/httpd reload
-#apache配置文件
-/www/server/apache/conf/httpd.conf
-MySQL服务管理
-#mysql安装目录
-/www/server/mysql
-#phpmyadmin安装目录
-/www/server/phpmyadmin
-#数据存储目录
-/www/server/data
-#启动
-/etc/init.d/mysqld start
-#停止
-/etc/init.d/mysqld stop
-#重启
-/etc/init.d/mysqld restart
-#启载
-/etc/init.d/mysqld reload
-#mysql配置文件
-/etc/my.cnf
-FTP服务管理
-#ftp安装目录
-/www/server/pure-ftpd
-#启动
-/etc/init.d/pure-ftpd start
-#停止
-/etc/init.d/pure-ftpd stop
-#重启
-/etc/init.d/pure-ftpd restart
-#ftp配置文件
-/www/server/pure-ftpd/etc/pure-ftpd.conf
-PHP服务管理
-#php安装目录
-/www/server/php
-#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} start
-#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} stop
-#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} restart
-#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} reload
-#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)
-/www/server/php/{52|53|54|55|56|70|71}/etc/php.ini
-Redis服务管理
-#redis安装目录
-/www/server/redis
-#启动
-/etc/init.d/redis start
-#停止
-/etc/init.d/redis stop
-#redis配置文件
-/www/server/redis/redis.conf
-Memcached服务管理
-#memcached安装目录
-/usr/local/memcached
-#启动
-/etc/init.d/memcached start
-#停止
-/etc/init.d/memcached stop
-#重启
-/etc/init.d/memcached restart
-#启载
-/etc/init.d/memcached reload
-参考
-
-bt doc
-宝塔面板手册
-
-]]></content>
-      <categories>
-        <category>linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>mysql</tag>
-        <tag>宝塔</tag>
-        <tag>vps</tag>
-        <tag>建站</tag>
-        <tag>nginx</tag>
-        <tag>apache</tag>
       </tags>
   </entry>
   <entry>
@@ -6479,8 +6479,8 @@ MySQL教程
       </categories>
       <tags>
         <tag>linux</tag>
-        <tag>docker</tag>
         <tag>mysql</tag>
+        <tag>docker</tag>
         <tag>mariadb</tag>
       </tags>
   </entry>
@@ -9806,57 +9806,6 @@ From: 4ark.me
       </tags>
   </entry>
   <entry>
-    <title>自动曝光原理</title>
-    <url>/posts/509c7bd3/</url>
-    <content><![CDATA[自动曝光的原理
-曝光是摄影中十分重要的一个环节，它决定了一张图片的明暗，如下图所示，第一张图片太暗，而第三种图片太亮。
-
-曝光由什么来决定
-使用过数码相机的人都知道曝光由光圈、曝光时间、ISO三者共同决定，详细的关系就不赘述。
-光圈：控制进光量；
-曝光时间：光到达的时间长度；
-ISO：增益；
-但是对于手机以及其他电子产品使用的微型摄像头，光圈大小是固定的，所以手机拍照的曝光由曝光时间和**增益(ISO)**来控制。
-什么是自动曝光
-数码相机中有一种手动模式，可手动设置光圈、曝光时间、ISO来控制曝光，该模式的使用对摄影师的要求会比较高。另外 数码相机的全自动模式、光圈优先模式、快门优先模式以及手机等电子产品的曝光都属于自动曝光。
-自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。
-自动曝光的标准
-在此之前需要了解物体的亮度与色彩是由物体对光线的反射率来决定的。例如纯黑色的放射率是0，纯白色的反射率是100%，处于中间的灰度的反射率是18%，这就是18%中间灰度。
-
-具有一定反射率的物体在最终的图像中被还原到了其相应的灰度级，这就意味着达到了正确的曝光。例如摄影师们通常在拍摄之前使用中性灰卡测试曝光是否正常。
-但是相机在各种场景下无法识别物体的反射率，因此采用了一个简单粗暴而又行之有效的方法，统一将图像整体平均亮度设置为中性灰的亮度。该方法基于**科学家认为自然界的平均反射率是18%**这一理论。当然，这个方法也不是走遍天下都不怕，比如拍摄雪景时需要增加曝光补偿，不然会偏暗，因为雪景的亮度远远大于中性灰度。这也就是摄影中的一句口诀的由来“白增黑减”。
-自动曝光算法
-上面已经讲了自动曝光的标准，也就确立了曝光目标，要达到这一目标还要自动曝光算法来实现。
-目前比较常见的算法有平均亮度法、权重均值法、亮度直方图等。其中最普遍的就是平均亮度法。平均亮度法就是对图像所以像素亮度求平均值，通过不断调整曝光参数最终达到目标亮度。而权重均值法是对图像不同区域设置不同权重来计算图像亮度，例如相机中的各种测光模式的选择就是改变不同区域的权重。亮度直方图法是通过为直方图中峰值分配不同权重来计算图像亮度。
-自动曝光实现的过程：
-第一步：对当前图像进行亮度统计；
-第二步：根据当前图像亮度确定曝光值；
-第三步：计算新的曝光参数，曝光时间、光圈、增益；
-第四步：将新的曝光参数应用到相机；
-第五步：重复步骤一到四，直到亮度满足要求。
-曝光参数调整_曝光表
-前面留下两个问题：“第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。” 第一个问题在前面有过解释，第二个问题也就是自动曝光实现步骤的第三步，曝光值由光圈、曝光时间、增益沟通决定，当计算出一个曝光量，曝光三要素有很多种组合方式。一般情况下有曝光曲线，每个曝光量对应一组参数。手机中曝光曲线可以通过Tuning调整。
-From: 积极的悲观主义者
-系列教程
-全部文章RSS订阅
-Embeded系列 Embeded 分类 RSS 订阅
-
-海思MPP&amp;UNF构架源代码级分析
-3G,4G,Wifi选型需求分析及技术简介
-自动曝光原理
-ISP 数字图像处理 算法概述、工作原理、架构、处理流程
-
-]]></content>
-      <categories>
-        <category>embeded</category>
-      </categories>
-      <tags>
-        <tag>3a</tag>
-        <tag>ae</tag>
-        <tag>image</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>深度学习之视频人脸识别系列</title>
     <url>/posts/a0f3c838/</url>
     <content><![CDATA[系列1 简介
@@ -12051,9 +12000,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-JBGVNyVPBPAbBniW").style.height=document.getElementById("mmedia-JBGVNyVPBPAbBniW").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-AEyTwZXdsHzqGxok").style.height=document.getElementById("mmedia-AEyTwZXdsHzqGxok").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-JBGVNyVPBPAbBniW").style.height=document.getElementById("mmedia-JBGVNyVPBPAbBniW").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-AEyTwZXdsHzqGxok").style.height=document.getElementById("mmedia-AEyTwZXdsHzqGxok").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -12451,6 +12400,57 @@ MusicBrainz Picard使用教程：
         <tag>刮削</tag>
         <tag>musicbrainz</tag>
         <tag>mp3tag</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>自动曝光原理</title>
+    <url>/posts/509c7bd3/</url>
+    <content><![CDATA[自动曝光的原理
+曝光是摄影中十分重要的一个环节，它决定了一张图片的明暗，如下图所示，第一张图片太暗，而第三种图片太亮。
+
+曝光由什么来决定
+使用过数码相机的人都知道曝光由光圈、曝光时间、ISO三者共同决定，详细的关系就不赘述。
+光圈：控制进光量；
+曝光时间：光到达的时间长度；
+ISO：增益；
+但是对于手机以及其他电子产品使用的微型摄像头，光圈大小是固定的，所以手机拍照的曝光由曝光时间和**增益(ISO)**来控制。
+什么是自动曝光
+数码相机中有一种手动模式，可手动设置光圈、曝光时间、ISO来控制曝光，该模式的使用对摄影师的要求会比较高。另外 数码相机的全自动模式、光圈优先模式、快门优先模式以及手机等电子产品的曝光都属于自动曝光。
+自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。
+自动曝光的标准
+在此之前需要了解物体的亮度与色彩是由物体对光线的反射率来决定的。例如纯黑色的放射率是0，纯白色的反射率是100%，处于中间的灰度的反射率是18%，这就是18%中间灰度。
+
+具有一定反射率的物体在最终的图像中被还原到了其相应的灰度级，这就意味着达到了正确的曝光。例如摄影师们通常在拍摄之前使用中性灰卡测试曝光是否正常。
+但是相机在各种场景下无法识别物体的反射率，因此采用了一个简单粗暴而又行之有效的方法，统一将图像整体平均亮度设置为中性灰的亮度。该方法基于**科学家认为自然界的平均反射率是18%**这一理论。当然，这个方法也不是走遍天下都不怕，比如拍摄雪景时需要增加曝光补偿，不然会偏暗，因为雪景的亮度远远大于中性灰度。这也就是摄影中的一句口诀的由来“白增黑减”。
+自动曝光算法
+上面已经讲了自动曝光的标准，也就确立了曝光目标，要达到这一目标还要自动曝光算法来实现。
+目前比较常见的算法有平均亮度法、权重均值法、亮度直方图等。其中最普遍的就是平均亮度法。平均亮度法就是对图像所以像素亮度求平均值，通过不断调整曝光参数最终达到目标亮度。而权重均值法是对图像不同区域设置不同权重来计算图像亮度，例如相机中的各种测光模式的选择就是改变不同区域的权重。亮度直方图法是通过为直方图中峰值分配不同权重来计算图像亮度。
+自动曝光实现的过程：
+第一步：对当前图像进行亮度统计；
+第二步：根据当前图像亮度确定曝光值；
+第三步：计算新的曝光参数，曝光时间、光圈、增益；
+第四步：将新的曝光参数应用到相机；
+第五步：重复步骤一到四，直到亮度满足要求。
+曝光参数调整_曝光表
+前面留下两个问题：“第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。” 第一个问题在前面有过解释，第二个问题也就是自动曝光实现步骤的第三步，曝光值由光圈、曝光时间、增益沟通决定，当计算出一个曝光量，曝光三要素有很多种组合方式。一般情况下有曝光曲线，每个曝光量对应一组参数。手机中曝光曲线可以通过Tuning调整。
+From: 积极的悲观主义者
+系列教程
+全部文章RSS订阅
+Embeded系列 Embeded 分类 RSS 订阅
+
+海思MPP&amp;UNF构架源代码级分析
+3G,4G,Wifi选型需求分析及技术简介
+自动曝光原理
+ISP 数字图像处理 算法概述、工作原理、架构、处理流程
+
+]]></content>
+      <categories>
+        <category>embeded</category>
+      </categories>
+      <tags>
+        <tag>3a</tag>
+        <tag>ae</tag>
+        <tag>image</tag>
       </tags>
   </entry>
   <entry>
@@ -17280,11 +17280,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var vamYypOBwqIQCpmG_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); vamYypOBwqIQCpmG_options.container = document.getElementById("mmedia-vamYypOBwqIQCpmG"); const ap_vamYypOBwqIQCpmG = new APlayer(vamYypOBwqIQCpmG_options); 
+ var VJMLulbpqWsHnqnH_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); VJMLulbpqWsHnqnH_options.container = document.getElementById("mmedia-VJMLulbpqWsHnqnH"); const ap_VJMLulbpqWsHnqnH = new APlayer(VJMLulbpqWsHnqnH_options); 
 
 - **列表**
 
- var XewbwpPYBnzBAAtl_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); XewbwpPYBnzBAAtl_options.container = document.getElementById("mmedia-XewbwpPYBnzBAAtl"); const ap_XewbwpPYBnzBAAtl = new APlayer(XewbwpPYBnzBAAtl_options); 
+ var fqBbKmiMLcALCzTM_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); fqBbKmiMLcALCzTM_options.container = document.getElementById("mmedia-fqBbKmiMLcALCzTM"); const ap_fqBbKmiMLcALCzTM = new APlayer(fqBbKmiMLcALCzTM_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -17536,21 +17536,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-OqbXSFbSrNuGuJln").style.height=document.getElementById("mmedia-OqbXSFbSrNuGuJln").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-USSzHsrBPbqkKJkO").style.height=document.getElementById("mmedia-USSzHsrBPbqkKJkO").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-OqbXSFbSrNuGuJln").style.height=document.getElementById("mmedia-OqbXSFbSrNuGuJln").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-USSzHsrBPbqkKJkO").style.height=document.getElementById("mmedia-USSzHsrBPbqkKJkO").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-HZeAVSBIdGtfcecv").style.height=document.getElementById("mmedia-HZeAVSBIdGtfcecv").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-AHVsetpISQoWczDf").style.height=document.getElementById("mmedia-AHVsetpISQoWczDf").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-HZeAVSBIdGtfcecv").style.height=document.getElementById("mmedia-HZeAVSBIdGtfcecv").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-AHVsetpISQoWczDf").style.height=document.getElementById("mmedia-AHVsetpISQoWczDf").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var OobcORmKblEFaOwK_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); OobcORmKblEFaOwK_options.container = "#mmedia-OobcORmKblEFaOwK"; const art_OobcORmKblEFaOwK = new Artplayer(OobcORmKblEFaOwK_options); 
+ var VVYaXarUflKhSmif_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); VVYaXarUflKhSmif_options.container = "#mmedia-VVYaXarUflKhSmif"; const art_VVYaXarUflKhSmif = new Artplayer(VVYaXarUflKhSmif_options); 
 脑图
 
 原作者记录
@@ -18614,11 +18614,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var efhKBXTFTvPThXDL_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); efhKBXTFTvPThXDL_options.container = document.getElementById("mmedia-efhKBXTFTvPThXDL"); const ap_efhKBXTFTvPThXDL = new APlayer(efhKBXTFTvPThXDL_options); 
+ var MeZgalGGrbnipFzl_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); MeZgalGGrbnipFzl_options.container = document.getElementById("mmedia-MeZgalGGrbnipFzl"); const ap_MeZgalGGrbnipFzl = new APlayer(MeZgalGGrbnipFzl_options); 
 
 
 
- var hyhOlxAccpYaMQqL_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); hyhOlxAccpYaMQqL_options.container = document.getElementById("mmedia-hyhOlxAccpYaMQqL"); const ap_hyhOlxAccpYaMQqL = new APlayer(hyhOlxAccpYaMQqL_options); 
+ var HtHpMEMkWRQbrUoL_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); HtHpMEMkWRQbrUoL_options.container = document.getElementById("mmedia-HtHpMEMkWRQbrUoL"); const ap_HtHpMEMkWRQbrUoL = new APlayer(HtHpMEMkWRQbrUoL_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -18756,9 +18756,9 @@ docker run -d \
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-URYQrRFMTVCfepcQ").style.height=document.getElementById("mmedia-URYQrRFMTVCfepcQ").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-JVxEVlkgHaQkHpmo").style.height=document.getElementById("mmedia-JVxEVlkgHaQkHpmo").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-URYQrRFMTVCfepcQ").style.height=document.getElementById("mmedia-URYQrRFMTVCfepcQ").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-JVxEVlkgHaQkHpmo").style.height=document.getElementById("mmedia-JVxEVlkgHaQkHpmo").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -18767,7 +18767,7 @@ docker run -d \
 
 ## 中文翻唱
 
- var QhpSiLtaeVfhgCWq_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); QhpSiLtaeVfhgCWq_options.container = document.getElementById("mmedia-QhpSiLtaeVfhgCWq"); const ap_QhpSiLtaeVfhgCWq = new APlayer(QhpSiLtaeVfhgCWq_options); 
+ var jNrLTYFzzreBBVVk_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); jNrLTYFzzreBBVVk_options.container = document.getElementById("mmedia-jNrLTYFzzreBBVVk"); const ap_jNrLTYFzzreBBVVk = new APlayer(jNrLTYFzzreBBVVk_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -25983,6 +25983,165 @@ RM是英文"repetition maximum"的缩写，中文意义是"最大重复值"。�
         <tag>fitness</tag>
         <tag>健身</tag>
         <tag>运动</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>DevOps系列---【Jenkinsfile+Dockerfile+nginx+vue】</title>
+    <url>/posts/3437994a/</url>
+    <content><![CDATA[1.前提：一台装好的jenkins
+参考:https://www.cnblogs.com/hujunwei/p/13176994.html
+2.编写Dockerfile，放在项目根目录下
+FROM nginx
+#修改名字、版本、作者
+LABEL name="home-finance-web-dev" version="1.0.0" author="hjw"
+COPY dist/ /usr/share/nginx/html/
+COPY nginx/nginx-dev.conf /etc/nginx/nginx.conf
+EXPOSE 80
+3.编写Jenkinsfile，放在项目根目录下
+//流水线脚本
+pipeline {
+    agent any
+    environment {
+        WS = "${WORKSPACE}"
+        TOPIC = "测试"
+        TITLE = "标题"
+        CONTENT = "具体内容"
+    }
+
+    //定义流水线的加工流程
+    stages {
+        stage('环境检查') {
+            steps{
+                sh 'printenv'
+                echo "正在检测基本信息"
+                sh 'git --version'
+                sh 'docker version'
+            }
+        }
+
+        stage('编译') {
+            //jenkins不配置任何环境的情况下可以兼容任何场景
+            agent {
+                docker { image 'node:14.17.6-alpine3.13' }
+            }
+            steps{
+                sh 'node -v'
+                sh 'npm -v'
+                sh 'pwd &amp;&amp; ls -alh'
+                sh 'echo "默认的项目目录:${WS}"'
+                //注意:cd ${WS} &amp;&amp; npm不能分开写，也不能直接用${WORKSPACE}
+                sh 'cd ${WS}/fast-ui &amp;&amp; npm config set registry=https://registry.npm.taobao.org &amp;&amp; npm install -g cnpm --registry=https://registry.npm.taobao.org &amp;&amp; cnpm install &amp;&amp; cnpm run build'
+            }
+        }
+
+        stage('生成镜像') {
+            steps{
+                sh 'pwd &amp;&amp; ls -alh'
+                echo '生成镜像'
+                sh 'docker version'
+                sh "echo 默认的项目目录:${WS}"
+                sh 'cd ${WS}/fast-ui &amp;&amp; docker build -t home-finance-web .'
+            }
+        }
+
+        stage('部署') {
+            steps{
+                echo '部署....'
+                sh 'pwd &amp;&amp; ls -alh'
+                sh 'pwd &amp;&amp; ls -alh'
+                sh 'docker rm -f home-finance-web'
+                sh 'docker run -d -p 8081:80 --restart=always --name home-finance-web home-finance-web'
+            }
+        }
+    }
+}
+4.编写nginx-dev.conf,放在项目根目录下的nginx目录下
+user  nginx;
+worker_processes  1;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    keepalive_timeout  65;
+
+    #gzip  on;
+
+    # include /etc/nginx/conf.d/*.conf;
+
+    server {
+        listen       80;
+        server_name  101.43.159.8; # 服务器地址或绑定域名
+
+        #charset koi8-r;
+        #access_log  /var/log/nginx/host.access.log  main;
+
+        # =========================================================
+        # ================== ↓↓↓↓↓↓ start ↓↓↓↓↓↓ ==================
+        # =========================================================
+
+        location / {
+            root   /usr/share/nginx/html;
+            #try_files $uri $uri/ @router;
+            index  index.html index.htm;
+            try_files $uri $uri/ /index.html; # 解决页面刷新 404 问题
+            #proxy_pass http://zhengqingya.gitee.io; # 代理的ip地址和端口号
+            #proxy_connect_timeout 600; #代理的连接超时时间（单位：毫秒）
+            #proxy_read_timeout 600; #代理的读取资源超时时间（单位：毫秒）
+        }
+
+        # =========================================================
+        # ================== ↑↑↑↑↑↑ end ↑↑↑↑↑↑ ==================
+        # =========================================================
+
+        #error_page  404              /404.html;
+
+        # redirect server error pages to the static page /50x.html
+        #
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   /usr/share/nginx/html;
+        }
+
+    }
+}
+编辑整理 hujunwei
+系列教程
+全部文章RSS订阅
+Devops系列 Devops 分类 RSS 订阅
+
+自建全套开源Devops开发系统
+Git介绍以及分支模型图解
+三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
+DevOps系列---【Jenkinsfile+Dockerfile+nginx+vue】
+项目开发管理工具推荐
+Gitlab的安装及使用教程完全版
+Gitlab的安装及使用
+
+]]></content>
+      <categories>
+        <category>devops</category>
+      </categories>
+      <tags>
+        <tag>nginx</tag>
+        <tag>jenkins</tag>
+        <tag>devops</tag>
       </tags>
   </entry>
   <entry>
@@ -34404,187 +34563,6 @@ q 退出
       </tags>
   </entry>
   <entry>
-    <title>如何建立自己的私人电子图书馆</title>
-    <url>/posts/dc1c8194/</url>
-    <content><![CDATA[
-继刮削音乐，刮削电影、电视剧、动画等视频之后的第三季，刮削图书！
-结构化自己的图书，方便自己随时查阅，是提高自己各种能力的重要辅助手段！把各方面知识都结构化，可以极大的扩展你的思维，放飞你的思想，让你以更清晰的目光看待这个世界!
-友情提示：中国法规是不允许私人做电子出版的！自用可以，公开访问是违法的！
-
-
-操作指南
-Web界面的Calibre作为阅读界面，支持OPDS接口，可以手机访问！
-PC 版的Calibrez作为电子书导入，转移，和管理的工具更方便！
-注意不要同时在web和PC端操作数据库，很容易导致数据库出bug。
-虽然pc calibre有数据库恢复功能，大部分时间都可以成功恢复数据库，但是偶尔也有不能恢复的时候！
-安装Docker
-
-更多平台Docker安装介绍，请看这里
-Hexo Docker环境使用篇
-
-1、安装docker
-curl -fsSL https://get.docker.com | sh &amp;&amp; systemctl enable --now docker
-2、安装docker-compose
-mkdir -p /usr/local/lib/docker/cli-plugins
-curl -SL https://get.daocloud.io/docker/compose/releases/download/v2.1.1/docker-compose-`uname -s`-`uname -m` -o /usr/local/lib/docker/cli-plugins/docker-compose
-chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-3、运行bookstack
-docker compose up -d
-4、查看日志
-docker logs -f calibre
-CalibreWeb
-
-
-Github
-Dockerhub
-Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
-注意这个Docker安装需要访问Github下载相关文件！注意你的网络是否正常
-
-
-
-视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-jfEGmdJNImTztTlV").style.height=document.getElementById("mmedia-jfEGmdJNImTztTlV").scrollWidth*0.76+"px";
-    window.onresize = function(){
-      document.getElementById("mmedia-jfEGmdJNImTztTlV").style.height=document.getElementById("mmedia-jfEGmdJNImTztTlV").scrollWidth*0.76+"px";
-    }; 
-Compose 安装示例
-calibre:
-  image: technosoft2000/calibre-web
-  container_name: calibre
-  hostname: calibre
-  restart: always
-  volumes:
-    - ${USERDIR}/Calibre/web/config:/calibre-web/config
-    - ${USERDIR}/Calibre/web/kindlegen:/calibre-web/kindlegen
-    - ${USERDIR}/Calibre/web/app:/calibre-web/app
-    - ${USERDIR}/Calibre/books:/books
-
-  ports:
-   - 8283:8083
-  env_file:
-    - .env
-  environment:
-    - PUID=${PUID}
-    - PGID=${PGID}
-    - TZ=${TZ}
-    - USE_CONFIG_DIR=true
-    - SET_CONTAINER_TIMEZONE=true
-talebook
-
-
-
-Github
-
-
-Dockerhub
-
-
-Tips: 国人开发的，个人感觉更适合作为图书管理的界面
-
-
-
-
-Compose 安装示例
-talebook:
-  image: talebook/talebook
-  container_name: talebook
-  hostname: talebook
-  restart: always
-  ports:
-    - 90:80
-  volumes:
-    - ${USERDIR}/talebook/data:/data
-  environment:
-    - PUID=${PUID}
-    - PGID=${PGID}
-    - TZ=${TZ}
-  networks:
-    public_access:
-      aliases:
-        - talebook 
-Calibre
-
-Pc版的Calibre用来做数据库管理，有各种插件支持，是最方便的。
-主页：calibre-ebook
-下载：download
-
-
-刮削插件安装
-
-
-
-
-豆瓣刮削插件这里下载安装
-
-Github
-官方地址 Github 下载地址
-本站自建加速地址 onebox.17lai.site加速下载 更新到1.05 如果打不开，多刷新几次！
-
-
-添加书库
-
-
-图书刮削
-
-
-
-检查完毕就可以点击确认
-数据库转移
-
-
-
-这里最好建立一个临时书库作为转移和刮削预备用，防止意外崩溃导致数据库损坏或丢失！
-你可以和你的好友之间共享或者转移某个书库。
-图书太多，刮削太耗时间，合作刮削建立书库才是正途！
-
-Calibre数据库恢复
-
-图书、音乐、视频三剑客！
-
-结构化自己的图书，音乐，和视频！
-
-
-    
-        
-    
-    
-        如何建立自己的私人电子图书馆
-        
-        图书管理员似乎是个非常有前途的职业，远的有孔子，游学之前当图书管理员，近的有本朝开国毛教员，也当了很长时间图书管理员。我们也可以自己做个私人电子图书馆，当个图书管理员，说不定很有前途？
-    
-
-
-    
-        
-    
-    
-        如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库
-        
-        音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。
-    
-
-
-    
-        
-    
-    
-        如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-        
-        tinyMediaManager是最好用的视频刮削工具，可以刮削电影，动画，电视剧。使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息，配合Emby，Plex使用体验绝佳
-    
-
-]]></content>
-      <categories>
-        <category>book</category>
-      </categories>
-      <tags>
-        <tag>刮削</tag>
-        <tag>calibre</tag>
-        <tag>douban</tag>
-        <tag>book</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>自建全套开源Devops开发系统</title>
     <url>/posts/ab63eb8f/</url>
     <content><![CDATA[
@@ -36323,162 +36301,184 @@ https://blinkfox.github.io/2018/10/09/ruan-jian-gong-ju/linux/chang-yong-bash-mi
       </tags>
   </entry>
   <entry>
-    <title>DevOps系列---【Jenkinsfile+Dockerfile+nginx+vue】</title>
-    <url>/posts/3437994a/</url>
-    <content><![CDATA[1.前提：一台装好的jenkins
-参考:https://www.cnblogs.com/hujunwei/p/13176994.html
-2.编写Dockerfile，放在项目根目录下
-FROM nginx
-#修改名字、版本、作者
-LABEL name="home-finance-web-dev" version="1.0.0" author="hjw"
-COPY dist/ /usr/share/nginx/html/
-COPY nginx/nginx-dev.conf /etc/nginx/nginx.conf
-EXPOSE 80
-3.编写Jenkinsfile，放在项目根目录下
-//流水线脚本
-pipeline {
-    agent any
-    environment {
-        WS = "${WORKSPACE}"
-        TOPIC = "测试"
-        TITLE = "标题"
-        CONTENT = "具体内容"
-    }
+    <title>如何建立自己的私人电子图书馆</title>
+    <url>/posts/dc1c8194/</url>
+    <content><![CDATA[
+继刮削音乐，刮削电影、电视剧、动画等视频之后的第三季，刮削图书！
+结构化自己的图书，方便自己随时查阅，是提高自己各种能力的重要辅助手段！把各方面知识都结构化，可以极大的扩展你的思维，放飞你的思想，让你以更清晰的目光看待这个世界!
+友情提示：中国法规是不允许私人做电子出版的！自用可以，公开访问是违法的！
 
-    //定义流水线的加工流程
-    stages {
-        stage('环境检查') {
-            steps{
-                sh 'printenv'
-                echo "正在检测基本信息"
-                sh 'git --version'
-                sh 'docker version'
-            }
-        }
 
-        stage('编译') {
-            //jenkins不配置任何环境的情况下可以兼容任何场景
-            agent {
-                docker { image 'node:14.17.6-alpine3.13' }
-            }
-            steps{
-                sh 'node -v'
-                sh 'npm -v'
-                sh 'pwd &amp;&amp; ls -alh'
-                sh 'echo "默认的项目目录:${WS}"'
-                //注意:cd ${WS} &amp;&amp; npm不能分开写，也不能直接用${WORKSPACE}
-                sh 'cd ${WS}/fast-ui &amp;&amp; npm config set registry=https://registry.npm.taobao.org &amp;&amp; npm install -g cnpm --registry=https://registry.npm.taobao.org &amp;&amp; cnpm install &amp;&amp; cnpm run build'
-            }
-        }
+操作指南
+Web界面的Calibre作为阅读界面，支持OPDS接口，可以手机访问！
+PC 版的Calibrez作为电子书导入，转移，和管理的工具更方便！
+注意不要同时在web和PC端操作数据库，很容易导致数据库出bug。
+虽然pc calibre有数据库恢复功能，大部分时间都可以成功恢复数据库，但是偶尔也有不能恢复的时候！
+安装Docker
 
-        stage('生成镜像') {
-            steps{
-                sh 'pwd &amp;&amp; ls -alh'
-                echo '生成镜像'
-                sh 'docker version'
-                sh "echo 默认的项目目录:${WS}"
-                sh 'cd ${WS}/fast-ui &amp;&amp; docker build -t home-finance-web .'
-            }
-        }
+更多平台Docker安装介绍，请看这里
+Hexo Docker环境使用篇
 
-        stage('部署') {
-            steps{
-                echo '部署....'
-                sh 'pwd &amp;&amp; ls -alh'
-                sh 'pwd &amp;&amp; ls -alh'
-                sh 'docker rm -f home-finance-web'
-                sh 'docker run -d -p 8081:80 --restart=always --name home-finance-web home-finance-web'
-            }
-        }
-    }
-}
-4.编写nginx-dev.conf,放在项目根目录下的nginx目录下
-user  nginx;
-worker_processes  1;
+1、安装docker
+curl -fsSL https://get.docker.com | sh &amp;&amp; systemctl enable --now docker
+2、安装docker-compose
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -SL https://get.daocloud.io/docker/compose/releases/download/v2.1.1/docker-compose-`uname -s`-`uname -m` -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+3、运行bookstack
+docker compose up -d
+4、查看日志
+docker logs -f calibre
+CalibreWeb
 
-error_log  /var/log/nginx/error.log warn;
-pid        /var/run/nginx.pid;
 
-events {
-    worker_connections  1024;
-}
+Github
+Dockerhub
+Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
+注意这个Docker安装需要访问Github下载相关文件！注意你的网络是否正常
 
-http {
-    include       /etc/nginx/mime.types;
-    default_type  application/octet-stream;
 
-    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
-                      '$status $body_bytes_sent "$http_referer" '
-                      '"$http_user_agent" "$http_x_forwarded_for"';
 
-    access_log  /var/log/nginx/access.log  main;
+视频详细Calibre web讲解
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-DTTjvOIOajbwOEbZ").style.height=document.getElementById("mmedia-DTTjvOIOajbwOEbZ").scrollWidth*0.76+"px";
+    window.onresize = function(){
+      document.getElementById("mmedia-DTTjvOIOajbwOEbZ").style.height=document.getElementById("mmedia-DTTjvOIOajbwOEbZ").scrollWidth*0.76+"px";
+    }; 
+Compose 安装示例
+calibre:
+  image: technosoft2000/calibre-web
+  container_name: calibre
+  hostname: calibre
+  restart: always
+  volumes:
+    - ${USERDIR}/Calibre/web/config:/calibre-web/config
+    - ${USERDIR}/Calibre/web/kindlegen:/calibre-web/kindlegen
+    - ${USERDIR}/Calibre/web/app:/calibre-web/app
+    - ${USERDIR}/Calibre/books:/books
 
-    sendfile        on;
-    #tcp_nopush     on;
+  ports:
+   - 8283:8083
+  env_file:
+    - .env
+  environment:
+    - PUID=${PUID}
+    - PGID=${PGID}
+    - TZ=${TZ}
+    - USE_CONFIG_DIR=true
+    - SET_CONTAINER_TIMEZONE=true
+talebook
 
-    keepalive_timeout  65;
 
-    #gzip  on;
 
-    # include /etc/nginx/conf.d/*.conf;
+Github
 
-    server {
-        listen       80;
-        server_name  101.43.159.8; # 服务器地址或绑定域名
 
-        #charset koi8-r;
-        #access_log  /var/log/nginx/host.access.log  main;
+Dockerhub
 
-        # =========================================================
-        # ================== ↓↓↓↓↓↓ start ↓↓↓↓↓↓ ==================
-        # =========================================================
 
-        location / {
-            root   /usr/share/nginx/html;
-            #try_files $uri $uri/ @router;
-            index  index.html index.htm;
-            try_files $uri $uri/ /index.html; # 解决页面刷新 404 问题
-            #proxy_pass http://zhengqingya.gitee.io; # 代理的ip地址和端口号
-            #proxy_connect_timeout 600; #代理的连接超时时间（单位：毫秒）
-            #proxy_read_timeout 600; #代理的读取资源超时时间（单位：毫秒）
-        }
+Tips: 国人开发的，个人感觉更适合作为图书管理的界面
 
-        # =========================================================
-        # ================== ↑↑↑↑↑↑ end ↑↑↑↑↑↑ ==================
-        # =========================================================
 
-        #error_page  404              /404.html;
 
-        # redirect server error pages to the static page /50x.html
-        #
-        error_page   500 502 503 504  /50x.html;
-        location = /50x.html {
-            root   /usr/share/nginx/html;
-        }
 
-    }
-}
-编辑整理 hujunwei
-系列教程
-全部文章RSS订阅
-Devops系列 Devops 分类 RSS 订阅
+Compose 安装示例
+talebook:
+  image: talebook/talebook
+  container_name: talebook
+  hostname: talebook
+  restart: always
+  ports:
+    - 90:80
+  volumes:
+    - ${USERDIR}/talebook/data:/data
+  environment:
+    - PUID=${PUID}
+    - PGID=${PGID}
+    - TZ=${TZ}
+  networks:
+    public_access:
+      aliases:
+        - talebook 
+Calibre
 
-自建全套开源Devops开发系统
-Git介绍以及分支模型图解
-三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
-DevOps系列---【Jenkinsfile+Dockerfile+nginx+vue】
-项目开发管理工具推荐
-Gitlab的安装及使用教程完全版
-Gitlab的安装及使用
+Pc版的Calibre用来做数据库管理，有各种插件支持，是最方便的。
+主页：calibre-ebook
+下载：download
+
+
+刮削插件安装
+
+
+
+
+豆瓣刮削插件这里下载安装
+
+Github
+官方地址 Github 下载地址
+本站自建加速地址 onebox.17lai.site加速下载 更新到1.05 如果打不开，多刷新几次！
+
+
+添加书库
+
+
+图书刮削
+
+
+
+检查完毕就可以点击确认
+数据库转移
+
+
+
+这里最好建立一个临时书库作为转移和刮削预备用，防止意外崩溃导致数据库损坏或丢失！
+你可以和你的好友之间共享或者转移某个书库。
+图书太多，刮削太耗时间，合作刮削建立书库才是正途！
+
+Calibre数据库恢复
+
+图书、音乐、视频三剑客！
+
+结构化自己的图书，音乐，和视频！
+
+
+    
+        
+    
+    
+        如何建立自己的私人电子图书馆
+        
+        图书管理员似乎是个非常有前途的职业，远的有孔子，游学之前当图书管理员，近的有本朝开国毛教员，也当了很长时间图书管理员。我们也可以自己做个私人电子图书馆，当个图书管理员，说不定很有前途？
+    
+
+
+    
+        
+    
+    
+        如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库
+        
+        音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。
+    
+
+
+    
+        
+    
+    
+        如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+        
+        tinyMediaManager是最好用的视频刮削工具，可以刮削电影，动画，电视剧。使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息，配合Emby，Plex使用体验绝佳
+    
 
 ]]></content>
       <categories>
-        <category>devops</category>
+        <category>book</category>
       </categories>
       <tags>
-        <tag>nginx</tag>
-        <tag>jenkins</tag>
-        <tag>devops</tag>
+        <tag>刮削</tag>
+        <tag>calibre</tag>
+        <tag>douban</tag>
+        <tag>book</tag>
       </tags>
   </entry>
   <entry>
@@ -42905,7 +42905,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts1758'));
+        var myChart = echarts.init(document.getElementById('echarts6273'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -42999,7 +42999,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts4080'));
+        var myChart = echarts.init(document.getElementById('echarts1605'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -43068,7 +43068,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts4962'));
+        var myChart = echarts.init(document.getElementById('echarts9765'));
 
         // 指定图表的配置项和数据
         var option = option = {
