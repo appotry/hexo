@@ -2788,1022 +2788,6 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
-    <title>Gitlab的安装及使用教程完全版</title>
-    <url>/posts/acc13b70/</url>
-    <content><![CDATA[1. Gitlab概述
-
-1.1 GitLab介绍
-GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。
-GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。
-它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找
-1.2 Gitlab服务构成
-Nginx：静态web服务器。
-gitlab-shell：用于处理Git命令和修改authorized keys列表。
-gitlab-workhorse: 轻量级的反向代理服务器。
-logrotate：日志文件管理工具。
-postgresql：数据库。
-redis：缓存数据库。
-sidekiq：用于在后台执行队列任务（异步执行）。
-unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。
-1.3 Gitlab工作流程
-
-1.4 GitLab Shell
-GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表
-当通过SSH访问GitLab Server时，GitLab Shell会：
-
-限制执行预定义好的Git命令（git push，git pull，git annex）
-调用GitLab Rails API检查权限
-执行pre-receive钩子（在企业版中叫做Git钩子）
-执行用户请求的动作，处理GitLab的post-receive动作
-处理自定义的post-receive动作
-
-当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：
-如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作
-如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：
-
-调用GitLab Rails API 检查权限
-执行pre-receive钩子（在GitLab企业版中叫做Git钩子）
-执行你请求的动作
-处理GitLab的post-receive动作
-处理自定义的post-receive动作
-
-1.5 GitLab Workhorse
-GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。
-2. Gitlab的安装部署
-
-Gitlab要求服务器内存2G以上
-
-2.1 方式一:下载gitlab-ce的rpm包
-
-gitlab官方rpm包下载
-清华的源
-
-将对应版本的gitlab-ce下载到本地后，直接yum安装即可
-# 要先将这个rpm包下载到本地
-yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm
-2.2 方式二:配置yum源
-在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：
-[gitlab-ce]
-name=gitlab-ce
-baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/
-Repo_gpgcheck=0
-Enabled=1
-Gpgkey=https://packages.gitlab.com/gpg.key
-然后创建cache，再直接安装gitlab-ce
-yum makecache  # 这一步会创建大量的数据
- 
-# 直接安装最新版
-yum install -y gitlab-ce
- 
-# 如果要安装指定的版本，在后面填上版本号即可
-yum install -y  gitlab-ce-13.6.1
- 
-# 如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
-yum install gitlab-ce -y --nogpgcheck
-2.2.1. 单服务启动模式
-docker run -d --name gitlab --hostname gitlab.example.com \
--e GITLAB_OMNIBUS_CONFIG="
-    external_url 'https://gitlab.example.com'
-    gitlab_rails['gitlab_shell_ssh_port'] = 22
-    nginx['redirect_http_to_https'] = true
-    nginx['ssl_dhparam'] = '/etc/gitlab/ssl/dhparam.pem'
-    nginx['ssl_certificate'] = '/etc/gitlab/ssl/domain.crt'
-    nginx['ssl_certificate_key'] = '/etc/gitlab/ssl/domain.key'
-    nginx['custom_gitlab_server_config'] = 'location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n'
-    high_availability['mountpoint'] = ['/etc/gitlab', '/var/log/gitlab' '/var/opt/gitlab'  # 严格限定gitlab服务启动前，指定文件系统挂完毕
-" \
--p 22:22 -p 80:80 -p 443:443 \
--v /srv/gitlab/config:/etc/gitlab \
--v /srv/gitlab/logs:/var/log/gitlab \
--v /srv/gitlab/data:/var/opt/gitlab \
--v /etc/certs:/etc/gitlab/ssl \
---restart=always gitlab/gitlab-ce:latest
- 
-2.2.1. Compose服务编排模式(推荐方式)
-docker pull gitlab/gitlab-ce:latest
- 
-############################ 多行命令开始 ##########################
-cat &gt; docker-compose.yaml &lt;&lt;EOF
-version: '2'
- 
-services:
- 
-  Gitlab:
-    image: 'gitlab/gitlab-ce:latest'
-    container_name: 'gitlab'
-    hostname: 'gitlab.example.com'
-    restart: always
-    ports:
-      - '22:22'
-      - '80:80'
-      - '443:443'
-    environment:
-      GITLAB_OMNIBUS_CONFIG: |
-        # Add any other gitlab.rb configuration here, each on its own line
-        external_url 'https://gitlab.example.com'
-        gitlab_rails['gitlab_shell_ssh_port'] = 22
-        nginx['redirect_http_to_https'] = true
-        nginx['ssl_dhparam'] = "/etc/gitlab/ssl/dhparam.pem"
-        nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
-        nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
-        nginx['custom_gitlab_server_config'] = "location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n"
-        high_availability['mountpoint'] = ["/etc/gitlab", "/var/log/gitlab", "/var/opt/gitlab"]  # 严格限定gitlab服务启动前，指定文件系统挂完毕
-    volumes:
-      - /srv/gitlab/config:/etc/gitlab
-      - /srv/gitlab/logs:/var/log/gitlab
-      - /srv/gitlab/data:/var/opt/gitlab
-      - /etc/certs:/etc/gitlab/ssl
-EOF
-############################ 多行命令结束 ##########################
- 
-# 启动服务
-docker-compose -f docker-compose.yaml up -d
- 
-2.3 gitlab的配置
-配置文件位置  /etc/gitlab/gitlab.rb
-[root@centos7 test]# vim /etc/gitlab/gitlab.rb
- 
-[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
- 
-external_url 'http://10.0.0.51'  # 这里一定要加上http://
- 
-# 配置邮件服务
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.qq.com"
-gitlab_rails['smtp_port'] = 25
-gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
-gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
-gitlab_rails['smtp_domain'] = "qq.com"
-gitlab_rails['smtp_authentication'] = "login"
-gitlab_rails['smtp_enable_starttls_auto'] = true
-gitlab_rails['smtp_tls'] = false
-gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
-user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址
-修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。
-gitlab-ctl reconfigure # 重载配置文件
-gitlab-ctl restart
-测试邮件服务器
-gitlab-rails console
-Notify.test_email('rollinghell@foxmail.com','testbiaoti','testzhegnwen1').deliver_now
-[root@test102 ~]# gitlab-rails console
---------------------------------------------------------------------------------
- GitLab:       12.5.0 (1f0ab8978ef)
-GitLab Shell: 10.2.0
- PostgreSQL:   10.9
---------------------------------------------------------------------------------
-Loading production environment (Rails 5.2.3)
-irb(main):001:0&gt; Notify.test_email('andycrusoe@gmail.com','test','test').deliver_now
-Notify#test_email: processed outbound mail in 1.4ms
-Sent mail to anliven@126.com (73.0ms)
-Date: Wed, 27 Nov 2019 15:12:58 +0800
-From: GitLab &lt;gitlab@192.168.16.102&gt;
-Reply-To: GitLab &lt;noreply@192.168.16.102&gt;
-To: anliven@126.com
-Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;
-Subject: test
-Mime-Version: 1.0
-Content-Type: text/html;
-charset=UTF-8
-Content-Transfer-Encoding: 7bit
-Auto-Submitted: auto-generated
-X-Auto-Response-Suppress: All
-&lt;!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd"&gt;
-&lt;html&gt;&lt;body&gt;&lt;p&gt;test&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
-=&gt; #&lt;Mail::Message:70141649239780, Multipart: false, Headers: &lt;Date: Wed, 27 Nov 2019 15:12:58 +0800&gt;, &lt;From: GitLab &lt;gitlab@192.168.16.102&gt;&gt;, &lt;Reply-To: GitLab &lt;noreply@192.168.16.102&gt;&gt;, &lt;To: anliven@126.com&gt;, &lt;Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;&gt;, &lt;Subject: test&gt;, &lt;Mime-Version: 1.0&gt;, &lt;Content-Type: text/html; charset=UTF-8&gt;, &lt;Content-Transfer-Encoding: 7bit&gt;, &lt;Auto-Submitted: auto-generated&gt;, &lt;X-Auto-Response-Suppress: All&gt;&gt;
-irb(main):002:0&gt;
-irb(main):003:0&gt; exit
-[root@test102 ~]#
- 
-配置gitlab代理
-https://docs.gitlab.com/omnibus/settings/environment-variables.html
-gitaly['env'] = {
-    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
-    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
-}
-2.4 Gitlab常用命令
-gitlab-ctl start         # 启动所有 gitlab 组件
-gitlab-ctl stop          # 停止所有 gitlab 组件
-gitlab-ctl restart       # 重启所有 gitlab 组件
-gitlab-ctl status        # 查看服务状态
- 
-gitlab-ctl reconfigure   # 启动服务
-gitlab-ctl show-config   # 验证配置文件
- 
-gitlab-ctl tail          # 查看日志
- 
-gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
- 
-vim /etc/gitlab/gitlab.rb # 修改默认的配置文件
-2.5 gitlab-ctl常用命令介绍
-
-
-
-命令
-说明
-
-
-
-
-check-config
-检查在gitlab中是否有任何配置。在指定版本中删除的rb
-
-
-deploy-page
-安装部署页面
-
-
-diff-config
-将用户配置与包可用配置进行比较
-
-
-remove-accounts
-删除所有用户和组
-
-
-upgrade
-升级
-
-
-service-list
-查看所有服务
-
-
-once
-如果GitLab服务停止了就启动服务，如果已启动就不做任何操作
-
-
-restart
-重启GitLab服务
-
-
-start
-如果GitLab服务停止了就启动服务，如果已启动就重启服务
-
-
-stop
-停止GitLab服务
-
-
-status
-查看GitLab服务状态
-
-
-reconfigure
-重新配置GitLab并启动
-
-
-
-3. Gitlab的使用
-
-Gitlab安装好后，设置密码，管理账户为root
-
-3.1 创建Group
-
-填上组名即可，这里组名为java
-
-
-
-3.2 创建User
-
-创建四个User：pm、dev1、dev2、dev3
-
-
-
-3.3 添加User到Group中并授权
-
-3.4 创建Project并配置SSH
-
-
-
-
-3.5 在项目中添加成员
-
-
-3.6 将本地文件推送到Gitlab
-# 将app01项目克隆下来
-git clone git@10.0.0.51:java/app01.git
- 
-# 初始化配置
-git config --global user.name "hgzero"
-git config --global user.email "hgzero@qq.com"
- 
-# 在app01目录下新建一些文件
- 
-# 推送到gitlab
-git add .
-git commit -m "first edition"
-git push origin master
-
-4. 制定开发计划
-4.1 创建开发计划
-
-项目：app01
-版本：v1.0
-
-
-4.2 创建里程碑Milestones
-
-用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）
-要根据开发计划来创建Milestones
-
-
-
-
-
-4.3 根据开发计划创建issue
-
-创建4个issue，分派给dev1和dev2这两个开发人员
-
-
-
-
-
-
-
-**4.4 开发者登录账号查看分派的任务 **
-
-然后开发dev1登录gitlab，就能看到任务已经分配过来了
-
-
-4.5 开发流程
-
-公司里的开发开始任务
-
-# 1. 先从仓库把项目拉下来
-git clone git@10.0.0.51:java/app01.git
-cd app01/
- 
-# 2.先创建一个自己的分支，然后进行开发
-git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
-git status
- 
-# 3. 开始开发首页
-echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
- 
-# 4. 开发完成后，把项目传到仓库
-git add .
-git commit -m "index"
-# 如果写成 git commit -m "close #2" ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
- 
-# 传到index分支
-git push origin index
-4.6 合并分支
-1）开发dev1发送合并分支请求给pm
-
-
-
-2）pm收到开发的Merge请求后进行处理
-
-使用pm登录，就可以看到pm已经收到了合并请求merge request
-
-
-
-
-
-3）开发dev1确认任务完成
-
-退出pm账户，登入dev1账户：
-
-
-
-或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close
-
-
-
-这个时候Milestones的进度已经往前进了一些了：
-
-
-4.7 开发其他功能
-
-然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发
-
-git checkout master  # 切换到master
-git pull             # 从远端仓库拉取数据
-# 然后再进行其他操作
-5. Gitlab备份恢复
-5.1 备份gitlab
-1）修改配置文件
-
-/etc/gitlab/gitlab.rb
-
-# 备份保存的位置，这里是默认位置，可修改成指定的位置
-gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
- 
-# 设置备份保存的时间，超过此时间的日志将会被新覆盖
-gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
- 
-# 特别注意：
-#     如果自定义了备份保存位置，则要修改备份目录的权限，比如：
-#     chown -R git.git /data/backup/gitlab
-
-配置完成后要重启以使配置生效
-
-# 重读配置文件
-gitlab-ctl reconfigure
- 
-# 重启gitlab
-gitlab-ctl restart
-2）设置定时任务
-# 每天凌晨2点定时创建备份
-# 将一下内容写入到定时任务中 crontab -e
-0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create
- 
-# 备份策略建议：
-#     本地保留3到7天，在异地备份永久保存
-3）备份时间的识别
-# 备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
- 
-data  -d  @1494170842
-5.2 恢复gitlab
-1）停止停止相关数据连接,数据写入服务
-# 停止数据写入服务
-gitlab-ctl stop puma
-gitlab-ctl stop sidekiq
-2）进行数据恢复并重启
-# 进行恢复
-gitlab-rake gitlab:backup:restore BACKUP=1627839447_2021_08_01_14.1.1-ee  # 这个时间戳就是刚刚备份的文件前面的时间戳
- 
-# 重启
-gitlab-ctl restart
-6. gitlab邮件通知配置
-
-vim  /etc/gitlab/gitlab.rb
-
-gitlab_rails['time_zone'] = 'Asia/Shanghai'
- 
-gitlab_rails['gitlab_email_enabled'] = true
-gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
-gitlab_rails['gitlab_email_display_name'] = 'gitlab'
- 
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
-gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
-gitlab_rails['smtp_user_name'] = "smtp用户名"
-gitlab_rails['smtp_password'] = "smtp用户密码"
-gitlab_rails['smtp_domain'] = "163.com"
-gitlab_rails['smtp_authentication'] = "login"
-启用邮件功能
-Gitlab 的 Compose 配置 GITLAB_OMNIBUS_CONFIG 节点下增加如下几行：
-########## 邮件服务配置 ##########
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.exmail.qq.com"
-gitlab_rails['smtp_port'] = 465
-gitlab_rails['smtp_tls'] = true
-gitlab_rails['smtp_user_name'] = "账号"
-gitlab_rails['smtp_password'] = "密码"
-gitlab_rails['smtp_authentication'] = "login"
-gitlab_rails['smtp_enable_starttls_auto'] = true 
-gitlab_rails['gitlab_email_from'] = "发件人邮箱"
- 
-7. 使用SourceTree进行项目开发
-
-7.1 项目拉取
-
-先把项目克隆下来
-
-
-
-
-如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加
-
-
-
-7.2 创建分支进行功能开发
-1）新建立一个叫“pay”的分支
-
-
-2）进行功能开发
-
-7.3 提交项目
-1）开发pay功能完成后进行提交
-
-可以看到SourceTree中已经有“未提交的更改”
-
-
-
-2）添加“用户信息”
-
-** 3）进行提交**
-
-
-注释也可以写成  close #3    ，作用是提交完成后关闭3号issue
-
-7.4 推送到仓库
-
-
-
-然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了
-
-7.5 项目上线
-1）当所有工作完成之后，就可以进行上线了
-
-2）打标签
-
-上线先打个标签
-
-
-
-
-** 3）删除无用分支**
-
-然后删除已经合并到主干中的不必要的分支，如index、pay等
-最后一定要注意时间一定要同步，不然会错乱
-
-8. Gitlab调优
-gitlab对内存资源的消耗比较厉害
-其中尤以 sidekiq队列 及 unicorn服务 两个组件对内存消耗最多
-可以再容器启动时对相关参数进行微调：
-unicorn['worker_processes'] = 1
-unicorn['worker_memory_limit_min'] = "300 * 1 &lt;&lt; 20"
-unicorn['worker_memory_limit_max'] = "400 * 1 &lt;&lt; 20"
-unicorn['worker_timeout'] = 15
-sidekiq['concurrency'] = 10
-sidekiq_cluster['enable'] = false
-sidekiq_cluster['ha'] = false
-redis['maxclients'] = "100"
-nginx['worker_processes'] = 2
-nginx['worker_connections'] = 512
-nginx['keepalive_timeout'] = 300
-nginx['cache_max_size'] = '200m'
-mattermost['enable'] = false
-mattermost_nginx['enable'] = false
-gitlab_pages['enable'] = false
-pages_nginx['enable'] = false
-postgresql['shared_buffers'] = "256MB"
-postgresql['max_connections'] = 30
-postgresql['work_mem'] = "8MB"
-postgresql['maintenance_work_mem'] = "16MB"
-postgresql['effective_cache_size'] = "1MB"
-postgresql['checkpoint_timeout'] = "5min"
-postgresql['checkpoint_warning'] = "30s"
- 
-配置调整后需要重载一下
-docker exec gitlab gitlab-ctl reconfigure
-docker-compose down
-docker-compose up -d
- 
-
-9. Gitlab 启用 ContainerRegistry
-
-ContainerRegistry是Gitlab内置的Docker Registry集成组件
-集成后每个项目可获得私有的 Docker 镜像存储空间
-ContainerRegistry 可以复用 Gitlab 域名 或者 独立域名
-这里配置为复用域名（此时ContainerRegistry 将复用 Gitlab 的 TLS 证书）
-
-
-docker-compose.yaml中Gitlab服务的 GITLAB_OMNIBUS_CONFIG 节点下增加如下配置：
-
-registry_external_url "https://gitlab.example.com:4567"  # ContainerRegistry的外部访问地址
-registry_nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
-registry_nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
-gitlab_rails['registry_host'] = "gitlab.example.com"
-gitlab_rails['registry_port'] = "4567"
-gitlab_rails['registry_api_url'] = "http://localhost:5000"
-gitlab_rails['gitlab_default_projects_features_builds'] = false
-gitlab_rails['gitlab_default_projects_features_container_registry'] = false
- 
-
-端口开放增加 - 4567:4567
-服务重启 docker-compose restart Gitlab
-
-ContainerRegistry 集成后可以通过 Gitlab 账户登录： docker login gitlab.example.com:4567
-
-日常维护命令
-# Gitlab维护
-docker exec gitlab gitlab-ctl status  # gitlab各组件服务状态
-docker exec gitlab gitlab-ctl start/restart/stop [组件名]  # gitlab所有组件的统一控制（其中Unicorn组件重启完成前GitLab会报502）
-docker exec gitlab gitlab-ctl tail [/var/log/gitlab下的某子目录]  # 实时查看日志
- 
-docker exec gitlab update-permissions  # 修复gitlab版本升级后出现的权限问题
-docker exec gitlab gitlab-ctl reconfigure  # 重载配置
-docker exec -t gitlab gitlab-rake gitlab:backup:create  # 创建备份
- 
-# ContainerRegistry维护
-docker exec gitlab gitlab-ctl registry-garbage-collect  # 垃圾回收，清理废弃layer（registry停机）
- 
-
-Import Repository(Repo By Url)
-# 账号密码若存在特殊字符则需要url编码
-https://username:password@host:port/group/project.git
- 
-10. GitLab重置用户名密码
-打开终端，访问：
-gitlab-rails console
-输入：
-user = User.where(id: 1).first
-user.password='123456'
-user.password_confirmation = '123456'
-user.save! #注意加上 “！”
-然后退出命令行即可。
-quit
- gitlab-rails console production 命令 开始初始化密码
-# 在irb(main):001:0&gt; 后面通过 u=User.where(id:1).first 来查找与切换账号（User.all 可以查看所有用户）
-# 通过u.password='12345678'设置密码为12345678(这里的密码看自己喜欢)：
-# 通过u.password_confirmation='12345678' 再次确认密码
-# 通过 u.save!进行保存
-11. HTTPS SSL 支持
-
-
-nginx反向代理方式
-
-注意docker 内部没有ca支持， 需要手动添加
-
-
-
-域名提供商提供的免费证书
-
-这种证书直接用，如果是自签名证书，需要添加自己的ca root证书到服务器
-
-
-
-12. Gitlab恢复数据出现must be owner of解决方法
-按正常Gitlab备份数据gitlab-rake gitlab:backup:create
-ERROR: must be owner of extension plpgsql
-ERROR: must be owner of schema public
-ERROR: schema “public” already exists
-ERROR: must be owner of schema public
-ERROR: must be owner of extension plpgsql
-WARNING: no privileges could be revoked for “public”
-WARNING: no privileges could be revoked for “public”
-WARNING: no privileges were granted for “public”
-WARNING: no privileges were granted for “public”
-解决方法：
-**1. 修改postgresql配置 **
-cd /var/opt/gitlab/postgresql/data
-$ vi /var/opt/gitlab/postgresql/data/postgresql.conf
-listen_addresses = '*'
-找到listen_addresses = ” 改为listen_addresses = ‘*’
-修改 /var/opt/gitlab/postgresql/data/pg_hba.conf
-在这个文件最后面加入
-$ vi /var/opt/gitlab/postgresql/data/pg_hba.conf
-local   all         all                               trust
-host    all         all                               127.0.0.1/32 trust
-host    all         all                               ::1/128 trust    #ipv6 可以不配置
-2. 重启gitlab生效
-gitlab-ctl restart
-3. 修改gitlab账号为超级用户
-进入postgresql命令行
-cd /opt/gitlab/embedded/bin
-su gitlab-psql
-./psql -h 127.0.0.1 gitlabhq_production
-查看账户权限
-\du
-执行修改gitlab用户为超级权限
-ALTER USER gitlab WITH SUPERUSER;
-退出
-\q
-
-4. 从1462989681编号备份中恢复
-gitlab-rake gitlab:backup:restore BACKUP=1462989681
-这样Gitlab恢复数据就不会再报must be owner of extension plpgsql错误。
-4. 重启gitlab
-gitlab-ctl restart
-13. Gitlab Pages
-
-官方文档：https://docs.gitlab.com/ee/user/project/pages/ 。
-
-Gitlab Pages 使用 GitLab Pages daemon 服务，它是用 GO 语言实现的简单 HTTP 服务，并且可以监听外部 IP 地址以及为自定义域名和自定义证书提供支持。它通过 SNI 支持动态证书并且默认通过 HTTP2 协议发送页面。最后推荐你去看官方文档 README 以便全面了解它的工作原理。
-启用 Pages
-打开 gitlab.rb：
-sudo vim /etc/gitlab/gitlab.rb
-修改 Pages 配置：
-# Pages 服务地址
-pages_external_url "http://git.17lai.io"
-# 启用 pages
-gitlab_pages['enable'] = true
-# fails to start in Docker
-gitlab_pages['inplace_chroot'] = true
-让 Gitlab 使用当前配置：
-sudo gitlab-ctl reconfigure
-
-# stdout
-&gt; gitlab Reconfigured!
-如果没有域名怎么办呢？可以参考 Linux智能DNS服务搭建之Bind服务。
-使用 Pages
-
-官方的案例库：https://gitlab.com/pages
-
-用户文档
-一般有两种类型的Pages可以创建
-
-对于用户（username.example.io）或组（groupname.example.io）
-对于Project（username.example.io/projectname 或 groupname.example.io/projectname ）
-
-在GitLab中，usernames或groupnames是唯一的，我们经常把他们称为namespaces。在一个GitLab实例中只能有一个namespace。
-下面是Gitlab Pages类型、Project Name和 website URL对照表：
-
-GitLab Pages前提条件：
-简而言之，这是上传web站点到GitLab Pages需要的：
-
-Gitlab Pages使用的域名（向管理员询问）。
-创建一个Project。
-仓库的根目录放一个.gitlab-ci.yml，其中有个叫做pages的job。
-设置一个GitLab Runner构建web站点。
-
-部署简单的 html 项目
-
-我们在自己的 gitlab 上面创建一个测试项目：plain-html
-把项目拉取到本地：
-
-# 换成你自己的仓库地址
-git clone git@git.17lai.io:pages/plain-html.git
-
-在项目中新建 public 目录，然后添加 index.html 、 style.css 文件:
-
-&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-  &lt;head&gt;
-    &lt;meta charset="utf-8"&gt;
-    &lt;meta name="generator" content="GitLab Pages"&gt;
-    &lt;title&gt;Plain HTML site using GitLab Pages&lt;/title&gt;
-    &lt;link rel="stylesheet" href="style.css"&gt;
-  &lt;/head&gt;
-  &lt;body&gt;
-    &lt;div class="navbar"&gt;
-      &lt;a href="https://pages.gitlab.io/plain-html/"&gt;Plain HTML Example&lt;/a&gt;
-      &lt;a href="https://gitlab.com/pages/plain-html/"&gt;Repository&lt;/a&gt;
-      &lt;a href="https://gitlab.com/pages/"&gt;Other Examples&lt;/a&gt;
-    &lt;/div&gt;
-
-    &lt;h1&gt;Hello World!&lt;/h1&gt;
-
-    &lt;p&gt;
-      This is a simple plain-HTML website on GitLab Pages, without any fancy static site generator.
-    &lt;/p&gt;
-  &lt;/body&gt;
-&lt;/html&gt;
-body {
-  font-family: sans-serif;
-  margin: auto;
-  max-width: 1280px;
-}
-
-.navbar {
-  background-color: #313236;
-  border-radius: 2px;
-  max-width: 800px;
-}
-
-.navbar a {
-  color: #aaa;
-  display: inline-block;
-  font-size: 15px;
-  padding: 10px;
-  text-decoration: none;
-}
-
-.navbar a:hover {
-  color: #ffffff;
-}
-
-在项目根目录添加 .gitlab-ci.yml 文件：
-
-# This file is a template, and might need editing before it works on your project.
-# Full project: https://gitlab.com/pages/plain-html
-pages:
-  tags:
-    - html
-  stage: deploy
-  script:
-    - mkdir .public
-    - cp -r * .public
-    - mv .public public
-  artifacts:
-    paths:
-      - public
-  only:
-    - master
-
-提交代码：
-
-git add .
-git commit -m"feat(pages):  开启 pages 服务"
-git push
-最后我们回到 gitlab 服务，在 plain-html 仓库中的 Settings / pages 页面可以看到已经有对应的服务地址了：
-
-
-gitlab 服务的域名跟 pages 的不要使用同一个，防止 XSS 攻击。
-
-
-
-管理员文档：https://docs.gitlab.com/ce/administration/pages/
-
-
-用户文档：https://docs.gitlab.com/ce/user/project/pages/index.html
-
-
-gitlab pages：https://pages.gitlab.io/
-
-
-Container Registry
-
-官方文档：https://docs.gitlab.com/ee/user/packages/container_registry/
-本节修改中
-
-开启 Container Registry
-修改gitlab配置文件： vim /etc/gitlab/gitlab.rb
-//外部访问地址，此处被nginx代理，暴露给外部访问
-registry_external_url 'http://xxx.com'
-//启用
-gitlab_rails['registry_enabled'] = true
-//registry 服务ip
-gitlab_rails['registry_host'] = "172.29.1.70"
-//registry 服务真正端口
-gitlab_rails['registry_port'] = "5000"
-这里需要注意的是，registry_external_url是外部访问的url，如docker需要pull和push，都是访问该路径。然后，刷新配置，重启：
-gitlab-ctl reconfigure
-gitlab-ctl restart
-访问Docker
-# docker login https://xxx.com -u root -p xxx
-Login Succeeded
-默认需要SSL，请使用反向代理
-官方文档有说明，如果启用了双重验证（Two-Factor Authentication）则不应该输入密码，而是token：
-docker login xxx.com -u &lt;username&gt; -p &lt;token&gt;
-CI
-GitLab Continuous Integration (GitLab CI/CD)
-
-
-CI: Continuous Integration：持续集成。
-CD: Coninuous delivery and deployment：持续交付和部署。
-
-Gitlab CI/CD 是以可持续方法论进行软件开发的内建工具（continuous integration service ）。
-
-在使用 Gitlab CI 之前，我们需要先了解几个概念：
-Stage
-阶段：通俗的讲就是步骤（把一件事分解成多个步骤来完成）。 从最上面的图中可以看到在 CI 中可能会有：Build、Unit Test 、Integration Tests 等多个阶段。
-Job
-任务：就是我们在每个阶段具体要做的事情，而一个阶段可能会有多个任务。
-Pipelines
-一条流水线 （ pipeline）就是 一组 在各个阶段执行的任务。在同一阶段的多个任务是可以并行的（如果 Runner 足够多的话），当全部的任务都执行成功之后流水线将会进入下一个阶段。反之，如果其中有一个任务失败，流水线的下一个阶段将不再执行。
-Runners
-在 Gitlab CI 中，Runner 负责运行定义在 .gitlab-ci.yml 中的代码。Runner 为三种：Shared Runners、Group Runners、Specific Runners，分别表示全局共用 Runner、组共用 Runner、单个项目指定的 Runner。
-.gitlab-ci.yml
-Gitlab CI 的配置文件，该文件声明了流水线的结构和顺序，以任务为最小单元。
-文件中允许定义的元素：
-
-image：docker 镜像，当 Gitlab-Runner 的类型为 docker 时，会根据该属性指定的镜像为脚本执行容器。
-services: 指定另一个 docker 镜像，主要用于提供服务层的能力，比如 mysql 。
-before_script：任务执行前的钩子事件，比如一个 node 项目，我们可以在这里安装依赖。
-after_script：任务执行后的钩子事件，当所有的任务都执行完毕之后被调用，不管任务是否执行成功。
-stages：定义流水线中的阶段，默认的为 build 、test、deploy。如果我们要在任务中指定其他的 stage，则需要使用该属性先申明。
-cache：需要缓存的文件，比如 node 项目可以把 node_modules 缓存起来。提示：可以定义在 .gitlab-ci.yml 顶级表示项目级别的，也可以申明在单个任务中。
-variables：变量，同样可以在顶级或者单个任务中申明。
-pages：内置的一个任务，用于上传任务执行的结果到 Gitlab Pages。
-include：合并其他的 .gitlab-ci.yml 文件配置。
-在单个任务中申明的元素：
-
-script：需要执行的脚本。
-stage：标识该任务所属的阶段。
-tags：为任务打上标签，用于选择特定的 Runner。
-only：用于表明何时创建该任务。
-except：用于表明何时不创建该任务。
-when：用于表明何时运行该任务。
-allow_failure：允许失败，该任务失败时不会影响整个流水线的结果。
-artifacts：任务执行的结果，比如执行 打包任务 后的产出资源。
-dependencies：依赖的其他任务。
-retry：当任务失败时最多重试的次数。
-coverage：指定如何从任务结果中提取代码覆盖率。
-parallel：允许并行的任务实例个数。
-
-
-
-
-请注意版本问题，每个属性对版本的要求并不一致，具体的可以点击属性查看官方文档。
-
-使用 Gitlab CI
-使用 Gitlab CI 服务的两种方式： 1. Auto DevOps 2. 手动配置 CI/CD
-Auto DevOps
-Auto DevOps 是 Gitlab 11.0 推出的新功能，它提供了预定义的 CI/CD 配置，允许我们自动检测、构建、测试、发布以及监控应用。
-暂未使用，待补充。
-手动配置 CI/CD
-手动配置主要就 2 个步骤，配置 .gitlab-ci.yml 文件，添加 Gitlab Runner 运行该文件。
-
-下面，我们看看如何配置 Gitlab Runner：
-Gitlab Runner
-Gitlab Runner 是一个开源项目，用来运行 .gitlab-ci.yml 中定义的任务并把结果返给 Gitlab。
-安装
-
-官方文档：https://docs.gitlab.com/runner/install/linux-repository.html
-
-首先，添加离线仓库：
-curl -L https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | sudo bash
-然后，安装最新版本：
-sudo apt-get install gitlab-runner
-注册
-
-官方文档：https://docs.gitlab.com/runner/register/index.html
-
-首先，我们进入要配置 Runner 的 Gitlab 仓库，在 Settings -&gt; CI / CD 页面展开 Runners 配置面板可以看到已经分配的 Runner 以及注册 Runner 需要的参数：
-然后，我们使用 Gitlab-Runner 命名开始注册：
-gitlab-runner register
-执行完会该命令，终端会有交互，要求我们输入以下参数：
-
-gitlab-ci coordinator url ：gitlab 服务地址
-gitlab-ci token：上图中的 token
-description：描述信息
-tags：标签，对应 .gitlab-ci.yml 任务中配置的 tags，只有 tags 匹配的任务才会被该 Runner 执行。
-executor：执行器，即任务脚本执行的环境
-
-
-如果使用 docker 执行，则需要事先安装 Docker 环境。
-
-参数填写完毕之后，一个 Runner 便被注册成功了：
-
-我们回到 gitlab 仓库页面，然后刷新便可以看到 _fzBq4PN 这个 Runner 已经被注册到该项目：
-
-
-我们可以点击 编辑图标 对该 Runner 进行修改。我比较喜欢把 Run untagged jobs 选项勾上，这样就不用每个任务都添加对应的 tags 了（因为现在涉及到的都是一些简单的流程）。
-
-总结
-首先，CI/CD 是一种软件开发流程，Gitlab CI/CD 是 Gitlab 为实现该流程而提供的一个内置工具（服务）。 其次，我们有 Auto DevOps 与 手动配置 两种方式使用，本文讲解的主要是 手动配置 方式。
-加速Gitlab Runner
-
-gitlab runner构建镜像每次RUN 安装依赖包，都远程下载?可以缓存加速吗？ 可以的！
-
-在将GitLab Runner注册到GitLab page上，让GitLab page可以和你的Runner通信时，有一步是填写使用的executor
-输入Runner的executor：
-Please enter the executor: ssh, docker+machine, docker-ssh+machine, kubernetes, docker, parallels, virtualbox, docker-ssh, shell:
-如果你选择Docker作为Runner的executor，你还要选择默认的docker image来运行job(当然，你也可以在.gitlab-ci.yml里指明你需要用的image),这句话就跟文章使用gitlab-runner往k8s上发送curl命令实现pod中容器使用的镜像版本更新，地址： 开头讲述的那样，不过.gitlab-ci.yml里指明的image优先级高。
-注册完成后你可以在/etc/gitlab-runner里发现 config.toml文件，该文件是Runner的配置文件
-接下来就牵涉到一个重要的话题 —— Executor
-
-Shell Executor
-以宿主机作为Runner的所有jobs的执行器。Runner将会从远程仓库pull你的工程，工程的目录为：/builds。如果你使用了cache，那么cache将会存在/cache/。
-但是，它需要将构建所需的所有依赖手动安装到安装了Runner的同一台计算机上，比如使用到的git,jdk,maven,docekr等
-Docker Executor
-所有jobs的执行环境为指定的docker image所生成的container，每个job都会生成一个container并且在job结束后立即销毁。这个说的就是config.toml文件和.gitlab-ci.yml中指定的image
-Docker executor默认将所有的builds存储在/builds/(这里的路径是container里的路径，Runner配置文件config.toml里的build_dir字段可以重新指明build的目录，默认对应于宿主机的目录是在宿主机的docker volume下：/var/lib/docker/volumes//_data/)，默认将所有的caches存储在container里的/cache目录(config.toml里的cache_dir字段可以重新指明cache的目录)，注意build_dir和cache_dir指向的均是container里的目录，要想将container里的数据持久化，需要用到volumes字段，这个字段的使用和docker volume的使用是类似的，只需在config.toml的[runner.docker]部分添加volumes = ["/cache", ":rw"]即可实现container里/cache目录数据的永久保存以及将host目录挂载到相应的container目录并具有读写的功能。
-比如：
-
-# 仅作展示，未显示完整
-[runners.docker]
-  image = "jdd.io/jre:1.8.275"
-  volumes = ["/cache","/run/docker.sock:/run/docker.sock"]
-当你使用docker 或 docker+machine executors时，你可以通过设置pull_policy来决定Runner如何pull docker image。pull_policy有三种值：
-always —— Runner始终从远程pull docker image。
-if-not-present —— Runner会首先检查本地是否有该image，如果有则用本地的，如果没有则从远程拉取。
-never —— Runner始终使用本地的image。
-
-注意：这一步就是本文开头提到的，使用本地镜像，不用再从dockerhub上拉取了
-
-# 仅作展示，未显示完整
-[runners.docker]
-  image = "jdd.io/jre:1.8.275"
-  pull_policy="if-not-present" # 添加这个选项就可以了
-  volumes = ["/cache","/run/docker.sock:/run/docker.sock"]
-当你使用docker, docker+machine 或 kubernetes作为executor时，GitLab Runner将会使用特定的container来处理Git、artifacts 和cache 操作。
-权限管理
-以管理员的身份登入gitlab，点击Settings，然后选择Members，可以通过输入名字选择要分配权限的小组成员，然后分配角色，选择权限有效时间，点击Add to Project就把人员拉近到项目中。
-GitLab的角色有以下四种：
-
-Guest：可以创建issue、发表评论，不能读写版本库
-Reporter：可以克隆代码，不能提交，可以赋予测试、产品经理此权限
-Developer：可以克隆代码、开发、提交、push，可以赋予开发人员此权限
-MainMaster：可以创建项目、添加tag、保护分支、添加项目成员、编辑项目，一般GitLab管理员或者CTO才有此权限
-
-访问权限 - Visibility Level：
-这个是在建立项目时就需要选定的，主要用于决定哪些人可以访问此项目，包含3种
-
-Private - 私有，只有属于该项目成员才有原先查看
-Internal - 内部，用个Gitlab账号的人都可以clone
-Public - 公开，任何人可以clone
-
-本文作者：夜法之书       写作不易，转载请注明来源地址！
-参考链接：
-
-https://www.cnblogs.com/hgzero/p/14088215.html
-http://www.51blogs.net/2017/11/10/1110113243.html
-https://my.oschina.net/u/2400083/blog/808097
-
-
-系列教程
-全部文章RSS订阅
-Devops系列 Devops 分类 RSS 订阅
-
-自建全套开源Devops开发系统
-Git介绍以及分支模型图解
-三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
-DevOps系列---【Jenkinsfile+Dockerfile+nginx+vue】
-项目开发管理工具推荐
-Gitlab的安装及使用教程完全版
-Gitlab的安装及使用
-
-]]></content>
-      <categories>
-        <category>devops</category>
-      </categories>
-      <tags>
-        <tag>gitlab</tag>
-        <tag>git</tag>
-        <tag>docker</tag>
-        <tag>registry</tag>
-        <tag>教程</tag>
-        <tag>email</tag>
-        <tag>https</tag>
-        <tag>ssl</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Debian Lenny Laptop安装记录</title>
     <url>/posts/b1fe1bb8/</url>
     <content><![CDATA[Debian Lenny Laptop安装记录
@@ -5659,6 +4643,1022 @@ Earthly 一个更加强大的镜像构建工具
         <tag>linux</tag>
         <tag>mysql</tag>
         <tag>优化</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Gitlab的安装及使用教程完全版</title>
+    <url>/posts/acc13b70/</url>
+    <content><![CDATA[1. Gitlab概述
+
+1.1 GitLab介绍
+GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。
+GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。
+它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找
+1.2 Gitlab服务构成
+Nginx：静态web服务器。
+gitlab-shell：用于处理Git命令和修改authorized keys列表。
+gitlab-workhorse: 轻量级的反向代理服务器。
+logrotate：日志文件管理工具。
+postgresql：数据库。
+redis：缓存数据库。
+sidekiq：用于在后台执行队列任务（异步执行）。
+unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。
+1.3 Gitlab工作流程
+
+1.4 GitLab Shell
+GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表
+当通过SSH访问GitLab Server时，GitLab Shell会：
+
+限制执行预定义好的Git命令（git push，git pull，git annex）
+调用GitLab Rails API检查权限
+执行pre-receive钩子（在企业版中叫做Git钩子）
+执行用户请求的动作，处理GitLab的post-receive动作
+处理自定义的post-receive动作
+
+当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：
+如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作
+如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：
+
+调用GitLab Rails API 检查权限
+执行pre-receive钩子（在GitLab企业版中叫做Git钩子）
+执行你请求的动作
+处理GitLab的post-receive动作
+处理自定义的post-receive动作
+
+1.5 GitLab Workhorse
+GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。
+2. Gitlab的安装部署
+
+Gitlab要求服务器内存2G以上
+
+2.1 方式一:下载gitlab-ce的rpm包
+
+gitlab官方rpm包下载
+清华的源
+
+将对应版本的gitlab-ce下载到本地后，直接yum安装即可
+# 要先将这个rpm包下载到本地
+yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm
+2.2 方式二:配置yum源
+在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：
+[gitlab-ce]
+name=gitlab-ce
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/
+Repo_gpgcheck=0
+Enabled=1
+Gpgkey=https://packages.gitlab.com/gpg.key
+然后创建cache，再直接安装gitlab-ce
+yum makecache  # 这一步会创建大量的数据
+ 
+# 直接安装最新版
+yum install -y gitlab-ce
+ 
+# 如果要安装指定的版本，在后面填上版本号即可
+yum install -y  gitlab-ce-13.6.1
+ 
+# 如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
+yum install gitlab-ce -y --nogpgcheck
+2.2.1. 单服务启动模式
+docker run -d --name gitlab --hostname gitlab.example.com \
+-e GITLAB_OMNIBUS_CONFIG="
+    external_url 'https://gitlab.example.com'
+    gitlab_rails['gitlab_shell_ssh_port'] = 22
+    nginx['redirect_http_to_https'] = true
+    nginx['ssl_dhparam'] = '/etc/gitlab/ssl/dhparam.pem'
+    nginx['ssl_certificate'] = '/etc/gitlab/ssl/domain.crt'
+    nginx['ssl_certificate_key'] = '/etc/gitlab/ssl/domain.key'
+    nginx['custom_gitlab_server_config'] = 'location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n'
+    high_availability['mountpoint'] = ['/etc/gitlab', '/var/log/gitlab' '/var/opt/gitlab'  # 严格限定gitlab服务启动前，指定文件系统挂完毕
+" \
+-p 22:22 -p 80:80 -p 443:443 \
+-v /srv/gitlab/config:/etc/gitlab \
+-v /srv/gitlab/logs:/var/log/gitlab \
+-v /srv/gitlab/data:/var/opt/gitlab \
+-v /etc/certs:/etc/gitlab/ssl \
+--restart=always gitlab/gitlab-ce:latest
+ 
+2.2.1. Compose服务编排模式(推荐方式)
+docker pull gitlab/gitlab-ce:latest
+ 
+############################ 多行命令开始 ##########################
+cat &gt; docker-compose.yaml &lt;&lt;EOF
+version: '2'
+ 
+services:
+ 
+  Gitlab:
+    image: 'gitlab/gitlab-ce:latest'
+    container_name: 'gitlab'
+    hostname: 'gitlab.example.com'
+    restart: always
+    ports:
+      - '22:22'
+      - '80:80'
+      - '443:443'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        # Add any other gitlab.rb configuration here, each on its own line
+        external_url 'https://gitlab.example.com'
+        gitlab_rails['gitlab_shell_ssh_port'] = 22
+        nginx['redirect_http_to_https'] = true
+        nginx['ssl_dhparam'] = "/etc/gitlab/ssl/dhparam.pem"
+        nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
+        nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
+        nginx['custom_gitlab_server_config'] = "location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n"
+        high_availability['mountpoint'] = ["/etc/gitlab", "/var/log/gitlab", "/var/opt/gitlab"]  # 严格限定gitlab服务启动前，指定文件系统挂完毕
+    volumes:
+      - /srv/gitlab/config:/etc/gitlab
+      - /srv/gitlab/logs:/var/log/gitlab
+      - /srv/gitlab/data:/var/opt/gitlab
+      - /etc/certs:/etc/gitlab/ssl
+EOF
+############################ 多行命令结束 ##########################
+ 
+# 启动服务
+docker-compose -f docker-compose.yaml up -d
+ 
+2.3 gitlab的配置
+配置文件位置  /etc/gitlab/gitlab.rb
+[root@centos7 test]# vim /etc/gitlab/gitlab.rb
+ 
+[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
+ 
+external_url 'http://10.0.0.51'  # 这里一定要加上http://
+ 
+# 配置邮件服务
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.qq.com"
+gitlab_rails['smtp_port'] = 25
+gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
+gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
+gitlab_rails['smtp_domain'] = "qq.com"
+gitlab_rails['smtp_authentication'] = "login"
+gitlab_rails['smtp_enable_starttls_auto'] = true
+gitlab_rails['smtp_tls'] = false
+gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
+user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址
+修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。
+gitlab-ctl reconfigure # 重载配置文件
+gitlab-ctl restart
+测试邮件服务器
+gitlab-rails console
+Notify.test_email('rollinghell@foxmail.com','testbiaoti','testzhegnwen1').deliver_now
+[root@test102 ~]# gitlab-rails console
+--------------------------------------------------------------------------------
+ GitLab:       12.5.0 (1f0ab8978ef)
+GitLab Shell: 10.2.0
+ PostgreSQL:   10.9
+--------------------------------------------------------------------------------
+Loading production environment (Rails 5.2.3)
+irb(main):001:0&gt; Notify.test_email('andycrusoe@gmail.com','test','test').deliver_now
+Notify#test_email: processed outbound mail in 1.4ms
+Sent mail to anliven@126.com (73.0ms)
+Date: Wed, 27 Nov 2019 15:12:58 +0800
+From: GitLab &lt;gitlab@192.168.16.102&gt;
+Reply-To: GitLab &lt;noreply@192.168.16.102&gt;
+To: anliven@126.com
+Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;
+Subject: test
+Mime-Version: 1.0
+Content-Type: text/html;
+charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Auto-Submitted: auto-generated
+X-Auto-Response-Suppress: All
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd"&gt;
+&lt;html&gt;&lt;body&gt;&lt;p&gt;test&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
+=&gt; #&lt;Mail::Message:70141649239780, Multipart: false, Headers: &lt;Date: Wed, 27 Nov 2019 15:12:58 +0800&gt;, &lt;From: GitLab &lt;gitlab@192.168.16.102&gt;&gt;, &lt;Reply-To: GitLab &lt;noreply@192.168.16.102&gt;&gt;, &lt;To: anliven@126.com&gt;, &lt;Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;&gt;, &lt;Subject: test&gt;, &lt;Mime-Version: 1.0&gt;, &lt;Content-Type: text/html; charset=UTF-8&gt;, &lt;Content-Transfer-Encoding: 7bit&gt;, &lt;Auto-Submitted: auto-generated&gt;, &lt;X-Auto-Response-Suppress: All&gt;&gt;
+irb(main):002:0&gt;
+irb(main):003:0&gt; exit
+[root@test102 ~]#
+ 
+配置gitlab代理
+https://docs.gitlab.com/omnibus/settings/environment-variables.html
+gitaly['env'] = {
+    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
+    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
+}
+2.4 Gitlab常用命令
+gitlab-ctl start         # 启动所有 gitlab 组件
+gitlab-ctl stop          # 停止所有 gitlab 组件
+gitlab-ctl restart       # 重启所有 gitlab 组件
+gitlab-ctl status        # 查看服务状态
+ 
+gitlab-ctl reconfigure   # 启动服务
+gitlab-ctl show-config   # 验证配置文件
+ 
+gitlab-ctl tail          # 查看日志
+ 
+gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
+ 
+vim /etc/gitlab/gitlab.rb # 修改默认的配置文件
+2.5 gitlab-ctl常用命令介绍
+
+
+
+命令
+说明
+
+
+
+
+check-config
+检查在gitlab中是否有任何配置。在指定版本中删除的rb
+
+
+deploy-page
+安装部署页面
+
+
+diff-config
+将用户配置与包可用配置进行比较
+
+
+remove-accounts
+删除所有用户和组
+
+
+upgrade
+升级
+
+
+service-list
+查看所有服务
+
+
+once
+如果GitLab服务停止了就启动服务，如果已启动就不做任何操作
+
+
+restart
+重启GitLab服务
+
+
+start
+如果GitLab服务停止了就启动服务，如果已启动就重启服务
+
+
+stop
+停止GitLab服务
+
+
+status
+查看GitLab服务状态
+
+
+reconfigure
+重新配置GitLab并启动
+
+
+
+3. Gitlab的使用
+
+Gitlab安装好后，设置密码，管理账户为root
+
+3.1 创建Group
+
+填上组名即可，这里组名为java
+
+
+
+3.2 创建User
+
+创建四个User：pm、dev1、dev2、dev3
+
+
+
+3.3 添加User到Group中并授权
+
+3.4 创建Project并配置SSH
+
+
+
+
+3.5 在项目中添加成员
+
+
+3.6 将本地文件推送到Gitlab
+# 将app01项目克隆下来
+git clone git@10.0.0.51:java/app01.git
+ 
+# 初始化配置
+git config --global user.name "hgzero"
+git config --global user.email "hgzero@qq.com"
+ 
+# 在app01目录下新建一些文件
+ 
+# 推送到gitlab
+git add .
+git commit -m "first edition"
+git push origin master
+
+4. 制定开发计划
+4.1 创建开发计划
+
+项目：app01
+版本：v1.0
+
+
+4.2 创建里程碑Milestones
+
+用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）
+要根据开发计划来创建Milestones
+
+
+
+
+
+4.3 根据开发计划创建issue
+
+创建4个issue，分派给dev1和dev2这两个开发人员
+
+
+
+
+
+
+
+**4.4 开发者登录账号查看分派的任务 **
+
+然后开发dev1登录gitlab，就能看到任务已经分配过来了
+
+
+4.5 开发流程
+
+公司里的开发开始任务
+
+# 1. 先从仓库把项目拉下来
+git clone git@10.0.0.51:java/app01.git
+cd app01/
+ 
+# 2.先创建一个自己的分支，然后进行开发
+git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
+git status
+ 
+# 3. 开始开发首页
+echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
+ 
+# 4. 开发完成后，把项目传到仓库
+git add .
+git commit -m "index"
+# 如果写成 git commit -m "close #2" ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
+ 
+# 传到index分支
+git push origin index
+4.6 合并分支
+1）开发dev1发送合并分支请求给pm
+
+
+
+2）pm收到开发的Merge请求后进行处理
+
+使用pm登录，就可以看到pm已经收到了合并请求merge request
+
+
+
+
+
+3）开发dev1确认任务完成
+
+退出pm账户，登入dev1账户：
+
+
+
+或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close
+
+
+
+这个时候Milestones的进度已经往前进了一些了：
+
+
+4.7 开发其他功能
+
+然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发
+
+git checkout master  # 切换到master
+git pull             # 从远端仓库拉取数据
+# 然后再进行其他操作
+5. Gitlab备份恢复
+5.1 备份gitlab
+1）修改配置文件
+
+/etc/gitlab/gitlab.rb
+
+# 备份保存的位置，这里是默认位置，可修改成指定的位置
+gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
+ 
+# 设置备份保存的时间，超过此时间的日志将会被新覆盖
+gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
+ 
+# 特别注意：
+#     如果自定义了备份保存位置，则要修改备份目录的权限，比如：
+#     chown -R git.git /data/backup/gitlab
+
+配置完成后要重启以使配置生效
+
+# 重读配置文件
+gitlab-ctl reconfigure
+ 
+# 重启gitlab
+gitlab-ctl restart
+2）设置定时任务
+# 每天凌晨2点定时创建备份
+# 将一下内容写入到定时任务中 crontab -e
+0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create
+ 
+# 备份策略建议：
+#     本地保留3到7天，在异地备份永久保存
+3）备份时间的识别
+# 备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
+ 
+data  -d  @1494170842
+5.2 恢复gitlab
+1）停止停止相关数据连接,数据写入服务
+# 停止数据写入服务
+gitlab-ctl stop puma
+gitlab-ctl stop sidekiq
+2）进行数据恢复并重启
+# 进行恢复
+gitlab-rake gitlab:backup:restore BACKUP=1627839447_2021_08_01_14.1.1-ee  # 这个时间戳就是刚刚备份的文件前面的时间戳
+ 
+# 重启
+gitlab-ctl restart
+6. gitlab邮件通知配置
+
+vim  /etc/gitlab/gitlab.rb
+
+gitlab_rails['time_zone'] = 'Asia/Shanghai'
+ 
+gitlab_rails['gitlab_email_enabled'] = true
+gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
+gitlab_rails['gitlab_email_display_name'] = 'gitlab'
+ 
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
+gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
+gitlab_rails['smtp_user_name'] = "smtp用户名"
+gitlab_rails['smtp_password'] = "smtp用户密码"
+gitlab_rails['smtp_domain'] = "163.com"
+gitlab_rails['smtp_authentication'] = "login"
+启用邮件功能
+Gitlab 的 Compose 配置 GITLAB_OMNIBUS_CONFIG 节点下增加如下几行：
+########## 邮件服务配置 ##########
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.exmail.qq.com"
+gitlab_rails['smtp_port'] = 465
+gitlab_rails['smtp_tls'] = true
+gitlab_rails['smtp_user_name'] = "账号"
+gitlab_rails['smtp_password'] = "密码"
+gitlab_rails['smtp_authentication'] = "login"
+gitlab_rails['smtp_enable_starttls_auto'] = true 
+gitlab_rails['gitlab_email_from'] = "发件人邮箱"
+ 
+7. 使用SourceTree进行项目开发
+
+7.1 项目拉取
+
+先把项目克隆下来
+
+
+
+
+如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加
+
+
+
+7.2 创建分支进行功能开发
+1）新建立一个叫“pay”的分支
+
+
+2）进行功能开发
+
+7.3 提交项目
+1）开发pay功能完成后进行提交
+
+可以看到SourceTree中已经有“未提交的更改”
+
+
+
+2）添加“用户信息”
+
+** 3）进行提交**
+
+
+注释也可以写成  close #3    ，作用是提交完成后关闭3号issue
+
+7.4 推送到仓库
+
+
+
+然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了
+
+7.5 项目上线
+1）当所有工作完成之后，就可以进行上线了
+
+2）打标签
+
+上线先打个标签
+
+
+
+
+** 3）删除无用分支**
+
+然后删除已经合并到主干中的不必要的分支，如index、pay等
+最后一定要注意时间一定要同步，不然会错乱
+
+8. Gitlab调优
+gitlab对内存资源的消耗比较厉害
+其中尤以 sidekiq队列 及 unicorn服务 两个组件对内存消耗最多
+可以再容器启动时对相关参数进行微调：
+unicorn['worker_processes'] = 1
+unicorn['worker_memory_limit_min'] = "300 * 1 &lt;&lt; 20"
+unicorn['worker_memory_limit_max'] = "400 * 1 &lt;&lt; 20"
+unicorn['worker_timeout'] = 15
+sidekiq['concurrency'] = 10
+sidekiq_cluster['enable'] = false
+sidekiq_cluster['ha'] = false
+redis['maxclients'] = "100"
+nginx['worker_processes'] = 2
+nginx['worker_connections'] = 512
+nginx['keepalive_timeout'] = 300
+nginx['cache_max_size'] = '200m'
+mattermost['enable'] = false
+mattermost_nginx['enable'] = false
+gitlab_pages['enable'] = false
+pages_nginx['enable'] = false
+postgresql['shared_buffers'] = "256MB"
+postgresql['max_connections'] = 30
+postgresql['work_mem'] = "8MB"
+postgresql['maintenance_work_mem'] = "16MB"
+postgresql['effective_cache_size'] = "1MB"
+postgresql['checkpoint_timeout'] = "5min"
+postgresql['checkpoint_warning'] = "30s"
+ 
+配置调整后需要重载一下
+docker exec gitlab gitlab-ctl reconfigure
+docker-compose down
+docker-compose up -d
+ 
+
+9. Gitlab 启用 ContainerRegistry
+
+ContainerRegistry是Gitlab内置的Docker Registry集成组件
+集成后每个项目可获得私有的 Docker 镜像存储空间
+ContainerRegistry 可以复用 Gitlab 域名 或者 独立域名
+这里配置为复用域名（此时ContainerRegistry 将复用 Gitlab 的 TLS 证书）
+
+
+docker-compose.yaml中Gitlab服务的 GITLAB_OMNIBUS_CONFIG 节点下增加如下配置：
+
+registry_external_url "https://gitlab.example.com:4567"  # ContainerRegistry的外部访问地址
+registry_nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
+registry_nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
+gitlab_rails['registry_host'] = "gitlab.example.com"
+gitlab_rails['registry_port'] = "4567"
+gitlab_rails['registry_api_url'] = "http://localhost:5000"
+gitlab_rails['gitlab_default_projects_features_builds'] = false
+gitlab_rails['gitlab_default_projects_features_container_registry'] = false
+ 
+
+端口开放增加 - 4567:4567
+服务重启 docker-compose restart Gitlab
+
+ContainerRegistry 集成后可以通过 Gitlab 账户登录： docker login gitlab.example.com:4567
+
+日常维护命令
+# Gitlab维护
+docker exec gitlab gitlab-ctl status  # gitlab各组件服务状态
+docker exec gitlab gitlab-ctl start/restart/stop [组件名]  # gitlab所有组件的统一控制（其中Unicorn组件重启完成前GitLab会报502）
+docker exec gitlab gitlab-ctl tail [/var/log/gitlab下的某子目录]  # 实时查看日志
+ 
+docker exec gitlab update-permissions  # 修复gitlab版本升级后出现的权限问题
+docker exec gitlab gitlab-ctl reconfigure  # 重载配置
+docker exec -t gitlab gitlab-rake gitlab:backup:create  # 创建备份
+ 
+# ContainerRegistry维护
+docker exec gitlab gitlab-ctl registry-garbage-collect  # 垃圾回收，清理废弃layer（registry停机）
+ 
+
+Import Repository(Repo By Url)
+# 账号密码若存在特殊字符则需要url编码
+https://username:password@host:port/group/project.git
+ 
+10. GitLab重置用户名密码
+打开终端，访问：
+gitlab-rails console
+输入：
+user = User.where(id: 1).first
+user.password='123456'
+user.password_confirmation = '123456'
+user.save! #注意加上 “！”
+然后退出命令行即可。
+quit
+ gitlab-rails console production 命令 开始初始化密码
+# 在irb(main):001:0&gt; 后面通过 u=User.where(id:1).first 来查找与切换账号（User.all 可以查看所有用户）
+# 通过u.password='12345678'设置密码为12345678(这里的密码看自己喜欢)：
+# 通过u.password_confirmation='12345678' 再次确认密码
+# 通过 u.save!进行保存
+11. HTTPS SSL 支持
+
+
+nginx反向代理方式
+
+注意docker 内部没有ca支持， 需要手动添加
+
+
+
+域名提供商提供的免费证书
+
+这种证书直接用，如果是自签名证书，需要添加自己的ca root证书到服务器
+
+
+
+12. Gitlab恢复数据出现must be owner of解决方法
+按正常Gitlab备份数据gitlab-rake gitlab:backup:create
+ERROR: must be owner of extension plpgsql
+ERROR: must be owner of schema public
+ERROR: schema “public” already exists
+ERROR: must be owner of schema public
+ERROR: must be owner of extension plpgsql
+WARNING: no privileges could be revoked for “public”
+WARNING: no privileges could be revoked for “public”
+WARNING: no privileges were granted for “public”
+WARNING: no privileges were granted for “public”
+解决方法：
+**1. 修改postgresql配置 **
+cd /var/opt/gitlab/postgresql/data
+$ vi /var/opt/gitlab/postgresql/data/postgresql.conf
+listen_addresses = '*'
+找到listen_addresses = ” 改为listen_addresses = ‘*’
+修改 /var/opt/gitlab/postgresql/data/pg_hba.conf
+在这个文件最后面加入
+$ vi /var/opt/gitlab/postgresql/data/pg_hba.conf
+local   all         all                               trust
+host    all         all                               127.0.0.1/32 trust
+host    all         all                               ::1/128 trust    #ipv6 可以不配置
+2. 重启gitlab生效
+gitlab-ctl restart
+3. 修改gitlab账号为超级用户
+进入postgresql命令行
+cd /opt/gitlab/embedded/bin
+su gitlab-psql
+./psql -h 127.0.0.1 gitlabhq_production
+查看账户权限
+\du
+执行修改gitlab用户为超级权限
+ALTER USER gitlab WITH SUPERUSER;
+退出
+\q
+
+4. 从1462989681编号备份中恢复
+gitlab-rake gitlab:backup:restore BACKUP=1462989681
+这样Gitlab恢复数据就不会再报must be owner of extension plpgsql错误。
+4. 重启gitlab
+gitlab-ctl restart
+13. Gitlab Pages
+
+官方文档：https://docs.gitlab.com/ee/user/project/pages/ 。
+
+Gitlab Pages 使用 GitLab Pages daemon 服务，它是用 GO 语言实现的简单 HTTP 服务，并且可以监听外部 IP 地址以及为自定义域名和自定义证书提供支持。它通过 SNI 支持动态证书并且默认通过 HTTP2 协议发送页面。最后推荐你去看官方文档 README 以便全面了解它的工作原理。
+启用 Pages
+打开 gitlab.rb：
+sudo vim /etc/gitlab/gitlab.rb
+修改 Pages 配置：
+# Pages 服务地址
+pages_external_url "http://git.17lai.io"
+# 启用 pages
+gitlab_pages['enable'] = true
+# fails to start in Docker
+gitlab_pages['inplace_chroot'] = true
+让 Gitlab 使用当前配置：
+sudo gitlab-ctl reconfigure
+
+# stdout
+&gt; gitlab Reconfigured!
+如果没有域名怎么办呢？可以参考 Linux智能DNS服务搭建之Bind服务。
+使用 Pages
+
+官方的案例库：https://gitlab.com/pages
+
+用户文档
+一般有两种类型的Pages可以创建
+
+对于用户（username.example.io）或组（groupname.example.io）
+对于Project（username.example.io/projectname 或 groupname.example.io/projectname ）
+
+在GitLab中，usernames或groupnames是唯一的，我们经常把他们称为namespaces。在一个GitLab实例中只能有一个namespace。
+下面是Gitlab Pages类型、Project Name和 website URL对照表：
+
+GitLab Pages前提条件：
+简而言之，这是上传web站点到GitLab Pages需要的：
+
+Gitlab Pages使用的域名（向管理员询问）。
+创建一个Project。
+仓库的根目录放一个.gitlab-ci.yml，其中有个叫做pages的job。
+设置一个GitLab Runner构建web站点。
+
+部署简单的 html 项目
+
+我们在自己的 gitlab 上面创建一个测试项目：plain-html
+把项目拉取到本地：
+
+# 换成你自己的仓库地址
+git clone git@git.17lai.io:pages/plain-html.git
+
+在项目中新建 public 目录，然后添加 index.html 、 style.css 文件:
+
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;meta charset="utf-8"&gt;
+    &lt;meta name="generator" content="GitLab Pages"&gt;
+    &lt;title&gt;Plain HTML site using GitLab Pages&lt;/title&gt;
+    &lt;link rel="stylesheet" href="style.css"&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div class="navbar"&gt;
+      &lt;a href="https://pages.gitlab.io/plain-html/"&gt;Plain HTML Example&lt;/a&gt;
+      &lt;a href="https://gitlab.com/pages/plain-html/"&gt;Repository&lt;/a&gt;
+      &lt;a href="https://gitlab.com/pages/"&gt;Other Examples&lt;/a&gt;
+    &lt;/div&gt;
+
+    &lt;h1&gt;Hello World!&lt;/h1&gt;
+
+    &lt;p&gt;
+      This is a simple plain-HTML website on GitLab Pages, without any fancy static site generator.
+    &lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+body {
+  font-family: sans-serif;
+  margin: auto;
+  max-width: 1280px;
+}
+
+.navbar {
+  background-color: #313236;
+  border-radius: 2px;
+  max-width: 800px;
+}
+
+.navbar a {
+  color: #aaa;
+  display: inline-block;
+  font-size: 15px;
+  padding: 10px;
+  text-decoration: none;
+}
+
+.navbar a:hover {
+  color: #ffffff;
+}
+
+在项目根目录添加 .gitlab-ci.yml 文件：
+
+# This file is a template, and might need editing before it works on your project.
+# Full project: https://gitlab.com/pages/plain-html
+pages:
+  tags:
+    - html
+  stage: deploy
+  script:
+    - mkdir .public
+    - cp -r * .public
+    - mv .public public
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
+
+提交代码：
+
+git add .
+git commit -m"feat(pages):  开启 pages 服务"
+git push
+最后我们回到 gitlab 服务，在 plain-html 仓库中的 Settings / pages 页面可以看到已经有对应的服务地址了：
+
+
+gitlab 服务的域名跟 pages 的不要使用同一个，防止 XSS 攻击。
+
+
+
+管理员文档：https://docs.gitlab.com/ce/administration/pages/
+
+
+用户文档：https://docs.gitlab.com/ce/user/project/pages/index.html
+
+
+gitlab pages：https://pages.gitlab.io/
+
+
+Container Registry
+
+官方文档：https://docs.gitlab.com/ee/user/packages/container_registry/
+本节修改中
+
+开启 Container Registry
+修改gitlab配置文件： vim /etc/gitlab/gitlab.rb
+//外部访问地址，此处被nginx代理，暴露给外部访问
+registry_external_url 'http://xxx.com'
+//启用
+gitlab_rails['registry_enabled'] = true
+//registry 服务ip
+gitlab_rails['registry_host'] = "172.29.1.70"
+//registry 服务真正端口
+gitlab_rails['registry_port'] = "5000"
+这里需要注意的是，registry_external_url是外部访问的url，如docker需要pull和push，都是访问该路径。然后，刷新配置，重启：
+gitlab-ctl reconfigure
+gitlab-ctl restart
+访问Docker
+# docker login https://xxx.com -u root -p xxx
+Login Succeeded
+默认需要SSL，请使用反向代理
+官方文档有说明，如果启用了双重验证（Two-Factor Authentication）则不应该输入密码，而是token：
+docker login xxx.com -u &lt;username&gt; -p &lt;token&gt;
+CI
+GitLab Continuous Integration (GitLab CI/CD)
+
+
+CI: Continuous Integration：持续集成。
+CD: Coninuous delivery and deployment：持续交付和部署。
+
+Gitlab CI/CD 是以可持续方法论进行软件开发的内建工具（continuous integration service ）。
+
+在使用 Gitlab CI 之前，我们需要先了解几个概念：
+Stage
+阶段：通俗的讲就是步骤（把一件事分解成多个步骤来完成）。 从最上面的图中可以看到在 CI 中可能会有：Build、Unit Test 、Integration Tests 等多个阶段。
+Job
+任务：就是我们在每个阶段具体要做的事情，而一个阶段可能会有多个任务。
+Pipelines
+一条流水线 （ pipeline）就是 一组 在各个阶段执行的任务。在同一阶段的多个任务是可以并行的（如果 Runner 足够多的话），当全部的任务都执行成功之后流水线将会进入下一个阶段。反之，如果其中有一个任务失败，流水线的下一个阶段将不再执行。
+Runners
+在 Gitlab CI 中，Runner 负责运行定义在 .gitlab-ci.yml 中的代码。Runner 为三种：Shared Runners、Group Runners、Specific Runners，分别表示全局共用 Runner、组共用 Runner、单个项目指定的 Runner。
+.gitlab-ci.yml
+Gitlab CI 的配置文件，该文件声明了流水线的结构和顺序，以任务为最小单元。
+文件中允许定义的元素：
+
+image：docker 镜像，当 Gitlab-Runner 的类型为 docker 时，会根据该属性指定的镜像为脚本执行容器。
+services: 指定另一个 docker 镜像，主要用于提供服务层的能力，比如 mysql 。
+before_script：任务执行前的钩子事件，比如一个 node 项目，我们可以在这里安装依赖。
+after_script：任务执行后的钩子事件，当所有的任务都执行完毕之后被调用，不管任务是否执行成功。
+stages：定义流水线中的阶段，默认的为 build 、test、deploy。如果我们要在任务中指定其他的 stage，则需要使用该属性先申明。
+cache：需要缓存的文件，比如 node 项目可以把 node_modules 缓存起来。提示：可以定义在 .gitlab-ci.yml 顶级表示项目级别的，也可以申明在单个任务中。
+variables：变量，同样可以在顶级或者单个任务中申明。
+pages：内置的一个任务，用于上传任务执行的结果到 Gitlab Pages。
+include：合并其他的 .gitlab-ci.yml 文件配置。
+在单个任务中申明的元素：
+
+script：需要执行的脚本。
+stage：标识该任务所属的阶段。
+tags：为任务打上标签，用于选择特定的 Runner。
+only：用于表明何时创建该任务。
+except：用于表明何时不创建该任务。
+when：用于表明何时运行该任务。
+allow_failure：允许失败，该任务失败时不会影响整个流水线的结果。
+artifacts：任务执行的结果，比如执行 打包任务 后的产出资源。
+dependencies：依赖的其他任务。
+retry：当任务失败时最多重试的次数。
+coverage：指定如何从任务结果中提取代码覆盖率。
+parallel：允许并行的任务实例个数。
+
+
+
+
+请注意版本问题，每个属性对版本的要求并不一致，具体的可以点击属性查看官方文档。
+
+使用 Gitlab CI
+使用 Gitlab CI 服务的两种方式： 1. Auto DevOps 2. 手动配置 CI/CD
+Auto DevOps
+Auto DevOps 是 Gitlab 11.0 推出的新功能，它提供了预定义的 CI/CD 配置，允许我们自动检测、构建、测试、发布以及监控应用。
+暂未使用，待补充。
+手动配置 CI/CD
+手动配置主要就 2 个步骤，配置 .gitlab-ci.yml 文件，添加 Gitlab Runner 运行该文件。
+
+下面，我们看看如何配置 Gitlab Runner：
+Gitlab Runner
+Gitlab Runner 是一个开源项目，用来运行 .gitlab-ci.yml 中定义的任务并把结果返给 Gitlab。
+安装
+
+官方文档：https://docs.gitlab.com/runner/install/linux-repository.html
+
+首先，添加离线仓库：
+curl -L https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | sudo bash
+然后，安装最新版本：
+sudo apt-get install gitlab-runner
+注册
+
+官方文档：https://docs.gitlab.com/runner/register/index.html
+
+首先，我们进入要配置 Runner 的 Gitlab 仓库，在 Settings -&gt; CI / CD 页面展开 Runners 配置面板可以看到已经分配的 Runner 以及注册 Runner 需要的参数：
+然后，我们使用 Gitlab-Runner 命名开始注册：
+gitlab-runner register
+执行完会该命令，终端会有交互，要求我们输入以下参数：
+
+gitlab-ci coordinator url ：gitlab 服务地址
+gitlab-ci token：上图中的 token
+description：描述信息
+tags：标签，对应 .gitlab-ci.yml 任务中配置的 tags，只有 tags 匹配的任务才会被该 Runner 执行。
+executor：执行器，即任务脚本执行的环境
+
+
+如果使用 docker 执行，则需要事先安装 Docker 环境。
+
+参数填写完毕之后，一个 Runner 便被注册成功了：
+
+我们回到 gitlab 仓库页面，然后刷新便可以看到 _fzBq4PN 这个 Runner 已经被注册到该项目：
+
+
+我们可以点击 编辑图标 对该 Runner 进行修改。我比较喜欢把 Run untagged jobs 选项勾上，这样就不用每个任务都添加对应的 tags 了（因为现在涉及到的都是一些简单的流程）。
+
+总结
+首先，CI/CD 是一种软件开发流程，Gitlab CI/CD 是 Gitlab 为实现该流程而提供的一个内置工具（服务）。 其次，我们有 Auto DevOps 与 手动配置 两种方式使用，本文讲解的主要是 手动配置 方式。
+加速Gitlab Runner
+
+gitlab runner构建镜像每次RUN 安装依赖包，都远程下载?可以缓存加速吗？ 可以的！
+
+在将GitLab Runner注册到GitLab page上，让GitLab page可以和你的Runner通信时，有一步是填写使用的executor
+输入Runner的executor：
+Please enter the executor: ssh, docker+machine, docker-ssh+machine, kubernetes, docker, parallels, virtualbox, docker-ssh, shell:
+如果你选择Docker作为Runner的executor，你还要选择默认的docker image来运行job(当然，你也可以在.gitlab-ci.yml里指明你需要用的image),这句话就跟文章使用gitlab-runner往k8s上发送curl命令实现pod中容器使用的镜像版本更新，地址： 开头讲述的那样，不过.gitlab-ci.yml里指明的image优先级高。
+注册完成后你可以在/etc/gitlab-runner里发现 config.toml文件，该文件是Runner的配置文件
+接下来就牵涉到一个重要的话题 —— Executor
+
+Shell Executor
+以宿主机作为Runner的所有jobs的执行器。Runner将会从远程仓库pull你的工程，工程的目录为：/builds。如果你使用了cache，那么cache将会存在/cache/。
+但是，它需要将构建所需的所有依赖手动安装到安装了Runner的同一台计算机上，比如使用到的git,jdk,maven,docekr等
+Docker Executor
+所有jobs的执行环境为指定的docker image所生成的container，每个job都会生成一个container并且在job结束后立即销毁。这个说的就是config.toml文件和.gitlab-ci.yml中指定的image
+Docker executor默认将所有的builds存储在/builds/(这里的路径是container里的路径，Runner配置文件config.toml里的build_dir字段可以重新指明build的目录，默认对应于宿主机的目录是在宿主机的docker volume下：/var/lib/docker/volumes//_data/)，默认将所有的caches存储在container里的/cache目录(config.toml里的cache_dir字段可以重新指明cache的目录)，注意build_dir和cache_dir指向的均是container里的目录，要想将container里的数据持久化，需要用到volumes字段，这个字段的使用和docker volume的使用是类似的，只需在config.toml的[runner.docker]部分添加volumes = ["/cache", ":rw"]即可实现container里/cache目录数据的永久保存以及将host目录挂载到相应的container目录并具有读写的功能。
+比如：
+
+# 仅作展示，未显示完整
+[runners.docker]
+  image = "jdd.io/jre:1.8.275"
+  volumes = ["/cache","/run/docker.sock:/run/docker.sock"]
+当你使用docker 或 docker+machine executors时，你可以通过设置pull_policy来决定Runner如何pull docker image。pull_policy有三种值：
+always —— Runner始终从远程pull docker image。
+if-not-present —— Runner会首先检查本地是否有该image，如果有则用本地的，如果没有则从远程拉取。
+never —— Runner始终使用本地的image。
+
+注意：这一步就是本文开头提到的，使用本地镜像，不用再从dockerhub上拉取了
+
+# 仅作展示，未显示完整
+[runners.docker]
+  image = "jdd.io/jre:1.8.275"
+  pull_policy="if-not-present" # 添加这个选项就可以了
+  volumes = ["/cache","/run/docker.sock:/run/docker.sock"]
+当你使用docker, docker+machine 或 kubernetes作为executor时，GitLab Runner将会使用特定的container来处理Git、artifacts 和cache 操作。
+权限管理
+以管理员的身份登入gitlab，点击Settings，然后选择Members，可以通过输入名字选择要分配权限的小组成员，然后分配角色，选择权限有效时间，点击Add to Project就把人员拉近到项目中。
+GitLab的角色有以下四种：
+
+Guest：可以创建issue、发表评论，不能读写版本库
+Reporter：可以克隆代码，不能提交，可以赋予测试、产品经理此权限
+Developer：可以克隆代码、开发、提交、push，可以赋予开发人员此权限
+MainMaster：可以创建项目、添加tag、保护分支、添加项目成员、编辑项目，一般GitLab管理员或者CTO才有此权限
+
+访问权限 - Visibility Level：
+这个是在建立项目时就需要选定的，主要用于决定哪些人可以访问此项目，包含3种
+
+Private - 私有，只有属于该项目成员才有原先查看
+Internal - 内部，用个Gitlab账号的人都可以clone
+Public - 公开，任何人可以clone
+
+本文作者：夜法之书       写作不易，转载请注明来源地址！
+参考链接：
+
+https://www.cnblogs.com/hgzero/p/14088215.html
+http://www.51blogs.net/2017/11/10/1110113243.html
+https://my.oschina.net/u/2400083/blog/808097
+
+
+系列教程
+全部文章RSS订阅
+Devops系列 Devops 分类 RSS 订阅
+
+自建全套开源Devops开发系统
+Git介绍以及分支模型图解
+三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
+DevOps系列---【Jenkinsfile+Dockerfile+nginx+vue】
+项目开发管理工具推荐
+Gitlab的安装及使用教程完全版
+Gitlab的安装及使用
+
+]]></content>
+      <categories>
+        <category>devops</category>
+      </categories>
+      <tags>
+        <tag>gitlab</tag>
+        <tag>git</tag>
+        <tag>docker</tag>
+        <tag>registry</tag>
+        <tag>教程</tag>
+        <tag>email</tag>
+        <tag>https</tag>
+        <tag>ssl</tag>
       </tags>
   </entry>
   <entry>
@@ -12051,9 +12051,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-JePfxQMAmZPozhMY").style.height=document.getElementById("mmedia-JePfxQMAmZPozhMY").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-xLkGsschxCqxqdZY").style.height=document.getElementById("mmedia-xLkGsschxCqxqdZY").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-JePfxQMAmZPozhMY").style.height=document.getElementById("mmedia-JePfxQMAmZPozhMY").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-xLkGsschxCqxqdZY").style.height=document.getElementById("mmedia-xLkGsschxCqxqdZY").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -17280,11 +17280,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var cNEXEtyGaUqZUrwv_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); cNEXEtyGaUqZUrwv_options.container = document.getElementById("mmedia-cNEXEtyGaUqZUrwv"); const ap_cNEXEtyGaUqZUrwv = new APlayer(cNEXEtyGaUqZUrwv_options); 
+ var gDrbZxikgEuRyiUJ_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); gDrbZxikgEuRyiUJ_options.container = document.getElementById("mmedia-gDrbZxikgEuRyiUJ"); const ap_gDrbZxikgEuRyiUJ = new APlayer(gDrbZxikgEuRyiUJ_options); 
 
 - **列表**
 
- var XSRXxvfBonlDzGEV_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); XSRXxvfBonlDzGEV_options.container = document.getElementById("mmedia-XSRXxvfBonlDzGEV"); const ap_XSRXxvfBonlDzGEV = new APlayer(XSRXxvfBonlDzGEV_options); 
+ var CPHAFcIhsNCIxLYQ_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); CPHAFcIhsNCIxLYQ_options.container = document.getElementById("mmedia-CPHAFcIhsNCIxLYQ"); const ap_CPHAFcIhsNCIxLYQ = new APlayer(CPHAFcIhsNCIxLYQ_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -17536,21 +17536,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-AEzCGfnCXjKVrZeo").style.height=document.getElementById("mmedia-AEzCGfnCXjKVrZeo").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-MzhCRcHKlXEfnXnd").style.height=document.getElementById("mmedia-MzhCRcHKlXEfnXnd").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-AEzCGfnCXjKVrZeo").style.height=document.getElementById("mmedia-AEzCGfnCXjKVrZeo").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-MzhCRcHKlXEfnXnd").style.height=document.getElementById("mmedia-MzhCRcHKlXEfnXnd").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-TUhwqVMRKLeZGvYC").style.height=document.getElementById("mmedia-TUhwqVMRKLeZGvYC").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-eHegMEHtznVdZJOj").style.height=document.getElementById("mmedia-eHegMEHtznVdZJOj").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-TUhwqVMRKLeZGvYC").style.height=document.getElementById("mmedia-TUhwqVMRKLeZGvYC").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-eHegMEHtznVdZJOj").style.height=document.getElementById("mmedia-eHegMEHtznVdZJOj").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var nOYLlYUOHBwVKDCN_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); nOYLlYUOHBwVKDCN_options.container = "#mmedia-nOYLlYUOHBwVKDCN"; const art_nOYLlYUOHBwVKDCN = new Artplayer(nOYLlYUOHBwVKDCN_options); 
+ var cINBdtvQXVNnaLdu_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); cINBdtvQXVNnaLdu_options.container = "#mmedia-cINBdtvQXVNnaLdu"; const art_cINBdtvQXVNnaLdu = new Artplayer(cINBdtvQXVNnaLdu_options); 
 脑图
 
 原作者记录
@@ -18614,11 +18614,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var yNHzTBmWaxTYSFwc_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); yNHzTBmWaxTYSFwc_options.container = document.getElementById("mmedia-yNHzTBmWaxTYSFwc"); const ap_yNHzTBmWaxTYSFwc = new APlayer(yNHzTBmWaxTYSFwc_options); 
+ var egLvjkGuMsJjrgvm_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); egLvjkGuMsJjrgvm_options.container = document.getElementById("mmedia-egLvjkGuMsJjrgvm"); const ap_egLvjkGuMsJjrgvm = new APlayer(egLvjkGuMsJjrgvm_options); 
 
 
 
- var LDfUwKiGWezYLxzA_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); LDfUwKiGWezYLxzA_options.container = document.getElementById("mmedia-LDfUwKiGWezYLxzA"); const ap_LDfUwKiGWezYLxzA = new APlayer(LDfUwKiGWezYLxzA_options); 
+ var RpiGIUMUwOQFNDiK_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); RpiGIUMUwOQFNDiK_options.container = document.getElementById("mmedia-RpiGIUMUwOQFNDiK"); const ap_RpiGIUMUwOQFNDiK = new APlayer(RpiGIUMUwOQFNDiK_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -18756,9 +18756,9 @@ docker run -d \
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-PAwAPAPcmTEMCGrb").style.height=document.getElementById("mmedia-PAwAPAPcmTEMCGrb").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-IRSczXEvXibtqHFf").style.height=document.getElementById("mmedia-IRSczXEvXibtqHFf").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-PAwAPAPcmTEMCGrb").style.height=document.getElementById("mmedia-PAwAPAPcmTEMCGrb").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-IRSczXEvXibtqHFf").style.height=document.getElementById("mmedia-IRSczXEvXibtqHFf").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -18767,7 +18767,7 @@ docker run -d \
 
 ## 中文翻唱
 
- var kwCCbUeWejZdawbI_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); kwCCbUeWejZdawbI_options.container = document.getElementById("mmedia-kwCCbUeWejZdawbI"); const ap_kwCCbUeWejZdawbI = new APlayer(kwCCbUeWejZdawbI_options); 
+ var JhjVudAXPhIDYwzK_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); JhjVudAXPhIDYwzK_options.container = document.getElementById("mmedia-JhjVudAXPhIDYwzK"); const ap_JhjVudAXPhIDYwzK = new APlayer(JhjVudAXPhIDYwzK_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -34602,9 +34602,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-XSMyUggtzhhzPpSj").style.height=document.getElementById("mmedia-XSMyUggtzhhzPpSj").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-QgfNAfKsjVqVRmlI").style.height=document.getElementById("mmedia-QgfNAfKsjVqVRmlI").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-XSMyUggtzhhzPpSj").style.height=document.getElementById("mmedia-XSMyUggtzhhzPpSj").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-QgfNAfKsjVqVRmlI").style.height=document.getElementById("mmedia-QgfNAfKsjVqVRmlI").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 calibre:
@@ -42454,245 +42454,6 @@ Linux内核源代码情景分析（上册）
       </tags>
   </entry>
   <entry>
-    <title>管理故事锦集</title>
-    <url>/posts/a6477052/</url>
-    <content><![CDATA[
-几十个关于管理，经营的故事。寓教于乐，寓意深刻，在自己遗忘之前，记录保存下来。包括 扁鹊三兄弟，曲突徒薪，猎人与狗等等
-
-
-八个管理故事
-分 工
-【故 事】
-一位年轻的炮兵军官上任后，到下属部队视察操练情况，发现有几个部队操练时有一个共同的情况：在操练中，总有一个士兵自始至终站在大炮的炮筒下，纹丝不动。经过询问，得到的答案是：操练条例就是这样规定的。原来，条例因循的是用马拉大炮时代的规则，当时站在炮筒下的士兵的任务是拉住马的缰绳，防止大炮发射后因后座力产生的距离偏差，减少再次瞄准的时间。现在大炮不再需要这一角色了。但条例没有及时调整，出现了不拉马的士兵。这位军官的发现使他受到了国防部的表彰。
-【分 析】
-**管理的首要工作就是科学分工。**只有每个员工都明确自己的岗位职责，才不会产生推委、扯皮等不良现象。如果公司象一个庞大的机器，那么每个员工就是一个个零件，只有他们爱岗敬业，公司的机器才能得以良性运转。**公司是发展的，管理者应当根据实际动态情况对人员数量和分工及时做出相应调整。否则，队伍中就会出现“不拉马的士兵”。**如果队伍中有人滥竽充数，给企业带来的不仅仅是工资的损失，而且会导致其他人员的心理不平衡，最终导致公司工作效率整体下降。
-标 准
-【故 事】
-有一个小和尚担任撞钟一职，半年下来，觉得无聊之极，“做一天和尚撞一天钟”而已。有一天，主持宣布调他到后院劈柴挑水，原因是他不能胜任撞钟一职。小和尚很不服气地问：“我撞的钟难道不准时、不响亮？”老主持耐心地告诉他：“你撞的钟虽然很准时、也很响亮，但钟声空泛、疲软，没有感召力。钟声是要唤醒沉迷的众生，因此，撞出的钟声不仅要洪亮，而且要圆润、浑厚、深沉、悠远。”
-【分 析】
-本故事中的主持犯了一个常识性管理错误，“做一天和尚撞一天钟”是由于主持没有提前公布工作标准造成的。如果小和尚进入寺院的当天就明白撞钟的标准和重要性，我想他也不会因怠工而被撤职。**工作标准是员工的行为指南和考核依据。缺乏工作标准，往往导致员工的努力方向与公司整体发展方向不统一，造成大量的人力和物力资源浪费。**因为缺乏参照物，时间久了员工容易形成自满情绪，导致工作懈怠。制定工作标准尽量做到数字化，要与考核联系起来，注意可操作性。
-体 制
-【故 事】
-有七个人住在一起，每天共喝一桶粥，但粥每天都不够。一开始，他们抓阄决定谁来分粥，每天轮一个。于是乎每周下来，他们只有一天是饱的，就是自己分粥的那一天。后来他们开始推选出一个道德高尚的人出来分粥。强权就会产生腐败，大家开始挖空心思去讨好他，贿赂他，搞得整个小团体乌烟瘴气。然后大家开始组成三人的分粥委员会及四人的评选委员会，互相攻击扯皮下来，粥吃到嘴里全是凉的。最后想出来一个方法：轮流分粥，但分粥的人要等其它人都挑完后拿剩下的最后一碗。为了不让自己吃到最少的，每人都尽量分得平均，就算不平，也只能认了。大家快快乐乐，和和气气，日子越过越好。
-【分 析】
-**管理的真谛在“理”不在“管”。**管理者的主要职责就是建立一个象“轮流分粥，分者后取”那样合理的游戏规则，让每个员工按照游戏规则自我管理。游戏规则要兼顾公司利益和个人利益，并且要让个人利益与公司整体利益统一起来。**责任、权利和利益是管理平台的三根支柱，缺一不可。缺乏责任，公司就会产生腐败，进而衰退；缺乏权利，管理者的执行就变成废纸；缺乏利益，员工就会积极性下降，消极怠工。**只有管理者把“责、权、利”的平台搭建好，员工才能“八仙过海，各显其能”。
-表 率
-【故 事】
-春秋晋国有一名叫李离的狱官，他在审理一件案子时，由于听从了下属的一面之辞，致使一个人冤死。真相大白后，李离准备以死赎罪，晋文公说：官有贵贱，罚有轻重，况且这件案子主要错在下面的办事人员，又不是你的罪过。李离说：“我平常没有跟下面的人说我们一起来当这个官，拿的俸禄也没有与下面的人一起分享。现在犯了错误，如果将责任推到下面的办事人员身上，我又怎么做得出来。”他拒绝听从晋文公的劝说，伏剑而死。
-【分 析】
-正人先正己，做事先做人。**管理者要想管好下属必须以身作则，示范的力量是惊人的。**不但要象先人李离那样勇于替下属承担责任，而且要事事为先、严格要求自己，做到“己所不欲，勿施于人”。**一旦通过表率树立起在员工中的威望，将会上下同心，大大提高团队的整体战斗力。**得人心者得天下，做下属敬佩的领导将使管理事半功倍。
-竞 争
-【故 事】
-国外一家森林公园曾养殖几百只梅花鹿，尽管环境幽静，水草丰美，又没有天敌，而几年以后，鹿群非但没有发展，反而病的病，死的死，竟然出现了负增长。后来他们买回几只狼放置在公园里，在狼的追赶捕食下，鹿群只得紧张地奔跑以逃命。这样一来，除了那些老弱病残者被狼捕食外，其它鹿的体质日益增强，数量也迅速地增长着。
-【分 析】
-**流水不腐，户枢不蠹。人天生有种惰性，没有竞争就会固步自封，躺在功劳簿上睡大觉。**竞争对手就是追赶梅花鹿的狼，时刻让梅花鹿清楚狼的位置和同伴的位置。跑在前面的梅花鹿可以得到更好的食物，跑在最后的梅花鹿就成了狼的食物。按照市场规则，给予“头鹿”奖励，让“末鹿”被市场淘汰。
-沟 通
-【故 事】
-美国知名主持人“林克莱特”一天访问一名小朋友，问他说：“你长大后想要当什么呀？”小朋友天真的回答：“我要当飞机的驾驶员！”林克莱特接着问：“如果有一天，你的飞机飞到太平洋上空所有引擎都熄火了，你会怎么办？”小朋友想了说：“我会先告诉坐在飞机上的人绑好安全带，然后我挂上我的降落伞跳出去。”当在现场的观众笑的东倒西歪时，林克莱特继续注视这孩子，想看他是不是自作聪明的家伙。没想到，接著孩子的两行热泪夺眶而出，这才使得林克莱特发觉这孩子的悲悯之情远非笔墨所能形容。于是林克莱特问他说：“为甚么要这么做？”小孩的答案透露出一个孩子真挚的想法：“我要去拿燃料，我还要回来！！”。
-【分 析】
-你真的听懂了手下的话了吗？你是不是也习惯性地用自己的权威打断手下的语言？我们经常犯这样的错误：在手下还没有来得及讲完自己的事情前，就按照我们的经验大加评论和指挥。反过头来想一下，如果你不是领导，你还会这么做吗？**打断手下的语言，一方面容易做出片面的决策，另一方面使员工缺乏被尊重的感觉。时间久了，手下将再也没有兴趣向上级反馈真实的信息。反馈信息系统被切断，领导就成了“孤家寡人”，在决策上就成了“睁眼瞎”。**与手下保持畅通的信息交流，将会使你的管理如鱼得水，以便及时纠正管理中的错误，制定更加切实可行的方案和制度。
-指 导
-【故 事】
-有一回，日本歌舞伎大师勘弥扮演古代一位徒步旅行的百姓，他要上场之前故意解开自己的鞋带，试图表现这个百姓长途旅行的疲态。正巧那天有位记者到后台采访，看见了这一幕。等演完戏后，记者问勘弥：“你为什么不当时指教学生呢，他们并没有松散自己的鞋带呀。”勘弥回答说：“要教导学生演戏的技能，机会多的是，在今天的场合，最重要的是不要让他们保持热情。”
-【分 析】
-**提高员工素质和能力是提高管理水准的有效方式。**学习有利于提高团队执行力，便于增强团队凝聚力。手把手的现场指导可以及时纠正员工的错误，是提高员工素质的重要形式之一。但是指导必须注重技巧，就像勘弥大师那样要保护员工的热情。管理者必须避免教训式指导，应当语重心长的激励员工提高自身业务素质。除了现场指导外，还可以综合运用培训、交流会、内部刊物、业务竞赛等多种形式，激发员工不断提高自身素质和业务水平，形成一个积极向上的学习型团队。
-锻 炼
-【故 事】
-一个人在高山之巅的鹰巢里，抓到了一只幼鹰，他把幼鹰带回家，养在鸡笼里。这只幼鹰和鸡一起啄食、嬉闹和休息。它以为自己是一只鸡。这只鹰渐渐长大，羽翼丰满了，主人想把它训练成猎鹰，可是由于终日和鸡混在一起，它已经变得和鸡完全一样，根本没有飞的愿望了。主人试了各种办法，都毫无效果，最后把它带到山顶上，一把将它扔了出去。这只鹰像块石头似的，直掉下去，慌乱之中它拼命地扑打翅膀，就这样，它终于飞了起来！
-【分 析】
-**每个人都希望用自己的能力来证明自身价值，手下也不例外。给他们更大的空间去施展自己的才华，是对他们最大的尊重和支持。**不要害怕他们失败，给予适当的扶持和指点，放开你手中的“雄鹰”，让他们翱翔于更宽阔的天空。是个猴子就给他们座山折腾折腾，是条龙就给他们条大江大河扑腾。他们的成长，将为你的工作带来更大的贡献。他们的成长，将促使你更进一步。
-猎人与猎狗的故事
-猎人与猎狗，看似永恒的主仆，但事事无绝对。一个小故事献给大家，故事虽小，含义颇丰，请各位看官慢慢看，细细读，用心品，绝对不会浪费大家的时间。既可以看好看的故事又可以在故事中受到启发，想必这也是内刊创建的宗旨之一吧。好啦，不多说啦，正文开始。
-CHAPTER Ⅰ
-一条猎狗将兔子赶出了窝，一直追赶它，但是追了很久仍没有捉到。羊看到此情景讥笑猎狗说：“你们两个之间，个子小的反而跑的快的多。”猎狗回答说：“你知道什么？我们两个的跑是完全不同的！我仅仅为了一顿饭在跑而它却是为了它的命！”
-读后感：目标
-两种不同的目标，将导致两种完全不同的结果。企业也是如此。据统计，中国中小型企业的寿命在4至7年之间，这就说明单纯以追求利润为目标的企业寿命不会长久。企业创立的初级目标是盈利，我认为企业创立的终极目标应该是在生存、发展和盈利的同时造福社会，回馈社会，这是一种责任也是一种使命。正所谓有多大的胸怀，就有多大的事业。
-CHAPTER Ⅱ
-猎人又买来几条猎狗，凡是能够捉到兔子的，就可以得到骨头，捉不到的就没有饭吃。这一招果然有用，猎狗们纷纷去努力追兔子。过了一段时间，问题又出现了。大兔子难捉，小兔子好捉。但捉到大兔子和小兔子得到的骨头差不多，猎狗们专门去捉小兔子。猎狗们说：反正没有什么大的区别，为什么费那么大的劲去捉那些大的呢?
-读后感：动力
-动力对于企业发展是不可缺少的。按劳取酬，有赏有罚是推动员工做好工作的必要措施和动力。在制定员工的工作目标时，要考虑如何保持个人目标与组织目标的一致，使员工在完成任务的同时有所收获，用以激励员工投入工作。此外，竞争机制一定要适度。如果结合得当，前有工作目标吸引员工，后有竞争对手和监督机制鞭策员工，前拉后推，则事半功倍。
-CHAPTER Ⅲ
-猎人经过思考后，按照捉到兔子的总重量决定猎狗的待遇。于是猎狗们捉到兔子的数量和重量都增加了。但是过了一段时间，猎狗们捉兔子的数量又少了，猎狗说“我们把最好的时间都奉献给了您，主人，但是当我们老了，捉不到兔子的时候，您还会给我们骨头吃吗?”
-读后感：长期的骨头
-猎狗的想法也是比较现实的，但是结合实际来讲，这并不是一两个企业能够解决的，需要社会这个大环境来共同解决，包括政府出台一些相关福利政策来解决企业的后顾之忧。
-CHAPTER Ⅳ
-猎人做了论功行赏的决定。规定如果捉到的兔子超过了一定的数量后，即使捉不到兔子，每顿饭也可以得到一定数量的骨头。猎狗们都努力去达到猎人规定的数量。一段时间过后，终于有一些猎狗达到了猎人规定的数量。这时，其中有一只猎狗说：“我们这么努力，只得到几根骨头，而我们捉的猎物远远超过了这几根骨头。我们为什么不能给自己捉兔子呢?”于是，有些猎狗离开了猎人，自己捉兔子去了
-读后感：骨头与肉兼而有之
-根据马斯洛理论，当员工较低层次的需求得到满足后必然会走向较高层次需求的追求，而且目前从雇员结构来看，已经慢慢走向多元化，人们越来越注重精神上的享受和自我实现，工作不再是必需的谋生手段。于是新的课题出现在管理者的面前，那就是如何对员工进行职业生涯规划，用什么样的愿景激励员工，为他们创造条件，使他们有机会获得成就感和自我价值实现感。
-CHAPTER Ⅴ
-猎人意识到猎狗正在流失，并且那些流失的猎狗像野狗一般和自己的猎狗抢兔子。情况变得越来越糟，猎人咨询了野狗以后进行了改革，使得每条猎狗除基本骨头外，可获得其所猎兔肉总量的n%，而且随着服务时间加长，贡献变大，该比例还可递增，并有权分享猎人总兔肉的m%。就这样，猎狗们与猎人一起努力，将野狗们逼得叫苦连天，纷纷强烈要求重归猎狗队伍。
-读后感：分享的权利
-作为管理者，无论是人力资源部工作人员还是直线管理工作人员，都应当向我们的猎人学习，及时了解员工的合理需求，作为制订政策的出发点。作为企业难免遇到竞争对手，正确认识对手的优势，取长补短，完善自我，才可以使企业处于不败之地。作为这场战争的总指挥，合理的分享企业效益可以刺激员工的积极性，增强对企业的信心。员工作为企业最宝贵财富，对企业发展起至关重要的作用，企业应抱着以人为本的最基本态度，分享所创造出来的财富，创建强大向心力。
-CHAPTER Ⅵ
-冬天到了，兔子越来越少，猎人们的收成也一天不如一天。而那些服务时间长的老猎狗们老得不能捉到兔子，但仍然在无忧无虑地享受着那些他们自以为是应得的大份食物。终于有一天猎人再也不能忍受，把他们扫地出门，因为猎人更需要身强力壮的猎狗……
-读后感：只有永远的利益，没有永远的朋友
-企业的管理由小作坊的人情化管理已经慢慢走向制度化和人性化，市场的结果导向和优胜劣汰就是最合理的规则。这是大多数人可以接受的准则。
-CHAPTER Ⅶ
-被扫地出门的老猎狗们得了一笔不菲的赔偿金，成立了Micro Bone公司。采用连锁加盟的方式招募野狗，向野狗们传授猎兔的技巧，他们从猎得的兔子中抽取一部分作为管理费。当赔偿金几乎全部用于广告后，他们终于有了足够多的野狗加盟。公司开始赢利。一年后，他们收购了猎人的家当……
-读后感：到这里故事出现了转折，仔细想想，的确是情理之外，意料之中。老猎狗们在进行常规的猎兔工作的同时，它一定也在默默修炼自身的技巧，将技巧的东西转化为理论，虽然他们已经不能像其他猎狗那样捕食猎物，但是他的经验和技巧才是最重要的财富。现在市场竞争越来越激烈，必须进行商业模式的创新。
-CHAPTER Ⅷ
-Micro Bone公司许诺给加盟的野狗能得到公司n%的股份。这实在是太有诱惑力了。于是野狗们拖家带口地加入了Micro Bone，一些在猎人门下的年轻猎狗也开始蠢蠢欲动，甚至很多猎人也想加入。好多同类型的公司象雨后春笋般地成立了，Bone Ease，Bone.com，China Bone……
-读后感：从提高工资到增加福利待遇，再到给予员工股份，这个发展过程是管理的进步。员工持股分配方法，是指企业员工通过投资购买、贷款购买或红利转让、无偿分配等方式认购本公司部分股权，委托员工持股会集中管理；员工持股管理委员会（或理事会）作为社团法人进入董事会参与按股分享红利的一种新型股权形式。这种新型的分配方法堪称分配制度一大创举，既可以使员工以劳动者和所有者双重身份参与企业生产经营管理，又能满足企业的融资需求，将企业效益与个人利益紧密联系起来，从而最大限度地调动员工的工作积极性，并且为企业的长久发展提供基本的人力要素，三效合一。
-CHAPTER Ⅸ
-猎人凭借出售公司的钱走上了老猎狗走过的路，最后千辛万苦要与Micro Bone公司谈判的时候，老猎狗出人意料，把Micro Bone公司卖给了猎人。老猎狗们从此不再经营公司，转而开始写自转《老猎狗的一生》，又写：《如何成为出色的猎狗》，《如何从一只普通猎狗成为一只管理层的猎狗》，《猎狗成功秘诀》《成功猎狗500条》《穷猎狗，富猎狗》，并且将老猎狗的故事搬上屏幕，取名《猎狗花园》，四只老猎狗成为了家喻户晓的明星F4。收版权费，没有风险，利润更高。
-读后感：读到这里，故事的发展也许会引得你莞尔一笑，不过我相信这也是意味深长的一笑，因为老猎狗最后的辉煌创业或许已经为我们这些准创业者树立了榜样。老猎狗知道有无数条崇拜他的小猎狗，他的书才会一本接着一本，又一次把机会牢牢地抓在手里，这就是所谓的名人效应，这一次他又赢了。
-也许有人会问到这里故事是不是就完结了，我想还没有，故事还会继续，要知道流星花园也有续集的哦，呵呵。老猎狗成名之后机会更多了，他们会怎么做？猎人难道就被打败了吗？想必每个人都有自己的想法和看法。
-14个「经营管理小故事」
-1、割草的男孩
-一个替人割草打工的男孩打电话给一位陈太太说：“您需不需要割草？”陈太太回答说：“不需要了，我已有了割草工。”，男孩又说：“我会帮您拔掉花丛中的杂草。”，陈太太回答：“我的割草工也做了。”，男孩又说：“我会帮您把草与走道的四周割齐。”，陈太太说：“我请的那人也已做了，谢谢你，我不需要新的割草工人。”，男孩便挂了电话，此时男孩的室友问他说：“你不是就在陈太太那割草打工吗？为什么还要打这电话？”男孩说：“我只是想知道我做得有多好！”。
-【启示】
-这个故事反映的ISO的第一个思想,即以顾客为关注焦点，不断地探询顾客的评价，我们才有可能知道自己的长处与不足,然后扬长避短，改进自己的工作质量，牢牢的抓住顾客。
-这也是质量管理八项原则第6条：“持续改进”思想的实际运用的一个例子。我们每个员工是否也可结合自己的岗位工作，做一些持续改进呢？
-所有的员工都可以做到让顾客满意。对于营销人员来说，这样是可以得到忠诚度极高的顾客。对于我们每个员工来说,只有时刻关注我们的“顾客（服务对象）”我们的工作质量才可以不断改进。
-这也是沟通的问题,一个人想得到公正、客观的评价真的好难。这个故事是否为我们提供了一个好的方法呢？
-做质量的大多数时候都是被动的，只是延续出现问题然后再去解决问题的模式，如果能主动查找问题并解决问题那才是完美的质量管理模式。这也就显示出了一个质量管理者的精髓所在。
-一切都属于那些天天做好准备的人。不要光想着天上能下钞票雨,那是不可能的,凡事靠脑子去想,用双手去做,把不应该发生的事情,提前预防,把不良的缺憾扼杀在萌芽状态。我们要始终坚信“风险是可以防范的，缺陷是可以预防的”！
-2、降落伞的真实故事
-这是一个发生在第二次世界大战中期，美国空军和降落伞制造商之间的真实故事。在当时，降落伞的安全度不够完美，即使经过厂商努力的改善，使得降落伞制造商生产的降落伞的良品率已经达到了99.9%，应该说这个良品率即使现在许多企业也很难达到。但是美国空军却对此公司说No,他们要求所交降落伞的合格率必须达到100%。于是降落伞制造商的总经理便专程去飞行大队商讨此事，看是否能够降低这个水准？因为厂商认为，能够达到这个程度已接近完美了，没有什么必要再改。当然美国空军一口回绝，因为品质没有折扣。后来，军方要求改变了检查品质的方法。那就是从厂商前一周交货的降落伞中，随机挑出一个，让厂商负责人装备上身后亲自从飞行中的机身跳下。这个方法实施后，不良率立刻变成零。
-【启示】
-日本经营之神松下幸之助有句名言：“对产品来说，不是100分就是0分。”任何产品，只要存在一丝一毫的质量问题，都意味着失败。许多人做事时常有“差不多”的心态，对于领导或是客户所提出的要求，即使是合理的，也会觉得对方吹毛求疵而心生不满！
-对待产品质量应该保持精益求精的态度和严谨细致的工作作风。换位成消费者，如果买回的酵母做的馒头里吃出一根头发，什么滋味？也许我们会认为10万（或10亿）袋酵母里才有一袋里有一根头发无需大惊小怪。但是对我们来说是十万分之一，对于吃到头发的消费者来说就是100%。试想，如果什么事情只有99.9%的成功率，那么每年有20，000次配错药事件；每年15，000个婴儿出生时会被抱错；每星期有500宗做错手术事件；每小时有2000封信邮寄错误。看了这些数据，我们肯定都希望全世界所有的人都能在工作中作到100%。因为我们是生产者，同时我们也是消费者。
-3、老木匠造房子的故事
-有个老木匠准备退休，他告诉老板，说要离开建筑行业，回家与妻子儿女享受天伦之乐。老板舍不得他的好工人走，问他是否能帮忙再建一座房子，老木匠说可以。但是大家后来都看得出来，他的心已不在工作上，他用的是软料、次料，出的是粗活，所以手工非常粗糙，工艺做得更是马虎。房子建好的时候，老板把大门的钥匙递给他。“这是我送给你的退休礼物。”，他震惊得目瞪口呆，羞愧得无地自容。如果他早知道是在给自己建房子，他怎么会这样呢？现在他得住在一幢粗制滥造的房子里！
-【启示】
-不可否认，老木匠曾经是一个优秀的人才，给公司创造过很多财富，但最后时刻没有做好自己的本职工作，忘了职责，后果自负。
-作为一名员工，责任在先，时时刻刻都应该认认真真地对待自己的工作，并做到善始善终。这才能给公司带来更多的利润，当然自己也将得到丰厚的回报。
-提高质量，总是有方法。
-品质没有折扣。
-我们的生活也像建房子，如果是漫不经心地“建造”自己的生活，不是积极行动，而是消极应付，凡事不肯精益求精，在关键时刻不能尽最大努力。等我们惊觉自己的处境，早已深困在自己建造的劣质“房子”里了。
-把你当成那个木匠吧，想想你的房子，每天你敲进去一颗钉，加上去一块板，或者竖起一面墙，用你的智慧好好建造吧！
-4、电话亭的故事
-中国的留德大学生见德国人做事刻板，不知变通，就存心捉弄他们一番。大学生们在相邻的两个电话亭上分别标上了“男”“女”的字样，然后躲到暗处，看“死心眼”的德国人到底会怎么样做。结果他们发现，所有到电话亭打电话的人，都像是看到厕所标志那样，毫无怨言地进入自己该进的那个亭子。有一段时间，“女亭”闲置，“男亭“那边宁可排队也不往“女亭”这边移动。我们的大学生惊讶极了，不晓得德国人何以“呆”到这份上。面对大学生的疑问，德国人平静地耸耸肩说：“规则嘛，还不就是让人来遵守的吗？”
-【启示】
-德国人的刻板可以让我们开心地一连笑上3天，而他们看似有理的解释，也足以让某些一贯无视规则的“国产大能人”笑掉大牙。但是在开心之余，嘲笑之余，我们漠视规则已经多久了？我们总是聪明地认为，那些甘愿被规则约束的人不仅是“死心眼”，简直是“缺心眼”。规则是死的可人是活的，活人为什么要被死规则套住呢？正是因为这样，我们才会落后人家好多年。
-5、小和尚撞钟的故事
-有一个小和尚在寺院担任撞钟之职。按照寺院的规定，他每天必须在早上和黄昏各撞钟一次。如此半年下来，小和尚感觉撞钟的工作极其简单，倍感无聊。后来，干脆“做一天和尚撞一天钟”了。一天寺院住持忽然宣布要将他调到后院劈柴挑水，原因是他不能胜任撞钟之职。小和尚觉得奇怪，就问住持：“难道我撞的钟不准时、不响亮？”住持告诉他：“你的钟撞得很响，但钟声空泛、疲软，因为你心中没有理解撞钟的意义。钟声不仅仅是寺里作息的准绳，更为重要的是唤醒沉迷众生。因此，钟声不仅要宏亮，还要圆润、浑厚、深沉、悠远。一个人心中无钟，既是无佛；如果不虔诚，怎能担当撞钟之职？”小和尚听后，面有愧色，此后潜心修炼，终成一代名僧。
-【启示】
-本故事中的主持犯了一个常识性管理错误，“做一天和尚撞一天钟”的结果，是由于主持没有提前公布工作标准造成的。如果小和尚进入寺院的当天就明白撞钟的标准和重要性，他也不会因怠工而被撤职。
-工作标准是员工的行为指南和考核依据。缺乏工作标准，往往导致员工的努力方向与公司整体发展方向不统一，造成大量的人力和物力资源浪费。因为缺乏参照物，时间久了员工容易形成自满情绪，导致工作懈怠。制定工作标准尽量做到数字化，要与考核联系起来，注意可操作性。
-既然有了工作标准就应该很好的去执行它，不要打折扣，不要等到领导认为你不能胜任工作才后悔！
-公司、各部门、各岗位的培训都是很重要的，为了让员工知道该怎么做，就必须定好标准，作好培训！
-领导------请重视制度和培训，这样才能培养员工，您才不需要这么忙。
-员工------请遵守制度，这样才能胜任工作，你才不会因怠工而被撤职。
-6、扁鹊论医
-魏文王问名医扁鹊说∶“你们家兄弟三人，都精于医术，到底哪一位医术最好呢？”扁鹊答说∶“长兄最好，中兄次之，我最差。”文王吃惊地问∶“你的名气最大，为何长兄医术最高呢？”扁鹊惭愧地说∶“我扁鹊治病，是治病于病情严重之时。一般人都看到我在经脉上穿针管来放血、在皮肤上敷药等大手术，所以以为我的医术高明，名气因此响遍全国。我中兄治病，是治病于病情初起之时。一般人以为他只能治轻微的小病，所以他的名气只及于本乡里。而我长兄治病，是治病于病情发作之前。由于一般人不知道他事先能铲除病因，所以觉得他水平一般，但在医学专家看来他水平最高。
-【启示】
-以上的“病”可以理解为“质量事故”。能将质量事故在“病”情发作之前就进行消除，才是“善之善者也”。
-预防质量事故，要从“小病”做起。也就是要防患于未然。事后控制不如事中控制，事中控制不如事前控制。
-对于成功处理已发质量事故的人要进行奖励，同时，更要对预防质量事故的人和行为进行奖励。
-质量管理如同医生看病，治标不能忘固本。许多企业悬挂着“质量是企业的生命”的标语，而现实中存在“头疼医头、脚疼医脚”的质量管理误区。
-造成“重结果轻过程”现象是因为：结果控制者因为改正了管理错误，得到员工和领导的认可；而默默无闻的过程控制者不容易引起员工和领导的重视。最终导致管理者对表面文章乐此不疲，而对预防式的事前控制和事中控制敬而远之。
-如何提高事前控制和事中控制的执行力呢？首先，从上到下应当有很强的全过程质量管理意识。其次，每个环节都制定详细的质量管理标准。再次，用业绩考核改变公司不利局面。第四，客户和员工是最好的质量改善者。
-7、袋鼠与笼子
-一天，动物园管理员发现袋鼠从笼子里跑出来了，于是开会讨论，一致认为是笼子的高度过低。所以决定将笼子的高度由原来的10米加高到20米。结果第二天又发现袋鼠还是跑到外面来了，所以再次决定再将高度加高到30米。没想到隔天居然又看到袋鼠全跑到外面，于是管理员大为紧张，决定一不做二不休，将笼子的高度加高到100米。一天长颈鹿和几只袋鼠们在闲聊，“你们看，这个人会不会再继续加高你们的笼子？”长颈鹿问。“很难说。”袋鼠说∶“如果他再继续忘记关门的话！”
-【启示】
-这是一个典型的本末倒置的例子。他们不是去消除根源——“关门”，而是去加高“笼子。”
-在作质量问题调查的时候，如果不找到问题的根源，那么，永远无法消除这些质量问题。同时，还将造成企业成本的升高——“加高笼子”。
-所以，作为质量人，我们要经常问自己，“我们的袋鼠笼子关好了吗？”
-8、提醒自我
-有个老太太坐在马路边望着不远处的一堵高墙，总觉得它马上就会倒塌，见有人向墙边走过去，她就善意地提醒道：“那堵墙要倒了，远着点走吧。”被提醒的人不解地看着她，大模大样地顺着墙根走过去了，那堵墙没有倒。老太太很生气：“怎么不听我的话呢？！”又有人走来，老太太又予以劝告。三天过去了，许多人在墙过走过去，并没有遇上危险。第四天，老太太感到有些奇怪，又有些失望，不由自主便走到墙根下仔细观看，然而就在此时墙倒了，老太太被掩埋在灰尘砖石中，气绝身亡。
-【启示】
-提醒别人容易，提醒自己有时更难。
-快要倒的墙，它始终是要倒的，不要存任何侥幸的心理。
-做质量工作也是一样。要时时警惕质量管理中风险，不仅时时提醒别人，也要时时警示自己。同时，对风险最好的方法是进行改善并消除，而且要有危机感，尽快解决。不然，一旦风险爆发了，伤及的不仅是公司，也会伤及自己。
-9、天堂
-一位行善的基督徒，临终后想见天堂与地狱究竟有何差异，于是天使就带他到地狱参观。在他们面前出现摆满了佳肴的餐桌。“地狱的生活还不错嘛”。“不用急，你再继续看下去。”一会，只见一群骨瘦如柴的饿鬼鱼贯入座。每个人手上拿着一双长十几尺的筷子。可是由于筷子实在是太长了，最后每个人都夹得到，吃不到……来到天堂，同样的情景，同样的满桌佳肴，每个人同样用一双长十几尺的筷子。不同的是，围着吃饭的人们，他们互相喂对面的人吃菜，因此每个人都吃得很愉快。
-【启示】
-这则故事体现了质量管理八项原则上与供方互利的关系，在经济全球化不断深化的今天，与供应商之间建立起牢固的合作关系，加强对供应商的质量控制，建立互利共赢的合作关系已经成为企业必须认真面对的问题。
-10、1000只羊
-在9.11事件之前，美国总统克林顿曾悬赏1000万美元捉拿恐怖组织头目本·拉登。9.11事件以后，总统将赏金提高到2500万美元。然而，阿富汗人民却对此无动于衷。后来，美国情报局经过调查发现，并非阿富汗人嫌2500万美元太少，而是在极端贫穷的阿富汗人的心目中，2500万美元是一个空洞无际的天文数字。对于他们来说，解决每天的柴米油盐和生计才是头等大事，至于那些数以千万计的巨额财富，实在是太遥远了——于是赏金变成了1000只羊。一时间，阿富汗人轰动了，他们纷纷钻进山林寻找拉登的下落。一个当地人兴奋地说：“1000只羊！天啊，那是多么大的一群羊啊！我们村子里最富有的人家也只有八只羊。如果能有1000只羊，我们全家几辈子都有着落了。”
-【启示】
-把握顾客需要是能否成功的关键。我们不能把产品毫无选择地卖给任何一个客户。例如：我们很难把梳子、洗发水和护发素推销给和尚；把保险柜卖给乞丐；把照相机卖给瞎子；把高级音响卖给聋子。对于他们来说，这些产品都毫无用处。
-必须时刻关注顾客的需求变化，努力适应并符合其需求。海尔在这一方面是成功的典范。为了适应每一个地区不同的消费群体的不同需要，海尔为北京市场提供技术最高、价格最贵的高档精品；为上海家庭提供小型瘦长、小巧玲珑的“小小王子”；为广西家庭提供有单列装水果用的保鲜室的“果蔬王”。
-11、曲突徙薪
-客人到主人家做客，看见主人家的灶上烟囱是直的，旁边又有很多木材。客人告诉主人说，烟囱要改曲，木材须移去，否则将来可能会有火灾，主人听了没有作任何表示。不久主人家里果然失火，四周邻居赶紧跑来救火，最后火被扑灭了。于是主人烹羊宰牛，宴请四邻，以酬谢他们救火的功劳，但没有请当初建议他将木材移走、烟囱改曲的人。有人对主人说：“如果当初听了那位先生的话，今天也不用准备筵席，而且没有火灾的损失，现在论功行赏，原先给你建议的人没有被感恩，而救火的人却是座上客，真是很奇怪的事呢！”主人顿时省悟，赶紧去邀请当初给予建议的那个客人。
-【启示】
-预防重于救火。客人告诉主人需要“曲突”和“徙薪”，其实就是告诉主人需要预防火灾的出现，因为“直突”和“薪”是产生火灾的重大隐患。只有去除火灾的根源，才能预防火灾的出现。不仅需要提出预防措施，而且要更进一步地跟踪改善措施的有效完成。
-12、猴子与香蕉
-西点实验室有一个很经典的故事：有6只猴子关在一个实验室里，头顶上挂着一些香蕉，但香蕉都连着一个水龙头，猴子看到香蕉，很开心去拉香蕉，结果被水淋的一塌糊涂，然后6只猴子知道香蕉不能碰了。然后换一只新猴子进去，就有5只老猴子1只新猴子，新来的猴子看到香蕉自然很想吃，但5只老猴子知道碰香蕉会被水淋，都制止它，过了一些时间，新来的猴子也不再问，也不去碰香蕉。然后再换一只新猴子，就这样，最开始的6只猴子被全部换出来，新进去的6只猴子也不会去碰香蕉。
-【启示】
-这个故事反映的是培训的重要性和无条件的执行制度。
-培训的重要性：把好的经验做好培训，让大家共享，培训好了，可以少犯错误，少走弯路，大家都会向同一个方向，也是正确的方向使力，这样的团队或公司会战无不胜的。
-制度就是要无条件执行的。因为制度是经验的总结。不遵守制度是要犯错误或受惩罚的。
-作为一个企业能不能在市场竞争当中生存、发展、取胜，质量将成为企业生死存亡的决定力量，但什么又决定质量呢？如何提高质量呢？执行！——还是执行！这个“质量文化”中最重要的一环，是质量最有力的发动机，它发动着质量的改进，发动着企业发展。
-13、汽车“秀逗”的故事
-有一天美国通用汽车公司收到一封客户抱怨信：我们家有一个传统的习惯，就是每天在吃完晚餐后，都会以冰淇淋来当饭后甜点。由于冰淇淋的口味很多，所以我们家每天在饭后投票决定要吃哪一种口味，等大家决定后我就会开车去买。但自从最近我买了一部新的庞帝雅克后，在我去买冰淇淋的这段路程问题就发生了。每当我买的是香草口味时，我从店里出来车子就发不动。但如果我买的是其它的口味，车子发动就顺得很。问题听起来很猪头。庞帝雅克的总经理对这封信虽心存怀疑，但还是派了一位工程师去查看究竟。当工程师去找这位仁兄时，很惊讶的发现这封信是出之于一位事业成功、乐观、且受了高等教育的人。工程师安排与这位仁兄的见面时间刚好是在用完晚餐的时间，两人于是上车往冰淇淋店开去。那个晚上投票结果是香草口味，当买好香草冰淇淋回到车上后，车子又熄火了。这位工程师之后又依约来了三个晚上。第一晚，巧克力冰淇淋，车子没事。第二晚，草莓冰淇淋，车子也没事。第三晚，香草冰淇淋，车子“秀逗”。这位思考有逻辑的工程师，还是死不相信这位仁兄的车子对香草过敏。
-因此，他仍然不放弃继续安排相同的行程，希望能够将这个问题解决。工程师开始记下从头到现在所发生的种种详细资料，如时间、车子使用油的种类、车子开出及开回的时间…，根据资料显示他有了一个结论，这位仁兄买香草冰淇淋所花的时间比其它口味的要少。为什么呢？原因是出在这家冰淇淋店的内部设置的问题。因为，香草冰淇淋是所有口味中最畅销的口味，店家为了让顾客每次都能很快的取拿，将香草口味特别分开陈列在单独的冰柜，并将冰柜放置在店的前端；至于其它口味则放置在距离收银台较远的后端。现在，工程师所要知道的疑问是，为什么这部车会因为从熄火到重新激活的时间较短时就会“秀逗”？原因很清楚，绝对不是因为香草冰淇淋的关系，工程师很快地由心中浮现出，答案应该是“蒸气锁”。因为当这位仁兄买其它口味时，由于时间较久，引擎有足够的时间散热，重新发动时就没有太大的问题。但是买香草口味时，由于花的时间较短，引擎太热以至于还无法让“蒸气锁”有足够的散热时间。
-【启示】
-即使有些问题看起来真的是疯狂，但是有时候它还是真的存在；如果我们每次在看待任何问题并秉持着冷静的思考去找寻解决的方法，这些问题将看起来会比较简单不那么复杂。所以碰到问题时不要直接就反应说那是不可能的，而没有投入一些真诚的努力。
-做质量的首先要相信顾客的投诉,没有谁闲的无聊,找人投诉玩儿!
-会投诉的客户才是真的回头客户或者是真诚的客户处事态度，莫若于此！若人人皆有此处事态度，何愁公司经营不好!
-质量改进工具之一的“头脑风暴法”在分析问题时“知无不言、言无不尽、言者无责”的方法和质量管理原则“基于事实为依据的决策方法”思想在此例中也有所体现。
-14、三个老汉想象皇帝的笑话
-话说有三个老汉有一天碰到一起了，于是就聊天，聊着聊着就聊到了皇帝身上。第一个是个拾粪的老汉说：“如果我当了皇帝，我就下令这条街东面的粪全部归我，谁去拾就有公差来抓”。第二个是个砍柴的老汉，瞪了第一个老汉一眼说：“你就知道拾粪，皇帝拾粪干啥？如果我当了皇帝，我就打一把金斧头，天天用金斧头去砍柴”。第三个是个讨饭的老汉，听完后哈哈大笑，眼泪都笑出来了，他说：“你们两个真有意思，都当了皇帝了，还用得着干活吗？要是我当了皇帝，我就天天坐在火炉边吃烤红薯”。
-【启示】
-这些老汉们就是想坏了脑子，也不知道皇帝是如何生活的。
-这个故事对我们从事质量管理和学习质量管理的人能引起深思。由于质量管理象雾霭的朦胧一样，既浩瀚又神秘；但同时质量管理又象空气，经常不经意的出现在每个人的身边；结果如同这三个老汉一样对质量管理并不真的知道却敢遐想的人还真不少。
-这种遐想如果是聊天还可以，可怕的是有些遐想质量管理的人却有机会发挥他的遐想；结果用对质量管理的这些遐想来代替实际的质量管理，从而引发了质量管理的危机。
-质量管理第一是人文科学；因为之所以叫质量管理，其主体对象应该是对“人”的行为才称之为质量管理。
-质量管理是按质量目标设计并实施的行为，因而质量管理又与目标形成对应关系。
-行为与实施的环境紧密相连的，因而质量管理还与实现目标时的环境呈依赖关系。
-质量管理既是科学，还是艺术；质量管理靠想当然是不行的。成功的质量管理不能复制，质量管理的成功永远来自于创新；而创新则需要知识和艺术的结合。
-对香草冰淇淋过敏的汽车
-这是一个发生在美国通用汽车的客户与该公司客服部间的真实故事。
-
-有一天美国通用汽车公司的庞帝雅克（Pontiac）部门收到一封客户抱怨信，上面是这样写的：
-这是我为了同一件事第二次写信给你，我不会怪你们为什么没有回信给我，因为我也觉得这样别人会认为我疯了，但这的确是一个事实。
-我们家有一个传统的习惯，就是我们每天在吃完晚餐后，都会以冰淇淋来当我们的饭后甜点。由于冰淇淋的口味很多，所以我们家每天在饭后才投票决定要吃哪一种口味，等大家决定后我就会开车去买。但自从最近我买了一部新的庞帝雅克后，在我去买冰淇淋的这段路程问题就发生了。
-你知道吗？每当我买的冰淇淋是香草口味时，我从店里出来后车子就发不动。但如果我买的是其它的口味，车子发动就顺得很。我要让你知道，我对这件事情是非常认真的，尽管这个问题听起来很猪头。但为什么这部庞帝雅克当我买了香草冰淇淋它就秀逗，而我不管什么时候买其它口味的冰淇淋，它就是一尾活龙？为什么？为什么？
-这封不可思议的投诉信立即引来了庞帝雅克车技术服务人员的调侃：“汽车对香草冰淇淋过敏？那我的游艇对可口可乐也要过敏了。”“找错了对象，他应该去看看心理医生。”“查查地址，这封投诉信可能是从疯人院里寄来的。”……虽然对这封信的真实性心存怀疑，但庞帝雅克的总经理没有马虎对待这近乎天方夜谭的投诉，他派了一位办事严谨的工程师前去处理这件不可思议的投诉案。
-当工程师去找这位仁兄时，很惊讶的发现这封信是出之于一位事业成功、乐观且受了高等教育的人。工程师安排与这位仁兄的见面时间刚好是在用完晚餐的时间，两人于是上了汽车，往冰淇淋店开去。那个晚上投票结果是香草口味，当买好香草冰淇淋回到车上后，车子又秀逗了。这位工程师之后又连续来了三个晚上。第一晚，巧克力冰淇淋，车子没事。第二晚，草莓冰淇淋，车子也没事。第三晚，香草冰淇淋，车子“秀逗”。看来，投诉者反映的“荒唐”问题一点儿也不荒唐，庞帝雅克汽车确实时香草冰淇淋“过敏”。
-这位思考有逻辑的工程师，到这时还是死不相信这位仁兄的车子对香草“过敏”。因此，他仍然不放弃继续安排相同的行程，希望能够将这个神秘的问题解决。工程师开始记下从开始到现在所发生的种种详细资料，如汽车经过的路线、使用汽油的种类、开出和开回以及停车所用的时间……根据记录的资料，他得出了一个结论：这位仁兄买香草冰淇淋所花的时间比其它口味的要少。
-为什么呢？一丝不苟的工程师仔细研究了其中的一些细节问题后，终于发现了汽车对香草冰淇淋“过敏”的奥秘：这家冰淇淋店的内部设置是整个问题的关键。因为，香草冰淇淋是所有冰淇淋口味中最畅销的口味，店家为了让顾客每次都能很快的取拿，将香草口味特别分开陈列在单独的冰柜，并将冰柜放置在店的前端；至于其它口味则放置在距离收银台较远的后端。
-现在，工程师所要知道的疑问是，为什么这部车会因为从熄火到重新激活的时间较短时就会“秀逗”？具有深厚专业知识的工程师很快找出了答案：问题出在汽车发动机那个小小的散热装置上。原来，当买其他口味的冰淇淋时，由于所花的时间较长，发动机有足够的时间散热，重新发动时就没有太大的问题；但是当买香草冰淇淋时，由于所花的时间较短发动机太热以至于还无法让散热装置有足够的时间散热，在密闭管路中油跟油之间会出现一段气体，阻塞了油路，人们通常把它叫做“气阻”，引擎所吸收的燃料就会断断续续，从而引起发动机不能正常发动，汽车当然就时香草冰淇淋“过敏”了。原来这都是发动机散热不畅惹的祸。
-这位工程师向公司反映了汽车对香草冰淇淋“过敏”的原因，设计部门迅速进行了技术改进，弥补了散热装置的缺陷，解决了气阻现象。不久，随时能重新发动引擎的散热装置应运而生。从此，庞帝雅克车对香草冰淇淋再也不“过敏”了，这个看似荒唐的投诉案得到了圆满的解决。
-
-解决问题的第一步是了解事情的来龙去脉，每一个细节都不能放过
-
-扁鹊三兄弟
-
-（魏文侯问扁鹊）曰：“子昆弟三人，其孰最善为医？”扁鹊曰：“长兄最善，中兄次之，扁鹊最为下。”魏文侯曰：“可得闻邪？”扁鹊曰：“长兄于病视神，未有形而除之，故名不出于家。中兄治病，其在毫毛，故名不出于闾（lǘ）。若扁鹊者，镵（chán）血脉，投毒药，副（pì）肌肤间，而名出闻于诸侯。”（节选自《鹖（hé）冠子·卷下·世贤第十六》）
-
-春秋战国时期，有位神医被尊为“医祖”，他就是“扁鹊”。一次，魏文王问扁鹊说：“你们家兄弟三人，都精于医术，到底哪一位最好呢？”扁鹊答：“长兄最好，中兄次之，我最差。”文王又问：“那么为什么你最出名呢？”扁鹊答：“长兄治病，是治病于病情发作之前，由于一般人不知道他事先能铲除病因，所以他的名气无法传出去；中兄治病，是治病于病情初起时，一般人以为他只能治轻微的小病，所以他的名气只及本乡里；而我是治病于病情严重之时，一般人都看到我在经脉上穿针管放血，在皮肤上敷药等大手术，所以以为我的医术高明，名气因此响遍全国。”
-从故事中，可以了解到：扁鹊大哥擅长的是“事前控制”，具有敏锐的洞察力和战略眼光，能够帮助人们防患于未然。因此，如果在现代社会，扁鹊大哥应该比较适合去卖保险或者保健品——赶快保险，重视保健，一句“君有疾在腠理，不治将恐深”已足以让现代人提心吊胆。而且，这年头，如果保险或者保健品卖得好，更容易出名。当然，如果扁鹊大哥不想去卖保险或者保健品，也可以到企业去做战略规划、项目投资的特聘专家。总之，一句话，在这个一切成功的要素都已经存在的今天，战略眼光已经显得比能力更加重要。所以，若干年前，扁鹊先生的谦虚，也具有很强的预见性，看来还真是兄弟一家亲。
-扁鹊二哥擅长的是“事中控制”，具有出手迅速、果断、干练的特点，能够帮助人们免受重大疾病或灾难的折磨。拿感冒来说，相信大部分人都有过感冒的经历。感冒虽是小病，但如果不及时根治，很容易引起鼻炎、肺炎、病毒性心肌炎等很难治疗的慢性疾病，给病人带来巨大的身体痛苦和金钱损失。所以，扁鹊二哥的迅速、果断与干练能及时地扼杀病毒，断病根于初起之时。如果在现代社会，扁鹊二哥一定会大受企业老板的欢迎。一方面，能够及时清除企业发展过程中遇到的问题，同时又节约成本，不至于让企业损失巨大的经济利益和商业机会。
-扁鹊先生擅长“事后控制”，能够扶大厦之将倾，挽狂澜于即倒，是临危受命型的关键人物——企业的救命草。当发生重大危机时，扁鹊先生往往能够将企业盘活，把企业从奄奄一息或者休克的状态中抢救过来，从而延续生命。所以，扁鹊先生不轻易出手，而是该出手时就出手；也不会受雇于一家企业，因为有太多的企业等着他去救死扶伤。因而，扁鹊先生类似于现代的咨询专家，在从一家企业走向另一家企业，一次手术到另一次手术的过程中，成就了自己的名声。因为人们天生对痛苦的经历记忆深刻，而且对冲在第一线的救命人员心存好感，所以，扁鹊先生的“医祖”之称自然当之无愧。
-
-事后控制不如事中控制，事中控制不如事前控制，可惜大多数的事业经营者均未能体会到这一点，等到错误的决策造成了重大的损失才寻求弥补，有时是亡羊补牢，为时已晚。
-需要我们建立完善的绩效考核体系，清除隐患的奖励必须大于时候解决这个问题的奖励！
-
-曲突徒薪
-有位客人到某人家里作客，看见主人家的灶上烟囱是直的，旁边又有很多木材。客人告诉主人说，烟囱要改曲，木材须移去，否则将来可能会有火灾，主人听了没有做任何表示。
-不久主人家里果然失火，四周的邻居赶紧跑来救火，最后火被扑灭了，于是主人烹羊宰牛，宴请四邻，以酬谢他们救火的功劳，但是并没有请当初建议他将木材移走，烟囱改曲的人。
-有人对主人说∶「如果当初听了那位先生的话，今天也不用准备筵席，而且没有火灾的损失，现在论功行赏，原先给你建议的人没有被感恩，而救火的人却是座上客，真是很奇怪的事呢！」
-主人顿时省悟，赶紧去邀请当初给予建议的那个客人来吃酒。
-一般人认为，足以摆平或解决企业经营过程中的各种棘手问题的人，就是优秀的管理者，其实这是有待商榷的，俗话说∶「预防重于治疗」，能防患于未然之前，更胜于治乱于已成之后，由此观之，企业问题的预防者，其实是优于企业问题的解决者。
-医生和鬼
-
-原故事找不到了，这里自己按照原来故事脉络现编一个
-
-一书生母亲病重，遂求医。镇上有两位医生，不知道该请哪一位。如是去问村里一位开了天眼的巫师，此巫师说：镇东大夫背后跟着5个小鬼，镇西大夫背后跟着100个小鬼。书生说：善，吾去请镇东大夫！巫师又说：镇东大夫每年看10病人，镇西大夫每年看1000个病人。书生拜谢：差点误了老母性命，吾速去请镇西大夫！
-
-不做不错，多做多错，多错多罚，管理大忌！
-
-猫捉老鼠
-一个越国人为了捕鼠，特地弄回一只善于捕老鼠的猫。这只猫善于捕鼠，也喜欢吃鸡，结果越国人家中的老鼠被捕光了，但鸡也所剩无几。他的儿子想把吃鸡的猫赶走，父亲却说：“祸害我们家的是老鼠不是猫，老鼠偷我们的食物，咬坏我们的衣物，挖穿我们的墙壁，损害我们的家具，不除掉它们我们必将挨饿受冻，所以必须除掉它们！没有鸡大不了不吃罢了，离挨饿受冻还远着哩！”
-金无足赤，领导者对人才不可苛求完美，任何人都难免有些小毛病，只要无伤大雅，何必过分计较呢？最重要的是发现他最大的优点，能够为企业带来怎样的利益。
-现代化管理学主张对人实行功能分析：“能”，是指一个人能力的强弱，长处短处的综合；“功”，是指这些能力是否可转化为工作成果。结果表明：宁可使用有缺点的能人，也不用没有缺点的平庸的“完人”。
-后话
-
-大家还有什么好故事推荐没？
-
-]]></content>
-      <categories>
-        <category>管理</category>
-      </categories>
-      <tags>
-        <tag>管理</tag>
-        <tag>故事</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>使用nodeppt给hexo博客嵌入PPT演示</title>
     <url>/posts/546887ac/</url>
     <content><![CDATA[
@@ -42983,7 +42744,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts1115'));
+        var myChart = echarts.init(document.getElementById('echarts7755'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -43077,7 +42838,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts3010'));
+        var myChart = echarts.init(document.getElementById('echarts6793'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -43146,7 +42907,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts5195'));
+        var myChart = echarts.init(document.getElementById('echarts6098'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44604,6 +44365,245 @@ markdown 各种其它语法插件，latex公式支持，mermaid图表，plant um
         <tag>markdown</tag>
         <tag>hexo</tag>
         <tag>写作</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>管理故事锦集</title>
+    <url>/posts/a6477052/</url>
+    <content><![CDATA[
+几十个关于管理，经营的故事。寓教于乐，寓意深刻，在自己遗忘之前，记录保存下来。包括 扁鹊三兄弟，曲突徒薪，猎人与狗等等
+
+
+八个管理故事
+分 工
+【故 事】
+一位年轻的炮兵军官上任后，到下属部队视察操练情况，发现有几个部队操练时有一个共同的情况：在操练中，总有一个士兵自始至终站在大炮的炮筒下，纹丝不动。经过询问，得到的答案是：操练条例就是这样规定的。原来，条例因循的是用马拉大炮时代的规则，当时站在炮筒下的士兵的任务是拉住马的缰绳，防止大炮发射后因后座力产生的距离偏差，减少再次瞄准的时间。现在大炮不再需要这一角色了。但条例没有及时调整，出现了不拉马的士兵。这位军官的发现使他受到了国防部的表彰。
+【分 析】
+**管理的首要工作就是科学分工。**只有每个员工都明确自己的岗位职责，才不会产生推委、扯皮等不良现象。如果公司象一个庞大的机器，那么每个员工就是一个个零件，只有他们爱岗敬业，公司的机器才能得以良性运转。**公司是发展的，管理者应当根据实际动态情况对人员数量和分工及时做出相应调整。否则，队伍中就会出现“不拉马的士兵”。**如果队伍中有人滥竽充数，给企业带来的不仅仅是工资的损失，而且会导致其他人员的心理不平衡，最终导致公司工作效率整体下降。
+标 准
+【故 事】
+有一个小和尚担任撞钟一职，半年下来，觉得无聊之极，“做一天和尚撞一天钟”而已。有一天，主持宣布调他到后院劈柴挑水，原因是他不能胜任撞钟一职。小和尚很不服气地问：“我撞的钟难道不准时、不响亮？”老主持耐心地告诉他：“你撞的钟虽然很准时、也很响亮，但钟声空泛、疲软，没有感召力。钟声是要唤醒沉迷的众生，因此，撞出的钟声不仅要洪亮，而且要圆润、浑厚、深沉、悠远。”
+【分 析】
+本故事中的主持犯了一个常识性管理错误，“做一天和尚撞一天钟”是由于主持没有提前公布工作标准造成的。如果小和尚进入寺院的当天就明白撞钟的标准和重要性，我想他也不会因怠工而被撤职。**工作标准是员工的行为指南和考核依据。缺乏工作标准，往往导致员工的努力方向与公司整体发展方向不统一，造成大量的人力和物力资源浪费。**因为缺乏参照物，时间久了员工容易形成自满情绪，导致工作懈怠。制定工作标准尽量做到数字化，要与考核联系起来，注意可操作性。
+体 制
+【故 事】
+有七个人住在一起，每天共喝一桶粥，但粥每天都不够。一开始，他们抓阄决定谁来分粥，每天轮一个。于是乎每周下来，他们只有一天是饱的，就是自己分粥的那一天。后来他们开始推选出一个道德高尚的人出来分粥。强权就会产生腐败，大家开始挖空心思去讨好他，贿赂他，搞得整个小团体乌烟瘴气。然后大家开始组成三人的分粥委员会及四人的评选委员会，互相攻击扯皮下来，粥吃到嘴里全是凉的。最后想出来一个方法：轮流分粥，但分粥的人要等其它人都挑完后拿剩下的最后一碗。为了不让自己吃到最少的，每人都尽量分得平均，就算不平，也只能认了。大家快快乐乐，和和气气，日子越过越好。
+【分 析】
+**管理的真谛在“理”不在“管”。**管理者的主要职责就是建立一个象“轮流分粥，分者后取”那样合理的游戏规则，让每个员工按照游戏规则自我管理。游戏规则要兼顾公司利益和个人利益，并且要让个人利益与公司整体利益统一起来。**责任、权利和利益是管理平台的三根支柱，缺一不可。缺乏责任，公司就会产生腐败，进而衰退；缺乏权利，管理者的执行就变成废纸；缺乏利益，员工就会积极性下降，消极怠工。**只有管理者把“责、权、利”的平台搭建好，员工才能“八仙过海，各显其能”。
+表 率
+【故 事】
+春秋晋国有一名叫李离的狱官，他在审理一件案子时，由于听从了下属的一面之辞，致使一个人冤死。真相大白后，李离准备以死赎罪，晋文公说：官有贵贱，罚有轻重，况且这件案子主要错在下面的办事人员，又不是你的罪过。李离说：“我平常没有跟下面的人说我们一起来当这个官，拿的俸禄也没有与下面的人一起分享。现在犯了错误，如果将责任推到下面的办事人员身上，我又怎么做得出来。”他拒绝听从晋文公的劝说，伏剑而死。
+【分 析】
+正人先正己，做事先做人。**管理者要想管好下属必须以身作则，示范的力量是惊人的。**不但要象先人李离那样勇于替下属承担责任，而且要事事为先、严格要求自己，做到“己所不欲，勿施于人”。**一旦通过表率树立起在员工中的威望，将会上下同心，大大提高团队的整体战斗力。**得人心者得天下，做下属敬佩的领导将使管理事半功倍。
+竞 争
+【故 事】
+国外一家森林公园曾养殖几百只梅花鹿，尽管环境幽静，水草丰美，又没有天敌，而几年以后，鹿群非但没有发展，反而病的病，死的死，竟然出现了负增长。后来他们买回几只狼放置在公园里，在狼的追赶捕食下，鹿群只得紧张地奔跑以逃命。这样一来，除了那些老弱病残者被狼捕食外，其它鹿的体质日益增强，数量也迅速地增长着。
+【分 析】
+**流水不腐，户枢不蠹。人天生有种惰性，没有竞争就会固步自封，躺在功劳簿上睡大觉。**竞争对手就是追赶梅花鹿的狼，时刻让梅花鹿清楚狼的位置和同伴的位置。跑在前面的梅花鹿可以得到更好的食物，跑在最后的梅花鹿就成了狼的食物。按照市场规则，给予“头鹿”奖励，让“末鹿”被市场淘汰。
+沟 通
+【故 事】
+美国知名主持人“林克莱特”一天访问一名小朋友，问他说：“你长大后想要当什么呀？”小朋友天真的回答：“我要当飞机的驾驶员！”林克莱特接着问：“如果有一天，你的飞机飞到太平洋上空所有引擎都熄火了，你会怎么办？”小朋友想了说：“我会先告诉坐在飞机上的人绑好安全带，然后我挂上我的降落伞跳出去。”当在现场的观众笑的东倒西歪时，林克莱特继续注视这孩子，想看他是不是自作聪明的家伙。没想到，接著孩子的两行热泪夺眶而出，这才使得林克莱特发觉这孩子的悲悯之情远非笔墨所能形容。于是林克莱特问他说：“为甚么要这么做？”小孩的答案透露出一个孩子真挚的想法：“我要去拿燃料，我还要回来！！”。
+【分 析】
+你真的听懂了手下的话了吗？你是不是也习惯性地用自己的权威打断手下的语言？我们经常犯这样的错误：在手下还没有来得及讲完自己的事情前，就按照我们的经验大加评论和指挥。反过头来想一下，如果你不是领导，你还会这么做吗？**打断手下的语言，一方面容易做出片面的决策，另一方面使员工缺乏被尊重的感觉。时间久了，手下将再也没有兴趣向上级反馈真实的信息。反馈信息系统被切断，领导就成了“孤家寡人”，在决策上就成了“睁眼瞎”。**与手下保持畅通的信息交流，将会使你的管理如鱼得水，以便及时纠正管理中的错误，制定更加切实可行的方案和制度。
+指 导
+【故 事】
+有一回，日本歌舞伎大师勘弥扮演古代一位徒步旅行的百姓，他要上场之前故意解开自己的鞋带，试图表现这个百姓长途旅行的疲态。正巧那天有位记者到后台采访，看见了这一幕。等演完戏后，记者问勘弥：“你为什么不当时指教学生呢，他们并没有松散自己的鞋带呀。”勘弥回答说：“要教导学生演戏的技能，机会多的是，在今天的场合，最重要的是不要让他们保持热情。”
+【分 析】
+**提高员工素质和能力是提高管理水准的有效方式。**学习有利于提高团队执行力，便于增强团队凝聚力。手把手的现场指导可以及时纠正员工的错误，是提高员工素质的重要形式之一。但是指导必须注重技巧，就像勘弥大师那样要保护员工的热情。管理者必须避免教训式指导，应当语重心长的激励员工提高自身业务素质。除了现场指导外，还可以综合运用培训、交流会、内部刊物、业务竞赛等多种形式，激发员工不断提高自身素质和业务水平，形成一个积极向上的学习型团队。
+锻 炼
+【故 事】
+一个人在高山之巅的鹰巢里，抓到了一只幼鹰，他把幼鹰带回家，养在鸡笼里。这只幼鹰和鸡一起啄食、嬉闹和休息。它以为自己是一只鸡。这只鹰渐渐长大，羽翼丰满了，主人想把它训练成猎鹰，可是由于终日和鸡混在一起，它已经变得和鸡完全一样，根本没有飞的愿望了。主人试了各种办法，都毫无效果，最后把它带到山顶上，一把将它扔了出去。这只鹰像块石头似的，直掉下去，慌乱之中它拼命地扑打翅膀，就这样，它终于飞了起来！
+【分 析】
+**每个人都希望用自己的能力来证明自身价值，手下也不例外。给他们更大的空间去施展自己的才华，是对他们最大的尊重和支持。**不要害怕他们失败，给予适当的扶持和指点，放开你手中的“雄鹰”，让他们翱翔于更宽阔的天空。是个猴子就给他们座山折腾折腾，是条龙就给他们条大江大河扑腾。他们的成长，将为你的工作带来更大的贡献。他们的成长，将促使你更进一步。
+猎人与猎狗的故事
+猎人与猎狗，看似永恒的主仆，但事事无绝对。一个小故事献给大家，故事虽小，含义颇丰，请各位看官慢慢看，细细读，用心品，绝对不会浪费大家的时间。既可以看好看的故事又可以在故事中受到启发，想必这也是内刊创建的宗旨之一吧。好啦，不多说啦，正文开始。
+CHAPTER Ⅰ
+一条猎狗将兔子赶出了窝，一直追赶它，但是追了很久仍没有捉到。羊看到此情景讥笑猎狗说：“你们两个之间，个子小的反而跑的快的多。”猎狗回答说：“你知道什么？我们两个的跑是完全不同的！我仅仅为了一顿饭在跑而它却是为了它的命！”
+读后感：目标
+两种不同的目标，将导致两种完全不同的结果。企业也是如此。据统计，中国中小型企业的寿命在4至7年之间，这就说明单纯以追求利润为目标的企业寿命不会长久。企业创立的初级目标是盈利，我认为企业创立的终极目标应该是在生存、发展和盈利的同时造福社会，回馈社会，这是一种责任也是一种使命。正所谓有多大的胸怀，就有多大的事业。
+CHAPTER Ⅱ
+猎人又买来几条猎狗，凡是能够捉到兔子的，就可以得到骨头，捉不到的就没有饭吃。这一招果然有用，猎狗们纷纷去努力追兔子。过了一段时间，问题又出现了。大兔子难捉，小兔子好捉。但捉到大兔子和小兔子得到的骨头差不多，猎狗们专门去捉小兔子。猎狗们说：反正没有什么大的区别，为什么费那么大的劲去捉那些大的呢?
+读后感：动力
+动力对于企业发展是不可缺少的。按劳取酬，有赏有罚是推动员工做好工作的必要措施和动力。在制定员工的工作目标时，要考虑如何保持个人目标与组织目标的一致，使员工在完成任务的同时有所收获，用以激励员工投入工作。此外，竞争机制一定要适度。如果结合得当，前有工作目标吸引员工，后有竞争对手和监督机制鞭策员工，前拉后推，则事半功倍。
+CHAPTER Ⅲ
+猎人经过思考后，按照捉到兔子的总重量决定猎狗的待遇。于是猎狗们捉到兔子的数量和重量都增加了。但是过了一段时间，猎狗们捉兔子的数量又少了，猎狗说“我们把最好的时间都奉献给了您，主人，但是当我们老了，捉不到兔子的时候，您还会给我们骨头吃吗?”
+读后感：长期的骨头
+猎狗的想法也是比较现实的，但是结合实际来讲，这并不是一两个企业能够解决的，需要社会这个大环境来共同解决，包括政府出台一些相关福利政策来解决企业的后顾之忧。
+CHAPTER Ⅳ
+猎人做了论功行赏的决定。规定如果捉到的兔子超过了一定的数量后，即使捉不到兔子，每顿饭也可以得到一定数量的骨头。猎狗们都努力去达到猎人规定的数量。一段时间过后，终于有一些猎狗达到了猎人规定的数量。这时，其中有一只猎狗说：“我们这么努力，只得到几根骨头，而我们捉的猎物远远超过了这几根骨头。我们为什么不能给自己捉兔子呢?”于是，有些猎狗离开了猎人，自己捉兔子去了
+读后感：骨头与肉兼而有之
+根据马斯洛理论，当员工较低层次的需求得到满足后必然会走向较高层次需求的追求，而且目前从雇员结构来看，已经慢慢走向多元化，人们越来越注重精神上的享受和自我实现，工作不再是必需的谋生手段。于是新的课题出现在管理者的面前，那就是如何对员工进行职业生涯规划，用什么样的愿景激励员工，为他们创造条件，使他们有机会获得成就感和自我价值实现感。
+CHAPTER Ⅴ
+猎人意识到猎狗正在流失，并且那些流失的猎狗像野狗一般和自己的猎狗抢兔子。情况变得越来越糟，猎人咨询了野狗以后进行了改革，使得每条猎狗除基本骨头外，可获得其所猎兔肉总量的n%，而且随着服务时间加长，贡献变大，该比例还可递增，并有权分享猎人总兔肉的m%。就这样，猎狗们与猎人一起努力，将野狗们逼得叫苦连天，纷纷强烈要求重归猎狗队伍。
+读后感：分享的权利
+作为管理者，无论是人力资源部工作人员还是直线管理工作人员，都应当向我们的猎人学习，及时了解员工的合理需求，作为制订政策的出发点。作为企业难免遇到竞争对手，正确认识对手的优势，取长补短，完善自我，才可以使企业处于不败之地。作为这场战争的总指挥，合理的分享企业效益可以刺激员工的积极性，增强对企业的信心。员工作为企业最宝贵财富，对企业发展起至关重要的作用，企业应抱着以人为本的最基本态度，分享所创造出来的财富，创建强大向心力。
+CHAPTER Ⅵ
+冬天到了，兔子越来越少，猎人们的收成也一天不如一天。而那些服务时间长的老猎狗们老得不能捉到兔子，但仍然在无忧无虑地享受着那些他们自以为是应得的大份食物。终于有一天猎人再也不能忍受，把他们扫地出门，因为猎人更需要身强力壮的猎狗……
+读后感：只有永远的利益，没有永远的朋友
+企业的管理由小作坊的人情化管理已经慢慢走向制度化和人性化，市场的结果导向和优胜劣汰就是最合理的规则。这是大多数人可以接受的准则。
+CHAPTER Ⅶ
+被扫地出门的老猎狗们得了一笔不菲的赔偿金，成立了Micro Bone公司。采用连锁加盟的方式招募野狗，向野狗们传授猎兔的技巧，他们从猎得的兔子中抽取一部分作为管理费。当赔偿金几乎全部用于广告后，他们终于有了足够多的野狗加盟。公司开始赢利。一年后，他们收购了猎人的家当……
+读后感：到这里故事出现了转折，仔细想想，的确是情理之外，意料之中。老猎狗们在进行常规的猎兔工作的同时，它一定也在默默修炼自身的技巧，将技巧的东西转化为理论，虽然他们已经不能像其他猎狗那样捕食猎物，但是他的经验和技巧才是最重要的财富。现在市场竞争越来越激烈，必须进行商业模式的创新。
+CHAPTER Ⅷ
+Micro Bone公司许诺给加盟的野狗能得到公司n%的股份。这实在是太有诱惑力了。于是野狗们拖家带口地加入了Micro Bone，一些在猎人门下的年轻猎狗也开始蠢蠢欲动，甚至很多猎人也想加入。好多同类型的公司象雨后春笋般地成立了，Bone Ease，Bone.com，China Bone……
+读后感：从提高工资到增加福利待遇，再到给予员工股份，这个发展过程是管理的进步。员工持股分配方法，是指企业员工通过投资购买、贷款购买或红利转让、无偿分配等方式认购本公司部分股权，委托员工持股会集中管理；员工持股管理委员会（或理事会）作为社团法人进入董事会参与按股分享红利的一种新型股权形式。这种新型的分配方法堪称分配制度一大创举，既可以使员工以劳动者和所有者双重身份参与企业生产经营管理，又能满足企业的融资需求，将企业效益与个人利益紧密联系起来，从而最大限度地调动员工的工作积极性，并且为企业的长久发展提供基本的人力要素，三效合一。
+CHAPTER Ⅸ
+猎人凭借出售公司的钱走上了老猎狗走过的路，最后千辛万苦要与Micro Bone公司谈判的时候，老猎狗出人意料，把Micro Bone公司卖给了猎人。老猎狗们从此不再经营公司，转而开始写自转《老猎狗的一生》，又写：《如何成为出色的猎狗》，《如何从一只普通猎狗成为一只管理层的猎狗》，《猎狗成功秘诀》《成功猎狗500条》《穷猎狗，富猎狗》，并且将老猎狗的故事搬上屏幕，取名《猎狗花园》，四只老猎狗成为了家喻户晓的明星F4。收版权费，没有风险，利润更高。
+读后感：读到这里，故事的发展也许会引得你莞尔一笑，不过我相信这也是意味深长的一笑，因为老猎狗最后的辉煌创业或许已经为我们这些准创业者树立了榜样。老猎狗知道有无数条崇拜他的小猎狗，他的书才会一本接着一本，又一次把机会牢牢地抓在手里，这就是所谓的名人效应，这一次他又赢了。
+也许有人会问到这里故事是不是就完结了，我想还没有，故事还会继续，要知道流星花园也有续集的哦，呵呵。老猎狗成名之后机会更多了，他们会怎么做？猎人难道就被打败了吗？想必每个人都有自己的想法和看法。
+14个「经营管理小故事」
+1、割草的男孩
+一个替人割草打工的男孩打电话给一位陈太太说：“您需不需要割草？”陈太太回答说：“不需要了，我已有了割草工。”，男孩又说：“我会帮您拔掉花丛中的杂草。”，陈太太回答：“我的割草工也做了。”，男孩又说：“我会帮您把草与走道的四周割齐。”，陈太太说：“我请的那人也已做了，谢谢你，我不需要新的割草工人。”，男孩便挂了电话，此时男孩的室友问他说：“你不是就在陈太太那割草打工吗？为什么还要打这电话？”男孩说：“我只是想知道我做得有多好！”。
+【启示】
+这个故事反映的ISO的第一个思想,即以顾客为关注焦点，不断地探询顾客的评价，我们才有可能知道自己的长处与不足,然后扬长避短，改进自己的工作质量，牢牢的抓住顾客。
+这也是质量管理八项原则第6条：“持续改进”思想的实际运用的一个例子。我们每个员工是否也可结合自己的岗位工作，做一些持续改进呢？
+所有的员工都可以做到让顾客满意。对于营销人员来说，这样是可以得到忠诚度极高的顾客。对于我们每个员工来说,只有时刻关注我们的“顾客（服务对象）”我们的工作质量才可以不断改进。
+这也是沟通的问题,一个人想得到公正、客观的评价真的好难。这个故事是否为我们提供了一个好的方法呢？
+做质量的大多数时候都是被动的，只是延续出现问题然后再去解决问题的模式，如果能主动查找问题并解决问题那才是完美的质量管理模式。这也就显示出了一个质量管理者的精髓所在。
+一切都属于那些天天做好准备的人。不要光想着天上能下钞票雨,那是不可能的,凡事靠脑子去想,用双手去做,把不应该发生的事情,提前预防,把不良的缺憾扼杀在萌芽状态。我们要始终坚信“风险是可以防范的，缺陷是可以预防的”！
+2、降落伞的真实故事
+这是一个发生在第二次世界大战中期，美国空军和降落伞制造商之间的真实故事。在当时，降落伞的安全度不够完美，即使经过厂商努力的改善，使得降落伞制造商生产的降落伞的良品率已经达到了99.9%，应该说这个良品率即使现在许多企业也很难达到。但是美国空军却对此公司说No,他们要求所交降落伞的合格率必须达到100%。于是降落伞制造商的总经理便专程去飞行大队商讨此事，看是否能够降低这个水准？因为厂商认为，能够达到这个程度已接近完美了，没有什么必要再改。当然美国空军一口回绝，因为品质没有折扣。后来，军方要求改变了检查品质的方法。那就是从厂商前一周交货的降落伞中，随机挑出一个，让厂商负责人装备上身后亲自从飞行中的机身跳下。这个方法实施后，不良率立刻变成零。
+【启示】
+日本经营之神松下幸之助有句名言：“对产品来说，不是100分就是0分。”任何产品，只要存在一丝一毫的质量问题，都意味着失败。许多人做事时常有“差不多”的心态，对于领导或是客户所提出的要求，即使是合理的，也会觉得对方吹毛求疵而心生不满！
+对待产品质量应该保持精益求精的态度和严谨细致的工作作风。换位成消费者，如果买回的酵母做的馒头里吃出一根头发，什么滋味？也许我们会认为10万（或10亿）袋酵母里才有一袋里有一根头发无需大惊小怪。但是对我们来说是十万分之一，对于吃到头发的消费者来说就是100%。试想，如果什么事情只有99.9%的成功率，那么每年有20，000次配错药事件；每年15，000个婴儿出生时会被抱错；每星期有500宗做错手术事件；每小时有2000封信邮寄错误。看了这些数据，我们肯定都希望全世界所有的人都能在工作中作到100%。因为我们是生产者，同时我们也是消费者。
+3、老木匠造房子的故事
+有个老木匠准备退休，他告诉老板，说要离开建筑行业，回家与妻子儿女享受天伦之乐。老板舍不得他的好工人走，问他是否能帮忙再建一座房子，老木匠说可以。但是大家后来都看得出来，他的心已不在工作上，他用的是软料、次料，出的是粗活，所以手工非常粗糙，工艺做得更是马虎。房子建好的时候，老板把大门的钥匙递给他。“这是我送给你的退休礼物。”，他震惊得目瞪口呆，羞愧得无地自容。如果他早知道是在给自己建房子，他怎么会这样呢？现在他得住在一幢粗制滥造的房子里！
+【启示】
+不可否认，老木匠曾经是一个优秀的人才，给公司创造过很多财富，但最后时刻没有做好自己的本职工作，忘了职责，后果自负。
+作为一名员工，责任在先，时时刻刻都应该认认真真地对待自己的工作，并做到善始善终。这才能给公司带来更多的利润，当然自己也将得到丰厚的回报。
+提高质量，总是有方法。
+品质没有折扣。
+我们的生活也像建房子，如果是漫不经心地“建造”自己的生活，不是积极行动，而是消极应付，凡事不肯精益求精，在关键时刻不能尽最大努力。等我们惊觉自己的处境，早已深困在自己建造的劣质“房子”里了。
+把你当成那个木匠吧，想想你的房子，每天你敲进去一颗钉，加上去一块板，或者竖起一面墙，用你的智慧好好建造吧！
+4、电话亭的故事
+中国的留德大学生见德国人做事刻板，不知变通，就存心捉弄他们一番。大学生们在相邻的两个电话亭上分别标上了“男”“女”的字样，然后躲到暗处，看“死心眼”的德国人到底会怎么样做。结果他们发现，所有到电话亭打电话的人，都像是看到厕所标志那样，毫无怨言地进入自己该进的那个亭子。有一段时间，“女亭”闲置，“男亭“那边宁可排队也不往“女亭”这边移动。我们的大学生惊讶极了，不晓得德国人何以“呆”到这份上。面对大学生的疑问，德国人平静地耸耸肩说：“规则嘛，还不就是让人来遵守的吗？”
+【启示】
+德国人的刻板可以让我们开心地一连笑上3天，而他们看似有理的解释，也足以让某些一贯无视规则的“国产大能人”笑掉大牙。但是在开心之余，嘲笑之余，我们漠视规则已经多久了？我们总是聪明地认为，那些甘愿被规则约束的人不仅是“死心眼”，简直是“缺心眼”。规则是死的可人是活的，活人为什么要被死规则套住呢？正是因为这样，我们才会落后人家好多年。
+5、小和尚撞钟的故事
+有一个小和尚在寺院担任撞钟之职。按照寺院的规定，他每天必须在早上和黄昏各撞钟一次。如此半年下来，小和尚感觉撞钟的工作极其简单，倍感无聊。后来，干脆“做一天和尚撞一天钟”了。一天寺院住持忽然宣布要将他调到后院劈柴挑水，原因是他不能胜任撞钟之职。小和尚觉得奇怪，就问住持：“难道我撞的钟不准时、不响亮？”住持告诉他：“你的钟撞得很响，但钟声空泛、疲软，因为你心中没有理解撞钟的意义。钟声不仅仅是寺里作息的准绳，更为重要的是唤醒沉迷众生。因此，钟声不仅要宏亮，还要圆润、浑厚、深沉、悠远。一个人心中无钟，既是无佛；如果不虔诚，怎能担当撞钟之职？”小和尚听后，面有愧色，此后潜心修炼，终成一代名僧。
+【启示】
+本故事中的主持犯了一个常识性管理错误，“做一天和尚撞一天钟”的结果，是由于主持没有提前公布工作标准造成的。如果小和尚进入寺院的当天就明白撞钟的标准和重要性，他也不会因怠工而被撤职。
+工作标准是员工的行为指南和考核依据。缺乏工作标准，往往导致员工的努力方向与公司整体发展方向不统一，造成大量的人力和物力资源浪费。因为缺乏参照物，时间久了员工容易形成自满情绪，导致工作懈怠。制定工作标准尽量做到数字化，要与考核联系起来，注意可操作性。
+既然有了工作标准就应该很好的去执行它，不要打折扣，不要等到领导认为你不能胜任工作才后悔！
+公司、各部门、各岗位的培训都是很重要的，为了让员工知道该怎么做，就必须定好标准，作好培训！
+领导------请重视制度和培训，这样才能培养员工，您才不需要这么忙。
+员工------请遵守制度，这样才能胜任工作，你才不会因怠工而被撤职。
+6、扁鹊论医
+魏文王问名医扁鹊说∶“你们家兄弟三人，都精于医术，到底哪一位医术最好呢？”扁鹊答说∶“长兄最好，中兄次之，我最差。”文王吃惊地问∶“你的名气最大，为何长兄医术最高呢？”扁鹊惭愧地说∶“我扁鹊治病，是治病于病情严重之时。一般人都看到我在经脉上穿针管来放血、在皮肤上敷药等大手术，所以以为我的医术高明，名气因此响遍全国。我中兄治病，是治病于病情初起之时。一般人以为他只能治轻微的小病，所以他的名气只及于本乡里。而我长兄治病，是治病于病情发作之前。由于一般人不知道他事先能铲除病因，所以觉得他水平一般，但在医学专家看来他水平最高。
+【启示】
+以上的“病”可以理解为“质量事故”。能将质量事故在“病”情发作之前就进行消除，才是“善之善者也”。
+预防质量事故，要从“小病”做起。也就是要防患于未然。事后控制不如事中控制，事中控制不如事前控制。
+对于成功处理已发质量事故的人要进行奖励，同时，更要对预防质量事故的人和行为进行奖励。
+质量管理如同医生看病，治标不能忘固本。许多企业悬挂着“质量是企业的生命”的标语，而现实中存在“头疼医头、脚疼医脚”的质量管理误区。
+造成“重结果轻过程”现象是因为：结果控制者因为改正了管理错误，得到员工和领导的认可；而默默无闻的过程控制者不容易引起员工和领导的重视。最终导致管理者对表面文章乐此不疲，而对预防式的事前控制和事中控制敬而远之。
+如何提高事前控制和事中控制的执行力呢？首先，从上到下应当有很强的全过程质量管理意识。其次，每个环节都制定详细的质量管理标准。再次，用业绩考核改变公司不利局面。第四，客户和员工是最好的质量改善者。
+7、袋鼠与笼子
+一天，动物园管理员发现袋鼠从笼子里跑出来了，于是开会讨论，一致认为是笼子的高度过低。所以决定将笼子的高度由原来的10米加高到20米。结果第二天又发现袋鼠还是跑到外面来了，所以再次决定再将高度加高到30米。没想到隔天居然又看到袋鼠全跑到外面，于是管理员大为紧张，决定一不做二不休，将笼子的高度加高到100米。一天长颈鹿和几只袋鼠们在闲聊，“你们看，这个人会不会再继续加高你们的笼子？”长颈鹿问。“很难说。”袋鼠说∶“如果他再继续忘记关门的话！”
+【启示】
+这是一个典型的本末倒置的例子。他们不是去消除根源——“关门”，而是去加高“笼子。”
+在作质量问题调查的时候，如果不找到问题的根源，那么，永远无法消除这些质量问题。同时，还将造成企业成本的升高——“加高笼子”。
+所以，作为质量人，我们要经常问自己，“我们的袋鼠笼子关好了吗？”
+8、提醒自我
+有个老太太坐在马路边望着不远处的一堵高墙，总觉得它马上就会倒塌，见有人向墙边走过去，她就善意地提醒道：“那堵墙要倒了，远着点走吧。”被提醒的人不解地看着她，大模大样地顺着墙根走过去了，那堵墙没有倒。老太太很生气：“怎么不听我的话呢？！”又有人走来，老太太又予以劝告。三天过去了，许多人在墙过走过去，并没有遇上危险。第四天，老太太感到有些奇怪，又有些失望，不由自主便走到墙根下仔细观看，然而就在此时墙倒了，老太太被掩埋在灰尘砖石中，气绝身亡。
+【启示】
+提醒别人容易，提醒自己有时更难。
+快要倒的墙，它始终是要倒的，不要存任何侥幸的心理。
+做质量工作也是一样。要时时警惕质量管理中风险，不仅时时提醒别人，也要时时警示自己。同时，对风险最好的方法是进行改善并消除，而且要有危机感，尽快解决。不然，一旦风险爆发了，伤及的不仅是公司，也会伤及自己。
+9、天堂
+一位行善的基督徒，临终后想见天堂与地狱究竟有何差异，于是天使就带他到地狱参观。在他们面前出现摆满了佳肴的餐桌。“地狱的生活还不错嘛”。“不用急，你再继续看下去。”一会，只见一群骨瘦如柴的饿鬼鱼贯入座。每个人手上拿着一双长十几尺的筷子。可是由于筷子实在是太长了，最后每个人都夹得到，吃不到……来到天堂，同样的情景，同样的满桌佳肴，每个人同样用一双长十几尺的筷子。不同的是，围着吃饭的人们，他们互相喂对面的人吃菜，因此每个人都吃得很愉快。
+【启示】
+这则故事体现了质量管理八项原则上与供方互利的关系，在经济全球化不断深化的今天，与供应商之间建立起牢固的合作关系，加强对供应商的质量控制，建立互利共赢的合作关系已经成为企业必须认真面对的问题。
+10、1000只羊
+在9.11事件之前，美国总统克林顿曾悬赏1000万美元捉拿恐怖组织头目本·拉登。9.11事件以后，总统将赏金提高到2500万美元。然而，阿富汗人民却对此无动于衷。后来，美国情报局经过调查发现，并非阿富汗人嫌2500万美元太少，而是在极端贫穷的阿富汗人的心目中，2500万美元是一个空洞无际的天文数字。对于他们来说，解决每天的柴米油盐和生计才是头等大事，至于那些数以千万计的巨额财富，实在是太遥远了——于是赏金变成了1000只羊。一时间，阿富汗人轰动了，他们纷纷钻进山林寻找拉登的下落。一个当地人兴奋地说：“1000只羊！天啊，那是多么大的一群羊啊！我们村子里最富有的人家也只有八只羊。如果能有1000只羊，我们全家几辈子都有着落了。”
+【启示】
+把握顾客需要是能否成功的关键。我们不能把产品毫无选择地卖给任何一个客户。例如：我们很难把梳子、洗发水和护发素推销给和尚；把保险柜卖给乞丐；把照相机卖给瞎子；把高级音响卖给聋子。对于他们来说，这些产品都毫无用处。
+必须时刻关注顾客的需求变化，努力适应并符合其需求。海尔在这一方面是成功的典范。为了适应每一个地区不同的消费群体的不同需要，海尔为北京市场提供技术最高、价格最贵的高档精品；为上海家庭提供小型瘦长、小巧玲珑的“小小王子”；为广西家庭提供有单列装水果用的保鲜室的“果蔬王”。
+11、曲突徙薪
+客人到主人家做客，看见主人家的灶上烟囱是直的，旁边又有很多木材。客人告诉主人说，烟囱要改曲，木材须移去，否则将来可能会有火灾，主人听了没有作任何表示。不久主人家里果然失火，四周邻居赶紧跑来救火，最后火被扑灭了。于是主人烹羊宰牛，宴请四邻，以酬谢他们救火的功劳，但没有请当初建议他将木材移走、烟囱改曲的人。有人对主人说：“如果当初听了那位先生的话，今天也不用准备筵席，而且没有火灾的损失，现在论功行赏，原先给你建议的人没有被感恩，而救火的人却是座上客，真是很奇怪的事呢！”主人顿时省悟，赶紧去邀请当初给予建议的那个客人。
+【启示】
+预防重于救火。客人告诉主人需要“曲突”和“徙薪”，其实就是告诉主人需要预防火灾的出现，因为“直突”和“薪”是产生火灾的重大隐患。只有去除火灾的根源，才能预防火灾的出现。不仅需要提出预防措施，而且要更进一步地跟踪改善措施的有效完成。
+12、猴子与香蕉
+西点实验室有一个很经典的故事：有6只猴子关在一个实验室里，头顶上挂着一些香蕉，但香蕉都连着一个水龙头，猴子看到香蕉，很开心去拉香蕉，结果被水淋的一塌糊涂，然后6只猴子知道香蕉不能碰了。然后换一只新猴子进去，就有5只老猴子1只新猴子，新来的猴子看到香蕉自然很想吃，但5只老猴子知道碰香蕉会被水淋，都制止它，过了一些时间，新来的猴子也不再问，也不去碰香蕉。然后再换一只新猴子，就这样，最开始的6只猴子被全部换出来，新进去的6只猴子也不会去碰香蕉。
+【启示】
+这个故事反映的是培训的重要性和无条件的执行制度。
+培训的重要性：把好的经验做好培训，让大家共享，培训好了，可以少犯错误，少走弯路，大家都会向同一个方向，也是正确的方向使力，这样的团队或公司会战无不胜的。
+制度就是要无条件执行的。因为制度是经验的总结。不遵守制度是要犯错误或受惩罚的。
+作为一个企业能不能在市场竞争当中生存、发展、取胜，质量将成为企业生死存亡的决定力量，但什么又决定质量呢？如何提高质量呢？执行！——还是执行！这个“质量文化”中最重要的一环，是质量最有力的发动机，它发动着质量的改进，发动着企业发展。
+13、汽车“秀逗”的故事
+有一天美国通用汽车公司收到一封客户抱怨信：我们家有一个传统的习惯，就是每天在吃完晚餐后，都会以冰淇淋来当饭后甜点。由于冰淇淋的口味很多，所以我们家每天在饭后投票决定要吃哪一种口味，等大家决定后我就会开车去买。但自从最近我买了一部新的庞帝雅克后，在我去买冰淇淋的这段路程问题就发生了。每当我买的是香草口味时，我从店里出来车子就发不动。但如果我买的是其它的口味，车子发动就顺得很。问题听起来很猪头。庞帝雅克的总经理对这封信虽心存怀疑，但还是派了一位工程师去查看究竟。当工程师去找这位仁兄时，很惊讶的发现这封信是出之于一位事业成功、乐观、且受了高等教育的人。工程师安排与这位仁兄的见面时间刚好是在用完晚餐的时间，两人于是上车往冰淇淋店开去。那个晚上投票结果是香草口味，当买好香草冰淇淋回到车上后，车子又熄火了。这位工程师之后又依约来了三个晚上。第一晚，巧克力冰淇淋，车子没事。第二晚，草莓冰淇淋，车子也没事。第三晚，香草冰淇淋，车子“秀逗”。这位思考有逻辑的工程师，还是死不相信这位仁兄的车子对香草过敏。
+因此，他仍然不放弃继续安排相同的行程，希望能够将这个问题解决。工程师开始记下从头到现在所发生的种种详细资料，如时间、车子使用油的种类、车子开出及开回的时间…，根据资料显示他有了一个结论，这位仁兄买香草冰淇淋所花的时间比其它口味的要少。为什么呢？原因是出在这家冰淇淋店的内部设置的问题。因为，香草冰淇淋是所有口味中最畅销的口味，店家为了让顾客每次都能很快的取拿，将香草口味特别分开陈列在单独的冰柜，并将冰柜放置在店的前端；至于其它口味则放置在距离收银台较远的后端。现在，工程师所要知道的疑问是，为什么这部车会因为从熄火到重新激活的时间较短时就会“秀逗”？原因很清楚，绝对不是因为香草冰淇淋的关系，工程师很快地由心中浮现出，答案应该是“蒸气锁”。因为当这位仁兄买其它口味时，由于时间较久，引擎有足够的时间散热，重新发动时就没有太大的问题。但是买香草口味时，由于花的时间较短，引擎太热以至于还无法让“蒸气锁”有足够的散热时间。
+【启示】
+即使有些问题看起来真的是疯狂，但是有时候它还是真的存在；如果我们每次在看待任何问题并秉持着冷静的思考去找寻解决的方法，这些问题将看起来会比较简单不那么复杂。所以碰到问题时不要直接就反应说那是不可能的，而没有投入一些真诚的努力。
+做质量的首先要相信顾客的投诉,没有谁闲的无聊,找人投诉玩儿!
+会投诉的客户才是真的回头客户或者是真诚的客户处事态度，莫若于此！若人人皆有此处事态度，何愁公司经营不好!
+质量改进工具之一的“头脑风暴法”在分析问题时“知无不言、言无不尽、言者无责”的方法和质量管理原则“基于事实为依据的决策方法”思想在此例中也有所体现。
+14、三个老汉想象皇帝的笑话
+话说有三个老汉有一天碰到一起了，于是就聊天，聊着聊着就聊到了皇帝身上。第一个是个拾粪的老汉说：“如果我当了皇帝，我就下令这条街东面的粪全部归我，谁去拾就有公差来抓”。第二个是个砍柴的老汉，瞪了第一个老汉一眼说：“你就知道拾粪，皇帝拾粪干啥？如果我当了皇帝，我就打一把金斧头，天天用金斧头去砍柴”。第三个是个讨饭的老汉，听完后哈哈大笑，眼泪都笑出来了，他说：“你们两个真有意思，都当了皇帝了，还用得着干活吗？要是我当了皇帝，我就天天坐在火炉边吃烤红薯”。
+【启示】
+这些老汉们就是想坏了脑子，也不知道皇帝是如何生活的。
+这个故事对我们从事质量管理和学习质量管理的人能引起深思。由于质量管理象雾霭的朦胧一样，既浩瀚又神秘；但同时质量管理又象空气，经常不经意的出现在每个人的身边；结果如同这三个老汉一样对质量管理并不真的知道却敢遐想的人还真不少。
+这种遐想如果是聊天还可以，可怕的是有些遐想质量管理的人却有机会发挥他的遐想；结果用对质量管理的这些遐想来代替实际的质量管理，从而引发了质量管理的危机。
+质量管理第一是人文科学；因为之所以叫质量管理，其主体对象应该是对“人”的行为才称之为质量管理。
+质量管理是按质量目标设计并实施的行为，因而质量管理又与目标形成对应关系。
+行为与实施的环境紧密相连的，因而质量管理还与实现目标时的环境呈依赖关系。
+质量管理既是科学，还是艺术；质量管理靠想当然是不行的。成功的质量管理不能复制，质量管理的成功永远来自于创新；而创新则需要知识和艺术的结合。
+对香草冰淇淋过敏的汽车
+这是一个发生在美国通用汽车的客户与该公司客服部间的真实故事。
+
+有一天美国通用汽车公司的庞帝雅克（Pontiac）部门收到一封客户抱怨信，上面是这样写的：
+这是我为了同一件事第二次写信给你，我不会怪你们为什么没有回信给我，因为我也觉得这样别人会认为我疯了，但这的确是一个事实。
+我们家有一个传统的习惯，就是我们每天在吃完晚餐后，都会以冰淇淋来当我们的饭后甜点。由于冰淇淋的口味很多，所以我们家每天在饭后才投票决定要吃哪一种口味，等大家决定后我就会开车去买。但自从最近我买了一部新的庞帝雅克后，在我去买冰淇淋的这段路程问题就发生了。
+你知道吗？每当我买的冰淇淋是香草口味时，我从店里出来后车子就发不动。但如果我买的是其它的口味，车子发动就顺得很。我要让你知道，我对这件事情是非常认真的，尽管这个问题听起来很猪头。但为什么这部庞帝雅克当我买了香草冰淇淋它就秀逗，而我不管什么时候买其它口味的冰淇淋，它就是一尾活龙？为什么？为什么？
+这封不可思议的投诉信立即引来了庞帝雅克车技术服务人员的调侃：“汽车对香草冰淇淋过敏？那我的游艇对可口可乐也要过敏了。”“找错了对象，他应该去看看心理医生。”“查查地址，这封投诉信可能是从疯人院里寄来的。”……虽然对这封信的真实性心存怀疑，但庞帝雅克的总经理没有马虎对待这近乎天方夜谭的投诉，他派了一位办事严谨的工程师前去处理这件不可思议的投诉案。
+当工程师去找这位仁兄时，很惊讶的发现这封信是出之于一位事业成功、乐观且受了高等教育的人。工程师安排与这位仁兄的见面时间刚好是在用完晚餐的时间，两人于是上了汽车，往冰淇淋店开去。那个晚上投票结果是香草口味，当买好香草冰淇淋回到车上后，车子又秀逗了。这位工程师之后又连续来了三个晚上。第一晚，巧克力冰淇淋，车子没事。第二晚，草莓冰淇淋，车子也没事。第三晚，香草冰淇淋，车子“秀逗”。看来，投诉者反映的“荒唐”问题一点儿也不荒唐，庞帝雅克汽车确实时香草冰淇淋“过敏”。
+这位思考有逻辑的工程师，到这时还是死不相信这位仁兄的车子对香草“过敏”。因此，他仍然不放弃继续安排相同的行程，希望能够将这个神秘的问题解决。工程师开始记下从开始到现在所发生的种种详细资料，如汽车经过的路线、使用汽油的种类、开出和开回以及停车所用的时间……根据记录的资料，他得出了一个结论：这位仁兄买香草冰淇淋所花的时间比其它口味的要少。
+为什么呢？一丝不苟的工程师仔细研究了其中的一些细节问题后，终于发现了汽车对香草冰淇淋“过敏”的奥秘：这家冰淇淋店的内部设置是整个问题的关键。因为，香草冰淇淋是所有冰淇淋口味中最畅销的口味，店家为了让顾客每次都能很快的取拿，将香草口味特别分开陈列在单独的冰柜，并将冰柜放置在店的前端；至于其它口味则放置在距离收银台较远的后端。
+现在，工程师所要知道的疑问是，为什么这部车会因为从熄火到重新激活的时间较短时就会“秀逗”？具有深厚专业知识的工程师很快找出了答案：问题出在汽车发动机那个小小的散热装置上。原来，当买其他口味的冰淇淋时，由于所花的时间较长，发动机有足够的时间散热，重新发动时就没有太大的问题；但是当买香草冰淇淋时，由于所花的时间较短发动机太热以至于还无法让散热装置有足够的时间散热，在密闭管路中油跟油之间会出现一段气体，阻塞了油路，人们通常把它叫做“气阻”，引擎所吸收的燃料就会断断续续，从而引起发动机不能正常发动，汽车当然就时香草冰淇淋“过敏”了。原来这都是发动机散热不畅惹的祸。
+这位工程师向公司反映了汽车对香草冰淇淋“过敏”的原因，设计部门迅速进行了技术改进，弥补了散热装置的缺陷，解决了气阻现象。不久，随时能重新发动引擎的散热装置应运而生。从此，庞帝雅克车对香草冰淇淋再也不“过敏”了，这个看似荒唐的投诉案得到了圆满的解决。
+
+解决问题的第一步是了解事情的来龙去脉，每一个细节都不能放过
+
+扁鹊三兄弟
+
+（魏文侯问扁鹊）曰：“子昆弟三人，其孰最善为医？”扁鹊曰：“长兄最善，中兄次之，扁鹊最为下。”魏文侯曰：“可得闻邪？”扁鹊曰：“长兄于病视神，未有形而除之，故名不出于家。中兄治病，其在毫毛，故名不出于闾（lǘ）。若扁鹊者，镵（chán）血脉，投毒药，副（pì）肌肤间，而名出闻于诸侯。”（节选自《鹖（hé）冠子·卷下·世贤第十六》）
+
+春秋战国时期，有位神医被尊为“医祖”，他就是“扁鹊”。一次，魏文王问扁鹊说：“你们家兄弟三人，都精于医术，到底哪一位最好呢？”扁鹊答：“长兄最好，中兄次之，我最差。”文王又问：“那么为什么你最出名呢？”扁鹊答：“长兄治病，是治病于病情发作之前，由于一般人不知道他事先能铲除病因，所以他的名气无法传出去；中兄治病，是治病于病情初起时，一般人以为他只能治轻微的小病，所以他的名气只及本乡里；而我是治病于病情严重之时，一般人都看到我在经脉上穿针管放血，在皮肤上敷药等大手术，所以以为我的医术高明，名气因此响遍全国。”
+从故事中，可以了解到：扁鹊大哥擅长的是“事前控制”，具有敏锐的洞察力和战略眼光，能够帮助人们防患于未然。因此，如果在现代社会，扁鹊大哥应该比较适合去卖保险或者保健品——赶快保险，重视保健，一句“君有疾在腠理，不治将恐深”已足以让现代人提心吊胆。而且，这年头，如果保险或者保健品卖得好，更容易出名。当然，如果扁鹊大哥不想去卖保险或者保健品，也可以到企业去做战略规划、项目投资的特聘专家。总之，一句话，在这个一切成功的要素都已经存在的今天，战略眼光已经显得比能力更加重要。所以，若干年前，扁鹊先生的谦虚，也具有很强的预见性，看来还真是兄弟一家亲。
+扁鹊二哥擅长的是“事中控制”，具有出手迅速、果断、干练的特点，能够帮助人们免受重大疾病或灾难的折磨。拿感冒来说，相信大部分人都有过感冒的经历。感冒虽是小病，但如果不及时根治，很容易引起鼻炎、肺炎、病毒性心肌炎等很难治疗的慢性疾病，给病人带来巨大的身体痛苦和金钱损失。所以，扁鹊二哥的迅速、果断与干练能及时地扼杀病毒，断病根于初起之时。如果在现代社会，扁鹊二哥一定会大受企业老板的欢迎。一方面，能够及时清除企业发展过程中遇到的问题，同时又节约成本，不至于让企业损失巨大的经济利益和商业机会。
+扁鹊先生擅长“事后控制”，能够扶大厦之将倾，挽狂澜于即倒，是临危受命型的关键人物——企业的救命草。当发生重大危机时，扁鹊先生往往能够将企业盘活，把企业从奄奄一息或者休克的状态中抢救过来，从而延续生命。所以，扁鹊先生不轻易出手，而是该出手时就出手；也不会受雇于一家企业，因为有太多的企业等着他去救死扶伤。因而，扁鹊先生类似于现代的咨询专家，在从一家企业走向另一家企业，一次手术到另一次手术的过程中，成就了自己的名声。因为人们天生对痛苦的经历记忆深刻，而且对冲在第一线的救命人员心存好感，所以，扁鹊先生的“医祖”之称自然当之无愧。
+
+事后控制不如事中控制，事中控制不如事前控制，可惜大多数的事业经营者均未能体会到这一点，等到错误的决策造成了重大的损失才寻求弥补，有时是亡羊补牢，为时已晚。
+需要我们建立完善的绩效考核体系，清除隐患的奖励必须大于时候解决这个问题的奖励！
+
+曲突徒薪
+有位客人到某人家里作客，看见主人家的灶上烟囱是直的，旁边又有很多木材。客人告诉主人说，烟囱要改曲，木材须移去，否则将来可能会有火灾，主人听了没有做任何表示。
+不久主人家里果然失火，四周的邻居赶紧跑来救火，最后火被扑灭了，于是主人烹羊宰牛，宴请四邻，以酬谢他们救火的功劳，但是并没有请当初建议他将木材移走，烟囱改曲的人。
+有人对主人说∶「如果当初听了那位先生的话，今天也不用准备筵席，而且没有火灾的损失，现在论功行赏，原先给你建议的人没有被感恩，而救火的人却是座上客，真是很奇怪的事呢！」
+主人顿时省悟，赶紧去邀请当初给予建议的那个客人来吃酒。
+一般人认为，足以摆平或解决企业经营过程中的各种棘手问题的人，就是优秀的管理者，其实这是有待商榷的，俗话说∶「预防重于治疗」，能防患于未然之前，更胜于治乱于已成之后，由此观之，企业问题的预防者，其实是优于企业问题的解决者。
+医生和鬼
+
+原故事找不到了，这里自己按照原来故事脉络现编一个
+
+一书生母亲病重，遂求医。镇上有两位医生，不知道该请哪一位。如是去问村里一位开了天眼的巫师，此巫师说：镇东大夫背后跟着5个小鬼，镇西大夫背后跟着100个小鬼。书生说：善，吾去请镇东大夫！巫师又说：镇东大夫每年看10病人，镇西大夫每年看1000个病人。书生拜谢：差点误了老母性命，吾速去请镇西大夫！
+
+不做不错，多做多错，多错多罚，管理大忌！
+
+猫捉老鼠
+一个越国人为了捕鼠，特地弄回一只善于捕老鼠的猫。这只猫善于捕鼠，也喜欢吃鸡，结果越国人家中的老鼠被捕光了，但鸡也所剩无几。他的儿子想把吃鸡的猫赶走，父亲却说：“祸害我们家的是老鼠不是猫，老鼠偷我们的食物，咬坏我们的衣物，挖穿我们的墙壁，损害我们的家具，不除掉它们我们必将挨饿受冻，所以必须除掉它们！没有鸡大不了不吃罢了，离挨饿受冻还远着哩！”
+金无足赤，领导者对人才不可苛求完美，任何人都难免有些小毛病，只要无伤大雅，何必过分计较呢？最重要的是发现他最大的优点，能够为企业带来怎样的利益。
+现代化管理学主张对人实行功能分析：“能”，是指一个人能力的强弱，长处短处的综合；“功”，是指这些能力是否可转化为工作成果。结果表明：宁可使用有缺点的能人，也不用没有缺点的平庸的“完人”。
+后话
+
+大家还有什么好故事推荐没？
+
+]]></content>
+      <categories>
+        <category>管理</category>
+      </categories>
+      <tags>
+        <tag>管理</tag>
+        <tag>故事</tag>
       </tags>
   </entry>
 </search>
