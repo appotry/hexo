@@ -1,1 +1,128 @@
-require(["gitbook","jQuery"],(function(t,o){o(window).width()<=600||(t.events.bind("start",(function(){})),t.events.bind("page.change",(function(){var e,i="plugin_gitbook_split",s=!1,n=null,u=o("body"),a=o(".book"),f=o(".book-summary"),r=o(".book-body"),d=o('<div class="divider-content-summary"><div class="divider-content-summary__icon"><i class="fa fa-ellipsis-v"></i></div></div>');function m(t,o,e){sessionStorage.setItem(i,JSON.stringify({summaryWidth:t,summaryOffset:o,bookBodyOffset:e}))}function l(t,o,e){f.outerWidth(t),f.offset({left:o}),r.offset({left:e}),f.css({position:"absolute"}),r.css({position:"absolute"})}f.append(d),d.outerWidth(),d.outerWidth(),l((e=function(){var t=JSON.parse(sessionStorage.getItem(i));return t||(t={}),t.summaryWidth||(t.summaryWidth=f.outerWidth()),t.summaryOffset||(t.summaryOffset=f.position().left),t.bookBodyOffset||(t.bookBodyOffset=r.position().left),t}()).summaryWidth,e.summaryOffset,e.bookBodyOffset),setTimeout((function(){var e=!Boolean(o(".toggle-summary").length);(e?o(".fa.fa-align-justify").parent():o(".toggle-summary")).on("click",(function(){var o=null,i=null;(e?!t.sidebar.isOpen():a.hasClass("with-summary"))?(o=-f.outerWidth(),i=0):(o=0,i=f.outerWidth()),l(f.outerWidth(),o,i),m(f.outerWidth(),o,i)}))}),1),d.on("mousedown",(function(t){t.stopPropagation(),s=!0,n=f.outerWidth()-t.pageX})),u.on("mouseup",(function(t){t.stopPropagation(),s=!1,m(f.outerWidth(),f.position().left,r.position().left)})),u.on("mousemove",(function(t){s&&(t.stopPropagation(),t.preventDefault(),f.outerWidth(t.pageX+n),r.offset({left:t.pageX+n}))}))})))}));
+require(['gitbook', 'jQuery'], function (gitbook, $) {
+  
+	// MEMO:
+	// Gitbook is calculated as "calc (100% - 60px)" in the horizontal width when the width of the screen size is 600px
+	// or less.
+	// In this case, since contradiction occurs in the implementation of this module, return.
+	if($(window).width() <= 600) {
+		return;
+	}
+
+	gitbook.events.bind('start', function () {
+	});
+
+	gitbook.events.bind('page.change', function () {
+
+		var KEY_SPLIT_STATE = 'plugin_gitbook_split';
+
+		var dividerWidth = null;
+		var isDraggable = false;
+		var dividerCenterOffsetLeft = null;
+		var splitState = null;
+		var grabPointWidth = null;
+
+		var $body = $('body');
+		var $book = $('.book');
+		var $summary = $('.book-summary');
+		var $bookBody = $('.book-body');
+		var $divider = $('<div class="divider-content-summary">' +
+			               '<div class="divider-content-summary__icon">' +
+			                 '<i class="fa fa-ellipsis-v"></i>' +
+			               '</div>' +
+			             '</div>');
+
+		$summary.append($divider);
+
+		dividerWidth = $divider.outerWidth();
+		dividerCenterOffsetLeft = $divider.outerWidth() / 2;
+
+		// restore split state from sessionStorage
+		splitState = getSplitState();
+		setSplitState(
+			splitState.summaryWidth,
+			splitState.summaryOffset,
+			splitState.bookBodyOffset
+		);
+
+		setTimeout(function() {
+			var isGreaterThanEqualGitbookV2_5 = !Boolean($('.toggle-summary').length);
+
+			var $toggleSummary = isGreaterThanEqualGitbookV2_5
+				? $('.fa.fa-align-justify').parent() : $('.toggle-summary');
+
+			$toggleSummary.on('click', function () {
+
+				var summaryOffset  = null;
+				var bookBodyOffset = null;
+
+				var isOpen = isGreaterThanEqualGitbookV2_5
+					? !gitbook.sidebar.isOpen() : $book.hasClass('with-summary');
+
+				if (isOpen) {
+					summaryOffset  = -($summary.outerWidth());
+					bookBodyOffset = 0;
+				} else {
+					summaryOffset  = 0;
+					bookBodyOffset = $summary.outerWidth();
+				}
+
+				setSplitState($summary.outerWidth(), summaryOffset, bookBodyOffset);
+				saveSplitState($summary.outerWidth(), summaryOffset, bookBodyOffset);
+			});
+		}, 1);
+
+		$divider.on('mousedown', function (event) {
+			event.stopPropagation();
+			isDraggable = true;
+			grabPointWidth = $summary.outerWidth() - event.pageX;
+		});
+
+		$body.on('mouseup', function (event) {
+			event.stopPropagation();
+			isDraggable = false;
+			saveSplitState(
+				$summary.outerWidth(),
+				$summary.position().left,
+				$bookBody.position().left
+			);
+		});
+
+		$body.on('mousemove', function (event) {
+			if (!isDraggable) {
+				return;
+			}
+			event.stopPropagation();
+			event.preventDefault();
+			$summary.outerWidth(event.pageX + grabPointWidth);
+			$bookBody.offset({ left: event.pageX + grabPointWidth });
+		});
+
+		function getSplitState() {
+			var splitState = JSON.parse(sessionStorage.getItem(KEY_SPLIT_STATE));
+			splitState || (splitState = {});
+			splitState.summaryWidth || (splitState.summaryWidth = $summary.outerWidth());
+			splitState.summaryOffset || (splitState.summaryOffset = $summary.position().left);
+			splitState.bookBodyOffset || (splitState.bookBodyOffset = $bookBody.position().left);
+			return splitState;
+		}
+
+		function saveSplitState(summaryWidth, summaryWidthOffset, bookBodyOffset) {
+			sessionStorage.setItem(KEY_SPLIT_STATE, JSON.stringify({
+				summaryWidth: summaryWidth,
+				summaryOffset: summaryWidthOffset,
+				bookBodyOffset: bookBodyOffset,
+			}));
+		}
+
+		function setSplitState(summaryWidth, summaryOffset, bookBodyOffset) {
+			$summary.outerWidth(summaryWidth);
+			$summary.offset({ left: summaryOffset });
+			$bookBody.offset({ left: bookBodyOffset });
+			// improved broken layout in windows chrome.
+			//   "$(x).offset" automatically add to "position:relative".
+			//   but it cause layout broken..
+			$summary.css({ position: 'absolute' });
+			$bookBody.css({ position: 'absolute' });
+		}
+	});
+});

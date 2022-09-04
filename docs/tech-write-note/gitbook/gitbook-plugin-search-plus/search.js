@@ -1,1 +1,266 @@
-require(["gitbook","jquery"],(function(e,t){var n,a,o,r,s,i=e.state,l={},u=void 0!==window.history.pushState,c=t("body");function p(e){return String(e).replace(/([-.*+?^${}()|[\]/\\])/g,"\\$1")}function d(i){if(null!=i&&""!==i.trim()){var u=[],c=-1;for(var d in l){var h=l[d],f=i.toLowerCase(),v=!1;h.keywords&&~h.keywords.split(/\s+/).indexOf(f.split(":").pop())&&(/.:./.test(f)?f=f.split(":").slice(0,-1).join(":"):v=!0);var g=new RegExp("("+p(f)+")","gi");(v||~(c=h.body.toLowerCase().indexOf(f)))&&u.push({url:d,title:h.title,body:h.body.substr(Math.max(0,c-50),500).replace(/^[^\s,.]+./,"").replace(/(..*)[\s,.].*/,"$1").replace(g,'<span class="search-highlight-keyword">$1</span>')})}!function(i){n=t("#book-search-results"),a=n.find(".search-results-list"),o=n.find(".search-results-title"),r=o.find(".search-results-count"),s=o.find(".search-query"),n.addClass("open");var l=0===i.count;n.toggleClass("no-results",l),a.empty(),r.text(i.count),s.text(i.query),i.results.forEach((function(n){var o=t("<li>",{class:"search-results-item"}),r=t("<h3>"),s=t("<a>",{href:e.state.basePath+"/"+n.url+"?h="+encodeURIComponent(i.query),text:n.title,"data-is-search":1});s[0].href.split("?")[0]===window.location.href.split("?")[0]&&s[0].setAttribute("data-need-reload",1);var l=n.body.trim();l.length>500&&(l+="...");var u=t("<p>").html(l);s.appendTo(r),r.appendTo(o),u.appendTo(o),o.appendTo(a)})),t(".body-inner").scrollTop(0)}({count:u.length,query:f,results:u})}}function h(e){var t,n,a;c.addClass("with-search"),c.addClass("search-loading"),(t=function(){d(e),c.removeClass("search-loading")},function(){var e=this,o=arguments;a||(a=setTimeout((function(){a=null,t.apply(e,o)}),n))})()}function f(){c.removeClass("with-search"),t("#book-search-results").removeClass("open")}function v(){var e=t("body");e.on("keyup","#book-search-input input",(function(e){if(13===e.keyCode&&u){var n=y("q",t(this).val());window.history.pushState({path:n},null,n)}var a;0===(a=t("#book-search-input input").val()).length?f():h(a)})),e.on("blur","#book-search-input input",(function(e){if(u){var n=y("q",t(this).val());window.history.pushState({path:n},null,n)}}))}e.events.on("start",(function(){v(),t.getJSON(i.basePath+"/search_plus_index.json").then((function(e){l=e,w(),f()}))}));var g={ignoreJoiners:!0,acrossElements:!0,separateWordSearch:!1};function w(){var e,n;/\b(q|h)=([^&]+)/.test(window.location.search)&&(n=RegExp.$1,e=decodeURIComponent(RegExp.$2),"q"===n?h(e):function(e){var n=t(".page-inner");/(?:(.+)?\:)(.+)/.test(e)&&n.mark(RegExp.$1,g),n.mark(e,g),setTimeout((function(){var e=t('mark[data-markjs="true"]');e.length&&e[0].scrollIntoView()}),100)}(e),t("#book-search-input input").val(e))}function y(e,t){t=encodeURIComponent(t);var n,a=window.location.href.replace(/([?&])(?:q|h)=([^&]+)(&|$)/,(function(e,t,n,a){return"&"===a?t:""})),o=new RegExp("([?&])"+e+"=.*?(&|#|$)(.*)","gi");if(o.test(a))return null!=t?a.replace(o,"$1"+e+"="+t+"$2$3"):(n=a.split("#"),a=n[0].replace(o,"$1$3").replace(/(&|\?)$/,""),void 0!==n[1]&&null!==n[1]&&(a+="#"+n[1]),a);if(null!=t){var r=-1!==a.indexOf("?")?"&":"?";return n=a.split("#"),a=n[0]+r+e+"="+t,void 0!==n[1]&&null!==n[1]&&(a+="#"+n[1]),a}return a}e.events.on("page.change",w),window.addEventListener("click",(function(e){"A"===e.target.tagName&&e.target.getAttribute("data-need-reload")&&setTimeout((function(){window.location.reload()}),100)}),!0)}));
+require([
+  'gitbook',
+  'jquery'
+], function (gitbook, $) {
+  var MAX_DESCRIPTION_SIZE = 500
+  var state = gitbook.state
+  var INDEX_DATA = {}
+  var usePushState = (typeof window.history.pushState !== 'undefined')
+
+  // DOM Elements
+  var $body = $('body')
+  var $bookSearchResults
+  var $searchList
+  var $searchTitle
+  var $searchResultsCount
+  var $searchQuery
+
+  // Throttle search
+  function throttle (fn, wait) {
+    var timeout
+
+    return function () {
+      var ctx = this
+      var args = arguments
+      if (!timeout) {
+        timeout = setTimeout(function () {
+          timeout = null
+          fn.apply(ctx, args)
+        }, wait)
+      }
+    }
+  }
+
+  function displayResults (res) {
+    $bookSearchResults = $('#book-search-results')
+    $searchList = $bookSearchResults.find('.search-results-list')
+    $searchTitle = $bookSearchResults.find('.search-results-title')
+    $searchResultsCount = $searchTitle.find('.search-results-count')
+    $searchQuery = $searchTitle.find('.search-query')
+
+    $bookSearchResults.addClass('open')
+
+    var noResults = res.count === 0
+    $bookSearchResults.toggleClass('no-results', noResults)
+
+    // Clear old results
+    $searchList.empty()
+
+    // Display title for research
+    $searchResultsCount.text(res.count)
+    $searchQuery.text(res.query)
+
+    // Create an <li> element for each result
+    res.results.forEach(function (item) {
+      var $li = $('<li>', {
+        'class': 'search-results-item'
+      })
+
+      var $title = $('<h3>')
+
+      var $link = $('<a>', {
+        'href': gitbook.state.basePath + '/' + item.url + '?h=' + encodeURIComponent(res.query),
+        'text': item.title,
+        'data-is-search': 1
+      })
+
+      if ($link[0].href.split('?')[0] === window.location.href.split('?')[0]) {
+        $link[0].setAttribute('data-need-reload', 1)
+      }
+
+      var content = item.body.trim()
+      if (content.length > MAX_DESCRIPTION_SIZE) {
+        content = content + '...'
+      }
+      var $content = $('<p>').html(content)
+
+      $link.appendTo($title)
+      $title.appendTo($li)
+      $content.appendTo($li)
+      $li.appendTo($searchList)
+    })
+    $('.body-inner').scrollTop(0)
+  }
+
+  function escapeRegExp (keyword) {
+    // escape regexp prevserve word
+    return String(keyword).replace(/([-.*+?^${}()|[\]/\\])/g, '\\$1')
+  }
+
+  function query (originKeyword) {
+    if (originKeyword == null || originKeyword.trim() === '') return
+
+    var results = []
+    var index = -1
+    for (var page in INDEX_DATA) {
+      var store = INDEX_DATA[page]
+      var keyword = originKeyword.toLowerCase() // ignore case
+      var hit = false
+      if (store.keywords && ~store.keywords.split(/\s+/).indexOf(keyword.split(':').pop())) {
+        if (/.:./.test(keyword)) {
+          keyword = keyword.split(':').slice(0, -1).join(':')
+        } else {
+          hit = true
+        }
+      }
+      var keywordRe = new RegExp('(' + escapeRegExp(keyword) + ')', 'gi')
+      if (
+        hit || ~(index = store.body.toLowerCase().indexOf(keyword))
+      ) {
+        results.push({
+          url: page,
+          title: store.title,
+          body: store.body.substr(Math.max(0, index - 50), MAX_DESCRIPTION_SIZE)
+                .replace(/^[^\s,.]+./, '').replace(/(..*)[\s,.].*/, '$1') // prevent break word
+                .replace(keywordRe, '<span class="search-highlight-keyword">$1</span>')
+        })
+      }
+    }
+    displayResults({
+      count: results.length,
+      query: keyword,
+      results: results
+    })
+  }
+
+  function launchSearch (keyword) {
+    // Add class for loading
+    $body.addClass('with-search')
+    $body.addClass('search-loading')
+
+    function doSearch () {
+      query(keyword)
+      $body.removeClass('search-loading')
+    }
+
+    throttle(doSearch)()
+  }
+
+  function closeSearch () {
+    $body.removeClass('with-search')
+    $('#book-search-results').removeClass('open')
+  }
+
+  function bindSearch () {
+    // Bind DOM
+    var $body = $('body')
+
+    // Launch query based on input content
+    function handleUpdate () {
+      var $searchInput = $('#book-search-input input')
+      var keyword = $searchInput.val()
+
+      if (keyword.length === 0) {
+        closeSearch()
+      } else {
+        launchSearch(keyword)
+      }
+    }
+
+    $body.on('keyup', '#book-search-input input', function (e) {
+      if (e.keyCode === 13) {
+        if (usePushState) {
+          var uri = updateQueryString('q', $(this).val())
+          window.history.pushState({
+            path: uri
+          }, null, uri)
+        }
+      }
+      handleUpdate()
+    })
+
+    // Push to history on blur
+    $body.on('blur', '#book-search-input input', function (e) {
+      // Update history state
+      if (usePushState) {
+        var uri = updateQueryString('q', $(this).val())
+        window.history.pushState({
+          path: uri
+        }, null, uri)
+      }
+    })
+  }
+
+  gitbook.events.on('start', function () {
+    bindSearch()
+    $.getJSON(state.basePath + '/search_plus_index.json').then(function (data) {
+      INDEX_DATA = data
+      showResult()
+      closeSearch()
+    })
+  })
+
+  var markConfig = {
+    'ignoreJoiners': true,
+    'acrossElements': true,
+    'separateWordSearch': false
+  }
+  // highlight
+  var highLightPageInner = function (keyword) {
+    var pageInner = $('.page-inner')
+    if (/(?:(.+)?\:)(.+)/.test(keyword)) {
+        pageInner.mark(RegExp.$1, markConfig)
+    }
+    pageInner.mark(keyword, markConfig)
+
+    setTimeout(function () {
+      var mark = $('mark[data-markjs="true"]')
+      if (mark.length) {
+        mark[0].scrollIntoView()
+      }
+    }, 100)
+  }
+
+  function showResult () {
+    var keyword, type
+    if (/\b(q|h)=([^&]+)/.test(window.location.search)) {
+      type = RegExp.$1
+      keyword = decodeURIComponent(RegExp.$2)
+      if (type === 'q') {
+        launchSearch(keyword)
+      } else {
+        highLightPageInner(keyword)
+      }
+      $('#book-search-input input').val(keyword)
+    }
+  }
+
+  gitbook.events.on('page.change', showResult)
+
+  function updateQueryString (key, value) {
+    value = encodeURIComponent(value)
+
+    var url = window.location.href.replace(/([?&])(?:q|h)=([^&]+)(&|$)/, function (all, pre, value, end) {
+      if (end === '&') {
+        return pre
+      }
+      return ''
+    })
+    var re = new RegExp('([?&])' + key + '=.*?(&|#|$)(.*)', 'gi')
+    var hash
+
+    if (re.test(url)) {
+      if (typeof value !== 'undefined' && value !== null) { return url.replace(re, '$1' + key + '=' + value + '$2$3') } else {
+        hash = url.split('#')
+        url = hash[0].replace(re, '$1$3').replace(/(&|\?)$/, '')
+        if (typeof hash[1] !== 'undefined' && hash[1] !== null) { url += '#' + hash[1] }
+        return url
+      }
+    } else {
+      if (typeof value !== 'undefined' && value !== null) {
+        var separator = url.indexOf('?') !== -1 ? '&' : '?'
+        hash = url.split('#')
+        url = hash[0] + separator + key + '=' + value
+        if (typeof hash[1] !== 'undefined' && hash[1] !== null) { url += '#' + hash[1] }
+        return url
+      } else { return url }
+    }
+  }
+  window.addEventListener('click', function (e) {
+    if (e.target.tagName === 'A' && e.target.getAttribute('data-need-reload')) {
+      setTimeout(function () {
+        window.location.reload()
+      }, 100)
+    }
+  }, true)
+})
