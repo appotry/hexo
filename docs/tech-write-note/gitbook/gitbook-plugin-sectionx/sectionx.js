@@ -1,1 +1,49 @@
-require(["gitbook","jquery"],(function(a,s){var t=function(a,t){a.click((function(){!function(a,t){var l=s("#"+a);l.collapse("toggle"),t&&l.parents(".panel").toggle("slow")}(t,!s(this).hasClass("atTitle")),s(this).hasClass("atTitle")||s(this).toggleClass("btn-info").toggleClass("btn-success")})),s("#"+t).on("show.bs.collapse",(function(){a.html(a.attr("hide")?"<b>"+a.attr("hide")+'</b><span class="fa fa-angle-up pull-left"/>':'<span class="fa fa-angle-up"/>')})),s("#"+t).on("hide.bs.collapse",(function(){a.html(a.attr("show")?"<b>"+a.attr("show")+'</b><span class="fa fa-angle-down pull-left"/>':'<span class="fa fa-angle-down"/>')}))};a.events.bind("page.change",(function(){s("sec").each((function(){s(this).find(".panel").hasClass("hidden")&&s(this).find(".panel").removeClass("hidden").hide(),!0===s(this).data("collapse")&&s("#"+s(this).data("id")).collapse("hide")})),s(".section").each((function(){t(s(this),s(this).attr("target")),s(this).hasClass("atTitle")||(s(this).addClass("btn btn-info"),s(this).html(s(this).attr("show")?"<b>"+s(this).attr("show")+'</b><span class="fa fa-angle-down pull-left"/>':'<span class="fa fa-angle-down"/>'))}))}))}));
+require(["gitbook", "jquery"], function (gitbook, $) {
+
+  var sectionToggle = function (tar, button) {
+    var $target = $('#' + tar);
+    $target.collapse('toggle');
+    if (button)
+      $target.parents('.panel').toggle('slow');
+  };
+
+  var clickAction = function ($source, tar) {
+    $source.click(function () {
+      sectionToggle(tar, !$(this).hasClass('atTitle'));
+      if (!$(this).hasClass('atTitle'))
+        $(this).toggleClass('btn-info').toggleClass('btn-success');
+    });
+
+    $('#' + tar).on('show.bs.collapse', function () {
+      $source.html($source.attr('hide') ?
+        ('<b>' + $source.attr('hide') + '</b><span class="fa fa-angle-up pull-left"/>') :
+        '<span class="fa fa-angle-up"/>');
+    });
+
+    $('#' + tar).on('hide.bs.collapse', function () {
+      $source.html($source.attr('show') ?
+        ('<b>' + $source.attr('show') + '</b><span class="fa fa-angle-down pull-left"/>') : '<span class="fa fa-angle-down"/>');
+    });
+  };
+
+  gitbook.events.bind("page.change", function () {
+    $('sec').each(function () {
+      if ($(this).find('.panel').hasClass('hidden'))
+        $(this).find('.panel').removeClass('hidden').hide();
+      if ($(this).data('collapse') === true) {
+        $('#' + $(this).data('id')).collapse('hide');
+      }
+      //.collapse('toggle');
+    });
+
+    $('.section').each(function () {
+      clickAction($(this), $(this).attr('target'));
+      if (!$(this).hasClass('atTitle')) {
+        $(this).addClass('btn btn-info');
+        $(this).html($(this).attr('show') ?
+          ('<b>' + $(this).attr('show') + '</b><span class="fa fa-angle-down pull-left"/>') :
+          '<span class="fa fa-angle-down"/>');
+      }
+    });
+  });
+});

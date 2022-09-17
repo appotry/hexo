@@ -1,1 +1,24 @@
-function addAccordionSelectors(){var c=document.querySelectorAll(".accordion");Object.keys(c).forEach((function(o){c[o].onclick=function(a){if("accordionButton"!==a.target.className&&"accordionTitle"!==a.target.className&&"accordionSpinnerBox"!==a.target.className&&"accordionSpinner"!==a.target.className)return null;a.stopPropagation(),c[o].className=~c[o].className.indexOf("accordionClose")?"accordion":"accordion accordionClose"}}))}require(["gitbook"],(function(c){c.events.bind("page.change",addAccordionSelectors)}));
+function addAccordionSelectors(){
+	var accordions = document.querySelectorAll('.accordion');
+	Object.keys(accordions)
+		.forEach(function(index){
+			accordions[index].onclick = function(event){
+				
+				if(	event.target.className !== "accordionButton" &&
+					event.target.className !== "accordionTitle" &&
+					event.target.className !== "accordionSpinnerBox" &&
+					event.target.className !== "accordionSpinner"
+				) return null;
+
+				event.stopPropagation();
+				
+				accordions[index].className = ~accordions[index].className.indexOf('accordionClose')
+					? 'accordion'
+					: 'accordion accordionClose';
+			}
+		})
+}
+
+require(["gitbook"], function(gitbook){
+	gitbook.events.bind("page.change", addAccordionSelectors);
+});

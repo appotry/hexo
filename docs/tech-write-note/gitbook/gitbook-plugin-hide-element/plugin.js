@@ -1,1 +1,13 @@
-require(["gitbook","jquery"],(function(e,n){var t;e.events.bind("start",(function(e,n){t=n["hide-element"].elements})),e.events.bind("page.change",(function(){n.map(t,(function(e){n(e).hide()}))}))}));
+require(['gitbook', 'jquery'], function(gitbook, $) {
+    var opts;
+
+    gitbook.events.bind('start', function(e, config) {
+        opts = config['hide-element'].elements;
+    });
+
+    gitbook.events.bind('page.change', function() {
+        $.map(opts, function(ele) {
+            $(ele).hide();
+        });
+    });
+});
