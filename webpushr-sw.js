@@ -1,1 +1,1 @@
-importScripts("/js/sw-server.min.js");
+importScripts('/js/sw-server.min.js');
