@@ -1,1 +1,1 @@
-$(document).ready((function(){$("pre").wrap('<div class="code-area" style="position: relative"></div>')}));
+$((function(){$("pre").wrap('<div class="code-area" style="position: relative"></div>')}));
