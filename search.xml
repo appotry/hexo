@@ -4630,125 +4630,6 @@ network.protocol-handler.app.ed2k
       </tags>
   </entry>
   <entry>
-    <title>qnap IO 错误消除</title>
-    <url>/posts/5b1993ac/</url>
-    <content><![CDATA[问题
-[Storage &amp; Snapshots] Failed to check file system of volume "SYS". Storage pool: 1. Volume could not be unmounted.
-检测问题
-检测问题可选命令有
-md_checker
-
-pvdisplay
-
-vgdisplay
-
-lvdisplay
-处理步骤
-备份
-先备份数据，rsync比HBS3好用多了。
-如果没有坏块
-如果没有坏块，就在下图位置扫描坏块，扫描完，自动清除异常标志
-
-如果有坏块
-坏块修复
-如果有坏块，可以使用 “DiskGenius”扫描修复
-
-
-强制消除异常标志
-
-
-開啟SSH
-登入 console
-# sed -i '/pd_err_wwn_/d' /mnt/HDA_ROOT/.conf
-重啟 NAS.
-
-
-The Solution
-
-
-Change the “/etc/lvm/lvm.conf” as described above
-
-
-In general one should configure the LVM to filter out all sd* devices and only see the /dev/emcpower* or /dev/mapper/* devices. If there are other non-mutipathed SCSI devices LVM volumes, e.g: /dev/cciss/*, then set the filter accordingly, for example:
-
-
-filter = [ "r/sd.*/" "a/dev/cciss/*/" "a/dev/emcpower.*/" "a/dev/mapper/*/" ]
-With this setting, the ‘lvmdiskscan’ and ‘pvscan’ commands should only find the /dev/ccisss/, /dev/emcpower and /dev/mapper/* devices.
-
-
-Stop any applications/services that access LVM managed devices/filesystems.
-
-
-Unmount all LVM-based filesystems.
-
-
-Deactivate all Volume Groups.
-
-
-# vgchange -an
-
-Rescan Volume Groups.
-
-# vgscan
-
-Re-activate Volume Groups.
-
-# vgchange -ay
-\8. Mount any LVM-based filesystems.
-
-Start any applications/services requring access to LVM managed devices/filesystems.
-
-总结：
-为了安全和稳定性，有坏块后，备份数据，使用DiskGenius修复坏块，（只能修复逻辑坏块，不能修复物理坏块），然后最好全盘格式化再使用。
-SDD可以使用低级格式化，但会全盘减少一次写寿命。尽量少用。
-进入维护模式，在进行修复，有可能解决问题！
-参考
-
-[I always get a failed to check Filesystem message](https://forum.qnap.com/viewtopic.php?t=162182)
-Duplicate PV Warnings for Multipathed Devices
-‘Found duplicate PV’ warnings when using LVM with multipath storage in RHEL/CentOS
-pvdisplay shows “Found duplicate PV” on multipath device
-
-系列教程
-全部文章RSS订阅
-Nas系列
-Nas 分类 RSS 订阅
-
-音视频图书和音乐自动化管理框架图解
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Potplayer终极优化教程实现PC视频播放最强画质
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列
-Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>qnap</tag>
-        <tag>nas</tag>
-        <tag>ssd</tag>
-        <tag>hdd</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>几种常用管理模型和方法</title>
     <url>/posts/ca630feb/</url>
     <content><![CDATA[这些只是基本的工具，你需要了解。但是，和行业相关的知识更重要。就像做数学题，把一堆错综复杂的线索中归纳总结出来问题，提出解决方法，这中间需要丰富的行业知识，这个没法速成。总结完后，执行阶段，就像数学加减乘除一样，这些是基本的工具和方法。
@@ -4884,6 +4765,125 @@ OKR 实施过程中起草制定好目标和关键结果是非常重要的一环�
         <tag>grow</tag>
         <tag>okr</tag>
         <tag>wbs</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>qnap IO 错误消除</title>
+    <url>/posts/5b1993ac/</url>
+    <content><![CDATA[问题
+[Storage &amp; Snapshots] Failed to check file system of volume "SYS". Storage pool: 1. Volume could not be unmounted.
+检测问题
+检测问题可选命令有
+md_checker
+
+pvdisplay
+
+vgdisplay
+
+lvdisplay
+处理步骤
+备份
+先备份数据，rsync比HBS3好用多了。
+如果没有坏块
+如果没有坏块，就在下图位置扫描坏块，扫描完，自动清除异常标志
+
+如果有坏块
+坏块修复
+如果有坏块，可以使用 “DiskGenius”扫描修复
+
+
+强制消除异常标志
+
+
+開啟SSH
+登入 console
+# sed -i '/pd_err_wwn_/d' /mnt/HDA_ROOT/.conf
+重啟 NAS.
+
+
+The Solution
+
+
+Change the “/etc/lvm/lvm.conf” as described above
+
+
+In general one should configure the LVM to filter out all sd* devices and only see the /dev/emcpower* or /dev/mapper/* devices. If there are other non-mutipathed SCSI devices LVM volumes, e.g: /dev/cciss/*, then set the filter accordingly, for example:
+
+
+filter = [ "r/sd.*/" "a/dev/cciss/*/" "a/dev/emcpower.*/" "a/dev/mapper/*/" ]
+With this setting, the ‘lvmdiskscan’ and ‘pvscan’ commands should only find the /dev/ccisss/, /dev/emcpower and /dev/mapper/* devices.
+
+
+Stop any applications/services that access LVM managed devices/filesystems.
+
+
+Unmount all LVM-based filesystems.
+
+
+Deactivate all Volume Groups.
+
+
+# vgchange -an
+
+Rescan Volume Groups.
+
+# vgscan
+
+Re-activate Volume Groups.
+
+# vgchange -ay
+\8. Mount any LVM-based filesystems.
+
+Start any applications/services requring access to LVM managed devices/filesystems.
+
+总结：
+为了安全和稳定性，有坏块后，备份数据，使用DiskGenius修复坏块，（只能修复逻辑坏块，不能修复物理坏块），然后最好全盘格式化再使用。
+SDD可以使用低级格式化，但会全盘减少一次写寿命。尽量少用。
+进入维护模式，在进行修复，有可能解决问题！
+参考
+
+[I always get a failed to check Filesystem message](https://forum.qnap.com/viewtopic.php?t=162182)
+Duplicate PV Warnings for Multipathed Devices
+‘Found duplicate PV’ warnings when using LVM with multipath storage in RHEL/CentOS
+pvdisplay shows “Found duplicate PV” on multipath device
+
+系列教程
+全部文章RSS订阅
+Nas系列
+Nas 分类 RSS 订阅
+
+音视频图书和音乐自动化管理框架图解
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Potplayer终极优化教程实现PC视频播放最强画质
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列
+Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>ssd</tag>
+        <tag>hdd</tag>
       </tags>
   </entry>
   <entry>
@@ -12035,9 +12035,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-pXDkLOVYzNNZsRUw").style.height=document.getElementById("mmedia-pXDkLOVYzNNZsRUw").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-IneKAOxfZbUrrgZj").style.height=document.getElementById("mmedia-IneKAOxfZbUrrgZj").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-pXDkLOVYzNNZsRUw").style.height=document.getElementById("mmedia-pXDkLOVYzNNZsRUw").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-IneKAOxfZbUrrgZj").style.height=document.getElementById("mmedia-IneKAOxfZbUrrgZj").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -17585,11 +17585,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var DvaFhmEmgvVIzarn_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); DvaFhmEmgvVIzarn_options.container = document.getElementById("mmedia-DvaFhmEmgvVIzarn"); const ap_DvaFhmEmgvVIzarn = new APlayer(DvaFhmEmgvVIzarn_options); 
+ var TZCZtwZQrZrrqwPA_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); TZCZtwZQrZrrqwPA_options.container = document.getElementById("mmedia-TZCZtwZQrZrrqwPA"); const ap_TZCZtwZQrZrrqwPA = new APlayer(TZCZtwZQrZrrqwPA_options); 
 
 - **列表**
 
- var eIMHCcaaboomKCwY_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); eIMHCcaaboomKCwY_options.container = document.getElementById("mmedia-eIMHCcaaboomKCwY"); const ap_eIMHCcaaboomKCwY = new APlayer(eIMHCcaaboomKCwY_options); 
+ var tyeMZBQTvnoemkla_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); tyeMZBQTvnoemkla_options.container = document.getElementById("mmedia-tyeMZBQTvnoemkla"); const ap_tyeMZBQTvnoemkla = new APlayer(tyeMZBQTvnoemkla_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -17841,21 +17841,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-HdMgiudTcuZfMgUd").style.height=document.getElementById("mmedia-HdMgiudTcuZfMgUd").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-rAfiRuqCfuADeRxR").style.height=document.getElementById("mmedia-rAfiRuqCfuADeRxR").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-HdMgiudTcuZfMgUd").style.height=document.getElementById("mmedia-HdMgiudTcuZfMgUd").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-rAfiRuqCfuADeRxR").style.height=document.getElementById("mmedia-rAfiRuqCfuADeRxR").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ktYyefYgfePAzaKT").style.height=document.getElementById("mmedia-ktYyefYgfePAzaKT").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-SCLXvCADCqAknerr").style.height=document.getElementById("mmedia-SCLXvCADCqAknerr").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-ktYyefYgfePAzaKT").style.height=document.getElementById("mmedia-ktYyefYgfePAzaKT").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-SCLXvCADCqAknerr").style.height=document.getElementById("mmedia-SCLXvCADCqAknerr").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var vqzemOcxBorQeCyX_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); vqzemOcxBorQeCyX_options.container = "#mmedia-vqzemOcxBorQeCyX"; const art_vqzemOcxBorQeCyX = new Artplayer(vqzemOcxBorQeCyX_options); 
+ var TOggYluDskhnCFoE_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); TOggYluDskhnCFoE_options.container = "#mmedia-TOggYluDskhnCFoE"; const art_TOggYluDskhnCFoE = new Artplayer(TOggYluDskhnCFoE_options); 
 脑图
 
 原作者记录
@@ -18897,11 +18897,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var oEfZfaZZiLDHcQwY_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); oEfZfaZZiLDHcQwY_options.container = document.getElementById("mmedia-oEfZfaZZiLDHcQwY"); const ap_oEfZfaZZiLDHcQwY = new APlayer(oEfZfaZZiLDHcQwY_options); 
+ var XcTgnufLueAhAzhF_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); XcTgnufLueAhAzhF_options.container = document.getElementById("mmedia-XcTgnufLueAhAzhF"); const ap_XcTgnufLueAhAzhF = new APlayer(XcTgnufLueAhAzhF_options); 
 
 
 
- var WlGmxOFapiLrsmWI_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); WlGmxOFapiLrsmWI_options.container = document.getElementById("mmedia-WlGmxOFapiLrsmWI"); const ap_WlGmxOFapiLrsmWI = new APlayer(WlGmxOFapiLrsmWI_options); 
+ var ZVWlqkJdmyggaXJm_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); ZVWlqkJdmyggaXJm_options.container = document.getElementById("mmedia-ZVWlqkJdmyggaXJm"); const ap_ZVWlqkJdmyggaXJm = new APlayer(ZVWlqkJdmyggaXJm_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -19059,9 +19059,9 @@ docker run -d \
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-vkmVezGijdujanMS").style.height=document.getElementById("mmedia-vkmVezGijdujanMS").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-kxFPNDrexctywfKh").style.height=document.getElementById("mmedia-kxFPNDrexctywfKh").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-vkmVezGijdujanMS").style.height=document.getElementById("mmedia-vkmVezGijdujanMS").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-kxFPNDrexctywfKh").style.height=document.getElementById("mmedia-kxFPNDrexctywfKh").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -19070,7 +19070,7 @@ docker run -d \
 
 ## 中文翻唱
 
- var ZmMGePXMCpcluzRz_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); ZmMGePXMCpcluzRz_options.container = document.getElementById("mmedia-ZmMGePXMCpcluzRz"); const ap_ZmMGePXMCpcluzRz = new APlayer(ZmMGePXMCpcluzRz_options); 
+ var eXgMPAfydrmkWemF_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); eXgMPAfydrmkWemF_options.container = document.getElementById("mmedia-eXgMPAfydrmkWemF"); const ap_eXgMPAfydrmkWemF = new APlayer(eXgMPAfydrmkWemF_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -34881,9 +34881,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-fKTWLAYuXrivGerk").style.height=document.getElementById("mmedia-fKTWLAYuXrivGerk").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ZdPZZVGpCZYCsIfM").style.height=document.getElementById("mmedia-ZdPZZVGpCZYCsIfM").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-fKTWLAYuXrivGerk").style.height=document.getElementById("mmedia-fKTWLAYuXrivGerk").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-ZdPZZVGpCZYCsIfM").style.height=document.getElementById("mmedia-ZdPZZVGpCZYCsIfM").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 calibre:
@@ -41149,7 +41149,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts5641'));
+        var myChart = echarts.init(document.getElementById('echarts4673'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -41243,7 +41243,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts3887'));
+        var myChart = echarts.init(document.getElementById('echarts3869'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -41312,7 +41312,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts2620'));
+        var myChart = echarts.init(document.getElementById('echarts1243'));
 
         // 指定图表的配置项和数据
         var option = option = {
