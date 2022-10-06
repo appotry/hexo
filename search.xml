@@ -5995,217 +5995,6 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
-    <title>【Gitbook】GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</title>
-    <url>/posts/7fe86002/</url>
-    <content><![CDATA[随着工作时间越来越久，项目越做越多，很多时候，手里面的技术文档都是零散的技术点。最近一直在着手把项目的技术开发文档(Technical Document)系统地整理一下。正好看到了非常棒的 GitBook 工具，又顺带研究了如何借助 Gitlab 的 CI/CD 功能实现自动部署。
-正好开个简短的教程，介绍一下 GitBook + GitLab怎样来撰写并发布文档。
-第一部分先来介绍一下 GitBook。
-系统环境
-惯例列出来我们的环境以及用到的工具。
-
-MacOS 10.12
-Node.js (版本 &gt; 4.0.0)
-Atom/MWebLite
-
-其实 Gitbook 有官方的编辑器，但是似乎对中文的支持不是很好，而且会有 bug，虽然最新版本做了优化，Mardown 格式的文字有些会自动显示成最终样式，而我个人还是比较喜欢原生的 markdown，所以我个人就没有用官方的编辑器。
-如果读者注册了 gitbook，并且打算文章都发布到 gitbook 官网上的话，还是建议可以使用官方的编辑器。因为我的目标是发布到公司内网的 gitlab 上，所以这里就用 atom 或者 MWebLite 来编写文档。
-其实这篇文章过后，大家对 Gitbook 的工作机制就很清楚了，完全可以自由地创作了。
-基本使用
-安装
-安装过程非常简单
-npm install gitbook-cli -g
-新建book
-安装成功后，我们就可以开始用gitbook 的命令来进行各种操作了。如果熟悉hexo的同学会发现，其实大同小异，只不过一个用来写blog，一个用来写 book。
-$ mkdir myBook
-$ cd myBook
-$ gitbook init
-初始化后，我们能在myBook目录下看到两个 markdown 文f件。这两个文件就是我们写一本书唯二必须要用的文件了。
-
-预览book
-先不做任何变动，模拟一下我们发布之后的页面的成品吧。
-$ gitbook serve
-
-我们打开浏览器，在浏览器中输入0.0.0.0:4000就可以在本地预览了。
-
-可以看到，左侧是我们的菜单栏，自带一个搜索栏，右侧就是我们的 book 的内容了，右上角有默认的诸如 twitter,facebook 等分享快捷方式。基本上和其他人用 gitbook 写出来的页面是一样的。
-
-注：
-
-gitbook 新版本提供了本地预览功能的热更新，也就是说本地预览的页面会随着我们写书的内容变化而自动更新，这着实是一个很使用的功能。
-在命令行ctrl+c可以关闭本地服务器，即预览页面。
-
-
-我们可以尝试修改一下书的内容，看一下页面的变化。打开README.md文件，修改成如下内容：
-# Introduction
- 
-Hello World!
-再回头看一眼我们的预览页面，是不是自动变成了下面的样子。
-
-关于 gitbook 自建的 README.md 文件我就不做过多的介绍了，都是一些 Markdown 的基本语法，相信使用 gitbook 的各位一定是对 markdown 语法非常熟悉的了。
-目录
-现在我们把注意力放到 gitbook 为我们创建的第二个文件SUMMARY.md上，这个文件决定了我们的目录结构。 一个比较简单的目录结构如下：
-# Summary
- 
-* [前言](README.md)
-* [第一章](xx.md)
-* [第二章](xx.md)
-* [第三章](xx.md)
-xx.md就是我们每个章节独立的 markdown 文件，所以用 gitbook 写一本书真的非常方便，一个目录文件，和若干个你的书的内容就好了。
-
-目录分层
-简单的目录有一个小的问题就是我们目录都只有一级，如果想要分层，比如第一章有1，2，3个小节，该怎么办呢？ 这里有两种方式：
-标题区分
-我们把SUMMARY.md文件修改成如下内容
-# Summary
- 
-## 前言
-* [前言](README.md)
- 
-## 第一章
-* [1.1小节]()
-* [1.2小节]()
- 
-## 第二章
-* [2.1小节]()
-* [2.2小节]()
- 
-## 第三章
-* [3.1小节]()
-* [3.2小节]()
-最终的样式如下：
-
-缩进区分
-我们还可以用缩进的方式对目录进行级别的区分
-# Summary
- 
-* [前言](README.md)
-* [第一章]()
-    * [1.1小节]()
-    * [1.2小节]()
-* [第二章]()
-    * [2.1小节]()
-    * [2.2小节]()
-* [第三章]()
-    * [3.1小节]()
-    * [3.2小节]()
-最终的样式如下：
-
-大家可以根据自己的喜好选择不同的样式，也可以把这两者结合起来一起用，as you wish.
-打包发布
-通过预览模式，我们可以随时掌握书籍的更新内容。当你完成了部分章节或者全书的编写后，我们需要把写好的内容打包并发布。
-$ gitbook build
-执行完上面的命令后，我们会发现在根目录下出现了_build文件夹，里面的文件就是我们需要发布的内容，你可以把所有的内容放到你的网站目录下，或者 gitlab/github 的 page页面，就实现了 gitbook 的线上发布了~
-进阶技巧
-看完上面的章节，你已经可以独立完成一本书的编写和发布，接下来的章节，我们提供一些进阶的技巧，你可以安装一些插件、更直观地规划你的目录结构等等。
-插件
-和众多开源的软件一样，gitbook 也有一些插件，这些插件可以让你的书更加完美。这里我仅附上我个人觉得比较有用的几个插件，更多的插件，可以访问社区来获取。
-插件的引入和修改都是在配置文件中完成的，那我们可以在根目录下创建book.json文件来修改当前书的一些配置，因为是 json 格式的，所以诸如书的标题、作者、内容等都可以在配置文件中完成，我们重点来说插件。
-{
-     "plugins": [
-          "-lunr",
-          "-search",
-          "search-plus",
-          "splitter",
-          "copy-code-button",
-          "expandable-chapters-small"
-     ]
-}
-以上是我的book.json配置文件，只有一个关于插件的配置项，其实总共就4个
-
-search-plus 让搜索支持中文，注意需要先把默认的两个插件lunr和serach禁用掉，禁用的方式就是在前面加上-号
-spliter 菜单栏宽度可调节
-copy-code-button 代码可以一键 copy
-expandable-chapters-small 菜单栏可以折叠
-
-
-注：
-如果引入了新的插件，需要通过gitbook install 命令来安装新的插件，否则在打包发布的时候会提示错误。
-
-目录结构
-一个基本的目录结构是这样的
-.
-├── _book/
-├── book.json
-├── README.md
-├── SUMMARY.md
-├── xx1.md
-├── xx2.md
-├── xx3.md
-├── xx4.md
-├── ...
-不过为了我们自己方便，个人建议的目录结构如下
-.
-├── _book/
-├── node_modules/
-├── .gitlab-ci.yml
-├── book.json
-├── SUMMARY.md
-├── content/
-|   ├── chapter1/
-|       ├── README.md
-|       └── something.md
-|   ├── chapter2/
-|       ├── README.md
-|       └── something.md
-├── res/
-|   ├── 1.png
-|   └── 2.jpg
-|   └── 3.jpeg
-|   └── ...
-说明：
-
-_book 目录是我们打包后要发布的文件目录
-node_modules 目录是我们安装插件后默认生成的目录
-.gitlab-ci.yml这个是 gitlab 要用的 ci 配置文件，下一章节我们马上就会用到
-book.json 是我们的配置文件
-content目录是我们的书的内容，所有章节都可以分类继续整理，方便自己查看
-res目录是我们要用到的一些图片资源文件夹，除了用到床图，我们可以把其他本地图片资源也包含进来
-
-参考&amp;致谢
-
-Gitbook 简要介绍
-GitBook 学习笔记
-
-From: lipeng1667
-系列教程
-全部文章RSS订阅
-Gitbook使用系列
-Gitbook分类RSS订阅
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-笔记系列
-Note分类RSS订阅
-
-完美笔记进化论
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Joplin入门指南&amp;实践方案
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-Joplin 插件以及其Markdown语法。All in One!
-Joplin 插件使用推荐
-为知笔记私有化Docker部署
-
-Gitlab 使用系列
-Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-]]></content>
-      <categories>
-        <category>gitbook</category>
-      </categories>
-      <tags>
-        <tag>git</tag>
-        <tag>linux</tag>
-        <tag>gitbook</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Mariadb/Mysql命令行常用命令</title>
     <url>/posts/f0b0af52/</url>
     <content><![CDATA[一、初始化等
@@ -9499,6 +9288,217 @@ https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&a
       </tags>
   </entry>
   <entry>
+    <title>【Gitbook】GitBook+GitLab撰写发布技术文档-Part1:GitBook篇</title>
+    <url>/posts/7fe86002/</url>
+    <content><![CDATA[随着工作时间越来越久，项目越做越多，很多时候，手里面的技术文档都是零散的技术点。最近一直在着手把项目的技术开发文档(Technical Document)系统地整理一下。正好看到了非常棒的 GitBook 工具，又顺带研究了如何借助 Gitlab 的 CI/CD 功能实现自动部署。
+正好开个简短的教程，介绍一下 GitBook + GitLab怎样来撰写并发布文档。
+第一部分先来介绍一下 GitBook。
+系统环境
+惯例列出来我们的环境以及用到的工具。
+
+MacOS 10.12
+Node.js (版本 &gt; 4.0.0)
+Atom/MWebLite
+
+其实 Gitbook 有官方的编辑器，但是似乎对中文的支持不是很好，而且会有 bug，虽然最新版本做了优化，Mardown 格式的文字有些会自动显示成最终样式，而我个人还是比较喜欢原生的 markdown，所以我个人就没有用官方的编辑器。
+如果读者注册了 gitbook，并且打算文章都发布到 gitbook 官网上的话，还是建议可以使用官方的编辑器。因为我的目标是发布到公司内网的 gitlab 上，所以这里就用 atom 或者 MWebLite 来编写文档。
+其实这篇文章过后，大家对 Gitbook 的工作机制就很清楚了，完全可以自由地创作了。
+基本使用
+安装
+安装过程非常简单
+npm install gitbook-cli -g
+新建book
+安装成功后，我们就可以开始用gitbook 的命令来进行各种操作了。如果熟悉hexo的同学会发现，其实大同小异，只不过一个用来写blog，一个用来写 book。
+$ mkdir myBook
+$ cd myBook
+$ gitbook init
+初始化后，我们能在myBook目录下看到两个 markdown 文f件。这两个文件就是我们写一本书唯二必须要用的文件了。
+
+预览book
+先不做任何变动，模拟一下我们发布之后的页面的成品吧。
+$ gitbook serve
+
+我们打开浏览器，在浏览器中输入0.0.0.0:4000就可以在本地预览了。
+
+可以看到，左侧是我们的菜单栏，自带一个搜索栏，右侧就是我们的 book 的内容了，右上角有默认的诸如 twitter,facebook 等分享快捷方式。基本上和其他人用 gitbook 写出来的页面是一样的。
+
+注：
+
+gitbook 新版本提供了本地预览功能的热更新，也就是说本地预览的页面会随着我们写书的内容变化而自动更新，这着实是一个很使用的功能。
+在命令行ctrl+c可以关闭本地服务器，即预览页面。
+
+
+我们可以尝试修改一下书的内容，看一下页面的变化。打开README.md文件，修改成如下内容：
+# Introduction
+ 
+Hello World!
+再回头看一眼我们的预览页面，是不是自动变成了下面的样子。
+
+关于 gitbook 自建的 README.md 文件我就不做过多的介绍了，都是一些 Markdown 的基本语法，相信使用 gitbook 的各位一定是对 markdown 语法非常熟悉的了。
+目录
+现在我们把注意力放到 gitbook 为我们创建的第二个文件SUMMARY.md上，这个文件决定了我们的目录结构。 一个比较简单的目录结构如下：
+# Summary
+ 
+* [前言](README.md)
+* [第一章](xx.md)
+* [第二章](xx.md)
+* [第三章](xx.md)
+xx.md就是我们每个章节独立的 markdown 文件，所以用 gitbook 写一本书真的非常方便，一个目录文件，和若干个你的书的内容就好了。
+
+目录分层
+简单的目录有一个小的问题就是我们目录都只有一级，如果想要分层，比如第一章有1，2，3个小节，该怎么办呢？ 这里有两种方式：
+标题区分
+我们把SUMMARY.md文件修改成如下内容
+# Summary
+ 
+## 前言
+* [前言](README.md)
+ 
+## 第一章
+* [1.1小节]()
+* [1.2小节]()
+ 
+## 第二章
+* [2.1小节]()
+* [2.2小节]()
+ 
+## 第三章
+* [3.1小节]()
+* [3.2小节]()
+最终的样式如下：
+
+缩进区分
+我们还可以用缩进的方式对目录进行级别的区分
+# Summary
+ 
+* [前言](README.md)
+* [第一章]()
+    * [1.1小节]()
+    * [1.2小节]()
+* [第二章]()
+    * [2.1小节]()
+    * [2.2小节]()
+* [第三章]()
+    * [3.1小节]()
+    * [3.2小节]()
+最终的样式如下：
+
+大家可以根据自己的喜好选择不同的样式，也可以把这两者结合起来一起用，as you wish.
+打包发布
+通过预览模式，我们可以随时掌握书籍的更新内容。当你完成了部分章节或者全书的编写后，我们需要把写好的内容打包并发布。
+$ gitbook build
+执行完上面的命令后，我们会发现在根目录下出现了_build文件夹，里面的文件就是我们需要发布的内容，你可以把所有的内容放到你的网站目录下，或者 gitlab/github 的 page页面，就实现了 gitbook 的线上发布了~
+进阶技巧
+看完上面的章节，你已经可以独立完成一本书的编写和发布，接下来的章节，我们提供一些进阶的技巧，你可以安装一些插件、更直观地规划你的目录结构等等。
+插件
+和众多开源的软件一样，gitbook 也有一些插件，这些插件可以让你的书更加完美。这里我仅附上我个人觉得比较有用的几个插件，更多的插件，可以访问社区来获取。
+插件的引入和修改都是在配置文件中完成的，那我们可以在根目录下创建book.json文件来修改当前书的一些配置，因为是 json 格式的，所以诸如书的标题、作者、内容等都可以在配置文件中完成，我们重点来说插件。
+{
+     "plugins": [
+          "-lunr",
+          "-search",
+          "search-plus",
+          "splitter",
+          "copy-code-button",
+          "expandable-chapters-small"
+     ]
+}
+以上是我的book.json配置文件，只有一个关于插件的配置项，其实总共就4个
+
+search-plus 让搜索支持中文，注意需要先把默认的两个插件lunr和serach禁用掉，禁用的方式就是在前面加上-号
+spliter 菜单栏宽度可调节
+copy-code-button 代码可以一键 copy
+expandable-chapters-small 菜单栏可以折叠
+
+
+注：
+如果引入了新的插件，需要通过gitbook install 命令来安装新的插件，否则在打包发布的时候会提示错误。
+
+目录结构
+一个基本的目录结构是这样的
+.
+├── _book/
+├── book.json
+├── README.md
+├── SUMMARY.md
+├── xx1.md
+├── xx2.md
+├── xx3.md
+├── xx4.md
+├── ...
+不过为了我们自己方便，个人建议的目录结构如下
+.
+├── _book/
+├── node_modules/
+├── .gitlab-ci.yml
+├── book.json
+├── SUMMARY.md
+├── content/
+|   ├── chapter1/
+|       ├── README.md
+|       └── something.md
+|   ├── chapter2/
+|       ├── README.md
+|       └── something.md
+├── res/
+|   ├── 1.png
+|   └── 2.jpg
+|   └── 3.jpeg
+|   └── ...
+说明：
+
+_book 目录是我们打包后要发布的文件目录
+node_modules 目录是我们安装插件后默认生成的目录
+.gitlab-ci.yml这个是 gitlab 要用的 ci 配置文件，下一章节我们马上就会用到
+book.json 是我们的配置文件
+content目录是我们的书的内容，所有章节都可以分类继续整理，方便自己查看
+res目录是我们要用到的一些图片资源文件夹，除了用到床图，我们可以把其他本地图片资源也包含进来
+
+参考&amp;致谢
+
+Gitbook 简要介绍
+GitBook 学习笔记
+
+From: lipeng1667
+系列教程
+全部文章RSS订阅
+Gitbook使用系列
+Gitbook分类RSS订阅
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+笔记系列
+Note分类RSS订阅
+
+完美笔记进化论
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Joplin入门指南&amp;实践方案
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+Joplin 插件以及其Markdown语法。All in One!
+Joplin 插件使用推荐
+为知笔记私有化Docker部署
+
+Gitlab 使用系列
+Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+]]></content>
+      <categories>
+        <category>gitbook</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+        <tag>linux</tag>
+        <tag>gitbook</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>在浏览器输入 URL 回车之后发生了什么</title>
     <url>/posts/656a0abb/</url>
     <content><![CDATA[前言
@@ -12035,9 +12035,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-BejYEhcHAbTvAKBz").style.height=document.getElementById("mmedia-BejYEhcHAbTvAKBz").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-TGkZoVDqSGsuIvwj").style.height=document.getElementById("mmedia-TGkZoVDqSGsuIvwj").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-BejYEhcHAbTvAKBz").style.height=document.getElementById("mmedia-BejYEhcHAbTvAKBz").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-TGkZoVDqSGsuIvwj").style.height=document.getElementById("mmedia-TGkZoVDqSGsuIvwj").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -17585,11 +17585,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var YzUWzzhhcmdBqnpi_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); YzUWzzhhcmdBqnpi_options.container = document.getElementById("mmedia-YzUWzzhhcmdBqnpi"); const ap_YzUWzzhhcmdBqnpi = new APlayer(YzUWzzhhcmdBqnpi_options); 
+ var ZzfcmyzANsZNLMMI_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); ZzfcmyzANsZNLMMI_options.container = document.getElementById("mmedia-ZzfcmyzANsZNLMMI"); const ap_ZzfcmyzANsZNLMMI = new APlayer(ZzfcmyzANsZNLMMI_options); 
 
 - **列表**
 
- var IwdHlcrPZGeLpcjy_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); IwdHlcrPZGeLpcjy_options.container = document.getElementById("mmedia-IwdHlcrPZGeLpcjy"); const ap_IwdHlcrPZGeLpcjy = new APlayer(IwdHlcrPZGeLpcjy_options); 
+ var OFiVMFUJmZHuRFEF_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); OFiVMFUJmZHuRFEF_options.container = document.getElementById("mmedia-OFiVMFUJmZHuRFEF"); const ap_OFiVMFUJmZHuRFEF = new APlayer(OFiVMFUJmZHuRFEF_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -17841,21 +17841,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-wycsFHhFxhJEZPne").style.height=document.getElementById("mmedia-wycsFHhFxhJEZPne").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-qMjPDexIJECXGVEW").style.height=document.getElementById("mmedia-qMjPDexIJECXGVEW").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-wycsFHhFxhJEZPne").style.height=document.getElementById("mmedia-wycsFHhFxhJEZPne").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-qMjPDexIJECXGVEW").style.height=document.getElementById("mmedia-qMjPDexIJECXGVEW").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-cdCVnYsUylqMYaJm").style.height=document.getElementById("mmedia-cdCVnYsUylqMYaJm").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-KmpqGRoXZEcSOZWh").style.height=document.getElementById("mmedia-KmpqGRoXZEcSOZWh").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-cdCVnYsUylqMYaJm").style.height=document.getElementById("mmedia-cdCVnYsUylqMYaJm").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-KmpqGRoXZEcSOZWh").style.height=document.getElementById("mmedia-KmpqGRoXZEcSOZWh").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var moyQQKDOpVAANzjs_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); moyQQKDOpVAANzjs_options.container = "#mmedia-moyQQKDOpVAANzjs"; const art_moyQQKDOpVAANzjs = new Artplayer(moyQQKDOpVAANzjs_options); 
+ var jUWZdMOaHLtbqCNq_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); jUWZdMOaHLtbqCNq_options.container = "#mmedia-jUWZdMOaHLtbqCNq"; const art_jUWZdMOaHLtbqCNq = new Artplayer(jUWZdMOaHLtbqCNq_options); 
 脑图
 
 原作者记录
@@ -18897,11 +18897,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var uXxmpXwjTjwdhYJV_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); uXxmpXwjTjwdhYJV_options.container = document.getElementById("mmedia-uXxmpXwjTjwdhYJV"); const ap_uXxmpXwjTjwdhYJV = new APlayer(uXxmpXwjTjwdhYJV_options); 
+ var oBCpjUXfeUrgkwuo_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); oBCpjUXfeUrgkwuo_options.container = document.getElementById("mmedia-oBCpjUXfeUrgkwuo"); const ap_oBCpjUXfeUrgkwuo = new APlayer(oBCpjUXfeUrgkwuo_options); 
 
 
 
- var WWmILPBrJnbahXeC_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); WWmILPBrJnbahXeC_options.container = document.getElementById("mmedia-WWmILPBrJnbahXeC"); const ap_WWmILPBrJnbahXeC = new APlayer(WWmILPBrJnbahXeC_options); 
+ var ObtlWgdHaTyYYKTl_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); ObtlWgdHaTyYYKTl_options.container = document.getElementById("mmedia-ObtlWgdHaTyYYKTl"); const ap_ObtlWgdHaTyYYKTl = new APlayer(ObtlWgdHaTyYYKTl_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -19059,9 +19059,9 @@ docker run -d \
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-bDwoSIyfytPPWPBk").style.height=document.getElementById("mmedia-bDwoSIyfytPPWPBk").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-hXhlmwrANkDwckoB").style.height=document.getElementById("mmedia-hXhlmwrANkDwckoB").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-bDwoSIyfytPPWPBk").style.height=document.getElementById("mmedia-bDwoSIyfytPPWPBk").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-hXhlmwrANkDwckoB").style.height=document.getElementById("mmedia-hXhlmwrANkDwckoB").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -19070,7 +19070,7 @@ docker run -d \
 
 ## 中文翻唱
 
- var xPXtWWgOyprmyppB_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); xPXtWWgOyprmyppB_options.container = document.getElementById("mmedia-xPXtWWgOyprmyppB"); const ap_xPXtWWgOyprmyppB = new APlayer(xPXtWWgOyprmyppB_options); 
+ var MKYwknestHROUmlo_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); MKYwknestHROUmlo_options.container = document.getElementById("mmedia-MKYwknestHROUmlo"); const ap_MKYwknestHROUmlo = new APlayer(MKYwknestHROUmlo_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -34881,9 +34881,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-NXSuyGgrhjhRToDK").style.height=document.getElementById("mmedia-NXSuyGgrhjhRToDK").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ZQGJXgFDBXXtSRFh").style.height=document.getElementById("mmedia-ZQGJXgFDBXXtSRFh").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-NXSuyGgrhjhRToDK").style.height=document.getElementById("mmedia-NXSuyGgrhjhRToDK").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-ZQGJXgFDBXXtSRFh").style.height=document.getElementById("mmedia-ZQGJXgFDBXXtSRFh").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 calibre:
@@ -36865,86 +36865,6 @@ https://blinkfox.github.io/2018/10/09/ruan-jian-gong-ju/linux/chang-yong-bash-mi
         <tag>中医</tag>
         <tag>西医</tag>
         <tag>社会观察</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>如何做好竞品分析</title>
-    <url>/posts/99be6dfb/</url>
-    <content><![CDATA[
-竞品分析可以帮助我们更好地找准自身产品定位，发现自己产品的优劣所在，进而推动产品的优化迭代。
-Tips：友情提示，部分内容RSS输出获取不到，请跳转到源网页地址浏览全文！
-
-
-
-
-  
-
-
-如何做好竞品分析？竞品分析的六大维度
-
-一、为什么做竞品分析？
-1.知己知彼百战百胜
-2.为自身的产品设计提供功能、可用性、关键技术等方面的参考
-3.提高自身产品的差异化程度
-4.降低风险
-二、如何选择竞品？
-1.寻找行业内领先的榜样产品（取其精华）
-2.类似于自己的产品（竞争关系最大）
-3.有潜力的竞品（存活原因）
-三、如何做竞品调研？
-1.市场分析：了解产业和行业的运作模式、所处环境和市场数据，便于筛选目标市场
-2.用户分析：了解目标市场中全部用户的分层及画像，便于筛选目标用户
-3.产品分析：了解开发生命周期中的差异
-4.产品调研：了解产品生命周期中的差异
-5.用户运营：了解产品中存量用户的细分，便于精细化运营
-6.用户调研：了解用户的体验和评价
-7.竞品分析：从产品背后看企业，了解竞争者的资源配置情况
-四、竞品分析的基本思路
-1.分析目的有哪些？
-2.分析对象有哪些？
-3.分析角度有哪些？
-4.竞品信息的来源有哪些？
-5.竞品信息的处理流程有哪些？
-6.分析方法有哪些？
-7.结论如何呈现？
-五、竞品分析的模型方法
-1.PEST分析模型
-2.STP理论
-3.波特五力模型
-4.波士顿矩阵分析
-5.用户体验五要素
-6.APPEALS模型
-7.SWOT分析法
-六、竞品分析报告模板
-1.分析目的：为什么做分析报告
-2.确定竞品：分析了哪些、产品形态、产品版本、体验环境
-3.竞品分析：战略定位、目标用户、商业模式、运营策略、产品功能及设计、市场推广、盈利模式
-4.复盘总结：优缺点总结、结论、趋势预测
-参考
-
-如何做好竞品分析
-
-附赠
-钱学森《论系统工程》
-
-钱学森诞辰110周年：重读经典，钱学森《论系统工程》笔记摘要
-
-钱老从中国传统哲学角度出发，把工业企业运行分为人、物、事三类要素。“人”就是组织、岗位和人员；“物”就是产品、设备等；“事”就是事物运转的流程。与国外的TOGAF建模方法不同，钱老说的模型太接地气了，中国人一听就懂。
-事实上，钱老刚回国，一穷二白，怎么搞航天，就是靠得这种系统工程理论，层层递进，才成就复杂的两弹一星工程。我们现在开发工业管理软件，实际上就是要找到这种底层的事物的规律，才可能起到事半功倍的效果，可以说是面向对象的中国特色版：
-以下是钱老的原文，大家可以一起学习下：
-
-就一个工厂甚至任何一个环节而言，都由下列人、物、事三类要素组成。其中“人”当然是第一要素；物包括三个要素即：物资（能源、原料、半成品、成品等），设备（土木建筑、机电设备、工具仪表等）和财（工资、流动资金等）；事包括两个要素：任务的推进（上级所下达的任务或与其他单位所订的合约）与信息的传递（数据、图纸、报表、规章、决策等等）。从历史上一个个体劳动者泥瓦匠的工作开始，就包含这六个要素。
-人、物资、设备、财、任务和信息这六个要素，都要满足一定的制约，一是经济规律的制约，一是技术条件的制约。进行经营管理首先要认识这种制约，并从而能动地求得在制约下的系统的最优运转。通过六个要素，把一个复杂的生产体系组织管理好，需要科学，即所谓经营科学。从历史上一个个体劳动者泥瓦匠的工作开始，就包含这六个要素。那时人当然是有的，不过是个体；砖瓦木料便是物资；斧锯瓦刀是设备；钱当然是个因素，任务指标是明确的；至于信息可能全部都存放在泥瓦匠这个人的头脑中。在现代的大工厂中，还是这六种要素，只不过规模空前地扩大。在工厂这个整系统中，各分系统之间的相互作用和相互依赖的关系，就凭这六个要素的流通而得以体现。
-中国为什么没有自己的编程语言？哲学、数学和语言学基础是关键
-钱老的物、事、人的理论是生根于中国历史文化中，有着具有中国特色的世界观和价值观，这也是中国哲学的基础研究问题。所以非常容易被东方文化人群所接受，每一个中国人都很容易理解物、事和人的划分，这就为理论应用奠定了基础。
-
-]]></content>
-      <categories>
-        <category>管理</category>
-      </categories>
-      <tags>
-        <tag>管理</tag>
-        <tag>竞品分析</tag>
       </tags>
   </entry>
   <entry>
@@ -40472,6 +40392,86 @@ Linux内核源代码情景分析（上册）
       </tags>
   </entry>
   <entry>
+    <title>如何做好竞品分析</title>
+    <url>/posts/99be6dfb/</url>
+    <content><![CDATA[
+竞品分析可以帮助我们更好地找准自身产品定位，发现自己产品的优劣所在，进而推动产品的优化迭代。
+Tips：友情提示，部分内容RSS输出获取不到，请跳转到源网页地址浏览全文！
+
+
+
+
+  
+
+
+如何做好竞品分析？竞品分析的六大维度
+
+一、为什么做竞品分析？
+1.知己知彼百战百胜
+2.为自身的产品设计提供功能、可用性、关键技术等方面的参考
+3.提高自身产品的差异化程度
+4.降低风险
+二、如何选择竞品？
+1.寻找行业内领先的榜样产品（取其精华）
+2.类似于自己的产品（竞争关系最大）
+3.有潜力的竞品（存活原因）
+三、如何做竞品调研？
+1.市场分析：了解产业和行业的运作模式、所处环境和市场数据，便于筛选目标市场
+2.用户分析：了解目标市场中全部用户的分层及画像，便于筛选目标用户
+3.产品分析：了解开发生命周期中的差异
+4.产品调研：了解产品生命周期中的差异
+5.用户运营：了解产品中存量用户的细分，便于精细化运营
+6.用户调研：了解用户的体验和评价
+7.竞品分析：从产品背后看企业，了解竞争者的资源配置情况
+四、竞品分析的基本思路
+1.分析目的有哪些？
+2.分析对象有哪些？
+3.分析角度有哪些？
+4.竞品信息的来源有哪些？
+5.竞品信息的处理流程有哪些？
+6.分析方法有哪些？
+7.结论如何呈现？
+五、竞品分析的模型方法
+1.PEST分析模型
+2.STP理论
+3.波特五力模型
+4.波士顿矩阵分析
+5.用户体验五要素
+6.APPEALS模型
+7.SWOT分析法
+六、竞品分析报告模板
+1.分析目的：为什么做分析报告
+2.确定竞品：分析了哪些、产品形态、产品版本、体验环境
+3.竞品分析：战略定位、目标用户、商业模式、运营策略、产品功能及设计、市场推广、盈利模式
+4.复盘总结：优缺点总结、结论、趋势预测
+参考
+
+如何做好竞品分析
+
+附赠
+钱学森《论系统工程》
+
+钱学森诞辰110周年：重读经典，钱学森《论系统工程》笔记摘要
+
+钱老从中国传统哲学角度出发，把工业企业运行分为人、物、事三类要素。“人”就是组织、岗位和人员；“物”就是产品、设备等；“事”就是事物运转的流程。与国外的TOGAF建模方法不同，钱老说的模型太接地气了，中国人一听就懂。
+事实上，钱老刚回国，一穷二白，怎么搞航天，就是靠得这种系统工程理论，层层递进，才成就复杂的两弹一星工程。我们现在开发工业管理软件，实际上就是要找到这种底层的事物的规律，才可能起到事半功倍的效果，可以说是面向对象的中国特色版：
+以下是钱老的原文，大家可以一起学习下：
+
+就一个工厂甚至任何一个环节而言，都由下列人、物、事三类要素组成。其中“人”当然是第一要素；物包括三个要素即：物资（能源、原料、半成品、成品等），设备（土木建筑、机电设备、工具仪表等）和财（工资、流动资金等）；事包括两个要素：任务的推进（上级所下达的任务或与其他单位所订的合约）与信息的传递（数据、图纸、报表、规章、决策等等）。从历史上一个个体劳动者泥瓦匠的工作开始，就包含这六个要素。
+人、物资、设备、财、任务和信息这六个要素，都要满足一定的制约，一是经济规律的制约，一是技术条件的制约。进行经营管理首先要认识这种制约，并从而能动地求得在制约下的系统的最优运转。通过六个要素，把一个复杂的生产体系组织管理好，需要科学，即所谓经营科学。从历史上一个个体劳动者泥瓦匠的工作开始，就包含这六个要素。那时人当然是有的，不过是个体；砖瓦木料便是物资；斧锯瓦刀是设备；钱当然是个因素，任务指标是明确的；至于信息可能全部都存放在泥瓦匠这个人的头脑中。在现代的大工厂中，还是这六种要素，只不过规模空前地扩大。在工厂这个整系统中，各分系统之间的相互作用和相互依赖的关系，就凭这六个要素的流通而得以体现。
+中国为什么没有自己的编程语言？哲学、数学和语言学基础是关键
+钱老的物、事、人的理论是生根于中国历史文化中，有着具有中国特色的世界观和价值观，这也是中国哲学的基础研究问题。所以非常容易被东方文化人群所接受，每一个中国人都很容易理解物、事和人的划分，这就为理论应用奠定了基础。
+
+]]></content>
+      <categories>
+        <category>管理</category>
+      </categories>
+      <tags>
+        <tag>管理</tag>
+        <tag>竞品分析</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>管理故事锦集</title>
     <url>/posts/a6477052/</url>
     <content><![CDATA[
@@ -41149,7 +41149,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts33'));
+        var myChart = echarts.init(document.getElementById('echarts258'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -41243,7 +41243,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts5553'));
+        var myChart = echarts.init(document.getElementById('echarts7711'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -41312,7 +41312,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts5191'));
+        var myChart = echarts.init(document.getElementById('echarts8462'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -43674,11 +43674,13 @@ CI/CD与Git Flow与GitLab
 这个值虽然足够小，但是依然远大于0，概率的发生同样是不连续的！
 无限猴子打字机与概率
 
+无限猴子定理的表述如下：让一只猴子在打字机上随机地按键，当按键时间达到无穷时，几乎必然能够打出任何给定的文字，比如莎士比亚的全套著作。
+
+
 字符串越长，数学概率越小。当文章长度超过一定长度，概率小于普朗克概率的时候，这种时间发生概率纯粹数学上不为零，但实际上，现实生活中已经不可能发生了！
-莎士比亚的文章长度，虽然是有限的，但长度已经足够长，以至于概率大概，约莫是一个非常非常小的数值！这个数值应该
-的确是一个小于普朗克概率的数值了。
+莎士比亚的文章长度，虽然是有限的，但长度已经足够长，以至于其发生概率大概，约莫是一个非常非常小的数值！这个数值应该的确是一个小于普朗克概率的数值了。
 所以什么无限猴子实验就是谬论，这个谬论只有在时间和空间都是连续的情况下才会发生！
-普朗克概率与钟表
+普朗克概率与泳池中的钟表
 把一个机械表拆成零件，丢入一个泳池，泳池晃动最后把机械表组装好的概率是多少？
 
 普朗克概率与生命
