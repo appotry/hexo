@@ -25,9 +25,12 @@ jobs:
           npm init -y
           npm install hexo-seo-autopush
 
-      - name: 4. 自动提交
-        run: |
-          curl -H 'Content-Type:text/plain' --data-binary @baidu.txt 'http://data.zz.baidu.com/urls?site=https://blog.17lai.site&token=${{secrets.baidu_token}}'
-          curl -X POST 'https://ssl.bing.com/webmaster/api.svc/json/SubmitUrlBatch?apikey=${{secrets.bing_apikey}}' -H 'Content-Type: application/json' -H 'charset: utf-8' -d @bing.json
-          npx hexoautopush ${{secrets.google_client_email}} ${{secrets.google_private_key}}
+      - name: 4. google 提交
+        run: npx hexoautopush ${{secrets.google_client_email}} ${{secrets.google_private_key}}
+      
+      - name: 5. bing 提交
+        run: curl -X POST "https://ssl.bing.com/webmaster/api.svc/json/SubmitUrlBatch?apikey=${{secrets.bing_apikey}}" -H "Content-Type:application/json" -H "charset:utf-8" -d @bing.json
+
+      - name: 6. baidu 提交
+        run: curl -H "Content-Type:text/plain" --data-binary @baidu.txt "http://data.zz.baidu.com/urls?site=https://blog.17lai.site&token=${{secrets.baidu_token}}"
   
