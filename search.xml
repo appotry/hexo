@@ -9944,6 +9944,258 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
       </tags>
   </entry>
   <entry>
+    <title>深度学习之视频人脸识别系列</title>
+    <url>/posts/a0f3c838/</url>
+    <content><![CDATA[系列1 简介
+出品 | 磐创AI技术团队
+【磐创AI导读】本文是深度学习之视频人脸识别系列的第一篇文章，介绍了人脸识别领域的一些基本概念，分析了深度学习在人脸识别的基本流程，并总结了近年来科研领域的研究进展，最后分析了静态数据与视频动态数据在人脸识别技术上的差异。欢迎大家点击上方篮子关注我们的公众号：磐创AI。
+一、基本概念
+1. 人脸识别（face identification）
+人脸识别是1对n的比对，给定一张人脸图片，如何在n张人脸图片中找到同一张人脸图片，相对于一个分类问题，将一张人脸划分到n张人脸中的一张。类似于管理人员进行的人脸识别门禁系统。
+2.人脸验证（face verification）
+人脸验证的1对1的比对，给定两张人脸图片，判断这两张人脸是否为同一人，类似于手机的人脸解锁系统，事先在手机在录入自己的脸部信息，然后在开锁时比对摄像头捕捉到的人脸是否与手机上录入的人脸为同一个人。
+3.人脸检测（face detection）
+人脸检测是在一张图片中把人脸检测出来，即在图片上把人脸用矩形框出来，并得到矩形的坐标，如下图所示。
+
+4. 人脸关键点检测
+根据输入的人脸图像，识别出面部关键特征点，如眼睛、鼻尖、嘴角点、眉毛以及人脸各部件轮廓点的坐标，如下图所示。
+
+5. 人脸矫正（人脸对齐）
+通过人脸关键点检测得到人脸的关键点坐标，然后根据人脸的关键点坐标调整人脸的角度，使人脸对齐，由于输入图像的尺寸是大小不一的，人脸区域大小也不相同，角度不一样，所以要通过坐标变换，对人脸图像进行归一化操作，如下图所示。
+
+二、基于深度学习的人脸识别算法基本流程
+随着神经网络的迅速发展和其对图像数据的强大的特征提取，深度学习运用于人脸识别也成为热点研究方向；2014年的开山之作DeepFace，第一个真正将大数据和深度学习结合应用于人脸识别与验证，确立人脸识别的常规流程：图片-&gt;人脸与关键点检测-&gt;人脸对齐-&gt;人脸表征（representation）-&gt;分类。首先将图片中的人脸检测处理并通过关键点进行对齐，如何输入到神经网络，得到特征向量，通过分类训练过程，该向量即为人脸的特征向量。要求出两张人脸的相似度即计算两个特征的向量度量之差，方法包括：SVM、SiameseNetwork、JointBayesian、L1距离、L2距离、cos距离等。
+三、科研领域近期进展
+科研领域近期进展主要集中于loss函数的研究，包括DeepId2（Contrastive Loss）、FaceNet（Triplet loss）、L-Softmax、SphereFace（A-Softmax）、Center Loss、L2-Softmax、NormFace、CosFace（AM-Softmax）、ArcFace（AA-Softmax）等。
+四、基于视频人脸识别和图片人脸识别的区别
+（该小结部分参考于博客园 - 米罗西http://www.cnblogs.com/zhehan54/p/6727631.html）
+相对于图片数据，目前视频人脸识别有很多挑战，包括：（1）视频数据一般为户外，视频图像质量比较差；（2）人脸图像比较小且模糊；（3）视频人脸识别对实时性要求更高。
+但是视频数据也有一些优越性，视频数据同时具有空间信息和时间信息，在时间和空间的联合空间中描述人脸和识别人脸会具有一定提升空间。在视频数据中人脸跟踪是一个提高识别的方法，首先检测出人脸，然后跟踪人脸特征随时间的变化。当捕捉到一帧比较好的图像时，再使用图片人脸识别算法进行识别。这类方法中跟踪和识别是单独进行的，时间信息只在跟踪阶段用到。
+【总结】：本期文章主要介绍了基于深度学习的人脸识别算法的一些基本入门知识，下一期我给大家介绍人脸识别中获取神经网络输入的算法，即关于人脸检测、人脸关键点检测与人脸对齐的一些重要算法和相关论文解析。
+系列2 人脸检测与对齐
+一、人脸检测与关键点检测
+1. 问题描述：
+人脸检测解决的问题为给定一张图片，输出图片中人脸的位置，即使用方框框住人脸，输出方框的左上角坐标和右下角坐标或者左上角坐标和长宽。算法难点包括：人脸大小差异、人脸遮挡、图片模糊、角度与姿态差异、表情差异等。而关键检测则是输出人脸关键点的坐标，如左眼（x1，y1）、右眼（x2，y2）、鼻子（x3，y3）、嘴巴左上角（x4，y4）、嘴巴右上角（x5，y5）等。
+2. 深度学习相关算法：
+（1）Cascade CNN
+Cascade CNN源于发表于2015年CVPR上的一篇论文A Convolutional Neural Network Cascade for Face Detection【2】，作者提出了一种级连的CNN网络结构用于人脸检测。算法主体框架是基于V-J的瀑布流思想【1】，是传统技术和深度网络相结合的一个代表，Cascade CNN包含了多个分类器，这些分类器使用级联结构进行组织，与V-J不同的地方在于Cascade CNN采用卷积网络作为每一级的分类器。整个网络的处理流程如下图所示：
+
+整个处理流程里包含了六个网络：12-net、12-calibration-net、24-net、24-calibration-net、48-net、48-calibration-net，其中三个二分类网络用于分类其是否为人脸，另外三个calibration网络用于矫正人脸框边界。其中第二个网络之后、第四个网络之后、第五个网络之后使用NMS算法过滤掉冗余的框。
+12-net，24-net和48-net的网络结构如下图所示：
+
+13-12-calibration-net，24-calibration-net，48-calibration-net的结构如下图所示：
+
+该算法结合了V-J框架构造了级连的CNN网络结构并设计边界矫正网络用来专门矫正人脸框边界，在AFW数据集上准确率达到97.97%。
+
+（2）Faceness-Net
+Faceness-Net源于论文A convolutional neural network cascade for face detection【3】，该算法基于DCNN网络【5】的人脸局部特征分类器，算法首先进行人脸局部特征的检测，使用多个基于DCNN网络的facial parts分类器对人脸进行评估，然后根据每个部件的得分进行规则分析得到Proposal的人脸区域，然后从局部到整体得到人脸候选区域，再对人脸候选区域进行人脸识别和矩形框坐标回归，该过程分为两个步骤。
+第一个步骤：每个人脸局部特征使用attribute-aware网络检测并生成人脸局部图，其中一共五个特征属性： 头发、眼睛、鼻子、嘴巴、胡子。然后通过人脸局部图根据评分构建人脸候选区域，具体如下图所示：
+
+第二个步骤：训练一个多任务的卷积网络来完成人脸二分类和矩形框坐标回归，进一步提升其效果，具体如下图所示：
+
+Faceness从脸部特征的角度来解决人脸检测中的遮挡和姿态角度问题，其整体性能在当时是非常好的，在AFW数据集上准确率可以达到98.05%。
+
+（3）MTCNN
+MTCNN源于论文Joint Face Detection and Alignment using Multi-task Cascaded Convolutional Networks【6】，是基于多任务级联卷积神经网络来解决人脸检测和对齐问题，同时输出图片的人脸矩阵框和关键点坐标（左眼、右眼、鼻子、嘴巴左上角、嘴巴右上角）。MTCNN为三阶的级联卷积神经网络，整体框架如下图所示：
+
+输入阶段：为应对目标多尺度问题，将原始图像resize到不同尺寸，构建图像金字塔，作为三阶级联架构的输入，这样处理可以更好地检测大小不一的人脸。
+第一阶段：通过一个全部由卷积层组成的CNN，取名P-Net，获取候选人脸框、关键点坐标和人脸分类（是人脸或不是），之后采用NMS过滤掉高重叠率的候选窗口。如下图所示：
+
+第二阶段：第一阶段输出的候选人脸框作为更为复杂的R-Net网络的输入，R-Net进一步筛除大量错误的候选人脸框，同样也通过NMS过滤掉高重叠率的候选窗口。如下图所示：
+
+第三阶段：与第二阶段类似，最终网络输出人脸框坐标、关键点坐标和人脸分类（是人脸或不是）。如下图所示：
+
+MTCNN通过三级的级联卷积神经网络对任务进行从粗到细的处理，还提出在线困难样本生成策略（online hard sample mining ）可以进一步提升性能。兼并了速度与准确率，速度在GPU上可以达到99FPS，在 FDDB数据集上可以达到95.04准确率，具体如下图所示：
+
+二、人脸对齐（部分参考于GraceDD的博客文章）
+人脸对齐通过人脸关键点检测得到人脸的关键点坐标，然后根据人脸的关键点坐标调整人脸的角度，使人脸对齐，由于输入图像的尺寸是大小不一的，人脸区域大小也不相同，角度不一样，所以要通过坐标变换，对人脸图像进行归一化操作。人脸关键点检测有很多算法可以使用包括：ASM、AAM、DCNN 、TCDCN 、MTCNN 、TCNN、TCNN等，这里就不详细介绍，主要说一下得到人脸关键点之后如何进行人脸对齐，是所有人脸达到归一化效果，该过程如下图所示：
+
+该过程涉及到图像的仿射变换，简单来说，“仿射变换”就是：“线性变换”+“平移”，即坐标的变换。假如我们希望人脸图片归一化为尺寸大小600600，左眼位置在（180，200），右眼位置在（420，200）。 这样人脸中心在图像高度的1/3位置，并且两个眼睛保持水平，所以我们选择左眼角位置为( 0.3width, height / 3 )，右眼角位置为（0.7*width , height / 3） 。
+利用这两个点计算图像的变换矩阵（similarity transform），该矩阵是一个2*3的矩阵，如下：
+
+如果我们想对一个矩形进行变换，其中x、y方向的缩放因为分别为sx，sy，同时旋转一个角度 ，然后再在x方向平移tx, 在y方向平移ty
+利用opencv的estimateRigidTransform方法，可以获得这样的变换矩阵，但遗憾的是，estimateRigidTransform至少需要三个点，所以我们需要构选第三个点，构造方法是用第三个点与已有的两个点构成等边三角形，这样第三个点的坐标为：
+
+代码如下：
+
+经过上一步的处理之后，所有的图像都变成一样大小，并且又三个关键点的位置是保持一致的，但因为除了三个点对齐了之外，其他点并没有对齐。所以根据得到的变换矩阵对剩下所有的点进行仿射变换，opencv代码如下所示：
+
+img为输入图像;
+warped为变换后图像，类型与src一致;
+M为变换矩阵，需要通过其它函数获得，当然也可以手动输入;
+Image_size为输出图像的大小;
+三、 总结
+本期文章主要介绍了人脸检测与对齐的相关算法，下一期我给大家介绍一下人脸表征的相关算法，即通过深度学习提取人脸特征，通过比较人脸特征进行人脸识别与验证。
+参考文献：
+
+【1】 S.Z.Li, L.Zhu, Z.Q.Zhang, A.Blake, H.J.Zhang, H.Y.Shum. Statistical learning of multi-view face detection. In: Proceedings of the 7-th European Conference on Computer Vision. Copenhagen, Denmark: Springer, 2002.67-81.
+【2】Li H, Lin Z, Shen X, et al. A convolutional neural network cascade for face detection[C]//Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition. 2015: 5325-5334.
+【3】Yang S, Luo P, Loy C C, et al. Faceness-Net: Face detection through deep facial part responses[J]. IEEE transactions on pattern analysis and machine intelligence, 2017.
+【4】Yang S, Luo P, Loy C C, et al. From facial parts responses to face detection: A deep learning approach[C]//Proceedings of the IEEE International Conference on Computer Vision. 2015: 3676-3684.
+【5】Sun Y, Wang X, Tang X. Deep convolutional network cascade for facial point detection[C]//Proceedings of the IEEE conference on computer vision and pattern recognition. 2013: 3476-3483.
+【6】Zhang K, Zhang Z, Li Z, et al. Joint face detection and alignment using multitask cascaded convolutional networks[J]. IEEE Signal Processing Letters, 2016, 23(10): 1499-1503.
+
+系列3：人脸表征
+一、人脸表征
+把人脸图像通过神经网络，得到一个特定维数的特征向量，该向量可以很好地表征人脸数据，使得不同人脸的两个特征向量距离尽可能大，同一张人脸的两个特征向量尽可能小，这样就可以通过特征向量来进行人脸识别。
+
+二、论文综述
+1. DeepFace：
+2014年论文DeepFace: Closing the Gap toHuman-Level Performance in Face Verification提出了DeepFace算法，第一个真正将大数据和深度学习神经网络结合应用于人脸识别与验证。在该人脸识别模型中分为四个阶段：人脸检测 =&gt; 人脸对齐 =&gt; 人脸表征 =&gt; 人脸分类，在LFW数据集中可以达到97.00%的准确率。
+（1）人脸检测与对齐：该模型使用3D模型来将人脸对齐，该方法过于繁琐，在实际应用中很少使用，经过3D对齐以后，形成的图像都是152×152的图像，具体步骤如下图。
+
+分为如下几步：
+a. 人脸检测，使用6个基点  b. 二维剪切，将人脸部分裁剪出来  c. 67个基点，然后Delaunay三角化，在轮廓处添加三角形来避免不连续  d. 将三角化后的人脸转换成3D形状  e. 三角化后的人脸变为有深度的3D三角网  f. 将三角网做偏转，使人脸的正面朝前。  g. 最后放正的人脸  h. 一个新角度的人脸（在论文中没有用到）
+（2）人脸表征：人脸表征使用了5个卷积层和1个最大池化层、1个全连接层，如下图所示。前三层的目的在于提取低层次的特征,为了网络保留更多图像信息只使用了一层池化层；后面三层都是使用参数不共享的卷积核，因为主要是因为人脸不同的区域的特征是不一样的，具有很大的区分性，比如鼻子和眼睛所表示的特征是不一样的，但是使用参数不共享的卷积核也增加了模型计算量以及需要更多的训练数据。最后输出的4096维向量进行L2归一化。
+
+a. Conv：32个11×11×3的卷积核
+b. max-pooling: 3×3， stride=2
+c. Conv: 16个9×9的卷积核
+d. Local-Conv: 16个9×9的卷积核，Local的意思是卷积核的参数不共享
+e. Local-Conv: 16个7×7的卷积核，参数不共享
+f. Local-Conv: 16个5×5的卷积核，参数不共享
+g. Fully-connected: 4096维
+h. Softmax: 4030维
+（3）分类：论文介绍了两种方法进行分类，加权的卡方距离和使用Siamese网络结构，设f1和f2为特征向量，上一个步骤的输出，则有：
+①加权卡方距离：计算公式如下，加权参数由线性SVM计算得到：
+
+②Siamese网络：网络结构是成对进行训练，得到的特征表示再使用如下公式进行计算距离：
+
+2. DeepID1：
+DeepID1 是2014年Deep LearningFace Representation from Predicting 10,000 Classes一文提出的，是DeepID三部曲的第一篇。DeepID1 使用softmax多分类训练，主要思想第一个是数据集的增大，包括训练集使用celebface，包含87628张图片，5436个人脸，增大了训练集；使用多尺寸输入，通过5个landmarks将每张人脸划分成10regions，每张图片提取60patches=10regions3scales2(RGB orgray)，第二个是网络结构，DeepID提取的人脸特征就是一个由连接第三层与第四层组成的全连接层特征，如下图所示，每个patches经过这个cnn网络，第四层的特征更加全局化（global），第三层的特征更加细节，因此DeepID连接了两者，以求同时包含全局，细节信息。
+
+60个patches使用60个CNN,每个CNN提取2*160=320维特征（与水平翻转一起输入），总网络模型如下图所示，最后分别使用联合贝叶斯算法与神经网络进行分类，并比较结果。
+
+模型最终以CelebFaces+中202,599图像作为训练集， patch数提升为100（10r10s2） ，特征数提升为1001602=32000 然后使用PCA降为150维 ，使用联合贝叶斯算法进行验证， 最终在LFW上达到97.20%的验证准确率。
+3. DeepID2：
+DeepID2是Deep Learning Face Representationby Joint Identification-Verification一文提出的，对DeepID1进行了进一步的改进，提出了contrastive loss，在分类任务，我们需要的是减少类内差距（同一人脸），增加类间差距（不同人脸），softmax loss分类的监督信号可以增大类间差距，但是却对类内差距影响不大，所以DeepID2加入了另一个loss，contrastive loss，从而增加验证的监督信号，就可以减少类内差距。
+网络结构类似DeepID1,不同之处在于使用了两种不同的损失函数，网络结构如下图所示。
+
+损失函数：
+①分类信号，Softmax loss。
+
+②验证信号，contrastiveloss，使用l2范数距离表示，m为阈值不参与训练，括号内的θve={m}，该损失函数可以让类间的距离给定一个限制margin，即m大小的距离。
+
+
+两loss的组合方式： 首先使用2个输入，计算Softmax loss和contrastive loss,总损失为二者通过λ加权求和，通过总损失来执行梯度下降更新卷积参数，通过Softmax loss来更新softmax层的参数。
+整个模型使用celebrate+数据集训练，每张图片使用了21 facial landmarks，分成200patches（20regions5scales2RGB&amp;Gray)，水平翻转后变为400patches，使用了200个卷积神经网络，提取400（2002）个Deepid2特征，使用贪婪算法降为25个Deepid2特征，使用PCA将25160Deepid2特征降为180维，最后使用联合贝叶斯算法进行验证，最终在LFW上得到的最终准确率是98.97%，使用7组25个Deepid2特征，SVM融合可得到准确率为99.15% 。DeepID2在2014 年是人脸领域非常有影响力的工作，也掀起了在人脸领域引进 MetricLearning 的浪潮。
+4. DeepID2+：
+DeepID2+源于论文Deeply learned facerepresentations are sparse, selective, and robust，DeepID2+是对DeepID2的改进。①卷积层在原来基础上再增加128维，第四层全连接层从160增加到512，训练数据增加了CelebFaces+ dataset，WDRef等，有12000个人脸的大约290,000张图片； ②每个卷积层的后面都加了一个512为的全连接层，并添加contrastive loss监督信号，而不仅在第四层全连接层上有 。网络结构如下图所示。
+
+最终在LFW数据集上准确率为99.47%。
+5. DeepID3：
+DeepID3源于2015年的Deepid3:Face recognition with very deep neural networks论文，该论文探究了复杂神经网络对人脸识别的作用。论文研究VGG与GoogleNet用于人脸识别的效果，论文在VGG和GooLeNet的基础上进行构建合适的结构，使得方便人脸识别。结果发现DeepID3的结果和DeepID2+相当，可能是由于数据集的瓶颈，需要更大的数据才能有更好的提升，两个网络结构如下图所示。
+
+网络输出使用PCA降维到300维的向量，使用联合贝叶斯算法进行验证，最终在LFW上得到的最终准确率是99.53%。
+6. FaceNet：
+FaceNet由论文Facenet: A unified embedding forface recognition and clustering提出，这篇 2015 年来自 Google 的 论文同样具有非常大的影响力，不仅仅成功应用了 TripletLoss 在 benchmark 上取得state-of-art 的结果，更因为他们提出了一个绝大部分人脸问题的统一解决框架，即：识别、验证、搜索等问题都可以放到特征空间里做，需要专注解决的仅仅是如何将人脸更好的映射到特征空间。FaceNet在DeepID的基础上，将 ContrastiveLoss 改进为 Triplet Loss，去掉softmaxloss。FaceNet实验了ZFNet类型网络和Inception类型网络，最终Inception类型网络效果更好，网络结构如下图所示。
+
+FaceNet没有使用PCA降维，而是在网络中直接训练输出128维的向量，用全连接层来完成降维，最后的128维的向量经过Triplet Loss。
+Triplet Loss输入不再是 Image Pair，而是三张图片（Triplet），分别为 Anchor Face（xa），Negative Face（xn）和 Positive Face（xp）。Anchor 与 Positive Face 为同一人，与 Negative Face 为不同人，在特征空间里 Anchor 与 Positive 的距离要小于 Anchor 与 Negative 的距离，且相差超过一个 Margin Alpha。
+loss的目标为：
+
+总loss公式为：
+
+Contrastive Loss与Triplet Loss的比较， Contrastive Loss目标是减少类内差距（两个蓝点），增加类间差距（蓝点与红点）；Triplet Loss则是输入三张图片，Anchor 与 Positive 的距离要小于 Anchor 与 Negative 的距离，且相差超过一个 Margin Alpha，即Triplet Loss同时约束了两个距离。
+
+最后FaceNet在LFW数据集上达到了99.63%的准确率。
+基于 ContrastiveLoss 和 Triplet Loss 的 MetricLearning 符合人的认知规律，在实际应用中也取得了不错的效果，但同时也有很多问题，由于ContrastiveLoss 和 Triplet Loss 的训练样本都基于pair 或者 triplet 的，可能的样本数是 O(N2) 或者 O (N3) 的，所以模型需要很久的计算才能拟合并且训练集需要足够大。
+三、总结
+本期文章主要介绍人脸表征相关算法和论文综述，主要是2014年到2016年的研究成果， ContrastiveLoss 和 Triplet Loss在实际应用中也取得了很好的效果，但是也有很多问题，由于Contrastive Loss 和 Triplet Loss 的训练样本都基于 pair 或者 triplet 的，可能的样本数是 O (N2) 或者 O (N3) 的，所以模型需要很久的计算才能拟合并且训练集要足够大，所以在之后的人脸识别研究中，大部分在于loss函数的研究，这部分将会在下一期给大家介绍。
+参考文献：
+
+【1】 Taigman Y, Yang M, Ranzato M A, et al.Deepface: Closing the gap to human-level performance in faceverification[C]//Proceedings of the IEEE conference on computer vision andpattern recognition. 2014: 1701-1708.
+【2】Sun Y, Wang X, Tang X. Deep learning facerepresentation from predicting 10,000 classes[C]//Proceedings of the IEEEconference on computer vision and pattern recognition. 2014: 1891-1898.
+【3】Sun Y, Chen Y, Wang X, et al. Deeplearning face representation by joint identification-verification[C]//Advancesin neural information processing systems. 2014: 1988-1996.
+【4】Sun Y, Liang D, Wang X, et al. Deepid3:Face recognition with very deep neural networks[J]. arXiv preprintarXiv:1502.00873, 2015.
+【5】Simonyan K, Zisserman A. Very deepconvolutional networks for large-scale image recognition[J]. arXiv preprintarXiv:1409.1556, 2014.
+【6】Szegedy C, Liu W, Jia Y, et al. Goingdeeper with convolutions[C]//Proceedings of the IEEE conference on computervision and pattern recognition. 2015: 1-9.
+【7】Sun Y, Wang X, Tang X. Deeply learned facerepresentations are sparse, selective, and robust[C]//Proceedings of the IEEEconference on computer vision and pattern recognition. 2015: 2892-2900.
+【8】Schroff F, Kalenichenko D, Philbin J.Facenet: A unified embedding for face recognition andclustering[C]//Proceedings of the IEEE conference on computer vision andpattern recognition. 2015: 815-823.
+
+系列4：人脸表征-续
+一、人脸表征
+把人脸图像通过神经网络，得到一个特定维数的特征向量，该向量可以很好地表征人脸数据，使得不同人脸的两个特征向量距离尽可能大，同一张人脸的两个特征向量尽可能小，这样就可以通过特征向量来进行人脸识别。
+
+二、论文综述
+1. L-Softmax：
+Softmax Loss函数被广泛应用于深度学习，较为简单实用，但是它并不能够明确引导神经网络学习区分性较高的特征。L-Softmax能够有效地引导网络学习使得样本类内距离较小、类间距离较大的特征，L-Softmax不但能够调节类间距离的间隔（margin）大小，而且能够防止过拟合。
+L-Softmax是对softmax loss的改进，softmax loss公式如下所示：
+
+其中 fj 表示最终全连接层的类别输出向量 f的第 j个元素, N为训练样本的个数，则 fyi可以表示为 fyi=WTyi xi，其中 0≤θj≤π，最终的损失函数可得：
+
+softmax的目的是使得WT1x&gt;WT2x，即 ∥W1∥∥x∥cos(θ1)&gt;∥W2∥∥x∥cos(θ2)，从而得到输入x（来自类别1）输出正确的分类结果。L-Softmax通过增加一个正整数变量m，从而产生一个决策余量，能够更加严格地约束上述不等式，即：
+
+其中0≤θ1&lt;π/m。如果W1和W2能够满足∥W1∥∥x∥cos(mθ1)&gt;∥W2∥∥x∥cos(θ2)，那么就必然满足∥W1∥∥x∥cos(θ1)&gt;∥W2∥∥x∥cos(θ2)，这样的约束对学习W1和W2的过程提出了更高的要求，在训练学习过程中，类间要比之前多了一个m的间隔，从而使得1类和2类有了更宽的分类决策边界。这种Margin Based Classification使得学习更加的困难，从而使类间距离增加了一个margin距离，L-Softmax loss的总公式如下：
+
+当m越大时，分类的边界越大，学习难度当然就越高。
+论文仅使用了WebFace数据集作为训练集和一个简单的卷积网络，就在LFW上达到了98.71%的正确率，证明了L-Softmax loss取得了比softmax loss更好的结果。
+2. SphereFace :
+SphereFace在MegaFace数据集上识别率在2017年排名第一，提出A-Softmax Loss使人脸识别达到不错的效果。A-Softmax Loss基于softmax loss和L-Softmax loss，在二分类模型中，softmax loss为：
+
+如果x为类别一，则希望p1&gt;p2,则二分类的划分函数为：
+
+权重归一化||w||为1，b为0，此时特征上的点映射到单位超球面上，则二分类的划分函数为：
+
+然后使用与L-Softmax loss相同的原理，使
+
+则A-Softmax Loss最终为：
+
+因此A-Softmax Loss是样本类别之间产生了角度距离，让决策函数更加严格并且更加具有可区分性。当m增大，角度距离也会增加。
+A-Softmax与L-Softmax的最大区别在于A-Softmax的权重归一化了，而L-Softmax则没有。A-Softmax权重的归一化导致特征上的点映射到单位超球面上，A-Softmax仅仅能从角度上划分类别，而L-Softmax是在角度与长度方向进行考量，两个方向如果划分不一就会收到干扰，导致精度下降。
+SphereFace使用的模型如下图所示：
+
+训练与测试过程如下图所示，在测试过程中使用余弦计算相似度：
+
+最终SphereFace在训练集较小的情况下，LFW数据集上准确率为99.42%。Sphereface效果很好，但是它不优美。在测试阶段，Sphereface通过特征间的余弦值来衡量相似性，即以角度为相似性的度量，在训练阶段，其实Sphereface的损失函数并不是在直接优化特征与类中心的角度，而是优化特征与类中心的角度在乘上一个特征的长度，这就造成了训练跟测试之间目标不一致。
+3. Normface :
+在优化人脸识别任务时，softmax本身优化的是没有归一化的内积结果，但是最后在预测的时候使用的一般是cosine距离或者欧式距离，这会导致优化目标和最终的距离度量其实并不一致。 Normface的核心思想是既然最后在特征对比的时候使用归一化的cosine距离，那么在训练的过程中把特征也做归一化处理，做了归一化之后，softmax的优化就变成了直接优化cosine距离了，归一化过程如下，其中e是为了防止除0的较小正数：
+
+相应的损失函数如下：
+
+其中 W 是归一化的权重，f_i 是归一化的特征，参数 s 的引入是因为保证梯度大小的合理性，去掉bias是因为softmax之前的fc有bias的情况下会使得有些类别在角度上没有区分性但是通过bias可以区分，在这种情况下如果对feature做normalize，会使得中间的那个小类别的feature变成一个单位球形并与其他的feature重叠在一起，所以在feature normalize的时候是不能加bias的。
+Normface使用了较小的模型使用多种loss训练，然后在LFW数据集上测试，证明了feature normalize的效果，结果如下：
+
+4. CosFace :
+Normface用特征归一化解决了Sphereface训练和测试不一致的问题。但是却没有了margin的惩罚，腾讯AI Lab的CosFace或者AM-softmax是在Normface的基础上引入了margin，损失函数为：
+
+其中特征与权值都做了归一化：
+
+分类决策为：
+
+，比之前增加了m的margin，m 是一个超参数，控制惩罚的力度，m 越大，惩罚越强。
+CosFace使用mtcnn进行人脸检测与对齐，人脸表征训练模型使用基于residual units 64层卷积网络的Sphere Face，在5M的训练集上训练，在LFW数据集上测试，精度达到99.73%。
+5. ArcFace :
+ArcFace源于论文Additive angular margin lossfor deep face recognition，也叫做InsightFace，论文基本介绍了近期较为流行的人脸识别模型，loss变化从softmax到AM-softmax，然后提出ArcFace，可以说起到了很好的综述作用，论文从三个方面探讨影响人脸识别模型精度的主要因素。
+（1）数据：数据方面，论文探讨了各个数据集的数据质量和优缺点，并对MS-Celeb-1M，MegaFace FaceScrub做了清洗，清洗后的数据公开。
+（2）网络：详细对比了不同的主流网络结构的性能，包括输入层尺寸大小、最后输出几层的不同结构、基本网络单元残差网络的不同结构、主干网络的不同模型。经过实验的证明，最后的网络结构：输入图片大小112x112；第一层convLayer 卷积核为33 stride 1时，网络输出77；主干网络使用ResNet100，并使用改进后的改进的残差网络结构，如下图；最后的几层输出层为最后一个卷积层后+BN-Dropout-FC-BN的结构。
+
+（3）损失函数：与 AM-softmax相比，区别在于Arcface引入margin的方式不同，损失函数为：
+
+Arcface的m是在余弦里面，AM-softmax的在外面，ArcFace更为直观并且在超球面维度上有更清晰的解释。Arcface在VGG2和MS-Celeb-1M数据集上训练，在LFW数据集上精度达到99.83%。
+三、总结
+本期文章主要介绍人脸表征相关算法和论文综述，人脸检测、对齐、特征提取等这些操作都可以在静态数据中完成，下一期将给大家介绍在视频数据中进行人脸识别的另一个重要的算法，视频人脸跟踪的概念与方法。
+参考文献：
+
+【1】 Liu W, Wen Y, Yu Z, et al. Large-MarginSoftmax Loss for Convolutional Neural Networks[C]//ICML. 2016: 507-516.1708.
+【2】Liu W, Wen Y, Yu Z, et al. Sphereface:Deep hypersphere embedding for face recognition[C]//The IEEE Conference onComputer Vision and Pattern Recognition (CVPR). 2017, 1: 1.
+【3】Wang F, Xiang X, Cheng J, et al. Normface:l 2 hypersphere embedding for face verification[C]//Proceedings of the 2017 ACMon Multimedia Conference. ACM, 2017: 1041-1049.
+【4】Wang F, Cheng J, Liu W, et al. Additivemargin softmax for face verification[J]. IEEE Signal Processing Letters, 2018,25(7): 926-930.
+【5】Wang H, Wang Y, Zhou Z, et al. CosFace:Large margin cosine loss for deep face recognition[J]. arXiv preprintarXiv:1801.09414, 2018.
+【6】Deng J, Guo J, Zafeiriou S. Arcface:Additive angular margin loss for deep face recognition[J]. arXiv preprintarXiv:1801.07698, 2018.
+
+From： https://cloud.tencent.com/developer/article/1160037?from=article.detail.1344438
+出品 | 磐创AI技术团队
+]]></content>
+      <categories>
+        <category>ai</category>
+      </categories>
+      <tags>
+        <tag>ai</tag>
+        <tag>face</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>1.5 万字 CSS 基础拾遗（核心知识、常见需求）</title>
     <url>/posts/448f849b/</url>
     <content><![CDATA[1.5 万字 CSS 基础拾遗（核心知识、常见需求）
@@ -11439,38 +11691,456 @@ main {
       </tags>
   </entry>
   <entry>
-    <title>解决Thinkpad笔记本喇叭破音问题！</title>
-    <url>/posts/c945eae1/</url>
-    <content><![CDATA[问题
-主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。
-分析
-从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。
-解决方案
-如是，网购了一个新喇叭，拆机，换上，完美解决问题！
-喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。
+    <title>Vim IDE Docker 以及中文指南</title>
+    <url>/posts/647e6265/</url>
+    <content><![CDATA[
+Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！
+
+Vim Docker
+
+docker pull bloodstar/vim
+alias edit='docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim' 
+edit some.file 
+alias edit_update="docker pull bloodstar/vim:latest"
+Vim IDE Docker
+
+What’s inside:
+
+Alpine Linux
+Vim + a ton of awesome plugins see bloodstar/vim:latest
+Good support of Golang development with bloodstar/go-tools container
+tmux
+powerline
+Mosh
+OpenSSH, Bash, OMF, Python, etc.
+
+how to start the daemon(and all containers)
+docker create -v '/usr/lib/go' --name go-tools \
+'bloodstar/go-tools' '/bin/true'
+
+docker run -v $('pwd'):/home/developer/workspace \
+--volumes-from go-tools \
+-v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
+-v /etc/localtime:/etc/localtime:ro \
+-d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
+--name drop-in bloodstar/drop-in
+-v /etc/localtime:/etc/localtime:ro - makes tmux display local time
+how to connect:
+mosh --ssh="ssh -p 62222" -- developer@$&lt;ip&gt; tmux -u
+or without host identity check:
+mosh --ssh="ssh -o StrictHostKeyChecking=no -p 62222" -- developer@$&lt;ip&gt; tmux -u
+Useful Bash scripts
+Connect
+#!/bin/bash
+ip=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' drop-in)
+mosh --ssh="ssh -p 62222" -- developer@$ip tmux -u
+start the daemon(and all containers)
+#!/bin/bash
+dtc_id=$(docker ps -a -q --filter 'name=vim-go-tools')
+if [[ -z "${dtc_id}" ]]; then
+ echo 'vim-go-tools container not found. Creating...'
+ docker create -v '/usr/lib/go' --name 'vim-go-tools' \
+   'bloodstar/go-tools' '/bin/true'
+ echo 'Done!'
+fi
+echo 'starting daemon...'
+docker run -v $('pwd'):/home/developer/workspace \
+  --volumes-from vim-go-tools \
+  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
+  -v /etc/localtime:/etc/localtime:ro \
+  -e "GEMAIL=&lt;github email&gt;" \
+  -e "GNAME=&lt;github name&gt;" \
+  -d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
+  --name drop-in bloodstar/drop-in
+echo 'Done!'
+Vim 中文快查表   &lt;= 戳这里
+
+Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！
+快去看看吧。
+
+Vim
+
+Vim简明教程
+1. 键位图
+
+vi-vim-cheat-sheet-sch
+vi-vim-cheat-sheet-sch
+vim分为三种主要模式，分别是命令模式（Command mode），输入模式（Insert mode）和底线命令模式（Last line mode）
+2. 命令模式
+用户刚刚启动 vi/vim，便进入了命令模式。
+2.1. 光标移动
 
 
 
-这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。
-型号：Thinkpad T4X0S
+按键
+动作
+
+
+
+
+h 或 向左箭头键(←)
+光标向 左 移动一个字符
+
+
+j 或 向下箭头键(↓) 或&lt;Enter&gt;
+光标向 下 移动一个字符
+
+
+k 或 向上箭头键(↑)
+光标向 上 移动一个字符
+
+
+l 或 向右箭头键(→) 或 &lt;space&gt;
+光标向 右 移动一个字符
+
+
+w/W
+移动到下一个单词，大写把标点符号当做单词的一部分
+
+
+e/E
+移动到词尾，大写把标点符号当做单词的一部分
+
+
+b/B
+移动到上一个单词，大写把标点符号当做单词的一部分
+
+
++
+光标移动到非空格符的下一行
+
+
+-
+光标移动到非空格符的上一行
+
+
+G
+移动到这个档案的最后一行
+
+
+gg
+移动到这个档案的第一行，相当于 1G
+
+
+[Ctrl] + f 或 [Page Down]
+屏幕『向下』移动一页
+
+
+[Ctrl] + b 或 [Page Up]
+屏幕『向上』移动一页
+
+
+[Ctrl] + d
+屏幕『向下』移动半页
+
+
+[Ctrl] + u
+屏幕『向上』移动半页
+
+
+0 或功能键[Home]
+数字『 0 』，移动到这一行的最前面字符处
+
+
+$ 或功能键[End]
+移动到这一行的最后面字符处
+
+
+H
+光标移动到这个屏幕的最上方那一行的第一个字符
+
+
+M
+光标移动到这个屏幕的中央那一行的第一个字符
+
+
+L
+光标移动到这个屏幕的最下方那一行的第一个字符
+
+
+
+2.2. 复制、粘贴
+
+
+
+按键
+动作
+
+
+
+
+y + 光标移动符
+复制光标所在到移动范围的内容，例如： yj：复制游标所在的那一整行 yG：复制光标所在到最后一行的内容 yw：复制光标所在到下一个单词的内容
+
+
+yy
+复制游标所在的那一行
+
+
+p
+在光标后粘贴，如果是单词级的粘贴，就会在光标后一位粘贴，如果是行级的粘贴，就会在光标下一行粘贴，下面的 P 粘贴时同理。
+
+
+P
+在光标前粘贴
+
+
+
+2.3. 文本修改
+
+
+
+按键
+动作
+
+
+
+
+x
+向 后 删除一个字符 ，相当于[del]
+
+
+X
+向 前 删除一个字符，相当于 [backspace]
+
+
+d + 光标移动符
+删除光标所在到移动范围的内容，例如： dj：删除游标所在的那一整行 dG：删除光标所在到最后一行的内容 dw：删除光标所在到下一个单词的内容
+
+
+dd
+删除游标所在的那一整行
+
+
+J
+将光标所在行与下一行的数据结合成同一行
+
+
+r + 「字符」
+替换光标处的单词为该字符
+
+
+R
+进入replace mode，直到接收到[Esc]按键信号退出该模式
+
+
+
+2.4. 重复动作
+
+
+
+按键
+动作
+
+
+
+
+u
+Undo，复原前一个动作。
+
+
+[Ctrl] + r
+重做上一个动作。
+
+
+.
+重复前一个动作。
+
+
+n
+向下重复前一个搜寻的动作。
+
+
+N
+向上重复前一个搜寻的动作。
+
+
+「n」+ 命令符
+「n」是数字，一般可以理解为重复n次该动作，例如： 10j 表示向下移动10行
+
+
+
+2.5. 可视模式（vim only）
+命令模式下按ctrl + v进入可视模式，这是一个比较特别地模式。
+这个模式可以移动光标，选择一大片区域，然后可以对这片区域进行操作。
+3. 输入模式
+在命令模式下按下i就进入了输入模式。
+在输入模式中，除了ESC键退出输入模式，其他按键和平常编辑模式是一样的。
+3.1. 进入输入模式
+
+
+
+按键
+动作
+
+
+
+
+i
+Insert，从当前光标前开始输入
+
+
+I
+Insert，在目前所在行的第一个非空格符处开始输入
+
+
+a
+Append，从当前光标后开始输入
+
+
+A
+Append，从光标所在行的最后一个字符处开始输入
+
+
+o
+在当前光标所在的下一行处输入新的一行
+
+
+O
+在当前光标所在处的上一行输入新的一行
+
+
+c + 光标移动符
+可以理解先按d + 光标移动符，然后再按a
+
+
+C
+可以理解先按dd，然后再按a
+
+
+
+4. 底线命令模式
+在命令模式下按下:、/、?键位就进入了底线命令模式。
+按ESC键退出底线命令模式。
+4.1. 查找替换
+
+
+
+语句
+动作
+
+
+
+
+/word
+向光标之下寻找一个名称为 word 的字符串。例如要在档案内搜寻 vbird 这个字符串，就输入 /vbird 即可！ (常用)
+
+
+?word
+向上搜索word字符串
+
+
+:n1,n2 s/word1/word2/g
+n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特别地，最后一行为$，
+
+
+:n1,n2 s#word1#word2#g
+效果同上，这个主要用于替换/符号，例如每一行行首添加//，可以这样操作： :1,$ s#^#//#g
+
+
+
+4.2. 文件操作
+
+
+
+按键
+动作
+
+
+
+
+:w [filename]
+将编辑的数据写入到filename文件中，如果不加参数，默认是当前文件
+
+
+:w!
+若文件属性为『只读』时，强制写入该档案，前提是得有文件的写权限。
+
+
+:q 或 ZQ
+退出vim，如果未保存的内容，该指令执行失败
+
+
+:q!
+若曾修改过档案，又不想储存，使用 ! 为强制离开不储存档案。
+
+
+:wq 或 ZZ
+储存后离开
+
+
+:wq!
+强制储存后离开
+
+
+:r [filename]
+在编辑的数据中，读入另一个档案的数据。亦即将 『filename』 这个档案内容加到游标所在行后面
+
+
+:n1,n2 w [filename]
+将 n1 到 n2 的内容储存成 filename 这个档案。
+
+
+:! command
+不退出vim执行command指令，多用于调试脚本。
+
+
+
+4.3. 其他功能
+
+
+
+按键
+动作
+
+
+
+
+:set nu
+显示行号
+
+
+:set nonu
+取消行号
+
+
+:sv
+当前界面打开文件，并呈纵向分布
+
+
+:vs
+当前界面打开文件，并呈横向分布
+
+
+:set fileformat=unix
+由Windows上传到linux的脚本文件，直接执行会报错，需要将其由dos文件格式改unix格式
+
+
+
+5. 扩展的vim功能
+当然，如果仅仅只有原生态的功能还不能让vim成为一个好用的ide，扩展功能才是vim的灵魂所在。
+参考
+
+菜鸟驿站的vim教程
 
 ]]></content>
       <categories>
-        <category>life</category>
+        <category>tools</category>
       </categories>
       <tags>
-        <tag>thinkpad</tag>
-        <tag>sound</tag>
-        <tag>speaker</tag>
+        <tag>linux</tag>
+        <tag>docker</tag>
+        <tag>vim</tag>
+        <tag>ide</tag>
       </tags>
   </entry>
   <entry>
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-GuIpQnSAPeJXjIVM").style.height=document.getElementById("mmedia-GuIpQnSAPeJXjIVM").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-NnpznniplKZiUGYU").style.height=document.getElementById("mmedia-NnpznniplKZiUGYU").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-GuIpQnSAPeJXjIVM").style.height=document.getElementById("mmedia-GuIpQnSAPeJXjIVM").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-NnpznniplKZiUGYU").style.height=document.getElementById("mmedia-NnpznniplKZiUGYU").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -11652,6 +12322,32 @@ main {
       </tags>
   </entry>
   <entry>
+    <title>解决Thinkpad笔记本喇叭破音问题！</title>
+    <url>/posts/c945eae1/</url>
+    <content><![CDATA[问题
+主力笔记本笔记本播放音乐再次出现破音，换了几首音乐后问题依旧，前后对比强烈。
+分析
+从几年前上一次维修经验来看，应该是喇叭老化破裂了！拆机查看，发现的确事喇叭破裂。
+解决方案
+如是，网购了一个新喇叭，拆机，换上，完美解决问题！
+喇叭施压后，能明显看到断裂痕迹。这样的喇叭音色就会出现明显的破音！如下图所示。
+
+
+
+这已经是这台笔记本第二次出现喇叭破裂问题了！  感觉喇叭材料或者工艺有问题。
+型号：Thinkpad T4X0S
+
+]]></content>
+      <categories>
+        <category>life</category>
+      </categories>
+      <tags>
+        <tag>thinkpad</tag>
+        <tag>sound</tag>
+        <tag>speaker</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>http 错误代码表</title>
     <url>/posts/80906b88/</url>
     <content><![CDATA[所有 HTTP 状态代码及其定义。
@@ -11734,255 +12430,348 @@ HTTP&nbsp;502&nbsp;-&nbsp;网关错误
       </tags>
   </entry>
   <entry>
-    <title>深度学习之视频人脸识别系列</title>
-    <url>/posts/a0f3c838/</url>
-    <content><![CDATA[系列1 简介
-出品 | 磐创AI技术团队
-【磐创AI导读】本文是深度学习之视频人脸识别系列的第一篇文章，介绍了人脸识别领域的一些基本概念，分析了深度学习在人脸识别的基本流程，并总结了近年来科研领域的研究进展，最后分析了静态数据与视频动态数据在人脸识别技术上的差异。欢迎大家点击上方篮子关注我们的公众号：磐创AI。
-一、基本概念
-1. 人脸识别（face identification）
-人脸识别是1对n的比对，给定一张人脸图片，如何在n张人脸图片中找到同一张人脸图片，相对于一个分类问题，将一张人脸划分到n张人脸中的一张。类似于管理人员进行的人脸识别门禁系统。
-2.人脸验证（face verification）
-人脸验证的1对1的比对，给定两张人脸图片，判断这两张人脸是否为同一人，类似于手机的人脸解锁系统，事先在手机在录入自己的脸部信息，然后在开锁时比对摄像头捕捉到的人脸是否与手机上录入的人脸为同一个人。
-3.人脸检测（face detection）
-人脸检测是在一张图片中把人脸检测出来，即在图片上把人脸用矩形框出来，并得到矩形的坐标，如下图所示。
+    <title>如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库</title>
+    <url>/posts/3847ad58/</url>
+    <content><![CDATA[背景
+动画、电影、剧集可使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息。
+而音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。桌面软件、多媒体管理软件（Foobar2000/Plex/Emby/Jellyfin等）都能解析展现歌曲信息。ID3标签是MP3音乐档案中的歌曲附加讯息，它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。缺少ID3标签并不会影响 MP3的播放，但若没有的话，管理音乐文件也会相当的麻烦。
+刮削效果
+Foobar2000读取效果：
 
-4. 人脸关键点检测
-根据输入的人脸图像，识别出面部关键特征点，如眼睛、鼻尖、嘴角点、眉毛以及人脸各部件轮廓点的坐标，如下图所示。
+Jellyfin读取效果：
 
-5. 人脸矫正（人脸对齐）
-通过人脸关键点检测得到人脸的关键点坐标，然后根据人脸的关键点坐标调整人脸的角度，使人脸对齐，由于输入图像的尺寸是大小不一的，人脸区域大小也不相同，角度不一样，所以要通过坐标变换，对人脸图像进行归一化操作，如下图所示。
+Mp3tag
 
-二、基于深度学习的人脸识别算法基本流程
-随着神经网络的迅速发展和其对图像数据的强大的特征提取，深度学习运用于人脸识别也成为热点研究方向；2014年的开山之作DeepFace，第一个真正将大数据和深度学习结合应用于人脸识别与验证，确立人脸识别的常规流程：图片-&gt;人脸与关键点检测-&gt;人脸对齐-&gt;人脸表征（representation）-&gt;分类。首先将图片中的人脸检测处理并通过关键点进行对齐，如何输入到神经网络，得到特征向量，通过分类训练过程，该向量即为人脸的特征向量。要求出两张人脸的相似度即计算两个特征的向量度量之差，方法包括：SVM、SiameseNetwork、JointBayesian、L1距离、L2距离、cos距离等。
-三、科研领域近期进展
-科研领域近期进展主要集中于loss函数的研究，包括DeepId2（Contrastive Loss）、FaceNet（Triplet loss）、L-Softmax、SphereFace（A-Softmax）、Center Loss、L2-Softmax、NormFace、CosFace（AM-Softmax）、ArcFace（AA-Softmax）等。
-四、基于视频人脸识别和图片人脸识别的区别
-（该小结部分参考于博客园 - 米罗西http://www.cnblogs.com/zhehan54/p/6727631.html）
-相对于图片数据，目前视频人脸识别有很多挑战，包括：（1）视频数据一般为户外，视频图像质量比较差；（2）人脸图像比较小且模糊；（3）视频人脸识别对实时性要求更高。
-但是视频数据也有一些优越性，视频数据同时具有空间信息和时间信息，在时间和空间的联合空间中描述人脸和识别人脸会具有一定提升空间。在视频数据中人脸跟踪是一个提高识别的方法，首先检测出人脸，然后跟踪人脸特征随时间的变化。当捕捉到一帧比较好的图像时，再使用图片人脸识别算法进行识别。这类方法中跟踪和识别是单独进行的，时间信息只在跟踪阶段用到。
-【总结】：本期文章主要介绍了基于深度学习的人脸识别算法的一些基本入门知识，下一期我给大家介绍人脸识别中获取神经网络输入的算法，即关于人脸检测、人脸关键点检测与人脸对齐的一些重要算法和相关论文解析。
-系列2 人脸检测与对齐
-一、人脸检测与关键点检测
-1. 问题描述：
-人脸检测解决的问题为给定一张图片，输出图片中人脸的位置，即使用方框框住人脸，输出方框的左上角坐标和右下角坐标或者左上角坐标和长宽。算法难点包括：人脸大小差异、人脸遮挡、图片模糊、角度与姿态差异、表情差异等。而关键检测则是输出人脸关键点的坐标，如左眼（x1，y1）、右眼（x2，y2）、鼻子（x3，y3）、嘴巴左上角（x4，y4）、嘴巴右上角（x5，y5）等。
-2. 深度学习相关算法：
-（1）Cascade CNN
-Cascade CNN源于发表于2015年CVPR上的一篇论文A Convolutional Neural Network Cascade for Face Detection【2】，作者提出了一种级连的CNN网络结构用于人脸检测。算法主体框架是基于V-J的瀑布流思想【1】，是传统技术和深度网络相结合的一个代表，Cascade CNN包含了多个分类器，这些分类器使用级联结构进行组织，与V-J不同的地方在于Cascade CNN采用卷积网络作为每一级的分类器。整个网络的处理流程如下图所示：
-
-整个处理流程里包含了六个网络：12-net、12-calibration-net、24-net、24-calibration-net、48-net、48-calibration-net，其中三个二分类网络用于分类其是否为人脸，另外三个calibration网络用于矫正人脸框边界。其中第二个网络之后、第四个网络之后、第五个网络之后使用NMS算法过滤掉冗余的框。
-12-net，24-net和48-net的网络结构如下图所示：
-
-13-12-calibration-net，24-calibration-net，48-calibration-net的结构如下图所示：
-
-该算法结合了V-J框架构造了级连的CNN网络结构并设计边界矫正网络用来专门矫正人脸框边界，在AFW数据集上准确率达到97.97%。
-
-（2）Faceness-Net
-Faceness-Net源于论文A convolutional neural network cascade for face detection【3】，该算法基于DCNN网络【5】的人脸局部特征分类器，算法首先进行人脸局部特征的检测，使用多个基于DCNN网络的facial parts分类器对人脸进行评估，然后根据每个部件的得分进行规则分析得到Proposal的人脸区域，然后从局部到整体得到人脸候选区域，再对人脸候选区域进行人脸识别和矩形框坐标回归，该过程分为两个步骤。
-第一个步骤：每个人脸局部特征使用attribute-aware网络检测并生成人脸局部图，其中一共五个特征属性： 头发、眼睛、鼻子、嘴巴、胡子。然后通过人脸局部图根据评分构建人脸候选区域，具体如下图所示：
-
-第二个步骤：训练一个多任务的卷积网络来完成人脸二分类和矩形框坐标回归，进一步提升其效果，具体如下图所示：
-
-Faceness从脸部特征的角度来解决人脸检测中的遮挡和姿态角度问题，其整体性能在当时是非常好的，在AFW数据集上准确率可以达到98.05%。
-
-（3）MTCNN
-MTCNN源于论文Joint Face Detection and Alignment using Multi-task Cascaded Convolutional Networks【6】，是基于多任务级联卷积神经网络来解决人脸检测和对齐问题，同时输出图片的人脸矩阵框和关键点坐标（左眼、右眼、鼻子、嘴巴左上角、嘴巴右上角）。MTCNN为三阶的级联卷积神经网络，整体框架如下图所示：
-
-输入阶段：为应对目标多尺度问题，将原始图像resize到不同尺寸，构建图像金字塔，作为三阶级联架构的输入，这样处理可以更好地检测大小不一的人脸。
-第一阶段：通过一个全部由卷积层组成的CNN，取名P-Net，获取候选人脸框、关键点坐标和人脸分类（是人脸或不是），之后采用NMS过滤掉高重叠率的候选窗口。如下图所示：
-
-第二阶段：第一阶段输出的候选人脸框作为更为复杂的R-Net网络的输入，R-Net进一步筛除大量错误的候选人脸框，同样也通过NMS过滤掉高重叠率的候选窗口。如下图所示：
-
-第三阶段：与第二阶段类似，最终网络输出人脸框坐标、关键点坐标和人脸分类（是人脸或不是）。如下图所示：
-
-MTCNN通过三级的级联卷积神经网络对任务进行从粗到细的处理，还提出在线困难样本生成策略（online hard sample mining ）可以进一步提升性能。兼并了速度与准确率，速度在GPU上可以达到99FPS，在 FDDB数据集上可以达到95.04准确率，具体如下图所示：
-
-二、人脸对齐（部分参考于GraceDD的博客文章）
-人脸对齐通过人脸关键点检测得到人脸的关键点坐标，然后根据人脸的关键点坐标调整人脸的角度，使人脸对齐，由于输入图像的尺寸是大小不一的，人脸区域大小也不相同，角度不一样，所以要通过坐标变换，对人脸图像进行归一化操作。人脸关键点检测有很多算法可以使用包括：ASM、AAM、DCNN 、TCDCN 、MTCNN 、TCNN、TCNN等，这里就不详细介绍，主要说一下得到人脸关键点之后如何进行人脸对齐，是所有人脸达到归一化效果，该过程如下图所示：
-
-该过程涉及到图像的仿射变换，简单来说，“仿射变换”就是：“线性变换”+“平移”，即坐标的变换。假如我们希望人脸图片归一化为尺寸大小600600，左眼位置在（180，200），右眼位置在（420，200）。 这样人脸中心在图像高度的1/3位置，并且两个眼睛保持水平，所以我们选择左眼角位置为( 0.3width, height / 3 )，右眼角位置为（0.7*width , height / 3） 。
-利用这两个点计算图像的变换矩阵（similarity transform），该矩阵是一个2*3的矩阵，如下：
-
-如果我们想对一个矩形进行变换，其中x、y方向的缩放因为分别为sx，sy，同时旋转一个角度 ，然后再在x方向平移tx, 在y方向平移ty
-利用opencv的estimateRigidTransform方法，可以获得这样的变换矩阵，但遗憾的是，estimateRigidTransform至少需要三个点，所以我们需要构选第三个点，构造方法是用第三个点与已有的两个点构成等边三角形，这样第三个点的坐标为：
-
-代码如下：
-
-经过上一步的处理之后，所有的图像都变成一样大小，并且又三个关键点的位置是保持一致的，但因为除了三个点对齐了之外，其他点并没有对齐。所以根据得到的变换矩阵对剩下所有的点进行仿射变换，opencv代码如下所示：
-
-img为输入图像;
-warped为变换后图像，类型与src一致;
-M为变换矩阵，需要通过其它函数获得，当然也可以手动输入;
-Image_size为输出图像的大小;
-三、 总结
-本期文章主要介绍了人脸检测与对齐的相关算法，下一期我给大家介绍一下人脸表征的相关算法，即通过深度学习提取人脸特征，通过比较人脸特征进行人脸识别与验证。
-参考文献：
-
-【1】 S.Z.Li, L.Zhu, Z.Q.Zhang, A.Blake, H.J.Zhang, H.Y.Shum. Statistical learning of multi-view face detection. In: Proceedings of the 7-th European Conference on Computer Vision. Copenhagen, Denmark: Springer, 2002.67-81.
-【2】Li H, Lin Z, Shen X, et al. A convolutional neural network cascade for face detection[C]//Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition. 2015: 5325-5334.
-【3】Yang S, Luo P, Loy C C, et al. Faceness-Net: Face detection through deep facial part responses[J]. IEEE transactions on pattern analysis and machine intelligence, 2017.
-【4】Yang S, Luo P, Loy C C, et al. From facial parts responses to face detection: A deep learning approach[C]//Proceedings of the IEEE International Conference on Computer Vision. 2015: 3676-3684.
-【5】Sun Y, Wang X, Tang X. Deep convolutional network cascade for facial point detection[C]//Proceedings of the IEEE conference on computer vision and pattern recognition. 2013: 3476-3483.
-【6】Zhang K, Zhang Z, Li Z, et al. Joint face detection and alignment using multitask cascaded convolutional networks[J]. IEEE Signal Processing Letters, 2016, 23(10): 1499-1503.
-
-系列3：人脸表征
-一、人脸表征
-把人脸图像通过神经网络，得到一个特定维数的特征向量，该向量可以很好地表征人脸数据，使得不同人脸的两个特征向量距离尽可能大，同一张人脸的两个特征向量尽可能小，这样就可以通过特征向量来进行人脸识别。
-
-二、论文综述
-1. DeepFace：
-2014年论文DeepFace: Closing the Gap toHuman-Level Performance in Face Verification提出了DeepFace算法，第一个真正将大数据和深度学习神经网络结合应用于人脸识别与验证。在该人脸识别模型中分为四个阶段：人脸检测 =&gt; 人脸对齐 =&gt; 人脸表征 =&gt; 人脸分类，在LFW数据集中可以达到97.00%的准确率。
-（1）人脸检测与对齐：该模型使用3D模型来将人脸对齐，该方法过于繁琐，在实际应用中很少使用，经过3D对齐以后，形成的图像都是152×152的图像，具体步骤如下图。
-
-分为如下几步：
-a. 人脸检测，使用6个基点  b. 二维剪切，将人脸部分裁剪出来  c. 67个基点，然后Delaunay三角化，在轮廓处添加三角形来避免不连续  d. 将三角化后的人脸转换成3D形状  e. 三角化后的人脸变为有深度的3D三角网  f. 将三角网做偏转，使人脸的正面朝前。  g. 最后放正的人脸  h. 一个新角度的人脸（在论文中没有用到）
-（2）人脸表征：人脸表征使用了5个卷积层和1个最大池化层、1个全连接层，如下图所示。前三层的目的在于提取低层次的特征,为了网络保留更多图像信息只使用了一层池化层；后面三层都是使用参数不共享的卷积核，因为主要是因为人脸不同的区域的特征是不一样的，具有很大的区分性，比如鼻子和眼睛所表示的特征是不一样的，但是使用参数不共享的卷积核也增加了模型计算量以及需要更多的训练数据。最后输出的4096维向量进行L2归一化。
-
-a. Conv：32个11×11×3的卷积核
-b. max-pooling: 3×3， stride=2
-c. Conv: 16个9×9的卷积核
-d. Local-Conv: 16个9×9的卷积核，Local的意思是卷积核的参数不共享
-e. Local-Conv: 16个7×7的卷积核，参数不共享
-f. Local-Conv: 16个5×5的卷积核，参数不共享
-g. Fully-connected: 4096维
-h. Softmax: 4030维
-（3）分类：论文介绍了两种方法进行分类，加权的卡方距离和使用Siamese网络结构，设f1和f2为特征向量，上一个步骤的输出，则有：
-①加权卡方距离：计算公式如下，加权参数由线性SVM计算得到：
-
-②Siamese网络：网络结构是成对进行训练，得到的特征表示再使用如下公式进行计算距离：
-
-2. DeepID1：
-DeepID1 是2014年Deep LearningFace Representation from Predicting 10,000 Classes一文提出的，是DeepID三部曲的第一篇。DeepID1 使用softmax多分类训练，主要思想第一个是数据集的增大，包括训练集使用celebface，包含87628张图片，5436个人脸，增大了训练集；使用多尺寸输入，通过5个landmarks将每张人脸划分成10regions，每张图片提取60patches=10regions3scales2(RGB orgray)，第二个是网络结构，DeepID提取的人脸特征就是一个由连接第三层与第四层组成的全连接层特征，如下图所示，每个patches经过这个cnn网络，第四层的特征更加全局化（global），第三层的特征更加细节，因此DeepID连接了两者，以求同时包含全局，细节信息。
-
-60个patches使用60个CNN,每个CNN提取2*160=320维特征（与水平翻转一起输入），总网络模型如下图所示，最后分别使用联合贝叶斯算法与神经网络进行分类，并比较结果。
-
-模型最终以CelebFaces+中202,599图像作为训练集， patch数提升为100（10r10s2） ，特征数提升为1001602=32000 然后使用PCA降为150维 ，使用联合贝叶斯算法进行验证， 最终在LFW上达到97.20%的验证准确率。
-3. DeepID2：
-DeepID2是Deep Learning Face Representationby Joint Identification-Verification一文提出的，对DeepID1进行了进一步的改进，提出了contrastive loss，在分类任务，我们需要的是减少类内差距（同一人脸），增加类间差距（不同人脸），softmax loss分类的监督信号可以增大类间差距，但是却对类内差距影响不大，所以DeepID2加入了另一个loss，contrastive loss，从而增加验证的监督信号，就可以减少类内差距。
-网络结构类似DeepID1,不同之处在于使用了两种不同的损失函数，网络结构如下图所示。
-
-损失函数：
-①分类信号，Softmax loss。
-
-②验证信号，contrastiveloss，使用l2范数距离表示，m为阈值不参与训练，括号内的θve={m}，该损失函数可以让类间的距离给定一个限制margin，即m大小的距离。
+纯手工修改，开源工具。
 
 
-两loss的组合方式： 首先使用2个输入，计算Softmax loss和contrastive loss,总损失为二者通过λ加权求和，通过总损失来执行梯度下降更新卷积参数，通过Softmax loss来更新softmax层的参数。
-整个模型使用celebrate+数据集训练，每张图片使用了21 facial landmarks，分成200patches（20regions5scales2RGB&amp;Gray)，水平翻转后变为400patches，使用了200个卷积神经网络，提取400（2002）个Deepid2特征，使用贪婪算法降为25个Deepid2特征，使用PCA将25160Deepid2特征降为180维，最后使用联合贝叶斯算法进行验证，最终在LFW上得到的最终准确率是98.97%，使用7组25个Deepid2特征，SVM融合可得到准确率为99.15% 。DeepID2在2014 年是人脸领域非常有影响力的工作，也掀起了在人脸领域引进 MetricLearning 的浪潮。
-4. DeepID2+：
-DeepID2+源于论文Deeply learned facerepresentations are sparse, selective, and robust，DeepID2+是对DeepID2的改进。①卷积层在原来基础上再增加128维，第四层全连接层从160增加到512，训练数据增加了CelebFaces+ dataset，WDRef等，有12000个人脸的大约290,000张图片； ②每个卷积层的后面都加了一个512为的全连接层，并添加contrastive loss监督信号，而不仅在第四层全连接层上有 。网络结构如下图所示。
+Media Go
 
-最终在LFW数据集上准确率为99.47%。
-5. DeepID3：
-DeepID3源于2015年的Deepid3:Face recognition with very deep neural networks论文，该论文探究了复杂神经网络对人脸识别的作用。论文研究VGG与GoogleNet用于人脸识别的效果，论文在VGG和GooLeNet的基础上进行构建合适的结构，使得方便人脸识别。结果发现DeepID3的结果和DeepID2+相当，可能是由于数据集的瓶颈，需要更大的数据才能有更好的提升，两个网络结构如下图所示。
+不要使用最新版！老版本才有我们最需要的功能。
 
-网络输出使用PCA降维到300维的向量，使用联合贝叶斯算法进行验证，最终在LFW上得到的最终准确率是99.53%。
-6. FaceNet：
-FaceNet由论文Facenet: A unified embedding forface recognition and clustering提出，这篇 2015 年来自 Google 的 论文同样具有非常大的影响力，不仅仅成功应用了 TripletLoss 在 benchmark 上取得state-of-art 的结果，更因为他们提出了一个绝大部分人脸问题的统一解决框架，即：识别、验证、搜索等问题都可以放到特征空间里做，需要专注解决的仅仅是如何将人脸更好的映射到特征空间。FaceNet在DeepID的基础上，将 ContrastiveLoss 改进为 Triplet Loss，去掉softmaxloss。FaceNet实验了ZFNet类型网络和Inception类型网络，最终Inception类型网络效果更好，网络结构如下图所示。
 
-FaceNet没有使用PCA降维，而是在网络中直接训练输出128维的向量，用全连接层来完成降维，最后的128维的向量经过Triplet Loss。
-Triplet Loss输入不再是 Image Pair，而是三张图片（Triplet），分别为 Anchor Face（xa），Negative Face（xn）和 Positive Face（xp）。Anchor 与 Positive Face 为同一人，与 Negative Face 为不同人，在特征空间里 Anchor 与 Positive 的距离要小于 Anchor 与 Negative 的距离，且相差超过一个 Margin Alpha。
-loss的目标为：
+添加媒体库
 
-总loss公式为：
 
-Contrastive Loss与Triplet Loss的比较， Contrastive Loss目标是减少类内差距（两个蓝点），增加类间差距（蓝点与红点）；Triplet Loss则是输入三张图片，Anchor 与 Positive 的距离要小于 Anchor 与 Negative 的距离，且相差超过一个 Margin Alpha，即Triplet Loss同时约束了两个距离。
+自动获取属性
 
-最后FaceNet在LFW数据集上达到了99.63%的准确率。
-基于 ContrastiveLoss 和 Triplet Loss 的 MetricLearning 符合人的认知规律，在实际应用中也取得了不错的效果，但同时也有很多问题，由于ContrastiveLoss 和 Triplet Loss 的训练样本都基于pair 或者 triplet 的，可能的样本数是 O(N2) 或者 O (N3) 的，所以模型需要很久的计算才能拟合并且训练集需要足够大。
-三、总结
-本期文章主要介绍人脸表征相关算法和论文综述，主要是2014年到2016年的研究成果， ContrastiveLoss 和 Triplet Loss在实际应用中也取得了很好的效果，但是也有很多问题，由于Contrastive Loss 和 Triplet Loss 的训练样本都基于 pair 或者 triplet 的，可能的样本数是 O (N2) 或者 O (N3) 的，所以模型需要很久的计算才能拟合并且训练集要足够大，所以在之后的人脸识别研究中，大部分在于loss函数的研究，这部分将会在下一期给大家介绍。
-参考文献：
+歌曲属性修改
 
-【1】 Taigman Y, Yang M, Ranzato M A, et al.Deepface: Closing the gap to human-level performance in faceverification[C]//Proceedings of the IEEE conference on computer vision andpattern recognition. 2014: 1701-1708.
-【2】Sun Y, Wang X, Tang X. Deep learning facerepresentation from predicting 10,000 classes[C]//Proceedings of the IEEEconference on computer vision and pattern recognition. 2014: 1891-1898.
-【3】Sun Y, Chen Y, Wang X, et al. Deeplearning face representation by joint identification-verification[C]//Advancesin neural information processing systems. 2014: 1988-1996.
-【4】Sun Y, Liang D, Wang X, et al. Deepid3:Face recognition with very deep neural networks[J]. arXiv preprintarXiv:1502.00873, 2015.
-【5】Simonyan K, Zisserman A. Very deepconvolutional networks for large-scale image recognition[J]. arXiv preprintarXiv:1409.1556, 2014.
-【6】Szegedy C, Liu W, Jia Y, et al. Goingdeeper with convolutions[C]//Proceedings of the IEEE conference on computervision and pattern recognition. 2015: 1-9.
-【7】Sun Y, Wang X, Tang X. Deeply learned facerepresentations are sparse, selective, and robust[C]//Proceedings of the IEEEconference on computer vision and pattern recognition. 2015: 2892-2900.
-【8】Schroff F, Kalenichenko D, Philbin J.Facenet: A unified embedding for face recognition andclustering[C]//Proceedings of the IEEE conference on computer vision andpattern recognition. 2015: 815-823.
+MusicBrainz
 
-系列4：人脸表征-续
-一、人脸表征
-把人脸图像通过神经网络，得到一个特定维数的特征向量，该向量可以很好地表征人脸数据，使得不同人脸的两个特征向量距离尽可能大，同一张人脸的两个特征向量尽可能小，这样就可以通过特征向量来进行人脸识别。
 
-二、论文综述
-1. L-Softmax：
-Softmax Loss函数被广泛应用于深度学习，较为简单实用，但是它并不能够明确引导神经网络学习区分性较高的特征。L-Softmax能够有效地引导网络学习使得样本类内距离较小、类间距离较大的特征，L-Softmax不但能够调节类间距离的间隔（margin）大小，而且能够防止过拟合。
-L-Softmax是对softmax loss的改进，softmax loss公式如下所示：
+MusicBrainz官网：https://musicbrainz.org/
+MusicBrainz Picard下载地址：https://picard.musicbrainz.org/
 
-其中 fj 表示最终全连接层的类别输出向量 f的第 j个元素, N为训练样本的个数，则 fyi可以表示为 fyi=WTyi xi，其中 0≤θj≤π，最终的损失函数可得：
 
-softmax的目的是使得WT1x&gt;WT2x，即 ∥W1∥∥x∥cos(θ1)&gt;∥W2∥∥x∥cos(θ2)，从而得到输入x（来自类别1）输出正确的分类结果。L-Softmax通过增加一个正整数变量m，从而产生一个决策余量，能够更加严格地约束上述不等式，即：
 
-其中0≤θ1&lt;π/m。如果W1和W2能够满足∥W1∥∥x∥cos(mθ1)&gt;∥W2∥∥x∥cos(θ2)，那么就必然满足∥W1∥∥x∥cos(θ1)&gt;∥W2∥∥x∥cos(θ2)，这样的约束对学习W1和W2的过程提出了更高的要求，在训练学习过程中，类间要比之前多了一个m的间隔，从而使得1类和2类有了更宽的分类决策边界。这种Margin Based Classification使得学习更加的困难，从而使类间距离增加了一个margin距离，L-Softmax loss的总公式如下：
+MusicBrainz Picard可以修改音乐的Tag标签信息，根据标签重命名文件。它的数据来源于非营利互联网音乐专辑数据库MusicBrainz项目，歌曲资源非常丰富。尤其它能根据声纹（音频指纹）识别Mp3文件进行匹配取信息，匹配率极高。不管是英文、中文歌曲，还是录音室版本、演唱会版本，都能很好地匹配出来。
+支持MP3、FLAC、OGG、M4A、WMA、WAV等主流的音频格式，wav,ape格式不支持，需要要转换成支持的格式。
+写入前后对比：
 
-当m越大时，分类的边界越大，学习难度当然就越高。
-论文仅使用了WebFace数据集作为训练集和一个简单的卷积网络，就在LFW上达到了98.71%的正确率，证明了L-Softmax loss取得了比softmax loss更好的结果。
-2. SphereFace :
-SphereFace在MegaFace数据集上识别率在2017年排名第一，提出A-Softmax Loss使人脸识别达到不错的效果。A-Softmax Loss基于softmax loss和L-Softmax loss，在二分类模型中，softmax loss为：
+MusicBrainz Picard使用教程：
+将音乐文件/文件夹拖入左侧窗口，点上方“查询“按钮，在MusicBrainz数据库里搜索对应音乐。
 
-如果x为类别一，则希望p1&gt;p2,则二分类的划分函数为：
+如果搜索不到，点击”扫描“，使用声纹匹配，准确度更高。
 
-权重归一化||w||为1，b为0，此时特征上的点映射到单位超球面上，则二分类的划分函数为：
+如果以上两种方法都搜索不到，或者添加的文件名变成乱码，右击”查找相似的音轨“
 
-然后使用与L-Softmax loss相同的原理，使
+手动输入歌曲名字，搜索，选择正确的歌曲信息，载入Picard。
 
-则A-Softmax Loss最终为：
+右侧窗口载入专辑信息。展开列表，绿色方块的就是匹配成功的音乐。底部窗口展示文件原始标签信息和MusicBrainz网站上的信息对照。
 
-因此A-Softmax Loss是样本类别之间产生了角度距离，让决策函数更加严格并且更加具有可区分性。当m增大，角度距离也会增加。
-A-Softmax与L-Softmax的最大区别在于A-Softmax的权重归一化了，而L-Softmax则没有。A-Softmax权重的归一化导致特征上的点映射到单位超球面上，A-Softmax仅仅能从角度上划分类别，而L-Softmax是在角度与长度方向进行考量，两个方向如果划分不一就会收到干扰，导致精度下降。
-SphereFace使用的模型如下图所示：
+如果匹配的不是正确的专辑信息，右击”查找相似的音轨“，选择正确的专辑信息载入Picard。
+如果搜索出了多张专辑，可点击错误的专辑拖动到目标专辑上完成匹配，省的一个一个文件的修改。
 
-训练与测试过程如下图所示，在测试过程中使用余弦计算相似度：
+最后点“保存”，将标签信息写入音乐文件。
 
-最终SphereFace在训练集较小的情况下，LFW数据集上准确率为99.42%。Sphereface效果很好，但是它不优美。在测试阶段，Sphereface通过特征间的余弦值来衡量相似性，即以角度为相似性的度量，在训练阶段，其实Sphereface的损失函数并不是在直接优化特征与类中心的角度，而是优化特征与类中心的角度在乘上一个特征的长度，这就造成了训练跟测试之间目标不一致。
-3. Normface :
-在优化人脸识别任务时，softmax本身优化的是没有归一化的内积结果，但是最后在预测的时候使用的一般是cosine距离或者欧式距离，这会导致优化目标和最终的距离度量其实并不一致。 Normface的核心思想是既然最后在特征对比的时候使用归一化的cosine距离，那么在训练的过程中把特征也做归一化处理，做了归一化之后，softmax的优化就变成了直接优化cosine距离了，归一化过程如下，其中e是为了防止除0的较小正数：
+如何重命名文件：
+菜单栏-选项-勾选“重命名文件”，保存的时候会同时写入信息+重命名。
 
-相应的损失函数如下：
+默认设置是：序号 歌名.mp3，适合一个专辑一个文件夹使用。
+如果是单文件的话要去创建命名规则，选项-正在重命名文件-保存时重命名文件，填写命名规则。
 
-其中 W 是归一化的权重，f_i 是归一化的特征，参数 s 的引入是因为保证梯度大小的合理性，去掉bias是因为softmax之前的fc有bias的情况下会使得有些类别在角度上没有区分性但是通过bias可以区分，在这种情况下如果对feature做normalize，会使得中间的那个小类别的feature变成一个单位球形并与其他的feature重叠在一起，所以在feature normalize的时候是不能加bias的。
-Normface使用了较小的模型使用多种loss训练，然后在LFW数据集上测试，证明了feature normalize的效果，结果如下：
+参考：
 
-4. CosFace :
-Normface用特征归一化解决了Sphereface训练和测试不一致的问题。但是却没有了margin的惩罚，腾讯AI Lab的CosFace或者AM-softmax是在Normface的基础上引入了margin，损失函数为：
+使用MusicBrainz Picard刮削音乐 整理音乐资料库
 
-其中特征与权值都做了归一化：
+图书、音乐、视频三剑客！
 
-分类决策为：
+结构化自己的图书，音乐，和视频！
 
-，比之前增加了m的margin，m 是一个超参数，控制惩罚的力度，m 越大，惩罚越强。
-CosFace使用mtcnn进行人脸检测与对齐，人脸表征训练模型使用基于residual units 64层卷积网络的Sphere Face，在5M的训练集上训练，在LFW数据集上测试，精度达到99.73%。
-5. ArcFace :
-ArcFace源于论文Additive angular margin lossfor deep face recognition，也叫做InsightFace，论文基本介绍了近期较为流行的人脸识别模型，loss变化从softmax到AM-softmax，然后提出ArcFace，可以说起到了很好的综述作用，论文从三个方面探讨影响人脸识别模型精度的主要因素。
-（1）数据：数据方面，论文探讨了各个数据集的数据质量和优缺点，并对MS-Celeb-1M，MegaFace FaceScrub做了清洗，清洗后的数据公开。
-（2）网络：详细对比了不同的主流网络结构的性能，包括输入层尺寸大小、最后输出几层的不同结构、基本网络单元残差网络的不同结构、主干网络的不同模型。经过实验的证明，最后的网络结构：输入图片大小112x112；第一层convLayer 卷积核为33 stride 1时，网络输出77；主干网络使用ResNet100，并使用改进后的改进的残差网络结构，如下图；最后的几层输出层为最后一个卷积层后+BN-Dropout-FC-BN的结构。
 
-（3）损失函数：与 AM-softmax相比，区别在于Arcface引入margin的方式不同，损失函数为：
+    
+        
+    
+    
+        如何建立自己的私人图书馆
+        
+        图书管理员似乎是个非常有前途的职业，远的有孔子，游学之前当图书管理员，近的有本朝开国毛教员，也当了很长时间图书管理员。我们也可以自己做个私人电子图书馆，单个管理员，说不定很有前途？
+    
 
-Arcface的m是在余弦里面，AM-softmax的在外面，ArcFace更为直观并且在超球面维度上有更清晰的解释。Arcface在VGG2和MS-Celeb-1M数据集上训练，在LFW数据集上精度达到99.83%。
-三、总结
-本期文章主要介绍人脸表征相关算法和论文综述，人脸检测、对齐、特征提取等这些操作都可以在静态数据中完成，下一期将给大家介绍在视频数据中进行人脸识别的另一个重要的算法，视频人脸跟踪的概念与方法。
-参考文献：
 
-【1】 Liu W, Wen Y, Yu Z, et al. Large-MarginSoftmax Loss for Convolutional Neural Networks[C]//ICML. 2016: 507-516.1708.
-【2】Liu W, Wen Y, Yu Z, et al. Sphereface:Deep hypersphere embedding for face recognition[C]//The IEEE Conference onComputer Vision and Pattern Recognition (CVPR). 2017, 1: 1.
-【3】Wang F, Xiang X, Cheng J, et al. Normface:l 2 hypersphere embedding for face verification[C]//Proceedings of the 2017 ACMon Multimedia Conference. ACM, 2017: 1041-1049.
-【4】Wang F, Cheng J, Liu W, et al. Additivemargin softmax for face verification[J]. IEEE Signal Processing Letters, 2018,25(7): 926-930.
-【5】Wang H, Wang Y, Zhou Z, et al. CosFace:Large margin cosine loss for deep face recognition[J]. arXiv preprintarXiv:1801.09414, 2018.
-【6】Deng J, Guo J, Zafeiriou S. Arcface:Additive angular margin loss for deep face recognition[J]. arXiv preprintarXiv:1801.07698, 2018.
+    
+        
+    
+    
+        如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库
+        
+        音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。
+    
 
-From： https://cloud.tencent.com/developer/article/1160037?from=article.detail.1344438
-出品 | 磐创AI技术团队
+
+    
+        
+    
+    
+        如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+        
+        tinyMediaManager是最好用的视频刮削工具，可以刮削电影，动画，电视剧。使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息，配合Emby，Plex使用体验绝佳
+    
+
 ]]></content>
       <categories>
-        <category>ai</category>
+        <category>music</category>
       </categories>
       <tags>
-        <tag>ai</tag>
-        <tag>face</tag>
+        <tag>music</tag>
+        <tag>刮削</tag>
+        <tag>musicbrainz</tag>
+        <tag>mp3tag</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕</title>
+    <url>/posts/e6d40157/</url>
+    <content><![CDATA[
+注意使用V3版本，V4版本收费！
+所以升级V3版本即可，不要升级到V4版本！不要升级到V4版本！不要升级到V4版本！
+
+
+Plex是一款很好用的个人媒体中心软件，但是因为国内网络的原因，使用默认的TMDB刮削器挂出来的效果并不好，要么就是影片信息不正确，要么就是海报不正常显示，实在让人头疼。
+tinyMediaManager是一款电影信息刮削和整理的软件，正好可以和plex配合，完美的解决这一问题。tinyMediaManager在刮削影片的过程中会把影片的海报、演员表、背景图片等等都保存到影片所在文件夹，自动生成电影的nfo信息文件，并对文件和文件夹进行重新命名的操作。在plex设置刮削代理的时候，需要用一款插件可以直接读取nfo的信息，完成刮削，下面把使用方法分享给大家，
+
+下载和安装tinyMediaManager
+官网下载地址：https://www.tinymediamanager.org/download/
+
+tmm下载
+下载后直接解压文件夹
+客户端需要java支持，先在电脑安装java
+客户端下载后是一个压缩包，解压之后就可以用
+
+解压之后打开tinyMediaManager.exe
+
+TMM设置
+TMM代理设置
+
+重要：很多源都需要代理才能访问。这里正确的配置才能正确的刮削！
+可以调整这里使用的内存，大内存可以极大加速刮削速度。
+
+
+电影刮削设置
+进行相关设置。Tmm可以对电影和电视剧的刮削进行分别设置，打开设置后选择电影选项，可以选择分级标准、自动重命名等选项。
+
+电影信息选项
+点击侧边栏媒体库目录，添加电影目录
+刮削器设置
+
+选择电影刮削器
+
+刮削器选项
+
+nfo选项，建议选择生成两种命名放视的nfo
+图片刮削器选择全选，图片文件名建议两边都选上，会分别生成两组命名格式不同的图片，为了保证plex能读取
+
+图片命名选项
+Tmm还可以自动下载预告片，字幕。字幕下载时可以输入opensubtitles账户
+
+字幕下载选项
+重命名规则
+这里重点讲一下重命名规则，刮削完后可以选择对电影文件和文件夹进行重命名，可能对于pt用户重命名可能会影响资源上传，可以不进行重命名操作。
+一般情况下电影刮削出来的信息，title是电影的中文标题名称，originaltitle是电影的原标题名称，一般是英文名称。软件默认的设置是文件和文件夹都命名成title，也就是中文标题，但是我发现这样在后期使用的时候有弊端。英文电影在检索字幕时会用文件名来检索，而用中文名称很多情况下检索不出来，所以这里把文件的命名规则改一下，改成originaltitle，并去掉年份信息的括号，中间连接符改成点，文件名设置成originaltitle{- ,edition,}.year.{videoFormat}.${audioCodec}的格式。
+
+电影文件重命名选项
+
+刮削完的文件夹内文件信息
+
+刮削完的电影文件夹目录
+电视节目刮削设置类似，如果挂不出来可以用the tvdb来刮削。
+tmm有时候会出现网络不稳定，刮不到的情况，可以修改host解决
+改host 在host文件最后加一行13.224.161.90 http://api.themoviedb.org
+退出设置，开始刮削
+
+更新电影源
+
+选中要刮削的电影自动匹配
+电影手动刮削
+
+
+电视剧&amp;动画手动刮削
+电视剧元数据刮削
+
+
+季和集元数据刮削前整理
+
+刮削季元素
+整理好正确的季和集之后，才能正确的刮削季元素
+
+TMM整理完效果
+
+这里用海贼王做展示，一个季和集都特别多的剧。
+
+
+TMM目录重命名整理
+
+刮削完后，可以重命名视频文件，并进行目录整理。
+
+方法1
+
+方法2
+
+等所有电影的信息刮削完后，选择重命名和清理，这样就完成了刮削的操作。以后下载了新电影，直接打开tmm,更新源之后直接选择搜索未刮削过的电影完成刮削。刮削出来的信息kodi，emby等软件也都能用。
+Plex设置
+plex插件的安装和设置
+下载plex的插件
+插件XBMCnfoMoviesImporter和XBMCnfoTVImporter分别是刮削电影和电视剧的插件
+下载地址：https://github.com/gboudreau/XBMCnfoMoviesImporter.bundle
+如果不能下载的话可以联系我获取，还有几个很好用的plex插件
+下载完插件后就需要把插件解压到plex的插件目录：C:\\Users\\用户名\\AppData\\Local\\Plex Media Server\\Plug-ins
+
+plex插件目录
+注意解压后要把文件夹名后边的master去掉。
+plex代理设置
+Plex的代理设置就是选择刮削电影所用的刮削器及优先级。
+装好插件后重启plex，进行plex的设置。在代理设置中选择XBMCnfoMoviesImporter，把它的优先级调到最高，第二个可以设置成字幕插件。
+
+设置电影资料库的刮削器代理
+点击设置界面下方管理里边的资料库，选择电影资料夹的高级设置，设置如下
+
+
+plex代理设置
+
+刷新电影源数据资料
+设置完成后就可以在plex主页对电影文件夹刷新元数据了。等待刷新完后就可以载入所有的电影信息了。
+
+管理资料库-刷新电影元数据
+
+更新后的电影信息
+采用类似的设置，电视剧信息也能刮削。
+
+电视剧更新后的信息
+Emby设置
+
+Emby内置刮削工具，但是速度较慢。下面设置基于外部刮削工具TMM，所以没有勾选Emby刮削源！
+
+最终效果演示
+
+
+开始设置
+
+新增媒体库
+
+已有媒体库属性设置
+
+
+
+
+
+Emby字幕设置
+字幕下载设置，字幕下载工具见后面的[字幕下载]章节
+
+字幕下载
+想要较好的自动下载字幕，最好用前面介绍的tmm刮削改名之后再使用下面工具。
+subfinder 自动下载字幕
+
+Docker： superng6/subfinder
+
+下载完成，刮削后的目录，挂载到subfinder的media目录，就会自动下载字幕。
+字幕下载对电影，英文剧集支持较好。对于一些tv，动画手动下载字幕会更好一些。
+注意：官方的配置文件有问题，时效问题。修改URL到最新即可。
+chinesesubfinder
+
+Docker： allanpk716/chinesesubfinder
+新开发的中文字幕查找工具，上面那个很久没更新了，这个刚出来。使用nfo里面刮削出来的文件名来匹配字幕。所以就原理来说，这个字幕匹配更准确。
+
+bazarr
+
+Docker：linuxserver/bazarr
+字幕下载管理，配合sonarr, radarr 使用效果更好。对于英文剧集命名规范的支持较好，比如[name]S01E01
+
+参考
+
+利用tinyMediaManager刮削影片，解决家用nas软件plex电影墙的问题
+
+图书、音乐、视频三剑客！
+
+结构化自己的图书，音乐，和视频！
+
+
+    
+        
+    
+    
+        如何建立自己的私人图书馆
+        
+        图书管理员似乎是个非常有前途的职业，远的有孔子，游学之前当图书管理员，近的有本朝开国毛教员，也当了很长时间图书管理员。我们也可以自己做个私人电子图书馆，单个管理员，说不定很有前途？
+    
+
+
+    
+        
+    
+    
+        如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库
+        
+        音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。
+    
+
+
+    
+        
+    
+    
+        如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+        
+        tinyMediaManager是最好用的视频刮削工具，可以刮削电影，动画，电视剧。使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息，配合Emby，Plex使用体验绝佳
+    
+
+系列教程
+全部文章RSS订阅
+Nas系列
+Nas 分类 RSS 订阅
+
+音视频图书和音乐自动化管理框架图解
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Potplayer终极优化教程实现PC视频播放最强画质
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列
+Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>emby</tag>
+        <tag>刮削</tag>
+        <tag>tmm</tag>
+        <tag>字幕</tag>
+        <tag>plex</tag>
       </tags>
   </entry>
   <entry>
@@ -12360,6 +13149,390 @@ Earthly 一个更加强大的镜像构建工具
         <tag>nas</tag>
         <tag>docker</tag>
         <tag>ipv6</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers Containers 的反向代理</title>
+    <url>/posts/465d2738/</url>
+    <content><![CDATA[How To Use Traefik v2 as a Reverse Proxy for Docker Containers on Ubuntu 20.04
+
+Traefik 适合配合Dockers swarm 做服务， Dockers portainer 做管理，ELK集群做监控日志。
+
+
+traefik 与 nginx 一样，是一款优秀的反向代理工具，或者叫 Edge Router。至于使用它的原因则基于以下几点
+
+无须重启即可更新配置
+自动的服务发现与负载均衡
+与 docker 完美集成，基于 container label 的配置
+漂亮的 dashboard 界面
+metrics 的支持，支持对 prometheus 和 k8s 集成
+
+Introduction
+Docker can be an efficient way to run web applications in production, but you may want to run multiple applications on the same Docker host. In this situation, you’ll need to set up a reverse proxy. This is because you only want to expose ports 80 and 443 to the rest of the world.
+Traefik is a Docker-aware reverse proxy that includes a monitoring dashboard. Traefik v1 has been widely used for a while, and you can follow this earlier tutorial to install Traefik v1). But in this tutorial, you’ll install and configure Traefik v2, which includes quite a few differences.
+The biggest difference between Traefik v1 and v2 is that frontends and backends were removed and their combined functionality spread out across routers, middlewares, and services. Previously a backend did the job of making modifications to requests and getting that request to whatever was supposed to handle it. Traefik v2 provides more separation of concerns by introducing middlewares that can modify requests before sending them to a service. Middlewares make it easier to specify a single modification step that might be used by a lot of different routes so that they can be reused (such as HTTP Basic Auth, which you’ll see later). A router can also use many different middlewares.
+In this tutorial you’ll configure Traefik v2 to route requests to two different web application containers: a Wordpress container and an Adminer container, each talking to a MySQL database. You’ll configure Traefik to serve everything over HTTPS using Let’s Encrypt.
+Prerequisites
+To complete this tutorial, you will need the following:
+
+One Ubuntu 20.04 server with a sudo non-root user and a firewall. You can set this up by following our Ubuntu 20.04 initial server setup guide.
+Docker installed on your server, which you can accomplish by following Steps 1 and 2 of How to Install and Use Docker on Ubuntu 20.04.
+Docker Compose installed using the instructions from Step 1 of How to Install Docker Compose on Ubuntu 20.04.
+A domain and three A records, db-admin.your_domain, blog.your_domain and monitor.your_domain. Each should point to the IP address of your server. You can learn how to point domains to DigitalOcean Droplets by reading through DigitalOcean’s Domains and DNS documentation. Throughout this tutorial, substitute your domain for your_domain in the configuration files and examples.
+
+Step 1 — Configuring and Running Traefik
+The Traefik project has an official Docker image, so you will use that to run Traefik in a Docker container.
+But before you get your Traefik container up and running, you need to create a configuration file and set up an encrypted password so you can access the monitoring dashboard.
+You’ll use the htpasswd utility to create this encrypted password. First, install the utility, which is included in the apache2-utils package:
+sudo apt-get install apache2-utils
+Then generate the password with htpasswd. Substitute secure_password with the password you’d like to use for the Traefik admin user:
+htpasswd -nb admin secure_password
+The output from the program will look like this:
+Outputadmin:$apr1$ruca84Hq$mbjdMZBAG.KWn7vfN/SNK/
+You’ll use this output in the Traefik configuration file to set up HTTP Basic Authentication for the Traefik health check and monitoring dashboard. Copy the entire output line so you can paste it later.
+To configure the Traefik server, you’ll create two new configuration files called traefik.toml and traefik_dynamic.toml using the TOML format. TOML is a configuration language similar to INI files, but standardized. These files let us configure the Traefik server and various integrations, or providers, that you want to use. In this tutorial, you will use three of Traefik’s available providers: api, docker, and acme. The last of these, acme, supports TLS certificates using Let’s Encrypt.
+Create and open traefik.toml using nano or your preferred text editor:
+nano traefik.toml
+First, you want to specify the ports that Traefik should listen on using the entryPoints section of your config file. You want two because you want to listen on port 80 and 443. Let’s call these web (port 80) and websecure (port 443).
+Add the following configurations:
+traefik.toml
+[entryPoints]
+  [entryPoints.web]
+    address = ":80"
+    [entryPoints.web.http.redirections.entryPoint]
+      to = "websecure"
+      scheme = "https"
+
+  [entryPoints.websecure]
+    address = ":443"
+Note that you are also automatically redirecting traffic to be handled over TLS.
+Next, configure the Traefik api, which gives you access to both the API and your dashboard interface. The heading of [api] is all that you need because the dashboard is then enabled by default, but you’ll be explicit for the time being.
+Add the following code:
+traefik.toml
+...
+[api]
+  dashboard = true
+To finish securing your web requests you want to use Let’s Encrypt to generate valid TLS certificates. Traefik v2 supports Let’s Encrypt out of the box and you can configure it by creating a certificates resolver of the type acme.
+Let’s configure your certificates resolver now using the name lets-encrypt:
+traefik.toml
+...
+[certificatesResolvers.lets-encrypt.acme]
+  email = "your_email@your_domain"
+  storage = "acme.json"
+  [certificatesResolvers.lets-encrypt.acme.tlsChallenge]
+This section is called acme because ACME is the name of the protocol used to communicate with Let’s Encrypt to manage certificates. The Let’s Encrypt service requires registration with a valid email address, so to have Traefik generate certificates for your hosts, set the email key to your email address. You then specify that you will store the information that you will receive from Let’s Encrypt in a JSON file called acme.json.
+The acme.tlsChallenge section allows us to specify how Let’s Encrypt can verify that the certificate. You’re configuring it to serve a file as part of the challenge over port 443.
+Finally, you need to configure Traefik to work with Docker.
+Add the following configurations:
+traefik.toml
+...
+[providers.docker]
+  watch = true
+  network = "web"
+The docker provider enables Traefik to act as a proxy in front of Docker containers. You’ve configured the provider to watch for new containers on the web network, which you’ll create soon.
+Our final configuration uses the file provider. With Traefik v2, static and dynamic configurations can’t be mixed and matched. To get around this, you will use traefik.toml to define your static configurations and then keep your dynamic configurations in another file, which you will call traefik_dynamic.toml. Here you are using the file provider to tell Traefik that it should read in dynamic configurations from a different file.
+Add the following file provider:
+traefik.toml
+[providers.file]
+  filename = "traefik_dynamic.toml"
+Your completed traefik.toml will look like this:
+traefik.toml
+[entryPoints]
+  [entryPoints.web]
+    address = ":80"
+    [entryPoints.web.http.redirections.entryPoint]
+      to = "websecure"
+      scheme = "https"
+
+  [entryPoints.websecure]
+    address = ":443"
+
+[api]
+  dashboard = true
+
+[certificatesResolvers.lets-encrypt.acme]
+  email = "your_email@your_domain"
+  storage = "acme.json"
+  [certificatesResolvers.lets-encrypt.acme.tlsChallenge]
+
+[providers.docker]
+  watch = true
+  network = "web"
+
+[providers.file]
+  filename = "traefik_dynamic.toml"
+Save and close the file.
+Now let’s create traefik_dynamic.toml.
+The dynamic configuration values that you need to keep in their own file are the middlewares and the routers. To put your dashboard behind a password you need to customize the API’s router and configure a middleware to handle HTTP basic authentication. Let’s start by setting up the middleware.
+The middleware is configured on a per-protocol basis and since you’re working with HTTP you’ll specify it as a section chained off of http.middlewares. Next comes the name of your middleware so that you can reference it later, followed by the type of middleware that it is, which will be basicAuth in this case. Let’s call your middleware simpleAuth.
+Create and open a new file called traefik_dynamic.toml:
+nano traefik_dynamic.toml
+Add the following code. This is where you’ll paste the output from the htpasswd command:
+traefik_dynamic.toml
+[http.middlewares.simpleAuth.basicAuth]
+  users = [
+    "admin:$apr1$ruca84Hq$mbjdMZBAG.KWn7vfN/SNK/"
+  ]
+To configure the router for the api you’ll once again be chaining off of the protocol name, but instead of using http.middlewares, you’ll use http.routers followed by the name of the router. In this case, the api provides its own named router that you can configure by using the [http.routers.api] section. You’ll configure the domain that you plan on using with your dashboard also by setting the rule key using a host match, the entrypoint to use websecure, and the middlewares to include simpleAuth.
+Add the following configurations:
+traefik_dynamic.toml
+...
+[http.routers.api]
+  rule = "Host(`monitor.your_domain`)"
+  entrypoints = ["websecure"]
+  middlewares = ["simpleAuth"]
+  service = "api@internal"
+  [http.routers.api.tls]
+    certResolver = "lets-encrypt"
+The web entry point handles port 80, while the websecure entry point uses port 443 for TLS/SSL. You automatically redirect all of the traffic on port 80 to the websecure entry point to force secure connections for all requests.
+Notice the last three lines here configure a service, enable tls, and configure certResolver to "lets-encrypt". Services are the final step to determining where a request is finally handled. The api@internal service is a built-in service that sits behind the API that you expose. Just like routers and middlewares, services can be configured in this file, but you won’t need to do that to achieve your desired result.
+Your completed traefik_dynamic.toml file will look like this:
+traefik_dynamic.toml
+[http.middlewares.simpleAuth.basicAuth]
+  users = [
+    "admin:$apr1$ruca84Hq$mbjdMZBAG.KWn7vfN/SNK/"
+  ]
+
+[http.routers.api]
+  rule = "Host(`monitor.your_domain`)"
+  entrypoints = ["websecure"]
+  middlewares = ["simpleAuth"]
+  service = "api@internal"
+  [http.routers.api.tls]
+    certResolver = "lets-encrypt"
+Save the file and exit the editor.
+With these configurations in place, you will now start Traefik.
+Step 2 – Running the Traefik Container
+In this step you will create a Docker network for the proxy to share with containers. You will then access the Traefik dashboard. The Docker network is necessary so that you can use it with applications that are run using Docker Compose.
+Create a new Docker network called web:
+docker network create web
+When the Traefik container starts, you will add it to this network. Then you can add additional containers to this network later for Traefik to proxy to.
+Next, create an empty file that will hold your Let’s Encrypt information. You’ll share this into the container so Traefik can use it:
+touch acme.json
+Traefik will only be able to use this file if the root user inside of the container has unique read and write access to it. To do this, lock down the permissions on acme.json so that only the owner of the file has read and write permission.
+chmod 600 acme.json
+Once the file gets passed to Docker, the owner will automatically change to the root user inside the container.
+Finally, create the Traefik container with this command:
+docker run -d \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v $PWD/traefik.toml:/traefik.toml \
+  -v $PWD/traefik_dynamic.toml:/traefik_dynamic.toml \
+  -v $PWD/acme.json:/acme.json \
+  -p 80:80 \
+  -p 443:443 \
+  --network web \
+  --name traefik \
+  traefik:v2.2
+This command is a little long. Let’s break it down.
+You use the -d flag to run the container in the background as a daemon. You then share your docker.sock file into the container so that the Traefik process can listen for changes to containers. You also share the traefik.toml and traefik_dynamic.toml configuration files into the container, as well as acme.json.
+Next, you map ports :80 and :443 of your Docker host to the same ports in the Traefik container so Traefik receives all HTTP and HTTPS traffic to the server.
+You set the network of the container to web, and you name the container traefik.
+Finally, you use the traefik:v2.2 image for this container so that you can guarantee that you’re not running a completely different version than this tutorial is written for.
+A Docker image’s ENTRYPOINT is a command that always runs when a container is created from the image. In this case, the command is the traefik binary within the container. You can pass additional arguments to that command when you launch the container, but you’ve configured all of your settings in the traefik.toml file.
+With the container started, you now have a dashboard you can access to see the health of your containers. You can also use this dashboard to visualize the routers, services, and middlewares that Traefik has registered. You can try to access the monitoring dashboard by pointing your browser to https://monitor.your_domain/dashboard/ (the trailing / is required).
+You will be prompted for your username and password, which are admin and the password you configured in Step 1.
+Once logged in, you’ll see the Traefik interface:
+
+You will notice that there are already some routers and services registered, but those are the ones that come with Traefik and the router configuration that you wrote for the API.
+You now have your Traefik proxy running, and you’ve configured it to work with Docker and monitor other containers. In the next step you will start some containers for Traefik to proxy.
+Step 3 — Registering Containers with Traefik
+With the Traefik container running, you’re ready to run applications behind it. Let’s launch the following containers behind Traefik:
+
+A blog using the official WordPress image.
+A database management server using the official Adminer image.
+
+You’ll manage both of these applications with Docker Compose using a docker-compose.yml file.
+Create and open the docker-compose.yml file in your editor:
+nano docker-compose.yml
+Add the following lines to the file to specify the version and the networks you’ll use:
+docker-compose.yml
+version: "3"
+
+networks:
+  web:
+    external: true
+  internal:
+    external: false
+You use Docker Compose version 3 because it’s the newest major version of the Compose file format.
+For Traefik to recognize your applications, they must be part of the same network, and since you created the network manually, you pull it in by specifying the network name of web and setting external to true. Then you define another network so that you can connect your exposed containers to a database container that you won’t expose through Traefik. You’ll call this network internal.
+Next, you’ll define each of your services, one at a time. Let’s start with the blog container, which you’ll base on the official WordPress image. Add this configuration to the bottom of the file:
+docker-compose.yml
+...
+
+services:
+  blog:
+    image: wordpress:4.9.8-apache
+    environment:
+      WORDPRESS_DB_PASSWORD:
+    labels:
+      - traefik.http.routers.blog.rule=Host(`blog.your_domain`)
+      - traefik.http.routers.blog.tls=true
+      - traefik.http.routers.blog.tls.certresolver=lets-encrypt
+      - traefik.port=80
+    networks:
+      - internal
+      - web
+    depends_on:
+      - mysql
+The environment key lets you specify environment variables that will be set inside of the container. By not setting a value for WORDPRESS_DB_PASSWORD, you’re telling Docker Compose to get the value from your shell and pass it through when you create the container. You will define this environment variable in your shell before starting the containers. This way you don’t hard-code passwords into the configuration file.
+The labels section is where you specify configuration values for Traefik. Docker labels don’t do anything by themselves, but Traefik reads these so it knows how to treat containers. Here’s what each of these labels does:
+
+traefik.http.routers.adminer.rule=Host(`````blog.your_domain`````) creates a new router for your container and then specifies the routing rule used to determine if a request matches this container.
+traefik.routers.custom_name.tls=true specifies that this router should use TLS.
+traefik.routers.custom_name.tls.certResolver=lets-encrypt specifies that the certificates resolver that you created earlier called lets-encrypt should be used to get a certificate for this route.
+traefik.port specifies the exposed port that Traefik should use to route traffic to this container.
+
+With this configuration, all traffic sent to your Docker host on port 80 or 443 with the domain of blog.your_domain will be routed to the blog container.
+You assign this container to two different networks so that Traefik can find it via the web network and it can communicate with the database container through the internal network.
+Lastly, the depends_on key tells Docker Compose that this container needs to start after its dependencies are running. Since WordPress needs a database to run, you must run your mysql container before starting your blog container.
+Next, configure the MySQL service:
+docker-compose.yml
+services:
+...
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD:
+    networks:
+      - internal
+    labels:
+      - traefik.enable=false
+You’re using the official MySQL 5.7 image for this container. You’ll notice that you’re once again using an environment item without a value. The MYSQL_ROOT_PASSWORD and WORDPRESS_DB_PASSWORD variables will need to be set to the same value to make sure that your WordPress container can communicate with the MySQL. You don’t want to expose the mysql container to Traefik or the outside world, so you’re only assigning this container to the internal network. Since Traefik has access to the Docker socket, the process will still expose a router for the mysql container by default, so you’ll add the label traefik.enable=false to specify that Traefik should not expose this container.
+Finally, define the Adminer container:
+docker-compose.yml
+services:
+...
+  adminer:
+    image: adminer:4.6.3-standalone
+    labels:
+      - traefik.http.routers.adminer.rule=Host(`db-admin.your_domain`)
+      - traefik.http.routers.adminer.tls=true
+      - traefik.http.routers.adminer.tls.certresolver=lets-encrypt
+      - traefik.port=8080
+    networks:
+      - internal
+      - web
+    depends_on:
+      - mysql
+This container is based on the official Adminer image. The network and depends_on configuration for this container exactly match what you’re using for the blog container.
+The line traefik.http.routers.adminer.rule=Host(`````db-admin.your_domain`````) tells Traefik to examine the host requested. If it matches the pattern of db-admin.your_domain, Traefik will route the traffic to the adminer container over port 8080.
+Your completed docker-compose.yml file will look like this:
+docker-compose.yml
+version: "3"
+
+networks:
+  web:
+    external: true
+  internal:
+    external: false
+
+services:
+  blog:
+    image: wordpress:4.9.8-apache
+    environment:
+      WORDPRESS_DB_PASSWORD:
+    labels:
+      - traefik.http.routers.blog.rule=Host(`blog.your_domain`)
+      - traefik.http.routers.blog.tls=true
+      - traefik.http.routers.blog.tls.certresolver=lets-encrypt
+      - traefik.port=80
+    networks:
+      - internal
+      - web
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD:
+    networks:
+      - internal
+    labels:
+      - traefik.enable=false
+
+  adminer:
+    image: adminer:4.6.3-standalone
+    labels:
+    labels:
+      - traefik.http.routers.adminer.rule=Host(`db-admin.your_domain`)
+      - traefik.http.routers.adminer.tls=true
+      - traefik.http.routers.adminer.tls.certresolver=lets-encrypt
+      - traefik.port=8080
+    networks:
+      - internal
+      - web
+    depends_on:
+      - mysql
+Save the file and exit the text editor.
+Next, set values in your shell for the WORDPRESS_DB_PASSWORD and MYSQL_ROOT_PASSWORD variables:
+export WORDPRESS_DB_PASSWORD=secure_database_password
+export MYSQL_ROOT_PASSWORD=secure_database_password
+Substitute secure_database_password with your desired database password. Remember to use the same password for both WORDPRESS_DB_PASSWORD and MYSQL_ROOT_PASSWORD.
+With these variables set, run the containers using docker-compose:
+docker-compose up -d
+Now watch the Traefik admin dashboard while it populates.
+
+If you explore the Routers section you will find routers for adminer and blog configured with TLS:
+
+Navigate to blog.your_domain, substituting your_domain with your domain. You’ll be redirected to a TLS connection and you can now complete the WordPress setup:
+
+Now access Adminer by visiting db-admin.your_domain in your browser, again substituting your_domain with your domain. The mysql container isn’t exposed to the outside world, but the adminer container has access to it through the internal Docker network that they share using the mysql container name as a hostname.
+On the Adminer login screen, enter root for Username, enter mysql for Server, and enter the value you set for MYSQL_ROOT_PASSWORD for the Password. Leave Database empty. Now press Login.
+Once logged in, you’ll see the Adminer user interface.
+
+Both sites are now working, and you can use the dashboard at monitor.your_domain to keep an eye on your applications.
+Conclusion
+In this tutorial, you configured Traefik v2 to proxy requests to other applications in Docker containers.
+Traefik’s declarative configuration at the application container level makes it easy to configure more services, and there’s no need to restart the traefik container when you add new applications to proxy traffic to since Traefik notices the changes immediately through the Docker socket file it’s monitoring.
+To learn more about what you can do with Traefik v2, head over to the official Traefik documentation.
+服务集群
+
+k8s 太重了,虽然也有 k3s 之类的轻量级 k8s 解决方案，不过我还是选择了原生的 docker swarm。VPS 安装好 Docker 之后，不需要额外安装软件，就可以马上建立集群。
+
+# 集群初始化，节点成为 manager 节点
+docker swarm init --advertise-addr=x.x.x.x
+
+# 集群丢失 Leader 时，强制重建集群
+docker swarm init --advertise-addr=x.x.x.x --force-new-cluster
+
+# 获取作为 worker 节点加入集群的命令
+docker swarm join-token worker
+
+# 获取作为 manager 节点加入集群的命令
+docker swarm join-token manager
+
+# 加入集群
+docker swarm join --token xxx x.x.x.x:xxx --advertise-addr=x.x.x.x
+
+参考：
+
+digitalocean
+shanyue
+
+系列教程
+全部文章RSS订阅
+Docker系列
+Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>docker</category>
+      </categories>
+      <tags>
+        <tag>docker</tag>
+        <tag>traefik</tag>
+        <tag>proxy</tag>
+        <tag>swarm</tag>
+        <tag>ubuntu</tag>
       </tags>
   </entry>
   <entry>
@@ -16513,11 +17686,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var GObKfgDGJjSznvKF_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); GObKfgDGJjSznvKF_options.container = document.getElementById("mmedia-GObKfgDGJjSznvKF"); const ap_GObKfgDGJjSznvKF = new APlayer(GObKfgDGJjSznvKF_options); 
+ var xbjQFlIHZtgEeRpV_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); xbjQFlIHZtgEeRpV_options.container = document.getElementById("mmedia-xbjQFlIHZtgEeRpV"); const ap_xbjQFlIHZtgEeRpV = new APlayer(xbjQFlIHZtgEeRpV_options); 
 
 - **列表**
 
- var TCjZIzrnpclFoYeD_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); TCjZIzrnpclFoYeD_options.container = document.getElementById("mmedia-TCjZIzrnpclFoYeD"); const ap_TCjZIzrnpclFoYeD = new APlayer(TCjZIzrnpclFoYeD_options); 
+ var nvtaJcPuKwEYXxVX_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); nvtaJcPuKwEYXxVX_options.container = document.getElementById("mmedia-nvtaJcPuKwEYXxVX"); const ap_nvtaJcPuKwEYXxVX = new APlayer(nvtaJcPuKwEYXxVX_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -16769,21 +17942,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-GJYqxUMKKytnrFBf").style.height=document.getElementById("mmedia-GJYqxUMKKytnrFBf").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-RNsswojYcnrGbJtD").style.height=document.getElementById("mmedia-RNsswojYcnrGbJtD").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-GJYqxUMKKytnrFBf").style.height=document.getElementById("mmedia-GJYqxUMKKytnrFBf").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-RNsswojYcnrGbJtD").style.height=document.getElementById("mmedia-RNsswojYcnrGbJtD").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-fxjftcRVrwoFpDOY").style.height=document.getElementById("mmedia-fxjftcRVrwoFpDOY").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-RGIsacwdmYEsOFkp").style.height=document.getElementById("mmedia-RGIsacwdmYEsOFkp").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-fxjftcRVrwoFpDOY").style.height=document.getElementById("mmedia-fxjftcRVrwoFpDOY").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-RGIsacwdmYEsOFkp").style.height=document.getElementById("mmedia-RGIsacwdmYEsOFkp").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var oEHJDsIrxFNoOKhW_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); oEHJDsIrxFNoOKhW_options.container = "#mmedia-oEHJDsIrxFNoOKhW"; const art_oEHJDsIrxFNoOKhW = new Artplayer(oEHJDsIrxFNoOKhW_options); 
+ var lgbTXGzGKhmEjJFf_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); lgbTXGzGKhmEjJFf_options.container = "#mmedia-lgbTXGzGKhmEjJFf"; const art_lgbTXGzGKhmEjJFf = new Artplayer(lgbTXGzGKhmEjJFf_options); 
 脑图
 
 原作者记录
@@ -17825,11 +18998,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var jIboFRiVWLoPEBpi_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); jIboFRiVWLoPEBpi_options.container = document.getElementById("mmedia-jIboFRiVWLoPEBpi"); const ap_jIboFRiVWLoPEBpi = new APlayer(jIboFRiVWLoPEBpi_options); 
+ var cHNvuOKVeOsgOkEE_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); cHNvuOKVeOsgOkEE_options.container = document.getElementById("mmedia-cHNvuOKVeOsgOkEE"); const ap_cHNvuOKVeOsgOkEE = new APlayer(cHNvuOKVeOsgOkEE_options); 
 
 
 
- var ikgPLLICFvpvXWnE_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); ikgPLLICFvpvXWnE_options.container = document.getElementById("mmedia-ikgPLLICFvpvXWnE"); const ap_ikgPLLICFvpvXWnE = new APlayer(ikgPLLICFvpvXWnE_options); 
+ var tEJvCyILasqKonAH_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); tEJvCyILasqKonAH_options.container = document.getElementById("mmedia-tEJvCyILasqKonAH"); const ap_tEJvCyILasqKonAH = new APlayer(tEJvCyILasqKonAH_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -17987,9 +19160,9 @@ docker run -d \
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-pyWsoEbaVoTQxqcX").style.height=document.getElementById("mmedia-pyWsoEbaVoTQxqcX").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-lmnqgTkUQxRrnYuK").style.height=document.getElementById("mmedia-lmnqgTkUQxRrnYuK").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-pyWsoEbaVoTQxqcX").style.height=document.getElementById("mmedia-pyWsoEbaVoTQxqcX").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-lmnqgTkUQxRrnYuK").style.height=document.getElementById("mmedia-lmnqgTkUQxRrnYuK").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -17998,7 +19171,7 @@ docker run -d \
 
 ## 中文翻唱
 
- var XONatbySYoSsdFfp_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); XONatbySYoSsdFfp_options.container = document.getElementById("mmedia-XONatbySYoSsdFfp"); const ap_XONatbySYoSsdFfp = new APlayer(XONatbySYoSsdFfp_options); 
+ var wCooIKUIIcvCxWng_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); wCooIKUIIcvCxWng_options.container = document.getElementById("mmedia-wCooIKUIIcvCxWng"); const ap_wCooIKUIIcvCxWng = new APlayer(wCooIKUIIcvCxWng_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -24965,795 +26138,6 @@ CI/CD与Git Flow与GitLab
         <tag>matery</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Vim IDE Docker 以及中文指南</title>
-    <url>/posts/647e6265/</url>
-    <content><![CDATA[
-Docker Vim IDE 由博主定制，加入中文环境配置，支持CJK。并升级到最新版本！
-
-Vim Docker
-
-docker pull bloodstar/vim
-alias edit='docker run -ti --rm -v $(pwd):/home/developer/workspace bloodstar/vim' 
-edit some.file 
-alias edit_update="docker pull bloodstar/vim:latest"
-Vim IDE Docker
-
-What’s inside:
-
-Alpine Linux
-Vim + a ton of awesome plugins see bloodstar/vim:latest
-Good support of Golang development with bloodstar/go-tools container
-tmux
-powerline
-Mosh
-OpenSSH, Bash, OMF, Python, etc.
-
-how to start the daemon(and all containers)
-docker create -v '/usr/lib/go' --name go-tools \
-'bloodstar/go-tools' '/bin/true'
-
-docker run -v $('pwd'):/home/developer/workspace \
---volumes-from go-tools \
--v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
--v /etc/localtime:/etc/localtime:ro \
--d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
---name drop-in bloodstar/drop-in
--v /etc/localtime:/etc/localtime:ro - makes tmux display local time
-how to connect:
-mosh --ssh="ssh -p 62222" -- developer@$&lt;ip&gt; tmux -u
-or without host identity check:
-mosh --ssh="ssh -o StrictHostKeyChecking=no -p 62222" -- developer@$&lt;ip&gt; tmux -u
-Useful Bash scripts
-Connect
-#!/bin/bash
-ip=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' drop-in)
-mosh --ssh="ssh -p 62222" -- developer@$ip tmux -u
-start the daemon(and all containers)
-#!/bin/bash
-dtc_id=$(docker ps -a -q --filter 'name=vim-go-tools')
-if [[ -z "${dtc_id}" ]]; then
- echo 'vim-go-tools container not found. Creating...'
- docker create -v '/usr/lib/go' --name 'vim-go-tools' \
-   'bloodstar/go-tools' '/bin/true'
- echo 'Done!'
-fi
-echo 'starting daemon...'
-docker run -v $('pwd'):/home/developer/workspace \
-  --volumes-from vim-go-tools \
-  -v ~/.ssh/pub_rsa:/etc/ssh_keys:ro \
-  -v /etc/localtime:/etc/localtime:ro \
-  -e "GEMAIL=&lt;github email&gt;" \
-  -e "GNAME=&lt;github name&gt;" \
-  -d -p 80:80 -p 8080:8080 -p 62222:62222 -p 60001:60001/udp \
-  --name drop-in bloodstar/drop-in
-echo 'Done!'
-Vim 中文快查表   &lt;= 戳这里
-
-Tips: 在网页上端导航栏，[快查] =&gt; [更多快查表]，有更多快查表！
-快去看看吧。
-
-Vim
-
-Vim简明教程
-1. 键位图
-
-vi-vim-cheat-sheet-sch
-vi-vim-cheat-sheet-sch
-vim分为三种主要模式，分别是命令模式（Command mode），输入模式（Insert mode）和底线命令模式（Last line mode）
-2. 命令模式
-用户刚刚启动 vi/vim，便进入了命令模式。
-2.1. 光标移动
-
-
-
-按键
-动作
-
-
-
-
-h 或 向左箭头键(←)
-光标向 左 移动一个字符
-
-
-j 或 向下箭头键(↓) 或&lt;Enter&gt;
-光标向 下 移动一个字符
-
-
-k 或 向上箭头键(↑)
-光标向 上 移动一个字符
-
-
-l 或 向右箭头键(→) 或 &lt;space&gt;
-光标向 右 移动一个字符
-
-
-w/W
-移动到下一个单词，大写把标点符号当做单词的一部分
-
-
-e/E
-移动到词尾，大写把标点符号当做单词的一部分
-
-
-b/B
-移动到上一个单词，大写把标点符号当做单词的一部分
-
-
-+
-光标移动到非空格符的下一行
-
-
--
-光标移动到非空格符的上一行
-
-
-G
-移动到这个档案的最后一行
-
-
-gg
-移动到这个档案的第一行，相当于 1G
-
-
-[Ctrl] + f 或 [Page Down]
-屏幕『向下』移动一页
-
-
-[Ctrl] + b 或 [Page Up]
-屏幕『向上』移动一页
-
-
-[Ctrl] + d
-屏幕『向下』移动半页
-
-
-[Ctrl] + u
-屏幕『向上』移动半页
-
-
-0 或功能键[Home]
-数字『 0 』，移动到这一行的最前面字符处
-
-
-$ 或功能键[End]
-移动到这一行的最后面字符处
-
-
-H
-光标移动到这个屏幕的最上方那一行的第一个字符
-
-
-M
-光标移动到这个屏幕的中央那一行的第一个字符
-
-
-L
-光标移动到这个屏幕的最下方那一行的第一个字符
-
-
-
-2.2. 复制、粘贴
-
-
-
-按键
-动作
-
-
-
-
-y + 光标移动符
-复制光标所在到移动范围的内容，例如： yj：复制游标所在的那一整行 yG：复制光标所在到最后一行的内容 yw：复制光标所在到下一个单词的内容
-
-
-yy
-复制游标所在的那一行
-
-
-p
-在光标后粘贴，如果是单词级的粘贴，就会在光标后一位粘贴，如果是行级的粘贴，就会在光标下一行粘贴，下面的 P 粘贴时同理。
-
-
-P
-在光标前粘贴
-
-
-
-2.3. 文本修改
-
-
-
-按键
-动作
-
-
-
-
-x
-向 后 删除一个字符 ，相当于[del]
-
-
-X
-向 前 删除一个字符，相当于 [backspace]
-
-
-d + 光标移动符
-删除光标所在到移动范围的内容，例如： dj：删除游标所在的那一整行 dG：删除光标所在到最后一行的内容 dw：删除光标所在到下一个单词的内容
-
-
-dd
-删除游标所在的那一整行
-
-
-J
-将光标所在行与下一行的数据结合成同一行
-
-
-r + 「字符」
-替换光标处的单词为该字符
-
-
-R
-进入replace mode，直到接收到[Esc]按键信号退出该模式
-
-
-
-2.4. 重复动作
-
-
-
-按键
-动作
-
-
-
-
-u
-Undo，复原前一个动作。
-
-
-[Ctrl] + r
-重做上一个动作。
-
-
-.
-重复前一个动作。
-
-
-n
-向下重复前一个搜寻的动作。
-
-
-N
-向上重复前一个搜寻的动作。
-
-
-「n」+ 命令符
-「n」是数字，一般可以理解为重复n次该动作，例如： 10j 表示向下移动10行
-
-
-
-2.5. 可视模式（vim only）
-命令模式下按ctrl + v进入可视模式，这是一个比较特别地模式。
-这个模式可以移动光标，选择一大片区域，然后可以对这片区域进行操作。
-3. 输入模式
-在命令模式下按下i就进入了输入模式。
-在输入模式中，除了ESC键退出输入模式，其他按键和平常编辑模式是一样的。
-3.1. 进入输入模式
-
-
-
-按键
-动作
-
-
-
-
-i
-Insert，从当前光标前开始输入
-
-
-I
-Insert，在目前所在行的第一个非空格符处开始输入
-
-
-a
-Append，从当前光标后开始输入
-
-
-A
-Append，从光标所在行的最后一个字符处开始输入
-
-
-o
-在当前光标所在的下一行处输入新的一行
-
-
-O
-在当前光标所在处的上一行输入新的一行
-
-
-c + 光标移动符
-可以理解先按d + 光标移动符，然后再按a
-
-
-C
-可以理解先按dd，然后再按a
-
-
-
-4. 底线命令模式
-在命令模式下按下:、/、?键位就进入了底线命令模式。
-按ESC键退出底线命令模式。
-4.1. 查找替换
-
-
-
-语句
-动作
-
-
-
-
-/word
-向光标之下寻找一个名称为 word 的字符串。例如要在档案内搜寻 vbird 这个字符串，就输入 /vbird 即可！ (常用)
-
-
-?word
-向上搜索word字符串
-
-
-:n1,n2 s/word1/word2/g
-n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特别地，最后一行为$，
-
-
-:n1,n2 s#word1#word2#g
-效果同上，这个主要用于替换/符号，例如每一行行首添加//，可以这样操作： :1,$ s#^#//#g
-
-
-
-4.2. 文件操作
-
-
-
-按键
-动作
-
-
-
-
-:w [filename]
-将编辑的数据写入到filename文件中，如果不加参数，默认是当前文件
-
-
-:w!
-若文件属性为『只读』时，强制写入该档案，前提是得有文件的写权限。
-
-
-:q 或 ZQ
-退出vim，如果未保存的内容，该指令执行失败
-
-
-:q!
-若曾修改过档案，又不想储存，使用 ! 为强制离开不储存档案。
-
-
-:wq 或 ZZ
-储存后离开
-
-
-:wq!
-强制储存后离开
-
-
-:r [filename]
-在编辑的数据中，读入另一个档案的数据。亦即将 『filename』 这个档案内容加到游标所在行后面
-
-
-:n1,n2 w [filename]
-将 n1 到 n2 的内容储存成 filename 这个档案。
-
-
-:! command
-不退出vim执行command指令，多用于调试脚本。
-
-
-
-4.3. 其他功能
-
-
-
-按键
-动作
-
-
-
-
-:set nu
-显示行号
-
-
-:set nonu
-取消行号
-
-
-:sv
-当前界面打开文件，并呈纵向分布
-
-
-:vs
-当前界面打开文件，并呈横向分布
-
-
-:set fileformat=unix
-由Windows上传到linux的脚本文件，直接执行会报错，需要将其由dos文件格式改unix格式
-
-
-
-5. 扩展的vim功能
-当然，如果仅仅只有原生态的功能还不能让vim成为一个好用的ide，扩展功能才是vim的灵魂所在。
-参考
-
-菜鸟驿站的vim教程
-
-]]></content>
-      <categories>
-        <category>tools</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>docker</tag>
-        <tag>vim</tag>
-        <tag>ide</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕</title>
-    <url>/posts/e6d40157/</url>
-    <content><![CDATA[
-注意使用V3版本，V4版本收费！
-所以升级V3版本即可，不要升级到V4版本！不要升级到V4版本！不要升级到V4版本！
-
-
-Plex是一款很好用的个人媒体中心软件，但是因为国内网络的原因，使用默认的TMDB刮削器挂出来的效果并不好，要么就是影片信息不正确，要么就是海报不正常显示，实在让人头疼。
-tinyMediaManager是一款电影信息刮削和整理的软件，正好可以和plex配合，完美的解决这一问题。tinyMediaManager在刮削影片的过程中会把影片的海报、演员表、背景图片等等都保存到影片所在文件夹，自动生成电影的nfo信息文件，并对文件和文件夹进行重新命名的操作。在plex设置刮削代理的时候，需要用一款插件可以直接读取nfo的信息，完成刮削，下面把使用方法分享给大家，
-
-下载和安装tinyMediaManager
-官网下载地址：https://www.tinymediamanager.org/download/
-
-tmm下载
-下载后直接解压文件夹
-客户端需要java支持，先在电脑安装java
-客户端下载后是一个压缩包，解压之后就可以用
-
-解压之后打开tinyMediaManager.exe
-
-TMM设置
-TMM代理设置
-
-重要：很多源都需要代理才能访问。这里正确的配置才能正确的刮削！
-可以调整这里使用的内存，大内存可以极大加速刮削速度。
-
-
-电影刮削设置
-进行相关设置。Tmm可以对电影和电视剧的刮削进行分别设置，打开设置后选择电影选项，可以选择分级标准、自动重命名等选项。
-
-电影信息选项
-点击侧边栏媒体库目录，添加电影目录
-刮削器设置
-
-选择电影刮削器
-
-刮削器选项
-
-nfo选项，建议选择生成两种命名放视的nfo
-图片刮削器选择全选，图片文件名建议两边都选上，会分别生成两组命名格式不同的图片，为了保证plex能读取
-
-图片命名选项
-Tmm还可以自动下载预告片，字幕。字幕下载时可以输入opensubtitles账户
-
-字幕下载选项
-重命名规则
-这里重点讲一下重命名规则，刮削完后可以选择对电影文件和文件夹进行重命名，可能对于pt用户重命名可能会影响资源上传，可以不进行重命名操作。
-一般情况下电影刮削出来的信息，title是电影的中文标题名称，originaltitle是电影的原标题名称，一般是英文名称。软件默认的设置是文件和文件夹都命名成title，也就是中文标题，但是我发现这样在后期使用的时候有弊端。英文电影在检索字幕时会用文件名来检索，而用中文名称很多情况下检索不出来，所以这里把文件的命名规则改一下，改成originaltitle，并去掉年份信息的括号，中间连接符改成点，文件名设置成originaltitle{- ,edition,}.year.{videoFormat}.${audioCodec}的格式。
-
-电影文件重命名选项
-
-刮削完的文件夹内文件信息
-
-刮削完的电影文件夹目录
-电视节目刮削设置类似，如果挂不出来可以用the tvdb来刮削。
-tmm有时候会出现网络不稳定，刮不到的情况，可以修改host解决
-改host 在host文件最后加一行13.224.161.90 http://api.themoviedb.org
-退出设置，开始刮削
-
-更新电影源
-
-选中要刮削的电影自动匹配
-电影手动刮削
-
-
-电视剧&amp;动画手动刮削
-电视剧元数据刮削
-
-
-季和集元数据刮削前整理
-
-刮削季元素
-整理好正确的季和集之后，才能正确的刮削季元素
-
-TMM整理完效果
-
-这里用海贼王做展示，一个季和集都特别多的剧。
-
-
-TMM目录重命名整理
-
-刮削完后，可以重命名视频文件，并进行目录整理。
-
-方法1
-
-方法2
-
-等所有电影的信息刮削完后，选择重命名和清理，这样就完成了刮削的操作。以后下载了新电影，直接打开tmm,更新源之后直接选择搜索未刮削过的电影完成刮削。刮削出来的信息kodi，emby等软件也都能用。
-Plex设置
-plex插件的安装和设置
-下载plex的插件
-插件XBMCnfoMoviesImporter和XBMCnfoTVImporter分别是刮削电影和电视剧的插件
-下载地址：https://github.com/gboudreau/XBMCnfoMoviesImporter.bundle
-如果不能下载的话可以联系我获取，还有几个很好用的plex插件
-下载完插件后就需要把插件解压到plex的插件目录：C:\\Users\\用户名\\AppData\\Local\\Plex Media Server\\Plug-ins
-
-plex插件目录
-注意解压后要把文件夹名后边的master去掉。
-plex代理设置
-Plex的代理设置就是选择刮削电影所用的刮削器及优先级。
-装好插件后重启plex，进行plex的设置。在代理设置中选择XBMCnfoMoviesImporter，把它的优先级调到最高，第二个可以设置成字幕插件。
-
-设置电影资料库的刮削器代理
-点击设置界面下方管理里边的资料库，选择电影资料夹的高级设置，设置如下
-
-
-plex代理设置
-
-刷新电影源数据资料
-设置完成后就可以在plex主页对电影文件夹刷新元数据了。等待刷新完后就可以载入所有的电影信息了。
-
-管理资料库-刷新电影元数据
-
-更新后的电影信息
-采用类似的设置，电视剧信息也能刮削。
-
-电视剧更新后的信息
-Emby设置
-
-Emby内置刮削工具，但是速度较慢。下面设置基于外部刮削工具TMM，所以没有勾选Emby刮削源！
-
-最终效果演示
-
-
-开始设置
-
-新增媒体库
-
-已有媒体库属性设置
-
-
-
-
-
-Emby字幕设置
-字幕下载设置，字幕下载工具见后面的[字幕下载]章节
-
-字幕下载
-想要较好的自动下载字幕，最好用前面介绍的tmm刮削改名之后再使用下面工具。
-subfinder 自动下载字幕
-
-Docker： superng6/subfinder
-
-下载完成，刮削后的目录，挂载到subfinder的media目录，就会自动下载字幕。
-字幕下载对电影，英文剧集支持较好。对于一些tv，动画手动下载字幕会更好一些。
-注意：官方的配置文件有问题，时效问题。修改URL到最新即可。
-chinesesubfinder
-
-Docker： allanpk716/chinesesubfinder
-新开发的中文字幕查找工具，上面那个很久没更新了，这个刚出来。使用nfo里面刮削出来的文件名来匹配字幕。所以就原理来说，这个字幕匹配更准确。
-
-bazarr
-
-Docker：linuxserver/bazarr
-字幕下载管理，配合sonarr, radarr 使用效果更好。对于英文剧集命名规范的支持较好，比如[name]S01E01
-
-参考
-
-利用tinyMediaManager刮削影片，解决家用nas软件plex电影墙的问题
-
-图书、音乐、视频三剑客！
-
-结构化自己的图书，音乐，和视频！
-
-
-    
-        
-    
-    
-        如何建立自己的私人图书馆
-        
-        图书管理员似乎是个非常有前途的职业，远的有孔子，游学之前当图书管理员，近的有本朝开国毛教员，也当了很长时间图书管理员。我们也可以自己做个私人电子图书馆，单个管理员，说不定很有前途？
-    
-
-
-    
-        
-    
-    
-        如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库
-        
-        音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。
-    
-
-
-    
-        
-    
-    
-        如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-        
-        tinyMediaManager是最好用的视频刮削工具，可以刮削电影，动画，电视剧。使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息，配合Emby，Plex使用体验绝佳
-    
-
-系列教程
-全部文章RSS订阅
-Nas系列
-Nas 分类 RSS 订阅
-
-音视频图书和音乐自动化管理框架图解
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Potplayer终极优化教程实现PC视频播放最强画质
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列
-Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>emby</tag>
-        <tag>tmm</tag>
-        <tag>刮削</tag>
-        <tag>字幕</tag>
-        <tag>plex</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库</title>
-    <url>/posts/3847ad58/</url>
-    <content><![CDATA[背景
-动画、电影、剧集可使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息。
-而音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。桌面软件、多媒体管理软件（Foobar2000/Plex/Emby/Jellyfin等）都能解析展现歌曲信息。ID3标签是MP3音乐档案中的歌曲附加讯息，它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。缺少ID3标签并不会影响 MP3的播放，但若没有的话，管理音乐文件也会相当的麻烦。
-刮削效果
-Foobar2000读取效果：
-
-Jellyfin读取效果：
-
-Mp3tag
-
-纯手工修改，开源工具。
-
-
-Media Go
-
-不要使用最新版！老版本才有我们最需要的功能。
-
-
-添加媒体库
-
-
-自动获取属性
-
-歌曲属性修改
-
-MusicBrainz
-
-
-MusicBrainz官网：https://musicbrainz.org/
-MusicBrainz Picard下载地址：https://picard.musicbrainz.org/
-
-
-
-MusicBrainz Picard可以修改音乐的Tag标签信息，根据标签重命名文件。它的数据来源于非营利互联网音乐专辑数据库MusicBrainz项目，歌曲资源非常丰富。尤其它能根据声纹（音频指纹）识别Mp3文件进行匹配取信息，匹配率极高。不管是英文、中文歌曲，还是录音室版本、演唱会版本，都能很好地匹配出来。
-支持MP3、FLAC、OGG、M4A、WMA、WAV等主流的音频格式，wav,ape格式不支持，需要要转换成支持的格式。
-写入前后对比：
-
-MusicBrainz Picard使用教程：
-将音乐文件/文件夹拖入左侧窗口，点上方“查询“按钮，在MusicBrainz数据库里搜索对应音乐。
-
-如果搜索不到，点击”扫描“，使用声纹匹配，准确度更高。
-
-如果以上两种方法都搜索不到，或者添加的文件名变成乱码，右击”查找相似的音轨“
-
-手动输入歌曲名字，搜索，选择正确的歌曲信息，载入Picard。
-
-右侧窗口载入专辑信息。展开列表，绿色方块的就是匹配成功的音乐。底部窗口展示文件原始标签信息和MusicBrainz网站上的信息对照。
-
-如果匹配的不是正确的专辑信息，右击”查找相似的音轨“，选择正确的专辑信息载入Picard。
-如果搜索出了多张专辑，可点击错误的专辑拖动到目标专辑上完成匹配，省的一个一个文件的修改。
-
-最后点“保存”，将标签信息写入音乐文件。
-
-如何重命名文件：
-菜单栏-选项-勾选“重命名文件”，保存的时候会同时写入信息+重命名。
-
-默认设置是：序号 歌名.mp3，适合一个专辑一个文件夹使用。
-如果是单文件的话要去创建命名规则，选项-正在重命名文件-保存时重命名文件，填写命名规则。
-
-参考：
-
-使用MusicBrainz Picard刮削音乐 整理音乐资料库
-
-图书、音乐、视频三剑客！
-
-结构化自己的图书，音乐，和视频！
-
-
-    
-        
-    
-    
-        如何建立自己的私人图书馆
-        
-        图书管理员似乎是个非常有前途的职业，远的有孔子，游学之前当图书管理员，近的有本朝开国毛教员，也当了很长时间图书管理员。我们也可以自己做个私人电子图书馆，单个管理员，说不定很有前途？
-    
-
-
-    
-        
-    
-    
-        如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库
-        
-        音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。
-    
-
-
-    
-        
-    
-    
-        如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-        
-        tinyMediaManager是最好用的视频刮削工具，可以刮削电影，动画，电视剧。使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息，配合Emby，Plex使用体验绝佳
-    
-
-]]></content>
-      <categories>
-        <category>music</category>
-      </categories>
-      <tags>
-        <tag>music</tag>
-        <tag>刮削</tag>
-        <tag>musicbrainz</tag>
-        <tag>mp3tag</tag>
       </tags>
   </entry>
   <entry>
@@ -34614,9 +34998,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-bWkxnEwmuKJuOPAC").style.height=document.getElementById("mmedia-bWkxnEwmuKJuOPAC").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-gMNbynCAnsAETRcz").style.height=document.getElementById("mmedia-gMNbynCAnsAETRcz").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-bWkxnEwmuKJuOPAC").style.height=document.getElementById("mmedia-bWkxnEwmuKJuOPAC").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-gMNbynCAnsAETRcz").style.height=document.getElementById("mmedia-gMNbynCAnsAETRcz").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 calibre:
@@ -40883,7 +41267,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts6857'));
+        var myChart = echarts.init(document.getElementById('echarts687'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -40977,7 +41361,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts4226'));
+        var myChart = echarts.init(document.getElementById('echarts7879'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -41046,7 +41430,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts6540'));
+        var myChart = echarts.init(document.getElementById('echarts2484'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -43452,390 +43836,6 @@ CI/CD与Git Flow与GitLab
         <tag>ai</tag>
         <tag>概率</tag>
         <tag>普朗克</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers Containers 的反向代理</title>
-    <url>/posts/465d2738/</url>
-    <content><![CDATA[How To Use Traefik v2 as a Reverse Proxy for Docker Containers on Ubuntu 20.04
-
-Traefik 适合配合Dockers swarm 做服务， Dockers portainer 做管理，ELK集群做监控日志。
-
-
-traefik 与 nginx 一样，是一款优秀的反向代理工具，或者叫 Edge Router。至于使用它的原因则基于以下几点
-
-无须重启即可更新配置
-自动的服务发现与负载均衡
-与 docker 完美集成，基于 container label 的配置
-漂亮的 dashboard 界面
-metrics 的支持，支持对 prometheus 和 k8s 集成
-
-Introduction
-Docker can be an efficient way to run web applications in production, but you may want to run multiple applications on the same Docker host. In this situation, you’ll need to set up a reverse proxy. This is because you only want to expose ports 80 and 443 to the rest of the world.
-Traefik is a Docker-aware reverse proxy that includes a monitoring dashboard. Traefik v1 has been widely used for a while, and you can follow this earlier tutorial to install Traefik v1). But in this tutorial, you’ll install and configure Traefik v2, which includes quite a few differences.
-The biggest difference between Traefik v1 and v2 is that frontends and backends were removed and their combined functionality spread out across routers, middlewares, and services. Previously a backend did the job of making modifications to requests and getting that request to whatever was supposed to handle it. Traefik v2 provides more separation of concerns by introducing middlewares that can modify requests before sending them to a service. Middlewares make it easier to specify a single modification step that might be used by a lot of different routes so that they can be reused (such as HTTP Basic Auth, which you’ll see later). A router can also use many different middlewares.
-In this tutorial you’ll configure Traefik v2 to route requests to two different web application containers: a Wordpress container and an Adminer container, each talking to a MySQL database. You’ll configure Traefik to serve everything over HTTPS using Let’s Encrypt.
-Prerequisites
-To complete this tutorial, you will need the following:
-
-One Ubuntu 20.04 server with a sudo non-root user and a firewall. You can set this up by following our Ubuntu 20.04 initial server setup guide.
-Docker installed on your server, which you can accomplish by following Steps 1 and 2 of How to Install and Use Docker on Ubuntu 20.04.
-Docker Compose installed using the instructions from Step 1 of How to Install Docker Compose on Ubuntu 20.04.
-A domain and three A records, db-admin.your_domain, blog.your_domain and monitor.your_domain. Each should point to the IP address of your server. You can learn how to point domains to DigitalOcean Droplets by reading through DigitalOcean’s Domains and DNS documentation. Throughout this tutorial, substitute your domain for your_domain in the configuration files and examples.
-
-Step 1 — Configuring and Running Traefik
-The Traefik project has an official Docker image, so you will use that to run Traefik in a Docker container.
-But before you get your Traefik container up and running, you need to create a configuration file and set up an encrypted password so you can access the monitoring dashboard.
-You’ll use the htpasswd utility to create this encrypted password. First, install the utility, which is included in the apache2-utils package:
-sudo apt-get install apache2-utils
-Then generate the password with htpasswd. Substitute secure_password with the password you’d like to use for the Traefik admin user:
-htpasswd -nb admin secure_password
-The output from the program will look like this:
-Outputadmin:$apr1$ruca84Hq$mbjdMZBAG.KWn7vfN/SNK/
-You’ll use this output in the Traefik configuration file to set up HTTP Basic Authentication for the Traefik health check and monitoring dashboard. Copy the entire output line so you can paste it later.
-To configure the Traefik server, you’ll create two new configuration files called traefik.toml and traefik_dynamic.toml using the TOML format. TOML is a configuration language similar to INI files, but standardized. These files let us configure the Traefik server and various integrations, or providers, that you want to use. In this tutorial, you will use three of Traefik’s available providers: api, docker, and acme. The last of these, acme, supports TLS certificates using Let’s Encrypt.
-Create and open traefik.toml using nano or your preferred text editor:
-nano traefik.toml
-First, you want to specify the ports that Traefik should listen on using the entryPoints section of your config file. You want two because you want to listen on port 80 and 443. Let’s call these web (port 80) and websecure (port 443).
-Add the following configurations:
-traefik.toml
-[entryPoints]
-  [entryPoints.web]
-    address = ":80"
-    [entryPoints.web.http.redirections.entryPoint]
-      to = "websecure"
-      scheme = "https"
-
-  [entryPoints.websecure]
-    address = ":443"
-Note that you are also automatically redirecting traffic to be handled over TLS.
-Next, configure the Traefik api, which gives you access to both the API and your dashboard interface. The heading of [api] is all that you need because the dashboard is then enabled by default, but you’ll be explicit for the time being.
-Add the following code:
-traefik.toml
-...
-[api]
-  dashboard = true
-To finish securing your web requests you want to use Let’s Encrypt to generate valid TLS certificates. Traefik v2 supports Let’s Encrypt out of the box and you can configure it by creating a certificates resolver of the type acme.
-Let’s configure your certificates resolver now using the name lets-encrypt:
-traefik.toml
-...
-[certificatesResolvers.lets-encrypt.acme]
-  email = "your_email@your_domain"
-  storage = "acme.json"
-  [certificatesResolvers.lets-encrypt.acme.tlsChallenge]
-This section is called acme because ACME is the name of the protocol used to communicate with Let’s Encrypt to manage certificates. The Let’s Encrypt service requires registration with a valid email address, so to have Traefik generate certificates for your hosts, set the email key to your email address. You then specify that you will store the information that you will receive from Let’s Encrypt in a JSON file called acme.json.
-The acme.tlsChallenge section allows us to specify how Let’s Encrypt can verify that the certificate. You’re configuring it to serve a file as part of the challenge over port 443.
-Finally, you need to configure Traefik to work with Docker.
-Add the following configurations:
-traefik.toml
-...
-[providers.docker]
-  watch = true
-  network = "web"
-The docker provider enables Traefik to act as a proxy in front of Docker containers. You’ve configured the provider to watch for new containers on the web network, which you’ll create soon.
-Our final configuration uses the file provider. With Traefik v2, static and dynamic configurations can’t be mixed and matched. To get around this, you will use traefik.toml to define your static configurations and then keep your dynamic configurations in another file, which you will call traefik_dynamic.toml. Here you are using the file provider to tell Traefik that it should read in dynamic configurations from a different file.
-Add the following file provider:
-traefik.toml
-[providers.file]
-  filename = "traefik_dynamic.toml"
-Your completed traefik.toml will look like this:
-traefik.toml
-[entryPoints]
-  [entryPoints.web]
-    address = ":80"
-    [entryPoints.web.http.redirections.entryPoint]
-      to = "websecure"
-      scheme = "https"
-
-  [entryPoints.websecure]
-    address = ":443"
-
-[api]
-  dashboard = true
-
-[certificatesResolvers.lets-encrypt.acme]
-  email = "your_email@your_domain"
-  storage = "acme.json"
-  [certificatesResolvers.lets-encrypt.acme.tlsChallenge]
-
-[providers.docker]
-  watch = true
-  network = "web"
-
-[providers.file]
-  filename = "traefik_dynamic.toml"
-Save and close the file.
-Now let’s create traefik_dynamic.toml.
-The dynamic configuration values that you need to keep in their own file are the middlewares and the routers. To put your dashboard behind a password you need to customize the API’s router and configure a middleware to handle HTTP basic authentication. Let’s start by setting up the middleware.
-The middleware is configured on a per-protocol basis and since you’re working with HTTP you’ll specify it as a section chained off of http.middlewares. Next comes the name of your middleware so that you can reference it later, followed by the type of middleware that it is, which will be basicAuth in this case. Let’s call your middleware simpleAuth.
-Create and open a new file called traefik_dynamic.toml:
-nano traefik_dynamic.toml
-Add the following code. This is where you’ll paste the output from the htpasswd command:
-traefik_dynamic.toml
-[http.middlewares.simpleAuth.basicAuth]
-  users = [
-    "admin:$apr1$ruca84Hq$mbjdMZBAG.KWn7vfN/SNK/"
-  ]
-To configure the router for the api you’ll once again be chaining off of the protocol name, but instead of using http.middlewares, you’ll use http.routers followed by the name of the router. In this case, the api provides its own named router that you can configure by using the [http.routers.api] section. You’ll configure the domain that you plan on using with your dashboard also by setting the rule key using a host match, the entrypoint to use websecure, and the middlewares to include simpleAuth.
-Add the following configurations:
-traefik_dynamic.toml
-...
-[http.routers.api]
-  rule = "Host(`monitor.your_domain`)"
-  entrypoints = ["websecure"]
-  middlewares = ["simpleAuth"]
-  service = "api@internal"
-  [http.routers.api.tls]
-    certResolver = "lets-encrypt"
-The web entry point handles port 80, while the websecure entry point uses port 443 for TLS/SSL. You automatically redirect all of the traffic on port 80 to the websecure entry point to force secure connections for all requests.
-Notice the last three lines here configure a service, enable tls, and configure certResolver to "lets-encrypt". Services are the final step to determining where a request is finally handled. The api@internal service is a built-in service that sits behind the API that you expose. Just like routers and middlewares, services can be configured in this file, but you won’t need to do that to achieve your desired result.
-Your completed traefik_dynamic.toml file will look like this:
-traefik_dynamic.toml
-[http.middlewares.simpleAuth.basicAuth]
-  users = [
-    "admin:$apr1$ruca84Hq$mbjdMZBAG.KWn7vfN/SNK/"
-  ]
-
-[http.routers.api]
-  rule = "Host(`monitor.your_domain`)"
-  entrypoints = ["websecure"]
-  middlewares = ["simpleAuth"]
-  service = "api@internal"
-  [http.routers.api.tls]
-    certResolver = "lets-encrypt"
-Save the file and exit the editor.
-With these configurations in place, you will now start Traefik.
-Step 2 – Running the Traefik Container
-In this step you will create a Docker network for the proxy to share with containers. You will then access the Traefik dashboard. The Docker network is necessary so that you can use it with applications that are run using Docker Compose.
-Create a new Docker network called web:
-docker network create web
-When the Traefik container starts, you will add it to this network. Then you can add additional containers to this network later for Traefik to proxy to.
-Next, create an empty file that will hold your Let’s Encrypt information. You’ll share this into the container so Traefik can use it:
-touch acme.json
-Traefik will only be able to use this file if the root user inside of the container has unique read and write access to it. To do this, lock down the permissions on acme.json so that only the owner of the file has read and write permission.
-chmod 600 acme.json
-Once the file gets passed to Docker, the owner will automatically change to the root user inside the container.
-Finally, create the Traefik container with this command:
-docker run -d \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v $PWD/traefik.toml:/traefik.toml \
-  -v $PWD/traefik_dynamic.toml:/traefik_dynamic.toml \
-  -v $PWD/acme.json:/acme.json \
-  -p 80:80 \
-  -p 443:443 \
-  --network web \
-  --name traefik \
-  traefik:v2.2
-This command is a little long. Let’s break it down.
-You use the -d flag to run the container in the background as a daemon. You then share your docker.sock file into the container so that the Traefik process can listen for changes to containers. You also share the traefik.toml and traefik_dynamic.toml configuration files into the container, as well as acme.json.
-Next, you map ports :80 and :443 of your Docker host to the same ports in the Traefik container so Traefik receives all HTTP and HTTPS traffic to the server.
-You set the network of the container to web, and you name the container traefik.
-Finally, you use the traefik:v2.2 image for this container so that you can guarantee that you’re not running a completely different version than this tutorial is written for.
-A Docker image’s ENTRYPOINT is a command that always runs when a container is created from the image. In this case, the command is the traefik binary within the container. You can pass additional arguments to that command when you launch the container, but you’ve configured all of your settings in the traefik.toml file.
-With the container started, you now have a dashboard you can access to see the health of your containers. You can also use this dashboard to visualize the routers, services, and middlewares that Traefik has registered. You can try to access the monitoring dashboard by pointing your browser to https://monitor.your_domain/dashboard/ (the trailing / is required).
-You will be prompted for your username and password, which are admin and the password you configured in Step 1.
-Once logged in, you’ll see the Traefik interface:
-
-You will notice that there are already some routers and services registered, but those are the ones that come with Traefik and the router configuration that you wrote for the API.
-You now have your Traefik proxy running, and you’ve configured it to work with Docker and monitor other containers. In the next step you will start some containers for Traefik to proxy.
-Step 3 — Registering Containers with Traefik
-With the Traefik container running, you’re ready to run applications behind it. Let’s launch the following containers behind Traefik:
-
-A blog using the official WordPress image.
-A database management server using the official Adminer image.
-
-You’ll manage both of these applications with Docker Compose using a docker-compose.yml file.
-Create and open the docker-compose.yml file in your editor:
-nano docker-compose.yml
-Add the following lines to the file to specify the version and the networks you’ll use:
-docker-compose.yml
-version: "3"
-
-networks:
-  web:
-    external: true
-  internal:
-    external: false
-You use Docker Compose version 3 because it’s the newest major version of the Compose file format.
-For Traefik to recognize your applications, they must be part of the same network, and since you created the network manually, you pull it in by specifying the network name of web and setting external to true. Then you define another network so that you can connect your exposed containers to a database container that you won’t expose through Traefik. You’ll call this network internal.
-Next, you’ll define each of your services, one at a time. Let’s start with the blog container, which you’ll base on the official WordPress image. Add this configuration to the bottom of the file:
-docker-compose.yml
-...
-
-services:
-  blog:
-    image: wordpress:4.9.8-apache
-    environment:
-      WORDPRESS_DB_PASSWORD:
-    labels:
-      - traefik.http.routers.blog.rule=Host(`blog.your_domain`)
-      - traefik.http.routers.blog.tls=true
-      - traefik.http.routers.blog.tls.certresolver=lets-encrypt
-      - traefik.port=80
-    networks:
-      - internal
-      - web
-    depends_on:
-      - mysql
-The environment key lets you specify environment variables that will be set inside of the container. By not setting a value for WORDPRESS_DB_PASSWORD, you’re telling Docker Compose to get the value from your shell and pass it through when you create the container. You will define this environment variable in your shell before starting the containers. This way you don’t hard-code passwords into the configuration file.
-The labels section is where you specify configuration values for Traefik. Docker labels don’t do anything by themselves, but Traefik reads these so it knows how to treat containers. Here’s what each of these labels does:
-
-traefik.http.routers.adminer.rule=Host(`````blog.your_domain`````) creates a new router for your container and then specifies the routing rule used to determine if a request matches this container.
-traefik.routers.custom_name.tls=true specifies that this router should use TLS.
-traefik.routers.custom_name.tls.certResolver=lets-encrypt specifies that the certificates resolver that you created earlier called lets-encrypt should be used to get a certificate for this route.
-traefik.port specifies the exposed port that Traefik should use to route traffic to this container.
-
-With this configuration, all traffic sent to your Docker host on port 80 or 443 with the domain of blog.your_domain will be routed to the blog container.
-You assign this container to two different networks so that Traefik can find it via the web network and it can communicate with the database container through the internal network.
-Lastly, the depends_on key tells Docker Compose that this container needs to start after its dependencies are running. Since WordPress needs a database to run, you must run your mysql container before starting your blog container.
-Next, configure the MySQL service:
-docker-compose.yml
-services:
-...
-  mysql:
-    image: mysql:5.7
-    environment:
-      MYSQL_ROOT_PASSWORD:
-    networks:
-      - internal
-    labels:
-      - traefik.enable=false
-You’re using the official MySQL 5.7 image for this container. You’ll notice that you’re once again using an environment item without a value. The MYSQL_ROOT_PASSWORD and WORDPRESS_DB_PASSWORD variables will need to be set to the same value to make sure that your WordPress container can communicate with the MySQL. You don’t want to expose the mysql container to Traefik or the outside world, so you’re only assigning this container to the internal network. Since Traefik has access to the Docker socket, the process will still expose a router for the mysql container by default, so you’ll add the label traefik.enable=false to specify that Traefik should not expose this container.
-Finally, define the Adminer container:
-docker-compose.yml
-services:
-...
-  adminer:
-    image: adminer:4.6.3-standalone
-    labels:
-      - traefik.http.routers.adminer.rule=Host(`db-admin.your_domain`)
-      - traefik.http.routers.adminer.tls=true
-      - traefik.http.routers.adminer.tls.certresolver=lets-encrypt
-      - traefik.port=8080
-    networks:
-      - internal
-      - web
-    depends_on:
-      - mysql
-This container is based on the official Adminer image. The network and depends_on configuration for this container exactly match what you’re using for the blog container.
-The line traefik.http.routers.adminer.rule=Host(`````db-admin.your_domain`````) tells Traefik to examine the host requested. If it matches the pattern of db-admin.your_domain, Traefik will route the traffic to the adminer container over port 8080.
-Your completed docker-compose.yml file will look like this:
-docker-compose.yml
-version: "3"
-
-networks:
-  web:
-    external: true
-  internal:
-    external: false
-
-services:
-  blog:
-    image: wordpress:4.9.8-apache
-    environment:
-      WORDPRESS_DB_PASSWORD:
-    labels:
-      - traefik.http.routers.blog.rule=Host(`blog.your_domain`)
-      - traefik.http.routers.blog.tls=true
-      - traefik.http.routers.blog.tls.certresolver=lets-encrypt
-      - traefik.port=80
-    networks:
-      - internal
-      - web
-    depends_on:
-      - mysql
-
-  mysql:
-    image: mysql:5.7
-    environment:
-      MYSQL_ROOT_PASSWORD:
-    networks:
-      - internal
-    labels:
-      - traefik.enable=false
-
-  adminer:
-    image: adminer:4.6.3-standalone
-    labels:
-    labels:
-      - traefik.http.routers.adminer.rule=Host(`db-admin.your_domain`)
-      - traefik.http.routers.adminer.tls=true
-      - traefik.http.routers.adminer.tls.certresolver=lets-encrypt
-      - traefik.port=8080
-    networks:
-      - internal
-      - web
-    depends_on:
-      - mysql
-Save the file and exit the text editor.
-Next, set values in your shell for the WORDPRESS_DB_PASSWORD and MYSQL_ROOT_PASSWORD variables:
-export WORDPRESS_DB_PASSWORD=secure_database_password
-export MYSQL_ROOT_PASSWORD=secure_database_password
-Substitute secure_database_password with your desired database password. Remember to use the same password for both WORDPRESS_DB_PASSWORD and MYSQL_ROOT_PASSWORD.
-With these variables set, run the containers using docker-compose:
-docker-compose up -d
-Now watch the Traefik admin dashboard while it populates.
-
-If you explore the Routers section you will find routers for adminer and blog configured with TLS:
-
-Navigate to blog.your_domain, substituting your_domain with your domain. You’ll be redirected to a TLS connection and you can now complete the WordPress setup:
-
-Now access Adminer by visiting db-admin.your_domain in your browser, again substituting your_domain with your domain. The mysql container isn’t exposed to the outside world, but the adminer container has access to it through the internal Docker network that they share using the mysql container name as a hostname.
-On the Adminer login screen, enter root for Username, enter mysql for Server, and enter the value you set for MYSQL_ROOT_PASSWORD for the Password. Leave Database empty. Now press Login.
-Once logged in, you’ll see the Adminer user interface.
-
-Both sites are now working, and you can use the dashboard at monitor.your_domain to keep an eye on your applications.
-Conclusion
-In this tutorial, you configured Traefik v2 to proxy requests to other applications in Docker containers.
-Traefik’s declarative configuration at the application container level makes it easy to configure more services, and there’s no need to restart the traefik container when you add new applications to proxy traffic to since Traefik notices the changes immediately through the Docker socket file it’s monitoring.
-To learn more about what you can do with Traefik v2, head over to the official Traefik documentation.
-服务集群
-
-k8s 太重了,虽然也有 k3s 之类的轻量级 k8s 解决方案，不过我还是选择了原生的 docker swarm。VPS 安装好 Docker 之后，不需要额外安装软件，就可以马上建立集群。
-
-# 集群初始化，节点成为 manager 节点
-docker swarm init --advertise-addr=x.x.x.x
-
-# 集群丢失 Leader 时，强制重建集群
-docker swarm init --advertise-addr=x.x.x.x --force-new-cluster
-
-# 获取作为 worker 节点加入集群的命令
-docker swarm join-token worker
-
-# 获取作为 manager 节点加入集群的命令
-docker swarm join-token manager
-
-# 加入集群
-docker swarm join --token xxx x.x.x.x:xxx --advertise-addr=x.x.x.x
-
-参考：
-
-digitalocean
-shanyue
-
-系列教程
-全部文章RSS订阅
-Docker系列
-Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>docker</category>
-      </categories>
-      <tags>
-        <tag>docker</tag>
-        <tag>traefik</tag>
-        <tag>proxy</tag>
-        <tag>swarm</tag>
-        <tag>ubuntu</tag>
       </tags>
   </entry>
 </search>
