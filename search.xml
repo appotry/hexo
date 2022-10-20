@@ -5827,92 +5827,6 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
-    <title>ESNI和加密DNS - 保护信息隐私的最后一块拼图</title>
-    <url>/posts/ec2cad2/</url>
-    <content><![CDATA[随着TLS1.3的发布，让该协议成为有史以来最安全、也是最复杂的TLS协议。在该协议之中，有很多的对于以往协议安全漏洞的修复，包括废弃RSA启用新的秘钥交换机制PSK等等。而Encrypted SNI作为一个TLS1.3的扩展协议用来防止传统的HTTPS流量受到ISP或者陌生网络环境的窥探以及一些网络审查。在过去，由于HTTPS协议之中Server Name Indication - SNI的使用，我们的HTTPS流量经常被窥探我们所访问站点的域名
-那么什么是SNI？⌗
-
-服务器名称指示（英语：Server Name Indication，简称SNI）是一个扩展的TLS计算机联网协议，在该协议下，在握手过程开始时客户端告诉它正在连接的服务器要连接的主机名称。这允许服务器在相同的IP地址和TCP端口号上呈现多个证书，并且因此允许在相同的IP地址上提供多个安全（HTTPS）网站（或其他任何基于TLS的服务），而不需要所有这些站点使用相同的证书。它与HTTP/1.1基于名称的虚拟主机的概念相同，但是用于HTTPS。所需的主机名未加密， 因此窃听者可以查看请求的网站 为了使SNI协议起作用，绝大多数访问者必须使用实现它的Web浏览器。使用未实现SNI浏览器的用户将被提供默认证书，因此很可能会收到证书警告
-
-
-SNI协议示意图
-
-
-
-TLS1.3完整握手流程
-
-
-为了弥补缺陷因应运而生的ESNI⌗
-在上述过程之中，存在的问题就是，在ClientHello环节中，TLS会在这个位置以明文的形式讲要请求的Host写在数据包之中，如果在网络路由中有任何的监听节点，那么用户所访问网站的域名将暴露无遗，这将是巨大的用户隐私泄露: 
-所以在最新的关于ESNI的草案中，IETF重新设计了一种加密的Client Hello机制，从而修复了这个问题: 
-不过这里问题又来了，之前服务器和客户端并没有事先交换任何数据啊，这个加密的凭证从何而来啊？？？
-依靠安全DNS的ESNI⌗
-上一个问题没有难倒工程师们，他们设计了这样一个办法。首先让网站提供者在DNS提供商上公布一个记录，这个记录包含着一个公钥，这个公钥由网站提供者生成，其私钥存储在Web服务器等待着被Web程序读取。如此，当用户想通过TLS1.3协议访问这个域名的时候，首先读取这个公开的公钥，在用公钥加密其想访问的域名Host，装在Client Hello里面发送给目标服务器，目标服务器再用自己的私钥解密，从而和用户建立HTTPS链接，这样就不会暴露Host信息 这时候有人会想，如果有人某Wall想给你的DNS偷天换日，那会不会很不安全啊,请继续向下看
-在ESNI的实现草案之中，里面要求安全加密的DNS是推荐的。大家都知道我们的DNS查询一般是TCP报文或者是UDP报文，本身它是不加密的，所以如果有人想在篡改你的DNS是相对简单的，大家可能都知道我们伟大的妨炎蔷会使用DNS污染的方式干扰一些网站的正常访问。正式由于DNS的非加密性，DNS也成为了审查信息的利器。此时加密的DNS势在必行
-DNS over TLS (DoT) and DNS over HTTPS (DoH)⌗
-于是出现了这两种新型的DNS查询方式
-
-DNS over HTTPS (DoH)
-
-
-DNS Over HTTPS (DOH) 是一个进行安全化的域名解析的方案，当前尚处于实验性阶段。其意义在于以加密的HTTPS协议进行DNS解析请求，避免原始DNS协议中用户的DNS解析请求被窃听或者修改的问题（例如中间人攻击）来达到保护用户隐私的目的。 Google及Mozilla基金会正在测试这一协议，作为其提高网络安全性的努力的一部分。 当前，该方案由IETF支持，其规范文档以 RFC 8484 的名义发布。2018年9月5日发布的Firefox 62正式版加入了这项功能，但需要用户手动开启 DNS Over HTTPS利用HTTP协议的GET命令发出经由JSON等编码的DNS解析请求。较于传统的DNS协议，此处的HTTP协议通信处于具有加密作用的SSL/TLS协议（两者统称作HTTPS）的保护之下。但是，由于其基于HTTPS，而HTTPS本身需要经由多次数据来回传递才能完成协议初始化，其域名解析耗时较原DNS协议会显著增加。 传统的DNS协议形成于互联网早期，直接基于UDP或TCP协议，且彼时未虑及现代安全性的需要，未利用密码学等手段进行加密或验证。因而，其无法抵御现代互联网常见的DNS投毒污染等攻击手段或监听。虽然后来的DNSSEC方案通过电子签名进行验证，强化了DNS的安全性，并能够抵御DNS投毒污染等篡改通信的手段，但其对于中间网络设备进行的监听仍然没有抵御能力（随后，监听者可以通过获取的通信数据知晓用户访问了哪一域名，而域名往往与具体的网站相关系）。此外，DNSSEC的起效要求现有的大量DNS解析服务的提供商（常为互联网服务提供商或第三方大型互联网机构）对已有的DNS服务器进行大范围修改等问题，其推进进程并不理想。而对于DNS Over HTTPS，在正确部署服务端并妥善配置客户端的前提下，互联网服务提供商或其它中间网络设备无法解密（亦即无法获知请求的实际内容）或者篡改已经加密的HTTPS通信，故其能够有效保护互联网用户的安全及隐私；另一方面，其基于已经成熟并已广泛部署的HTTPS协议，客户端进行利用较为方便。
-
-
-DNS over TLS (DoT)
-
-
-DNS over TLS (DoT) 是通过传输层安全协议（TLS）来加密并打包域名系统（DNS）的安全协议。此协议旨在防止中间人攻击与控制DNS数据以保护用户隐私。 RFC 7858及RFC 8310定义了DNS over TLS。 截至2018年，Cloudflare、Quad9与CleanBrowsing均向大众提供支持DNS over TLS的公共DNS解析服务。2018年4月，Google宣布Android P将包含对DNS over TLS的支持。PowerDNS的DNSDist也宣布在其最新的1.3.0版本中添加了对DNS over TLS的支持。BIND用户也可以通过stunnel代理提供DNS over TLS服务。
-
-手动配置⌗
-Firefox所在的Mozilla宣布从Firefox 62版本之后开始支持ESNI，默认没有开启，需要用户手动配置打开，那么我们现在试验一下 这里Firefox的解决方案是使用DNS over HTTPS (DoH)和ESNI
-
-
-安装Firefox Nightly版本，这个版本是预发布版本，使得开发这和即可门可以提前尝鲜到新功能。下载地址
-
-
-在浏览器地址栏输入about:config并回车，打开配置页面，在搜索位置搜索network.trr.mode，这个是打开浏览器对于DoH的支持，将此项的数值修改为3（0对应的是不开启此功能；1对应的是交由浏览器选择DoH与传统方式那种更快；2代表优先使用加密DNS查询，如果失败则回落到普通DNS查询；3代表只使用加密DNS查询；5代表明确的关闭此功能）
-
-
-继续搜索network.trr.uri，将此项的值修改为https://mozilla.cloudflare-dns.com/dns-query，这个是默认的DoH查询地址，当然我们也可以使用诸如https://1.1.1.1/dns-query、https://dns.google.com/experimental这样的地址，我们可以事先ping检测一下对比哪个延迟更低来使用
-
-
-（可选）搜索network.trr.bootstrapAddress，讲此值修改位第三步的DNS域名的IP。此举是为了避免使用操作系统DNS查询域名受到劫持，一般来说这些DNS的IP是不会变的
-
-
-
-
-
-将network.security.esni.enabled设置为true,此举为了打开浏览器对于ESNI的支持（感谢chenlshi同学的提醒，在原版的文章中我不小心遗漏了这个关键的步骤）
-
-
-完成配置后重启浏览器，再打开在线验证页面验证来查询你的浏览器是否完全支持ESNI功能，如果出现如图说明配置成功了
-
-
-
-验证⌗
-为了验证是否真的加密了Client Hello，我们使用Wireshark进行网络抓包 由于这个特性仍在试验阶段，并没有太多站点支持这个特性，CloudFlare是第一个全站支持ESNI的网站，这里我们使用blog.cloudflare.com来做测试：
-
-首先打开Wireshark的抓包功能，然后开启Chrome浏览器打开上述网址，页面加载完后停止抓包，在得到的结果中查询协议为TLS1.3和报文为Client Hello的报文，通过观察发现域名的Host果然被以明文形式写在数据包中（参见Server_Name字段）：
-
-
-
-然后打开Firefox Nightly浏览器重复上述操作，这次发现在整个数据包中根本找不到Server_Name字段，说明Host已经被加密：
-
-
-目前来说，我查阅了相关的关键词，仍然没有任何一篇教程有介绍如何在自己的服务器上支持ESNI，同时我也看到在Nginx的论坛里面有人呼吁尽快支持ESNI，所以我推测这个功能仍然在试验期，还没有被这两个Web软件所支持，起劲为止我也没有查阅到任何的Web软件预计支持此项功能。这项扩展已经进入IETF的草案阶段，可以预见到，在不就的将来，这项技术可以普及开来，为我们的网络隐私保驾护航 目前来说，有了HTTPS+TLS1.3+ESNI+DoH/DoT的加持，我们的网络隐私的到了极大的保障，最后还有一个问题是访问服务器IP的泄露仍然无法被避免，迫于IP协议设计的机制，他目前还不能被解决。不过我相信，随着网技术不断的趋于保护个人隐私和更快速的发展方向，这个问题可以最终被解决
-From: hackerchai
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>ssl</tag>
-        <tag>tls</tag>
-        <tag>隐私</tag>
-        <tag>安全</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>【Gitlab】GitBook+GitLab撰写发布技术文档-Part2:GitLab篇</title>
     <url>/posts/7790e989/</url>
     <content><![CDATA[上一篇文章介绍了如果用 gitbook 写书，并且我们已经通过 gitbook build命令把书的内容打包成 HTML 格式发布到了_book文件夹中。
@@ -6033,6 +5947,92 @@ CI/CD与Git Flow与GitLab
         <tag>git</tag>
         <tag>linux</tag>
         <tag>gitbook</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>ESNI和加密DNS - 保护信息隐私的最后一块拼图</title>
+    <url>/posts/ec2cad2/</url>
+    <content><![CDATA[随着TLS1.3的发布，让该协议成为有史以来最安全、也是最复杂的TLS协议。在该协议之中，有很多的对于以往协议安全漏洞的修复，包括废弃RSA启用新的秘钥交换机制PSK等等。而Encrypted SNI作为一个TLS1.3的扩展协议用来防止传统的HTTPS流量受到ISP或者陌生网络环境的窥探以及一些网络审查。在过去，由于HTTPS协议之中Server Name Indication - SNI的使用，我们的HTTPS流量经常被窥探我们所访问站点的域名
+那么什么是SNI？⌗
+
+服务器名称指示（英语：Server Name Indication，简称SNI）是一个扩展的TLS计算机联网协议，在该协议下，在握手过程开始时客户端告诉它正在连接的服务器要连接的主机名称。这允许服务器在相同的IP地址和TCP端口号上呈现多个证书，并且因此允许在相同的IP地址上提供多个安全（HTTPS）网站（或其他任何基于TLS的服务），而不需要所有这些站点使用相同的证书。它与HTTP/1.1基于名称的虚拟主机的概念相同，但是用于HTTPS。所需的主机名未加密， 因此窃听者可以查看请求的网站 为了使SNI协议起作用，绝大多数访问者必须使用实现它的Web浏览器。使用未实现SNI浏览器的用户将被提供默认证书，因此很可能会收到证书警告
+
+
+SNI协议示意图
+
+
+
+TLS1.3完整握手流程
+
+
+为了弥补缺陷因应运而生的ESNI⌗
+在上述过程之中，存在的问题就是，在ClientHello环节中，TLS会在这个位置以明文的形式讲要请求的Host写在数据包之中，如果在网络路由中有任何的监听节点，那么用户所访问网站的域名将暴露无遗，这将是巨大的用户隐私泄露: 
+所以在最新的关于ESNI的草案中，IETF重新设计了一种加密的Client Hello机制，从而修复了这个问题: 
+不过这里问题又来了，之前服务器和客户端并没有事先交换任何数据啊，这个加密的凭证从何而来啊？？？
+依靠安全DNS的ESNI⌗
+上一个问题没有难倒工程师们，他们设计了这样一个办法。首先让网站提供者在DNS提供商上公布一个记录，这个记录包含着一个公钥，这个公钥由网站提供者生成，其私钥存储在Web服务器等待着被Web程序读取。如此，当用户想通过TLS1.3协议访问这个域名的时候，首先读取这个公开的公钥，在用公钥加密其想访问的域名Host，装在Client Hello里面发送给目标服务器，目标服务器再用自己的私钥解密，从而和用户建立HTTPS链接，这样就不会暴露Host信息 这时候有人会想，如果有人某Wall想给你的DNS偷天换日，那会不会很不安全啊,请继续向下看
+在ESNI的实现草案之中，里面要求安全加密的DNS是推荐的。大家都知道我们的DNS查询一般是TCP报文或者是UDP报文，本身它是不加密的，所以如果有人想在篡改你的DNS是相对简单的，大家可能都知道我们伟大的妨炎蔷会使用DNS污染的方式干扰一些网站的正常访问。正式由于DNS的非加密性，DNS也成为了审查信息的利器。此时加密的DNS势在必行
+DNS over TLS (DoT) and DNS over HTTPS (DoH)⌗
+于是出现了这两种新型的DNS查询方式
+
+DNS over HTTPS (DoH)
+
+
+DNS Over HTTPS (DOH) 是一个进行安全化的域名解析的方案，当前尚处于实验性阶段。其意义在于以加密的HTTPS协议进行DNS解析请求，避免原始DNS协议中用户的DNS解析请求被窃听或者修改的问题（例如中间人攻击）来达到保护用户隐私的目的。 Google及Mozilla基金会正在测试这一协议，作为其提高网络安全性的努力的一部分。 当前，该方案由IETF支持，其规范文档以 RFC 8484 的名义发布。2018年9月5日发布的Firefox 62正式版加入了这项功能，但需要用户手动开启 DNS Over HTTPS利用HTTP协议的GET命令发出经由JSON等编码的DNS解析请求。较于传统的DNS协议，此处的HTTP协议通信处于具有加密作用的SSL/TLS协议（两者统称作HTTPS）的保护之下。但是，由于其基于HTTPS，而HTTPS本身需要经由多次数据来回传递才能完成协议初始化，其域名解析耗时较原DNS协议会显著增加。 传统的DNS协议形成于互联网早期，直接基于UDP或TCP协议，且彼时未虑及现代安全性的需要，未利用密码学等手段进行加密或验证。因而，其无法抵御现代互联网常见的DNS投毒污染等攻击手段或监听。虽然后来的DNSSEC方案通过电子签名进行验证，强化了DNS的安全性，并能够抵御DNS投毒污染等篡改通信的手段，但其对于中间网络设备进行的监听仍然没有抵御能力（随后，监听者可以通过获取的通信数据知晓用户访问了哪一域名，而域名往往与具体的网站相关系）。此外，DNSSEC的起效要求现有的大量DNS解析服务的提供商（常为互联网服务提供商或第三方大型互联网机构）对已有的DNS服务器进行大范围修改等问题，其推进进程并不理想。而对于DNS Over HTTPS，在正确部署服务端并妥善配置客户端的前提下，互联网服务提供商或其它中间网络设备无法解密（亦即无法获知请求的实际内容）或者篡改已经加密的HTTPS通信，故其能够有效保护互联网用户的安全及隐私；另一方面，其基于已经成熟并已广泛部署的HTTPS协议，客户端进行利用较为方便。
+
+
+DNS over TLS (DoT)
+
+
+DNS over TLS (DoT) 是通过传输层安全协议（TLS）来加密并打包域名系统（DNS）的安全协议。此协议旨在防止中间人攻击与控制DNS数据以保护用户隐私。 RFC 7858及RFC 8310定义了DNS over TLS。 截至2018年，Cloudflare、Quad9与CleanBrowsing均向大众提供支持DNS over TLS的公共DNS解析服务。2018年4月，Google宣布Android P将包含对DNS over TLS的支持。PowerDNS的DNSDist也宣布在其最新的1.3.0版本中添加了对DNS over TLS的支持。BIND用户也可以通过stunnel代理提供DNS over TLS服务。
+
+手动配置⌗
+Firefox所在的Mozilla宣布从Firefox 62版本之后开始支持ESNI，默认没有开启，需要用户手动配置打开，那么我们现在试验一下 这里Firefox的解决方案是使用DNS over HTTPS (DoH)和ESNI
+
+
+安装Firefox Nightly版本，这个版本是预发布版本，使得开发这和即可门可以提前尝鲜到新功能。下载地址
+
+
+在浏览器地址栏输入about:config并回车，打开配置页面，在搜索位置搜索network.trr.mode，这个是打开浏览器对于DoH的支持，将此项的数值修改为3（0对应的是不开启此功能；1对应的是交由浏览器选择DoH与传统方式那种更快；2代表优先使用加密DNS查询，如果失败则回落到普通DNS查询；3代表只使用加密DNS查询；5代表明确的关闭此功能）
+
+
+继续搜索network.trr.uri，将此项的值修改为https://mozilla.cloudflare-dns.com/dns-query，这个是默认的DoH查询地址，当然我们也可以使用诸如https://1.1.1.1/dns-query、https://dns.google.com/experimental这样的地址，我们可以事先ping检测一下对比哪个延迟更低来使用
+
+
+（可选）搜索network.trr.bootstrapAddress，讲此值修改位第三步的DNS域名的IP。此举是为了避免使用操作系统DNS查询域名受到劫持，一般来说这些DNS的IP是不会变的
+
+
+
+
+
+将network.security.esni.enabled设置为true,此举为了打开浏览器对于ESNI的支持（感谢chenlshi同学的提醒，在原版的文章中我不小心遗漏了这个关键的步骤）
+
+
+完成配置后重启浏览器，再打开在线验证页面验证来查询你的浏览器是否完全支持ESNI功能，如果出现如图说明配置成功了
+
+
+
+验证⌗
+为了验证是否真的加密了Client Hello，我们使用Wireshark进行网络抓包 由于这个特性仍在试验阶段，并没有太多站点支持这个特性，CloudFlare是第一个全站支持ESNI的网站，这里我们使用blog.cloudflare.com来做测试：
+
+首先打开Wireshark的抓包功能，然后开启Chrome浏览器打开上述网址，页面加载完后停止抓包，在得到的结果中查询协议为TLS1.3和报文为Client Hello的报文，通过观察发现域名的Host果然被以明文形式写在数据包中（参见Server_Name字段）：
+
+
+
+然后打开Firefox Nightly浏览器重复上述操作，这次发现在整个数据包中根本找不到Server_Name字段，说明Host已经被加密：
+
+
+目前来说，我查阅了相关的关键词，仍然没有任何一篇教程有介绍如何在自己的服务器上支持ESNI，同时我也看到在Nginx的论坛里面有人呼吁尽快支持ESNI，所以我推测这个功能仍然在试验期，还没有被这两个Web软件所支持，起劲为止我也没有查阅到任何的Web软件预计支持此项功能。这项扩展已经进入IETF的草案阶段，可以预见到，在不就的将来，这项技术可以普及开来，为我们的网络隐私保驾护航 目前来说，有了HTTPS+TLS1.3+ESNI+DoH/DoT的加持，我们的网络隐私的到了极大的保障，最后还有一个问题是访问服务器IP的泄露仍然无法被避免，迫于IP协议设计的机制，他目前还不能被解决。不过我相信，随着网技术不断的趋于保护个人隐私和更快速的发展方向，这个问题可以最终被解决
+From: hackerchai
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>ssl</tag>
+        <tag>tls</tag>
+        <tag>隐私</tag>
+        <tag>安全</tag>
       </tags>
   </entry>
   <entry>
@@ -12138,9 +12138,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-NnpznniplKZiUGYU").style.height=document.getElementById("mmedia-NnpznniplKZiUGYU").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-erWvFqtyYYZNyPDg").style.height=document.getElementById("mmedia-erWvFqtyYYZNyPDg").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-NnpznniplKZiUGYU").style.height=document.getElementById("mmedia-NnpznniplKZiUGYU").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-erWvFqtyYYZNyPDg").style.height=document.getElementById("mmedia-erWvFqtyYYZNyPDg").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -17686,11 +17686,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var xbjQFlIHZtgEeRpV_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); xbjQFlIHZtgEeRpV_options.container = document.getElementById("mmedia-xbjQFlIHZtgEeRpV"); const ap_xbjQFlIHZtgEeRpV = new APlayer(xbjQFlIHZtgEeRpV_options); 
+ var FzhJPvEpbZIhcChY_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); FzhJPvEpbZIhcChY_options.container = document.getElementById("mmedia-FzhJPvEpbZIhcChY"); const ap_FzhJPvEpbZIhcChY = new APlayer(FzhJPvEpbZIhcChY_options); 
 
 - **列表**
 
- var nvtaJcPuKwEYXxVX_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); nvtaJcPuKwEYXxVX_options.container = document.getElementById("mmedia-nvtaJcPuKwEYXxVX"); const ap_nvtaJcPuKwEYXxVX = new APlayer(nvtaJcPuKwEYXxVX_options); 
+ var WIWkRPeMQitjngsv_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); WIWkRPeMQitjngsv_options.container = document.getElementById("mmedia-WIWkRPeMQitjngsv"); const ap_WIWkRPeMQitjngsv = new APlayer(WIWkRPeMQitjngsv_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -17942,21 +17942,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-RNsswojYcnrGbJtD").style.height=document.getElementById("mmedia-RNsswojYcnrGbJtD").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-sgtvrepFjrIWNQwP").style.height=document.getElementById("mmedia-sgtvrepFjrIWNQwP").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-RNsswojYcnrGbJtD").style.height=document.getElementById("mmedia-RNsswojYcnrGbJtD").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-sgtvrepFjrIWNQwP").style.height=document.getElementById("mmedia-sgtvrepFjrIWNQwP").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-RGIsacwdmYEsOFkp").style.height=document.getElementById("mmedia-RGIsacwdmYEsOFkp").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-RYWWuAMXtXfduudU").style.height=document.getElementById("mmedia-RYWWuAMXtXfduudU").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-RGIsacwdmYEsOFkp").style.height=document.getElementById("mmedia-RGIsacwdmYEsOFkp").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-RYWWuAMXtXfduudU").style.height=document.getElementById("mmedia-RYWWuAMXtXfduudU").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var lgbTXGzGKhmEjJFf_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); lgbTXGzGKhmEjJFf_options.container = "#mmedia-lgbTXGzGKhmEjJFf"; const art_lgbTXGzGKhmEjJFf = new Artplayer(lgbTXGzGKhmEjJFf_options); 
+ var JejaXAPbgCrJtRwC_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); JejaXAPbgCrJtRwC_options.container = "#mmedia-JejaXAPbgCrJtRwC"; const art_JejaXAPbgCrJtRwC = new Artplayer(JejaXAPbgCrJtRwC_options); 
 脑图
 
 原作者记录
@@ -18998,11 +18998,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var cHNvuOKVeOsgOkEE_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); cHNvuOKVeOsgOkEE_options.container = document.getElementById("mmedia-cHNvuOKVeOsgOkEE"); const ap_cHNvuOKVeOsgOkEE = new APlayer(cHNvuOKVeOsgOkEE_options); 
+ var aVXJSibRzlkQTCun_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); aVXJSibRzlkQTCun_options.container = document.getElementById("mmedia-aVXJSibRzlkQTCun"); const ap_aVXJSibRzlkQTCun = new APlayer(aVXJSibRzlkQTCun_options); 
 
 
 
- var tEJvCyILasqKonAH_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); tEJvCyILasqKonAH_options.container = document.getElementById("mmedia-tEJvCyILasqKonAH"); const ap_tEJvCyILasqKonAH = new APlayer(tEJvCyILasqKonAH_options); 
+ var gIbYReFxJtDSBFRw_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); gIbYReFxJtDSBFRw_options.container = document.getElementById("mmedia-gIbYReFxJtDSBFRw"); const ap_gIbYReFxJtDSBFRw = new APlayer(gIbYReFxJtDSBFRw_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -19160,9 +19160,9 @@ docker run -d \
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-lmnqgTkUQxRrnYuK").style.height=document.getElementById("mmedia-lmnqgTkUQxRrnYuK").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-YKYijzJiGvmkRyWD").style.height=document.getElementById("mmedia-YKYijzJiGvmkRyWD").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-lmnqgTkUQxRrnYuK").style.height=document.getElementById("mmedia-lmnqgTkUQxRrnYuK").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-YKYijzJiGvmkRyWD").style.height=document.getElementById("mmedia-YKYijzJiGvmkRyWD").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -19171,7 +19171,7 @@ docker run -d \
 
 ## 中文翻唱
 
- var wCooIKUIIcvCxWng_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); wCooIKUIIcvCxWng_options.container = document.getElementById("mmedia-wCooIKUIIcvCxWng"); const ap_wCooIKUIIcvCxWng = new APlayer(wCooIKUIIcvCxWng_options); 
+ var mHjnwlZiUJhtlmWc_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); mHjnwlZiUJhtlmWc_options.container = document.getElementById("mmedia-mHjnwlZiUJhtlmWc"); const ap_mHjnwlZiUJhtlmWc = new APlayer(mHjnwlZiUJhtlmWc_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -34998,9 +34998,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-gMNbynCAnsAETRcz").style.height=document.getElementById("mmedia-gMNbynCAnsAETRcz").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-aMVAffUBfGktIrBq").style.height=document.getElementById("mmedia-aMVAffUBfGktIrBq").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-gMNbynCAnsAETRcz").style.height=document.getElementById("mmedia-gMNbynCAnsAETRcz").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-aMVAffUBfGktIrBq").style.height=document.getElementById("mmedia-aMVAffUBfGktIrBq").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 calibre:
@@ -41267,7 +41267,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts687'));
+        var myChart = echarts.init(document.getElementById('echarts9424'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -41361,7 +41361,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts7879'));
+        var myChart = echarts.init(document.getElementById('echarts8496'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -41430,7 +41430,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts2484'));
+        var myChart = echarts.init(document.getElementById('echarts7484'));
 
         // 指定图表的配置项和数据
         var option = option = {
