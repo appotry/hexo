@@ -8119,1387 +8119,6 @@ Vercel部署高级用法教程
       </tags>
   </entry>
   <entry>
-    <title>[三万字教程]基于Hexo的matery主题搭建博客并深度优化一站式完全教程</title>
-    <url>/posts/40300608/</url>
-    <content><![CDATA[
-All in one 一站式Hexo配置优化教程！
-
-本文很长，特别长，快卡死编辑器了，如是被拆分为6篇文章了，见文末链接。
-如果你遇到了什么问题，可以尝试搜索本文，你很可能有收获！ CtRL + F，还可以试试右上角菜单搜索功能。
-欢迎光临博主的独立博客 夜法之书，本文授权CC4.0非商用，转载请注明出处
-本文就教你搭建一个美观实用的博客系统，步骤极尽详细！
-本文中提到的大量特性，已经被博主提交到matery主题develop分支，提交记录见Commit。所以下面很多特性已经不用自己修改了，可以直接使用。
-参考列表放到了最后一篇末尾，去找找看，里面能发现很多好东西。
-Tips：友情提示，部分内容RSS输出获取不到，请跳转到源网页地址浏览全文！
-
-
-选择Hexo的理由？
-
-
-Hexo创建者是台湾人，对中文支持很友好！
-Hexo开源，方便学习和修改
-Hexo生态非常完善，各种插件极其丰富！而且基本全部免费、开源！
-Hexo对Markdown支持非常完善，对比遍各种博客框架，hexo对Markdown支持最友好
-Hexo静态部署，不需要php,java之类的运行环境，方便各种部署环境。不需要购买vps,就有各种免费的部署环境！最低0成本建立独立博客！
-所有文章和源码可以使用Git管理，方便保存和维护
-缺点：最好懂一点npm web编程技术，不懂也没关系，各种教程非常丰富！
-
-
-写博客的重要性
-
-
-  
-
-
-
-最终效果如下图所示！
-
-支持离线访问。
-支持浅色/深色模式。
-支持文章RSS订阅，并支持文章分类订阅。
-看板娘文字功能提示。
-支持新博文订阅通知，右下角小铃铛点击订阅！ chrome用户可能由于网络原因链接不到Google的服务器而看不到这个小铃铛。edge 和 Firefox 用户可以正常订阅。
-
-
-
-
-service worker 实现的渐进式App，不仅可以离线浏览，还可以加速缓存访问！
-
-
-
-深色模式，夜晚保护您的视力！
-
-
-
-RSS Hub 和 TTRSS 私有部署实现订阅。
-配合浏览器扩展 RSSHub Radar (opens new window)和 移动端辅助 App RSSBud (opens new window)(iOS) 与 RSSAid (opens new window)(Android) 食用。
-教程：RSS的使用与Tiny Tiny RSS Selfhost自建
-
-
-
-
-对所有菜单和常用按钮做了文字功能提示。
-支持看板娘模型切换，服装切换，某些模型还有语音互动！
-看板娘还可以自定义时间提示，特殊节日提示等等。参考 Hexo博客个性定制篇中来完成吧。
-
-
-
-
-经过多次优化，新版看板娘资源异步加载体积大拖累的性能分数。其它几乎都是满分了！
-大量使用本地缓存，牺牲了第一次加载的体积，保证了第二次打开几乎都是使用缓存，异步加载对第一次渲染速度影响不大，但可以极大的提高第二次来自后续的访问速度！
-
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-Vercel部署高级用法教程
-
-Hexo Docker环境使用篇
-Docker 简介：
-
-Docker 是一种轻量级的虚拟机环境，可以隔离主机的运行环境，内核公用主机的，运行库和环境是 Docker 私有的。运行 Docker 程序只比主机直接运行程序性能损失微乎其微。使用 Docker 你可以同时运行各种各样运行库环境而不用担心搞乱你的主机运行库环境！
-Docker 运行负载远小于 Vmware 这类虚拟机， Vmware 需要模拟对应的CPU指令，再虚机运行一个虚拟机自己的内核，再这个虚拟机内核之上，再运行虚拟机的运行库和程序。比 Docker 多了一个内核模拟和运行，Cpu 和内存开销大增！
-
-Docker 版 hexo 环境一键部署
-
-博主开源定制，推荐使用！省去您大量环境配置时间。
-使用Hexo Docker之前需要Docker 环境，请参阅后文Docker安装方法
-
-docker-hub
-Github-hexo
-
-
-
-  
-
-
-
-使用推荐Docker来搭配本文，阅读使用，将更省事，方便，快捷。hexo环境一键搞定！
-Docker一键安装
-docker create --name=hexo \
--e HEXO_SERVER_PORT=4000 \
--e GIT_USER="17lai" \
--e GIT_EMAIL="17lai@domain.tld" \
--v /mnt/blog.17lai.site:/app \
--p 4000:4000 \
-bloodstar/hexo
-Docker镜像直接提供最新版本node ，hexo
-hexo web 后台写作
-
-基于 hexo-admin 实现，具体配置实现方法见后文。
-最终效果如下图所示。 blog.17lai.fun 访问blog， 添加后缀 admin 访问 hexo 后台。
-使用前面提到的 hexo docker ，启动运行 hexo docker 后，非自动安装 hexo-admin 以及常用插件，你也可以自定义安装你虚幻的插件， vi /app/useRun.sh。
-
-
-
-配置 hexo-admin 根目录下_config.yml:
-admin:
-  username: myfavoritename #用户名
-  password_hash: be121740bf988b2225a313fa1f107ca1 #密码
-  secret: a secret something # secret is used to make the cookies secure
-  deployCommand: '/app/tools/cide.sh'  # 自定义的部署脚本，在 hexo admin 的 deploy 标签页 deploy 按钮点击调用
-配置 post metadata 根目录下_config.yml:
-# add and edit your own post metadata with the admin interface
-metadata:
-  author_id: defaultAuthorId
-  language:
-hexon
-
-Github: hexon
-另一个hexo web 编辑界面，界面比hexo-admin更现代化。安装配置方法见Github
-
-
-hexo-editor
-
-hexo-editor
-又一个hexo web 编辑器
-
-
-
-
-支持手机
-
-Qexo
-
-
-https://github.com/Qexo/Qexo
-
-A Quick, Powerful and Pretty Online Manager for Hexo.
-类似项目
-
-https://github.com/Wexagonal/Wexagonal
-
-轻量级\多平台\开箱即用的hexo后端管理器
-
-
-ssh key 部署
-Docker会自动随机生成ssh key 在 /app/.ssh 目录下面。自动部署请把ssh key添加到github 等平台。
-Github详细教程
-
-
-将SSH 公钥复制到剪贴板。 …
-在任何页面的右上角，单击您的个人资料照片，然后单击Settings（设置）。
-在用户设置侧边栏中，单击SSH and GPG keys（SSH 和GPG 密钥）。
-单击New SSH key（新SSH 密钥）或Add SSH key（添加SSH 密钥）。
-
-
-SSH 进入docker
-docker exec -it hexo /bin/bash
-然后就可以正常运行hexo的各种命令了，是不是非常简单？ 快来试试吧。
-远程 SSH 访问Docker
-
-推荐使用SecurtCRT 来远程访问你的Docker。
-
-
-自定义用户自动运行脚本
-
-用户可以在这里添加自动配置，自动安装插件，等各种启动docker运行的命令。
-它将在Docker启动完成后自动调用运行！
-
-vi /app/useRun.sh
-反向代理 Hexo Docker
-
-Nginx (engine x) 是一个高性能的HTTP和反向代理web服务器，同时也提供了IMAP/POP3/SMTP服务。
-
-
-一些测试可能需要ssl支持，那么用nginx来反向代理一下，就可以在本地愉快的测试ssl加密功能了。
-
-
-访问docker，需要 192.168.0.100:4000这样数字ip + 端口号的方式不觉得很丑陋，而且需要开大量的端口，使用nginx反向代理，可以直接使用域名访问。
-
-
-如果你想使用blog.17lai.fun这样的域名访问你的 docker 里面运行的博客，请参考下文。
-
-
-
-Nginx也使用docker来运行，blog.17lai.fun为本地域名，修改本地hosts dns信息来访问。
-docker compose 配置
-nginxweb:
-  image: bloodstar/nginx-purge
-  container_name: "nginxweb"
-  hostname: nginxweb
-  ports:
-    - "80:80"
-    - "443:443"
-  restart: always
-  volumes:
-    # ${USERDIR}为你docker运行目录
-    - ${USERDIR}/nginx/conf.d:/etc/nginx/conf.d:ro
-    - ${USERDIR}/nginxproxy/certs:/etc/nginx/certs:ro
-    - ${USERDIR}/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-
-bloodstar/nginx-purge
-
-
-  
-
-
-
-nginx配置
-文件 blog.conf ，配置文件放到${USERDIR}/nginx/conf.d目录中
-upstream blog {
-    server hexo:4000;
-}
-
-server {
-    listen 80;
-    listen 443 ssl http2;
-    server_name  blog.17lai.fun;
-
-    ssl_certificate /etc/nginx/certs/17lai.pem;
-    ssl_certificate_key /etc/nginx/certs/17lai.key;
-
-    ssl_session_cache shared:aria2SSL:10m;
-    ssl_session_timeout  30m;
-    #ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE:ECDH:AES:HIGH:!NULL:!aNULL:!MD5:!ADH:!RC4;
-    ssl_ciphers EECDH+CHACHA20:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
-    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
-    ssl_prefer_server_ciphers on;
-    
-    access_log /var/log/nginx/blog.17lai.fun_access.log combined;
-    error_log  /var/log/nginx/blog.17lai.fun_error.log;
-    
-    keepalive_requests 10000;
-    
-    location / {
-        #proxy_redirect off;
-        proxy_pass http://blog;
-
-        proxy_buffering off;
-        
-        add_header X-Cache-Status $upstream_cache_status;
-        proxy_set_header Host $http_host;
-
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header  X-Forwarded-Ssl     on;
-        proxy_set_header  X-Forwarded-For     $proxy_add_x_forwarded_for;      
-        proxy_set_header  X-Frame-Options     SAMEORIGIN;
-        
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    } 
-}
-
-Windows DNS修改
-windows hosts文件路径为： C:\Windows\System32\drivers\etc\HOSTS
-管理员权限用文本编辑器打开这个文件并添加 192.168.0.100 blog.17lai.fun，然后，你就可以在本地浏览器中使用域名访问你的blog了！
-Linux DNS 修改
-Linux hosts 文件路径为： /etc/hosts
-用文本编辑器或者命令行工具vim打开这个文件并添加 192.168.0.100 blog.17lai.fun，然后，你就可以在本地浏览器中使用域名访问你的blog了！
-# root用户一条指令搞定
-echo "192.168.0.100 blog.17lai.fun" &gt;&gt; /etc/hosts
-
-#或者使用 vi 或者 vim
-vi /etc/hosts
-获取 SSL 证书
-
-
-如果你购买了域名，可以在域名服务商获得免费的ssl证书。
-自己生成私有证书，使用时需要给本地计算机，浏览器添加你自己的根证书，才能使你的ssl 证书在你自己的浏览器中生效。
-
-
-
-使用Hexo Docker之前需要Docker 环境，下面是Docker 环境安装方法。
-
-Centos 安装Docker
-X86（一键安装脚本）：
-curl -sSL https://get.docker.com/ | sh
-Arm：
-步骤1
-sudo yum install -y yum-utils device-mapper-persistent-data lvm2
-步骤2
-添加仓库
-sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-步骤3
-安装Docker
-sudo yum install docker-ce docker-ce-cli containerd.io
-
-完成安装
-步骤4
-启动Docker
-sudo systemctl start docker
-QNAP 安装Docker
-
-在系统应用的AppCenter中找到 Container  Station，可以直接点击安装即可。
-
-
-群晖 安装 Docker
-首先要说的是，x86 平台的群晖才能用的上 Docker 套件，因此，ARM 架构平台的群晖只能说非常遗憾了。
-　　打开套件中心，在 “所有套件” 中找到 Docker 并安装：
-
-Hexo入门篇
-Hexo 通用简明教程
-Hexo 是一个快速、简洁且高效的博客框架。Hexo 使用 Markdown（或其他渲染引擎）解析文章，在几秒内，即可利用靓丽的主题生成静态网页。
-前提
-安装 Hexo 相当简单，只需要先安装下列应用程序即可：
-
-Node.js (Node.js 版本需不低于 8.10，建议使用 Node.js 10.0 及以上版本)
-Git
-nmp
-
-安装
-所有必备的应用程序安装完成后，即可使用 npm 安装 Hexo。
-npm install -g hexo-cli
-安装以后，可以使用以下两种方式执行 Hexo：
-
-npx hexo
-将 Hexo 所在的目录下的 node_modules 添加到环境变量之中即可直接使用： hexo
-
-echo 'PATH="$PATH:./node_modules/.bin"' &gt;&gt; ~/.profile
-升级
-后期需要升级的化，进入 blog 目录，先检查更新:
-$ npm outdated
-Package                  Current  Wanted  Latest  Location
-hexo                       3.9.0   3.9.0   4.2.0  hexo-site
-hexo-deployer-git          1.0.0   1.0.0   2.1.0  hexo-site
-hexo-generator-archive     0.1.5   0.1.5   1.0.0  hexo-site
-hexo-generator-category    0.1.3   0.1.3   1.0.0  hexo-site
-hexo-generator-feed        1.2.2   1.2.2   2.2.0  hexo-site
-hexo-generator-index       0.2.1   0.2.1   1.0.0  hexo-site
-hexo-generator-tag         0.2.0   0.2.0   1.0.0  hexo-site
-hexo-renderer-ejs          0.3.1   0.3.1   1.0.0  hexo-site
-hexo-renderer-marked       0.3.2   0.3.2   2.0.0  hexo-site
-hexo-renderer-stylus       0.3.3   0.3.3   1.1.0  hexo-site
-hexo-server                0.3.3   0.3.3   1.0.0  hexo-site
-修改 package.json 文件，基于 Latest 列内容更新版本号，然后更新并检查版本号：
-$ npm install --save
-
-# 检查版本号
-$ hexo -v
-hexo: 4.2.0
-hexo-cli: 3.1.0
-......
-建站
-安装 Hexo 完成后，请执行下列命令，Hexo 将会在指定文件夹中新建所需要的文件。
-hexo init &lt;folder&gt;
-cd &lt;folder&gt;
-npm install
-启动网页服务
-此时，通过 hexo s 命令即可在本地启动您的博客站点了。
-$ hexo s
-INFO  Start processing
-INFO  Hexo is running at http://localhost:4000 . Press Ctrl+C to stop.
-接下来将安装主题，配置博客托管平台，实现一键发布并刷新 CDN 缓存。
-npm下载加速
-安装淘宝镜像， 加速NPM
-npm config set registry http://registry.npmmirror.com
-安装CNPM
-
-个人使用体验来说，npm兼容性最好，如果你遇到某个包cnpm或者yarn安装失败，试试最原始的老婆吗，或许有奇效！
-
-npm install -g cnpm --registry=http://registry.npmmirror.com
-Hexo 日常操作命令
-# 进入hexo docker 环境。需要你已经安装了docker环境，并安装了上文提到的hexo docker
-docker exec -it hexo /bin/bash
-# 运行完这条命令后，你就发现命令提示符变了，你此时进入了一个独立于你的主机运行环境的新的 node + hexo 开发环境了。
-
-# 生成新页面 404
-hexo new page 404
-
-# 新增新文章 2022-03-26-blog.17lai.site
-hexo new post 2022-03-26-blog.17lai.site
-
-# 清理上次生成的静态网页，可以不运行，但你修改了一些源码后，很可能有各种不生效或错误
-hexo clean
-
-# 生成静态网页
-hexo g
-
-# gulp调用gulpfile.js压缩静态网页相关代码，减小网页体积
-gulp 
-
-# 调用根目录中 _config.yml 文件的deploy配置的参数来部署你的静态网页
-hexo d
-hexo 目录结构说明
-在执行过Hexo deploy命令之后，目录结构新增了.deploy_git，public，.gitignore，如下：
- $ tree -L 2
-.
-├── .deploy_git
-├── node_modules
-├── public
-├── scaffolds
-│   ├── draft.md
-│   ├── page.md
-│   └── post.md
-├── source
-│   ├── _posts
-│   ├── _drafts
-├── themes
-├── _config.yml
-├── db.json
-├── package.json
-└── package-lock.json
-_config.yml
-用来配置博客相关的参数，初始化时自动创建。具体参数设置，可参照 Hexo 配置 文档。
-node_modules 和 package.json
-都是在初始化时自动创建。
-
-node_modules用来存储已安装的各类依赖包。
-package.json用来查看 Hexo 的版本以及相关依赖包的版本。
-
-Hexo 会默认安装：
-
-hexo：主程序
-hexo-deployer-git：实现 git 部署方式
-hexo-generator-archive：存档页面生成器
-hexo-generator-category：分类页面生成器
-hexo-generator-index：index 生成器
-hexo-generator-tag：标签页面生成器
-hexo-renderer-ejs：支持 EJS 渲染
-hexo-renderer-marked：Markdown 引擎
-hexo-renderer-stylus：支持 stylus 渲染
-hexo-server：支持本地预览，默认地址 localhost:4000
-
-新安装的依赖包，也会保存在node_module文件夹下。
-scaffold
-模板文件夹，初始化时自动创建。包含page，post，draft三种模板，分别对应 页面、要发布的文章、草稿。
-themes
-主题文件夹，初始化时自动创建。每一个主题，都有一个单独的文件夹。默认主题为 landscape。
-source ， public 和 .deploy_git
-
-source：资源文件夹。用来存放图片、Markdown 文档（文章、草稿）、各种页面（分类、关于页面等）。
-public：将 source 文件夹里的 Markdown 文档，转换成 index.html。再结合主题进行渲染，就是我们最终看到的博客。
-.deploy_git：将 public 文件夹的内容提交到 Github 后生成，内容与 public 文件夹基本一致。
-
-这三者的关系大致是：source -&gt; public -&gt; .deploy_git
-
-执行hexo generate，根据 source，更新 public。
-执行hexo deploy，根据 public，更新 .deploy_git。
-
-常用命令
-指令说明
-
-hexo server #启动本地服务器，用于预览主题。Hexo 会监视文件变动并自动更新，除修改站点配置文件外,无须重启服务器,直接刷新网页即可生效。
-hexo server -s #以静态模式启动
-hexo server -p 5000 #更改访问端口 (默认端口为 4000，’ctrl + c’关闭 server)
-hexo server -i IP地址 #自定义 IP
-hexo clean #清除缓存 ,网页正常情况下可以忽略此条命令,执行该指令后,会删掉站点根目录下的 public 文件夹
-hexo g #生成静态网页 (执行 $ hexo g后会在站点根目录下生成 public 文件夹, hexo 会将”/blog/source/“ 下面的.md 后缀的文件编译为.html 后缀的文件,存放在”/blog/public/ “ 路径下)
-hexo d #自动生成网站静态文件，并将本地数据部署到设定的仓库(如 github)
-hexo init 文件夹名称 #初始化 XX 文件夹名称
-npm update hexo -g#升级
-npm install hexo -g #安装
-node -v #查看 node.js 版本号
-npm -v #查看 npm 版本号
-git --version #查看 git 版本号
-hexo -v #查看 hexo 版本号
-hexo new page “music” #新增页面music
-hexo new post “文章名称” #新增文章
-
-简写指令
-
-
-hexo n "我的第一篇文章" 等价于 hexo new "我的第一篇文章" 还等价于 hexo new post "我的第一篇文章"
-
-
-hexo p 等价于 hexo publish
-
-
-hexo g 等价于 hexo generate
-
-
-hexo s等价于 hexo server
-
-
-hexo d 等价于 hexo deploy
-
-
-hexo g -d等价于hexo generate --deploy
-
-
-注: hexo clean 没有 简写, git --version 没有简写
-hexo版本升级
-
-Docker镜像直接提供最新版本node ，hexo
-
-升级 Node
-# n 是交互式 node.js 版本管理工具
-sudo npm install -g n
-# 更新到 node 16 LTS
-sudo n 16
-升级 Hexo
-# 安装 npm-check 和 npm-upgrade
-npm install -g npm-check npm-upgrade
-# 检查本地插件版本
-npm-check
-# 交互式升级，根据提示即可完成升级
-npm-upgrade
-现在 Hexo 及插件已经升级成功，执行 hexo version 查看版本。
-设置npm源的几种方式
-原始源
-# the original source
-https://registry.npmjs.org/
-方案: 使用nrm
-
-安装
-
-npm install -g nrm
-
-列出源的候选项
-
-nrm ls
-输出结果：
-* npm -------- https://registry.npmjs.org/
-  yarn ------- https://registry.yarnpkg.com/
-  cnpm ------- http://r.cnpmjs.org/
-  taobao ----- https://registry.npmmirror.com/
-  nj --------- https://registry.nodejitsu.com/
-  npmMirror -- https://skimdb.npmjs.com/registry/
-  edunpm ----- http://registry.enpmjs.org/
-
-使用淘宝源
-
-nrm use taobao
-方案: 改变全局的注册
-
-设置成淘宝源
-
-npm config set registry https://registry.npmmirror.com
-
-查看结果
-
-npm config get registry
-输出结果：
-https://registry.npmmirror.com/
-
-测试一下
-
-npm info underscore
-方案: 在命令行里指定源
-npm --registry https://registry.npmmirror.com install [name]
-方案: 修改 ~/.npmrc
-registry = https://registry.npmmirror.com
-方案: 使用cnpm
-npm install -g cnpm --registry=https://registry.npmmirror.com
-cnpm install [name]
-Hexo基础配置篇
-下载主题
-hexo-theme-matery 是一个采用 Material Design 和响应式设计的 Hexo 博客主题，点击 这里 可以查看示例效果。点击 这里 下载 master 分支的最新稳定版的代码，解压缩后，将 hexo-theme-matery 的文件夹复制到 Hexo 的 themes 文件夹中即可。
-Docker环境命令
-git clone https://github.com/blinkfox/hexo-theme-matery.git /app/themes/matery; 
-切换主题
-修改 Hexo 根目录下的 _config.yml 的 theme 的值：theme: hexo-theme-matery
-_config.yml 文件的其它修改建议
-
-请修改 _config.yml 的 url 的值为你的网站主 URL（如：http://xxx.github.io）。
-建议修改两个 per_page 的分页条数值为 6 的倍数，如：12、18 等，这样文章列表在各个屏幕下都能较好的显示。
-如果是中文用户，则建议修改 language 的值为 zh-CN。
-
-在本主题的 _config.yml 中可以修改部分自定义信息，有以下几个部分：
-
-菜单
-我的梦想
-首页的音乐播放器和视频播放器配置
-是否显示推荐文章名称和按钮配置
-favicon 和 Logo
-个人信息
-TOC 目录
-文章打赏信息
-复制文章内容时追加版权信息
-MathJax
-文章字数统计、阅读时长
-点击页面的’爱心’效果
-我的项目
-我的技能
-我的相册
-Gitalk、Gitment、Valine 和 disqus 评论配置
-不蒜子统计和谷歌分析（Google Analytics）
-默认特色图的集合。当文章没有设置特色图时，本主题会根据文章标题的 hashcode 值取余，来选择展示对应的特色图
-
-新建主题必备about、tags、404等页面
-新建分类 categories 页
-categories 页是用来展示所有分类的页面，如果 source 目录下还没有 categories/index.md 文件，那么就需要新建一个，命令如下：
-hexo new page "categories"
-编辑你刚刚新建的页面文件 /source/categories/index.md，至少需要以下内容：
----
-title: categories
-date: 2018-09-30 17:25:30
-type: "categories"
-layout: "categories"
----
-新建标签 tags 页
-tags 页是用来展示所有标签的页面，如果 source 目录下还没有 tags/index.md 文件，那么就需要新建一个，命令如下：
-hexo new page "tags"
-编辑刚刚新建的页面文件 /source/tags/index.md，至少需要以下内容：
----
-title: tags
-date: 2018-09-30 18:23:38
-type: "tags"
-layout: "tags"
----
-新建留言板 contact 页
-contact 页是用来展示留言板信息的页面，如果在你的博客 source 目录下还没有 contact/index.md 文件，那么你就需要新建一个，命令如下：
-hexo new page "contact"
-编辑你刚刚新建的页面文件 /source/contact/index.md，至少需要以下内容：
----
-title: contact
-date: 2018-09-30 17:25:30
-type: "contact"
-layout: "contact"
----
-
-注：本留言板功能依赖于第三方评论系统，请激活你的评论系统才有效果。并且在主题的 _config.yml 文件中，第 19 至 21 行的“菜单”配置，取消关于留言板的注释即可。
-
-新建友情链接 friends 页
-friends 页是用来展示友情链接信息的页面，如果在你的博客 source 目录下还没有 friends/index.md 文件，那么你就需要新建一个，命令如下：
-hexo new page "friends"
-编辑你刚刚新建的页面文件 /source/friends/index.md，至少需要以下内容：
----
-title: friends
-date: 2018-12-12 21:25:30
-type: "friends"
-layout: "friends"
----
-同时，在你的博客 source 目录下新建 _data 目录，在 _data 目录中新建 friends.json 文件，文件内容如下所示：
-[{
-    "avatar": "https://blog.17lai.site/favicon.png",
-    "name": "夜法之书的Blog",
-    "introduction": "嵌入式，Linux Kernel&amp;Driver, PT, Docker, Nas等等",
-    "url": "https://blog.17lai.site",
-    "title": "前去学习"
-},{
-    "avatar": "http://image.luokangyuan.com/1_qq_27922023.jpg",
-    "name": "码酱",
-    "introduction": "我不是大佬，只是在追寻大佬的脚步",
-    "url": "http://luokangyuan.com/",
-    "title": "前去学习"
-}, {
-    "avatar": "http://image.luokangyuan.com/4027734.jpeg",
-    "name": "闪烁之狐",
-    "introduction": "编程界大佬，技术牛，人还特别好，不懂的都可以请教大佬",
-    "url": "https://blinkfox.github.io/",
-    "title": "前去学习"
-}, {
-    "avatar": "http://image.luokangyuan.com/avatar.jpg",
-    "name": "ja_rome",
-    "introduction": "平凡的脚步也可以走出伟大的行程",
-    "url": "https://me.csdn.net/jlh912008548",
-    "title": "前去学习"
-}]
-新建关于我 about 页
-about 页是用来展示关于我和我的博客信息的页面，如果 source 目录下还没有 about/index.md 文件，那么就需要新建一个，命令如下：
-hexo new page "about"
-编辑刚刚新建的页面文件 /source/about/index.md，至少需要以下内容：
----
-title: about
-date: 2018-09-30 17:25:30
-type: "about"
-layout: "about"
----
-新建404页
-新建一个404.md文件
-在hexo的souce文件夹下创建一个404.md，之后输入如下内容：
----
-title: 404
-date: 2019-11-23 21:10:10
-type: "404"
-layout: "404"
----
-
-然后hexo g生成页面中就有404。只是页面较丑。
-404页面美化
-
-下载404特效
-点击下载代码:点我去代码出处
-
-移植
-放入js文件到主题中
-将下载的压缩包解压，会发现里面有两个js文件和一个html页面，重要的就是js文件，将文件移植到主题的source文件的libs文件夹下，需要自己创建一个文件夹，我给文件夹取的名字叫做404。
-
-导入404 js
-因为该主题的js文件都是写_config.yml文件里面的，为了规范，也需要将文件的路径写到该文件夹下
-如下，之后导入js文件的时候就可以使用404bodymovin和404data来代替了
-
-编辑404.esj
-&lt;style type="text/css"&gt;
-    /* don't remove. */
-    .page404-cover {
-        /* height: 75vh; */
-        height: 88vh;
-    }
- 
-    #svgContainer {
-      width: 100%;
-      height: 100%;
-      background-color: white;
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      margin: auto;
-    }
-&lt;/style&gt;
-
-&lt;script src="&lt;%- theme.jsDelivr.url %&gt;&lt;%- url_for(theme.libs.js.404bodymovin) %&gt;"&gt;&lt;/script&gt;
-&lt;script src="&lt;%- theme.jsDelivr.url %&gt;&lt;%- url_for(theme.libs.js.404data) %&gt;"&gt;&lt;/script&gt;
-
-&lt;div class="bg-cover pd-header page404-cover"&gt;
-    &lt;div id="svgContainer"&gt;&lt;/div&gt;
- 
-    &lt;script type="text/javascript"&gt;
-        var svgContainer = document.getElementById('svgContainer');
-        var animItem = bodymovin.loadAnimation({
-          wrapper: svgContainer,
-          animType: 'svg',
-          loop: true,
-          animationData: JSON.parse(animationData)
-        });
-    &lt;/script&gt;
-&lt;/div&gt;
-现在就移植成功了，使用下面命令上传，之后输入一个错误的页面就可以查看到了
-hexo cl &amp;&amp; hexo g -d
-
-Tips: 不要再本地试验，本地的时候输入错误的页面不会显示404页面的。
-
-新建友情连接 friends 页（可选的）
-friends 页是用来展示友情连接信息的页面，如果 source 目录下还没有 friends/index.md 文件，那么就需要新建一个，命令如下：
-hexo new page "friends"
-编辑刚刚新建的页面文件 /source/friends/index.md，至少需要以下内容：
----
-title: friends
-date: 2018-12-12 21:25:30
-type: "friends"
-layout: "friends"
----
-同时，在 source 目录下新建 _data 目录，在 _data 目录中新建 friends.json 文件，文件内容如下所示：
-[{
-    "avatar": "https://blog.17lai.site/favicon.png",
-    "name": "和博主交换链接",
-    "introduction": "如何和博主交换友情链接介绍。",
-    "url": "https://blog.17lai.site/friends",
-    "title": "前去交换"
-},{
-    "avatar": "https://images.weserv.nl?url=https://einverne.github.io/images/favicon.ico",
-    "name": "Ein Verne的Blog",
-    "introduction": "毅力帝！坚持写了99页的独立BLog博主！",
-    "url": "https://blog.einverne.info/",
-    "title": "前去学习"
-},{
-    "avatar": "https://images.weserv.nl?url=https://blinkfox.github.io/favicon.png",
-    "name": "闪烁之狐",
-    "introduction": "Matary 主题的作者。",
-    "url": "https://blinkfox.github.io/",
-    "title": "前去学习"
-}]
-菜单导航配置
-配置基本菜单导航的名称、路径url和图标icon.
-
-1.菜单导航名称可以是中文也可以是英文(如：Index或主页)
-2.图标icon 可以在Font Awesome 中查找
-
-menu:
-  Index:
-    url: /
-    icon: fas fa-home
-  Tags:
-    url: /tags
-    icon: fas fa-tags
-  Categories:
-    url: /categories
-    icon: fas fa-bookmark
-  Archives:
-    url: /archives
-    icon: fas fa-archive
-  About:
-    url: /about
-    icon: fas fa-user-circle
-  Friends:
-    url: /friends
-    icon: fas fa-address-book
-二级菜单配置方法
-如果你需要二级菜单则可以在原基本菜单导航的基础上如下操作
-
-在需要添加二级菜单的一级菜单下添加children关键字(如:About菜单下添加children)
-在children下创建二级菜单的 名称name,路径url和图标icon.
-注意每个二级菜单模块前要加 -.
-注意缩进格式
-
-menu:
-  Index:
-    url: /
-    icon: fas fa-home
-  Tags:
-    url: /tags
-    icon: fas fa-tags
-  Categories:
-    url: /categories
-    icon: fas fa-bookmark
-  Archives:
-    url: /archives
-    icon: fas fa-archive
-  About:
-    url: /about
-    icon: fas fa-user-circle-o
-  Friends:
-    url: /friends
-    icon: fas fa-address-book
-  Medias:
-    icon: fas fa-list
-    children:
-      - name: Music
-        url: /music
-        icon: fas fa-music
-      - name: Movies
-        url: /movies
-        icon: fas fa-film
-      - name: Books
-        url: /books
-        icon: fas fa-book
-      - name: Galleries
-        url: /galleries
-        icon: fas fa-image
-文章 Front-matter 介绍
-Front-matter 选项详解
-Front-matter 选项中的所有内容均为非必填的。但仍然建议至少填写 title 和 date 的值。
-
-
-
-配置选项
-默认值
-描述
-
-
-
-
-title
-Markdown 的文件标题
-文章标题，强烈建议填写此选项
-
-
-date
-文件创建时的日期时间
-发布时间，强烈建议填写此选项，且最好保证全局唯一
-
-
-author
-根 _config.yml 中的 author
-文章作者
-
-
-img
-featureImages 中的某个值
-文章特征图，推荐使用图床(腾讯云、七牛云、又拍云等)来做图片的路径.如: http://xxx.com/xxx.jpg
-
-
-top
-true
-推荐文章（文章是否置顶），如果 top 值为 true，则会作为首页推荐文章
-
-
-hide
-false
-隐藏文章，如果hide值为true，则文章不会在首页显示
-
-
-cover
-false
-v1.0.2版本新增，表示该文章是否需要加入到首页轮播封面中
-
-
-coverImg
-无
-v1.0.2版本新增，表示该文章在首页轮播封面需要显示的图片路径，如果没有，则默认使用文章的特色图片
-
-
-password
-无
-文章阅读密码，如果要对文章设置阅读验证密码的话，就可以设置 password 的值，该值必须是用 SHA256 加密后的密码，防止被他人识破。前提是在主题的 config.yml 中激活了 verifyPassword 选项
-
-
-toc
-true
-是否开启 TOC，可以针对某篇文章单独关闭 TOC 的功能。前提是在主题的 config.yml 中激活了 toc 选项
-
-
-mathjax
-false
-是否开启数学公式支持 ，本文章是否开启 mathjax，且需要在主题的 _config.yml 文件中也需要开启才行
-
-
-summary
-无
-文章摘要，自定义的文章摘要内容，如果这个属性有值，文章卡片摘要就显示这段文字，否则程序会自动截取文章的部分内容作为摘要
-
-
-categories
-无
-文章分类，本主题的分类表示宏观上大的分类，只建议一篇文章一个分类
-
-
-tags
-无
-文章标签，一篇文章可以多个标签
-
-
-keywords
-文章标题
-文章关键字，SEO 时需要
-
-
-reprintPolicy
-cc_by
-文章转载规则， 可以是 cc_by, cc_by_nd, cc_by_sa, cc_by_nc, cc_by_nc_nd, cc_by_nc_sa, cc0, noreprint 或 pay 中的一个
-
-
-
-
-注意:
-
-如果 img 属性不填写的话，文章特色图会根据文章标题的 hashcode 的值取余，然后选取主题中对应的特色图片，从而达到让所有文章都的特色图各有特色。
-date 的值尽量保证每篇文章是唯一的，因为本主题中 Gitalk 和 Gitment 识别 id 是通过 date 的值来作为唯一标识的。
-如果要对文章设置阅读验证密码的功能，不仅要在 Front-matter 中设置采用了 SHA256 加密的 password 的值，还需要在主题的 _config.yml 中激活了配置。有些在线的 SHA256 加密的地址，可供使用：开源中国在线工具、chahuo、站长工具。
-
-
-以下为文章的 Front-matter 示例。
-最简示例
----
-title: 基于Hexo的hexo-theme-matery主题搭建博客并优化
-date: 2019-10-03 14:25:00
----
-最全示例
----
-title: 基于Hexo的hexo-theme-matery主题搭建博客并优化
-date: 2019-12-30 09:25:00
-author: 17lai.site
-img: /medias/cover/hexo.jpg
-top: true
-cover: true
-coverImg: /medias/cover/hexo.jpg
-password: 8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92
-toc: false
-mathjax: false
-summary: 这是你自定义的文章摘要内容，如果这个属性有值，文章卡片摘要就显示这段文字，否则程序会自动截取文章的部分内容作为摘要
-categories: Hexo
-keywords: Hexo GitHub blog
-tags:
-  - Hexo
-  - Blog
-  - GitHub
----
-新建文章模板修改
-首先为了新建文章方便，我们可以修改一下文章模板，建议将/scaffolds/post.md修改为如下代码：
----
-title: {{ title }}
-date: {{ date }}
-author: 
-img: 
-coverImg: 
-top: false
-cover: false
-toc: true
-mathjax: false
-password:
-summary:
-tags:
-categories:
----
-这样新建文章后 一些Front-matter参数不用你自己补充了，修改对应信息就可以了。
-代码高亮
-从 Hexo5.0 版本开始自带了 prismjs 代码语法高亮的支持，本主题对此进行了改造支持。
-如果你的博客中曾经安装过 hexo-prism-plugin 的插件，那么你须要执行 npm uninstall hexo-prism-plugin 来卸载掉它，否则生成的代码中会有 { 和 } 的转义字符。
-然后，修改 Hexo 根目录下 _config.yml 文件中 highlight.enable 的值为 false，并将 prismjs.enable 的值设置为 true，主要配置如下：
-highlight:
-  enable: false
-  line_number: true
-  auto_detect: false
-  tab_replace: ''
-  wrap: true
-  hljs: false
-prismjs:
-  enable: true
-  preprocess: true
-  line_number: true
-  tab_replace: ''
-主题中默认的 prismjs 主题是 Tomorrow Night，如果你想定制自己的主题，可以前往 prismjs 下载页面 定制下载自己喜欢的主题 css 文件，然后将此 css 主题文件取名为 prism.css，替换掉 hexo-theme-matery 主题文件夹中的 source/libs/prism/prism.css 文件即可。
-添加文章搜索功能
-
-
-
-这个插件比广大教程提到的hexo-generator-search插件更加强大和好用！
-
-
-matery目前只支持search.xml xml格式的搜索文件！
-
-
-
-本主题中还使用到了 hexo-generator-searchdb 的 Hexo 插件来做内容搜索，安装命令如下：
-npm install hexo-generator-searchdb --save
-在 Hexo 根目录下的 _config.yml 文件中，新增以下的配置项：
-search:
-  path: search.xml
-  field: post
-  content: true
-  format: html
-参数含义
-
-
-path - file path. By default is search.xml. If the file extension is .json, the output format will be JSON. Otherwise XML format file will be exported.
-
-
-field
-
-
-the search scope you want to search, you can chose:
-
-
-post (Default) - will only cover all the posts of your blog.
-
-
-page - will only cover all the pages of your blog.
-
-
-all - will cover all the posts and pages of your blog.
-
-
-
-
-content - whether contains the whole content of each article. If false, the generated results only cover title and other meta info without mainbody. By default is true.
-
-
-format
-
-
-the form of the page contents, options are:
-
-
-html (Default) - original html string being minified.
-
-
-striptags - original html string being minified, and remove all the tags.
-
-
-raw - markdown text of each posts or pages.
-
-
-
-
-修改页脚
-页脚信息可能需要做定制化修改，而且它不便于做成配置信息，所以可能需要你自己去再修改和加工。修改的地方在主题文件的 /layout/_partial/footer.ejs 文件中，包括站点、使用的主题、访问量等。
-修改社交链接
-在主题的 _config.yml 文件中，默认支持 QQ、GitHub 和邮箱的配置，可以在主题文件的 /layout/_partial/social-link.ejs 文件中，新增、修改需要的社交链接地址，增加链接可参考如下代码：
-&lt;a
-  href="https://github.com/blinkfox"
-  class="tooltipped"
-  target="_blank"
-  data-tooltip="访问我的GitHub"
-  data-position="top"
-  data-delay="50"
-&gt;
-  &lt;i class="fa fa-github"&gt;&lt;/i&gt;
-&lt;/a&gt;
-其中，社交图标（如：fa-github）可以在 Font Awesome 中搜索找到。以下是常用社交图标的标识，供参考：
-
-Facebook: fa-facebook
-Twitter: fa-twitter
-Google-plus: fa-google-plus
-Linkedin: fa-linkedin
-Tumblr: fa-tumblr
-Medium: fa-medium
-Slack: fa-slack
-新浪微博: fa-weibo
-微信: fa-wechat
-QQ: fa-qq
-
-修改打赏的二维码图片
-在主题文件的 source/medias/reward 文件中，可以替换成你的的微信和支付宝的打赏二维码图片。
-配置文章基本信息
-new_post_name: :title.md   # 新文章的文件名称
-default_layout: post       # 预设布局
-auto_spacing: false        # 在中文和英文之间加入空格
-titlecase: false           # 把标题转换为 title case
-external_link:             # 在新标签中打开链接
-  enable: true             # 在新标签中打开链接
-  field:                   # 对整个网站（site）生效或仅对文章（post）生效
-  exclude:                 # 需要排除的域名。主域名和子域名如 www 需分别配置	[]
-filename_case: 0           # 把文件名称转换为 (1) 小写或 (2) 大写
-render_drafts: false       # 显示草稿，默认为：false
-post_asset_folder: true    # 启动 Asset 文件夹
-relative_link: false       # 把链接改为与根目录的相对位址
-future: true               # 显示未来的文章
-highlight:                 # 代码块的设置
-  enable: false            # 开启代码块高亮
-  line_number: false       # 显示行数
-  auto_detect: false       # 如果未指定语言，则启用自动检测
-  tab_replace:             # 用 n 个空格替换 tabs；如果值为空，则不会替换 tabs
-配置代码高亮及样式
-从 Hexo5.0 版本开始自带了 prismjs 代码语法高亮的支持，本主题对此进行了改造支持。
-如果你的博客中曾经安装过 hexo-prism-plugin 的插件，那么你须要执行 npm uninstall hexo-prism-plugin 来卸载掉它，否则生成的代码中会有 { 和 } 的转义字符。
-然后，修改 Hexo 根目录下 _config.yml 文件中 highlight.enable 的值为 false，并将 prismjs.enable 的值设置为 true，主要配置如下：
-highlight:                      # 代码块的设置
-  enable: false                 # 开启代码块高亮
-  line_number: true             # 显示行数
-  auto_detect: false            # 如果未指定语言，则启用自动检测
-  tab_replace: ''               # 用 n 个空格替换 tabs；如果值为空，则不会替换 tabs
-  wrap: true
-  hljs: false
-prismjs:
-  enable: true
-  preprocess: true
-  line_number: true
-  tab_replace: ''
-注意事项
-Hexo 内建的 PrismJS 支持浏览器端高亮（preprocess 设置为 false）和服务器端高亮（preprocess 设置为 true）两种方式。
-使用服务器端高亮时（preprocess 设置为 true），只需要在站点引入 Prismjs 的主题（CSS 样式表）即可；而使用浏览器端高亮时（preprocess 设置为 false），需要将 JavaScript 文件也引入。
-主题中默认的 prismjs 主题是 Tomorrow Night，如果你想定制自己的主题，可以前往 prismjs 下载页面 定制下载自己喜欢的主题 css 文件，然后将此 css 主题文件取名为 prism.css，替换掉 hexo-theme-matery 主题文件夹中的 source/libs/prism/prism.css 文件即可。
-配置代码的样式
-code:
-  lang: true     # 代码块是否显示名称
-  copy: true     # 代码块是否可复制
-  shrink: false  # 代码块是否可以收缩
-  break: false   # 代码是否折行
-配置是否启用转载限制模块
-reprint:
-  enable: false   #是否启用“转载规则限定模块”
-  default: cc_by
-文章转载规则，可以是 cc_by, cc_by_nd, cc_by_sa, cc_by_nc, cc_by_nc_nd, cc_by_nc_sa, cc0, noreprint 或 pay 中的一个
-配置文章阅读密码功能
-阅读文章的密码验证功能，如要使用此功能请激活该配置项，并在对应文章的 Front-matter 中写上 password 的键和加密后的密文即可。
-
-请注意：为了保证密码原文不会被泄露到网页中，文章的密码必须是通过 SHA256 加密的，这样就不会被破解。
-
-verifyPassword:
-  enable: true
-  promptMessage: 请输入访问本文章的密码
-  errorMessage:  密码错误，将返回主页！
-如何一键部署hexo
-通过 hexo-deployer-git 插件可以实现一键将博客同时部署到多个 git 仓库中。如同时发布到 github 及 gitee 提供的 pages 服务。安装：
-npm install hexo-deployer-git --save
-修改 Hexo 根目录下的 _config.yml 文件中的如下内容:
-## Docs: https://hexo.io/docs/deployment.html
-deploy:
-  - type: git
-    repo: https://github.com/lxl80/blog.git
-    branch: gh-pages
-    ignore_hidden: false
-  - type: git
-    repo: https://gitee.com/lxl80/lxl80.git
-    branch: master
-    ignore_hidden: false
-
-也可以如本站一样，采用 hexo-deployer-cos-enhanced 插件将静态内容部署到腾讯云对象存储服务中，在 DNS 配置中将境内线路解析到腾讯云 CDN 地址，实现加速。部署完成后会自动刷新被更新文件的 CDN 缓存。
-
-安装：
-npm install hexo-deployer-cos-enhanced --save
-_config.yml 配置如下:
-deploy:
-  - type: git
-    repo: https://github.com/lxl80/blog.git
-    branch: gh-pages
-    ignore_hidden: false
-  - type: cos
-    bucket: lxl80-130****
-    region: ap-beijing
-    secretId: AKIDh9****F8FvL
-    secretKey: Z3IGiur****QZR3PgjXmlVg
-    cdnConfig:
-      enable: true
-      cdnUrl: https://static.lixl.cn
-      bucket: static-130****
-      region: ap-beijing
-      folder: static
-      secretId: AKIDh9****F8FvL
-      secretKey: Z3IGiur****QZR3PgjXmlVg
-然后通过 hexo g -d 即可实现一键发布，并更新 CDN 缓存。
-文章链接转静态短地址（可选的）
-如果文章名称是中文的，那么 Hexo 默认生成的永久链接也会有中文，这样不利于 SEO，且 gitment 评论对中文链接也不支持。我们可以用 hexo-permalink-pinyin Hexo 插件生成文章时生成中文拼音的永久链接，或者用hexo-abbrlink 生成静态文章链接。以下结合 hexo-abbrlink 生成类似 /yyyy/mmdd+随机数.html 的文章链接地址。
-安装命令如下：
-npm install hexo-abbrlink --save
-
-
-
-npm下载太慢怎么办？ 修改国内淘宝源加速，戳
-
-
-
-在 Hexo 根目录下的 _config.yml 文件中，修改 permalink: ，并在文件末尾新增 abbrlink:配置项：
-permalink: :year/:month:day:abbrlink.html
-
-abbrlink:
-  alg: crc16 #算法选项：crc16丨crc32
-  rep: dec #输出进制：dec为十进制，hex为十六进制
-添加 emoji 表情支持（可选的）
-Matery主题新增了对 emoji 表情的支持，使用到了 hexo-filter-github-emojis 的 Hexo 插件来支持 emoji 表情的生成，把对应的 markdown emoji 语法（::, 例如：:smile:）转变成会跳跃的 emoji 表情，安装命令如下
-npm install hexo-filter-github-emojis --save
-
-
-npm下载太慢怎么办？ 修改国内淘宝源加速，戳
-
-
-在 博客根目录下的 _config.yml 文件中，新增以下的配置项：
-githubEmojis:
-  enable: true
-  className: github-emoji
-  inject: true
-  styles:
-  customEmojis:
-执行 hexo clean &amp;&amp; hexo g 重新生成博客文件，然后就可以在文章中对应位置看到你用 emoji 语法写的表情了。
-文章字数统计插件
-如果你想要在文章中显示文章字数、阅读时长信息，可以安装 hexo-wordcount插件。
-安装命令如下：
-npm i --save hexo-wordcount
-然后只需在本主题下的 _config.yml 文件中，激活以下配置项即可：
-wordCount:
-  enable: false # 将这个值设置为 true 即可.
-  postWordCount: true
-  min2read: true
-  totalCount: true
-添加 RSS 订阅支持
-本主题中还使用到了 hexo-generator-feed 的 Hexo 插件来做 RSS，安装命令如下：
-npm install hexo-generator-feed --save
-在 Hexo 根目录下的 _config.yml 文件中，新增以下的配置项：
-feed:
-  type: atom
-  path: atom.xml
-  limit: 20
-  hub:
-  content:
-  content_limit: 140
-  content_limit_delim: " "
-  order_by: -date
-执行 hexo clean &amp;&amp; hexo g 重新生成博客文件，然后在 public 文件夹中即可看到 atom.xml 文件，说明已经安装成功了。
-
-hexo-feed 这个RSS插件更加强大，支持分类订阅，标签订阅。但对hexo 6.x没有做支持，虽然在hexo6.x上面工作正常。
-
-增加百度统计功能
-首先注册百度统计站长版，登陆后点击 新增网站，然后直接输入你的博客地址例如： https://blog.17lai.site，网站域名 和 网站首页 都写这个，网站名称 可以填 我的博客，
-行业类别： 博客—空间周边。
-然后点击左侧菜单的 代码获取，找到
-hm.src = "https://hm.baidu.com/hm.js?……"
-问号后的这一段十六进制代码
-复制下来，粘贴到 主题配置文件 中的baidu_analytics:后面，注意冒号和值之间要有一个空格，然后将该字段前面的#号删除代表启用此功能。保存后即可
-# Add baidu analytics configuration
-# 添加 baidu Analytics 配置
-baiduAnalytics:
-  enable: false # 开启时设置为true 并填写正确的id
-  id: f614xxxxxxxxxxxxxxxx05d25e
-Leancloud+Valine打造Hexo个人博客极简评论系统
-Leancloud配置
-首先访问Leancloud官网https://leancloud.cn/
-有Github账号的小伙伴可以用Github账号进行登陆然后绑定邮箱就可以啦！
-进入之后点击创建应用
-
-这样我们就创建好啦！
-
-接着点击应用右上角的设置进入设置界面
-
-选择应用key，这样就可以看到我们接下来需要使用到的key
-
-接着进入应用中心绑定你的个人博客域名
-
-Valine配置
-然后我们去主题配置文件中进行修改
-主题配置文件路径：matery_config.yml
-找到以下参数进行修改
-# Valine.
-# You can get your appid and appkey from https://leancloud.cn
-# more info please open https://valine.js.org
-valine:
-  enable: true //打开valine评论功能
-  appid: 你的leancloud appid 
-  appkey: 你的leancloud appkey 
-  notify: false //邮件提醒
-  verify: true //评论时是否有验证码，需要在Leancloud 设置-&gt;安全中心 中打开
-  placeholder: 说点什么吧！ //评论框默认显示
-  avatar: hide //评论者的头像,我这里设置的不显示
-  guest_info: nick # custom comment header
-  pageSize: 10 # pagination size
-PS：评论者头像可以进行如下设置
-
-到此，一个极简评论系统就完成啦！
-系列教程
-全部文章RSS订阅
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-Vercel部署高级用法教程
-
-Docker系列
-Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-笔记系列
-Note分类RSS订阅
-
-完美笔记进化论
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Joplin入门指南&amp;实践方案
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-Joplin 插件以及其Markdown语法。All in One!
-Joplin 插件使用推荐
-为知笔记私有化Docker部署
-
-Gitbook使用系列
-Gitbook分类RSS订阅
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-Gitlab 使用系列
-Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-]]></content>
-      <categories>
-        <category>hexo</category>
-      </categories>
-      <tags>
-        <tag>hexo</tag>
-        <tag>docker</tag>
-        <tag>matery</tag>
-        <tag>npm</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>浏览器的渲染过程</title>
     <url>/posts/69a052c9/</url>
     <content><![CDATA[
@@ -12185,9 +10804,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-nurWpIWtrpOsXzNy").style.height=document.getElementById("mmedia-nurWpIWtrpOsXzNy").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-gDxZSugRraQEJART").style.height=document.getElementById("mmedia-gDxZSugRraQEJART").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-nurWpIWtrpOsXzNy").style.height=document.getElementById("mmedia-nurWpIWtrpOsXzNy").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-gDxZSugRraQEJART").style.height=document.getElementById("mmedia-gDxZSugRraQEJART").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -12474,6 +11093,1387 @@ HTTP&nbsp;502&nbsp;-&nbsp;网关错误
       <tags>
         <tag>web</tag>
         <tag>http</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>[三万字教程]基于Hexo的matery主题搭建博客并深度优化一站式完全教程</title>
+    <url>/posts/40300608/</url>
+    <content><![CDATA[
+All in one 一站式Hexo配置优化教程！
+
+本文很长，特别长，快卡死编辑器了，如是被拆分为6篇文章了，见文末链接。
+如果你遇到了什么问题，可以尝试搜索本文，你很可能有收获！ CtRL + F，还可以试试右上角菜单搜索功能。
+欢迎光临博主的独立博客 夜法之书，本文授权CC4.0非商用，转载请注明出处
+本文就教你搭建一个美观实用的博客系统，步骤极尽详细！
+本文中提到的大量特性，已经被博主提交到matery主题develop分支，提交记录见Commit。所以下面很多特性已经不用自己修改了，可以直接使用。
+参考列表放到了最后一篇末尾，去找找看，里面能发现很多好东西。
+Tips：友情提示，部分内容RSS输出获取不到，请跳转到源网页地址浏览全文！
+
+
+选择Hexo的理由？
+
+
+Hexo创建者是台湾人，对中文支持很友好！
+Hexo开源，方便学习和修改
+Hexo生态非常完善，各种插件极其丰富！而且基本全部免费、开源！
+Hexo对Markdown支持非常完善，对比遍各种博客框架，hexo对Markdown支持最友好
+Hexo静态部署，不需要php,java之类的运行环境，方便各种部署环境。不需要购买vps,就有各种免费的部署环境！最低0成本建立独立博客！
+所有文章和源码可以使用Git管理，方便保存和维护
+缺点：最好懂一点npm web编程技术，不懂也没关系，各种教程非常丰富！
+
+
+写博客的重要性
+
+
+  
+
+
+
+最终效果如下图所示！
+
+支持离线访问。
+支持浅色/深色模式。
+支持文章RSS订阅，并支持文章分类订阅。
+看板娘文字功能提示。
+支持新博文订阅通知，右下角小铃铛点击订阅！ chrome用户可能由于网络原因链接不到Google的服务器而看不到这个小铃铛。edge 和 Firefox 用户可以正常订阅。
+
+
+
+
+service worker 实现的渐进式App，不仅可以离线浏览，还可以加速缓存访问！
+
+
+
+深色模式，夜晚保护您的视力！
+
+
+
+RSS Hub 和 TTRSS 私有部署实现订阅。
+配合浏览器扩展 RSSHub Radar (opens new window)和 移动端辅助 App RSSBud (opens new window)(iOS) 与 RSSAid (opens new window)(Android) 食用。
+教程：RSS的使用与Tiny Tiny RSS Selfhost自建
+
+
+
+
+对所有菜单和常用按钮做了文字功能提示。
+支持看板娘模型切换，服装切换，某些模型还有语音互动！
+看板娘还可以自定义时间提示，特殊节日提示等等。参考 Hexo博客个性定制篇中来完成吧。
+
+
+
+
+经过多次优化，新版看板娘资源异步加载体积大拖累的性能分数。其它几乎都是满分了！
+大量使用本地缓存，牺牲了第一次加载的体积，保证了第二次打开几乎都是使用缓存，异步加载对第一次渲染速度影响不大，但可以极大的提高第二次来自后续的访问速度！
+
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+Vercel部署高级用法教程
+
+Hexo Docker环境使用篇
+Docker 简介：
+
+Docker 是一种轻量级的虚拟机环境，可以隔离主机的运行环境，内核公用主机的，运行库和环境是 Docker 私有的。运行 Docker 程序只比主机直接运行程序性能损失微乎其微。使用 Docker 你可以同时运行各种各样运行库环境而不用担心搞乱你的主机运行库环境！
+Docker 运行负载远小于 Vmware 这类虚拟机， Vmware 需要模拟对应的CPU指令，再虚机运行一个虚拟机自己的内核，再这个虚拟机内核之上，再运行虚拟机的运行库和程序。比 Docker 多了一个内核模拟和运行，Cpu 和内存开销大增！
+
+Docker 版 hexo 环境一键部署
+
+博主开源定制，推荐使用！省去您大量环境配置时间。
+使用Hexo Docker之前需要Docker 环境，请参阅后文Docker安装方法
+
+docker-hub
+Github-hexo
+
+
+
+  
+
+
+
+使用推荐Docker来搭配本文，阅读使用，将更省事，方便，快捷。hexo环境一键搞定！
+Docker一键安装
+docker create --name=hexo \
+-e HEXO_SERVER_PORT=4000 \
+-e GIT_USER="17lai" \
+-e GIT_EMAIL="17lai@domain.tld" \
+-v /mnt/blog.17lai.site:/app \
+-p 4000:4000 \
+bloodstar/hexo
+Docker镜像直接提供最新版本node ，hexo
+hexo web 后台写作
+
+基于 hexo-admin 实现，具体配置实现方法见后文。
+最终效果如下图所示。 blog.17lai.fun 访问blog， 添加后缀 admin 访问 hexo 后台。
+使用前面提到的 hexo docker ，启动运行 hexo docker 后，非自动安装 hexo-admin 以及常用插件，你也可以自定义安装你虚幻的插件， vi /app/useRun.sh。
+
+
+
+配置 hexo-admin 根目录下_config.yml:
+admin:
+  username: myfavoritename #用户名
+  password_hash: be121740bf988b2225a313fa1f107ca1 #密码
+  secret: a secret something # secret is used to make the cookies secure
+  deployCommand: '/app/tools/cide.sh'  # 自定义的部署脚本，在 hexo admin 的 deploy 标签页 deploy 按钮点击调用
+配置 post metadata 根目录下_config.yml:
+# add and edit your own post metadata with the admin interface
+metadata:
+  author_id: defaultAuthorId
+  language:
+hexon
+
+Github: hexon
+另一个hexo web 编辑界面，界面比hexo-admin更现代化。安装配置方法见Github
+
+
+hexo-editor
+
+hexo-editor
+又一个hexo web 编辑器
+
+
+
+
+支持手机
+
+Qexo
+
+
+https://github.com/Qexo/Qexo
+
+A Quick, Powerful and Pretty Online Manager for Hexo.
+类似项目
+
+https://github.com/Wexagonal/Wexagonal
+
+轻量级\多平台\开箱即用的hexo后端管理器
+
+
+ssh key 部署
+Docker会自动随机生成ssh key 在 /app/.ssh 目录下面。自动部署请把ssh key添加到github 等平台。
+Github详细教程
+
+
+将SSH 公钥复制到剪贴板。 …
+在任何页面的右上角，单击您的个人资料照片，然后单击Settings（设置）。
+在用户设置侧边栏中，单击SSH and GPG keys（SSH 和GPG 密钥）。
+单击New SSH key（新SSH 密钥）或Add SSH key（添加SSH 密钥）。
+
+
+SSH 进入docker
+docker exec -it hexo /bin/bash
+然后就可以正常运行hexo的各种命令了，是不是非常简单？ 快来试试吧。
+远程 SSH 访问Docker
+
+推荐使用SecurtCRT 来远程访问你的Docker。
+
+
+自定义用户自动运行脚本
+
+用户可以在这里添加自动配置，自动安装插件，等各种启动docker运行的命令。
+它将在Docker启动完成后自动调用运行！
+
+vi /app/useRun.sh
+反向代理 Hexo Docker
+
+Nginx (engine x) 是一个高性能的HTTP和反向代理web服务器，同时也提供了IMAP/POP3/SMTP服务。
+
+
+一些测试可能需要ssl支持，那么用nginx来反向代理一下，就可以在本地愉快的测试ssl加密功能了。
+
+
+访问docker，需要 192.168.0.100:4000这样数字ip + 端口号的方式不觉得很丑陋，而且需要开大量的端口，使用nginx反向代理，可以直接使用域名访问。
+
+
+如果你想使用blog.17lai.fun这样的域名访问你的 docker 里面运行的博客，请参考下文。
+
+
+
+Nginx也使用docker来运行，blog.17lai.fun为本地域名，修改本地hosts dns信息来访问。
+docker compose 配置
+nginxweb:
+  image: bloodstar/nginx-purge
+  container_name: "nginxweb"
+  hostname: nginxweb
+  ports:
+    - "80:80"
+    - "443:443"
+  restart: always
+  volumes:
+    # ${USERDIR}为你docker运行目录
+    - ${USERDIR}/nginx/conf.d:/etc/nginx/conf.d:ro
+    - ${USERDIR}/nginxproxy/certs:/etc/nginx/certs:ro
+    - ${USERDIR}/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+bloodstar/nginx-purge
+
+
+  
+
+
+
+nginx配置
+文件 blog.conf ，配置文件放到${USERDIR}/nginx/conf.d目录中
+upstream blog {
+    server hexo:4000;
+}
+
+server {
+    listen 80;
+    listen 443 ssl http2;
+    server_name  blog.17lai.fun;
+
+    ssl_certificate /etc/nginx/certs/17lai.pem;
+    ssl_certificate_key /etc/nginx/certs/17lai.key;
+
+    ssl_session_cache shared:aria2SSL:10m;
+    ssl_session_timeout  30m;
+    #ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE:ECDH:AES:HIGH:!NULL:!aNULL:!MD5:!ADH:!RC4;
+    ssl_ciphers EECDH+CHACHA20:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+    
+    access_log /var/log/nginx/blog.17lai.fun_access.log combined;
+    error_log  /var/log/nginx/blog.17lai.fun_error.log;
+    
+    keepalive_requests 10000;
+    
+    location / {
+        #proxy_redirect off;
+        proxy_pass http://blog;
+
+        proxy_buffering off;
+        
+        add_header X-Cache-Status $upstream_cache_status;
+        proxy_set_header Host $http_host;
+
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header  X-Forwarded-Ssl     on;
+        proxy_set_header  X-Forwarded-For     $proxy_add_x_forwarded_for;      
+        proxy_set_header  X-Frame-Options     SAMEORIGIN;
+        
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    } 
+}
+
+Windows DNS修改
+windows hosts文件路径为： C:\Windows\System32\drivers\etc\HOSTS
+管理员权限用文本编辑器打开这个文件并添加 192.168.0.100 blog.17lai.fun，然后，你就可以在本地浏览器中使用域名访问你的blog了！
+Linux DNS 修改
+Linux hosts 文件路径为： /etc/hosts
+用文本编辑器或者命令行工具vim打开这个文件并添加 192.168.0.100 blog.17lai.fun，然后，你就可以在本地浏览器中使用域名访问你的blog了！
+# root用户一条指令搞定
+echo "192.168.0.100 blog.17lai.fun" &gt;&gt; /etc/hosts
+
+#或者使用 vi 或者 vim
+vi /etc/hosts
+获取 SSL 证书
+
+
+如果你购买了域名，可以在域名服务商获得免费的ssl证书。
+自己生成私有证书，使用时需要给本地计算机，浏览器添加你自己的根证书，才能使你的ssl 证书在你自己的浏览器中生效。
+
+
+
+使用Hexo Docker之前需要Docker 环境，下面是Docker 环境安装方法。
+
+Centos 安装Docker
+X86（一键安装脚本）：
+curl -sSL https://get.docker.com/ | sh
+Arm：
+步骤1
+sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+步骤2
+添加仓库
+sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+步骤3
+安装Docker
+sudo yum install docker-ce docker-ce-cli containerd.io
+
+完成安装
+步骤4
+启动Docker
+sudo systemctl start docker
+QNAP 安装Docker
+
+在系统应用的AppCenter中找到 Container  Station，可以直接点击安装即可。
+
+
+群晖 安装 Docker
+首先要说的是，x86 平台的群晖才能用的上 Docker 套件，因此，ARM 架构平台的群晖只能说非常遗憾了。
+　　打开套件中心，在 “所有套件” 中找到 Docker 并安装：
+
+Hexo入门篇
+Hexo 通用简明教程
+Hexo 是一个快速、简洁且高效的博客框架。Hexo 使用 Markdown（或其他渲染引擎）解析文章，在几秒内，即可利用靓丽的主题生成静态网页。
+前提
+安装 Hexo 相当简单，只需要先安装下列应用程序即可：
+
+Node.js (Node.js 版本需不低于 8.10，建议使用 Node.js 10.0 及以上版本)
+Git
+nmp
+
+安装
+所有必备的应用程序安装完成后，即可使用 npm 安装 Hexo。
+npm install -g hexo-cli
+安装以后，可以使用以下两种方式执行 Hexo：
+
+npx hexo
+将 Hexo 所在的目录下的 node_modules 添加到环境变量之中即可直接使用： hexo
+
+echo 'PATH="$PATH:./node_modules/.bin"' &gt;&gt; ~/.profile
+升级
+后期需要升级的化，进入 blog 目录，先检查更新:
+$ npm outdated
+Package                  Current  Wanted  Latest  Location
+hexo                       3.9.0   3.9.0   4.2.0  hexo-site
+hexo-deployer-git          1.0.0   1.0.0   2.1.0  hexo-site
+hexo-generator-archive     0.1.5   0.1.5   1.0.0  hexo-site
+hexo-generator-category    0.1.3   0.1.3   1.0.0  hexo-site
+hexo-generator-feed        1.2.2   1.2.2   2.2.0  hexo-site
+hexo-generator-index       0.2.1   0.2.1   1.0.0  hexo-site
+hexo-generator-tag         0.2.0   0.2.0   1.0.0  hexo-site
+hexo-renderer-ejs          0.3.1   0.3.1   1.0.0  hexo-site
+hexo-renderer-marked       0.3.2   0.3.2   2.0.0  hexo-site
+hexo-renderer-stylus       0.3.3   0.3.3   1.1.0  hexo-site
+hexo-server                0.3.3   0.3.3   1.0.0  hexo-site
+修改 package.json 文件，基于 Latest 列内容更新版本号，然后更新并检查版本号：
+$ npm install --save
+
+# 检查版本号
+$ hexo -v
+hexo: 4.2.0
+hexo-cli: 3.1.0
+......
+建站
+安装 Hexo 完成后，请执行下列命令，Hexo 将会在指定文件夹中新建所需要的文件。
+hexo init &lt;folder&gt;
+cd &lt;folder&gt;
+npm install
+启动网页服务
+此时，通过 hexo s 命令即可在本地启动您的博客站点了。
+$ hexo s
+INFO  Start processing
+INFO  Hexo is running at http://localhost:4000 . Press Ctrl+C to stop.
+接下来将安装主题，配置博客托管平台，实现一键发布并刷新 CDN 缓存。
+npm下载加速
+安装淘宝镜像， 加速NPM
+npm config set registry http://registry.npmmirror.com
+安装CNPM
+
+个人使用体验来说，npm兼容性最好，如果你遇到某个包cnpm或者yarn安装失败，试试最原始的老婆吗，或许有奇效！
+
+npm install -g cnpm --registry=http://registry.npmmirror.com
+Hexo 日常操作命令
+# 进入hexo docker 环境。需要你已经安装了docker环境，并安装了上文提到的hexo docker
+docker exec -it hexo /bin/bash
+# 运行完这条命令后，你就发现命令提示符变了，你此时进入了一个独立于你的主机运行环境的新的 node + hexo 开发环境了。
+
+# 生成新页面 404
+hexo new page 404
+
+# 新增新文章 2022-03-26-blog.17lai.site
+hexo new post 2022-03-26-blog.17lai.site
+
+# 清理上次生成的静态网页，可以不运行，但你修改了一些源码后，很可能有各种不生效或错误
+hexo clean
+
+# 生成静态网页
+hexo g
+
+# gulp调用gulpfile.js压缩静态网页相关代码，减小网页体积
+gulp 
+
+# 调用根目录中 _config.yml 文件的deploy配置的参数来部署你的静态网页
+hexo d
+hexo 目录结构说明
+在执行过Hexo deploy命令之后，目录结构新增了.deploy_git，public，.gitignore，如下：
+ $ tree -L 2
+.
+├── .deploy_git
+├── node_modules
+├── public
+├── scaffolds
+│   ├── draft.md
+│   ├── page.md
+│   └── post.md
+├── source
+│   ├── _posts
+│   ├── _drafts
+├── themes
+├── _config.yml
+├── db.json
+├── package.json
+└── package-lock.json
+_config.yml
+用来配置博客相关的参数，初始化时自动创建。具体参数设置，可参照 Hexo 配置 文档。
+node_modules 和 package.json
+都是在初始化时自动创建。
+
+node_modules用来存储已安装的各类依赖包。
+package.json用来查看 Hexo 的版本以及相关依赖包的版本。
+
+Hexo 会默认安装：
+
+hexo：主程序
+hexo-deployer-git：实现 git 部署方式
+hexo-generator-archive：存档页面生成器
+hexo-generator-category：分类页面生成器
+hexo-generator-index：index 生成器
+hexo-generator-tag：标签页面生成器
+hexo-renderer-ejs：支持 EJS 渲染
+hexo-renderer-marked：Markdown 引擎
+hexo-renderer-stylus：支持 stylus 渲染
+hexo-server：支持本地预览，默认地址 localhost:4000
+
+新安装的依赖包，也会保存在node_module文件夹下。
+scaffold
+模板文件夹，初始化时自动创建。包含page，post，draft三种模板，分别对应 页面、要发布的文章、草稿。
+themes
+主题文件夹，初始化时自动创建。每一个主题，都有一个单独的文件夹。默认主题为 landscape。
+source ， public 和 .deploy_git
+
+source：资源文件夹。用来存放图片、Markdown 文档（文章、草稿）、各种页面（分类、关于页面等）。
+public：将 source 文件夹里的 Markdown 文档，转换成 index.html。再结合主题进行渲染，就是我们最终看到的博客。
+.deploy_git：将 public 文件夹的内容提交到 Github 后生成，内容与 public 文件夹基本一致。
+
+这三者的关系大致是：source -&gt; public -&gt; .deploy_git
+
+执行hexo generate，根据 source，更新 public。
+执行hexo deploy，根据 public，更新 .deploy_git。
+
+常用命令
+指令说明
+
+hexo server #启动本地服务器，用于预览主题。Hexo 会监视文件变动并自动更新，除修改站点配置文件外,无须重启服务器,直接刷新网页即可生效。
+hexo server -s #以静态模式启动
+hexo server -p 5000 #更改访问端口 (默认端口为 4000，’ctrl + c’关闭 server)
+hexo server -i IP地址 #自定义 IP
+hexo clean #清除缓存 ,网页正常情况下可以忽略此条命令,执行该指令后,会删掉站点根目录下的 public 文件夹
+hexo g #生成静态网页 (执行 $ hexo g后会在站点根目录下生成 public 文件夹, hexo 会将”/blog/source/“ 下面的.md 后缀的文件编译为.html 后缀的文件,存放在”/blog/public/ “ 路径下)
+hexo d #自动生成网站静态文件，并将本地数据部署到设定的仓库(如 github)
+hexo init 文件夹名称 #初始化 XX 文件夹名称
+npm update hexo -g#升级
+npm install hexo -g #安装
+node -v #查看 node.js 版本号
+npm -v #查看 npm 版本号
+git --version #查看 git 版本号
+hexo -v #查看 hexo 版本号
+hexo new page “music” #新增页面music
+hexo new post “文章名称” #新增文章
+
+简写指令
+
+
+hexo n "我的第一篇文章" 等价于 hexo new "我的第一篇文章" 还等价于 hexo new post "我的第一篇文章"
+
+
+hexo p 等价于 hexo publish
+
+
+hexo g 等价于 hexo generate
+
+
+hexo s等价于 hexo server
+
+
+hexo d 等价于 hexo deploy
+
+
+hexo g -d等价于hexo generate --deploy
+
+
+注: hexo clean 没有 简写, git --version 没有简写
+hexo版本升级
+
+Docker镜像直接提供最新版本node ，hexo
+
+升级 Node
+# n 是交互式 node.js 版本管理工具
+sudo npm install -g n
+# 更新到 node 16 LTS
+sudo n 16
+升级 Hexo
+# 安装 npm-check 和 npm-upgrade
+npm install -g npm-check npm-upgrade
+# 检查本地插件版本
+npm-check
+# 交互式升级，根据提示即可完成升级
+npm-upgrade
+现在 Hexo 及插件已经升级成功，执行 hexo version 查看版本。
+设置npm源的几种方式
+原始源
+# the original source
+https://registry.npmjs.org/
+方案: 使用nrm
+
+安装
+
+npm install -g nrm
+
+列出源的候选项
+
+nrm ls
+输出结果：
+* npm -------- https://registry.npmjs.org/
+  yarn ------- https://registry.yarnpkg.com/
+  cnpm ------- http://r.cnpmjs.org/
+  taobao ----- https://registry.npmmirror.com/
+  nj --------- https://registry.nodejitsu.com/
+  npmMirror -- https://skimdb.npmjs.com/registry/
+  edunpm ----- http://registry.enpmjs.org/
+
+使用淘宝源
+
+nrm use taobao
+方案: 改变全局的注册
+
+设置成淘宝源
+
+npm config set registry https://registry.npmmirror.com
+
+查看结果
+
+npm config get registry
+输出结果：
+https://registry.npmmirror.com/
+
+测试一下
+
+npm info underscore
+方案: 在命令行里指定源
+npm --registry https://registry.npmmirror.com install [name]
+方案: 修改 ~/.npmrc
+registry = https://registry.npmmirror.com
+方案: 使用cnpm
+npm install -g cnpm --registry=https://registry.npmmirror.com
+cnpm install [name]
+Hexo基础配置篇
+下载主题
+hexo-theme-matery 是一个采用 Material Design 和响应式设计的 Hexo 博客主题，点击 这里 可以查看示例效果。点击 这里 下载 master 分支的最新稳定版的代码，解压缩后，将 hexo-theme-matery 的文件夹复制到 Hexo 的 themes 文件夹中即可。
+Docker环境命令
+git clone https://github.com/blinkfox/hexo-theme-matery.git /app/themes/matery; 
+切换主题
+修改 Hexo 根目录下的 _config.yml 的 theme 的值：theme: hexo-theme-matery
+_config.yml 文件的其它修改建议
+
+请修改 _config.yml 的 url 的值为你的网站主 URL（如：http://xxx.github.io）。
+建议修改两个 per_page 的分页条数值为 6 的倍数，如：12、18 等，这样文章列表在各个屏幕下都能较好的显示。
+如果是中文用户，则建议修改 language 的值为 zh-CN。
+
+在本主题的 _config.yml 中可以修改部分自定义信息，有以下几个部分：
+
+菜单
+我的梦想
+首页的音乐播放器和视频播放器配置
+是否显示推荐文章名称和按钮配置
+favicon 和 Logo
+个人信息
+TOC 目录
+文章打赏信息
+复制文章内容时追加版权信息
+MathJax
+文章字数统计、阅读时长
+点击页面的’爱心’效果
+我的项目
+我的技能
+我的相册
+Gitalk、Gitment、Valine 和 disqus 评论配置
+不蒜子统计和谷歌分析（Google Analytics）
+默认特色图的集合。当文章没有设置特色图时，本主题会根据文章标题的 hashcode 值取余，来选择展示对应的特色图
+
+新建主题必备about、tags、404等页面
+新建分类 categories 页
+categories 页是用来展示所有分类的页面，如果 source 目录下还没有 categories/index.md 文件，那么就需要新建一个，命令如下：
+hexo new page "categories"
+编辑你刚刚新建的页面文件 /source/categories/index.md，至少需要以下内容：
+---
+title: categories
+date: 2018-09-30 17:25:30
+type: "categories"
+layout: "categories"
+---
+新建标签 tags 页
+tags 页是用来展示所有标签的页面，如果 source 目录下还没有 tags/index.md 文件，那么就需要新建一个，命令如下：
+hexo new page "tags"
+编辑刚刚新建的页面文件 /source/tags/index.md，至少需要以下内容：
+---
+title: tags
+date: 2018-09-30 18:23:38
+type: "tags"
+layout: "tags"
+---
+新建留言板 contact 页
+contact 页是用来展示留言板信息的页面，如果在你的博客 source 目录下还没有 contact/index.md 文件，那么你就需要新建一个，命令如下：
+hexo new page "contact"
+编辑你刚刚新建的页面文件 /source/contact/index.md，至少需要以下内容：
+---
+title: contact
+date: 2018-09-30 17:25:30
+type: "contact"
+layout: "contact"
+---
+
+注：本留言板功能依赖于第三方评论系统，请激活你的评论系统才有效果。并且在主题的 _config.yml 文件中，第 19 至 21 行的“菜单”配置，取消关于留言板的注释即可。
+
+新建友情链接 friends 页
+friends 页是用来展示友情链接信息的页面，如果在你的博客 source 目录下还没有 friends/index.md 文件，那么你就需要新建一个，命令如下：
+hexo new page "friends"
+编辑你刚刚新建的页面文件 /source/friends/index.md，至少需要以下内容：
+---
+title: friends
+date: 2018-12-12 21:25:30
+type: "friends"
+layout: "friends"
+---
+同时，在你的博客 source 目录下新建 _data 目录，在 _data 目录中新建 friends.json 文件，文件内容如下所示：
+[{
+    "avatar": "https://blog.17lai.site/favicon.png",
+    "name": "夜法之书的Blog",
+    "introduction": "嵌入式，Linux Kernel&amp;Driver, PT, Docker, Nas等等",
+    "url": "https://blog.17lai.site",
+    "title": "前去学习"
+},{
+    "avatar": "http://image.luokangyuan.com/1_qq_27922023.jpg",
+    "name": "码酱",
+    "introduction": "我不是大佬，只是在追寻大佬的脚步",
+    "url": "http://luokangyuan.com/",
+    "title": "前去学习"
+}, {
+    "avatar": "http://image.luokangyuan.com/4027734.jpeg",
+    "name": "闪烁之狐",
+    "introduction": "编程界大佬，技术牛，人还特别好，不懂的都可以请教大佬",
+    "url": "https://blinkfox.github.io/",
+    "title": "前去学习"
+}, {
+    "avatar": "http://image.luokangyuan.com/avatar.jpg",
+    "name": "ja_rome",
+    "introduction": "平凡的脚步也可以走出伟大的行程",
+    "url": "https://me.csdn.net/jlh912008548",
+    "title": "前去学习"
+}]
+新建关于我 about 页
+about 页是用来展示关于我和我的博客信息的页面，如果 source 目录下还没有 about/index.md 文件，那么就需要新建一个，命令如下：
+hexo new page "about"
+编辑刚刚新建的页面文件 /source/about/index.md，至少需要以下内容：
+---
+title: about
+date: 2018-09-30 17:25:30
+type: "about"
+layout: "about"
+---
+新建404页
+新建一个404.md文件
+在hexo的souce文件夹下创建一个404.md，之后输入如下内容：
+---
+title: 404
+date: 2019-11-23 21:10:10
+type: "404"
+layout: "404"
+---
+
+然后hexo g生成页面中就有404。只是页面较丑。
+404页面美化
+
+下载404特效
+点击下载代码:点我去代码出处
+
+移植
+放入js文件到主题中
+将下载的压缩包解压，会发现里面有两个js文件和一个html页面，重要的就是js文件，将文件移植到主题的source文件的libs文件夹下，需要自己创建一个文件夹，我给文件夹取的名字叫做404。
+
+导入404 js
+因为该主题的js文件都是写_config.yml文件里面的，为了规范，也需要将文件的路径写到该文件夹下
+如下，之后导入js文件的时候就可以使用404bodymovin和404data来代替了
+
+编辑404.esj
+&lt;style type="text/css"&gt;
+    /* don't remove. */
+    .page404-cover {
+        /* height: 75vh; */
+        height: 88vh;
+    }
+ 
+    #svgContainer {
+      width: 100%;
+      height: 100%;
+      background-color: white;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      margin: auto;
+    }
+&lt;/style&gt;
+
+&lt;script src="&lt;%- theme.jsDelivr.url %&gt;&lt;%- url_for(theme.libs.js.404bodymovin) %&gt;"&gt;&lt;/script&gt;
+&lt;script src="&lt;%- theme.jsDelivr.url %&gt;&lt;%- url_for(theme.libs.js.404data) %&gt;"&gt;&lt;/script&gt;
+
+&lt;div class="bg-cover pd-header page404-cover"&gt;
+    &lt;div id="svgContainer"&gt;&lt;/div&gt;
+ 
+    &lt;script type="text/javascript"&gt;
+        var svgContainer = document.getElementById('svgContainer');
+        var animItem = bodymovin.loadAnimation({
+          wrapper: svgContainer,
+          animType: 'svg',
+          loop: true,
+          animationData: JSON.parse(animationData)
+        });
+    &lt;/script&gt;
+&lt;/div&gt;
+现在就移植成功了，使用下面命令上传，之后输入一个错误的页面就可以查看到了
+hexo cl &amp;&amp; hexo g -d
+
+Tips: 不要再本地试验，本地的时候输入错误的页面不会显示404页面的。
+
+新建友情连接 friends 页（可选的）
+friends 页是用来展示友情连接信息的页面，如果 source 目录下还没有 friends/index.md 文件，那么就需要新建一个，命令如下：
+hexo new page "friends"
+编辑刚刚新建的页面文件 /source/friends/index.md，至少需要以下内容：
+---
+title: friends
+date: 2018-12-12 21:25:30
+type: "friends"
+layout: "friends"
+---
+同时，在 source 目录下新建 _data 目录，在 _data 目录中新建 friends.json 文件，文件内容如下所示：
+[{
+    "avatar": "https://blog.17lai.site/favicon.png",
+    "name": "和博主交换链接",
+    "introduction": "如何和博主交换友情链接介绍。",
+    "url": "https://blog.17lai.site/friends",
+    "title": "前去交换"
+},{
+    "avatar": "https://images.weserv.nl?url=https://einverne.github.io/images/favicon.ico",
+    "name": "Ein Verne的Blog",
+    "introduction": "毅力帝！坚持写了99页的独立BLog博主！",
+    "url": "https://blog.einverne.info/",
+    "title": "前去学习"
+},{
+    "avatar": "https://images.weserv.nl?url=https://blinkfox.github.io/favicon.png",
+    "name": "闪烁之狐",
+    "introduction": "Matary 主题的作者。",
+    "url": "https://blinkfox.github.io/",
+    "title": "前去学习"
+}]
+菜单导航配置
+配置基本菜单导航的名称、路径url和图标icon.
+
+1.菜单导航名称可以是中文也可以是英文(如：Index或主页)
+2.图标icon 可以在Font Awesome 中查找
+
+menu:
+  Index:
+    url: /
+    icon: fas fa-home
+  Tags:
+    url: /tags
+    icon: fas fa-tags
+  Categories:
+    url: /categories
+    icon: fas fa-bookmark
+  Archives:
+    url: /archives
+    icon: fas fa-archive
+  About:
+    url: /about
+    icon: fas fa-user-circle
+  Friends:
+    url: /friends
+    icon: fas fa-address-book
+二级菜单配置方法
+如果你需要二级菜单则可以在原基本菜单导航的基础上如下操作
+
+在需要添加二级菜单的一级菜单下添加children关键字(如:About菜单下添加children)
+在children下创建二级菜单的 名称name,路径url和图标icon.
+注意每个二级菜单模块前要加 -.
+注意缩进格式
+
+menu:
+  Index:
+    url: /
+    icon: fas fa-home
+  Tags:
+    url: /tags
+    icon: fas fa-tags
+  Categories:
+    url: /categories
+    icon: fas fa-bookmark
+  Archives:
+    url: /archives
+    icon: fas fa-archive
+  About:
+    url: /about
+    icon: fas fa-user-circle-o
+  Friends:
+    url: /friends
+    icon: fas fa-address-book
+  Medias:
+    icon: fas fa-list
+    children:
+      - name: Music
+        url: /music
+        icon: fas fa-music
+      - name: Movies
+        url: /movies
+        icon: fas fa-film
+      - name: Books
+        url: /books
+        icon: fas fa-book
+      - name: Galleries
+        url: /galleries
+        icon: fas fa-image
+文章 Front-matter 介绍
+Front-matter 选项详解
+Front-matter 选项中的所有内容均为非必填的。但仍然建议至少填写 title 和 date 的值。
+
+
+
+配置选项
+默认值
+描述
+
+
+
+
+title
+Markdown 的文件标题
+文章标题，强烈建议填写此选项
+
+
+date
+文件创建时的日期时间
+发布时间，强烈建议填写此选项，且最好保证全局唯一
+
+
+author
+根 _config.yml 中的 author
+文章作者
+
+
+img
+featureImages 中的某个值
+文章特征图，推荐使用图床(腾讯云、七牛云、又拍云等)来做图片的路径.如: http://xxx.com/xxx.jpg
+
+
+top
+true
+推荐文章（文章是否置顶），如果 top 值为 true，则会作为首页推荐文章
+
+
+hide
+false
+隐藏文章，如果hide值为true，则文章不会在首页显示
+
+
+cover
+false
+v1.0.2版本新增，表示该文章是否需要加入到首页轮播封面中
+
+
+coverImg
+无
+v1.0.2版本新增，表示该文章在首页轮播封面需要显示的图片路径，如果没有，则默认使用文章的特色图片
+
+
+password
+无
+文章阅读密码，如果要对文章设置阅读验证密码的话，就可以设置 password 的值，该值必须是用 SHA256 加密后的密码，防止被他人识破。前提是在主题的 config.yml 中激活了 verifyPassword 选项
+
+
+toc
+true
+是否开启 TOC，可以针对某篇文章单独关闭 TOC 的功能。前提是在主题的 config.yml 中激活了 toc 选项
+
+
+mathjax
+false
+是否开启数学公式支持 ，本文章是否开启 mathjax，且需要在主题的 _config.yml 文件中也需要开启才行
+
+
+summary
+无
+文章摘要，自定义的文章摘要内容，如果这个属性有值，文章卡片摘要就显示这段文字，否则程序会自动截取文章的部分内容作为摘要
+
+
+categories
+无
+文章分类，本主题的分类表示宏观上大的分类，只建议一篇文章一个分类
+
+
+tags
+无
+文章标签，一篇文章可以多个标签
+
+
+keywords
+文章标题
+文章关键字，SEO 时需要
+
+
+reprintPolicy
+cc_by
+文章转载规则， 可以是 cc_by, cc_by_nd, cc_by_sa, cc_by_nc, cc_by_nc_nd, cc_by_nc_sa, cc0, noreprint 或 pay 中的一个
+
+
+
+
+注意:
+
+如果 img 属性不填写的话，文章特色图会根据文章标题的 hashcode 的值取余，然后选取主题中对应的特色图片，从而达到让所有文章都的特色图各有特色。
+date 的值尽量保证每篇文章是唯一的，因为本主题中 Gitalk 和 Gitment 识别 id 是通过 date 的值来作为唯一标识的。
+如果要对文章设置阅读验证密码的功能，不仅要在 Front-matter 中设置采用了 SHA256 加密的 password 的值，还需要在主题的 _config.yml 中激活了配置。有些在线的 SHA256 加密的地址，可供使用：开源中国在线工具、chahuo、站长工具。
+
+
+以下为文章的 Front-matter 示例。
+最简示例
+---
+title: 基于Hexo的hexo-theme-matery主题搭建博客并优化
+date: 2019-10-03 14:25:00
+---
+最全示例
+---
+title: 基于Hexo的hexo-theme-matery主题搭建博客并优化
+date: 2019-12-30 09:25:00
+author: 17lai.site
+img: /medias/cover/hexo.jpg
+top: true
+cover: true
+coverImg: /medias/cover/hexo.jpg
+password: 8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92
+toc: false
+mathjax: false
+summary: 这是你自定义的文章摘要内容，如果这个属性有值，文章卡片摘要就显示这段文字，否则程序会自动截取文章的部分内容作为摘要
+categories: Hexo
+keywords: Hexo GitHub blog
+tags:
+  - Hexo
+  - Blog
+  - GitHub
+---
+新建文章模板修改
+首先为了新建文章方便，我们可以修改一下文章模板，建议将/scaffolds/post.md修改为如下代码：
+---
+title: {{ title }}
+date: {{ date }}
+author: 
+img: 
+coverImg: 
+top: false
+cover: false
+toc: true
+mathjax: false
+password:
+summary:
+tags:
+categories:
+---
+这样新建文章后 一些Front-matter参数不用你自己补充了，修改对应信息就可以了。
+代码高亮
+从 Hexo5.0 版本开始自带了 prismjs 代码语法高亮的支持，本主题对此进行了改造支持。
+如果你的博客中曾经安装过 hexo-prism-plugin 的插件，那么你须要执行 npm uninstall hexo-prism-plugin 来卸载掉它，否则生成的代码中会有 { 和 } 的转义字符。
+然后，修改 Hexo 根目录下 _config.yml 文件中 highlight.enable 的值为 false，并将 prismjs.enable 的值设置为 true，主要配置如下：
+highlight:
+  enable: false
+  line_number: true
+  auto_detect: false
+  tab_replace: ''
+  wrap: true
+  hljs: false
+prismjs:
+  enable: true
+  preprocess: true
+  line_number: true
+  tab_replace: ''
+主题中默认的 prismjs 主题是 Tomorrow Night，如果你想定制自己的主题，可以前往 prismjs 下载页面 定制下载自己喜欢的主题 css 文件，然后将此 css 主题文件取名为 prism.css，替换掉 hexo-theme-matery 主题文件夹中的 source/libs/prism/prism.css 文件即可。
+添加文章搜索功能
+
+
+
+这个插件比广大教程提到的hexo-generator-search插件更加强大和好用！
+
+
+matery目前只支持search.xml xml格式的搜索文件！
+
+
+
+本主题中还使用到了 hexo-generator-searchdb 的 Hexo 插件来做内容搜索，安装命令如下：
+npm install hexo-generator-searchdb --save
+在 Hexo 根目录下的 _config.yml 文件中，新增以下的配置项：
+search:
+  path: search.xml
+  field: post
+  content: true
+  format: html
+参数含义
+
+
+path - file path. By default is search.xml. If the file extension is .json, the output format will be JSON. Otherwise XML format file will be exported.
+
+
+field
+
+
+the search scope you want to search, you can chose:
+
+
+post (Default) - will only cover all the posts of your blog.
+
+
+page - will only cover all the pages of your blog.
+
+
+all - will cover all the posts and pages of your blog.
+
+
+
+
+content - whether contains the whole content of each article. If false, the generated results only cover title and other meta info without mainbody. By default is true.
+
+
+format
+
+
+the form of the page contents, options are:
+
+
+html (Default) - original html string being minified.
+
+
+striptags - original html string being minified, and remove all the tags.
+
+
+raw - markdown text of each posts or pages.
+
+
+
+
+修改页脚
+页脚信息可能需要做定制化修改，而且它不便于做成配置信息，所以可能需要你自己去再修改和加工。修改的地方在主题文件的 /layout/_partial/footer.ejs 文件中，包括站点、使用的主题、访问量等。
+修改社交链接
+在主题的 _config.yml 文件中，默认支持 QQ、GitHub 和邮箱的配置，可以在主题文件的 /layout/_partial/social-link.ejs 文件中，新增、修改需要的社交链接地址，增加链接可参考如下代码：
+&lt;a
+  href="https://github.com/blinkfox"
+  class="tooltipped"
+  target="_blank"
+  data-tooltip="访问我的GitHub"
+  data-position="top"
+  data-delay="50"
+&gt;
+  &lt;i class="fa fa-github"&gt;&lt;/i&gt;
+&lt;/a&gt;
+其中，社交图标（如：fa-github）可以在 Font Awesome 中搜索找到。以下是常用社交图标的标识，供参考：
+
+Facebook: fa-facebook
+Twitter: fa-twitter
+Google-plus: fa-google-plus
+Linkedin: fa-linkedin
+Tumblr: fa-tumblr
+Medium: fa-medium
+Slack: fa-slack
+新浪微博: fa-weibo
+微信: fa-wechat
+QQ: fa-qq
+
+修改打赏的二维码图片
+在主题文件的 source/medias/reward 文件中，可以替换成你的的微信和支付宝的打赏二维码图片。
+配置文章基本信息
+new_post_name: :title.md   # 新文章的文件名称
+default_layout: post       # 预设布局
+auto_spacing: false        # 在中文和英文之间加入空格
+titlecase: false           # 把标题转换为 title case
+external_link:             # 在新标签中打开链接
+  enable: true             # 在新标签中打开链接
+  field:                   # 对整个网站（site）生效或仅对文章（post）生效
+  exclude:                 # 需要排除的域名。主域名和子域名如 www 需分别配置	[]
+filename_case: 0           # 把文件名称转换为 (1) 小写或 (2) 大写
+render_drafts: false       # 显示草稿，默认为：false
+post_asset_folder: true    # 启动 Asset 文件夹
+relative_link: false       # 把链接改为与根目录的相对位址
+future: true               # 显示未来的文章
+highlight:                 # 代码块的设置
+  enable: false            # 开启代码块高亮
+  line_number: false       # 显示行数
+  auto_detect: false       # 如果未指定语言，则启用自动检测
+  tab_replace:             # 用 n 个空格替换 tabs；如果值为空，则不会替换 tabs
+配置代码高亮及样式
+从 Hexo5.0 版本开始自带了 prismjs 代码语法高亮的支持，本主题对此进行了改造支持。
+如果你的博客中曾经安装过 hexo-prism-plugin 的插件，那么你须要执行 npm uninstall hexo-prism-plugin 来卸载掉它，否则生成的代码中会有 { 和 } 的转义字符。
+然后，修改 Hexo 根目录下 _config.yml 文件中 highlight.enable 的值为 false，并将 prismjs.enable 的值设置为 true，主要配置如下：
+highlight:                      # 代码块的设置
+  enable: false                 # 开启代码块高亮
+  line_number: true             # 显示行数
+  auto_detect: false            # 如果未指定语言，则启用自动检测
+  tab_replace: ''               # 用 n 个空格替换 tabs；如果值为空，则不会替换 tabs
+  wrap: true
+  hljs: false
+prismjs:
+  enable: true
+  preprocess: true
+  line_number: true
+  tab_replace: ''
+注意事项
+Hexo 内建的 PrismJS 支持浏览器端高亮（preprocess 设置为 false）和服务器端高亮（preprocess 设置为 true）两种方式。
+使用服务器端高亮时（preprocess 设置为 true），只需要在站点引入 Prismjs 的主题（CSS 样式表）即可；而使用浏览器端高亮时（preprocess 设置为 false），需要将 JavaScript 文件也引入。
+主题中默认的 prismjs 主题是 Tomorrow Night，如果你想定制自己的主题，可以前往 prismjs 下载页面 定制下载自己喜欢的主题 css 文件，然后将此 css 主题文件取名为 prism.css，替换掉 hexo-theme-matery 主题文件夹中的 source/libs/prism/prism.css 文件即可。
+配置代码的样式
+code:
+  lang: true     # 代码块是否显示名称
+  copy: true     # 代码块是否可复制
+  shrink: false  # 代码块是否可以收缩
+  break: false   # 代码是否折行
+配置是否启用转载限制模块
+reprint:
+  enable: false   #是否启用“转载规则限定模块”
+  default: cc_by
+文章转载规则，可以是 cc_by, cc_by_nd, cc_by_sa, cc_by_nc, cc_by_nc_nd, cc_by_nc_sa, cc0, noreprint 或 pay 中的一个
+配置文章阅读密码功能
+阅读文章的密码验证功能，如要使用此功能请激活该配置项，并在对应文章的 Front-matter 中写上 password 的键和加密后的密文即可。
+
+请注意：为了保证密码原文不会被泄露到网页中，文章的密码必须是通过 SHA256 加密的，这样就不会被破解。
+
+verifyPassword:
+  enable: true
+  promptMessage: 请输入访问本文章的密码
+  errorMessage:  密码错误，将返回主页！
+如何一键部署hexo
+通过 hexo-deployer-git 插件可以实现一键将博客同时部署到多个 git 仓库中。如同时发布到 github 及 gitee 提供的 pages 服务。安装：
+npm install hexo-deployer-git --save
+修改 Hexo 根目录下的 _config.yml 文件中的如下内容:
+## Docs: https://hexo.io/docs/deployment.html
+deploy:
+  - type: git
+    repo: https://github.com/lxl80/blog.git
+    branch: gh-pages
+    ignore_hidden: false
+  - type: git
+    repo: https://gitee.com/lxl80/lxl80.git
+    branch: master
+    ignore_hidden: false
+
+也可以如本站一样，采用 hexo-deployer-cos-enhanced 插件将静态内容部署到腾讯云对象存储服务中，在 DNS 配置中将境内线路解析到腾讯云 CDN 地址，实现加速。部署完成后会自动刷新被更新文件的 CDN 缓存。
+
+安装：
+npm install hexo-deployer-cos-enhanced --save
+_config.yml 配置如下:
+deploy:
+  - type: git
+    repo: https://github.com/lxl80/blog.git
+    branch: gh-pages
+    ignore_hidden: false
+  - type: cos
+    bucket: lxl80-130****
+    region: ap-beijing
+    secretId: AKIDh9****F8FvL
+    secretKey: Z3IGiur****QZR3PgjXmlVg
+    cdnConfig:
+      enable: true
+      cdnUrl: https://static.lixl.cn
+      bucket: static-130****
+      region: ap-beijing
+      folder: static
+      secretId: AKIDh9****F8FvL
+      secretKey: Z3IGiur****QZR3PgjXmlVg
+然后通过 hexo g -d 即可实现一键发布，并更新 CDN 缓存。
+文章链接转静态短地址（可选的）
+如果文章名称是中文的，那么 Hexo 默认生成的永久链接也会有中文，这样不利于 SEO，且 gitment 评论对中文链接也不支持。我们可以用 hexo-permalink-pinyin Hexo 插件生成文章时生成中文拼音的永久链接，或者用hexo-abbrlink 生成静态文章链接。以下结合 hexo-abbrlink 生成类似 /yyyy/mmdd+随机数.html 的文章链接地址。
+安装命令如下：
+npm install hexo-abbrlink --save
+
+
+
+npm下载太慢怎么办？ 修改国内淘宝源加速，戳
+
+
+
+在 Hexo 根目录下的 _config.yml 文件中，修改 permalink: ，并在文件末尾新增 abbrlink:配置项：
+permalink: :year/:month:day:abbrlink.html
+
+abbrlink:
+  alg: crc16 #算法选项：crc16丨crc32
+  rep: dec #输出进制：dec为十进制，hex为十六进制
+添加 emoji 表情支持（可选的）
+Matery主题新增了对 emoji 表情的支持，使用到了 hexo-filter-github-emojis 的 Hexo 插件来支持 emoji 表情的生成，把对应的 markdown emoji 语法（::, 例如：:smile:）转变成会跳跃的 emoji 表情，安装命令如下
+npm install hexo-filter-github-emojis --save
+
+
+npm下载太慢怎么办？ 修改国内淘宝源加速，戳
+
+
+在 博客根目录下的 _config.yml 文件中，新增以下的配置项：
+githubEmojis:
+  enable: true
+  className: github-emoji
+  inject: true
+  styles:
+  customEmojis:
+执行 hexo clean &amp;&amp; hexo g 重新生成博客文件，然后就可以在文章中对应位置看到你用 emoji 语法写的表情了。
+文章字数统计插件
+如果你想要在文章中显示文章字数、阅读时长信息，可以安装 hexo-wordcount插件。
+安装命令如下：
+npm i --save hexo-wordcount
+然后只需在本主题下的 _config.yml 文件中，激活以下配置项即可：
+wordCount:
+  enable: false # 将这个值设置为 true 即可.
+  postWordCount: true
+  min2read: true
+  totalCount: true
+添加 RSS 订阅支持
+本主题中还使用到了 hexo-generator-feed 的 Hexo 插件来做 RSS，安装命令如下：
+npm install hexo-generator-feed --save
+在 Hexo 根目录下的 _config.yml 文件中，新增以下的配置项：
+feed:
+  type: atom
+  path: atom.xml
+  limit: 20
+  hub:
+  content:
+  content_limit: 140
+  content_limit_delim: " "
+  order_by: -date
+执行 hexo clean &amp;&amp; hexo g 重新生成博客文件，然后在 public 文件夹中即可看到 atom.xml 文件，说明已经安装成功了。
+
+hexo-feed 这个RSS插件更加强大，支持分类订阅，标签订阅。但对hexo 6.x没有做支持，虽然在hexo6.x上面工作正常。
+
+增加百度统计功能
+首先注册百度统计站长版，登陆后点击 新增网站，然后直接输入你的博客地址例如： https://blog.17lai.site，网站域名 和 网站首页 都写这个，网站名称 可以填 我的博客，
+行业类别： 博客—空间周边。
+然后点击左侧菜单的 代码获取，找到
+hm.src = "https://hm.baidu.com/hm.js?……"
+问号后的这一段十六进制代码
+复制下来，粘贴到 主题配置文件 中的baidu_analytics:后面，注意冒号和值之间要有一个空格，然后将该字段前面的#号删除代表启用此功能。保存后即可
+# Add baidu analytics configuration
+# 添加 baidu Analytics 配置
+baiduAnalytics:
+  enable: false # 开启时设置为true 并填写正确的id
+  id: f614xxxxxxxxxxxxxxxx05d25e
+Leancloud+Valine打造Hexo个人博客极简评论系统
+Leancloud配置
+首先访问Leancloud官网https://leancloud.cn/
+有Github账号的小伙伴可以用Github账号进行登陆然后绑定邮箱就可以啦！
+进入之后点击创建应用
+
+这样我们就创建好啦！
+
+接着点击应用右上角的设置进入设置界面
+
+选择应用key，这样就可以看到我们接下来需要使用到的key
+
+接着进入应用中心绑定你的个人博客域名
+
+Valine配置
+然后我们去主题配置文件中进行修改
+主题配置文件路径：matery_config.yml
+找到以下参数进行修改
+# Valine.
+# You can get your appid and appkey from https://leancloud.cn
+# more info please open https://valine.js.org
+valine:
+  enable: true //打开valine评论功能
+  appid: 你的leancloud appid 
+  appkey: 你的leancloud appkey 
+  notify: false //邮件提醒
+  verify: true //评论时是否有验证码，需要在Leancloud 设置-&gt;安全中心 中打开
+  placeholder: 说点什么吧！ //评论框默认显示
+  avatar: hide //评论者的头像,我这里设置的不显示
+  guest_info: nick # custom comment header
+  pageSize: 10 # pagination size
+PS：评论者头像可以进行如下设置
+
+到此，一个极简评论系统就完成啦！
+系列教程
+全部文章RSS订阅
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+Vercel部署高级用法教程
+
+Docker系列
+Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+笔记系列
+Note分类RSS订阅
+
+完美笔记进化论
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Joplin入门指南&amp;实践方案
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+Joplin 插件以及其Markdown语法。All in One!
+Joplin 插件使用推荐
+为知笔记私有化Docker部署
+
+Gitbook使用系列
+Gitbook分类RSS订阅
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+Gitlab 使用系列
+Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+]]></content>
+      <categories>
+        <category>hexo</category>
+      </categories>
+      <tags>
+        <tag>hexo</tag>
+        <tag>docker</tag>
+        <tag>matery</tag>
+        <tag>npm</tag>
       </tags>
   </entry>
   <entry>
@@ -17777,11 +17777,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var CAqdNaHRLEdeDZOU_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); CAqdNaHRLEdeDZOU_options.container = document.getElementById("mmedia-CAqdNaHRLEdeDZOU"); const ap_CAqdNaHRLEdeDZOU = new APlayer(CAqdNaHRLEdeDZOU_options); 
+ var mhYxmChRQYeIfVmA_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); mhYxmChRQYeIfVmA_options.container = document.getElementById("mmedia-mhYxmChRQYeIfVmA"); const ap_mhYxmChRQYeIfVmA = new APlayer(mhYxmChRQYeIfVmA_options); 
 
 - **列表**
 
- var sgfHTjPNbqnjtUhE_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); sgfHTjPNbqnjtUhE_options.container = document.getElementById("mmedia-sgfHTjPNbqnjtUhE"); const ap_sgfHTjPNbqnjtUhE = new APlayer(sgfHTjPNbqnjtUhE_options); 
+ var iVsFmVGmhdHjIVuL_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); iVsFmVGmhdHjIVuL_options.container = document.getElementById("mmedia-iVsFmVGmhdHjIVuL"); const ap_iVsFmVGmhdHjIVuL = new APlayer(iVsFmVGmhdHjIVuL_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -18033,21 +18033,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-pxmoHAoanARqvvcW").style.height=document.getElementById("mmedia-pxmoHAoanARqvvcW").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-tVAtPuYXxyLrnWWv").style.height=document.getElementById("mmedia-tVAtPuYXxyLrnWWv").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-pxmoHAoanARqvvcW").style.height=document.getElementById("mmedia-pxmoHAoanARqvvcW").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-tVAtPuYXxyLrnWWv").style.height=document.getElementById("mmedia-tVAtPuYXxyLrnWWv").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-uDgUSjMiGeGBxLwf").style.height=document.getElementById("mmedia-uDgUSjMiGeGBxLwf").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-VvuEFscEeRaOKCSh").style.height=document.getElementById("mmedia-VvuEFscEeRaOKCSh").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-uDgUSjMiGeGBxLwf").style.height=document.getElementById("mmedia-uDgUSjMiGeGBxLwf").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-VvuEFscEeRaOKCSh").style.height=document.getElementById("mmedia-VvuEFscEeRaOKCSh").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var GfzJAdgfaiekLmgv_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); GfzJAdgfaiekLmgv_options.container = "#mmedia-GfzJAdgfaiekLmgv"; const art_GfzJAdgfaiekLmgv = new Artplayer(GfzJAdgfaiekLmgv_options); 
+ var BOpywlFaEeCGpQfm_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); BOpywlFaEeCGpQfm_options.container = "#mmedia-BOpywlFaEeCGpQfm"; const art_BOpywlFaEeCGpQfm = new Artplayer(BOpywlFaEeCGpQfm_options); 
 脑图
 
 原作者记录
@@ -18747,6 +18747,346 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
+    <title>音乐推荐-曾经我也想过一了百了</title>
+    <url>/posts/8b7d3a9a/</url>
+    <content><![CDATA[现场MV
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-HZzoFTCLaEUTZIYT").style.height=document.getElementById("mmedia-HZzoFTCLaEUTZIYT").scrollWidth*0.76+"px";
+    window.onresize = function(){
+      document.getElementById("mmedia-HZzoFTCLaEUTZIYT").style.height=document.getElementById("mmedia-HZzoFTCLaEUTZIYT").scrollWidth*0.76+"px";
+    }; 
+
+## 背景介绍
+
+《曾经我也想过一了百了》是日本歌手中岛美嘉演唱的歌曲，由秋田弘填词和谱曲、出羽良彰编曲，于2013年8月28日发行，收录在中岛美嘉个人专辑《TOUGH 为爱勇敢》中。该歌曲勾勒出向死而生、努力活着的人，让人感到温暖和希望，让因为压力迷茫无助而有轻生想法的人，开始积极拥抱生活。 《曾经我也想过一了百了》由日本摇滚乐队amazarashi的主唱秋田弘创作，创作理念为“为了描写浓烈的希望，必须先描写深层的黑暗”。2010年，迎来出道十周年的中岛美嘉宣布自己因耳咽管开放症暂停一切音乐活动。在疾病的影响下，歌唱对她而言变得无比艰难。2011年，她携单曲《Dear》复出，但复出后始终经历着状态的起伏和媒体的质疑。 中岛美嘉起先向amazarashi提出合作请求，希望乐队能为自己创作一首节奏明快的歌曲，但随后秋田弘向她播放了乐队一首未发行的样本歌曲，并认为该曲很适合由她来演唱。收到该曲时，中岛美嘉起先感到十分惊讶，但听到最后泪流不止，感到自己的心变得柔和，便立即要求演唱该曲。录制过程中，中岛美嘉将自己的心声融入到了该曲中，希望能将力量传达给低迷苦闷的听众。
+
+## 中文翻唱
+
+ var donhHZjywVOdcsmP_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); donhHZjywVOdcsmP_options.container = document.getElementById("mmedia-donhHZjywVOdcsmP"); const ap_donhHZjywVOdcsmP = new APlayer(donhHZjywVOdcsmP_options); 
+LRC歌词
+[00:02.09]作曲 : 秋田 ひろむ
+[00:02.64]曾经我也想过一了百了
+[00:03.21]原唱：中岛美嘉
+[00:04.46] 
+[00:29.85]曾经我 也想过 一了百了
+[00:34.79]因为看见蜷缩的猫
+[00:37.40]在码头望着远方
+[00:40.40]海浪拍打在岸上
+[00:43.44]一阵又一阵侵踏
+[00:46.22]希望那些过往都消失
+[00:49.38]不再回望
+[00:52.43]曾经我 也想过
+[00:54.82]一了百了
+[00:57.46]是因为生日的那天
+[01:00.10]杏花 又开放
+[01:03.75]阳光灿烂树荫下
+[01:06.41]落花已沉睡安详
+[01:09.84]是否我也 能化作尘土
+[01:12.16]不再流浪
+[01:15.76]仍放抽屉里过期的糖
+[01:18.28]迷路的单车被留在回家路上
+[01:21.27]还有海边抛弃的避风港
+[01:23.88]全都提醒 我和他们一样
+[01:26.75]昨天和今天的画面不断浮现
+[01:29.74]明天 渴望能不能有
+[01:31.54]新的改变
+[01:32.90]不能沮丧 我知道啊
+[01:35.55]可是啊
+[01:40.88]曾经我 也想过 一了百了
+[01:46.24]身边一切都像在问我
+[01:49.19]过得好不好
+[01:52.28]泪不能停止的流
+[01:55.05]流进心底的荒漠
+[01:58.28]这颗心中的模样
+[02:00.17]早空如一具躯壳
+[02:26.84]曾经我 也想过 一了百了
+[02:32.71]因为我的存在
+[02:34.23]总让别人失望
+[02:37.98]不曾拥有就不怕
+[02:40.80]关于人与人的伤
+[02:44.18]这么简单的道理
+[02:45.96]我也只会搞砸
+[02:49.80]曾经我 也想过 一了百了
+[02:55.49]是因为墙上
+[02:56.52]那张骄傲的自画像
+[03:00.96]无力反驳地跪下
+[03:03.66]只说的出一句话
+[03:06.99]生而为人的我
+[03:08.61]真的对不起呀
+[03:12.75]房间里闪烁着荧幕微光
+[03:15.56]伴随着屋外夜色的声音嘈杂
+[03:18.43]电话那头传来窒息的话
+[03:21.28]刺痛在笼中
+[03:22.44]备受折磨的时间啊
+[03:24.25]黑暗中我装备
+[03:25.58]唐吉轲德的毅力
+[03:26.89]对抗看不见的敌人
+[03:28.38]摧毁我的决心
+[03:29.85]不要害怕我知道啊可是啊
+[03:38.04]曾经我也想过一了百了
+[03:44.29]为何人们都说我无可救药
+[03:49.69]不强求能明白我
+[03:52.60]不奢望时间倒流
+[03:55.70]因为很久很久以前我曾爱过
+[04:00.86]曾经我 也想过 一了百了
+[04:06.89]是因为我该那样
+[04:08.43]灿烂那样美好
+[04:12.49]一味消极着过去
+[04:14.95]离去的念头缠绕
+[04:17.29]闭上眼能感受到
+[04:20.04]更好的明天来到
+[04:24.35]茫茫人海中的你
+[04:27.01]泪光中微笑的你
+[04:30.26]在我耳边温柔唱起这首歌曲
+[00:00.10]僕が死のうと思ったのは (曾经我也想过一了百了) - 中島美嘉 (なかしま みか)
+[00:00.20]词：秋田ひろむ
+[00:00.30]曲：秋田ひろむ
+[00:00.40]编曲：出羽良彰
+[00:27.95]僕が死のうと思ったのは
+[00:33.83]ウミネコが桟橋で鳴いたから
+[00:39.20]波の随意に浮かんで消える
+[00:45.33]過去も啄ばんで飛んでいけ
+[00:50.70]僕が死のうと思ったのは
+[00:56.52]誕生日に杏の花が咲いたから
+[01:02.22]その木漏れ日でうたた寝したら
+[01:08.09]虫の死骸と土になれるかな
+[01:14.09]薄荷飴 漁港の灯台
+[01:17.05]錆びたアーチ橋 捨てた自転車
+[01:19.74]木造の駅のストーブの前で
+[01:22.74]どこにも旅立てない心
+[01:25.61]今日はまるで昨日みたいだ
+[01:28.30]明日を変えるなら今日を変えなきゃ
+[01:31.56]分かってる 分かってる けれど
+[01:39.71]僕が死のうと思ったのは
+[01:44.89]心が空っぽになったから
+[01:50.71]満たされないと泣いているのは
+[01:56.39]きっと満たされたいと願うから
+[02:25.49]僕が死のうと思ったのは
+[02:30.69]靴紐が解けたから
+[02:36.57]結びなおすのは苦手なんだよ
+[02:42.25]人との繋がりもまた然り
+[02:47.90]僕が死のうと思ったのは
+[02:53.65]少年が僕を見つめていたから
+[02:59.30]ベッドの上で土下座してるよ
+[03:05.12]あの日の僕にごめんなさいと
+[03:11.43]パソコンの薄明かり
+[03:14.05]上階の部屋の生活音
+[03:16.80]インターフォンのチャイムの音
+[03:19.80]耳を塞ぐ鳥かごの少年
+[03:22.87]見えない敵と戦ってる
+[03:25.43]六畳一間のドンキホーテ
+[03:28.30]ゴールはどうせ醜いものさ
+[03:36.74]僕が死のうと思ったのは
+[03:42.05]冷たい人と言われたから
+[03:47.94]愛されたいと泣いているのは
+[03:53.63]人の温もりを知ってしまったから
+[04:22.79]僕が死のうと思ったのは
+[04:27.91]あなたが綺麗に笑うから
+[04:33.49]死ぬことばかり考えてしまうのは
+[04:39.62]きっと生きる事に真面目すぎるから
+[04:45.43]僕が死のうと思ったのは
+[04:50.70]まだあなたに出会ってなかったから
+[04:56.51]あなたのような人が生まれた
+[05:02.09]世界を少し好きになったよ
+[05:07.96]あなたのような人が生きてる
+[05:13.65]世界に少し期待するよ]]></content>
+      <categories>
+        <category>music</category>
+      </categories>
+      <tags>
+        <tag>music</tag>
+        <tag>中岛美嘉</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>私人在线音乐服务器搭建与使用介绍</title>
+    <url>/posts/2b9325d0/</url>
+    <content><![CDATA[
+多种音乐播放实现方式
+
+页面内插入音乐列表。Aplayer实现
+单独页面音乐列表。Aplayer实现
+音乐Docker。在线云音乐
+
+
+
+原作者DMCA原因不再维护，如果你想自己部署，需要修改原作者docker内部代码。
+后面提供另一个Fork的版本，不过也被DMCA干掉了，不过功能比上面多一些，基本直接可用！
+
+
+
+音乐Docker Mstream docker。
+音乐Docker Logitech Media Server。Github
+
+
+
+多用户音乐分享、播放，在线，分类等功能。
+
+
+
+
+Aplayer 在线音乐
+
+博文页面内插入音乐列表
+
+ var qMiOVFtlFFjQVDZQ_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); qMiOVFtlFFjQVDZQ_options.container = document.getElementById("mmedia-qMiOVFtlFFjQVDZQ"); const ap_qMiOVFtlFFjQVDZQ = new APlayer(qMiOVFtlFFjQVDZQ_options); 
+
+
+
+ var FCPxJgKAdHiMReMC_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); FCPxJgKAdHiMReMC_options.container = document.getElementById("mmedia-FCPxJgKAdHiMReMC"); const ap_FCPxJgKAdHiMReMC = new APlayer(FCPxJgKAdHiMReMC_options); 
+单独Aplayer音乐页面
+
+直接戳这里 -&gt; Musics
+
+
+在线云音乐
+私人云音乐
+研究学习使用
+不对外公开发布，研究学习用。
+
+用户名密码base64编码
+55So5oi35ZCN5a+G56CB6YO95pivMTdsYWk=
+base64解密: 在线加密解密
+入口
+
+
+公开在线云音乐服务网页版。
+可以与网易云音乐UID同步！
+DockerHub
+
+
+
+
+与网易云同步
+
+网易云UID在登陆 https://music.163.com/ 后 点击右上角图标的我的主页 https://music.163.com/#/user/home?id=617xxxxx0
+home?id= 后面的数字就是你的UID。登录后，可以同步个人列表！
+
+在线播放可以配合IDM下载各个平台的音乐，在放入后面介绍的Docker播放器中，如此，可搭建自己的音乐播放器！
+吐槽一下，QQ音乐在线版和这个神似，基本可以肯定就是抄袭这个的！
+
+另一个 Fork 版本
+
+注意！ 不要公开使用！
+
+version: '3'
+services:
+  music:
+    image: bloodstar/music-player
+    container_name: music
+    hostname: music
+    restart: always
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Shanghai
+    volumes:
+      - /www/cache/docker/music/cache/:/var/www/html/cache/
+      - /www/cache/docker/music/temp/:/var/www/html/temp/
+    ports:
+      - "264:264"
+私人音乐服务器
+入口
+
+
+所有音乐作者，专辑，演唱者元数据刮削。
+rclone挂载webdav网盘存储音乐文件。
+cloudflare parterner加速。
+私人使用，不对外公开。
+
+
+在线音乐播放 Mstream
+
+
+SelfHost 支持。Docker 部署！
+Github: Mstream docker。
+浏览器界面支持。
+
+
+
+支持DJ模式
+
+
+在音乐库中随机选择音乐播放。
+选择症患者救星。
+
+
+
+Android支持
+
+其它特性
+
+
+转码支持
+遥控器支持
+播放列表
+等等
+
+
+在线音乐播放 navidrome
+
+
+Dockerhub navidrome
+Github navidrome
+
+Docker compose
+# This is just an example. Customize it to your needs.
+
+version: "3"
+services:
+  navidrome:
+    image: deluan/navidrome:latest
+    ports:
+      - "4533:4533"
+    environment:
+      # Optional: put your config options customization here. Examples:
+      ND_SCANSCHEDULE: 1h
+      ND_LOGLEVEL: info  
+      ND_BASEURL: ""
+    volumes:
+      - "./data:/data"
+      - "/path/to/your/music/folder:/music:ro"
+在线Demo
+登录用户名和密码
+
+User: demo
+Password: demo
+
+
+
+Mstream文件路径管理更完善，Navidrome界面更现代化，有封面，更美观！
+目前博主使用中！
+
+Logitech Media Server
+
+Dockerhub LMS
+
+
+另一个音乐播放器，Docker管理音乐文件，音乐上传到指定目录。
+博主试用了一段时间后，感觉管理音乐文件不方便，就弃用了。
+
+docker run -d \
+           --name lms \
+           -p 9000:9000 \
+           -p 9090:9090 \
+           -p 3483:3483 \
+           -p 3483:3483/udp \
+           -v /etc/localtime:/etc/localtime:ro \
+           -v &lt;local-state-dir&gt;:/srv/squeezebox \
+           -v &lt;audio-dir&gt;:/srv/music \
+           apnar/logitech-media-server
+
+]]></content>
+      <categories>
+        <category>music</category>
+      </categories>
+      <tags>
+        <tag>docker</tag>
+        <tag>music</tag>
+        <tag>mstream</tag>
+        <tag>selfhost</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</title>
     <url>/posts/d6bad1e5/</url>
     <content><![CDATA[前言
@@ -19056,346 +19396,6 @@ CI/CD与Git Flow与GitLab
         <tag>git</tag>
         <tag>docker</tag>
         <tag>gitbook</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>私人在线音乐服务器搭建与使用介绍</title>
-    <url>/posts/2b9325d0/</url>
-    <content><![CDATA[
-多种音乐播放实现方式
-
-页面内插入音乐列表。Aplayer实现
-单独页面音乐列表。Aplayer实现
-音乐Docker。在线云音乐
-
-
-
-原作者DMCA原因不再维护，如果你想自己部署，需要修改原作者docker内部代码。
-后面提供另一个Fork的版本，不过也被DMCA干掉了，不过功能比上面多一些，基本直接可用！
-
-
-
-音乐Docker Mstream docker。
-音乐Docker Logitech Media Server。Github
-
-
-
-多用户音乐分享、播放，在线，分类等功能。
-
-
-
-
-Aplayer 在线音乐
-
-博文页面内插入音乐列表
-
- var LOKStlnbvPeCZqFb_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); LOKStlnbvPeCZqFb_options.container = document.getElementById("mmedia-LOKStlnbvPeCZqFb"); const ap_LOKStlnbvPeCZqFb = new APlayer(LOKStlnbvPeCZqFb_options); 
-
-
-
- var DfTBWNucXBZargLi_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); DfTBWNucXBZargLi_options.container = document.getElementById("mmedia-DfTBWNucXBZargLi"); const ap_DfTBWNucXBZargLi = new APlayer(DfTBWNucXBZargLi_options); 
-单独Aplayer音乐页面
-
-直接戳这里 -&gt; Musics
-
-
-在线云音乐
-私人云音乐
-研究学习使用
-不对外公开发布，研究学习用。
-
-用户名密码base64编码
-55So5oi35ZCN5a+G56CB6YO95pivMTdsYWk=
-base64解密: 在线加密解密
-入口
-
-
-公开在线云音乐服务网页版。
-可以与网易云音乐UID同步！
-DockerHub
-
-
-
-
-与网易云同步
-
-网易云UID在登陆 https://music.163.com/ 后 点击右上角图标的我的主页 https://music.163.com/#/user/home?id=617xxxxx0
-home?id= 后面的数字就是你的UID。登录后，可以同步个人列表！
-
-在线播放可以配合IDM下载各个平台的音乐，在放入后面介绍的Docker播放器中，如此，可搭建自己的音乐播放器！
-吐槽一下，QQ音乐在线版和这个神似，基本可以肯定就是抄袭这个的！
-
-另一个 Fork 版本
-
-注意！ 不要公开使用！
-
-version: '3'
-services:
-  music:
-    image: bloodstar/music-player
-    container_name: music
-    hostname: music
-    restart: always
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Asia/Shanghai
-    volumes:
-      - /www/cache/docker/music/cache/:/var/www/html/cache/
-      - /www/cache/docker/music/temp/:/var/www/html/temp/
-    ports:
-      - "264:264"
-私人音乐服务器
-入口
-
-
-所有音乐作者，专辑，演唱者元数据刮削。
-rclone挂载webdav网盘存储音乐文件。
-cloudflare parterner加速。
-私人使用，不对外公开。
-
-
-在线音乐播放 Mstream
-
-
-SelfHost 支持。Docker 部署！
-Github: Mstream docker。
-浏览器界面支持。
-
-
-
-支持DJ模式
-
-
-在音乐库中随机选择音乐播放。
-选择症患者救星。
-
-
-
-Android支持
-
-其它特性
-
-
-转码支持
-遥控器支持
-播放列表
-等等
-
-
-在线音乐播放 navidrome
-
-
-Dockerhub navidrome
-Github navidrome
-
-Docker compose
-# This is just an example. Customize it to your needs.
-
-version: "3"
-services:
-  navidrome:
-    image: deluan/navidrome:latest
-    ports:
-      - "4533:4533"
-    environment:
-      # Optional: put your config options customization here. Examples:
-      ND_SCANSCHEDULE: 1h
-      ND_LOGLEVEL: info  
-      ND_BASEURL: ""
-    volumes:
-      - "./data:/data"
-      - "/path/to/your/music/folder:/music:ro"
-在线Demo
-登录用户名和密码
-
-User: demo
-Password: demo
-
-
-
-Mstream文件路径管理更完善，Navidrome界面更现代化，有封面，更美观！
-目前博主使用中！
-
-Logitech Media Server
-
-Dockerhub LMS
-
-
-另一个音乐播放器，Docker管理音乐文件，音乐上传到指定目录。
-博主试用了一段时间后，感觉管理音乐文件不方便，就弃用了。
-
-docker run -d \
-           --name lms \
-           -p 9000:9000 \
-           -p 9090:9090 \
-           -p 3483:3483 \
-           -p 3483:3483/udp \
-           -v /etc/localtime:/etc/localtime:ro \
-           -v &lt;local-state-dir&gt;:/srv/squeezebox \
-           -v &lt;audio-dir&gt;:/srv/music \
-           apnar/logitech-media-server
-
-]]></content>
-      <categories>
-        <category>music</category>
-      </categories>
-      <tags>
-        <tag>docker</tag>
-        <tag>music</tag>
-        <tag>mstream</tag>
-        <tag>selfhost</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>音乐推荐-曾经我也想过一了百了</title>
-    <url>/posts/8b7d3a9a/</url>
-    <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-mfyxesemjktujrJV").style.height=document.getElementById("mmedia-mfyxesemjktujrJV").scrollWidth*0.76+"px";
-    window.onresize = function(){
-      document.getElementById("mmedia-mfyxesemjktujrJV").style.height=document.getElementById("mmedia-mfyxesemjktujrJV").scrollWidth*0.76+"px";
-    }; 
-
-## 背景介绍
-
-《曾经我也想过一了百了》是日本歌手中岛美嘉演唱的歌曲，由秋田弘填词和谱曲、出羽良彰编曲，于2013年8月28日发行，收录在中岛美嘉个人专辑《TOUGH 为爱勇敢》中。该歌曲勾勒出向死而生、努力活着的人，让人感到温暖和希望，让因为压力迷茫无助而有轻生想法的人，开始积极拥抱生活。 《曾经我也想过一了百了》由日本摇滚乐队amazarashi的主唱秋田弘创作，创作理念为“为了描写浓烈的希望，必须先描写深层的黑暗”。2010年，迎来出道十周年的中岛美嘉宣布自己因耳咽管开放症暂停一切音乐活动。在疾病的影响下，歌唱对她而言变得无比艰难。2011年，她携单曲《Dear》复出，但复出后始终经历着状态的起伏和媒体的质疑。 中岛美嘉起先向amazarashi提出合作请求，希望乐队能为自己创作一首节奏明快的歌曲，但随后秋田弘向她播放了乐队一首未发行的样本歌曲，并认为该曲很适合由她来演唱。收到该曲时，中岛美嘉起先感到十分惊讶，但听到最后泪流不止，感到自己的心变得柔和，便立即要求演唱该曲。录制过程中，中岛美嘉将自己的心声融入到了该曲中，希望能将力量传达给低迷苦闷的听众。
-
-## 中文翻唱
-
- var mssivYnxaikXpEay_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); mssivYnxaikXpEay_options.container = document.getElementById("mmedia-mssivYnxaikXpEay"); const ap_mssivYnxaikXpEay = new APlayer(mssivYnxaikXpEay_options); 
-LRC歌词
-[00:02.09]作曲 : 秋田 ひろむ
-[00:02.64]曾经我也想过一了百了
-[00:03.21]原唱：中岛美嘉
-[00:04.46] 
-[00:29.85]曾经我 也想过 一了百了
-[00:34.79]因为看见蜷缩的猫
-[00:37.40]在码头望着远方
-[00:40.40]海浪拍打在岸上
-[00:43.44]一阵又一阵侵踏
-[00:46.22]希望那些过往都消失
-[00:49.38]不再回望
-[00:52.43]曾经我 也想过
-[00:54.82]一了百了
-[00:57.46]是因为生日的那天
-[01:00.10]杏花 又开放
-[01:03.75]阳光灿烂树荫下
-[01:06.41]落花已沉睡安详
-[01:09.84]是否我也 能化作尘土
-[01:12.16]不再流浪
-[01:15.76]仍放抽屉里过期的糖
-[01:18.28]迷路的单车被留在回家路上
-[01:21.27]还有海边抛弃的避风港
-[01:23.88]全都提醒 我和他们一样
-[01:26.75]昨天和今天的画面不断浮现
-[01:29.74]明天 渴望能不能有
-[01:31.54]新的改变
-[01:32.90]不能沮丧 我知道啊
-[01:35.55]可是啊
-[01:40.88]曾经我 也想过 一了百了
-[01:46.24]身边一切都像在问我
-[01:49.19]过得好不好
-[01:52.28]泪不能停止的流
-[01:55.05]流进心底的荒漠
-[01:58.28]这颗心中的模样
-[02:00.17]早空如一具躯壳
-[02:26.84]曾经我 也想过 一了百了
-[02:32.71]因为我的存在
-[02:34.23]总让别人失望
-[02:37.98]不曾拥有就不怕
-[02:40.80]关于人与人的伤
-[02:44.18]这么简单的道理
-[02:45.96]我也只会搞砸
-[02:49.80]曾经我 也想过 一了百了
-[02:55.49]是因为墙上
-[02:56.52]那张骄傲的自画像
-[03:00.96]无力反驳地跪下
-[03:03.66]只说的出一句话
-[03:06.99]生而为人的我
-[03:08.61]真的对不起呀
-[03:12.75]房间里闪烁着荧幕微光
-[03:15.56]伴随着屋外夜色的声音嘈杂
-[03:18.43]电话那头传来窒息的话
-[03:21.28]刺痛在笼中
-[03:22.44]备受折磨的时间啊
-[03:24.25]黑暗中我装备
-[03:25.58]唐吉轲德的毅力
-[03:26.89]对抗看不见的敌人
-[03:28.38]摧毁我的决心
-[03:29.85]不要害怕我知道啊可是啊
-[03:38.04]曾经我也想过一了百了
-[03:44.29]为何人们都说我无可救药
-[03:49.69]不强求能明白我
-[03:52.60]不奢望时间倒流
-[03:55.70]因为很久很久以前我曾爱过
-[04:00.86]曾经我 也想过 一了百了
-[04:06.89]是因为我该那样
-[04:08.43]灿烂那样美好
-[04:12.49]一味消极着过去
-[04:14.95]离去的念头缠绕
-[04:17.29]闭上眼能感受到
-[04:20.04]更好的明天来到
-[04:24.35]茫茫人海中的你
-[04:27.01]泪光中微笑的你
-[04:30.26]在我耳边温柔唱起这首歌曲
-[00:00.10]僕が死のうと思ったのは (曾经我也想过一了百了) - 中島美嘉 (なかしま みか)
-[00:00.20]词：秋田ひろむ
-[00:00.30]曲：秋田ひろむ
-[00:00.40]编曲：出羽良彰
-[00:27.95]僕が死のうと思ったのは
-[00:33.83]ウミネコが桟橋で鳴いたから
-[00:39.20]波の随意に浮かんで消える
-[00:45.33]過去も啄ばんで飛んでいけ
-[00:50.70]僕が死のうと思ったのは
-[00:56.52]誕生日に杏の花が咲いたから
-[01:02.22]その木漏れ日でうたた寝したら
-[01:08.09]虫の死骸と土になれるかな
-[01:14.09]薄荷飴 漁港の灯台
-[01:17.05]錆びたアーチ橋 捨てた自転車
-[01:19.74]木造の駅のストーブの前で
-[01:22.74]どこにも旅立てない心
-[01:25.61]今日はまるで昨日みたいだ
-[01:28.30]明日を変えるなら今日を変えなきゃ
-[01:31.56]分かってる 分かってる けれど
-[01:39.71]僕が死のうと思ったのは
-[01:44.89]心が空っぽになったから
-[01:50.71]満たされないと泣いているのは
-[01:56.39]きっと満たされたいと願うから
-[02:25.49]僕が死のうと思ったのは
-[02:30.69]靴紐が解けたから
-[02:36.57]結びなおすのは苦手なんだよ
-[02:42.25]人との繋がりもまた然り
-[02:47.90]僕が死のうと思ったのは
-[02:53.65]少年が僕を見つめていたから
-[02:59.30]ベッドの上で土下座してるよ
-[03:05.12]あの日の僕にごめんなさいと
-[03:11.43]パソコンの薄明かり
-[03:14.05]上階の部屋の生活音
-[03:16.80]インターフォンのチャイムの音
-[03:19.80]耳を塞ぐ鳥かごの少年
-[03:22.87]見えない敵と戦ってる
-[03:25.43]六畳一間のドンキホーテ
-[03:28.30]ゴールはどうせ醜いものさ
-[03:36.74]僕が死のうと思ったのは
-[03:42.05]冷たい人と言われたから
-[03:47.94]愛されたいと泣いているのは
-[03:53.63]人の温もりを知ってしまったから
-[04:22.79]僕が死のうと思ったのは
-[04:27.91]あなたが綺麗に笑うから
-[04:33.49]死ぬことばかり考えてしまうのは
-[04:39.62]きっと生きる事に真面目すぎるから
-[04:45.43]僕が死のうと思ったのは
-[04:50.70]まだあなたに出会ってなかったから
-[04:56.51]あなたのような人が生まれた
-[05:02.09]世界を少し好きになったよ
-[05:07.96]あなたのような人が生きてる
-[05:13.65]世界に少し期待するよ]]></content>
-      <categories>
-        <category>music</category>
-      </categories>
-      <tags>
-        <tag>music</tag>
-        <tag>中岛美嘉</tag>
       </tags>
   </entry>
   <entry>
@@ -24643,7 +24643,7 @@ https://cdn.jsdelivr.net/gh/{你的用户名}/{你的仓库名}@{发布的版本
 https://cdn.jsdelivr.net/gh/appotry/cloudimg@latest/data/2022/03/1120220311110247.webp
 注意：版本号不是必需的，是为了区分新旧资源，如果不使用版本号，将会直接引用最新资源。
 
-还可以配合 PicGo图床上传工具的自定义域名前缀来上传图片，使用极其方便。具体使用方法可参见我的另一篇文章: 使用 Typora+iPic/PicGo 图床+CDN 实现高效 Markdown 创作
+还可以配合 PicGo图床上传工具的自定义域名前缀来上传图片，使用极其方便。具体使用方法可参见这篇文章: 使用 Typora+iPic/PicGo 图床+CDN 实现高效 Markdown 创作
 
 jsdelivr
 jsdelivr 是还在目前还在国内运营的可以通过特殊方法免费使用的CDN。
@@ -35111,9 +35111,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-LFVJnygjRuAuOvJE").style.height=document.getElementById("mmedia-LFVJnygjRuAuOvJE").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-JXYWTKzZXOSxSeHt").style.height=document.getElementById("mmedia-JXYWTKzZXOSxSeHt").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-LFVJnygjRuAuOvJE").style.height=document.getElementById("mmedia-LFVJnygjRuAuOvJE").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-JXYWTKzZXOSxSeHt").style.height=document.getElementById("mmedia-JXYWTKzZXOSxSeHt").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 
@@ -35293,6 +35293,248 @@ Docker reader
         <tag>calibre</tag>
         <tag>douban</tag>
         <tag>book</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>自建全套开源Devops开发系统</title>
+    <url>/posts/ab63eb8f/</url>
+    <content><![CDATA[
+国内的Devops云平台动辄封号，删库，屏蔽，还多次发生数据泄密，项目被云平台克隆事件，国内云平台devops已死！数据安全没法保证，自建私有Devops平台才靠谱。这里采用开源项目建立一个完善的低成本Devops系统，基本运行良好！
+
+
+目标：单节点，以最低成本，最低消耗，使用开源软件实现一个可用的DevOps！满足中小企业的研发、测试、运维需求。并对后续如何扩展本套DevOps系统做了项目，成本，路线升级规划，可以一直扩展到业界最前沿最大系统。
+整套系统已经跑起来很长时间了！单节点Nas服务器，32G内存，共运行了约80个Docker，优化到平均负载10以下。
+
+
+
+Devops框架图解
+
+下面系统大多可以做负载平衡，多节点备份，可以扩展为一个高可用，大中央平台。
+珍爱生命，使用Docker！
+
+
+开源云平台生死连问
+
+珍爱生命，不建议使用国内云平台。
+
+什么是大教堂？
+什么是集市？
+什么是信任链？
+什么是开源生态？
+为什么要做开源生态？
+怎么做开源生态？
+开源生态的土壤肥力维护如何做？
+这些问题没想明白，没想到如何做的是没法做开源的。
+国内平台连种子嫩芽都要收割，到处收费，动辄删库，屏蔽，封号，注定做不了开源生态。
+Consul自动负载均衡
+
+基于服务自动发现和注册的负载均衡，负载均衡的方式没有变，只是多了一些外围组件，当然这些组件对 Client 是不可见的，client 依然只能看到 Nginx 入口，访问方式也没变化。
+
+
+Github仓库备份
+
+最优秀的资源，大多只在短时间内出现！
+平时多备份你重要的仓库，以及你使用的仓库的重要上下游仓库！
+
+
+
+github-backup Githb
+github-backup Dockerhub
+
+
+githubback:
+  image: lnxd/github-backup
+  container_name: "githubback"
+  hostname: githubback
+  # ports:
+    # - "80:80"
+  volumes:
+    - "${USERDIR}/githubback/data:/home/docker/backups:rw"
+  env_file:
+    - .env
+  environment:
+    - HTTP_PROXY=http://[ip]:[port]
+    - HTTPS_PROXY=http://[ip]:[port]
+  restart: always
+配置要求
+个人Nas配置
+
+
+cpu j4125 4 核 14nm 2.00 GHz ~2.70 GHz
+SSD sata 接口的 读写 500MB/S
+32G DDR4. 2x16G 双通道
+
+
+上图中介绍的系统都是上面配置的单服务器中可以运行的。
+如何以最低的配置，最少的内存运行起来最多的功能才是本文的追求，花费更多金钱去满足极少数情况的高压力是钱多的没处花。
+
+8G内存的nas 就可以运行 gitea + drone ，zentao 想用就用
+gitlab 要跑起来至少要2核 8G 内存，jenkins 也是内存 cpu 占用大户。大于 16G 内存时考虑上这个
+4核 32G 内存的nas，图片中介绍的可以全都跑起来！
+
+可靠性
+ELK集群监控对于单服务器来说完全多余，netdata监控也不错，portainer就够用了，以后为了节约资源，portainer说不定也会被干掉，大多数时候命令行监控就够了。少于200节点K8S就是多余的。
+数据安全
+
+云平台把数据交给别人，赌别人的道德不会私自偷拿你的数据？真是想多了。
+某垄断社交平台内部有专门的团队分析客户的数据，看有什么有价值的没有，是很多年前就爆出来的消息。
+自建DevOps成本其实相当的低！
+
+整套系统可以从少到多，从小到大，慢慢优化，扩展的。硬件成本也是随着需求变化而变化的，随着业务扩展而增加成本，一开始单节点单服务器就可以满足要求了，后面业务增加慢慢扩展为集群，k8s 等。
+数据，代码是公司核心资产与竞争力的公司，上云赌别人的人品就是找死。你注册账户的时候，就同意了，无论别人随意删除你的数据，或者窃取你的数据都是不用付任何责任的，再说，整个系统数据都在别人手上，你要维权也没有证据。
+备份
+
+UPS电源，防止意外断电
+rsync 备份，对于大多数人，已经够用了
+文件系统快照
+离线每日，或者每周冷备份
+大系统，多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群
+
+扩展性
+
+上面说的都可以单服务器搞定。多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群。
+多于200节点，大于3台服务器以后考虑上K8S。ELK监控之类的这时候可以上了。蓝鲸智云标准运维这时候也可以考虑了。
+再次扩大的时候可以考虑Proxmox VE（PVE） + ceph
+更大的系统，或者对外提供云平台服务的时候可以考虑上OpenStack
+
+项目介绍
+ELK
+
+消耗资源很多，至少上百节点以上再考虑上这个
+portainer -&gt; netdata -&gt; ELK，zabbix 
+
+
+cacti
+
+  
+
+
+
+
+  
+
+
+
+zabbix
+
+  
+
+
+
+
+  
+
+
+
+ansible
+
+  
+
+
+
+
+  
+
+
+
+CMDB
+
+  
+
+
+
+
+  
+
+
+
+PVE
+
+Proxmox VE（PVE）
+
+
+  
+
+
+
+CEPH
+
+  
+
+
+
+
+  
+
+
+
+OpenStack
+
+  
+
+
+
+
+  
+
+
+
+其它项目
+
+大家还有啥好项目建议？
+
+onedev
+onedev 是替代Gitlab的极佳候补，看文档介绍，潜力无限！
+
+  
+
+
+
+smartdns
+
+一个本地DNS服务器，获取最快的网站IP，获得最佳上网体验。
+
+
+  
+
+
+
+awesome-selfhosted
+
+这里你能找到各种各样的自建 Docker 服务
+
+
+  
+
+
+
+系列教程
+全部文章RSS订阅
+Devops系列
+Devops 分类 RSS 订阅
+
+自建全套开源Devops开发系统
+Git介绍以及分支模型图解
+三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
+DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
+项目开发管理工具推荐
+Gitlab的安装及使用教程完全版
+Gitlab的安装及使用
+那些有用的Github工具介绍！Action、app、workflow等
+
+相关文档
+
+Devops
+
+]]></content>
+      <categories>
+        <category>devops</category>
+      </categories>
+      <tags>
+        <tag>docker</tag>
+        <tag>devops</tag>
+        <tag>框架</tag>
+        <tag>图解</tag>
       </tags>
   </entry>
   <entry>
@@ -41327,7 +41569,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts5393'));
+        var myChart = echarts.init(document.getElementById('echarts914'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -41421,7 +41663,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts5164'));
+        var myChart = echarts.init(document.getElementById('echarts6079'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -41490,7 +41732,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts4684'));
+        var myChart = echarts.init(document.getElementById('echarts7046'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44889,248 +45131,6 @@ https://www.zhihu.com/question/35540121/answer/122175313
         <tag>投资</tag>
         <tag>理财</tag>
         <tag>金融</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>自建全套开源Devops开发系统</title>
-    <url>/posts/ab63eb8f/</url>
-    <content><![CDATA[
-国内的Devops云平台动辄封号，删库，屏蔽，还多次发生数据泄密，项目被云平台克隆事件，国内云平台devops已死！数据安全没法保证，自建私有Devops平台才靠谱。这里采用开源项目建立一个完善的低成本Devops系统，基本运行良好！
-
-
-目标：单节点，以最低成本，最低消耗，使用开源软件实现一个可用的DevOps！满足中小企业的研发、测试、运维需求。并对后续如何扩展本套DevOps系统做了项目，成本，路线升级规划，可以一直扩展到业界最前沿最大系统。
-整套系统已经跑起来很长时间了！单节点Nas服务器，32G内存，共运行了约80个Docker，优化到平均负载10以下。
-
-
-
-Devops框架图解
-
-下面系统大多可以做负载平衡，多节点备份，可以扩展为一个高可用，大中央平台。
-珍爱生命，使用Docker！
-
-
-开源云平台生死连问
-
-珍爱生命，不建议使用国内云平台。
-
-什么是大教堂？
-什么是集市？
-什么是信任链？
-什么是开源生态？
-为什么要做开源生态？
-怎么做开源生态？
-开源生态的土壤肥力维护如何做？
-这些问题没想明白，没想到如何做的是没法做开源的。
-国内平台连种子嫩芽都要收割，到处收费，动辄删库，屏蔽，封号，注定做不了开源生态。
-Consul自动负载均衡
-
-基于服务自动发现和注册的负载均衡，负载均衡的方式没有变，只是多了一些外围组件，当然这些组件对 Client 是不可见的，client 依然只能看到 Nginx 入口，访问方式也没变化。
-
-
-Github仓库备份
-
-最优秀的资源，大多只在短时间内出现！
-平时多备份你重要的仓库，以及你使用的仓库的重要上下游仓库！
-
-
-
-github-backup Githb
-github-backup Dockerhub
-
-
-githubback:
-  image: lnxd/github-backup
-  container_name: "githubback"
-  hostname: githubback
-  # ports:
-    # - "80:80"
-  volumes:
-    - "${USERDIR}/githubback/data:/home/docker/backups:rw"
-  env_file:
-    - .env
-  environment:
-    - HTTP_PROXY=http://[ip]:[port]
-    - HTTPS_PROXY=http://[ip]:[port]
-  restart: always
-配置要求
-个人Nas配置
-
-
-cpu j4125 4 核 14nm 2.00 GHz ~2.70 GHz
-SSD sata 接口的 读写 500MB/S
-32G DDR4. 2x16G 双通道
-
-
-上图中介绍的系统都是上面配置的单服务器中可以运行的。
-如何以最低的配置，最少的内存运行起来最多的功能才是本文的追求，花费更多金钱去满足极少数情况的高压力是钱多的没处花。
-
-8G内存的nas 就可以运行 gitea + drone ，zentao 想用就用
-gitlab 要跑起来至少要2核 8G 内存，jenkins 也是内存 cpu 占用大户。大于 16G 内存时考虑上这个
-4核 32G 内存的nas，图片中介绍的可以全都跑起来！
-
-可靠性
-ELK集群监控对于单服务器来说完全多余，netdata监控也不错，portainer就够用了，以后为了节约资源，portainer说不定也会被干掉，大多数时候命令行监控就够了。少于200节点K8S就是多余的。
-数据安全
-
-云平台把数据交给别人，赌别人的道德不会私自偷拿你的数据？真是想多了。
-某垄断社交平台内部有专门的团队分析客户的数据，看有什么有价值的没有，是很多年前就爆出来的消息。
-自建DevOps成本其实相当的低！
-
-整套系统可以从少到多，从小到大，慢慢优化，扩展的。硬件成本也是随着需求变化而变化的，随着业务扩展而增加成本，一开始单节点单服务器就可以满足要求了，后面业务增加慢慢扩展为集群，k8s 等。
-数据，代码是公司核心资产与竞争力的公司，上云赌别人的人品就是找死。你注册账户的时候，就同意了，无论别人随意删除你的数据，或者窃取你的数据都是不用付任何责任的，再说，整个系统数据都在别人手上，你要维权也没有证据。
-备份
-
-UPS电源，防止意外断电
-rsync 备份，对于大多数人，已经够用了
-文件系统快照
-离线每日，或者每周冷备份
-大系统，多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群
-
-扩展性
-
-上面说的都可以单服务器搞定。多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群。
-多于200节点，大于3台服务器以后考虑上K8S。ELK监控之类的这时候可以上了。蓝鲸智云标准运维这时候也可以考虑了。
-再次扩大的时候可以考虑Proxmox VE（PVE） + ceph
-更大的系统，或者对外提供云平台服务的时候可以考虑上OpenStack
-
-项目介绍
-ELK
-
-消耗资源很多，至少上百节点以上再考虑上这个
-portainer -&gt; netdata -&gt; ELK，zabbix 
-
-
-cacti
-
-  
-
-
-
-
-  
-
-
-
-zabbix
-
-  
-
-
-
-
-  
-
-
-
-ansible
-
-  
-
-
-
-
-  
-
-
-
-CMDB
-
-  
-
-
-
-
-  
-
-
-
-PVE
-
-Proxmox VE（PVE）
-
-
-  
-
-
-
-CEPH
-
-  
-
-
-
-
-  
-
-
-
-OpenStack
-
-  
-
-
-
-
-  
-
-
-
-其它项目
-
-大家还有啥好项目建议？
-
-onedev
-onedev 是替代Gitlab的极佳候补，看文档介绍，潜力无限！
-
-  
-
-
-
-smartdns
-
-一个本地DNS服务器，获取最快的网站IP，获得最佳上网体验。
-
-
-  
-
-
-
-awesome-selfhosted
-
-这里你能找到各种各样的自建 Docker 服务
-
-
-  
-
-
-
-系列教程
-全部文章RSS订阅
-Devops系列
-Devops 分类 RSS 订阅
-
-自建全套开源Devops开发系统
-Git介绍以及分支模型图解
-三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
-DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
-项目开发管理工具推荐
-Gitlab的安装及使用教程完全版
-Gitlab的安装及使用
-那些有用的Github工具介绍！Action、app、workflow等
-
-相关文档
-
-Devops
-
-]]></content>
-      <categories>
-        <category>devops</category>
-      </categories>
-      <tags>
-        <tag>docker</tag>
-        <tag>devops</tag>
-        <tag>框架</tag>
-        <tag>图解</tag>
       </tags>
   </entry>
 </search>
