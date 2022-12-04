@@ -145,6 +145,384 @@ Github Pages 并不是无限存储和无限流量的静态站点服务，一些�
       </tags>
   </entry>
   <entry>
+    <title>Gitlab的安装及使用</title>
+    <url>/posts/d08eb7b/</url>
+    <content><![CDATA[Gitlab概述
+1.1 GitLab介绍
+GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。
+GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。
+它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找
+1.2 Gitlab服务构成
+
+
+Nginx：静态web服务器。
+
+
+gitlab-shell：用于处理Git命令和修改authorized keys列表。
+
+
+gitlab-workhorse: 轻量级的反向代理服务器。
+
+
+logrotate：日志文件管理工具。
+
+
+postgresql：数据库。
+
+
+redis：缓存数据库。
+
+
+sidekiq：用于在后台执行队列任务（异步执行）。
+
+
+unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。
+
+
+1.3 Gitlab工作流程
+
+1.4 GitLab Shell
+GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表
+当通过SSH访问GitLab Server时，GitLab Shell会：
+
+限制执行预定义好的Git命令（git push，git pull，git annex）
+调用GitLab Rails API检查权限
+执行pre-receive钩子（在企业版中叫做Git钩子）
+执行用户请求的动作，处理GitLab的post-receive动作
+处理自定义的post-receive动作
+
+当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：
+如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作
+如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：
+
+调用GitLab Rails API 检查权限
+执行pre-receive钩子（在GitLab企业版中叫做Git钩子）
+执行你请求的动作
+处理GitLab的post-receive动作
+处理自定义的post-receive动作
+
+1.5 GitLab Workhorse
+GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。
+Gitlab的安装部署
+
+
+Gitlab要求服务器内存2G以上
+
+2.1 方式一:下载gitlab-ce的rpm包
+
+gitlab官方rpm包下载
+清华的源
+
+将对应版本的gitlab-ce下载到本地后，直接yum安装即可
+要先将这个rpm包下载到本地
+yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm
+2.2 方式二:配置yum源
+在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：
+[gitlab-ce]
+name=gitlab-ce
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/ Repo_gpgcheck=0
+Enabled=1 Gpgkey=https://packages.gitlab.com/gpg.key
+然后创建cache，再直接安装gitlab-ce
+yum makecache  # 这一步会创建大量的数据
+直接安装最新版
+yum install -y gitlab-ce # 如果要安装指定的版本，在后面填上版本号即可
+yum install -y  gitlab-ce-13.6.1
+如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
+yum install gitlab-ce -y --nogpgcheck
+2.3 gitlab的配置
+配置文件位置  /etc/gitlab/gitlab.rb
+[root@centos7 test]# vim /etc/gitlab/gitlab.rb
+[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
+external_url 'http://10.0.0.51'  # 这里一定要加上http://
+配置邮件服务
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.qq.com" gitlab_rails['smtp_port'] = 25 gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
+gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
+gitlab_rails['smtp_domain'] = "qq.com" gitlab_rails['smtp_authentication'] = "login" gitlab_rails['smtp_enable_starttls_auto'] = true
+gitlab_rails['smtp_tls'] = false
+gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
+user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址
+修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。
+gitlab-ctl reconfigure # 重载配置文件
+2.4 Gitlab常用命令
+gitlab-ctl start         # 启动所有 gitlab 组件
+gitlab-ctl stop          # 停止所有 gitlab 组件
+gitlab-ctl restart       # 重启所有 gitlab 组件
+gitlab-ctl status        # 查看服务状态
+gitlab-ctl reconfigure   # 启动服务
+gitlab-ctl show-config   # 验证配置文件
+gitlab-ctl tail          # 查看日志
+gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
+vim /etc/gitlab/gitlab.rb # 修改默认的配置文件
+Gitlab的使用
+
+
+Gitlab安装好后，设置密码，管理账户为root
+
+3.1 创建Group
+
+填上组名即可，这里组名为java
+
+
+
+3.2 创建User
+
+创建四个User：pm、dev1、dev2、dev3
+
+
+
+3.3 添加User到Group中并授权
+
+3.4 创建Project并配置SSH
+
+
+
+
+3.5 在项目中添加成员
+
+
+3.6 将本地文件推送到Gitlab
+将app01项目克隆下来
+git clone git@10.0.0.51:java/app01.git # 初始化配置
+git config --global user.name "hgzero" git config --global user.email "hgzero@qq.com"
+在app01目录下新建一些文件
+推送到gitlab
+git add .
+git commit -m "first edition" git push origin master
+
+
+制定开发计划
+
+
+4.1 创建开发计划
+
+项目：app01
+版本：v1.0
+
+
+4.2 创建里程碑Milestones
+
+用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）
+要根据开发计划来创建Milestones
+
+
+
+
+
+4.3 根据开发计划创建issue
+
+创建4个issue，分派给dev1和dev2这两个开发人员
+
+
+
+
+
+
+
+**4.4 开发者登录账号查看分派的任务 **
+
+然后开发dev1登录gitlab，就能看到任务已经分配过来了
+
+
+4.5 开发流程
+
+公司里的开发开始任务
+
+1. 先从仓库把项目拉下来
+git clone git@10.0.0.51:java/app01.git
+cd app01/
+2.先创建一个自己的分支，然后进行开发
+git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
+git status # 3. 开始开发首页
+echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
+4. 开发完成后，把项目传到仓库
+git add .
+git commit -m "index"
+如果写成 git commit -m “close #2” ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
+传到index分支
+git push origin index
+4.6 合并分支
+1）开发dev1发送合并分支请求给pm
+
+
+
+2）pm收到开发的Merge请求后进行处理
+
+使用pm登录，就可以看到pm已经收到了合并请求merge request
+
+
+
+
+
+3）开发dev1确认任务完成
+
+退出pm账户，登入dev1账户：
+
+
+
+或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close
+
+
+
+这个时候Milestones的进度已经往前进了一些了：
+
+
+4.7 开发其他功能
+
+然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发
+
+git checkout master  # 切换到master
+git pull             # 从远端仓库拉取数据
+然后再进行其他操作
+Gitlab备份恢复
+
+5.1 备份gitlab
+1）修改配置文件
+
+/etc/gitlab/gitlab.rb
+
+备份保存的位置，这里是默认位置，可修改成指定的位置
+gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
+设置备份保存的时间，超过此时间的日志将会被新覆盖
+gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
+特别注意： # 如果自定义了备份保存位置，则要修改备份目录的权限，比如： # chown -R git.git /data/backup/gitlab
+
+配置完成后要重启以使配置生效
+
+重读配置文件
+gitlab-ctl reconfigure # 重启gitlab
+gitlab-ctl restart
+2）设置定时任务
+每天凌晨2点定时创建备份 # 将一下内容写入到定时任务中 crontab -e
+0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create # 备份策略建议： # 本地保留3到7天，在异地备份永久保存
+3）备份时间的识别
+备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
+data -d  @1494170842
+5.2 恢复gitlab
+1）停止数据写入服务
+停止数据写入服务
+gitlab-ctl stop unicorn
+gitlab-ctl stop sidekiq
+2）进行数据恢复并重启
+进行恢复
+gitlab-rake gitlab:backup:restore BACKUP=1494170842  # 这个时间戳就是刚刚备份的文件前面的时间戳
+重启
+gitlab-ctl restart
+gitlab邮件通知配置
+
+
+vim  /etc/gitlab/gitlab.rb
+
+gitlab_rails['time_zone'] = 'Asia/Shanghai' gitlab_rails['gitlab_email_enabled'] = true
+gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
+gitlab_rails['gitlab_email_display_name'] = 'gitlab' gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
+gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
+gitlab_rails['smtp_user_name'] = "smtp用户名" gitlab_rails['smtp_password'] = "smtp用户密码" gitlab_rails['smtp_domain'] = "163.com" gitlab_rails['smtp_authentication'] = "login"
+
+
+使用SourceTree进行项目开发
+
+
+
+7.1 项目拉取
+
+先把项目克隆下来
+
+
+
+
+如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加
+
+
+
+7.2 创建分支进行功能开发
+1）新建立一个叫“pay”的分支
+
+
+2）进行功能开发
+
+7.3 提交项目
+1）开发pay功能完成后进行提交
+
+可以看到SourceTree中已经有“未提交的更改”
+
+
+
+2）添加“用户信息”
+
+** 3）进行提交**
+
+
+注释也可以写成  close #3    ，作用是提交完成后关闭3号issue
+
+7.4 推送到仓库
+
+
+
+然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了
+
+7.5 项目上线
+1）当所有工作完成之后，就可以进行上线了
+
+2）打标签
+
+上线先打个标签
+
+
+
+
+** 3）删除无用分支**
+
+然后删除已经合并到主干中的不必要的分支，如index、pay等
+最后一定要注意时间一定要同步，不然会错乱
+
+参考
+
+Praywu
+
+Gitlab 使用系列
+
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+
+系列教程
+全部文章RSS订阅
+Gitlab 使用系列
+Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+Devops系列
+Devops 分类 RSS 订阅
+
+自建全套开源Devops开发系统
+Git介绍以及分支模型图解
+三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
+DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
+项目开发管理工具推荐
+Gitlab的安装及使用教程完全版
+Gitlab的安装及使用
+那些有用的Github工具介绍！Action、app、workflow等
+
+]]></content>
+      <categories>
+        <category>devops</category>
+      </categories>
+      <tags>
+        <tag>gitlab</tag>
+        <tag>git</tag>
+        <tag>crack</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>PT 工具集，Linux硬链接助手</title>
     <url>/posts/bb600b4b/</url>
     <content><![CDATA[由于自我需求，写了两个脚本完成PT下载和保种两全其美的硬链接 Linux shell 脚本方案。
@@ -719,384 +1097,6 @@ Earthly 一个更加强大的镜像构建工具
         <tag>qnap</tag>
         <tag>硬盘</tag>
         <tag>nas</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Gitlab的安装及使用</title>
-    <url>/posts/d08eb7b/</url>
-    <content><![CDATA[Gitlab概述
-1.1 GitLab介绍
-GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。
-GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。
-它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找
-1.2 Gitlab服务构成
-
-
-Nginx：静态web服务器。
-
-
-gitlab-shell：用于处理Git命令和修改authorized keys列表。
-
-
-gitlab-workhorse: 轻量级的反向代理服务器。
-
-
-logrotate：日志文件管理工具。
-
-
-postgresql：数据库。
-
-
-redis：缓存数据库。
-
-
-sidekiq：用于在后台执行队列任务（异步执行）。
-
-
-unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。
-
-
-1.3 Gitlab工作流程
-
-1.4 GitLab Shell
-GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表
-当通过SSH访问GitLab Server时，GitLab Shell会：
-
-限制执行预定义好的Git命令（git push，git pull，git annex）
-调用GitLab Rails API检查权限
-执行pre-receive钩子（在企业版中叫做Git钩子）
-执行用户请求的动作，处理GitLab的post-receive动作
-处理自定义的post-receive动作
-
-当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：
-如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作
-如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：
-
-调用GitLab Rails API 检查权限
-执行pre-receive钩子（在GitLab企业版中叫做Git钩子）
-执行你请求的动作
-处理GitLab的post-receive动作
-处理自定义的post-receive动作
-
-1.5 GitLab Workhorse
-GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。
-Gitlab的安装部署
-
-
-Gitlab要求服务器内存2G以上
-
-2.1 方式一:下载gitlab-ce的rpm包
-
-gitlab官方rpm包下载
-清华的源
-
-将对应版本的gitlab-ce下载到本地后，直接yum安装即可
-要先将这个rpm包下载到本地
-yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm
-2.2 方式二:配置yum源
-在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：
-[gitlab-ce]
-name=gitlab-ce
-baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/ Repo_gpgcheck=0
-Enabled=1 Gpgkey=https://packages.gitlab.com/gpg.key
-然后创建cache，再直接安装gitlab-ce
-yum makecache  # 这一步会创建大量的数据
-直接安装最新版
-yum install -y gitlab-ce # 如果要安装指定的版本，在后面填上版本号即可
-yum install -y  gitlab-ce-13.6.1
-如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
-yum install gitlab-ce -y --nogpgcheck
-2.3 gitlab的配置
-配置文件位置  /etc/gitlab/gitlab.rb
-[root@centos7 test]# vim /etc/gitlab/gitlab.rb
-[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
-external_url 'http://10.0.0.51'  # 这里一定要加上http://
-配置邮件服务
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.qq.com" gitlab_rails['smtp_port'] = 25 gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
-gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
-gitlab_rails['smtp_domain'] = "qq.com" gitlab_rails['smtp_authentication'] = "login" gitlab_rails['smtp_enable_starttls_auto'] = true
-gitlab_rails['smtp_tls'] = false
-gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
-user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址
-修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。
-gitlab-ctl reconfigure # 重载配置文件
-2.4 Gitlab常用命令
-gitlab-ctl start         # 启动所有 gitlab 组件
-gitlab-ctl stop          # 停止所有 gitlab 组件
-gitlab-ctl restart       # 重启所有 gitlab 组件
-gitlab-ctl status        # 查看服务状态
-gitlab-ctl reconfigure   # 启动服务
-gitlab-ctl show-config   # 验证配置文件
-gitlab-ctl tail          # 查看日志
-gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
-vim /etc/gitlab/gitlab.rb # 修改默认的配置文件
-Gitlab的使用
-
-
-Gitlab安装好后，设置密码，管理账户为root
-
-3.1 创建Group
-
-填上组名即可，这里组名为java
-
-
-
-3.2 创建User
-
-创建四个User：pm、dev1、dev2、dev3
-
-
-
-3.3 添加User到Group中并授权
-
-3.4 创建Project并配置SSH
-
-
-
-
-3.5 在项目中添加成员
-
-
-3.6 将本地文件推送到Gitlab
-将app01项目克隆下来
-git clone git@10.0.0.51:java/app01.git # 初始化配置
-git config --global user.name "hgzero" git config --global user.email "hgzero@qq.com"
-在app01目录下新建一些文件
-推送到gitlab
-git add .
-git commit -m "first edition" git push origin master
-
-
-制定开发计划
-
-
-4.1 创建开发计划
-
-项目：app01
-版本：v1.0
-
-
-4.2 创建里程碑Milestones
-
-用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）
-要根据开发计划来创建Milestones
-
-
-
-
-
-4.3 根据开发计划创建issue
-
-创建4个issue，分派给dev1和dev2这两个开发人员
-
-
-
-
-
-
-
-**4.4 开发者登录账号查看分派的任务 **
-
-然后开发dev1登录gitlab，就能看到任务已经分配过来了
-
-
-4.5 开发流程
-
-公司里的开发开始任务
-
-1. 先从仓库把项目拉下来
-git clone git@10.0.0.51:java/app01.git
-cd app01/
-2.先创建一个自己的分支，然后进行开发
-git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
-git status # 3. 开始开发首页
-echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
-4. 开发完成后，把项目传到仓库
-git add .
-git commit -m "index"
-如果写成 git commit -m “close #2” ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
-传到index分支
-git push origin index
-4.6 合并分支
-1）开发dev1发送合并分支请求给pm
-
-
-
-2）pm收到开发的Merge请求后进行处理
-
-使用pm登录，就可以看到pm已经收到了合并请求merge request
-
-
-
-
-
-3）开发dev1确认任务完成
-
-退出pm账户，登入dev1账户：
-
-
-
-或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close
-
-
-
-这个时候Milestones的进度已经往前进了一些了：
-
-
-4.7 开发其他功能
-
-然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发
-
-git checkout master  # 切换到master
-git pull             # 从远端仓库拉取数据
-然后再进行其他操作
-Gitlab备份恢复
-
-5.1 备份gitlab
-1）修改配置文件
-
-/etc/gitlab/gitlab.rb
-
-备份保存的位置，这里是默认位置，可修改成指定的位置
-gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
-设置备份保存的时间，超过此时间的日志将会被新覆盖
-gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
-特别注意： # 如果自定义了备份保存位置，则要修改备份目录的权限，比如： # chown -R git.git /data/backup/gitlab
-
-配置完成后要重启以使配置生效
-
-重读配置文件
-gitlab-ctl reconfigure # 重启gitlab
-gitlab-ctl restart
-2）设置定时任务
-每天凌晨2点定时创建备份 # 将一下内容写入到定时任务中 crontab -e
-0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create # 备份策略建议： # 本地保留3到7天，在异地备份永久保存
-3）备份时间的识别
-备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
-data -d  @1494170842
-5.2 恢复gitlab
-1）停止数据写入服务
-停止数据写入服务
-gitlab-ctl stop unicorn
-gitlab-ctl stop sidekiq
-2）进行数据恢复并重启
-进行恢复
-gitlab-rake gitlab:backup:restore BACKUP=1494170842  # 这个时间戳就是刚刚备份的文件前面的时间戳
-重启
-gitlab-ctl restart
-gitlab邮件通知配置
-
-
-vim  /etc/gitlab/gitlab.rb
-
-gitlab_rails['time_zone'] = 'Asia/Shanghai' gitlab_rails['gitlab_email_enabled'] = true
-gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
-gitlab_rails['gitlab_email_display_name'] = 'gitlab' gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
-gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
-gitlab_rails['smtp_user_name'] = "smtp用户名" gitlab_rails['smtp_password'] = "smtp用户密码" gitlab_rails['smtp_domain'] = "163.com" gitlab_rails['smtp_authentication'] = "login"
-
-
-使用SourceTree进行项目开发
-
-
-
-7.1 项目拉取
-
-先把项目克隆下来
-
-
-
-
-如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加
-
-
-
-7.2 创建分支进行功能开发
-1）新建立一个叫“pay”的分支
-
-
-2）进行功能开发
-
-7.3 提交项目
-1）开发pay功能完成后进行提交
-
-可以看到SourceTree中已经有“未提交的更改”
-
-
-
-2）添加“用户信息”
-
-** 3）进行提交**
-
-
-注释也可以写成  close #3    ，作用是提交完成后关闭3号issue
-
-7.4 推送到仓库
-
-
-
-然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了
-
-7.5 项目上线
-1）当所有工作完成之后，就可以进行上线了
-
-2）打标签
-
-上线先打个标签
-
-
-
-
-** 3）删除无用分支**
-
-然后删除已经合并到主干中的不必要的分支，如index、pay等
-最后一定要注意时间一定要同步，不然会错乱
-
-参考
-
-Praywu
-
-Gitlab 使用系列
-
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-
-系列教程
-全部文章RSS订阅
-Gitlab 使用系列
-Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-Devops系列
-Devops 分类 RSS 订阅
-
-自建全套开源Devops开发系统
-Git介绍以及分支模型图解
-三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
-DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
-项目开发管理工具推荐
-Gitlab的安装及使用教程完全版
-Gitlab的安装及使用
-那些有用的Github工具介绍！Action、app、workflow等
-
-]]></content>
-      <categories>
-        <category>devops</category>
-      </categories>
-      <tags>
-        <tag>gitlab</tag>
-        <tag>git</tag>
-        <tag>crack</tag>
       </tags>
   </entry>
   <entry>
@@ -2805,6 +2805,1047 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
+    <title>Gitlab的安装及使用教程完全版</title>
+    <url>/posts/acc13b70/</url>
+    <content><![CDATA[1. Gitlab概述
+
+1.1 GitLab介绍
+GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。
+GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。
+它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找
+1.2 Gitlab服务构成
+Nginx：静态web服务器。
+gitlab-shell：用于处理Git命令和修改authorized keys列表。
+gitlab-workhorse: 轻量级的反向代理服务器。
+logrotate：日志文件管理工具。
+postgresql：数据库。
+redis：缓存数据库。
+sidekiq：用于在后台执行队列任务（异步执行）。
+unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。
+1.3 Gitlab工作流程
+
+1.4 GitLab Shell
+GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表
+当通过SSH访问GitLab Server时，GitLab Shell会：
+
+限制执行预定义好的Git命令（git push，git pull，git annex）
+调用GitLab Rails API检查权限
+执行pre-receive钩子（在企业版中叫做Git钩子）
+执行用户请求的动作，处理GitLab的post-receive动作
+处理自定义的post-receive动作
+
+当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：
+如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作
+如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：
+
+调用GitLab Rails API 检查权限
+执行pre-receive钩子（在GitLab企业版中叫做Git钩子）
+执行你请求的动作
+处理GitLab的post-receive动作
+处理自定义的post-receive动作
+
+1.5 GitLab Workhorse
+GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。
+2. Gitlab的安装部署
+
+Gitlab要求服务器内存2G以上
+
+2.1 方式一:下载gitlab-ce的rpm包
+
+gitlab官方rpm包下载
+清华的源
+
+将对应版本的gitlab-ce下载到本地后，直接yum安装即可
+# 要先将这个rpm包下载到本地
+yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm
+2.2 方式二:配置yum源
+在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：
+[gitlab-ce]
+name=gitlab-ce
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/
+Repo_gpgcheck=0
+Enabled=1
+Gpgkey=https://packages.gitlab.com/gpg.key
+然后创建cache，再直接安装gitlab-ce
+yum makecache  # 这一步会创建大量的数据
+ 
+# 直接安装最新版
+yum install -y gitlab-ce
+ 
+# 如果要安装指定的版本，在后面填上版本号即可
+yum install -y  gitlab-ce-13.6.1
+ 
+# 如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
+yum install gitlab-ce -y --nogpgcheck
+2.2.1. 单服务启动模式
+docker run -d --name gitlab --hostname gitlab.example.com \
+-e GITLAB_OMNIBUS_CONFIG="
+    external_url 'https://gitlab.example.com'
+    gitlab_rails['gitlab_shell_ssh_port'] = 22
+    nginx['redirect_http_to_https'] = true
+    nginx['ssl_dhparam'] = '/etc/gitlab/ssl/dhparam.pem'
+    nginx['ssl_certificate'] = '/etc/gitlab/ssl/domain.crt'
+    nginx['ssl_certificate_key'] = '/etc/gitlab/ssl/domain.key'
+    nginx['custom_gitlab_server_config'] = 'location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n'
+    high_availability['mountpoint'] = ['/etc/gitlab', '/var/log/gitlab' '/var/opt/gitlab'  # 严格限定gitlab服务启动前，指定文件系统挂完毕
+" \
+-p 22:22 -p 80:80 -p 443:443 \
+-v /srv/gitlab/config:/etc/gitlab \
+-v /srv/gitlab/logs:/var/log/gitlab \
+-v /srv/gitlab/data:/var/opt/gitlab \
+-v /etc/certs:/etc/gitlab/ssl \
+--restart=always gitlab/gitlab-ce:latest
+ 
+2.2.1. Compose服务编排模式(推荐方式)
+docker pull gitlab/gitlab-ce:latest
+ 
+############################ 多行命令开始 ##########################
+cat &gt; docker-compose.yaml &lt;&lt;EOF
+version: '2'
+ 
+services:
+ 
+  Gitlab:
+    image: 'gitlab/gitlab-ce:latest'
+    container_name: 'gitlab'
+    hostname: 'gitlab.example.com'
+    restart: always
+    ports:
+      - '22:22'
+      - '80:80'
+      - '443:443'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        # Add any other gitlab.rb configuration here, each on its own line
+        external_url 'https://gitlab.example.com'
+        gitlab_rails['gitlab_shell_ssh_port'] = 22
+        nginx['redirect_http_to_https'] = true
+        nginx['ssl_dhparam'] = "/etc/gitlab/ssl/dhparam.pem"
+        nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
+        nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
+        nginx['custom_gitlab_server_config'] = "location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n"
+        high_availability['mountpoint'] = ["/etc/gitlab", "/var/log/gitlab", "/var/opt/gitlab"]  # 严格限定gitlab服务启动前，指定文件系统挂完毕
+    volumes:
+      - /srv/gitlab/config:/etc/gitlab
+      - /srv/gitlab/logs:/var/log/gitlab
+      - /srv/gitlab/data:/var/opt/gitlab
+      - /etc/certs:/etc/gitlab/ssl
+EOF
+############################ 多行命令结束 ##########################
+ 
+# 启动服务
+docker-compose -f docker-compose.yaml up -d
+ 
+2.3 gitlab的配置
+配置文件位置  /etc/gitlab/gitlab.rb
+[root@centos7 test]# vim /etc/gitlab/gitlab.rb
+ 
+[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
+ 
+external_url 'http://10.0.0.51'  # 这里一定要加上http://
+ 
+# 配置邮件服务
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.qq.com"
+gitlab_rails['smtp_port'] = 25
+gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
+gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
+gitlab_rails['smtp_domain'] = "qq.com"
+gitlab_rails['smtp_authentication'] = "login"
+gitlab_rails['smtp_enable_starttls_auto'] = true
+gitlab_rails['smtp_tls'] = false
+gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
+user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址
+修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。
+gitlab-ctl reconfigure # 重载配置文件
+gitlab-ctl restart
+测试邮件服务器
+gitlab-rails console
+Notify.test_email('rollinghell@foxmail.com','testbiaoti','testzhegnwen1').deliver_now
+[root@test102 ~]# gitlab-rails console
+--------------------------------------------------------------------------------
+ GitLab:       12.5.0 (1f0ab8978ef)
+GitLab Shell: 10.2.0
+ PostgreSQL:   10.9
+--------------------------------------------------------------------------------
+Loading production environment (Rails 5.2.3)
+irb(main):001:0&gt; Notify.test_email('andycrusoe@gmail.com','test','test').deliver_now
+Notify#test_email: processed outbound mail in 1.4ms
+Sent mail to anliven@126.com (73.0ms)
+Date: Wed, 27 Nov 2019 15:12:58 +0800
+From: GitLab &lt;gitlab@192.168.16.102&gt;
+Reply-To: GitLab &lt;noreply@192.168.16.102&gt;
+To: anliven@126.com
+Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;
+Subject: test
+Mime-Version: 1.0
+Content-Type: text/html;
+charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Auto-Submitted: auto-generated
+X-Auto-Response-Suppress: All
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd"&gt;
+&lt;html&gt;&lt;body&gt;&lt;p&gt;test&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
+=&gt; #&lt;Mail::Message:70141649239780, Multipart: false, Headers: &lt;Date: Wed, 27 Nov 2019 15:12:58 +0800&gt;, &lt;From: GitLab &lt;gitlab@192.168.16.102&gt;&gt;, &lt;Reply-To: GitLab &lt;noreply@192.168.16.102&gt;&gt;, &lt;To: anliven@126.com&gt;, &lt;Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;&gt;, &lt;Subject: test&gt;, &lt;Mime-Version: 1.0&gt;, &lt;Content-Type: text/html; charset=UTF-8&gt;, &lt;Content-Transfer-Encoding: 7bit&gt;, &lt;Auto-Submitted: auto-generated&gt;, &lt;X-Auto-Response-Suppress: All&gt;&gt;
+irb(main):002:0&gt;
+irb(main):003:0&gt; exit
+[root@test102 ~]#
+ 
+配置gitlab代理
+https://docs.gitlab.com/omnibus/settings/environment-variables.html
+gitaly['env'] = {
+    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
+    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
+}
+也可以使用单独模块代理
+# Needed for proxying Git clones
+gitaly['env'] = {
+    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
+    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
+}
+
+gitlab_workhorse['env'] = {
+    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
+    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
+}
+
+gitlab_pages['env'] = {
+    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
+    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
+}
+
+# If you use the docker registry
+registry['env'] = {
+    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
+    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
+}
+应用生效 gitlab-ctl reconfigure
+2.4 Gitlab常用命令
+gitlab-ctl start         # 启动所有 gitlab 组件
+gitlab-ctl stop          # 停止所有 gitlab 组件
+gitlab-ctl restart       # 重启所有 gitlab 组件
+gitlab-ctl status        # 查看服务状态
+ 
+gitlab-ctl reconfigure   # 启动服务
+gitlab-ctl show-config   # 验证配置文件
+ 
+gitlab-ctl tail          # 查看日志
+ 
+gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
+ 
+vim /etc/gitlab/gitlab.rb # 修改默认的配置文件
+2.5 gitlab-ctl常用命令介绍
+
+
+
+命令
+说明
+
+
+
+
+check-config
+检查在gitlab中是否有任何配置。在指定版本中删除的rb
+
+
+deploy-page
+安装部署页面
+
+
+diff-config
+将用户配置与包可用配置进行比较
+
+
+remove-accounts
+删除所有用户和组
+
+
+upgrade
+升级
+
+
+service-list
+查看所有服务
+
+
+once
+如果GitLab服务停止了就启动服务，如果已启动就不做任何操作
+
+
+restart
+重启GitLab服务
+
+
+start
+如果GitLab服务停止了就启动服务，如果已启动就重启服务
+
+
+stop
+停止GitLab服务
+
+
+status
+查看GitLab服务状态
+
+
+reconfigure
+重新配置GitLab并启动
+
+
+
+3. Gitlab的使用
+
+Gitlab安装好后，设置密码，管理账户为root
+
+3.1 创建Group
+
+填上组名即可，这里组名为java
+
+
+
+3.2 创建User
+
+创建四个User：pm、dev1、dev2、dev3
+
+
+
+3.3 添加User到Group中并授权
+
+3.4 创建Project并配置SSH
+
+
+
+
+3.5 在项目中添加成员
+
+
+3.6 将本地文件推送到Gitlab
+# 将app01项目克隆下来
+git clone git@10.0.0.51:java/app01.git
+ 
+# 初始化配置
+git config --global user.name "hgzero"
+git config --global user.email "hgzero@qq.com"
+ 
+# 在app01目录下新建一些文件
+ 
+# 推送到gitlab
+git add .
+git commit -m "first edition"
+git push origin master
+
+4. 制定开发计划
+4.1 创建开发计划
+
+项目：app01
+版本：v1.0
+
+
+4.2 创建里程碑Milestones
+
+用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）
+要根据开发计划来创建Milestones
+
+
+
+
+
+4.3 根据开发计划创建issue
+
+创建4个issue，分派给dev1和dev2这两个开发人员
+
+
+
+
+
+
+
+**4.4 开发者登录账号查看分派的任务 **
+
+然后开发dev1登录gitlab，就能看到任务已经分配过来了
+
+
+4.5 开发流程
+
+公司里的开发开始任务
+
+# 1. 先从仓库把项目拉下来
+git clone git@10.0.0.51:java/app01.git
+cd app01/
+ 
+# 2.先创建一个自己的分支，然后进行开发
+git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
+git status
+ 
+# 3. 开始开发首页
+echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
+ 
+# 4. 开发完成后，把项目传到仓库
+git add .
+git commit -m "index"
+# 如果写成 git commit -m "close #2" ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
+ 
+# 传到index分支
+git push origin index
+4.6 合并分支
+1）开发dev1发送合并分支请求给pm
+
+
+
+2）pm收到开发的Merge请求后进行处理
+
+使用pm登录，就可以看到pm已经收到了合并请求merge request
+
+
+
+
+
+3）开发dev1确认任务完成
+
+退出pm账户，登入dev1账户：
+
+
+
+或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close
+
+
+
+这个时候Milestones的进度已经往前进了一些了：
+
+
+4.7 开发其他功能
+
+然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发
+
+git checkout master  # 切换到master
+git pull             # 从远端仓库拉取数据
+# 然后再进行其他操作
+5. Gitlab备份恢复
+5.1 备份gitlab
+1）修改配置文件
+
+/etc/gitlab/gitlab.rb
+
+# 备份保存的位置，这里是默认位置，可修改成指定的位置
+gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
+ 
+# 设置备份保存的时间，超过此时间的日志将会被新覆盖
+gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
+ 
+# 特别注意：
+#     如果自定义了备份保存位置，则要修改备份目录的权限，比如：
+#     chown -R git.git /data/backup/gitlab
+
+配置完成后要重启以使配置生效
+
+# 重读配置文件
+gitlab-ctl reconfigure
+ 
+# 重启gitlab
+gitlab-ctl restart
+2）设置定时任务
+# 每天凌晨2点定时创建备份
+# 将一下内容写入到定时任务中 crontab -e
+0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create
+ 
+# 备份策略建议：
+#     本地保留3到7天，在异地备份永久保存
+3）备份时间的识别
+# 备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
+ 
+data  -d  @1494170842
+5.2 恢复gitlab
+1）停止停止相关数据连接,数据写入服务
+# 停止数据写入服务
+gitlab-ctl stop puma
+gitlab-ctl stop sidekiq
+2）进行数据恢复并重启
+# 进行恢复
+gitlab-rake gitlab:backup:restore BACKUP=1627839447_2021_08_01_14.1.1-ee  # 这个时间戳就是刚刚备份的文件前面的时间戳
+ 
+# 重启
+gitlab-ctl restart
+6. gitlab邮件通知配置
+
+vim  /etc/gitlab/gitlab.rb
+
+gitlab_rails['time_zone'] = 'Asia/Shanghai'
+ 
+gitlab_rails['gitlab_email_enabled'] = true
+gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
+gitlab_rails['gitlab_email_display_name'] = 'gitlab'
+ 
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
+gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
+gitlab_rails['smtp_user_name'] = "smtp用户名"
+gitlab_rails['smtp_password'] = "smtp用户密码"
+gitlab_rails['smtp_domain'] = "163.com"
+gitlab_rails['smtp_authentication'] = "login"
+启用邮件功能
+Gitlab 的 Compose 配置 GITLAB_OMNIBUS_CONFIG 节点下增加如下几行：
+########## 邮件服务配置 ##########
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.exmail.qq.com"
+gitlab_rails['smtp_port'] = 465
+gitlab_rails['smtp_tls'] = true
+gitlab_rails['smtp_user_name'] = "账号"
+gitlab_rails['smtp_password'] = "密码"
+gitlab_rails['smtp_authentication'] = "login"
+gitlab_rails['smtp_enable_starttls_auto'] = true 
+gitlab_rails['gitlab_email_from'] = "发件人邮箱"
+ 
+7. 使用SourceTree进行项目开发
+
+7.1 项目拉取
+
+先把项目克隆下来
+
+
+
+
+如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加
+
+
+
+7.2 创建分支进行功能开发
+1）新建立一个叫“pay”的分支
+
+
+2）进行功能开发
+
+7.3 提交项目
+1）开发pay功能完成后进行提交
+
+可以看到SourceTree中已经有“未提交的更改”
+
+
+
+2）添加“用户信息”
+
+** 3）进行提交**
+
+
+注释也可以写成  close #3    ，作用是提交完成后关闭3号issue
+
+7.4 推送到仓库
+
+
+
+然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了
+
+7.5 项目上线
+1）当所有工作完成之后，就可以进行上线了
+
+2）打标签
+
+上线先打个标签
+
+
+
+
+** 3）删除无用分支**
+
+然后删除已经合并到主干中的不必要的分支，如index、pay等
+最后一定要注意时间一定要同步，不然会错乱
+
+8. Gitlab调优
+gitlab对内存资源的消耗比较厉害
+其中尤以 sidekiq队列 及 unicorn服务 两个组件对内存消耗最多
+可以再容器启动时对相关参数进行微调：
+unicorn['worker_processes'] = 1
+unicorn['worker_memory_limit_min'] = "300 * 1 &lt;&lt; 20"
+unicorn['worker_memory_limit_max'] = "400 * 1 &lt;&lt; 20"
+unicorn['worker_timeout'] = 15
+sidekiq['concurrency'] = 10
+sidekiq_cluster['enable'] = false
+sidekiq_cluster['ha'] = false
+redis['maxclients'] = "100"
+nginx['worker_processes'] = 2
+nginx['worker_connections'] = 512
+nginx['keepalive_timeout'] = 300
+nginx['cache_max_size'] = '200m'
+mattermost['enable'] = false
+mattermost_nginx['enable'] = false
+gitlab_pages['enable'] = false
+pages_nginx['enable'] = false
+postgresql['shared_buffers'] = "256MB"
+postgresql['max_connections'] = 30
+postgresql['work_mem'] = "8MB"
+postgresql['maintenance_work_mem'] = "16MB"
+postgresql['effective_cache_size'] = "1MB"
+postgresql['checkpoint_timeout'] = "5min"
+postgresql['checkpoint_warning'] = "30s"
+ 
+配置调整后需要重载一下
+docker exec gitlab gitlab-ctl reconfigure
+docker-compose down
+docker-compose up -d
+ 
+
+9. Gitlab 启用 ContainerRegistry
+
+ContainerRegistry是Gitlab内置的Docker Registry集成组件
+集成后每个项目可获得私有的 Docker 镜像存储空间
+ContainerRegistry 可以复用 Gitlab 域名 或者 独立域名
+这里配置为复用域名（此时ContainerRegistry 将复用 Gitlab 的 TLS 证书）
+
+
+docker-compose.yaml中Gitlab服务的 GITLAB_OMNIBUS_CONFIG 节点下增加如下配置：
+
+registry_external_url "https://gitlab.example.com:4567"  # ContainerRegistry的外部访问地址
+registry_nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
+registry_nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
+gitlab_rails['registry_host'] = "gitlab.example.com"
+gitlab_rails['registry_port'] = "4567"
+gitlab_rails['registry_api_url'] = "http://localhost:5000"
+gitlab_rails['gitlab_default_projects_features_builds'] = false
+gitlab_rails['gitlab_default_projects_features_container_registry'] = false
+ 
+
+端口开放增加 - 4567:4567
+服务重启 docker-compose restart Gitlab
+
+ContainerRegistry 集成后可以通过 Gitlab 账户登录： docker login gitlab.example.com:4567
+
+日常维护命令
+# Gitlab维护
+docker exec gitlab gitlab-ctl status  # gitlab各组件服务状态
+docker exec gitlab gitlab-ctl start/restart/stop [组件名]  # gitlab所有组件的统一控制（其中Unicorn组件重启完成前GitLab会报502）
+docker exec gitlab gitlab-ctl tail [/var/log/gitlab下的某子目录]  # 实时查看日志
+ 
+docker exec gitlab update-permissions  # 修复gitlab版本升级后出现的权限问题
+docker exec gitlab gitlab-ctl reconfigure  # 重载配置
+docker exec -t gitlab gitlab-rake gitlab:backup:create  # 创建备份
+ 
+# ContainerRegistry维护
+docker exec gitlab gitlab-ctl registry-garbage-collect  # 垃圾回收，清理废弃layer（registry停机）
+ 
+
+Import Repository(Repo By Url)
+# 账号密码若存在特殊字符则需要url编码
+https://username:password@host:port/group/project.git
+ 
+10. GitLab重置用户名密码
+打开终端，访问：
+gitlab-rails console
+输入：
+user = User.where(id: 1).first
+user.password='123456'
+user.password_confirmation = '123456'
+user.save! #注意加上 “！”
+然后退出命令行即可。
+quit
+ gitlab-rails console production 命令 开始初始化密码
+# 在irb(main):001:0&gt; 后面通过 u=User.where(id:1).first 来查找与切换账号（User.all 可以查看所有用户）
+# 通过u.password='12345678'设置密码为12345678(这里的密码看自己喜欢)：
+# 通过u.password_confirmation='12345678' 再次确认密码
+# 通过 u.save!进行保存
+11. HTTPS SSL 支持
+
+
+nginx反向代理方式
+
+注意docker 内部没有ca支持， 需要手动添加
+
+
+
+域名提供商提供的免费证书
+
+这种证书直接用，如果是自签名证书，需要添加自己的ca root证书到服务器
+
+
+
+12. Gitlab恢复数据出现must be owner of解决方法
+按正常Gitlab备份数据gitlab-rake gitlab:backup:create
+ERROR: must be owner of extension plpgsql
+ERROR: must be owner of schema public
+ERROR: schema “public” already exists
+ERROR: must be owner of schema public
+ERROR: must be owner of extension plpgsql
+WARNING: no privileges could be revoked for “public”
+WARNING: no privileges could be revoked for “public”
+WARNING: no privileges were granted for “public”
+WARNING: no privileges were granted for “public”
+解决方法：
+**1. 修改postgresql配置 **
+cd /var/opt/gitlab/postgresql/data
+$ vi /var/opt/gitlab/postgresql/data/postgresql.conf
+listen_addresses = '*'
+找到listen_addresses = ” 改为listen_addresses = ‘*’
+修改 /var/opt/gitlab/postgresql/data/pg_hba.conf
+在这个文件最后面加入
+$ vi /var/opt/gitlab/postgresql/data/pg_hba.conf
+local   all         all                               trust
+host    all         all                               127.0.0.1/32 trust
+host    all         all                               ::1/128 trust    #ipv6 可以不配置
+2. 重启gitlab生效
+gitlab-ctl restart
+3. 修改gitlab账号为超级用户
+进入postgresql命令行
+cd /opt/gitlab/embedded/bin
+su gitlab-psql
+./psql -h 127.0.0.1 gitlabhq_production
+查看账户权限
+\du
+执行修改gitlab用户为超级权限
+ALTER USER gitlab WITH SUPERUSER;
+退出
+\q
+
+4. 从1462989681编号备份中恢复
+gitlab-rake gitlab:backup:restore BACKUP=1462989681
+这样Gitlab恢复数据就不会再报must be owner of extension plpgsql错误。
+4. 重启gitlab
+gitlab-ctl restart
+13. Gitlab Pages
+
+官方文档：https://docs.gitlab.com/ee/user/project/pages/ 。
+
+Gitlab Pages 使用 GitLab Pages daemon 服务，它是用 GO 语言实现的简单 HTTP 服务，并且可以监听外部 IP 地址以及为自定义域名和自定义证书提供支持。它通过 SNI 支持动态证书并且默认通过 HTTP2 协议发送页面。最后推荐你去看官方文档 README 以便全面了解它的工作原理。
+启用 Pages
+打开 gitlab.rb：
+sudo vim /etc/gitlab/gitlab.rb
+修改 Pages 配置：
+# Pages 服务地址
+pages_external_url "http://git.17lai.io"
+# 启用 pages
+gitlab_pages['enable'] = true
+# fails to start in Docker
+gitlab_pages['inplace_chroot'] = true
+让 Gitlab 使用当前配置：
+sudo gitlab-ctl reconfigure
+
+# stdout
+&gt; gitlab Reconfigured!
+如果没有域名怎么办呢？可以参考 Linux智能DNS服务搭建之Bind服务。
+使用 Pages
+
+官方的案例库：https://gitlab.com/pages
+
+用户文档
+一般有两种类型的Pages可以创建
+
+对于用户（username.example.io）或组（groupname.example.io）
+对于Project（username.example.io/projectname 或 groupname.example.io/projectname ）
+
+在GitLab中，usernames或groupnames是唯一的，我们经常把他们称为namespaces。在一个GitLab实例中只能有一个namespace。
+下面是Gitlab Pages类型、Project Name和 website URL对照表：
+
+GitLab Pages前提条件：
+简而言之，这是上传web站点到GitLab Pages需要的：
+
+Gitlab Pages使用的域名（向管理员询问）。
+创建一个Project。
+仓库的根目录放一个.gitlab-ci.yml，其中有个叫做pages的job。
+设置一个GitLab Runner构建web站点。
+
+部署简单的 html 项目
+
+我们在自己的 gitlab 上面创建一个测试项目：plain-html
+把项目拉取到本地：
+
+# 换成你自己的仓库地址
+git clone git@git.17lai.io:pages/plain-html.git
+
+在项目中新建 public 目录，然后添加 index.html 、 style.css 文件:
+
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;meta charset="utf-8"&gt;
+    &lt;meta name="generator" content="GitLab Pages"&gt;
+    &lt;title&gt;Plain HTML site using GitLab Pages&lt;/title&gt;
+    &lt;link rel="stylesheet" href="style.css"&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div class="navbar"&gt;
+      &lt;a href="https://pages.gitlab.io/plain-html/"&gt;Plain HTML Example&lt;/a&gt;
+      &lt;a href="https://gitlab.com/pages/plain-html/"&gt;Repository&lt;/a&gt;
+      &lt;a href="https://gitlab.com/pages/"&gt;Other Examples&lt;/a&gt;
+    &lt;/div&gt;
+
+    &lt;h1&gt;Hello World!&lt;/h1&gt;
+
+    &lt;p&gt;
+      This is a simple plain-HTML website on GitLab Pages, without any fancy static site generator.
+    &lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+body {
+  font-family: sans-serif;
+  margin: auto;
+  max-width: 1280px;
+}
+
+.navbar {
+  background-color: #313236;
+  border-radius: 2px;
+  max-width: 800px;
+}
+
+.navbar a {
+  color: #aaa;
+  display: inline-block;
+  font-size: 15px;
+  padding: 10px;
+  text-decoration: none;
+}
+
+.navbar a:hover {
+  color: #ffffff;
+}
+
+在项目根目录添加 .gitlab-ci.yml 文件：
+
+# This file is a template, and might need editing before it works on your project.
+# Full project: https://gitlab.com/pages/plain-html
+pages:
+  tags:
+    - html
+  stage: deploy
+  script:
+    - mkdir .public
+    - cp -r * .public
+    - mv .public public
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
+
+提交代码：
+
+git add .
+git commit -m"feat(pages):  开启 pages 服务"
+git push
+最后我们回到 gitlab 服务，在 plain-html 仓库中的 Settings / pages 页面可以看到已经有对应的服务地址了：
+
+
+gitlab 服务的域名跟 pages 的不要使用同一个，防止 XSS 攻击。
+
+
+
+管理员文档：https://docs.gitlab.com/ce/administration/pages/
+
+
+用户文档：https://docs.gitlab.com/ce/user/project/pages/index.html
+
+
+gitlab pages：https://pages.gitlab.io/
+
+
+Container Registry
+
+官方文档：https://docs.gitlab.com/ee/user/packages/container_registry/
+本节修改中
+
+开启 Container Registry
+修改gitlab配置文件： vim /etc/gitlab/gitlab.rb
+//外部访问地址，此处被nginx代理，暴露给外部访问
+registry_external_url 'http://xxx.com'
+//启用
+gitlab_rails['registry_enabled'] = true
+//registry 服务ip
+gitlab_rails['registry_host'] = "172.29.1.70"
+//registry 服务真正端口
+gitlab_rails['registry_port'] = "5000"
+这里需要注意的是，registry_external_url是外部访问的url，如docker需要pull和push，都是访问该路径。然后，刷新配置，重启：
+gitlab-ctl reconfigure
+gitlab-ctl restart
+访问Docker
+# docker login https://xxx.com -u root -p xxx
+Login Succeeded
+默认需要SSL，请使用反向代理
+官方文档有说明，如果启用了双重验证（Two-Factor Authentication）则不应该输入密码，而是token：
+docker login xxx.com -u &lt;username&gt; -p &lt;token&gt;
+CI
+GitLab Continuous Integration (GitLab CI/CD)
+
+
+CI: Continuous Integration：持续集成。
+CD: Coninuous delivery and deployment：持续交付和部署。
+
+Gitlab CI/CD 是以可持续方法论进行软件开发的内建工具（continuous integration service ）。
+
+在使用 Gitlab CI 之前，我们需要先了解几个概念：
+Stage
+阶段：通俗的讲就是步骤（把一件事分解成多个步骤来完成）。 从最上面的图中可以看到在 CI 中可能会有：Build、Unit Test 、Integration Tests 等多个阶段。
+Job
+任务：就是我们在每个阶段具体要做的事情，而一个阶段可能会有多个任务。
+Pipelines
+一条流水线 （ pipeline）就是 一组 在各个阶段执行的任务。在同一阶段的多个任务是可以并行的（如果 Runner 足够多的话），当全部的任务都执行成功之后流水线将会进入下一个阶段。反之，如果其中有一个任务失败，流水线的下一个阶段将不再执行。
+Runners
+在 Gitlab CI 中，Runner 负责运行定义在 .gitlab-ci.yml 中的代码。Runner 为三种：Shared Runners、Group Runners、Specific Runners，分别表示全局共用 Runner、组共用 Runner、单个项目指定的 Runner。
+.gitlab-ci.yml
+Gitlab CI 的配置文件，该文件声明了流水线的结构和顺序，以任务为最小单元。
+文件中允许定义的元素：
+
+image：docker 镜像，当 Gitlab-Runner 的类型为 docker 时，会根据该属性指定的镜像为脚本执行容器。
+services: 指定另一个 docker 镜像，主要用于提供服务层的能力，比如 mysql 。
+before_script：任务执行前的钩子事件，比如一个 node 项目，我们可以在这里安装依赖。
+after_script：任务执行后的钩子事件，当所有的任务都执行完毕之后被调用，不管任务是否执行成功。
+stages：定义流水线中的阶段，默认的为 build 、test、deploy。如果我们要在任务中指定其他的 stage，则需要使用该属性先申明。
+cache：需要缓存的文件，比如 node 项目可以把 node_modules 缓存起来。提示：可以定义在 .gitlab-ci.yml 顶级表示项目级别的，也可以申明在单个任务中。
+variables：变量，同样可以在顶级或者单个任务中申明。
+pages：内置的一个任务，用于上传任务执行的结果到 Gitlab Pages。
+include：合并其他的 .gitlab-ci.yml 文件配置。
+在单个任务中申明的元素：
+
+script：需要执行的脚本。
+stage：标识该任务所属的阶段。
+tags：为任务打上标签，用于选择特定的 Runner。
+only：用于表明何时创建该任务。
+except：用于表明何时不创建该任务。
+when：用于表明何时运行该任务。
+allow_failure：允许失败，该任务失败时不会影响整个流水线的结果。
+artifacts：任务执行的结果，比如执行 打包任务 后的产出资源。
+dependencies：依赖的其他任务。
+retry：当任务失败时最多重试的次数。
+coverage：指定如何从任务结果中提取代码覆盖率。
+parallel：允许并行的任务实例个数。
+
+
+
+
+请注意版本问题，每个属性对版本的要求并不一致，具体的可以点击属性查看官方文档。
+
+使用 Gitlab CI
+使用 Gitlab CI 服务的两种方式： 1. Auto DevOps 2. 手动配置 CI/CD
+Auto DevOps
+Auto DevOps 是 Gitlab 11.0 推出的新功能，它提供了预定义的 CI/CD 配置，允许我们自动检测、构建、测试、发布以及监控应用。
+暂未使用，待补充。
+手动配置 CI/CD
+手动配置主要就 2 个步骤，配置 .gitlab-ci.yml 文件，添加 Gitlab Runner 运行该文件。
+
+下面，我们看看如何配置 Gitlab Runner：
+Gitlab Runner
+Gitlab Runner 是一个开源项目，用来运行 .gitlab-ci.yml 中定义的任务并把结果返给 Gitlab。
+安装
+
+官方文档：https://docs.gitlab.com/runner/install/linux-repository.html
+
+首先，添加离线仓库：
+curl -L https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | sudo bash
+然后，安装最新版本：
+sudo apt-get install gitlab-runner
+注册
+
+官方文档：https://docs.gitlab.com/runner/register/index.html
+
+首先，我们进入要配置 Runner 的 Gitlab 仓库，在 Settings -&gt; CI / CD 页面展开 Runners 配置面板可以看到已经分配的 Runner 以及注册 Runner 需要的参数：
+然后，我们使用 Gitlab-Runner 命名开始注册：
+gitlab-runner register
+执行完会该命令，终端会有交互，要求我们输入以下参数：
+
+gitlab-ci coordinator url ：gitlab 服务地址
+gitlab-ci token：上图中的 token
+description：描述信息
+tags：标签，对应 .gitlab-ci.yml 任务中配置的 tags，只有 tags 匹配的任务才会被该 Runner 执行。
+executor：执行器，即任务脚本执行的环境
+
+
+如果使用 docker 执行，则需要事先安装 Docker 环境。
+
+参数填写完毕之后，一个 Runner 便被注册成功了：
+
+我们回到 gitlab 仓库页面，然后刷新便可以看到 _fzBq4PN 这个 Runner 已经被注册到该项目：
+
+
+我们可以点击 编辑图标 对该 Runner 进行修改。我比较喜欢把 Run untagged jobs 选项勾上，这样就不用每个任务都添加对应的 tags 了（因为现在涉及到的都是一些简单的流程）。
+
+总结
+首先，CI/CD 是一种软件开发流程，Gitlab CI/CD 是 Gitlab 为实现该流程而提供的一个内置工具（服务）。 其次，我们有 Auto DevOps 与 手动配置 两种方式使用，本文讲解的主要是 手动配置 方式。
+加速Gitlab Runner
+
+gitlab runner构建镜像每次RUN 安装依赖包，都远程下载?可以缓存加速吗？ 可以的！
+
+在将GitLab Runner注册到GitLab page上，让GitLab page可以和你的Runner通信时，有一步是填写使用的executor
+输入Runner的executor：
+Please enter the executor: ssh, docker+machine, docker-ssh+machine, kubernetes, docker, parallels, virtualbox, docker-ssh, shell:
+如果你选择Docker作为Runner的executor，你还要选择默认的docker image来运行job(当然，你也可以在.gitlab-ci.yml里指明你需要用的image),这句话就跟文章使用gitlab-runner往k8s上发送curl命令实现pod中容器使用的镜像版本更新，地址： 开头讲述的那样，不过.gitlab-ci.yml里指明的image优先级高。
+注册完成后你可以在/etc/gitlab-runner里发现 config.toml文件，该文件是Runner的配置文件
+接下来就牵涉到一个重要的话题 —— Executor
+
+Shell Executor
+以宿主机作为Runner的所有jobs的执行器。Runner将会从远程仓库pull你的工程，工程的目录为：/builds。如果你使用了cache，那么cache将会存在/cache/。
+但是，它需要将构建所需的所有依赖手动安装到安装了Runner的同一台计算机上，比如使用到的git,jdk,maven,docekr等
+Docker Executor
+所有jobs的执行环境为指定的docker image所生成的container，每个job都会生成一个container并且在job结束后立即销毁。这个说的就是config.toml文件和.gitlab-ci.yml中指定的image
+Docker executor默认将所有的builds存储在/builds/(这里的路径是container里的路径，Runner配置文件config.toml里的build_dir字段可以重新指明build的目录，默认对应于宿主机的目录是在宿主机的docker volume下：/var/lib/docker/volumes//_data/)，默认将所有的caches存储在container里的/cache目录(config.toml里的cache_dir字段可以重新指明cache的目录)，注意build_dir和cache_dir指向的均是container里的目录，要想将container里的数据持久化，需要用到volumes字段，这个字段的使用和docker volume的使用是类似的，只需在config.toml的[runner.docker]部分添加volumes = [“/cache”, “:rw”]即可实现container里/cache目录数据的永久保存以及将host目录挂载到相应的container目录并具有读写的功能。
+比如：
+
+# 仅作展示，未显示完整
+[runners.docker]
+  image = "jdd.io/jre:1.8.275"
+  volumes = ["/cache","/run/docker.sock:/run/docker.sock"]
+当你使用docker 或 docker+machine executors时，你可以通过设置pull_policy来决定Runner如何pull docker image。pull_policy有三种值：
+always —— Runner始终从远程pull docker image。
+if-not-present —— Runner会首先检查本地是否有该image，如果有则用本地的，如果没有则从远程拉取。
+never —— Runner始终使用本地的image。
+
+注意：这一步就是本文开头提到的，使用本地镜像，不用再从dockerhub上拉取了
+
+# 仅作展示，未显示完整
+[runners.docker]
+  image = "jdd.io/jre:1.8.275"
+  pull_policy="if-not-present" # 添加这个选项就可以了
+  volumes = ["/cache","/run/docker.sock:/run/docker.sock"]
+当你使用docker, docker+machine 或 kubernetes作为executor时，GitLab Runner将会使用特定的container来处理Git、artifacts 和cache 操作。
+权限管理
+以管理员的身份登入gitlab，点击Settings，然后选择Members，可以通过输入名字选择要分配权限的小组成员，然后分配角色，选择权限有效时间，点击Add to Project就把人员拉近到项目中。
+GitLab的角色有以下四种：
+
+Guest：可以创建issue、发表评论，不能读写版本库
+Reporter：可以克隆代码，不能提交，可以赋予测试、产品经理此权限
+Developer：可以克隆代码、开发、提交、push，可以赋予开发人员此权限
+MainMaster：可以创建项目、添加tag、保护分支、添加项目成员、编辑项目，一般GitLab管理员或者CTO才有此权限
+
+访问权限 - Visibility Level：
+这个是在建立项目时就需要选定的，主要用于决定哪些人可以访问此项目，包含3种
+
+Private - 私有，只有属于该项目成员才有原先查看
+Internal - 内部，用个Gitlab账号的人都可以clone
+Public - 公开，任何人可以clone
+
+本文作者：夜法之书       写作不易，转载请注明来源地址！
+参考链接：
+
+https://www.cnblogs.com/hgzero/p/14088215.html
+http://www.51blogs.net/2017/11/10/1110113243.html
+https://my.oschina.net/u/2400083/blog/808097
+
+
+系列教程
+全部文章RSS订阅
+Devops系列
+Devops 分类 RSS 订阅
+
+自建全套开源Devops开发系统
+Git介绍以及分支模型图解
+三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
+DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
+项目开发管理工具推荐
+Gitlab的安装及使用教程完全版
+Gitlab的安装及使用
+那些有用的Github工具介绍！Action、app、workflow等
+
+]]></content>
+      <categories>
+        <category>devops</category>
+      </categories>
+      <tags>
+        <tag>gitlab</tag>
+        <tag>git</tag>
+        <tag>docker</tag>
+        <tag>registry</tag>
+        <tag>教程</tag>
+        <tag>email</tag>
+        <tag>https</tag>
+        <tag>ssl</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Debian Lenny Laptop安装记录</title>
     <url>/posts/b1fe1bb8/</url>
     <content><![CDATA[Debian Lenny Laptop安装记录
@@ -3870,1047 +4911,6 @@ OKR 实施过程中起草制定好目标和关键结果是非常重要的一环�
         <tag>grow</tag>
         <tag>okr</tag>
         <tag>wbs</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Gitlab的安装及使用教程完全版</title>
-    <url>/posts/acc13b70/</url>
-    <content><![CDATA[1. Gitlab概述
-
-1.1 GitLab介绍
-GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。
-GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。
-它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找
-1.2 Gitlab服务构成
-Nginx：静态web服务器。
-gitlab-shell：用于处理Git命令和修改authorized keys列表。
-gitlab-workhorse: 轻量级的反向代理服务器。
-logrotate：日志文件管理工具。
-postgresql：数据库。
-redis：缓存数据库。
-sidekiq：用于在后台执行队列任务（异步执行）。
-unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。
-1.3 Gitlab工作流程
-
-1.4 GitLab Shell
-GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表
-当通过SSH访问GitLab Server时，GitLab Shell会：
-
-限制执行预定义好的Git命令（git push，git pull，git annex）
-调用GitLab Rails API检查权限
-执行pre-receive钩子（在企业版中叫做Git钩子）
-执行用户请求的动作，处理GitLab的post-receive动作
-处理自定义的post-receive动作
-
-当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：
-如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作
-如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：
-
-调用GitLab Rails API 检查权限
-执行pre-receive钩子（在GitLab企业版中叫做Git钩子）
-执行你请求的动作
-处理GitLab的post-receive动作
-处理自定义的post-receive动作
-
-1.5 GitLab Workhorse
-GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。
-2. Gitlab的安装部署
-
-Gitlab要求服务器内存2G以上
-
-2.1 方式一:下载gitlab-ce的rpm包
-
-gitlab官方rpm包下载
-清华的源
-
-将对应版本的gitlab-ce下载到本地后，直接yum安装即可
-# 要先将这个rpm包下载到本地
-yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm
-2.2 方式二:配置yum源
-在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：
-[gitlab-ce]
-name=gitlab-ce
-baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/
-Repo_gpgcheck=0
-Enabled=1
-Gpgkey=https://packages.gitlab.com/gpg.key
-然后创建cache，再直接安装gitlab-ce
-yum makecache  # 这一步会创建大量的数据
- 
-# 直接安装最新版
-yum install -y gitlab-ce
- 
-# 如果要安装指定的版本，在后面填上版本号即可
-yum install -y  gitlab-ce-13.6.1
- 
-# 如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
-yum install gitlab-ce -y --nogpgcheck
-2.2.1. 单服务启动模式
-docker run -d --name gitlab --hostname gitlab.example.com \
--e GITLAB_OMNIBUS_CONFIG="
-    external_url 'https://gitlab.example.com'
-    gitlab_rails['gitlab_shell_ssh_port'] = 22
-    nginx['redirect_http_to_https'] = true
-    nginx['ssl_dhparam'] = '/etc/gitlab/ssl/dhparam.pem'
-    nginx['ssl_certificate'] = '/etc/gitlab/ssl/domain.crt'
-    nginx['ssl_certificate_key'] = '/etc/gitlab/ssl/domain.key'
-    nginx['custom_gitlab_server_config'] = 'location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n'
-    high_availability['mountpoint'] = ['/etc/gitlab', '/var/log/gitlab' '/var/opt/gitlab'  # 严格限定gitlab服务启动前，指定文件系统挂完毕
-" \
--p 22:22 -p 80:80 -p 443:443 \
--v /srv/gitlab/config:/etc/gitlab \
--v /srv/gitlab/logs:/var/log/gitlab \
--v /srv/gitlab/data:/var/opt/gitlab \
--v /etc/certs:/etc/gitlab/ssl \
---restart=always gitlab/gitlab-ce:latest
- 
-2.2.1. Compose服务编排模式(推荐方式)
-docker pull gitlab/gitlab-ce:latest
- 
-############################ 多行命令开始 ##########################
-cat &gt; docker-compose.yaml &lt;&lt;EOF
-version: '2'
- 
-services:
- 
-  Gitlab:
-    image: 'gitlab/gitlab-ce:latest'
-    container_name: 'gitlab'
-    hostname: 'gitlab.example.com'
-    restart: always
-    ports:
-      - '22:22'
-      - '80:80'
-      - '443:443'
-    environment:
-      GITLAB_OMNIBUS_CONFIG: |
-        # Add any other gitlab.rb configuration here, each on its own line
-        external_url 'https://gitlab.example.com'
-        gitlab_rails['gitlab_shell_ssh_port'] = 22
-        nginx['redirect_http_to_https'] = true
-        nginx['ssl_dhparam'] = "/etc/gitlab/ssl/dhparam.pem"
-        nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
-        nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
-        nginx['custom_gitlab_server_config'] = "location ^~ /.well-known {\n alias /var/opt/gitlab/letsencrypt/.well-known;\n}\n"
-        high_availability['mountpoint'] = ["/etc/gitlab", "/var/log/gitlab", "/var/opt/gitlab"]  # 严格限定gitlab服务启动前，指定文件系统挂完毕
-    volumes:
-      - /srv/gitlab/config:/etc/gitlab
-      - /srv/gitlab/logs:/var/log/gitlab
-      - /srv/gitlab/data:/var/opt/gitlab
-      - /etc/certs:/etc/gitlab/ssl
-EOF
-############################ 多行命令结束 ##########################
- 
-# 启动服务
-docker-compose -f docker-compose.yaml up -d
- 
-2.3 gitlab的配置
-配置文件位置  /etc/gitlab/gitlab.rb
-[root@centos7 test]# vim /etc/gitlab/gitlab.rb
- 
-[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
- 
-external_url 'http://10.0.0.51'  # 这里一定要加上http://
- 
-# 配置邮件服务
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.qq.com"
-gitlab_rails['smtp_port'] = 25
-gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
-gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
-gitlab_rails['smtp_domain'] = "qq.com"
-gitlab_rails['smtp_authentication'] = "login"
-gitlab_rails['smtp_enable_starttls_auto'] = true
-gitlab_rails['smtp_tls'] = false
-gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
-user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址
-修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。
-gitlab-ctl reconfigure # 重载配置文件
-gitlab-ctl restart
-测试邮件服务器
-gitlab-rails console
-Notify.test_email('rollinghell@foxmail.com','testbiaoti','testzhegnwen1').deliver_now
-[root@test102 ~]# gitlab-rails console
---------------------------------------------------------------------------------
- GitLab:       12.5.0 (1f0ab8978ef)
-GitLab Shell: 10.2.0
- PostgreSQL:   10.9
---------------------------------------------------------------------------------
-Loading production environment (Rails 5.2.3)
-irb(main):001:0&gt; Notify.test_email('andycrusoe@gmail.com','test','test').deliver_now
-Notify#test_email: processed outbound mail in 1.4ms
-Sent mail to anliven@126.com (73.0ms)
-Date: Wed, 27 Nov 2019 15:12:58 +0800
-From: GitLab &lt;gitlab@192.168.16.102&gt;
-Reply-To: GitLab &lt;noreply@192.168.16.102&gt;
-To: anliven@126.com
-Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;
-Subject: test
-Mime-Version: 1.0
-Content-Type: text/html;
-charset=UTF-8
-Content-Transfer-Encoding: 7bit
-Auto-Submitted: auto-generated
-X-Auto-Response-Suppress: All
-&lt;!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd"&gt;
-&lt;html&gt;&lt;body&gt;&lt;p&gt;test&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
-=&gt; #&lt;Mail::Message:70141649239780, Multipart: false, Headers: &lt;Date: Wed, 27 Nov 2019 15:12:58 +0800&gt;, &lt;From: GitLab &lt;gitlab@192.168.16.102&gt;&gt;, &lt;Reply-To: GitLab &lt;noreply@192.168.16.102&gt;&gt;, &lt;To: anliven@126.com&gt;, &lt;Message-ID: &lt;5dde21fa612d4_3a1b3fcb38fcf9c0651b@test102.mail&gt;&gt;, &lt;Subject: test&gt;, &lt;Mime-Version: 1.0&gt;, &lt;Content-Type: text/html; charset=UTF-8&gt;, &lt;Content-Transfer-Encoding: 7bit&gt;, &lt;Auto-Submitted: auto-generated&gt;, &lt;X-Auto-Response-Suppress: All&gt;&gt;
-irb(main):002:0&gt;
-irb(main):003:0&gt; exit
-[root@test102 ~]#
- 
-配置gitlab代理
-https://docs.gitlab.com/omnibus/settings/environment-variables.html
-gitaly['env'] = {
-    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
-    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
-}
-也可以使用单独模块代理
-# Needed for proxying Git clones
-gitaly['env'] = {
-    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
-    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
-}
-
-gitlab_workhorse['env'] = {
-    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
-    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
-}
-
-gitlab_pages['env'] = {
-    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
-    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
-}
-
-# If you use the docker registry
-registry['env'] = {
-    "http_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080",
-    "https_proxy" =&gt; "http://USERNAME:PASSWORD@example.com:8080"
-}
-应用生效 gitlab-ctl reconfigure
-2.4 Gitlab常用命令
-gitlab-ctl start         # 启动所有 gitlab 组件
-gitlab-ctl stop          # 停止所有 gitlab 组件
-gitlab-ctl restart       # 重启所有 gitlab 组件
-gitlab-ctl status        # 查看服务状态
- 
-gitlab-ctl reconfigure   # 启动服务
-gitlab-ctl show-config   # 验证配置文件
- 
-gitlab-ctl tail          # 查看日志
- 
-gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
- 
-vim /etc/gitlab/gitlab.rb # 修改默认的配置文件
-2.5 gitlab-ctl常用命令介绍
-
-
-
-命令
-说明
-
-
-
-
-check-config
-检查在gitlab中是否有任何配置。在指定版本中删除的rb
-
-
-deploy-page
-安装部署页面
-
-
-diff-config
-将用户配置与包可用配置进行比较
-
-
-remove-accounts
-删除所有用户和组
-
-
-upgrade
-升级
-
-
-service-list
-查看所有服务
-
-
-once
-如果GitLab服务停止了就启动服务，如果已启动就不做任何操作
-
-
-restart
-重启GitLab服务
-
-
-start
-如果GitLab服务停止了就启动服务，如果已启动就重启服务
-
-
-stop
-停止GitLab服务
-
-
-status
-查看GitLab服务状态
-
-
-reconfigure
-重新配置GitLab并启动
-
-
-
-3. Gitlab的使用
-
-Gitlab安装好后，设置密码，管理账户为root
-
-3.1 创建Group
-
-填上组名即可，这里组名为java
-
-
-
-3.2 创建User
-
-创建四个User：pm、dev1、dev2、dev3
-
-
-
-3.3 添加User到Group中并授权
-
-3.4 创建Project并配置SSH
-
-
-
-
-3.5 在项目中添加成员
-
-
-3.6 将本地文件推送到Gitlab
-# 将app01项目克隆下来
-git clone git@10.0.0.51:java/app01.git
- 
-# 初始化配置
-git config --global user.name "hgzero"
-git config --global user.email "hgzero@qq.com"
- 
-# 在app01目录下新建一些文件
- 
-# 推送到gitlab
-git add .
-git commit -m "first edition"
-git push origin master
-
-4. 制定开发计划
-4.1 创建开发计划
-
-项目：app01
-版本：v1.0
-
-
-4.2 创建里程碑Milestones
-
-用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）
-要根据开发计划来创建Milestones
-
-
-
-
-
-4.3 根据开发计划创建issue
-
-创建4个issue，分派给dev1和dev2这两个开发人员
-
-
-
-
-
-
-
-**4.4 开发者登录账号查看分派的任务 **
-
-然后开发dev1登录gitlab，就能看到任务已经分配过来了
-
-
-4.5 开发流程
-
-公司里的开发开始任务
-
-# 1. 先从仓库把项目拉下来
-git clone git@10.0.0.51:java/app01.git
-cd app01/
- 
-# 2.先创建一个自己的分支，然后进行开发
-git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
-git status
- 
-# 3. 开始开发首页
-echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
- 
-# 4. 开发完成后，把项目传到仓库
-git add .
-git commit -m "index"
-# 如果写成 git commit -m "close #2" ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
- 
-# 传到index分支
-git push origin index
-4.6 合并分支
-1）开发dev1发送合并分支请求给pm
-
-
-
-2）pm收到开发的Merge请求后进行处理
-
-使用pm登录，就可以看到pm已经收到了合并请求merge request
-
-
-
-
-
-3）开发dev1确认任务完成
-
-退出pm账户，登入dev1账户：
-
-
-
-或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close
-
-
-
-这个时候Milestones的进度已经往前进了一些了：
-
-
-4.7 开发其他功能
-
-然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发
-
-git checkout master  # 切换到master
-git pull             # 从远端仓库拉取数据
-# 然后再进行其他操作
-5. Gitlab备份恢复
-5.1 备份gitlab
-1）修改配置文件
-
-/etc/gitlab/gitlab.rb
-
-# 备份保存的位置，这里是默认位置，可修改成指定的位置
-gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
- 
-# 设置备份保存的时间，超过此时间的日志将会被新覆盖
-gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
- 
-# 特别注意：
-#     如果自定义了备份保存位置，则要修改备份目录的权限，比如：
-#     chown -R git.git /data/backup/gitlab
-
-配置完成后要重启以使配置生效
-
-# 重读配置文件
-gitlab-ctl reconfigure
- 
-# 重启gitlab
-gitlab-ctl restart
-2）设置定时任务
-# 每天凌晨2点定时创建备份
-# 将一下内容写入到定时任务中 crontab -e
-0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create
- 
-# 备份策略建议：
-#     本地保留3到7天，在异地备份永久保存
-3）备份时间的识别
-# 备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
- 
-data  -d  @1494170842
-5.2 恢复gitlab
-1）停止停止相关数据连接,数据写入服务
-# 停止数据写入服务
-gitlab-ctl stop puma
-gitlab-ctl stop sidekiq
-2）进行数据恢复并重启
-# 进行恢复
-gitlab-rake gitlab:backup:restore BACKUP=1627839447_2021_08_01_14.1.1-ee  # 这个时间戳就是刚刚备份的文件前面的时间戳
- 
-# 重启
-gitlab-ctl restart
-6. gitlab邮件通知配置
-
-vim  /etc/gitlab/gitlab.rb
-
-gitlab_rails['time_zone'] = 'Asia/Shanghai'
- 
-gitlab_rails['gitlab_email_enabled'] = true
-gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
-gitlab_rails['gitlab_email_display_name'] = 'gitlab'
- 
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
-gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
-gitlab_rails['smtp_user_name'] = "smtp用户名"
-gitlab_rails['smtp_password'] = "smtp用户密码"
-gitlab_rails['smtp_domain'] = "163.com"
-gitlab_rails['smtp_authentication'] = "login"
-启用邮件功能
-Gitlab 的 Compose 配置 GITLAB_OMNIBUS_CONFIG 节点下增加如下几行：
-########## 邮件服务配置 ##########
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.exmail.qq.com"
-gitlab_rails['smtp_port'] = 465
-gitlab_rails['smtp_tls'] = true
-gitlab_rails['smtp_user_name'] = "账号"
-gitlab_rails['smtp_password'] = "密码"
-gitlab_rails['smtp_authentication'] = "login"
-gitlab_rails['smtp_enable_starttls_auto'] = true 
-gitlab_rails['gitlab_email_from'] = "发件人邮箱"
- 
-7. 使用SourceTree进行项目开发
-
-7.1 项目拉取
-
-先把项目克隆下来
-
-
-
-
-如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加
-
-
-
-7.2 创建分支进行功能开发
-1）新建立一个叫“pay”的分支
-
-
-2）进行功能开发
-
-7.3 提交项目
-1）开发pay功能完成后进行提交
-
-可以看到SourceTree中已经有“未提交的更改”
-
-
-
-2）添加“用户信息”
-
-** 3）进行提交**
-
-
-注释也可以写成  close #3    ，作用是提交完成后关闭3号issue
-
-7.4 推送到仓库
-
-
-
-然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了
-
-7.5 项目上线
-1）当所有工作完成之后，就可以进行上线了
-
-2）打标签
-
-上线先打个标签
-
-
-
-
-** 3）删除无用分支**
-
-然后删除已经合并到主干中的不必要的分支，如index、pay等
-最后一定要注意时间一定要同步，不然会错乱
-
-8. Gitlab调优
-gitlab对内存资源的消耗比较厉害
-其中尤以 sidekiq队列 及 unicorn服务 两个组件对内存消耗最多
-可以再容器启动时对相关参数进行微调：
-unicorn['worker_processes'] = 1
-unicorn['worker_memory_limit_min'] = "300 * 1 &lt;&lt; 20"
-unicorn['worker_memory_limit_max'] = "400 * 1 &lt;&lt; 20"
-unicorn['worker_timeout'] = 15
-sidekiq['concurrency'] = 10
-sidekiq_cluster['enable'] = false
-sidekiq_cluster['ha'] = false
-redis['maxclients'] = "100"
-nginx['worker_processes'] = 2
-nginx['worker_connections'] = 512
-nginx['keepalive_timeout'] = 300
-nginx['cache_max_size'] = '200m'
-mattermost['enable'] = false
-mattermost_nginx['enable'] = false
-gitlab_pages['enable'] = false
-pages_nginx['enable'] = false
-postgresql['shared_buffers'] = "256MB"
-postgresql['max_connections'] = 30
-postgresql['work_mem'] = "8MB"
-postgresql['maintenance_work_mem'] = "16MB"
-postgresql['effective_cache_size'] = "1MB"
-postgresql['checkpoint_timeout'] = "5min"
-postgresql['checkpoint_warning'] = "30s"
- 
-配置调整后需要重载一下
-docker exec gitlab gitlab-ctl reconfigure
-docker-compose down
-docker-compose up -d
- 
-
-9. Gitlab 启用 ContainerRegistry
-
-ContainerRegistry是Gitlab内置的Docker Registry集成组件
-集成后每个项目可获得私有的 Docker 镜像存储空间
-ContainerRegistry 可以复用 Gitlab 域名 或者 独立域名
-这里配置为复用域名（此时ContainerRegistry 将复用 Gitlab 的 TLS 证书）
-
-
-docker-compose.yaml中Gitlab服务的 GITLAB_OMNIBUS_CONFIG 节点下增加如下配置：
-
-registry_external_url "https://gitlab.example.com:4567"  # ContainerRegistry的外部访问地址
-registry_nginx['ssl_certificate'] = "/etc/gitlab/ssl/domain.crt"
-registry_nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/domain.key"
-gitlab_rails['registry_host'] = "gitlab.example.com"
-gitlab_rails['registry_port'] = "4567"
-gitlab_rails['registry_api_url'] = "http://localhost:5000"
-gitlab_rails['gitlab_default_projects_features_builds'] = false
-gitlab_rails['gitlab_default_projects_features_container_registry'] = false
- 
-
-端口开放增加 - 4567:4567
-服务重启 docker-compose restart Gitlab
-
-ContainerRegistry 集成后可以通过 Gitlab 账户登录： docker login gitlab.example.com:4567
-
-日常维护命令
-# Gitlab维护
-docker exec gitlab gitlab-ctl status  # gitlab各组件服务状态
-docker exec gitlab gitlab-ctl start/restart/stop [组件名]  # gitlab所有组件的统一控制（其中Unicorn组件重启完成前GitLab会报502）
-docker exec gitlab gitlab-ctl tail [/var/log/gitlab下的某子目录]  # 实时查看日志
- 
-docker exec gitlab update-permissions  # 修复gitlab版本升级后出现的权限问题
-docker exec gitlab gitlab-ctl reconfigure  # 重载配置
-docker exec -t gitlab gitlab-rake gitlab:backup:create  # 创建备份
- 
-# ContainerRegistry维护
-docker exec gitlab gitlab-ctl registry-garbage-collect  # 垃圾回收，清理废弃layer（registry停机）
- 
-
-Import Repository(Repo By Url)
-# 账号密码若存在特殊字符则需要url编码
-https://username:password@host:port/group/project.git
- 
-10. GitLab重置用户名密码
-打开终端，访问：
-gitlab-rails console
-输入：
-user = User.where(id: 1).first
-user.password='123456'
-user.password_confirmation = '123456'
-user.save! #注意加上 “！”
-然后退出命令行即可。
-quit
- gitlab-rails console production 命令 开始初始化密码
-# 在irb(main):001:0&gt; 后面通过 u=User.where(id:1).first 来查找与切换账号（User.all 可以查看所有用户）
-# 通过u.password='12345678'设置密码为12345678(这里的密码看自己喜欢)：
-# 通过u.password_confirmation='12345678' 再次确认密码
-# 通过 u.save!进行保存
-11. HTTPS SSL 支持
-
-
-nginx反向代理方式
-
-注意docker 内部没有ca支持， 需要手动添加
-
-
-
-域名提供商提供的免费证书
-
-这种证书直接用，如果是自签名证书，需要添加自己的ca root证书到服务器
-
-
-
-12. Gitlab恢复数据出现must be owner of解决方法
-按正常Gitlab备份数据gitlab-rake gitlab:backup:create
-ERROR: must be owner of extension plpgsql
-ERROR: must be owner of schema public
-ERROR: schema “public” already exists
-ERROR: must be owner of schema public
-ERROR: must be owner of extension plpgsql
-WARNING: no privileges could be revoked for “public”
-WARNING: no privileges could be revoked for “public”
-WARNING: no privileges were granted for “public”
-WARNING: no privileges were granted for “public”
-解决方法：
-**1. 修改postgresql配置 **
-cd /var/opt/gitlab/postgresql/data
-$ vi /var/opt/gitlab/postgresql/data/postgresql.conf
-listen_addresses = '*'
-找到listen_addresses = ” 改为listen_addresses = ‘*’
-修改 /var/opt/gitlab/postgresql/data/pg_hba.conf
-在这个文件最后面加入
-$ vi /var/opt/gitlab/postgresql/data/pg_hba.conf
-local   all         all                               trust
-host    all         all                               127.0.0.1/32 trust
-host    all         all                               ::1/128 trust    #ipv6 可以不配置
-2. 重启gitlab生效
-gitlab-ctl restart
-3. 修改gitlab账号为超级用户
-进入postgresql命令行
-cd /opt/gitlab/embedded/bin
-su gitlab-psql
-./psql -h 127.0.0.1 gitlabhq_production
-查看账户权限
-\du
-执行修改gitlab用户为超级权限
-ALTER USER gitlab WITH SUPERUSER;
-退出
-\q
-
-4. 从1462989681编号备份中恢复
-gitlab-rake gitlab:backup:restore BACKUP=1462989681
-这样Gitlab恢复数据就不会再报must be owner of extension plpgsql错误。
-4. 重启gitlab
-gitlab-ctl restart
-13. Gitlab Pages
-
-官方文档：https://docs.gitlab.com/ee/user/project/pages/ 。
-
-Gitlab Pages 使用 GitLab Pages daemon 服务，它是用 GO 语言实现的简单 HTTP 服务，并且可以监听外部 IP 地址以及为自定义域名和自定义证书提供支持。它通过 SNI 支持动态证书并且默认通过 HTTP2 协议发送页面。最后推荐你去看官方文档 README 以便全面了解它的工作原理。
-启用 Pages
-打开 gitlab.rb：
-sudo vim /etc/gitlab/gitlab.rb
-修改 Pages 配置：
-# Pages 服务地址
-pages_external_url "http://git.17lai.io"
-# 启用 pages
-gitlab_pages['enable'] = true
-# fails to start in Docker
-gitlab_pages['inplace_chroot'] = true
-让 Gitlab 使用当前配置：
-sudo gitlab-ctl reconfigure
-
-# stdout
-&gt; gitlab Reconfigured!
-如果没有域名怎么办呢？可以参考 Linux智能DNS服务搭建之Bind服务。
-使用 Pages
-
-官方的案例库：https://gitlab.com/pages
-
-用户文档
-一般有两种类型的Pages可以创建
-
-对于用户（username.example.io）或组（groupname.example.io）
-对于Project（username.example.io/projectname 或 groupname.example.io/projectname ）
-
-在GitLab中，usernames或groupnames是唯一的，我们经常把他们称为namespaces。在一个GitLab实例中只能有一个namespace。
-下面是Gitlab Pages类型、Project Name和 website URL对照表：
-
-GitLab Pages前提条件：
-简而言之，这是上传web站点到GitLab Pages需要的：
-
-Gitlab Pages使用的域名（向管理员询问）。
-创建一个Project。
-仓库的根目录放一个.gitlab-ci.yml，其中有个叫做pages的job。
-设置一个GitLab Runner构建web站点。
-
-部署简单的 html 项目
-
-我们在自己的 gitlab 上面创建一个测试项目：plain-html
-把项目拉取到本地：
-
-# 换成你自己的仓库地址
-git clone git@git.17lai.io:pages/plain-html.git
-
-在项目中新建 public 目录，然后添加 index.html 、 style.css 文件:
-
-&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-  &lt;head&gt;
-    &lt;meta charset="utf-8"&gt;
-    &lt;meta name="generator" content="GitLab Pages"&gt;
-    &lt;title&gt;Plain HTML site using GitLab Pages&lt;/title&gt;
-    &lt;link rel="stylesheet" href="style.css"&gt;
-  &lt;/head&gt;
-  &lt;body&gt;
-    &lt;div class="navbar"&gt;
-      &lt;a href="https://pages.gitlab.io/plain-html/"&gt;Plain HTML Example&lt;/a&gt;
-      &lt;a href="https://gitlab.com/pages/plain-html/"&gt;Repository&lt;/a&gt;
-      &lt;a href="https://gitlab.com/pages/"&gt;Other Examples&lt;/a&gt;
-    &lt;/div&gt;
-
-    &lt;h1&gt;Hello World!&lt;/h1&gt;
-
-    &lt;p&gt;
-      This is a simple plain-HTML website on GitLab Pages, without any fancy static site generator.
-    &lt;/p&gt;
-  &lt;/body&gt;
-&lt;/html&gt;
-body {
-  font-family: sans-serif;
-  margin: auto;
-  max-width: 1280px;
-}
-
-.navbar {
-  background-color: #313236;
-  border-radius: 2px;
-  max-width: 800px;
-}
-
-.navbar a {
-  color: #aaa;
-  display: inline-block;
-  font-size: 15px;
-  padding: 10px;
-  text-decoration: none;
-}
-
-.navbar a:hover {
-  color: #ffffff;
-}
-
-在项目根目录添加 .gitlab-ci.yml 文件：
-
-# This file is a template, and might need editing before it works on your project.
-# Full project: https://gitlab.com/pages/plain-html
-pages:
-  tags:
-    - html
-  stage: deploy
-  script:
-    - mkdir .public
-    - cp -r * .public
-    - mv .public public
-  artifacts:
-    paths:
-      - public
-  only:
-    - master
-
-提交代码：
-
-git add .
-git commit -m"feat(pages):  开启 pages 服务"
-git push
-最后我们回到 gitlab 服务，在 plain-html 仓库中的 Settings / pages 页面可以看到已经有对应的服务地址了：
-
-
-gitlab 服务的域名跟 pages 的不要使用同一个，防止 XSS 攻击。
-
-
-
-管理员文档：https://docs.gitlab.com/ce/administration/pages/
-
-
-用户文档：https://docs.gitlab.com/ce/user/project/pages/index.html
-
-
-gitlab pages：https://pages.gitlab.io/
-
-
-Container Registry
-
-官方文档：https://docs.gitlab.com/ee/user/packages/container_registry/
-本节修改中
-
-开启 Container Registry
-修改gitlab配置文件： vim /etc/gitlab/gitlab.rb
-//外部访问地址，此处被nginx代理，暴露给外部访问
-registry_external_url 'http://xxx.com'
-//启用
-gitlab_rails['registry_enabled'] = true
-//registry 服务ip
-gitlab_rails['registry_host'] = "172.29.1.70"
-//registry 服务真正端口
-gitlab_rails['registry_port'] = "5000"
-这里需要注意的是，registry_external_url是外部访问的url，如docker需要pull和push，都是访问该路径。然后，刷新配置，重启：
-gitlab-ctl reconfigure
-gitlab-ctl restart
-访问Docker
-# docker login https://xxx.com -u root -p xxx
-Login Succeeded
-默认需要SSL，请使用反向代理
-官方文档有说明，如果启用了双重验证（Two-Factor Authentication）则不应该输入密码，而是token：
-docker login xxx.com -u &lt;username&gt; -p &lt;token&gt;
-CI
-GitLab Continuous Integration (GitLab CI/CD)
-
-
-CI: Continuous Integration：持续集成。
-CD: Coninuous delivery and deployment：持续交付和部署。
-
-Gitlab CI/CD 是以可持续方法论进行软件开发的内建工具（continuous integration service ）。
-
-在使用 Gitlab CI 之前，我们需要先了解几个概念：
-Stage
-阶段：通俗的讲就是步骤（把一件事分解成多个步骤来完成）。 从最上面的图中可以看到在 CI 中可能会有：Build、Unit Test 、Integration Tests 等多个阶段。
-Job
-任务：就是我们在每个阶段具体要做的事情，而一个阶段可能会有多个任务。
-Pipelines
-一条流水线 （ pipeline）就是 一组 在各个阶段执行的任务。在同一阶段的多个任务是可以并行的（如果 Runner 足够多的话），当全部的任务都执行成功之后流水线将会进入下一个阶段。反之，如果其中有一个任务失败，流水线的下一个阶段将不再执行。
-Runners
-在 Gitlab CI 中，Runner 负责运行定义在 .gitlab-ci.yml 中的代码。Runner 为三种：Shared Runners、Group Runners、Specific Runners，分别表示全局共用 Runner、组共用 Runner、单个项目指定的 Runner。
-.gitlab-ci.yml
-Gitlab CI 的配置文件，该文件声明了流水线的结构和顺序，以任务为最小单元。
-文件中允许定义的元素：
-
-image：docker 镜像，当 Gitlab-Runner 的类型为 docker 时，会根据该属性指定的镜像为脚本执行容器。
-services: 指定另一个 docker 镜像，主要用于提供服务层的能力，比如 mysql 。
-before_script：任务执行前的钩子事件，比如一个 node 项目，我们可以在这里安装依赖。
-after_script：任务执行后的钩子事件，当所有的任务都执行完毕之后被调用，不管任务是否执行成功。
-stages：定义流水线中的阶段，默认的为 build 、test、deploy。如果我们要在任务中指定其他的 stage，则需要使用该属性先申明。
-cache：需要缓存的文件，比如 node 项目可以把 node_modules 缓存起来。提示：可以定义在 .gitlab-ci.yml 顶级表示项目级别的，也可以申明在单个任务中。
-variables：变量，同样可以在顶级或者单个任务中申明。
-pages：内置的一个任务，用于上传任务执行的结果到 Gitlab Pages。
-include：合并其他的 .gitlab-ci.yml 文件配置。
-在单个任务中申明的元素：
-
-script：需要执行的脚本。
-stage：标识该任务所属的阶段。
-tags：为任务打上标签，用于选择特定的 Runner。
-only：用于表明何时创建该任务。
-except：用于表明何时不创建该任务。
-when：用于表明何时运行该任务。
-allow_failure：允许失败，该任务失败时不会影响整个流水线的结果。
-artifacts：任务执行的结果，比如执行 打包任务 后的产出资源。
-dependencies：依赖的其他任务。
-retry：当任务失败时最多重试的次数。
-coverage：指定如何从任务结果中提取代码覆盖率。
-parallel：允许并行的任务实例个数。
-
-
-
-
-请注意版本问题，每个属性对版本的要求并不一致，具体的可以点击属性查看官方文档。
-
-使用 Gitlab CI
-使用 Gitlab CI 服务的两种方式： 1. Auto DevOps 2. 手动配置 CI/CD
-Auto DevOps
-Auto DevOps 是 Gitlab 11.0 推出的新功能，它提供了预定义的 CI/CD 配置，允许我们自动检测、构建、测试、发布以及监控应用。
-暂未使用，待补充。
-手动配置 CI/CD
-手动配置主要就 2 个步骤，配置 .gitlab-ci.yml 文件，添加 Gitlab Runner 运行该文件。
-
-下面，我们看看如何配置 Gitlab Runner：
-Gitlab Runner
-Gitlab Runner 是一个开源项目，用来运行 .gitlab-ci.yml 中定义的任务并把结果返给 Gitlab。
-安装
-
-官方文档：https://docs.gitlab.com/runner/install/linux-repository.html
-
-首先，添加离线仓库：
-curl -L https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | sudo bash
-然后，安装最新版本：
-sudo apt-get install gitlab-runner
-注册
-
-官方文档：https://docs.gitlab.com/runner/register/index.html
-
-首先，我们进入要配置 Runner 的 Gitlab 仓库，在 Settings -&gt; CI / CD 页面展开 Runners 配置面板可以看到已经分配的 Runner 以及注册 Runner 需要的参数：
-然后，我们使用 Gitlab-Runner 命名开始注册：
-gitlab-runner register
-执行完会该命令，终端会有交互，要求我们输入以下参数：
-
-gitlab-ci coordinator url ：gitlab 服务地址
-gitlab-ci token：上图中的 token
-description：描述信息
-tags：标签，对应 .gitlab-ci.yml 任务中配置的 tags，只有 tags 匹配的任务才会被该 Runner 执行。
-executor：执行器，即任务脚本执行的环境
-
-
-如果使用 docker 执行，则需要事先安装 Docker 环境。
-
-参数填写完毕之后，一个 Runner 便被注册成功了：
-
-我们回到 gitlab 仓库页面，然后刷新便可以看到 _fzBq4PN 这个 Runner 已经被注册到该项目：
-
-
-我们可以点击 编辑图标 对该 Runner 进行修改。我比较喜欢把 Run untagged jobs 选项勾上，这样就不用每个任务都添加对应的 tags 了（因为现在涉及到的都是一些简单的流程）。
-
-总结
-首先，CI/CD 是一种软件开发流程，Gitlab CI/CD 是 Gitlab 为实现该流程而提供的一个内置工具（服务）。 其次，我们有 Auto DevOps 与 手动配置 两种方式使用，本文讲解的主要是 手动配置 方式。
-加速Gitlab Runner
-
-gitlab runner构建镜像每次RUN 安装依赖包，都远程下载?可以缓存加速吗？ 可以的！
-
-在将GitLab Runner注册到GitLab page上，让GitLab page可以和你的Runner通信时，有一步是填写使用的executor
-输入Runner的executor：
-Please enter the executor: ssh, docker+machine, docker-ssh+machine, kubernetes, docker, parallels, virtualbox, docker-ssh, shell:
-如果你选择Docker作为Runner的executor，你还要选择默认的docker image来运行job(当然，你也可以在.gitlab-ci.yml里指明你需要用的image),这句话就跟文章使用gitlab-runner往k8s上发送curl命令实现pod中容器使用的镜像版本更新，地址： 开头讲述的那样，不过.gitlab-ci.yml里指明的image优先级高。
-注册完成后你可以在/etc/gitlab-runner里发现 config.toml文件，该文件是Runner的配置文件
-接下来就牵涉到一个重要的话题 —— Executor
-
-Shell Executor
-以宿主机作为Runner的所有jobs的执行器。Runner将会从远程仓库pull你的工程，工程的目录为：/builds。如果你使用了cache，那么cache将会存在/cache/。
-但是，它需要将构建所需的所有依赖手动安装到安装了Runner的同一台计算机上，比如使用到的git,jdk,maven,docekr等
-Docker Executor
-所有jobs的执行环境为指定的docker image所生成的container，每个job都会生成一个container并且在job结束后立即销毁。这个说的就是config.toml文件和.gitlab-ci.yml中指定的image
-Docker executor默认将所有的builds存储在/builds/(这里的路径是container里的路径，Runner配置文件config.toml里的build_dir字段可以重新指明build的目录，默认对应于宿主机的目录是在宿主机的docker volume下：/var/lib/docker/volumes//_data/)，默认将所有的caches存储在container里的/cache目录(config.toml里的cache_dir字段可以重新指明cache的目录)，注意build_dir和cache_dir指向的均是container里的目录，要想将container里的数据持久化，需要用到volumes字段，这个字段的使用和docker volume的使用是类似的，只需在config.toml的[runner.docker]部分添加volumes = [“/cache”, “:rw”]即可实现container里/cache目录数据的永久保存以及将host目录挂载到相应的container目录并具有读写的功能。
-比如：
-
-# 仅作展示，未显示完整
-[runners.docker]
-  image = "jdd.io/jre:1.8.275"
-  volumes = ["/cache","/run/docker.sock:/run/docker.sock"]
-当你使用docker 或 docker+machine executors时，你可以通过设置pull_policy来决定Runner如何pull docker image。pull_policy有三种值：
-always —— Runner始终从远程pull docker image。
-if-not-present —— Runner会首先检查本地是否有该image，如果有则用本地的，如果没有则从远程拉取。
-never —— Runner始终使用本地的image。
-
-注意：这一步就是本文开头提到的，使用本地镜像，不用再从dockerhub上拉取了
-
-# 仅作展示，未显示完整
-[runners.docker]
-  image = "jdd.io/jre:1.8.275"
-  pull_policy="if-not-present" # 添加这个选项就可以了
-  volumes = ["/cache","/run/docker.sock:/run/docker.sock"]
-当你使用docker, docker+machine 或 kubernetes作为executor时，GitLab Runner将会使用特定的container来处理Git、artifacts 和cache 操作。
-权限管理
-以管理员的身份登入gitlab，点击Settings，然后选择Members，可以通过输入名字选择要分配权限的小组成员，然后分配角色，选择权限有效时间，点击Add to Project就把人员拉近到项目中。
-GitLab的角色有以下四种：
-
-Guest：可以创建issue、发表评论，不能读写版本库
-Reporter：可以克隆代码，不能提交，可以赋予测试、产品经理此权限
-Developer：可以克隆代码、开发、提交、push，可以赋予开发人员此权限
-MainMaster：可以创建项目、添加tag、保护分支、添加项目成员、编辑项目，一般GitLab管理员或者CTO才有此权限
-
-访问权限 - Visibility Level：
-这个是在建立项目时就需要选定的，主要用于决定哪些人可以访问此项目，包含3种
-
-Private - 私有，只有属于该项目成员才有原先查看
-Internal - 内部，用个Gitlab账号的人都可以clone
-Public - 公开，任何人可以clone
-
-本文作者：夜法之书       写作不易，转载请注明来源地址！
-参考链接：
-
-https://www.cnblogs.com/hgzero/p/14088215.html
-http://www.51blogs.net/2017/11/10/1110113243.html
-https://my.oschina.net/u/2400083/blog/808097
-
-
-系列教程
-全部文章RSS订阅
-Devops系列
-Devops 分类 RSS 订阅
-
-自建全套开源Devops开发系统
-Git介绍以及分支模型图解
-三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
-DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
-项目开发管理工具推荐
-Gitlab的安装及使用教程完全版
-Gitlab的安装及使用
-那些有用的Github工具介绍！Action、app、workflow等
-
-]]></content>
-      <categories>
-        <category>devops</category>
-      </categories>
-      <tags>
-        <tag>gitlab</tag>
-        <tag>git</tag>
-        <tag>docker</tag>
-        <tag>registry</tag>
-        <tag>教程</tag>
-        <tag>email</tag>
-        <tag>https</tag>
-        <tag>ssl</tag>
       </tags>
   </entry>
   <entry>
@@ -6081,8 +6081,8 @@ CI/CD与Git Flow与GitLab
         <category>gitbook</category>
       </categories>
       <tags>
-        <tag>linux</tag>
         <tag>git</tag>
+        <tag>linux</tag>
         <tag>gitbook</tag>
       </tags>
   </entry>
@@ -6292,8 +6292,8 @@ CI/CD与Git Flow与GitLab
         <category>gitbook</category>
       </categories>
       <tags>
-        <tag>linux</tag>
         <tag>git</tag>
+        <tag>linux</tag>
         <tag>gitbook</tag>
       </tags>
   </entry>
@@ -12185,9 +12185,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ermiolgMEAjyUyeW").style.height=document.getElementById("mmedia-ermiolgMEAjyUyeW").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-nurWpIWtrpOsXzNy").style.height=document.getElementById("mmedia-nurWpIWtrpOsXzNy").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-ermiolgMEAjyUyeW").style.height=document.getElementById("mmedia-ermiolgMEAjyUyeW").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-nurWpIWtrpOsXzNy").style.height=document.getElementById("mmedia-nurWpIWtrpOsXzNy").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -17777,11 +17777,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var hXJbCEpwlInbPtsl_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); hXJbCEpwlInbPtsl_options.container = document.getElementById("mmedia-hXJbCEpwlInbPtsl"); const ap_hXJbCEpwlInbPtsl = new APlayer(hXJbCEpwlInbPtsl_options); 
+ var CAqdNaHRLEdeDZOU_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); CAqdNaHRLEdeDZOU_options.container = document.getElementById("mmedia-CAqdNaHRLEdeDZOU"); const ap_CAqdNaHRLEdeDZOU = new APlayer(CAqdNaHRLEdeDZOU_options); 
 
 - **列表**
 
- var dcJCjvUdCMmRVneY_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); dcJCjvUdCMmRVneY_options.container = document.getElementById("mmedia-dcJCjvUdCMmRVneY"); const ap_dcJCjvUdCMmRVneY = new APlayer(dcJCjvUdCMmRVneY_options); 
+ var sgfHTjPNbqnjtUhE_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); sgfHTjPNbqnjtUhE_options.container = document.getElementById("mmedia-sgfHTjPNbqnjtUhE"); const ap_sgfHTjPNbqnjtUhE = new APlayer(sgfHTjPNbqnjtUhE_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -18033,21 +18033,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-gjYZiIOVsReimMIX").style.height=document.getElementById("mmedia-gjYZiIOVsReimMIX").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-pxmoHAoanARqvvcW").style.height=document.getElementById("mmedia-pxmoHAoanARqvvcW").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-gjYZiIOVsReimMIX").style.height=document.getElementById("mmedia-gjYZiIOVsReimMIX").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-pxmoHAoanARqvvcW").style.height=document.getElementById("mmedia-pxmoHAoanARqvvcW").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-DynZDoSgWdOGsUwb").style.height=document.getElementById("mmedia-DynZDoSgWdOGsUwb").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-uDgUSjMiGeGBxLwf").style.height=document.getElementById("mmedia-uDgUSjMiGeGBxLwf").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-DynZDoSgWdOGsUwb").style.height=document.getElementById("mmedia-DynZDoSgWdOGsUwb").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-uDgUSjMiGeGBxLwf").style.height=document.getElementById("mmedia-uDgUSjMiGeGBxLwf").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var qruVmZAZprAanvGr_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); qruVmZAZprAanvGr_options.container = "#mmedia-qruVmZAZprAanvGr"; const art_qruVmZAZprAanvGr = new Artplayer(qruVmZAZprAanvGr_options); 
+ var GfzJAdgfaiekLmgv_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); GfzJAdgfaiekLmgv_options.container = "#mmedia-GfzJAdgfaiekLmgv"; const art_GfzJAdgfaiekLmgv = new Artplayer(GfzJAdgfaiekLmgv_options); 
 脑图
 
 原作者记录
@@ -19089,11 +19089,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var RtVmxLfkIzJVbRhZ_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); RtVmxLfkIzJVbRhZ_options.container = document.getElementById("mmedia-RtVmxLfkIzJVbRhZ"); const ap_RtVmxLfkIzJVbRhZ = new APlayer(RtVmxLfkIzJVbRhZ_options); 
+ var LOKStlnbvPeCZqFb_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); LOKStlnbvPeCZqFb_options.container = document.getElementById("mmedia-LOKStlnbvPeCZqFb"); const ap_LOKStlnbvPeCZqFb = new APlayer(LOKStlnbvPeCZqFb_options); 
 
 
 
- var QWfbmLjZhHAXabQZ_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); QWfbmLjZhHAXabQZ_options.container = document.getElementById("mmedia-QWfbmLjZhHAXabQZ"); const ap_QWfbmLjZhHAXabQZ = new APlayer(QWfbmLjZhHAXabQZ_options); 
+ var DfTBWNucXBZargLi_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); DfTBWNucXBZargLi_options.container = document.getElementById("mmedia-DfTBWNucXBZargLi"); const ap_DfTBWNucXBZargLi = new APlayer(DfTBWNucXBZargLi_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -19251,9 +19251,9 @@ docker run -d \
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-xUVvKXSHEfKFpTHM").style.height=document.getElementById("mmedia-xUVvKXSHEfKFpTHM").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-mfyxesemjktujrJV").style.height=document.getElementById("mmedia-mfyxesemjktujrJV").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-xUVvKXSHEfKFpTHM").style.height=document.getElementById("mmedia-xUVvKXSHEfKFpTHM").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-mfyxesemjktujrJV").style.height=document.getElementById("mmedia-mfyxesemjktujrJV").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -19262,7 +19262,7 @@ docker run -d \
 
 ## 中文翻唱
 
- var LVHaTidfFkytZiYs_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); LVHaTidfFkytZiYs_options.container = document.getElementById("mmedia-LVHaTidfFkytZiYs"); const ap_LVHaTidfFkytZiYs = new APlayer(LVHaTidfFkytZiYs_options); 
+ var mssivYnxaikXpEay_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); mssivYnxaikXpEay_options.container = document.getElementById("mmedia-mssivYnxaikXpEay"); const ap_mssivYnxaikXpEay = new APlayer(mssivYnxaikXpEay_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -35111,9 +35111,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-VvOKhCDWScUBSrDq").style.height=document.getElementById("mmedia-VvOKhCDWScUBSrDq").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-LFVJnygjRuAuOvJE").style.height=document.getElementById("mmedia-LFVJnygjRuAuOvJE").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-VvOKhCDWScUBSrDq").style.height=document.getElementById("mmedia-VvOKhCDWScUBSrDq").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-LFVJnygjRuAuOvJE").style.height=document.getElementById("mmedia-LFVJnygjRuAuOvJE").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 
@@ -35293,248 +35293,6 @@ Docker reader
         <tag>calibre</tag>
         <tag>douban</tag>
         <tag>book</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>自建全套开源Devops开发系统</title>
-    <url>/posts/ab63eb8f/</url>
-    <content><![CDATA[
-国内的Devops云平台动辄封号，删库，屏蔽，还多次发生数据泄密，项目被云平台克隆事件，国内云平台devops已死！数据安全没法保证，自建私有Devops平台才靠谱。这里采用开源项目建立一个完善的低成本Devops系统，基本运行良好！
-
-
-目标：单节点，以最低成本，最低消耗，使用开源软件实现一个可用的DevOps！满足中小企业的研发、测试、运维需求。并对后续如何扩展本套DevOps系统做了项目，成本，路线升级规划，可以一直扩展到业界最前沿最大系统。
-整套系统已经跑起来很长时间了！单节点Nas服务器，32G内存，共运行了约80个Docker，优化到平均负载10以下。
-
-
-
-Devops框架图解
-
-下面系统大多可以做负载平衡，多节点备份，可以扩展为一个高可用，大中央平台。
-珍爱生命，使用Docker！
-
-
-开源云平台生死连问
-
-珍爱生命，不建议使用国内云平台。
-
-什么是大教堂？
-什么是集市？
-什么是信任链？
-什么是开源生态？
-为什么要做开源生态？
-怎么做开源生态？
-开源生态的土壤肥力维护如何做？
-这些问题没想明白，没想到如何做的是没法做开源的。
-国内平台连种子嫩芽都要收割，到处收费，动辄删库，屏蔽，封号，注定做不了开源生态。
-Consul自动负载均衡
-
-基于服务自动发现和注册的负载均衡，负载均衡的方式没有变，只是多了一些外围组件，当然这些组件对 Client 是不可见的，client 依然只能看到 Nginx 入口，访问方式也没变化。
-
-
-Github仓库备份
-
-最优秀的资源，大多只在短时间内出现！
-平时多备份你重要的仓库，以及你使用的仓库的重要上下游仓库！
-
-
-
-github-backup Githb
-github-backup Dockerhub
-
-
-githubback:
-  image: lnxd/github-backup
-  container_name: "githubback"
-  hostname: githubback
-  # ports:
-    # - "80:80"
-  volumes:
-    - "${USERDIR}/githubback/data:/home/docker/backups:rw"
-  env_file:
-    - .env
-  environment:
-    - HTTP_PROXY=http://[ip]:[port]
-    - HTTPS_PROXY=http://[ip]:[port]
-  restart: always
-配置要求
-个人Nas配置
-
-
-cpu j4125 4 核 14nm 2.00 GHz ~2.70 GHz
-SSD sata 接口的 读写 500MB/S
-32G DDR4. 2x16G 双通道
-
-
-上图中介绍的系统都是上面配置的单服务器中可以运行的。
-如何以最低的配置，最少的内存运行起来最多的功能才是本文的追求，花费更多金钱去满足极少数情况的高压力是钱多的没处花。
-
-8G内存的nas 就可以运行 gitea + drone ，zentao 想用就用
-gitlab 要跑起来至少要2核 8G 内存，jenkins 也是内存 cpu 占用大户。大于 16G 内存时考虑上这个
-4核 32G 内存的nas，图片中介绍的可以全都跑起来！
-
-可靠性
-ELK集群监控对于单服务器来说完全多余，netdata监控也不错，portainer就够用了，以后为了节约资源，portainer说不定也会被干掉，大多数时候命令行监控就够了。少于200节点K8S就是多余的。
-数据安全
-
-云平台把数据交给别人，赌别人的道德不会私自偷拿你的数据？真是想多了。
-某垄断社交平台内部有专门的团队分析客户的数据，看有什么有价值的没有，是很多年前就爆出来的消息。
-自建DevOps成本其实相当的低！
-
-整套系统可以从少到多，从小到大，慢慢优化，扩展的。硬件成本也是随着需求变化而变化的，随着业务扩展而增加成本，一开始单节点单服务器就可以满足要求了，后面业务增加慢慢扩展为集群，k8s 等。
-数据，代码是公司核心资产与竞争力的公司，上云赌别人的人品就是找死。你注册账户的时候，就同意了，无论别人随意删除你的数据，或者窃取你的数据都是不用付任何责任的，再说，整个系统数据都在别人手上，你要维权也没有证据。
-备份
-
-UPS电源，防止意外断电
-rsync 备份，对于大多数人，已经够用了
-文件系统快照
-离线每日，或者每周冷备份
-大系统，多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群
-
-扩展性
-
-上面说的都可以单服务器搞定。多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群。
-多于200节点，大于3台服务器以后考虑上K8S。ELK监控之类的这时候可以上了。蓝鲸智云标准运维这时候也可以考虑了。
-再次扩大的时候可以考虑Proxmox VE（PVE） + ceph
-更大的系统，或者对外提供云平台服务的时候可以考虑上OpenStack
-
-项目介绍
-ELK
-
-消耗资源很多，至少上百节点以上再考虑上这个
-portainer -&gt; netdata -&gt; ELK，zabbix 
-
-
-cacti
-
-  
-
-
-
-
-  
-
-
-
-zabbix
-
-  
-
-
-
-
-  
-
-
-
-ansible
-
-  
-
-
-
-
-  
-
-
-
-CMDB
-
-  
-
-
-
-
-  
-
-
-
-PVE
-
-Proxmox VE（PVE）
-
-
-  
-
-
-
-CEPH
-
-  
-
-
-
-
-  
-
-
-
-OpenStack
-
-  
-
-
-
-
-  
-
-
-
-其它项目
-
-大家还有啥好项目建议？
-
-onedev
-onedev 是替代Gitlab的极佳候补，看文档介绍，潜力无限！
-
-  
-
-
-
-smartdns
-
-一个本地DNS服务器，获取最快的网站IP，获得最佳上网体验。
-
-
-  
-
-
-
-awesome-selfhosted
-
-这里你能找到各种各样的自建 Docker 服务
-
-
-  
-
-
-
-系列教程
-全部文章RSS订阅
-Devops系列
-Devops 分类 RSS 订阅
-
-自建全套开源Devops开发系统
-Git介绍以及分支模型图解
-三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
-DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
-项目开发管理工具推荐
-Gitlab的安装及使用教程完全版
-Gitlab的安装及使用
-那些有用的Github工具介绍！Action、app、workflow等
-
-相关文档
-
-Devops
-
-]]></content>
-      <categories>
-        <category>devops</category>
-      </categories>
-      <tags>
-        <tag>docker</tag>
-        <tag>devops</tag>
-        <tag>框架</tag>
-        <tag>图解</tag>
       </tags>
   </entry>
   <entry>
@@ -37350,6 +37108,287 @@ Tips：友情提示，部分内容RSS输出获取不到，请跳转到源网页�
       <tags>
         <tag>管理</tag>
         <tag>竞品分析</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>RSS的使用与Tiny Tiny RSS Selfhost自建</title>
+    <url>/posts/f4926c88/</url>
+    <content><![CDATA[
+RSS 是对你信任的网站的订阅，微博是对你信任的人的订阅，即刻是对你感兴趣的话题的订阅。
+
+
+
+RSS 的介绍
+
+维基百科zh.wikipedia.org/wiki/RSS
+
+RSS（简易信息聚合）是一种消息来源格式规范，用以聚合经常发布更新数据的网站，例如博客文章、新闻、音频或视频的网摘。RSS文件（或称做摘要、网络摘要、或频更新，提供到频道）包含全文或是节录的文字，再加上发布者所订阅之网摘数据和授权的元数据。
+社交媒体混乱的时间线、聚合阅读工具烦人的算法推荐，都让我们无法高效地获取需要的信息。RSS 将信息的选择权交还给了用户，但 RSS 并不是什么新玩意，20多年前就有了。RSS可以让我们高效的获取感兴趣的信息。
+互联网的信息是庞杂的，甚至可以说是无限的，随着我们关注量的上升，我们关注的内容会越来越多，可能每天要去打开几十几百个网站或APP。手机里的有些 APP，收藏夹里的某些网站，也许就是为了看一小部分的内容，但是我们不得不装上它。通过 RSS 我们就可以将它们聚合在一起，还免受广告和追踪的困扰。也许对于一些内容还有即时推送的要求，有些网站和APP可能并没有推送，但是我们又需要即时收到推送（比如停水通知），这时如果通过 RSS 联动 IFTTT 便可以做到即时推送。可见 RSS 可以有提高信息获取效率、时效性高、便于管理、无广告等优点。
+RSS工具
+RSSHub
+RSSHub docs
+
+万物皆可 RSS
+RSSHub 是一个轻量、易于扩展的 RSS 生成器，可以给任何奇奇怪怪的内容生成 RSS 订阅源
+
+在使用一段时间后你可能会发现有很多网站和想订阅的内容没有提供 RSS，因为 RSS 不利于投放广告、收集数据等商业行为，越来越多的网站不再提供 RSS，甚至还反爬虫。幸好，我们还有 RSSHub 项目（反爬严格的网站也需要自建，RSSHub 文档有自建教程）。RSSHub 项目由 DIYgod 发起，经过许多开发者一年多的活跃开发，现在已经支持很多网站的 RSS 输出。具体支持那些网站可以查阅文档。
+
+RSSHub Radar
+RSSHub 项目，作者开发了相应的浏览器插件 – RSSHub Radar。浏览器插件可以帮助你快速发现和订阅当前网站 RSS ，RSSHub 项目网站上也提供了很多可以直接拿来用的方式，例如订阅 B 站某 UP 主的投稿等，具体的请参看 https://docs.rsshub.app/social-media.html 后食用。
+
+Tiny Tiny RSS
+
+可以Selfhost部署的RSS聚合客户端，支持多用户注册。
+
+FEEDX
+FEEDX 是一个个人站，主打一些网站的全文 RSS，但质量上乘，没有 RSS 的话留言站长也会考虑做 RSS。
+与其他 APP 联动
+IFTTT
+
+IFTTT，是一个新生的网络服务平台，通过其他不同平台的条件来决定是否执行下一条命令。即对网络服务通过其他网络服务作出反应。IFTTT得名为其口号“if this then that”。
+维基百科zh.wikipedia.org/wiki/IFTTT
+
+IFTTT 是一款可玩性很高的软件，其中便包含着 RSS Feed（有简单的关键词过滤功能），可以做到停水通知（×××有更新…）发送邮件或通知等功能。
+Telegram bot
+Telegram 是一款国外的即时通讯聊天工具，除了加密、简洁流畅、跨平台、消息记录永久保存等优点外，我最喜欢的还是 Telegram bot 的功能。Telegram 里有各种各样的 bot，可以满足许多的需求，比如 十分钟邮箱、油管下载、听歌等 bot，RSS 订阅 bot 也十分多（IFTTT 同样有 Telegram bot）。这里就推荐一款最近才出现在眼前的 RSS bot：flowerss bot。优点是可以将 RSS 内容转换成 telegraph 来支持 Telegram 的应用内 instant view（即时预览用过的都说好！），还可以为 Group 和 Channel 订阅 RSS 消息。支持 Docker 部署。
+RSS 也许还有更多有趣好玩的方式，期待更多的骚操作被广大网友发现
+Tiny Tiny RSS Selfhost 搭建
+搭建要求
+
+一台服务器（我是 Debian 10,以它为例），能连上外网最好
+知道 Linux 基本命令
+
+安装方式
+
+传统方式安装，通过 git clone 的方式安装 TTRSS，这种方式安装比较慢，而且难度比较大，这里不介绍这种方式，如果有兴趣的话可以去官方 wiki 瞅瞅。
+Docker 安装，可以将 Docker 看作 虚拟机，但是又有占用小、启动快等优点，这里采用的是 @HenryQW 的通过 docker-compose 部署。戳这里查看文档。
+
+开始安装
+安装 Docker
+首先升级系统到最新
+apt update &amp;&amp; apt upgrade
+可以选择使用一键脚本安装 Docker，优点是方便快速，缺点是有可能不稳定，如果使用此方法运行下面的命令后跳过后面的步骤直接到下一步。想一步步安装的请无视。
+curl https://get.docker.com/ | sh
+然后安装一些软件包使 apt 支持 https
+apt install \
+  apt-transport-https \
+  ca-certificates \
+  curl \
+  gnupg2 \
+  software-properties-common
+添加 Docker 官方的 GPG 密钥
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
+添加 Docker CE 稳定版的库（nightly、test 版本可通过替换 stable 实现），这里是 amd64 架构的，其他架构自行替换。
+sudo add-apt-repository \
+  "deb [arch=amd64] https://download.docker.com/linux/debian \
+  $(lsb_release -cs) \
+  stable"
+接下来更新 apt 包索引
+apt update
+安装最新的 Docker CE 和 containerd（非必选）
+apt install docker-ce docker-ce-cli containerd.io
+测试 docker 是否安装成功
+docker run hello-world
+将 Docker 加入开机自启
+systemctl enable docker
+
+安装 docker-compose
+安装 docker-compose 最新版的命令可以在这里查看：https://github.com/docker/compose/releases
+通过 docker-compose 部署
+下载 docker-compose.yml 至任意目录或者新建 docker-compose.yml 拷贝我的内容进去。
+注意事项：
+
+包含了：TTRSS、PostgreSQL、Mercury Parser API、OpenCC API 四个镜像，后面两个为可选项，可以安装也可以不安装。
+请务必更改 postgres 用户密码。
+默认通过 181 端口访问 TTRSS，
+默认账户：admin 密码：password，请第一时间更改。
+
+docker-compose.yml
+version: '3'
+
+services:
+  database.postgres:
+    image: postgres:alpine
+    container_name: postgres
+    restart: always
+    environment:
+      - PG_PASSWORD=password # 务必修改密码！
+      - DB_EXTENSION=pg_trgm
+    volumes:
+      - ./postgres/data/:/var/lib/postgresql/ # 将数据库数据保存到当前目录的 postgres/data/ 文件夹中
+
+  service.rss:
+    image: wangqiru/ttrss:latest
+    container_name: ttrss
+    restart: always
+    ports:
+      - 181:80
+    environment:
+      - SELF_URL_PATH=http://localhost:181/ # 更改为你自己的域名或者 IP！
+      - DB_HOST=database.postgres # 数据库地址
+      - DB_PORT=5432 # 数据库端口
+      - DB_NAME=ttrss # 数据库名称
+      - DB_USER=postgres # 数据库用户名
+      - DB_PASS=password # 务必修改密码（应与上面修改的密码相同）
+      - ENABLE_PLUGINS=auth_internal,fever # 在系统层面启用的插件名称（为所有用户启用），auth_internal 为必选
+    stdin_open: true
+    tty: true
+    command: sh -c 'sh /wait-for.sh database.postgres:5432 -- php /configure-db.php &amp;&amp; exec s6-svscan /etc/s6/'
+
+  service.mercury: # 在插件页 API 地址填写 `service.mercury:3000` 启用插件
+    image: wangqiru/mercury-parser-api:latest
+    container_name: mercury
+    restart: always
+    expose:
+      - 3000
+
+  service.opencc: # 在插件页 API 地址填写 `service.opencc:3000` 启用插件
+    image: wangqiru/opencc-api-server:latest
+    container_name: opencc
+    restart: always
+    environment:
+      - NODE_ENV=production
+    expose:
+      - 3000
+支持的环境变量列表：
+
+SELF_URL_PATH: TTRSS 实例地址
+DB_HOST: 数据库地址
+DB_PORT: 数据库端口
+DB_NAME: 数据库名字
+DB_USER: 数据库用户名
+DB_PASS: 数据库密码
+ENABLE_PLUGINS: 在系统层面启用的插件名称，其中 auth_internal 为必须启用的登录插件
+SESSION_COOKIE_LIFETIME: 使用网页版登陆时 cookie 过期时间，单位为小时，默认为 24 小时
+
+修改完成后在同目录下运行 docker-compose up -d 等待部署完成即可。此时通过域名（域名需解析到这个 VPS）或 ip 加刚刚设置的端口已经可以开始使用 TTRSS 了，出来登录的界面后先去改个密码，然后来开启 HTTPS 访问。
+
+Tips: TTRSS是每日构建，有时候构建出来的镜像没法使用，还不如固定一个Docker版本
+
+配置 HTTPS
+首先安装 nginx 并将其加入开机自启：
+apt install nginx
+systemctl enable  nginx
+然后编写 ttrss 反向代理配置文件
+新建 /etc/nginx/conf.d/ttrss.conf 并将一下内容写入，注意替换域名。
+nano /etc/nginx/conf.d/ttrss.conf
+/etc/nginx/conf.d/ttrss.conf
+upstream ttrssdev {
+  server 127.0.0.1:181;
+}
+
+server {
+    listen 80;
+    server_name  youdomain.com;
+    #return 301 https://youdomain.com$request_uri;
+    #rewrite ^(.*)$ https://$host$1 permanent;
+}
+
+server {
+    listen 443 ssl;
+    gzip on;
+    server_name  youdomain.com;
+
+    access_log /var/log/nginx/ttrssdev_access.log combined;
+    error_log  /var/log/nginx/ttrssdev_error.log;
+
+    location / {
+        proxy_redirect off;
+        proxy_pass http://ttrssdev;
+
+        proxy_set_header  Host                $http_host;
+        proxy_set_header  X-Real-IP           $remote_addr;
+        proxy_set_header  X-Forwarded-Ssl     on;
+        proxy_set_header  X-Forwarded-For     $proxy_add_x_forwarded_for;
+        proxy_set_header  X-Forwarded-Proto   $scheme;
+        proxy_set_header  X-Frame-Options     SAMEORIGIN;
+
+        client_max_body_size        100m;
+        client_body_buffer_size     128k;
+
+        proxy_buffer_size           4k;
+        proxy_buffers               4 32k;
+        proxy_busy_buffers_size     64k;
+        proxy_temp_file_write_size  64k;
+    }
+}
+然后使用 nginx -t 查看有无错误，没有错误后使用 nginx -s reload 重启 Nginx 服务。此时使用域名或 ip 应该可以直接访问了，不过这时还是 http。
+然后使用 Let’s Encrypt 官方推荐的 Certbot 获取免费的 SSL 证书。
+打开 Certbot 说明 后选择 Nginx 和运行的系统后就可以查看官方详细地说明，跟着做一遍就好了。
+
+有证书之后再再访问我们的 TTRSS 服务器令人喜爱的小绿锁是不是就出来呢（可能需要重启 Nginx 服务）。
+到这个界面就算是告一段落了，撒花！
+
+TTRSS 插件
+Mercury 全文获取
+Mercury 全文获取插件需要配合单独的 Mercury Parser API 服务器使用，docker-compose 部署方式已经包含 HenryQW/mercury-parser-api 服务器。
+设置步骤：
+首先去 TTRSS 的偏好设置中开启 Mercury。
+
+再在设置中填写 mercury 容器的地址。
+
+再右键点击源选择编辑信息源，在插件中对这个源开启插件。
+
+OpenCC 繁简转换
+OpenCC 是一个开源的简繁转换项目，需要配合单独的 Mercury Parser API 服务器使用，docker-compose 部署方式已经包含 HenryQW/OpenCC.henry.wang 服务器。
+
+再在设置中填写刚刚查看的 Opencc 容器的地址。
+
+备注：t2s为繁体转简体，其他的转换方式如下:
+
+s2t: Simplified Chinese to Traditional Chinese 简体到繁体
+t2s: Traditional Chinese to Simplified Chinese 繁体到简体
+s2tw: Simplified Chinese to Traditional Chinese (Taiwan Standard) 简体到台湾正体
+tw2s: Traditional Chinese (Taiwan Standard) to Simplified Chinese 台湾正体到简体
+s2hk: Simplified Chinese to Traditional Chinese (Hong Kong Standard) 简体到香港繁体（香港小学学习字词表标准）
+hk2s: Traditional Chinese (Hong Kong Standard) to Simplified Chinese 香港繁体（香港小学学习字词表标准）到简体
+s2twp: Simplified Chinese to Traditional Chinese (Taiwan Standard) with Taiwanese idiom 简体到繁体（台湾正体标准）并转换为台湾常用词汇
+tw2sp: Traditional Chinese (Taiwan Standard) to Simplified Chinese with Mainland Chinese idiom 繁体（台湾正体标准）到简体并转换为中国大陆常用词汇
+t2tw: Traditional Chinese (OpenCC Standard) to Taiwan Standard 繁体（OpenCC 标准）到台湾正体
+t2hk: Traditional Chinese (OpenCC Standard) to Hong Kong Standard 繁体（OpenCC 标准）到香港繁体（香港小学学习字词表标准）
+
+这个插件同样需要去订阅源的编辑源信息中开启。
+Fever API
+提供 Fever API 支持，对于使用 Reeder 的用户十分有用。该插件默认作为系统插件启用。
+首先在设置中启用 API
+
+然后在插件中设置 Fever API 密码
+
+在支持 Fever 的阅读器使用 https://youdomain.com/plugins/fever/ 作为服务器地址，使用刚刚设置的密码登录。由于该插件使用未加盐的 MD5 加密密码进行通信，强烈建议使用应用专用密码并开启 HTTPS。
+最终效果
+
+把你感兴趣的RSS订阅了，甚至可以作为一个更加高效的私有搜索引擎来使用！
+个人独立博客是博文质量最高的搜索文章来源！
+
+
+网络订阅平台
+
+各种原因没法自己搭建私有订阅，那么还有一些免费平台可以选择。只是都有各种限制！
+在聚合搜索平台查找感兴趣的订阅源，使用私有订阅工具订阅，是最佳体验！
+
+wordpress
+https://wordpress.com/read
+
+feedly
+http://feedly.com/
+
+参考
+
+RSS使用心得
+TTRSS搭建教程
+Installing on a host machine
+Installation Guide
+
+]]></content>
+      <categories>
+        <category>tools</category>
+      </categories>
+      <tags>
+        <tag>docker</tag>
+        <tag>tools</tag>
+        <tag>rss</tag>
+        <tag>rsshub</tag>
       </tags>
   </entry>
   <entry>
@@ -41288,7 +41327,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts5064'));
+        var myChart = echarts.init(document.getElementById('echarts5393'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -41382,7 +41421,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts9082'));
+        var myChart = echarts.init(document.getElementById('echarts5164'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -41451,7 +41490,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts2428'));
+        var myChart = echarts.init(document.getElementById('echarts4684'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44853,284 +44892,245 @@ https://www.zhihu.com/question/35540121/answer/122175313
       </tags>
   </entry>
   <entry>
-    <title>RSS的使用与Tiny Tiny RSS Selfhost自建</title>
-    <url>/posts/f4926c88/</url>
+    <title>自建全套开源Devops开发系统</title>
+    <url>/posts/ab63eb8f/</url>
     <content><![CDATA[
-RSS 是对你信任的网站的订阅，微博是对你信任的人的订阅，即刻是对你感兴趣的话题的订阅。
+国内的Devops云平台动辄封号，删库，屏蔽，还多次发生数据泄密，项目被云平台克隆事件，国内云平台devops已死！数据安全没法保证，自建私有Devops平台才靠谱。这里采用开源项目建立一个完善的低成本Devops系统，基本运行良好！
+
+
+目标：单节点，以最低成本，最低消耗，使用开源软件实现一个可用的DevOps！满足中小企业的研发、测试、运维需求。并对后续如何扩展本套DevOps系统做了项目，成本，路线升级规划，可以一直扩展到业界最前沿最大系统。
+整套系统已经跑起来很长时间了！单节点Nas服务器，32G内存，共运行了约80个Docker，优化到平均负载10以下。
 
 
 
-RSS 的介绍
+Devops框架图解
 
-维基百科zh.wikipedia.org/wiki/RSS
-
-RSS（简易信息聚合）是一种消息来源格式规范，用以聚合经常发布更新数据的网站，例如博客文章、新闻、音频或视频的网摘。RSS文件（或称做摘要、网络摘要、或频更新，提供到频道）包含全文或是节录的文字，再加上发布者所订阅之网摘数据和授权的元数据。
-社交媒体混乱的时间线、聚合阅读工具烦人的算法推荐，都让我们无法高效地获取需要的信息。RSS 将信息的选择权交还给了用户，但 RSS 并不是什么新玩意，20多年前就有了。RSS可以让我们高效的获取感兴趣的信息。
-互联网的信息是庞杂的，甚至可以说是无限的，随着我们关注量的上升，我们关注的内容会越来越多，可能每天要去打开几十几百个网站或APP。手机里的有些 APP，收藏夹里的某些网站，也许就是为了看一小部分的内容，但是我们不得不装上它。通过 RSS 我们就可以将它们聚合在一起，还免受广告和追踪的困扰。也许对于一些内容还有即时推送的要求，有些网站和APP可能并没有推送，但是我们又需要即时收到推送（比如停水通知），这时如果通过 RSS 联动 IFTTT 便可以做到即时推送。可见 RSS 可以有提高信息获取效率、时效性高、便于管理、无广告等优点。
-RSS工具
-RSSHub
-RSSHub docs
-
-万物皆可 RSS
-RSSHub 是一个轻量、易于扩展的 RSS 生成器，可以给任何奇奇怪怪的内容生成 RSS 订阅源
-
-在使用一段时间后你可能会发现有很多网站和想订阅的内容没有提供 RSS，因为 RSS 不利于投放广告、收集数据等商业行为，越来越多的网站不再提供 RSS，甚至还反爬虫。幸好，我们还有 RSSHub 项目（反爬严格的网站也需要自建，RSSHub 文档有自建教程）。RSSHub 项目由 DIYgod 发起，经过许多开发者一年多的活跃开发，现在已经支持很多网站的 RSS 输出。具体支持那些网站可以查阅文档。
-
-RSSHub Radar
-RSSHub 项目，作者开发了相应的浏览器插件 – RSSHub Radar。浏览器插件可以帮助你快速发现和订阅当前网站 RSS ，RSSHub 项目网站上也提供了很多可以直接拿来用的方式，例如订阅 B 站某 UP 主的投稿等，具体的请参看 https://docs.rsshub.app/social-media.html 后食用。
-
-Tiny Tiny RSS
-
-可以Selfhost部署的RSS聚合客户端，支持多用户注册。
-
-FEEDX
-FEEDX 是一个个人站，主打一些网站的全文 RSS，但质量上乘，没有 RSS 的话留言站长也会考虑做 RSS。
-与其他 APP 联动
-IFTTT
-
-IFTTT，是一个新生的网络服务平台，通过其他不同平台的条件来决定是否执行下一条命令。即对网络服务通过其他网络服务作出反应。IFTTT得名为其口号“if this then that”。
-维基百科zh.wikipedia.org/wiki/IFTTT
-
-IFTTT 是一款可玩性很高的软件，其中便包含着 RSS Feed（有简单的关键词过滤功能），可以做到停水通知（×××有更新…）发送邮件或通知等功能。
-Telegram bot
-Telegram 是一款国外的即时通讯聊天工具，除了加密、简洁流畅、跨平台、消息记录永久保存等优点外，我最喜欢的还是 Telegram bot 的功能。Telegram 里有各种各样的 bot，可以满足许多的需求，比如 十分钟邮箱、油管下载、听歌等 bot，RSS 订阅 bot 也十分多（IFTTT 同样有 Telegram bot）。这里就推荐一款最近才出现在眼前的 RSS bot：flowerss bot。优点是可以将 RSS 内容转换成 telegraph 来支持 Telegram 的应用内 instant view（即时预览用过的都说好！），还可以为 Group 和 Channel 订阅 RSS 消息。支持 Docker 部署。
-RSS 也许还有更多有趣好玩的方式，期待更多的骚操作被广大网友发现
-Tiny Tiny RSS Selfhost 搭建
-搭建要求
-
-一台服务器（我是 Debian 10,以它为例），能连上外网最好
-知道 Linux 基本命令
-
-安装方式
-
-传统方式安装，通过 git clone 的方式安装 TTRSS，这种方式安装比较慢，而且难度比较大，这里不介绍这种方式，如果有兴趣的话可以去官方 wiki 瞅瞅。
-Docker 安装，可以将 Docker 看作 虚拟机，但是又有占用小、启动快等优点，这里采用的是 @HenryQW 的通过 docker-compose 部署。戳这里查看文档。
-
-开始安装
-安装 Docker
-首先升级系统到最新
-apt update &amp;&amp; apt upgrade
-可以选择使用一键脚本安装 Docker，优点是方便快速，缺点是有可能不稳定，如果使用此方法运行下面的命令后跳过后面的步骤直接到下一步。想一步步安装的请无视。
-curl https://get.docker.com/ | sh
-然后安装一些软件包使 apt 支持 https
-apt install \
-  apt-transport-https \
-  ca-certificates \
-  curl \
-  gnupg2 \
-  software-properties-common
-添加 Docker 官方的 GPG 密钥
-curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
-添加 Docker CE 稳定版的库（nightly、test 版本可通过替换 stable 实现），这里是 amd64 架构的，其他架构自行替换。
-sudo add-apt-repository \
-  "deb [arch=amd64] https://download.docker.com/linux/debian \
-  $(lsb_release -cs) \
-  stable"
-接下来更新 apt 包索引
-apt update
-安装最新的 Docker CE 和 containerd（非必选）
-apt install docker-ce docker-ce-cli containerd.io
-测试 docker 是否安装成功
-docker run hello-world
-将 Docker 加入开机自启
-systemctl enable docker
-
-安装 docker-compose
-安装 docker-compose 最新版的命令可以在这里查看：https://github.com/docker/compose/releases
-通过 docker-compose 部署
-下载 docker-compose.yml 至任意目录或者新建 docker-compose.yml 拷贝我的内容进去。
-注意事项：
-
-包含了：TTRSS、PostgreSQL、Mercury Parser API、OpenCC API 四个镜像，后面两个为可选项，可以安装也可以不安装。
-请务必更改 postgres 用户密码。
-默认通过 181 端口访问 TTRSS，
-默认账户：admin 密码：password，请第一时间更改。
-
-docker-compose.yml
-version: '3'
-
-services:
-  database.postgres:
-    image: postgres:alpine
-    container_name: postgres
-    restart: always
-    environment:
-      - PG_PASSWORD=password # 务必修改密码！
-      - DB_EXTENSION=pg_trgm
-    volumes:
-      - ./postgres/data/:/var/lib/postgresql/ # 将数据库数据保存到当前目录的 postgres/data/ 文件夹中
-
-  service.rss:
-    image: wangqiru/ttrss:latest
-    container_name: ttrss
-    restart: always
-    ports:
-      - 181:80
-    environment:
-      - SELF_URL_PATH=http://localhost:181/ # 更改为你自己的域名或者 IP！
-      - DB_HOST=database.postgres # 数据库地址
-      - DB_PORT=5432 # 数据库端口
-      - DB_NAME=ttrss # 数据库名称
-      - DB_USER=postgres # 数据库用户名
-      - DB_PASS=password # 务必修改密码（应与上面修改的密码相同）
-      - ENABLE_PLUGINS=auth_internal,fever # 在系统层面启用的插件名称（为所有用户启用），auth_internal 为必选
-    stdin_open: true
-    tty: true
-    command: sh -c 'sh /wait-for.sh database.postgres:5432 -- php /configure-db.php &amp;&amp; exec s6-svscan /etc/s6/'
-
-  service.mercury: # 在插件页 API 地址填写 `service.mercury:3000` 启用插件
-    image: wangqiru/mercury-parser-api:latest
-    container_name: mercury
-    restart: always
-    expose:
-      - 3000
-
-  service.opencc: # 在插件页 API 地址填写 `service.opencc:3000` 启用插件
-    image: wangqiru/opencc-api-server:latest
-    container_name: opencc
-    restart: always
-    environment:
-      - NODE_ENV=production
-    expose:
-      - 3000
-支持的环境变量列表：
-
-SELF_URL_PATH: TTRSS 实例地址
-DB_HOST: 数据库地址
-DB_PORT: 数据库端口
-DB_NAME: 数据库名字
-DB_USER: 数据库用户名
-DB_PASS: 数据库密码
-ENABLE_PLUGINS: 在系统层面启用的插件名称，其中 auth_internal 为必须启用的登录插件
-SESSION_COOKIE_LIFETIME: 使用网页版登陆时 cookie 过期时间，单位为小时，默认为 24 小时
-
-修改完成后在同目录下运行 docker-compose up -d 等待部署完成即可。此时通过域名（域名需解析到这个 VPS）或 ip 加刚刚设置的端口已经可以开始使用 TTRSS 了，出来登录的界面后先去改个密码，然后来开启 HTTPS 访问。
-
-Tips: TTRSS是每日构建，有时候构建出来的镜像没法使用，还不如固定一个Docker版本
-
-配置 HTTPS
-首先安装 nginx 并将其加入开机自启：
-apt install nginx
-systemctl enable  nginx
-然后编写 ttrss 反向代理配置文件
-新建 /etc/nginx/conf.d/ttrss.conf 并将一下内容写入，注意替换域名。
-nano /etc/nginx/conf.d/ttrss.conf
-/etc/nginx/conf.d/ttrss.conf
-upstream ttrssdev {
-  server 127.0.0.1:181;
-}
-
-server {
-    listen 80;
-    server_name  youdomain.com;
-    #return 301 https://youdomain.com$request_uri;
-    #rewrite ^(.*)$ https://$host$1 permanent;
-}
-
-server {
-    listen 443 ssl;
-    gzip on;
-    server_name  youdomain.com;
-
-    access_log /var/log/nginx/ttrssdev_access.log combined;
-    error_log  /var/log/nginx/ttrssdev_error.log;
-
-    location / {
-        proxy_redirect off;
-        proxy_pass http://ttrssdev;
-
-        proxy_set_header  Host                $http_host;
-        proxy_set_header  X-Real-IP           $remote_addr;
-        proxy_set_header  X-Forwarded-Ssl     on;
-        proxy_set_header  X-Forwarded-For     $proxy_add_x_forwarded_for;
-        proxy_set_header  X-Forwarded-Proto   $scheme;
-        proxy_set_header  X-Frame-Options     SAMEORIGIN;
-
-        client_max_body_size        100m;
-        client_body_buffer_size     128k;
-
-        proxy_buffer_size           4k;
-        proxy_buffers               4 32k;
-        proxy_busy_buffers_size     64k;
-        proxy_temp_file_write_size  64k;
-    }
-}
-然后使用 nginx -t 查看有无错误，没有错误后使用 nginx -s reload 重启 Nginx 服务。此时使用域名或 ip 应该可以直接访问了，不过这时还是 http。
-然后使用 Let’s Encrypt 官方推荐的 Certbot 获取免费的 SSL 证书。
-打开 Certbot 说明 后选择 Nginx 和运行的系统后就可以查看官方详细地说明，跟着做一遍就好了。
-
-有证书之后再再访问我们的 TTRSS 服务器令人喜爱的小绿锁是不是就出来呢（可能需要重启 Nginx 服务）。
-到这个界面就算是告一段落了，撒花！
-
-TTRSS 插件
-Mercury 全文获取
-Mercury 全文获取插件需要配合单独的 Mercury Parser API 服务器使用，docker-compose 部署方式已经包含 HenryQW/mercury-parser-api 服务器。
-设置步骤：
-首先去 TTRSS 的偏好设置中开启 Mercury。
-
-再在设置中填写 mercury 容器的地址。
-
-再右键点击源选择编辑信息源，在插件中对这个源开启插件。
-
-OpenCC 繁简转换
-OpenCC 是一个开源的简繁转换项目，需要配合单独的 Mercury Parser API 服务器使用，docker-compose 部署方式已经包含 HenryQW/OpenCC.henry.wang 服务器。
-
-再在设置中填写刚刚查看的 Opencc 容器的地址。
-
-备注：t2s为繁体转简体，其他的转换方式如下:
-
-s2t: Simplified Chinese to Traditional Chinese 简体到繁体
-t2s: Traditional Chinese to Simplified Chinese 繁体到简体
-s2tw: Simplified Chinese to Traditional Chinese (Taiwan Standard) 简体到台湾正体
-tw2s: Traditional Chinese (Taiwan Standard) to Simplified Chinese 台湾正体到简体
-s2hk: Simplified Chinese to Traditional Chinese (Hong Kong Standard) 简体到香港繁体（香港小学学习字词表标准）
-hk2s: Traditional Chinese (Hong Kong Standard) to Simplified Chinese 香港繁体（香港小学学习字词表标准）到简体
-s2twp: Simplified Chinese to Traditional Chinese (Taiwan Standard) with Taiwanese idiom 简体到繁体（台湾正体标准）并转换为台湾常用词汇
-tw2sp: Traditional Chinese (Taiwan Standard) to Simplified Chinese with Mainland Chinese idiom 繁体（台湾正体标准）到简体并转换为中国大陆常用词汇
-t2tw: Traditional Chinese (OpenCC Standard) to Taiwan Standard 繁体（OpenCC 标准）到台湾正体
-t2hk: Traditional Chinese (OpenCC Standard) to Hong Kong Standard 繁体（OpenCC 标准）到香港繁体（香港小学学习字词表标准）
-
-这个插件同样需要去订阅源的编辑源信息中开启。
-Fever API
-提供 Fever API 支持，对于使用 Reeder 的用户十分有用。该插件默认作为系统插件启用。
-首先在设置中启用 API
-
-然后在插件中设置 Fever API 密码
-
-在支持 Fever 的阅读器使用 https://youdomain.com/plugins/fever/ 作为服务器地址，使用刚刚设置的密码登录。由于该插件使用未加盐的 MD5 加密密码进行通信，强烈建议使用应用专用密码并开启 HTTPS。
-最终效果
-
-把你感兴趣的RSS订阅了，甚至可以作为一个更加高效的私有搜索引擎来使用！
-个人独立博客是博文质量最高的搜索文章来源！
+下面系统大多可以做负载平衡，多节点备份，可以扩展为一个高可用，大中央平台。
+珍爱生命，使用Docker！
 
 
-网络订阅平台
+开源云平台生死连问
 
-各种原因没法自己搭建私有订阅，那么还有一些免费平台可以选择。只是都有各种限制！
-在聚合搜索平台查找感兴趣的订阅源，使用私有订阅工具订阅，是最佳体验！
+珍爱生命，不建议使用国内云平台。
 
-wordpress
-https://wordpress.com/read
+什么是大教堂？
+什么是集市？
+什么是信任链？
+什么是开源生态？
+为什么要做开源生态？
+怎么做开源生态？
+开源生态的土壤肥力维护如何做？
+这些问题没想明白，没想到如何做的是没法做开源的。
+国内平台连种子嫩芽都要收割，到处收费，动辄删库，屏蔽，封号，注定做不了开源生态。
+Consul自动负载均衡
 
-feedly
-http://feedly.com/
+基于服务自动发现和注册的负载均衡，负载均衡的方式没有变，只是多了一些外围组件，当然这些组件对 Client 是不可见的，client 依然只能看到 Nginx 入口，访问方式也没变化。
 
-参考
 
-RSS使用心得
-TTRSS搭建教程
-Installing on a host machine
-Installation Guide
+Github仓库备份
+
+最优秀的资源，大多只在短时间内出现！
+平时多备份你重要的仓库，以及你使用的仓库的重要上下游仓库！
+
+
+
+github-backup Githb
+github-backup Dockerhub
+
+
+githubback:
+  image: lnxd/github-backup
+  container_name: "githubback"
+  hostname: githubback
+  # ports:
+    # - "80:80"
+  volumes:
+    - "${USERDIR}/githubback/data:/home/docker/backups:rw"
+  env_file:
+    - .env
+  environment:
+    - HTTP_PROXY=http://[ip]:[port]
+    - HTTPS_PROXY=http://[ip]:[port]
+  restart: always
+配置要求
+个人Nas配置
+
+
+cpu j4125 4 核 14nm 2.00 GHz ~2.70 GHz
+SSD sata 接口的 读写 500MB/S
+32G DDR4. 2x16G 双通道
+
+
+上图中介绍的系统都是上面配置的单服务器中可以运行的。
+如何以最低的配置，最少的内存运行起来最多的功能才是本文的追求，花费更多金钱去满足极少数情况的高压力是钱多的没处花。
+
+8G内存的nas 就可以运行 gitea + drone ，zentao 想用就用
+gitlab 要跑起来至少要2核 8G 内存，jenkins 也是内存 cpu 占用大户。大于 16G 内存时考虑上这个
+4核 32G 内存的nas，图片中介绍的可以全都跑起来！
+
+可靠性
+ELK集群监控对于单服务器来说完全多余，netdata监控也不错，portainer就够用了，以后为了节约资源，portainer说不定也会被干掉，大多数时候命令行监控就够了。少于200节点K8S就是多余的。
+数据安全
+
+云平台把数据交给别人，赌别人的道德不会私自偷拿你的数据？真是想多了。
+某垄断社交平台内部有专门的团队分析客户的数据，看有什么有价值的没有，是很多年前就爆出来的消息。
+自建DevOps成本其实相当的低！
+
+整套系统可以从少到多，从小到大，慢慢优化，扩展的。硬件成本也是随着需求变化而变化的，随着业务扩展而增加成本，一开始单节点单服务器就可以满足要求了，后面业务增加慢慢扩展为集群，k8s 等。
+数据，代码是公司核心资产与竞争力的公司，上云赌别人的人品就是找死。你注册账户的时候，就同意了，无论别人随意删除你的数据，或者窃取你的数据都是不用付任何责任的，再说，整个系统数据都在别人手上，你要维权也没有证据。
+备份
+
+UPS电源，防止意外断电
+rsync 备份，对于大多数人，已经够用了
+文件系统快照
+离线每日，或者每周冷备份
+大系统，多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群
+
+扩展性
+
+上面说的都可以单服务器搞定。多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群。
+多于200节点，大于3台服务器以后考虑上K8S。ELK监控之类的这时候可以上了。蓝鲸智云标准运维这时候也可以考虑了。
+再次扩大的时候可以考虑Proxmox VE（PVE） + ceph
+更大的系统，或者对外提供云平台服务的时候可以考虑上OpenStack
+
+项目介绍
+ELK
+
+消耗资源很多，至少上百节点以上再考虑上这个
+portainer -&gt; netdata -&gt; ELK，zabbix 
+
+
+cacti
+
+  
+
+
+
+
+  
+
+
+
+zabbix
+
+  
+
+
+
+
+  
+
+
+
+ansible
+
+  
+
+
+
+
+  
+
+
+
+CMDB
+
+  
+
+
+
+
+  
+
+
+
+PVE
+
+Proxmox VE（PVE）
+
+
+  
+
+
+
+CEPH
+
+  
+
+
+
+
+  
+
+
+
+OpenStack
+
+  
+
+
+
+
+  
+
+
+
+其它项目
+
+大家还有啥好项目建议？
+
+onedev
+onedev 是替代Gitlab的极佳候补，看文档介绍，潜力无限！
+
+  
+
+
+
+smartdns
+
+一个本地DNS服务器，获取最快的网站IP，获得最佳上网体验。
+
+
+  
+
+
+
+awesome-selfhosted
+
+这里你能找到各种各样的自建 Docker 服务
+
+
+  
+
+
+
+系列教程
+全部文章RSS订阅
+Devops系列
+Devops 分类 RSS 订阅
+
+自建全套开源Devops开发系统
+Git介绍以及分支模型图解
+三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
+DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
+项目开发管理工具推荐
+Gitlab的安装及使用教程完全版
+Gitlab的安装及使用
+那些有用的Github工具介绍！Action、app、workflow等
+
+相关文档
+
+Devops
 
 ]]></content>
       <categories>
-        <category>tools</category>
+        <category>devops</category>
       </categories>
       <tags>
         <tag>docker</tag>
-        <tag>tools</tag>
-        <tag>rss</tag>
-        <tag>rsshub</tag>
+        <tag>devops</tag>
+        <tag>框架</tag>
+        <tag>图解</tag>
       </tags>
   </entry>
 </search>
