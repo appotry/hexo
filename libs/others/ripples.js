@@ -1,0 +1,1 @@
+$(document).ready(function(){try{$("#banner").ripples({resolution:512,dropRadius:10,perturbance:.04})}catch(r){$(".error").show().text(r)}});
