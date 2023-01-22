@@ -5878,6 +5878,92 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
+    <title>ESNI和加密DNS - 保护信息隐私的最后一块拼图</title>
+    <url>/posts/ec2cad2/</url>
+    <content><![CDATA[随着TLS1.3的发布，让该协议成为有史以来最安全、也是最复杂的TLS协议。在该协议之中，有很多的对于以往协议安全漏洞的修复，包括废弃RSA启用新的秘钥交换机制PSK等等。而Encrypted SNI作为一个TLS1.3的扩展协议用来防止传统的HTTPS流量受到ISP或者陌生网络环境的窥探以及一些网络审查。在过去，由于HTTPS协议之中Server Name Indication - SNI的使用，我们的HTTPS流量经常被窥探我们所访问站点的域名
+那么什么是SNI？⌗
+
+服务器名称指示（英语：Server Name Indication，简称SNI）是一个扩展的TLS计算机联网协议，在该协议下，在握手过程开始时客户端告诉它正在连接的服务器要连接的主机名称。这允许服务器在相同的IP地址和TCP端口号上呈现多个证书，并且因此允许在相同的IP地址上提供多个安全（HTTPS）网站（或其他任何基于TLS的服务），而不需要所有这些站点使用相同的证书。它与HTTP/1.1基于名称的虚拟主机的概念相同，但是用于HTTPS。所需的主机名未加密， 因此窃听者可以查看请求的网站 为了使SNI协议起作用，绝大多数访问者必须使用实现它的Web浏览器。使用未实现SNI浏览器的用户将被提供默认证书，因此很可能会收到证书警告
+
+
+SNI协议示意图
+
+
+
+TLS1.3完整握手流程
+
+
+为了弥补缺陷因应运而生的ESNI⌗
+在上述过程之中，存在的问题就是，在ClientHello环节中，TLS会在这个位置以明文的形式讲要请求的Host写在数据包之中，如果在网络路由中有任何的监听节点，那么用户所访问网站的域名将暴露无遗，这将是巨大的用户隐私泄露: 
+所以在最新的关于ESNI的草案中，IETF重新设计了一种加密的Client Hello机制，从而修复了这个问题: 
+不过这里问题又来了，之前服务器和客户端并没有事先交换任何数据啊，这个加密的凭证从何而来啊？？？
+依靠安全DNS的ESNI⌗
+上一个问题没有难倒工程师们，他们设计了这样一个办法。首先让网站提供者在DNS提供商上公布一个记录，这个记录包含着一个公钥，这个公钥由网站提供者生成，其私钥存储在Web服务器等待着被Web程序读取。如此，当用户想通过TLS1.3协议访问这个域名的时候，首先读取这个公开的公钥，在用公钥加密其想访问的域名Host，装在Client Hello里面发送给目标服务器，目标服务器再用自己的私钥解密，从而和用户建立HTTPS链接，这样就不会暴露Host信息 这时候有人会想，如果有人某Wall想给你的DNS偷天换日，那会不会很不安全啊,请继续向下看
+在ESNI的实现草案之中，里面要求安全加密的DNS是推荐的。大家都知道我们的DNS查询一般是TCP报文或者是UDP报文，本身它是不加密的，所以如果有人想在篡改你的DNS是相对简单的，大家可能都知道我们伟大的妨炎蔷会使用DNS污染的方式干扰一些网站的正常访问。正式由于DNS的非加密性，DNS也成为了审查信息的利器。此时加密的DNS势在必行
+DNS over TLS (DoT) and DNS over HTTPS (DoH)⌗
+于是出现了这两种新型的DNS查询方式
+
+DNS over HTTPS (DoH)
+
+
+DNS Over HTTPS (DOH) 是一个进行安全化的域名解析的方案，当前尚处于实验性阶段。其意义在于以加密的HTTPS协议进行DNS解析请求，避免原始DNS协议中用户的DNS解析请求被窃听或者修改的问题（例如中间人攻击）来达到保护用户隐私的目的。 Google及Mozilla基金会正在测试这一协议，作为其提高网络安全性的努力的一部分。 当前，该方案由IETF支持，其规范文档以 RFC 8484 的名义发布。2018年9月5日发布的Firefox 62正式版加入了这项功能，但需要用户手动开启 DNS Over HTTPS利用HTTP协议的GET命令发出经由JSON等编码的DNS解析请求。较于传统的DNS协议，此处的HTTP协议通信处于具有加密作用的SSL/TLS协议（两者统称作HTTPS）的保护之下。但是，由于其基于HTTPS，而HTTPS本身需要经由多次数据来回传递才能完成协议初始化，其域名解析耗时较原DNS协议会显著增加。 传统的DNS协议形成于互联网早期，直接基于UDP或TCP协议，且彼时未虑及现代安全性的需要，未利用密码学等手段进行加密或验证。因而，其无法抵御现代互联网常见的DNS投毒污染等攻击手段或监听。虽然后来的DNSSEC方案通过电子签名进行验证，强化了DNS的安全性，并能够抵御DNS投毒污染等篡改通信的手段，但其对于中间网络设备进行的监听仍然没有抵御能力（随后，监听者可以通过获取的通信数据知晓用户访问了哪一域名，而域名往往与具体的网站相关系）。此外，DNSSEC的起效要求现有的大量DNS解析服务的提供商（常为互联网服务提供商或第三方大型互联网机构）对已有的DNS服务器进行大范围修改等问题，其推进进程并不理想。而对于DNS Over HTTPS，在正确部署服务端并妥善配置客户端的前提下，互联网服务提供商或其它中间网络设备无法解密（亦即无法获知请求的实际内容）或者篡改已经加密的HTTPS通信，故其能够有效保护互联网用户的安全及隐私；另一方面，其基于已经成熟并已广泛部署的HTTPS协议，客户端进行利用较为方便。
+
+
+DNS over TLS (DoT)
+
+
+DNS over TLS (DoT) 是通过传输层安全协议（TLS）来加密并打包域名系统（DNS）的安全协议。此协议旨在防止中间人攻击与控制DNS数据以保护用户隐私。 RFC 7858及RFC 8310定义了DNS over TLS。 截至2018年，Cloudflare、Quad9与CleanBrowsing均向大众提供支持DNS over TLS的公共DNS解析服务。2018年4月，Google宣布Android P将包含对DNS over TLS的支持。PowerDNS的DNSDist也宣布在其最新的1.3.0版本中添加了对DNS over TLS的支持。BIND用户也可以通过stunnel代理提供DNS over TLS服务。
+
+手动配置⌗
+Firefox所在的Mozilla宣布从Firefox 62版本之后开始支持ESNI，默认没有开启，需要用户手动配置打开，那么我们现在试验一下 这里Firefox的解决方案是使用DNS over HTTPS (DoH)和ESNI
+
+
+安装Firefox Nightly版本，这个版本是预发布版本，使得开发这和即可门可以提前尝鲜到新功能。下载地址
+
+
+在浏览器地址栏输入about:config并回车，打开配置页面，在搜索位置搜索network.trr.mode，这个是打开浏览器对于DoH的支持，将此项的数值修改为3（0对应的是不开启此功能；1对应的是交由浏览器选择DoH与传统方式那种更快；2代表优先使用加密DNS查询，如果失败则回落到普通DNS查询；3代表只使用加密DNS查询；5代表明确的关闭此功能）
+
+
+继续搜索network.trr.uri，将此项的值修改为https://mozilla.cloudflare-dns.com/dns-query，这个是默认的DoH查询地址，当然我们也可以使用诸如https://1.1.1.1/dns-query、https://dns.google.com/experimental这样的地址，我们可以事先ping检测一下对比哪个延迟更低来使用
+
+
+（可选）搜索network.trr.bootstrapAddress，讲此值修改位第三步的DNS域名的IP。此举是为了避免使用操作系统DNS查询域名受到劫持，一般来说这些DNS的IP是不会变的
+
+
+
+
+
+将network.security.esni.enabled设置为true,此举为了打开浏览器对于ESNI的支持（感谢chenlshi同学的提醒，在原版的文章中我不小心遗漏了这个关键的步骤）
+
+
+完成配置后重启浏览器，再打开在线验证页面验证来查询你的浏览器是否完全支持ESNI功能，如果出现如图说明配置成功了
+
+
+
+验证⌗
+为了验证是否真的加密了Client Hello，我们使用Wireshark进行网络抓包 由于这个特性仍在试验阶段，并没有太多站点支持这个特性，CloudFlare是第一个全站支持ESNI的网站，这里我们使用blog.cloudflare.com来做测试：
+
+首先打开Wireshark的抓包功能，然后开启Chrome浏览器打开上述网址，页面加载完后停止抓包，在得到的结果中查询协议为TLS1.3和报文为Client Hello的报文，通过观察发现域名的Host果然被以明文形式写在数据包中（参见Server_Name字段）：
+
+
+
+然后打开Firefox Nightly浏览器重复上述操作，这次发现在整个数据包中根本找不到Server_Name字段，说明Host已经被加密：
+
+
+目前来说，我查阅了相关的关键词，仍然没有任何一篇教程有介绍如何在自己的服务器上支持ESNI，同时我也看到在Nginx的论坛里面有人呼吁尽快支持ESNI，所以我推测这个功能仍然在试验期，还没有被这两个Web软件所支持，起劲为止我也没有查阅到任何的Web软件预计支持此项功能。这项扩展已经进入IETF的草案阶段，可以预见到，在不就的将来，这项技术可以普及开来，为我们的网络隐私保驾护航 目前来说，有了HTTPS+TLS1.3+ESNI+DoH/DoT的加持，我们的网络隐私的到了极大的保障，最后还有一个问题是访问服务器IP的泄露仍然无法被避免，迫于IP协议设计的机制，他目前还不能被解决。不过我相信，随着网技术不断的趋于保护个人隐私和更快速的发展方向，这个问题可以最终被解决
+From: hackerchai
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>ssl</tag>
+        <tag>tls</tag>
+        <tag>隐私</tag>
+        <tag>安全</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>【Gitlab】GitBook+GitLab撰写发布技术文档-Part2:GitLab篇</title>
     <url>/posts/7790e989/</url>
     <content><![CDATA[上一篇文章介绍了如果用 gitbook 写书，并且我们已经通过 gitbook build命令把书的内容打包成 HTML 格式发布到了_book文件夹中。
@@ -12114,9 +12200,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ZBgxOTgJVwfjhFsX").style.height=document.getElementById("mmedia-ZBgxOTgJVwfjhFsX").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-VwMllWRrWaWXZPHH").style.height=document.getElementById("mmedia-VwMllWRrWaWXZPHH").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-ZBgxOTgJVwfjhFsX").style.height=document.getElementById("mmedia-ZBgxOTgJVwfjhFsX").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-VwMllWRrWaWXZPHH").style.height=document.getElementById("mmedia-VwMllWRrWaWXZPHH").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -12846,92 +12932,6 @@ ALL_BUILD
         <tag>linux</tag>
         <tag>cmake</tag>
         <tag>develop</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>ESNI和加密DNS - 保护信息隐私的最后一块拼图</title>
-    <url>/posts/ec2cad2/</url>
-    <content><![CDATA[随着TLS1.3的发布，让该协议成为有史以来最安全、也是最复杂的TLS协议。在该协议之中，有很多的对于以往协议安全漏洞的修复，包括废弃RSA启用新的秘钥交换机制PSK等等。而Encrypted SNI作为一个TLS1.3的扩展协议用来防止传统的HTTPS流量受到ISP或者陌生网络环境的窥探以及一些网络审查。在过去，由于HTTPS协议之中Server Name Indication - SNI的使用，我们的HTTPS流量经常被窥探我们所访问站点的域名
-那么什么是SNI？⌗
-
-服务器名称指示（英语：Server Name Indication，简称SNI）是一个扩展的TLS计算机联网协议，在该协议下，在握手过程开始时客户端告诉它正在连接的服务器要连接的主机名称。这允许服务器在相同的IP地址和TCP端口号上呈现多个证书，并且因此允许在相同的IP地址上提供多个安全（HTTPS）网站（或其他任何基于TLS的服务），而不需要所有这些站点使用相同的证书。它与HTTP/1.1基于名称的虚拟主机的概念相同，但是用于HTTPS。所需的主机名未加密， 因此窃听者可以查看请求的网站 为了使SNI协议起作用，绝大多数访问者必须使用实现它的Web浏览器。使用未实现SNI浏览器的用户将被提供默认证书，因此很可能会收到证书警告
-
-
-SNI协议示意图
-
-
-
-TLS1.3完整握手流程
-
-
-为了弥补缺陷因应运而生的ESNI⌗
-在上述过程之中，存在的问题就是，在ClientHello环节中，TLS会在这个位置以明文的形式讲要请求的Host写在数据包之中，如果在网络路由中有任何的监听节点，那么用户所访问网站的域名将暴露无遗，这将是巨大的用户隐私泄露: 
-所以在最新的关于ESNI的草案中，IETF重新设计了一种加密的Client Hello机制，从而修复了这个问题: 
-不过这里问题又来了，之前服务器和客户端并没有事先交换任何数据啊，这个加密的凭证从何而来啊？？？
-依靠安全DNS的ESNI⌗
-上一个问题没有难倒工程师们，他们设计了这样一个办法。首先让网站提供者在DNS提供商上公布一个记录，这个记录包含着一个公钥，这个公钥由网站提供者生成，其私钥存储在Web服务器等待着被Web程序读取。如此，当用户想通过TLS1.3协议访问这个域名的时候，首先读取这个公开的公钥，在用公钥加密其想访问的域名Host，装在Client Hello里面发送给目标服务器，目标服务器再用自己的私钥解密，从而和用户建立HTTPS链接，这样就不会暴露Host信息 这时候有人会想，如果有人某Wall想给你的DNS偷天换日，那会不会很不安全啊,请继续向下看
-在ESNI的实现草案之中，里面要求安全加密的DNS是推荐的。大家都知道我们的DNS查询一般是TCP报文或者是UDP报文，本身它是不加密的，所以如果有人想在篡改你的DNS是相对简单的，大家可能都知道我们伟大的妨炎蔷会使用DNS污染的方式干扰一些网站的正常访问。正式由于DNS的非加密性，DNS也成为了审查信息的利器。此时加密的DNS势在必行
-DNS over TLS (DoT) and DNS over HTTPS (DoH)⌗
-于是出现了这两种新型的DNS查询方式
-
-DNS over HTTPS (DoH)
-
-
-DNS Over HTTPS (DOH) 是一个进行安全化的域名解析的方案，当前尚处于实验性阶段。其意义在于以加密的HTTPS协议进行DNS解析请求，避免原始DNS协议中用户的DNS解析请求被窃听或者修改的问题（例如中间人攻击）来达到保护用户隐私的目的。 Google及Mozilla基金会正在测试这一协议，作为其提高网络安全性的努力的一部分。 当前，该方案由IETF支持，其规范文档以 RFC 8484 的名义发布。2018年9月5日发布的Firefox 62正式版加入了这项功能，但需要用户手动开启 DNS Over HTTPS利用HTTP协议的GET命令发出经由JSON等编码的DNS解析请求。较于传统的DNS协议，此处的HTTP协议通信处于具有加密作用的SSL/TLS协议（两者统称作HTTPS）的保护之下。但是，由于其基于HTTPS，而HTTPS本身需要经由多次数据来回传递才能完成协议初始化，其域名解析耗时较原DNS协议会显著增加。 传统的DNS协议形成于互联网早期，直接基于UDP或TCP协议，且彼时未虑及现代安全性的需要，未利用密码学等手段进行加密或验证。因而，其无法抵御现代互联网常见的DNS投毒污染等攻击手段或监听。虽然后来的DNSSEC方案通过电子签名进行验证，强化了DNS的安全性，并能够抵御DNS投毒污染等篡改通信的手段，但其对于中间网络设备进行的监听仍然没有抵御能力（随后，监听者可以通过获取的通信数据知晓用户访问了哪一域名，而域名往往与具体的网站相关系）。此外，DNSSEC的起效要求现有的大量DNS解析服务的提供商（常为互联网服务提供商或第三方大型互联网机构）对已有的DNS服务器进行大范围修改等问题，其推进进程并不理想。而对于DNS Over HTTPS，在正确部署服务端并妥善配置客户端的前提下，互联网服务提供商或其它中间网络设备无法解密（亦即无法获知请求的实际内容）或者篡改已经加密的HTTPS通信，故其能够有效保护互联网用户的安全及隐私；另一方面，其基于已经成熟并已广泛部署的HTTPS协议，客户端进行利用较为方便。
-
-
-DNS over TLS (DoT)
-
-
-DNS over TLS (DoT) 是通过传输层安全协议（TLS）来加密并打包域名系统（DNS）的安全协议。此协议旨在防止中间人攻击与控制DNS数据以保护用户隐私。 RFC 7858及RFC 8310定义了DNS over TLS。 截至2018年，Cloudflare、Quad9与CleanBrowsing均向大众提供支持DNS over TLS的公共DNS解析服务。2018年4月，Google宣布Android P将包含对DNS over TLS的支持。PowerDNS的DNSDist也宣布在其最新的1.3.0版本中添加了对DNS over TLS的支持。BIND用户也可以通过stunnel代理提供DNS over TLS服务。
-
-手动配置⌗
-Firefox所在的Mozilla宣布从Firefox 62版本之后开始支持ESNI，默认没有开启，需要用户手动配置打开，那么我们现在试验一下 这里Firefox的解决方案是使用DNS over HTTPS (DoH)和ESNI
-
-
-安装Firefox Nightly版本，这个版本是预发布版本，使得开发这和即可门可以提前尝鲜到新功能。下载地址
-
-
-在浏览器地址栏输入about:config并回车，打开配置页面，在搜索位置搜索network.trr.mode，这个是打开浏览器对于DoH的支持，将此项的数值修改为3（0对应的是不开启此功能；1对应的是交由浏览器选择DoH与传统方式那种更快；2代表优先使用加密DNS查询，如果失败则回落到普通DNS查询；3代表只使用加密DNS查询；5代表明确的关闭此功能）
-
-
-继续搜索network.trr.uri，将此项的值修改为https://mozilla.cloudflare-dns.com/dns-query，这个是默认的DoH查询地址，当然我们也可以使用诸如https://1.1.1.1/dns-query、https://dns.google.com/experimental这样的地址，我们可以事先ping检测一下对比哪个延迟更低来使用
-
-
-（可选）搜索network.trr.bootstrapAddress，讲此值修改位第三步的DNS域名的IP。此举是为了避免使用操作系统DNS查询域名受到劫持，一般来说这些DNS的IP是不会变的
-
-
-
-
-
-将network.security.esni.enabled设置为true,此举为了打开浏览器对于ESNI的支持（感谢chenlshi同学的提醒，在原版的文章中我不小心遗漏了这个关键的步骤）
-
-
-完成配置后重启浏览器，再打开在线验证页面验证来查询你的浏览器是否完全支持ESNI功能，如果出现如图说明配置成功了
-
-
-
-验证⌗
-为了验证是否真的加密了Client Hello，我们使用Wireshark进行网络抓包 由于这个特性仍在试验阶段，并没有太多站点支持这个特性，CloudFlare是第一个全站支持ESNI的网站，这里我们使用blog.cloudflare.com来做测试：
-
-首先打开Wireshark的抓包功能，然后开启Chrome浏览器打开上述网址，页面加载完后停止抓包，在得到的结果中查询协议为TLS1.3和报文为Client Hello的报文，通过观察发现域名的Host果然被以明文形式写在数据包中（参见Server_Name字段）：
-
-
-
-然后打开Firefox Nightly浏览器重复上述操作，这次发现在整个数据包中根本找不到Server_Name字段，说明Host已经被加密：
-
-
-目前来说，我查阅了相关的关键词，仍然没有任何一篇教程有介绍如何在自己的服务器上支持ESNI，同时我也看到在Nginx的论坛里面有人呼吁尽快支持ESNI，所以我推测这个功能仍然在试验期，还没有被这两个Web软件所支持，起劲为止我也没有查阅到任何的Web软件预计支持此项功能。这项扩展已经进入IETF的草案阶段，可以预见到，在不就的将来，这项技术可以普及开来，为我们的网络隐私保驾护航 目前来说，有了HTTPS+TLS1.3+ESNI+DoH/DoT的加持，我们的网络隐私的到了极大的保障，最后还有一个问题是访问服务器IP的泄露仍然无法被避免，迫于IP协议设计的机制，他目前还不能被解决。不过我相信，随着网技术不断的趋于保护个人隐私和更快速的发展方向，这个问题可以最终被解决
-From: hackerchai
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>ssl</tag>
-        <tag>tls</tag>
-        <tag>隐私</tag>
-        <tag>安全</tag>
       </tags>
   </entry>
   <entry>
@@ -17792,11 +17792,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var aupSztvbmagXxtSb_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); aupSztvbmagXxtSb_options.container = document.getElementById("mmedia-aupSztvbmagXxtSb"); const ap_aupSztvbmagXxtSb = new APlayer(aupSztvbmagXxtSb_options); 
+ var iVRCtcGCtMkxnUCj_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); iVRCtcGCtMkxnUCj_options.container = document.getElementById("mmedia-iVRCtcGCtMkxnUCj"); const ap_iVRCtcGCtMkxnUCj = new APlayer(iVRCtcGCtMkxnUCj_options); 
 
 - **列表**
 
- var kIbqBqNgyFaaoGUN_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); kIbqBqNgyFaaoGUN_options.container = document.getElementById("mmedia-kIbqBqNgyFaaoGUN"); const ap_kIbqBqNgyFaaoGUN = new APlayer(kIbqBqNgyFaaoGUN_options); 
+ var aJMzgfeqWPEyjfBb_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); aJMzgfeqWPEyjfBb_options.container = document.getElementById("mmedia-aJMzgfeqWPEyjfBb"); const ap_aJMzgfeqWPEyjfBb = new APlayer(aJMzgfeqWPEyjfBb_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -18048,21 +18048,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-rTvpcGgKfLRUoNFC").style.height=document.getElementById("mmedia-rTvpcGgKfLRUoNFC").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-DBoQOchMzIHGeItQ").style.height=document.getElementById("mmedia-DBoQOchMzIHGeItQ").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-rTvpcGgKfLRUoNFC").style.height=document.getElementById("mmedia-rTvpcGgKfLRUoNFC").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-DBoQOchMzIHGeItQ").style.height=document.getElementById("mmedia-DBoQOchMzIHGeItQ").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-MAocydaikWHlbKxY").style.height=document.getElementById("mmedia-MAocydaikWHlbKxY").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-CvfDTQfunEOKluXL").style.height=document.getElementById("mmedia-CvfDTQfunEOKluXL").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-MAocydaikWHlbKxY").style.height=document.getElementById("mmedia-MAocydaikWHlbKxY").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-CvfDTQfunEOKluXL").style.height=document.getElementById("mmedia-CvfDTQfunEOKluXL").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var uUiBhXOilkAhiFek_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); uUiBhXOilkAhiFek_options.container = "#mmedia-uUiBhXOilkAhiFek"; const art_uUiBhXOilkAhiFek = new Artplayer(uUiBhXOilkAhiFek_options); 
+ var LGmTzceRFUxpAjDX_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); LGmTzceRFUxpAjDX_options.container = "#mmedia-LGmTzceRFUxpAjDX"; const art_LGmTzceRFUxpAjDX = new Artplayer(LGmTzceRFUxpAjDX_options); 
 脑图
 
 原作者记录
@@ -19104,11 +19104,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var doqkHGzOwYTjaqOg_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); doqkHGzOwYTjaqOg_options.container = document.getElementById("mmedia-doqkHGzOwYTjaqOg"); const ap_doqkHGzOwYTjaqOg = new APlayer(doqkHGzOwYTjaqOg_options); 
+ var ORnblwcEocZNNwWV_options = JSON.parse('{\"lrcType\":3,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); ORnblwcEocZNNwWV_options.container = document.getElementById("mmedia-ORnblwcEocZNNwWV"); const ap_ORnblwcEocZNNwWV = new APlayer(ORnblwcEocZNNwWV_options); 
 
 
 
- var TeTAETQaljmhiNAX_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); TeTAETQaljmhiNAX_options.container = document.getElementById("mmedia-TeTAETQaljmhiNAX"); const ap_TeTAETQaljmhiNAX = new APlayer(TeTAETQaljmhiNAX_options); 
+ var JGSXWfrcowgJBWTr_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); JGSXWfrcowgJBWTr_options.container = document.getElementById("mmedia-JGSXWfrcowgJBWTr"); const ap_JGSXWfrcowgJBWTr = new APlayer(JGSXWfrcowgJBWTr_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -19266,9 +19266,9 @@ docker run -d \
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-WLGmiesseUwjdiyi").style.height=document.getElementById("mmedia-WLGmiesseUwjdiyi").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-TsgpXSMdEKIOkuis").style.height=document.getElementById("mmedia-TsgpXSMdEKIOkuis").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-WLGmiesseUwjdiyi").style.height=document.getElementById("mmedia-WLGmiesseUwjdiyi").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-TsgpXSMdEKIOkuis").style.height=document.getElementById("mmedia-TsgpXSMdEKIOkuis").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -19277,7 +19277,7 @@ docker run -d \
 
 ## 中文翻唱
 
- var UqeHYVQezqHhbKnx_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); UqeHYVQezqHhbKnx_options.container = document.getElementById("mmedia-UqeHYVQezqHhbKnx"); const ap_UqeHYVQezqHhbKnx = new APlayer(UqeHYVQezqHhbKnx_options); 
+ var EjWNuxsQLtEpiRle_options = JSON.parse('{\"lrcType\":3,\"volume\":0.8,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.site/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}]}'); EjWNuxsQLtEpiRle_options.container = document.getElementById("mmedia-EjWNuxsQLtEpiRle"); const ap_EjWNuxsQLtEpiRle = new APlayer(EjWNuxsQLtEpiRle_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -20948,932 +20948,6 @@ emoji表情符号是非常流行的表情符号，几乎没有地方都会支持
         <tag>isp</tag>
         <tag>awb</tag>
         <tag>mywork</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>基于Hexo的matery主题搭建博客增强部署篇4</title>
-    <url>/posts/5311b619/</url>
-    <content><![CDATA[各种部署方式
-
-静态博客的部署方式多种多样，免费部署资源非常多。
-如果DNS支持多线路，还可以设置多路负载均衡！
-注意：这些免费的部署都没法做ICP备案，或者国内CDN套着备案。不过，都免费了，你还要求那么多？
-
-
-
-
-部署方式
-费用
-难易度
-多域名
-
-
-
-
-Github
-0￥
-简单
-单域名
-
-
-VPS
-2~5$/M
-复杂
-支持
-
-
-Vercel
-0￥
-简单
-支持
-
-
-Cloudflare pages
-0￥
-简单
-支持
-
-
-Gitlab
-0￥
-简单
-支持（？）
-
-
-
-
-Github可以通过同样代码仓库，多个仓库同时部署，不同仓库设置不同的域名来支持多域名！
-
-
-Tips: Github有每个账户1000个仓库限制，每个仓库大小超过1G，就会被人工审查！所以撸羊毛可以，注意仓库个数和大小限制！
-
-GitHub Pages
-
-
-速度：尚可，并不很慢，但有时候会抽风。
-
-
-自定义域名：一个。
-
-
-限制：
-
-
-
-单个文件大于50MB将受到警告。
-单个文件大于100MB无法上传。
-仓库大小「强烈建议」少于1GB。
-每小时可构建10次。https://help.github.com/articles/what-is-my-disk-quota/#file-and-repository-size-limitations
-每月流量100GB 或者 100,000 次请求。
-详情可见：https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#guidelines-for-using-github-pages
-
-
-
-
-
-优点：简单方便
-缺点：国内速度慢，直连CNAME会泄露GitHub用户名，免费版私有仓库无法使用
-
-
-Netlify
-控制台无法访问。
-
-
-部署方式：GitHub、GitLab、BitBucket仓库自动拉取以及本地CLI直接推送。
-
-
-速度：较GitHub Pages要快，但是稳定性差上不少，部分时候可能直接出现无法访问。
-
-
-自定义域名：多个。
-
-
-限制：
-对于每个账户：
-
-
-
-同时只能构建一个站点。
-每月流量100GB。
-每月构建时间300分钟。
-详情可见：https://www.netlify.com/pricing
-
-
-
-
-
-优点：pr单独部署，速度还可以，有免费的serverless
-缺点：直连CNAME会泄露分配域名
-对比Vercel，Netlify在国内的速度确实要比Vercel慢很多，但前者有许多后者没有的服务或插件，比如Algolia、表单等等
-
-
-Cloudflare Pages
-
-
-部署方式：GitHub仓库。
-
-
-速度：与GitHub Pages相似。
-
-
-自定义域名：最多10个；
-
-
-限制：
-
-
-
-每月构可构建500次。
-每日所有Functions 和 Workers 总计限制 100,000 次请求。
-文件数量最多2w个。
-单个文件大小不得超过25MB。
-详情可见：https://developers.cloudflare.com/pages/platform/limits
-
-
-
-Vercel
-
-
-部署方式：与Netlify相同，支持GitHub、GitLab、BitBucket仓库自动拉取以及本地CLI直接推送。
-
-
-速度：在所有方案中最快且最稳定。
-
-
-自定义域名：多个。
-
-
-限制：
-
-
-
-每日可构建100次，但每小时不超过32次。
-单个Git仓库支持连接3个Vercel项目。
-每次构建时长最多45min。每月总计不超过100h。
-每月带宽100G。
-详情可见：https://vercel.com/docs/platform/limits
-
-
-
-
-
-优点：pr单独部署，速度快，CNAME无隐私问题，有免费的serverless
-缺点：嗯，免费的能做到这样还指望啥？
-
-
-Cloudflare CDN
-Cloudflare CDN本身并非博客托管服务，但是可以与上文任意一个服务进行搭配。
-使用CF CDN时访问速度大多数时候较快，遇高峰期将减速。总体来说速度不如Vercel。稳定性尚可，但曾出现过无法访问的情况。
-最主要的是将获得非常多的扩展功能，如HSTS、访问限制，以及HTTP/3等前沿网络技术。他们对IETF的跟进是很快的。同时还会获得DDoS清洗、网站分析等服务。
-
-注意，套上CF CDN之后，可能访问速度会下降，例如Vercel，CF pages
-最佳方法是使用Vercel+CF Partner？不过现在能用的CF Partner几乎没有了
-
-jsDelivr CDN
-官网
-
-支持 HTTPS，支持 HTTP2，提供 SRI
-网宿、Fastly、Stackpath、Cloudflare Business Plan
-非常丰富的国内节点
-非常丰富的海外节点
-全球的速度都非常优秀
-cdn.jsdelivr.net，NS1 和 Rage4 主从 DNS
-便捷性：★★★★★
-
-jsDelivr 支持从 NPM、GitHub Tag 和 WordPress SVN 上抓取文件并分发，大大降低了开发者使用的难度——直接发个 Release 就可以用了。jsDelivr 每个月会被调用上百亿次，服务 620+ TB 的流量，意味着如果你不是通过 jsDelivr 加载较为热门的库，那么缓存命中率是不会太理想的。
-
-公用库采用jsDelivr加速，自定义修改的js，css使用自己的部署服务
-
-其它CDN测评
-VPS
-一句话，VPS的超能力就是有钱。配置更好的服务器速度更快，对国内外来说，地理位置最理想的是香港VPS。当然，价格也是相当感人！
-
-
-优点：钱越多，速度越快。自定义性最高，想做什么服务都可以
-缺点：很花钱，网站较大时考虑这个。不够稳定，要稳定性就要多点部署，需要自己维护服务器
-
-
-RackNerd VPS 推荐
-目前个人能找到的最便宜的 VPS 服务商: racknerd VPS
-双11，或者6.18 活动价更优惠！几年前买的一个 1核1G 的，一年不到10刀！现在已经绝版了，并且后续每年循环账单续费没有涨价！
-如果你发现了更便宜的服务商，务必留言告诉我！
-部署示例
-
-本站的镜像！
-
-
-
-主站： blog.17lai.site
-Vercel: 17lai.vercel.app
-netlify: 17lai.netlify.app
-Cloudflare Pages: 17lai.pages.dev
-VPS: v20blog.17lai.site
-
-
-Hexo Docker 本地部署
-在最前面的篇章介绍了Hexo Docker 环境的使用方法。具体使用方法见本文系列Hexo Docker 环境篇。
-优点：本地使用可定制化成都更高
-缺点：必须要有Docker 环境。异地使用麻烦，除非ssh,vpn等远程链接方法。
-Hexo Docker VPS 部署
-和 Hexo Docker 本地部署基本一样，最后反向代理设置域名。
-具体参考 Hexo Docker 环境篇
-Hexo IPFS 部署
-
-全面拥抱 web 3.0。静态部署 hexo blog！
-本节待完善！
-
-4everland
-https://4everland.org/
-私有部署 IPFS
-hexo 插件 hexo-deployer-ipfs
-Docker 配置 IPFS
-Hexo+IPFS搭建个人免服务器独立博客
-Docker linuxserver/ipfs
-Docker private-network-ipfs 利用 Docker 搭建 IPFS 私有网络
-IPFS在windows平台下的安装与简单使用
-Win10 配置IPFS
-IPFS是点对点协议InterPlanetary File System的简称，它是一个面向全球的、点对点的分布式版本文件系统，试图将所有具有相同文件系统的计算设备连接在一起。
-近日，IFPS宣布了一个未来web发展计划，它用基于内容的地址替代基于域名的地址，也就是用户寻找的不是某个地址而是储存在某个地方的内容，不需要验证发送者的身份，而只需要验证内容的哈希，通过这样可以让网页的速度更快、更安全、更健壮、更持久。IPFS表示，IPFS未来将替代HTTP（以及其他的许多东西）。
-2.1 安装IPFS
-至官网下载对应版本，一路安装即可，win10系统，下载对应zip解压后，将ipfs.exe添加到%PATH%。
-测试是否安装成功：ipfs help
-出现 USAGE:
-ipfs - Global p2p merkle-dag filesystem.
-…
-即可。
-2.2 启动本地IPFS节点
-第一步:先初始化IPFS
-ipfs init
-第二部：打开节点
-ipfs daemon
-此时，你可以在http://localhost:5001/webui，打开自己的操作台。
-2.3 将Hexo博客部署到IPFS节点上
-Hexo是一个静态博客生成器，执行hexo generate后，会在博客目录生成/Public目录,该目录即为全部博客内容
-执行 ipfs add -r public
-得到：added QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx public
-QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx即为博客网站的site_hash,你可以通过任意运行IPFS的节点访问，如：http://localhost:8080/ipfs/，也可以通过官方运行的节点访问：SITEHASH，也可以通过官方运行的节点访问：http://gateway.ipfs.io/ipfs/SITE_HASH。
-2.4 绑定独立域名
-刚才，我们通过ipfs add，将博客发布到了IPFS运行的区块链节点上，但复杂的site_hash并不友好，我们可以使用IPNS技术，通过绑定独立域名来实现与现有的网站访问并无任何不一样的体现。我们假设你已经有一个可以正常使用的域名，如aa.com，没有域名的可以到任意域名服务商初购买。
-首先，我们将网站发布
-执行 ipfs name publish QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx
-得到 Published to QmV61ui6H9qX3126yGH846dPkMgSe7SZcDxrVwm2gxTidu: /ipfs/QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx
-记住QmV61ui6H9qX3126yGH846dPkMgSe7SZcDxrVwm2gxTidu为你的peerid，该hash是保持不变的。
-那好，我们现在只需要将aa.com解析到上述地址即可，添加TXT记录为dnslink=/ipns/QmV61ui6H9qX3126yGH846dPkMgSe7SZcDxrVwm2gxTidu,同时将域名A记录指向任意ipfs节点的ip，如gateway.ipfs.io。
-现在访问aa.com，你是不是发现已经可以正常访问你刚才生成的博客了。当然，在没有优化之前，访问会很慢，但可以打开。
-由于IPNS还不稳定，你可以在http://ipfs.io/ipfs/QmeaNWtacNyWZxEphYCdVmF6bcMg7Bjn6e5sGdK6fr1nMx 查看本页面。
-将Hexo部署到VPS实现自动发布
-搭建流程
-
-服务器环境配置，安装Git、Nginx配置、创建git用户
-本地hexo初始化
-使用Git自动部署并发布博客
-
-服务器环境搭建
-
-安装Git和NodeJS(Centos环境)
-
-yum install git
-# 安装NodeJS 
-curl --silent --location https://rpm.nodesource.com/setup_5.x | bash -
-
-创建git账号
-
-adduser git
-chmod 740 /etc/sudoers
-vim /etc/sudoers
-
-添加内容
-找到
-
-## Allow root to run any commands anywhere
-root    ALL=(ALL)     ALL
-
-添加以下内容
-
-git     ALL=(ALL)     ALL
-
-保存退出并改回权限
-
-chmod 400 /etc/sudoers
-
-设置git账号密码
-
-sudo passwd git
-
-使用su git切换到git用户，再执行下列操作：
-
-# 切换到git用户目录
-cd /home/git
-# 创建.ssh文件夹
-mkdir ~/.ssh
-# 创建authorized_keys文件并编辑
-vim ~/.ssh/authorized_keys
-# 如果你还没有生成公钥，那么首先在本地电脑中执行 cat ~/.ssh/id_rsa.pub | pbcopy生成公钥
-# 再将公钥复制粘贴到authorized_keys
-# 保存关闭authorized_keys后，修改相应权限
-chmod 600 ~/.ssh/authorized_keys
-chmod 700 ~/.ssh
-
-然后可以通过本地Git Bash执行ssh命令测试是否可以免密登录
-
-ssh -v git@服务器ip地址
-这样git用户就添加好了。
-
-Tips: 将公钥拷贝到服务器的~/.ssh/authorized_keys文件中方法有如下几种：
-
-将公钥通过scp拷贝到服务器上，然后追加到~/.ssh/authorized_keys文件中，这种方式比较麻烦。scp -P 22 ~/.ssh/id_rsa.pub user@host:~/。
-通过ssh-copy-id程序，就是我演示的方法，ssh-copyid user@host即可
-可以通过cat ~/.ssh/id_rsa.pub | ssh username@host "mkdir ~/.ssh; cat &gt;&gt; ~/.ssh/authorized_keys"，这个也是比较常用的方法，因为可以更改端口号。
-
-
-
-安装Nginx
-准备工作
-首先由于nginx的一些模块依赖一些lib库，所以在安装nginx之前，必须先安装这些lib库，这些依赖库主要有g++、gcc、openssl-devel、pcre-devel和zlib-devel 所以执行如下命令安装
-
-yum install gcc-c++
-yum install pcre pcre-devel
-yum install zlib zlib-devel
-yum install openssl openssl--devel
-Ubuntu系统安装命令如下：
-sudo apt-get install libpcre3 libpcre3-dev
-sudo apt-get install zlib1g-dev
-sudo apt-get install openssl libssl-dev
-
-安装Nginx
-安装之前，最好检查一下是否已经安装有nginx
-
-find -name nginx
-如果系统已经安装了nginx，那么就先卸载
-yum remove nginx
-然后开始安装
-首先进入/usr/local目录
-cd /usr/local
-从官网下载最新版的nginx
-wget -c https://nginx.org/download/nginx-1.14.2.tar.gz 
-（注：版本号可更改，去官网查看最新版本号修改即可）
-解压nginx压缩包
-tar -zxvf nginx-1.14.2.tar.gz
-会产生一个nginx-1.14.2 目录，这时进入nginx-1.14.2 目录
-cd  nginx-1.14.2
-接下来安装，使用–prefix参数指定nginx安装的目录,make、make install安装
-./configure
-（默认安装在/usr/local/nginx，推荐使用默认设置）
-
-make
-
-make install
-
-如果没有报错，顺利完成后，最好看一下nginx的安装目录
-whereis nginx
-（where和is要连这些，中间没有空格）
-
-
-启动和停止nginx
-
-cd /usr/local/nginx/sbin/
-./nginx 
-./nginx -s stop
-./nginx -s quit
-./nginx -s reload
-./nginx -s quit: 此方式停止步骤是待nginx进程处理任务完毕进行停止。
-./nginx -s stop: 此方式相当于先查出nginx进程id再使用kill命令强制杀掉进程。
-查询nginx进程：
-ps aux | grep nginx
-
-
-重启 nginx
-
-
-先停止再启动（推荐）：
-对 nginx 进行重启相当于先停止再启动，即先执行停止命令再执行启动命令。如下：
-
-./nginx -s quit
-./nginx
-
-重新加载配置文件：
-当 nginx 的配置文件 nginx.conf 修改后，要想让配置生效需要重启 nginx，使用 -s reload 不用先停止 nginx 再启动 nginx 即可将配置信息在 nginx 中生效，如下：
-
-./nginx -s reload
-启动成功后，在浏览器可以看到如下页面：
-
-
-开机自启动
-
-即在rc.local增加启动代码就可以了。
-vim /etc/rc.local
-增加一行
-/usr/local/nginx/sbin/nginx
-到这里，nginx安装完毕，启动、停止、重启操作也都完成。
-建立git裸库
-# 回到git目录
-cd /home/git
-# 使用git用户创建git裸仓库，以blog.git为例
-git init --bare blog.git
-检查用户组权限
-我们的git裸仓库已经建立好了，离成功又近了一步。为了以防万一，我们要检查一下之前的blog.git、.ssh、blog目录的用户组权限是否都为git:git
-# 还记得/var/www/吗？这是之前配置nginx时，我们自己选定的网站根目录，请依据你自己的设置更改，如果没有的话自己
-ll -a /www/wwwroot/hexo
-ll -a /home/git/
-如果有哪个不是，执行下面相应的命令后再查看
-sudo chown -R git:git /www/wwwroot/hexo
-sudo chmod -R 755 /www/wwwroot/hexo
-sudo chown git:git -R /home/git/blog.git
-使用git-hooks同步网站根目录
-简单来说，我们使用一个钩子文件：post-receive，每当git仓库接收到内容的时候，就会自动调用这个钩子，把内容同步到网站根目录。
-在git用户下执行：
-# 新建一个post-receive文件并编辑
-vim ~/blog.git/hooks/post-receive
-在里面输入以下内容，注意修改为自己的设置：
-#!/bin/bash
-set -e
-GIT_REPO=/home/git/blog.git
-TMP_GIT_CLONE=/tmp/blog
-PUBLIC_WWW=/www/wwwroot/hexo
-rm -rf ${TMP_GIT_CLONE}
-git clone -b main $GIT_REPO $TMP_GIT_CLONE
-cd $TMP_GIT_CLONE
-#for b in `git branch -r | grep -v -- '-&gt;'`; do git branch --track ${b##origin/} $b; done
-#git checkout main
-rm -rf ${PUBLIC_WWW}/*
-cp -rf ${TMP_GIT_CLONE}/* ${PUBLIC_WWW}
-echo "update web done!"
-#ls -al ${PUBLIC_WWW}
-rm -rf ${TMP_GIT_CLONE}
-保存退出后，执行以下赋予这个文件可执行权限。
-chown -R git:git ~/blog.git/hooks/post-receive
-chmod +x ~/blog.git/hooks/post-receive
-好了，以上就是服务器端需要配置的内容。我们还差最后一步就可以完成整个部署了！
-修改配置文件nginx.conf
-修改上面的配置文件：
-vim /usr/local/nginx/conf/nginx_config
-然后修改其中两个部分，如下所示：
-
-然后重启nginx，方法见nginx安装部分。
-配置本地Hexo的_config.yml
-非常简单，只需要找到本地Hexo博客的站点配置文件_config.yml，找到以下内容并修改：
-deploy: 
-  type: git
-  repo: git@你的服务器IP:/home/git/blog.git
-  branch: master
-保存后，剩下的就是Hexo的日常操作了，这里就不赘述了，写完文章后，在你的本地博客根目录执行以下命令：
-hexo c &amp;&amp; hexo g -d
-就可以实现线上博客的自动更新了！一切搞定！
-Rsync同步部署静态文件方法
-
-使用rsync同步
-
-本地生成静态文件后rsync同步到vps网页目录，lnap使用宝塔配置，这里只需要一个nginx。
-# rsync [options] from_dir to_dir
-# 替换这里的ip为你的服务器ip
-rsync -avzP  /home/17lai.blog  root@8.8.8.8:/www/wwwroot/hexo
-Hexo Github Action 自动部署
-准备
-
-Hexo 博客源码的仓库，在 GitHub 上。
-ssh 密钥，参考文章：Windows 下利用 Git 生成 SSH KEY 并配置到 GitHub
-
-步骤
-
-为需要部署的平台添加密钥
-修改 _config.yml 中的 deploy 配置
-在 GitHub 上设置 Secrets
-创建 GitHub Action
-
-为需要部署的平台添加密钥
-按照之前的教程，只要你之前成功将 Hexo 的博客部署到 GitHub 上，那你电脑在 ~/.ssh 目录下一定有以下三个文件：
-
-id_rsa：私钥
-id_rsa.pub：公钥
-known_hosts：记录对所有用户都可信赖的远程主机的公钥
-
-将 id_rsa.pub（公钥）添加到不同平台中即可，参考文章：Windows 下利用 Git 生成 SSH KEY 并配置到 GitHub
-下面是不同平台添加的地址：
-
-GitHub
-GitLab
-Coding
-Gitee
-
-修改 _config.yml 中的 deploy 配置
-请使用 ssh (即以 git@ 开头的 clone 链接) 的连接方式，根据直接的实际地址填写。
-deploy:
-  - type: git
-    repo:
-      github: git@github.com:Sitoi/Sitoi.github.io.git
-      coding: git@e.coding.net:Sitoi/Sitoi.git
-      gitee: git@gitee.com:sitoi/sitoi.git
-      gitlab: git@gitlab.com:Sitoi/sitoi.gitlab.io.git
-    branch: master
-在 GitHub 上设置 Secrets
-
-
-进入到你在 GitHub 上面的源码仓库
-
-
-点击右上角的 Settings
-
-
-
-Settings
-
-
-点击左侧的 Secrets
-
-
-点击右上角的 New secret
-
-
-
-New secret
-
-在 Name 中输入 HEXO_DEPLOY_PRI，在 Value 中填入 id_rsa（私钥）的全部内容
-
-
-Add secret
-创建 GitHub Action
-
-点击项目上方的 Action 按钮
-
-
-Action
-
-点击 set up a workflow yourself 创建 Workflow
-
-
-Workflow
-
-修改 main.yaml 的内容
-
-
-Create Workflow
-
-根据实际情况修改成你自己的内容
-
-
-Git 推送使用的用户名：git config –global user.name ‘sitoi’：
-Git 推送使用的邮箱：git config –global user.email ‘133397418@qq.com‘
-Hexo 的版本：npm i hexo@4.1.1 -g
-
-name: Hexo CI
-
-on:
-  push:
-    branches:
-      - butterfly
-
-jobs:
-  butterfly-build:
-
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [10.x]
-
-    steps:
-      - uses: actions/checkout@v1
-      - name: Use Node.js 10.x
-        uses: actions/setup-node@v1
-        with:
-          node-version: '10.x'
-      - name: env prepare
-        env:
-          HEXO_DEPLOY_PRI: ${{ secrets.HEXO_DEPLOY_PRI }}
-        run: |
-          mkdir -p ~/.ssh/
-          echo "$HEXO_DEPLOY_PRI" &gt; ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com &gt;&gt; ~/.ssh/known_hosts
-          ssh-keyscan gitlab.com &gt;&gt; ~/.ssh/known_hosts
-          ssh-keyscan e.coding.net &gt;&gt; ~/.ssh/known_hosts
-          ssh-keyscan gitee.com &gt;&gt; ~/.ssh/known_hosts
-          git config --global user.name 'sito'
-          git config --global user.email '133397418@qq.com'
-          npm i
-          npm i hexo@4.1.1 -g
-      - name: gen
-        run: |
-          hexo clean
-          hexo generate
-          hexo deploy
-
-将你的源码推送到 GitHub 上，你的博客一会就会自动更新了。
-
-Hexo Gitlab CI/CD自动部署
-啥都不说，直接上代码，请参考 Gitlab 官方项目 Gitlab hexo
-更多关于 Gitlab CICD 介绍，请看下面文章
-
-CI/CD与Git Flow与GitLab
-
-vercel 部署
-
-jsdelivr被封了，怎么办？vercel 部署可以加速访问
-
-为什么使用 vercel
-
-国内 Github Pages 速度较慢。
-vercel 速度快且能够自定义域名，能实现和 Github Pages 一样的效果
-
-
-vercel 官方地址：vercel.com/
-
-如何部署
-
-首先注册一个账号
-注册成功后进入页面，点击 News Project
-
-
-
-然后通过绑定的 github 或者 gitlab 导入需要部署的项目
-
-
-
-如果导入的项目是打包好的静态页，在 Build and Output Settings 的 override 都勾上，表示不执行它的默认命令。
-
-
-
-点击 deployed 进行部署，如果部署失败可以查看报错信息是不是上一步的某些选项没有覆盖。部署成功后会进入如图所示的界面
-
-
-如何自定义域名
-
-腾讯云域名地址：console.cloud.tencent.com/domain
-vercel 静态页挂载地址：
-进入到 setting 中可对项目进行一些设置，如项目名称
-
-
-
-下面演示如何自定义域名，默认情况下部署成功后 vercel 会给你生成一个默认的域名，如果想要修改成自己的域名可将域名名称修改成自己的。
-当选择修改成自己的域名名称后，vercel 会检查域名指向的 DNS 对不对，如果不对的话会提示你域名的 DNS 应该如何配置，按照 vercel 提示的 DNS 信息
-
-在自己的域名的 DNS 配置中进行配置，如图
-
-配置多个域名
-对其他新增的域名选择重定向到自己的主域名即可
-
-自定义Header缓存时间
-
-vercel.com/docs
-使用Vercel必备配置，本地缓存加速访问！
-
-vercel.json
-{
-  "headers": [
-    {
-      "source": "/sw.js",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, s-maxage=86400, max-age=86400"
-        }
-      ]
-    }
-  ]
-}
-Vercel自定义404
-
-learn how to customize the 404 page.
-
-cloudflare Pages 部署
-jsdelivr被封了，怎么办？cloudflare Pages 部署可以加速访问
-
-强烈推荐！
-全球CDN，静态加速，可以说是最佳部署方案！就是有每日100000次请求限制！可以使用dnspod多线路负载均衡来帮助分流。
-
-
-官网 cloudflare  首先注册一个账号
-
-
-
-
-
-
-错过了CloudFlare Partner的时代，官方的CloudFlare for SaaS也提供了一种更灵活的CNAME接入方式
-https://blog.cloudflare.com/zh-cn/waf-for-saas-zh-cn/
-
-以 token 方式部署到 Github
-deploy:
-  type: git
-  repo:
-    github:
-      url: &lt;repository url&gt;
-      branch: [branch]
-      token: ''
-  message: [message]
-  name: [git user]
-  email: [git email]
-  extend_dirs: [extend directory]
-  ignore_hidden: false # default is true
-  ignore_pattern: regexp  # whatever file that matches the 
-travis 自动部署配置
-
-travis是第三方CICD服务，比action更加强大，下面只是参考，请查阅travis 文档，并结合自己的环境修改！
-
-sudo: false
-language: node_js
-node_js:
-- 10.16.3
-cache: npm
-branches:
-  only:
-  - master # build master branch only
-
-env:
-  global:
-  - GIT_USER: appotry
-  - HEXO_BACKUP_REPO: github.com/appotry/hexo-backup.git
-  - HEXO_THEME_REPO: github.com/appotry/hexo-theme-matery.git
-  - GITHUB_PAGES_REPO: github.com/appotry/hexo.github.io.git
-  - APPOTRY_REPO: github.com/appotry/hexo.git
-
-before_install:
-- export TZ='Asia/Shanghai'
-- npm install hexo -g
-- npm install gulp-cli -g
-
-install:
-- npm install
-
-script:
-- git clone https://${HEXO_THEME_REPO} themes/next
-- git clone https://${GIT_USER}:${GITHUB_TOKEN}@${HEXO_BACKUP_REPO} hexo-backup
-- mv hexo-backup/source .
-- rm -rf source/private
-- npm run build
-
-after_success:
-- git config --global user.name "appotry"
-- git config --global user.email "email@qq.com"
-- git clone https://${GIT_USER}:${GITHUB_TOKEN}@${GITHUB_PAGES_REPO} voidking
-- unalias cp
-- cp -rf public/. 17lai.blog
-- cd 17lai.blog
-- git add .
-- git commit -m "Travis CI Auto Builder"
-- git push --force --quiet "https://${GIT_USER}:${GITHUB_TOKEN}@${GITHUB_PAGES_REPO}" master:master
-利用 GitLab 实现 Hexo 博客的 CI/CD
-Portainer 提供了对服务在线更新的 WebHook，所以基于 GitLab 自带的 CI/CD 功能实现 Hexo 博客的持续部署，就非常轻松了。
-CI/CD 其实本质上是一套流程，流程规则可以自行定义。在本文研究的主题下，流程分为三步：第一步是编译 Hexo 博客并生成静态文件；第二步是将静态文件打包成可提供 Web 服务的镜像；第三步则是通过 Portainer 的钩子触发服务更新。
-.gitlab-ci.yml
-stages:
-  - compile
-  - build
-  - deploy
-
-# CONTAINER_RELEASE_IMAGE 根据自己的仓库名修改
-variables:
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_DRIVER: overlay2
-  CONTAINER_RELEASE_IMAGE: registry.gitlab.com/xxx/xxx:latest
-
-compile:
-  stage: compile
-  image: node:lts-alpine
-  script:
-    - npm install
-    - ./node_modules/hexo/bin/hexo generate
-  artifacts:
-    paths:
-      - public/
-    expire_in: 20 minutes
-
-build:
-  stage: build
-  image: docker:stable
-  services:
-    - docker:dind
-  script:
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
-    - docker info
-    - docker build -f ./Dockerfile -t $CONTAINER_RELEASE_IMAGE public
-    - docker push $CONTAINER_RELEASE_IMAGE
-
-# 根据自己的钩子修改下方的 URL
-deploy:
-  stage: deploy
-  script:
-    - curl https://xxx.xxx.xxx/api/webhooks/xxx -X POST
-
-为了保证服务更新的成功率，可以在 deploy 环节加个错误判断和重试次数，具体的看 GitLab 官方文档即可。
-下面给出我的 Dockerfile 文件，供参考。
-FROM nginx:alpine
-
-COPY . /usr/share/nginx/html
-
-RUN chmod 777 /usr/share/nginx/html -R \
-    &amp;&amp; sed -i 's/#error_page  404/error_page  404/' /etc/nginx/conf.d/default.conf
-DNSPOD 多线路负载均衡
-
-DNSPOD官网 console.dnspod.cn
-
-
-
-
-dnspod对cname数目有限制。
-这里使用权重来分配各条线路访问比例！
-
-乒乓部署
-
-也可以叫旋转门部署。
-解决调试博客插件，修改半成品文章时部署到云端会影响正在查阅博客的用户的问题！
-使用Docker版本本地预览是很不错，但是 jsdelivr 版本发布需要在 Github 生成新 release 这时本地就不行了。乒乓部署可以解决这个问题！
-
-具体方法就是同时部署到两个地方A和B，博客域名在两个服务器之间切换。这里以 Vercel 为例
-准备工作：
-
-创建2个Github仓库，对应服务器A和B的部署
-建立两个服务器A和B，分别关联两个 Github 仓库
-把调试完毕的代码上传到两个仓库
-这时通过服务器A和B都是可以正常浏览的
-
-要调试的时候：
-
-发布到A之前，把博客域名转移到服务器B
-在服务A做一些调试，在线 debug 工作
-特别是在线 pageseed 测试调优，这种事必备方法。简单不需要新的 jsdelivr 版本调试本地 docker-hexo 调试即可！
-
-
-
-调试完毕后：
-
-把域名切换到服务器A
-同时部署到服务器B，服务器B同步A的部署内容，以便下次备用
-
-
-总结就是服务器A现行，服务器B做后备，调试发布使用A，调试A的时候B就顶上前台！
-这样，调试和正常部署网络服务两不误。是不是感觉自己是个大聪明！
-
-系列教程
-全部文章RSS订阅
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-Vercel部署高级用法教程
-
-笔记系列
-Note分类RSS订阅
-
-完美笔记进化论
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Joplin入门指南&amp;实践方案
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-Joplin 插件以及其Markdown语法。All in One!
-Joplin 插件使用推荐
-为知笔记私有化Docker部署
-
-Gitbook使用系列
-Gitbook分类RSS订阅
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-Gitlab 使用系列
-Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-]]></content>
-      <categories>
-        <category>hexo</category>
-      </categories>
-      <tags>
-        <tag>hexo</tag>
-        <tag>github</tag>
-        <tag>matery</tag>
-        <tag>cdn</tag>
-        <tag>seo</tag>
       </tags>
   </entry>
   <entry>
@@ -24062,6 +23136,1448 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
+    <title>基于Hexo的matery主题搭建博客增强部署篇4</title>
+    <url>/posts/5311b619/</url>
+    <content><![CDATA[各种部署方式
+
+静态博客的部署方式多种多样，免费部署资源非常多。
+如果DNS支持多线路，还可以设置多路负载均衡！
+注意：这些免费的部署都没法做ICP备案，或者国内CDN套着备案。不过，都免费了，你还要求那么多？
+
+
+
+
+部署方式
+费用
+难易度
+多域名
+
+
+
+
+Github
+0￥
+简单
+单域名
+
+
+VPS
+2~5$/M
+复杂
+支持
+
+
+Vercel
+0￥
+简单
+支持
+
+
+Cloudflare pages
+0￥
+简单
+支持
+
+
+Gitlab
+0￥
+简单
+支持（？）
+
+
+
+
+Github可以通过同样代码仓库，多个仓库同时部署，不同仓库设置不同的域名来支持多域名！
+
+
+Tips: Github有每个账户1000个仓库限制，每个仓库大小超过1G，就会被人工审查！所以撸羊毛可以，注意仓库个数和大小限制！
+
+GitHub Pages
+
+
+速度：尚可，并不很慢，但有时候会抽风。
+
+
+自定义域名：一个。
+
+
+限制：
+
+
+
+单个文件大于50MB将受到警告。
+单个文件大于100MB无法上传。
+仓库大小「强烈建议」少于1GB。
+每小时可构建10次。https://help.github.com/articles/what-is-my-disk-quota/#file-and-repository-size-limitations
+每月流量100GB 或者 100,000 次请求。
+详情可见：https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#guidelines-for-using-github-pages
+
+
+
+
+
+优点：简单方便
+缺点：国内速度慢，直连CNAME会泄露GitHub用户名，免费版私有仓库无法使用
+
+
+Netlify
+控制台无法访问。
+
+
+部署方式：GitHub、GitLab、BitBucket仓库自动拉取以及本地CLI直接推送。
+
+
+速度：较GitHub Pages要快，但是稳定性差上不少，部分时候可能直接出现无法访问。
+
+
+自定义域名：多个。
+
+
+限制：
+对于每个账户：
+
+
+
+同时只能构建一个站点。
+每月流量100GB。
+每月构建时间300分钟。
+详情可见：https://www.netlify.com/pricing
+
+
+
+
+
+优点：pr单独部署，速度还可以，有免费的serverless
+缺点：直连CNAME会泄露分配域名
+对比Vercel，Netlify在国内的速度确实要比Vercel慢很多，但前者有许多后者没有的服务或插件，比如Algolia、表单等等
+
+
+Cloudflare Pages
+
+
+部署方式：GitHub仓库。
+
+
+速度：与GitHub Pages相似。
+
+
+自定义域名：最多10个；
+
+
+限制：
+
+
+
+每月构可构建500次。
+每日所有Functions 和 Workers 总计限制 100,000 次请求。
+文件数量最多2w个。
+单个文件大小不得超过25MB。
+详情可见：https://developers.cloudflare.com/pages/platform/limits
+
+
+
+Vercel
+
+
+部署方式：与Netlify相同，支持GitHub、GitLab、BitBucket仓库自动拉取以及本地CLI直接推送。
+
+
+速度：在所有方案中最快且最稳定。
+
+
+自定义域名：多个。
+
+
+限制：
+
+
+
+每日可构建100次，但每小时不超过32次。
+单个Git仓库支持连接3个Vercel项目。
+每次构建时长最多45min。每月总计不超过100h。
+每月带宽100G。
+详情可见：https://vercel.com/docs/platform/limits
+
+
+
+
+
+优点：pr单独部署，速度快，CNAME无隐私问题，有免费的serverless
+缺点：嗯，免费的能做到这样还指望啥？
+
+
+Cloudflare CDN
+Cloudflare CDN本身并非博客托管服务，但是可以与上文任意一个服务进行搭配。
+使用CF CDN时访问速度大多数时候较快，遇高峰期将减速。总体来说速度不如Vercel。稳定性尚可，但曾出现过无法访问的情况。
+最主要的是将获得非常多的扩展功能，如HSTS、访问限制，以及HTTP/3等前沿网络技术。他们对IETF的跟进是很快的。同时还会获得DDoS清洗、网站分析等服务。
+
+注意，套上CF CDN之后，可能访问速度会下降，例如Vercel，CF pages
+最佳方法是使用Vercel+CF Partner？不过现在能用的CF Partner几乎没有了
+
+jsDelivr CDN
+官网
+
+支持 HTTPS，支持 HTTP2，提供 SRI
+网宿、Fastly、Stackpath、Cloudflare Business Plan
+非常丰富的国内节点
+非常丰富的海外节点
+全球的速度都非常优秀
+cdn.jsdelivr.net，NS1 和 Rage4 主从 DNS
+便捷性：★★★★★
+
+jsDelivr 支持从 NPM、GitHub Tag 和 WordPress SVN 上抓取文件并分发，大大降低了开发者使用的难度——直接发个 Release 就可以用了。jsDelivr 每个月会被调用上百亿次，服务 620+ TB 的流量，意味着如果你不是通过 jsDelivr 加载较为热门的库，那么缓存命中率是不会太理想的。
+
+公用库采用jsDelivr加速，自定义修改的js，css使用自己的部署服务
+
+其它CDN测评
+VPS
+一句话，VPS的超能力就是有钱。配置更好的服务器速度更快，对国内外来说，地理位置最理想的是香港VPS。当然，价格也是相当感人！
+
+
+优点：钱越多，速度越快。自定义性最高，想做什么服务都可以
+缺点：很花钱，网站较大时考虑这个。不够稳定，要稳定性就要多点部署，需要自己维护服务器
+
+
+RackNerd VPS 推荐
+目前个人能找到的最便宜的 VPS 服务商: racknerd VPS
+双11，或者6.18 活动价更优惠！几年前买的一个 1核1G 的，一年不到10刀！现在已经绝版了，并且后续每年循环账单续费没有涨价！
+如果你发现了更便宜的服务商，务必留言告诉我！
+部署示例
+
+本站的镜像！
+
+
+
+主站： blog.17lai.site
+Vercel: 17lai.vercel.app
+netlify: 17lai.netlify.app
+Cloudflare Pages: 17lai.pages.dev
+VPS: v20blog.17lai.site
+
+
+Hexo Docker 本地部署
+在最前面的篇章介绍了Hexo Docker 环境的使用方法。具体使用方法见本文系列Hexo Docker 环境篇。
+优点：本地使用可定制化成都更高
+缺点：必须要有Docker 环境。异地使用麻烦，除非ssh,vpn等远程链接方法。
+Hexo Docker VPS 部署
+和 Hexo Docker 本地部署基本一样，最后反向代理设置域名。
+具体参考 Hexo Docker 环境篇
+Hexo IPFS 部署
+
+全面拥抱 web 3.0。静态部署 hexo blog！
+本节待完善！
+
+4everland
+https://4everland.org/
+私有部署 IPFS
+hexo 插件 hexo-deployer-ipfs
+Docker 配置 IPFS
+Hexo+IPFS搭建个人免服务器独立博客
+Docker linuxserver/ipfs
+Docker private-network-ipfs 利用 Docker 搭建 IPFS 私有网络
+IPFS在windows平台下的安装与简单使用
+Win10 配置IPFS
+IPFS是点对点协议InterPlanetary File System的简称，它是一个面向全球的、点对点的分布式版本文件系统，试图将所有具有相同文件系统的计算设备连接在一起。
+近日，IFPS宣布了一个未来web发展计划，它用基于内容的地址替代基于域名的地址，也就是用户寻找的不是某个地址而是储存在某个地方的内容，不需要验证发送者的身份，而只需要验证内容的哈希，通过这样可以让网页的速度更快、更安全、更健壮、更持久。IPFS表示，IPFS未来将替代HTTP（以及其他的许多东西）。
+2.1 安装IPFS
+至官网下载对应版本，一路安装即可，win10系统，下载对应zip解压后，将ipfs.exe添加到%PATH%。
+测试是否安装成功：ipfs help
+出现 USAGE:
+ipfs - Global p2p merkle-dag filesystem.
+…
+即可。
+2.2 启动本地IPFS节点
+第一步:先初始化IPFS
+ipfs init
+第二部：打开节点
+ipfs daemon
+此时，你可以在http://localhost:5001/webui，打开自己的操作台。
+2.3 将Hexo博客部署到IPFS节点上
+Hexo是一个静态博客生成器，执行hexo generate后，会在博客目录生成/Public目录,该目录即为全部博客内容
+执行 ipfs add -r public
+得到：added QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx public
+QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx即为博客网站的site_hash,你可以通过任意运行IPFS的节点访问，如：http://localhost:8080/ipfs/，也可以通过官方运行的节点访问：SITEHASH，也可以通过官方运行的节点访问：http://gateway.ipfs.io/ipfs/SITE_HASH。
+2.4 绑定独立域名
+刚才，我们通过ipfs add，将博客发布到了IPFS运行的区块链节点上，但复杂的site_hash并不友好，我们可以使用IPNS技术，通过绑定独立域名来实现与现有的网站访问并无任何不一样的体现。我们假设你已经有一个可以正常使用的域名，如aa.com，没有域名的可以到任意域名服务商初购买。
+首先，我们将网站发布
+执行 ipfs name publish QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx
+得到 Published to QmV61ui6H9qX3126yGH846dPkMgSe7SZcDxrVwm2gxTidu: /ipfs/QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx
+记住QmV61ui6H9qX3126yGH846dPkMgSe7SZcDxrVwm2gxTidu为你的peerid，该hash是保持不变的。
+那好，我们现在只需要将aa.com解析到上述地址即可，添加TXT记录为dnslink=/ipns/QmV61ui6H9qX3126yGH846dPkMgSe7SZcDxrVwm2gxTidu,同时将域名A记录指向任意ipfs节点的ip，如gateway.ipfs.io。
+现在访问aa.com，你是不是发现已经可以正常访问你刚才生成的博客了。当然，在没有优化之前，访问会很慢，但可以打开。
+由于IPNS还不稳定，你可以在http://ipfs.io/ipfs/QmeaNWtacNyWZxEphYCdVmF6bcMg7Bjn6e5sGdK6fr1nMx 查看本页面。
+将Hexo部署到VPS实现自动发布
+搭建流程
+
+服务器环境配置，安装Git、Nginx配置、创建git用户
+本地hexo初始化
+使用Git自动部署并发布博客
+
+服务器环境搭建
+
+安装Git和NodeJS(Centos环境)
+
+yum install git
+# 安装NodeJS 
+curl --silent --location https://rpm.nodesource.com/setup_5.x | bash -
+
+创建git账号
+
+adduser git
+chmod 740 /etc/sudoers
+vim /etc/sudoers
+
+添加内容
+找到
+
+## Allow root to run any commands anywhere
+root    ALL=(ALL)     ALL
+
+添加以下内容
+
+git     ALL=(ALL)     ALL
+
+保存退出并改回权限
+
+chmod 400 /etc/sudoers
+
+设置git账号密码
+
+sudo passwd git
+
+使用su git切换到git用户，再执行下列操作：
+
+# 切换到git用户目录
+cd /home/git
+# 创建.ssh文件夹
+mkdir ~/.ssh
+# 创建authorized_keys文件并编辑
+vim ~/.ssh/authorized_keys
+# 如果你还没有生成公钥，那么首先在本地电脑中执行 cat ~/.ssh/id_rsa.pub | pbcopy生成公钥
+# 再将公钥复制粘贴到authorized_keys
+# 保存关闭authorized_keys后，修改相应权限
+chmod 600 ~/.ssh/authorized_keys
+chmod 700 ~/.ssh
+
+然后可以通过本地Git Bash执行ssh命令测试是否可以免密登录
+
+ssh -v git@服务器ip地址
+这样git用户就添加好了。
+
+Tips: 将公钥拷贝到服务器的~/.ssh/authorized_keys文件中方法有如下几种：
+
+将公钥通过scp拷贝到服务器上，然后追加到~/.ssh/authorized_keys文件中，这种方式比较麻烦。scp -P 22 ~/.ssh/id_rsa.pub user@host:~/。
+通过ssh-copy-id程序，就是我演示的方法，ssh-copyid user@host即可
+可以通过cat ~/.ssh/id_rsa.pub | ssh username@host "mkdir ~/.ssh; cat &gt;&gt; ~/.ssh/authorized_keys"，这个也是比较常用的方法，因为可以更改端口号。
+
+
+
+安装Nginx
+准备工作
+首先由于nginx的一些模块依赖一些lib库，所以在安装nginx之前，必须先安装这些lib库，这些依赖库主要有g++、gcc、openssl-devel、pcre-devel和zlib-devel 所以执行如下命令安装
+
+yum install gcc-c++
+yum install pcre pcre-devel
+yum install zlib zlib-devel
+yum install openssl openssl--devel
+Ubuntu系统安装命令如下：
+sudo apt-get install libpcre3 libpcre3-dev
+sudo apt-get install zlib1g-dev
+sudo apt-get install openssl libssl-dev
+
+安装Nginx
+安装之前，最好检查一下是否已经安装有nginx
+
+find -name nginx
+如果系统已经安装了nginx，那么就先卸载
+yum remove nginx
+然后开始安装
+首先进入/usr/local目录
+cd /usr/local
+从官网下载最新版的nginx
+wget -c https://nginx.org/download/nginx-1.14.2.tar.gz 
+（注：版本号可更改，去官网查看最新版本号修改即可）
+解压nginx压缩包
+tar -zxvf nginx-1.14.2.tar.gz
+会产生一个nginx-1.14.2 目录，这时进入nginx-1.14.2 目录
+cd  nginx-1.14.2
+接下来安装，使用–prefix参数指定nginx安装的目录,make、make install安装
+./configure
+（默认安装在/usr/local/nginx，推荐使用默认设置）
+
+make
+
+make install
+
+如果没有报错，顺利完成后，最好看一下nginx的安装目录
+whereis nginx
+（where和is要连这些，中间没有空格）
+
+
+启动和停止nginx
+
+cd /usr/local/nginx/sbin/
+./nginx 
+./nginx -s stop
+./nginx -s quit
+./nginx -s reload
+./nginx -s quit: 此方式停止步骤是待nginx进程处理任务完毕进行停止。
+./nginx -s stop: 此方式相当于先查出nginx进程id再使用kill命令强制杀掉进程。
+查询nginx进程：
+ps aux | grep nginx
+
+
+重启 nginx
+
+
+先停止再启动（推荐）：
+对 nginx 进行重启相当于先停止再启动，即先执行停止命令再执行启动命令。如下：
+
+./nginx -s quit
+./nginx
+
+重新加载配置文件：
+当 nginx 的配置文件 nginx.conf 修改后，要想让配置生效需要重启 nginx，使用 -s reload 不用先停止 nginx 再启动 nginx 即可将配置信息在 nginx 中生效，如下：
+
+./nginx -s reload
+启动成功后，在浏览器可以看到如下页面：
+
+
+开机自启动
+
+即在rc.local增加启动代码就可以了。
+vim /etc/rc.local
+增加一行
+/usr/local/nginx/sbin/nginx
+到这里，nginx安装完毕，启动、停止、重启操作也都完成。
+建立git裸库
+# 回到git目录
+cd /home/git
+# 使用git用户创建git裸仓库，以blog.git为例
+git init --bare blog.git
+检查用户组权限
+我们的git裸仓库已经建立好了，离成功又近了一步。为了以防万一，我们要检查一下之前的blog.git、.ssh、blog目录的用户组权限是否都为git:git
+# 还记得/var/www/吗？这是之前配置nginx时，我们自己选定的网站根目录，请依据你自己的设置更改，如果没有的话自己
+ll -a /www/wwwroot/hexo
+ll -a /home/git/
+如果有哪个不是，执行下面相应的命令后再查看
+sudo chown -R git:git /www/wwwroot/hexo
+sudo chmod -R 755 /www/wwwroot/hexo
+sudo chown git:git -R /home/git/blog.git
+使用git-hooks同步网站根目录
+简单来说，我们使用一个钩子文件：post-receive，每当git仓库接收到内容的时候，就会自动调用这个钩子，把内容同步到网站根目录。
+在git用户下执行：
+# 新建一个post-receive文件并编辑
+vim ~/blog.git/hooks/post-receive
+在里面输入以下内容，注意修改为自己的设置：
+#!/bin/bash
+set -e
+GIT_REPO=/home/git/blog.git
+TMP_GIT_CLONE=/tmp/blog
+PUBLIC_WWW=/www/wwwroot/hexo
+rm -rf ${TMP_GIT_CLONE}
+git clone -b main $GIT_REPO $TMP_GIT_CLONE
+cd $TMP_GIT_CLONE
+#for b in `git branch -r | grep -v -- '-&gt;'`; do git branch --track ${b##origin/} $b; done
+#git checkout main
+rm -rf ${PUBLIC_WWW}/*
+cp -rf ${TMP_GIT_CLONE}/* ${PUBLIC_WWW}
+echo "update web done!"
+#ls -al ${PUBLIC_WWW}
+rm -rf ${TMP_GIT_CLONE}
+保存退出后，执行以下赋予这个文件可执行权限。
+chown -R git:git ~/blog.git/hooks/post-receive
+chmod +x ~/blog.git/hooks/post-receive
+好了，以上就是服务器端需要配置的内容。我们还差最后一步就可以完成整个部署了！
+修改配置文件nginx.conf
+修改上面的配置文件：
+vim /usr/local/nginx/conf/nginx_config
+然后修改其中两个部分，如下所示：
+
+然后重启nginx，方法见nginx安装部分。
+配置本地Hexo的_config.yml
+非常简单，只需要找到本地Hexo博客的站点配置文件_config.yml，找到以下内容并修改：
+deploy: 
+  type: git
+  repo: git@你的服务器IP:/home/git/blog.git
+  branch: master
+保存后，剩下的就是Hexo的日常操作了，这里就不赘述了，写完文章后，在你的本地博客根目录执行以下命令：
+hexo c &amp;&amp; hexo g -d
+就可以实现线上博客的自动更新了！一切搞定！
+Rsync同步部署静态文件方法
+
+使用rsync同步
+
+本地生成静态文件后rsync同步到vps网页目录，lnap使用宝塔配置，这里只需要一个nginx。
+# rsync [options] from_dir to_dir
+# 替换这里的ip为你的服务器ip
+rsync -avzP  /home/17lai.blog  root@8.8.8.8:/www/wwwroot/hexo
+Hexo Github Action 自动部署
+准备
+
+Hexo 博客源码的仓库，在 GitHub 上。
+ssh 密钥，参考文章：Windows 下利用 Git 生成 SSH KEY 并配置到 GitHub
+
+步骤
+
+为需要部署的平台添加密钥
+修改 _config.yml 中的 deploy 配置
+在 GitHub 上设置 Secrets
+创建 GitHub Action
+
+为需要部署的平台添加密钥
+按照之前的教程，只要你之前成功将 Hexo 的博客部署到 GitHub 上，那你电脑在 ~/.ssh 目录下一定有以下三个文件：
+
+id_rsa：私钥
+id_rsa.pub：公钥
+known_hosts：记录对所有用户都可信赖的远程主机的公钥
+
+将 id_rsa.pub（公钥）添加到不同平台中即可，参考文章：Windows 下利用 Git 生成 SSH KEY 并配置到 GitHub
+下面是不同平台添加的地址：
+
+GitHub
+GitLab
+Coding
+Gitee
+
+修改 _config.yml 中的 deploy 配置
+请使用 ssh (即以 git@ 开头的 clone 链接) 的连接方式，根据直接的实际地址填写。
+deploy:
+  - type: git
+    repo:
+      github: git@github.com:Sitoi/Sitoi.github.io.git
+      coding: git@e.coding.net:Sitoi/Sitoi.git
+      gitee: git@gitee.com:sitoi/sitoi.git
+      gitlab: git@gitlab.com:Sitoi/sitoi.gitlab.io.git
+    branch: master
+在 GitHub 上设置 Secrets
+
+
+进入到你在 GitHub 上面的源码仓库
+
+
+点击右上角的 Settings
+
+
+
+Settings
+
+
+点击左侧的 Secrets
+
+
+点击右上角的 New secret
+
+
+
+New secret
+
+在 Name 中输入 HEXO_DEPLOY_PRI，在 Value 中填入 id_rsa（私钥）的全部内容
+
+
+Add secret
+创建 GitHub Action
+
+点击项目上方的 Action 按钮
+
+
+Action
+
+点击 set up a workflow yourself 创建 Workflow
+
+
+Workflow
+
+修改 main.yaml 的内容
+
+
+Create Workflow
+
+根据实际情况修改成你自己的内容
+
+
+Git 推送使用的用户名：git config –global user.name ‘sitoi’：
+Git 推送使用的邮箱：git config –global user.email ‘133397418@qq.com‘
+Hexo 的版本：npm i hexo@4.1.1 -g
+
+name: Hexo CI
+
+on:
+  push:
+    branches:
+      - butterfly
+
+jobs:
+  butterfly-build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [10.x]
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Use Node.js 10.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+      - name: env prepare
+        env:
+          HEXO_DEPLOY_PRI: ${{ secrets.HEXO_DEPLOY_PRI }}
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$HEXO_DEPLOY_PRI" &gt; ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com &gt;&gt; ~/.ssh/known_hosts
+          ssh-keyscan gitlab.com &gt;&gt; ~/.ssh/known_hosts
+          ssh-keyscan e.coding.net &gt;&gt; ~/.ssh/known_hosts
+          ssh-keyscan gitee.com &gt;&gt; ~/.ssh/known_hosts
+          git config --global user.name 'sito'
+          git config --global user.email '133397418@qq.com'
+          npm i
+          npm i hexo@4.1.1 -g
+      - name: gen
+        run: |
+          hexo clean
+          hexo generate
+          hexo deploy
+
+将你的源码推送到 GitHub 上，你的博客一会就会自动更新了。
+
+Hexo Gitlab CI/CD自动部署
+啥都不说，直接上代码，请参考 Gitlab 官方项目 Gitlab hexo
+更多关于 Gitlab CICD 介绍，请看下面文章
+
+CI/CD与Git Flow与GitLab
+
+vercel 部署
+
+jsdelivr被封了，怎么办？vercel 部署可以加速访问
+
+为什么使用 vercel
+
+国内 Github Pages 速度较慢。
+vercel 速度快且能够自定义域名，能实现和 Github Pages 一样的效果
+
+
+vercel 官方地址：vercel.com/
+
+如何部署
+
+首先注册一个账号
+注册成功后进入页面，点击 News Project
+
+
+
+然后通过绑定的 github 或者 gitlab 导入需要部署的项目
+
+
+
+如果导入的项目是打包好的静态页，在 Build and Output Settings 的 override 都勾上，表示不执行它的默认命令。
+
+
+
+点击 deployed 进行部署，如果部署失败可以查看报错信息是不是上一步的某些选项没有覆盖。部署成功后会进入如图所示的界面
+
+
+如何自定义域名
+
+腾讯云域名地址：console.cloud.tencent.com/domain
+vercel 静态页挂载地址：
+进入到 setting 中可对项目进行一些设置，如项目名称
+
+
+
+下面演示如何自定义域名，默认情况下部署成功后 vercel 会给你生成一个默认的域名，如果想要修改成自己的域名可将域名名称修改成自己的。
+当选择修改成自己的域名名称后，vercel 会检查域名指向的 DNS 对不对，如果不对的话会提示你域名的 DNS 应该如何配置，按照 vercel 提示的 DNS 信息
+
+在自己的域名的 DNS 配置中进行配置，如图
+
+配置多个域名
+对其他新增的域名选择重定向到自己的主域名即可
+
+自定义Header缓存时间
+
+vercel.com/docs
+使用Vercel必备配置，本地缓存加速访问！
+
+vercel.json
+{
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=86400, max-age=86400"
+        }
+      ]
+    }
+  ]
+}
+Vercel自定义404
+
+learn how to customize the 404 page.
+
+cloudflare Pages 部署
+jsdelivr被封了，怎么办？cloudflare Pages 部署可以加速访问
+
+强烈推荐！
+全球CDN，静态加速，可以说是最佳部署方案！就是有每日100000次请求限制！可以使用dnspod多线路负载均衡来帮助分流。
+
+
+官网 cloudflare  首先注册一个账号
+
+
+
+
+
+
+错过了CloudFlare Partner的时代，官方的CloudFlare for SaaS也提供了一种更灵活的CNAME接入方式
+https://blog.cloudflare.com/zh-cn/waf-for-saas-zh-cn/
+
+以 token 方式部署到 Github
+deploy:
+  type: git
+  repo:
+    github:
+      url: &lt;repository url&gt;
+      branch: [branch]
+      token: ''
+  message: [message]
+  name: [git user]
+  email: [git email]
+  extend_dirs: [extend directory]
+  ignore_hidden: false # default is true
+  ignore_pattern: regexp  # whatever file that matches the 
+travis 自动部署配置
+
+travis是第三方CICD服务，比action更加强大，下面只是参考，请查阅travis 文档，并结合自己的环境修改！
+
+sudo: false
+language: node_js
+node_js:
+- 10.16.3
+cache: npm
+branches:
+  only:
+  - master # build master branch only
+
+env:
+  global:
+  - GIT_USER: appotry
+  - HEXO_BACKUP_REPO: github.com/appotry/hexo-backup.git
+  - HEXO_THEME_REPO: github.com/appotry/hexo-theme-matery.git
+  - GITHUB_PAGES_REPO: github.com/appotry/hexo.github.io.git
+  - APPOTRY_REPO: github.com/appotry/hexo.git
+
+before_install:
+- export TZ='Asia/Shanghai'
+- npm install hexo -g
+- npm install gulp-cli -g
+
+install:
+- npm install
+
+script:
+- git clone https://${HEXO_THEME_REPO} themes/next
+- git clone https://${GIT_USER}:${GITHUB_TOKEN}@${HEXO_BACKUP_REPO} hexo-backup
+- mv hexo-backup/source .
+- rm -rf source/private
+- npm run build
+
+after_success:
+- git config --global user.name "appotry"
+- git config --global user.email "email@qq.com"
+- git clone https://${GIT_USER}:${GITHUB_TOKEN}@${GITHUB_PAGES_REPO} voidking
+- unalias cp
+- cp -rf public/. 17lai.blog
+- cd 17lai.blog
+- git add .
+- git commit -m "Travis CI Auto Builder"
+- git push --force --quiet "https://${GIT_USER}:${GITHUB_TOKEN}@${GITHUB_PAGES_REPO}" master:master
+利用 GitLab 实现 Hexo 博客的 CI/CD
+Portainer 提供了对服务在线更新的 WebHook，所以基于 GitLab 自带的 CI/CD 功能实现 Hexo 博客的持续部署，就非常轻松了。
+CI/CD 其实本质上是一套流程，流程规则可以自行定义。在本文研究的主题下，流程分为三步：第一步是编译 Hexo 博客并生成静态文件；第二步是将静态文件打包成可提供 Web 服务的镜像；第三步则是通过 Portainer 的钩子触发服务更新。
+.gitlab-ci.yml
+stages:
+  - compile
+  - build
+  - deploy
+
+# CONTAINER_RELEASE_IMAGE 根据自己的仓库名修改
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_DRIVER: overlay2
+  CONTAINER_RELEASE_IMAGE: registry.gitlab.com/xxx/xxx:latest
+
+compile:
+  stage: compile
+  image: node:lts-alpine
+  script:
+    - npm install
+    - ./node_modules/hexo/bin/hexo generate
+  artifacts:
+    paths:
+      - public/
+    expire_in: 20 minutes
+
+build:
+  stage: build
+  image: docker:stable
+  services:
+    - docker:dind
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+    - docker info
+    - docker build -f ./Dockerfile -t $CONTAINER_RELEASE_IMAGE public
+    - docker push $CONTAINER_RELEASE_IMAGE
+
+# 根据自己的钩子修改下方的 URL
+deploy:
+  stage: deploy
+  script:
+    - curl https://xxx.xxx.xxx/api/webhooks/xxx -X POST
+
+为了保证服务更新的成功率，可以在 deploy 环节加个错误判断和重试次数，具体的看 GitLab 官方文档即可。
+下面给出我的 Dockerfile 文件，供参考。
+FROM nginx:alpine
+
+COPY . /usr/share/nginx/html
+
+RUN chmod 777 /usr/share/nginx/html -R \
+    &amp;&amp; sed -i 's/#error_page  404/error_page  404/' /etc/nginx/conf.d/default.conf
+DNSPOD 多线路负载均衡
+
+DNSPOD官网 console.dnspod.cn
+
+
+
+
+dnspod对cname数目有限制。
+这里使用权重来分配各条线路访问比例！
+
+乒乓部署
+
+也可以叫旋转门部署。
+解决调试博客插件，修改半成品文章时部署到云端会影响正在查阅博客的用户的问题！
+使用Docker版本本地预览是很不错，但是 jsdelivr 版本发布需要在 Github 生成新 release 这时本地就不行了。乒乓部署可以解决这个问题！
+
+具体方法就是同时部署到两个地方A和B，博客域名在两个服务器之间切换。这里以 Vercel 为例
+准备工作：
+
+创建2个Github仓库，对应服务器A和B的部署
+建立两个服务器A和B，分别关联两个 Github 仓库
+把调试完毕的代码上传到两个仓库
+这时通过服务器A和B都是可以正常浏览的
+
+要调试的时候：
+
+发布到A之前，把博客域名转移到服务器B
+在服务A做一些调试，在线 debug 工作
+特别是在线 pageseed 测试调优，这种事必备方法。简单不需要新的 jsdelivr 版本调试本地 docker-hexo 调试即可！
+
+
+
+调试完毕后：
+
+把域名切换到服务器A
+同时部署到服务器B，服务器B同步A的部署内容，以便下次备用
+
+
+总结就是服务器A现行，服务器B做后备，调试发布使用A，调试A的时候B就顶上前台！
+这样，调试和正常部署网络服务两不误。是不是感觉自己是个大聪明！
+
+系列教程
+全部文章RSS订阅
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+Vercel部署高级用法教程
+
+笔记系列
+Note分类RSS订阅
+
+完美笔记进化论
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Joplin入门指南&amp;实践方案
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+Joplin 插件以及其Markdown语法。All in One!
+Joplin 插件使用推荐
+为知笔记私有化Docker部署
+
+Gitbook使用系列
+Gitbook分类RSS订阅
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+Gitlab 使用系列
+Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+]]></content>
+      <categories>
+        <category>hexo</category>
+      </categories>
+      <tags>
+        <tag>hexo</tag>
+        <tag>github</tag>
+        <tag>matery</tag>
+        <tag>cdn</tag>
+        <tag>seo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>基于Hexo的matery主题搭建博客常见问题篇6</title>
+    <url>/posts/84b4059a/</url>
+    <content><![CDATA[Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+Vercel部署高级用法教程
+
+独立博客相关组织
+一些有趣的相关组织介绍。
+
+一个人码文太孤单，但是，别忘了，你还有这么多同路人！
+建立独立博客之后，可以试着加入一些博客联盟，相互学习，引流！
+
+十年之约
+
+十年之约，即从加入这个活动起，我们的博客十年不关闭，保持更新和活力！
+点击加入  点击查看成员
+
+中文博客列表导航项目
+
+尝试链接几乎所有的中文博客
+申请加入
+
+中文独立博客列表
+
+一个自动合并PR,CVS管理博客列表的Github项目
+加入方法，点击 Fork chinese-independent-blogs
+
+在 ./blogs-original.csv 中填入博客的 名称、URL、RSS以及标签
+提交 PR
+(自动) PR 被 merge 之后 README 通过 ./script.js 生成
+
+
+要不要加参考链接？
+
+要加！一定要加！
+本来就是白嫖了别人的成功，去掉署名声称是原创就要下做了。
+
+不加引用后果：
+
+
+本来加个署名可以和原作者成为朋友，不加就弄成了仇人！
+别人不一定告你，告你，输是一定的。但违反人家发布协议，弄臭你很容易
+创作圈不大，很快大家都知道了
+文章人家原创，后续很可能还会更新、修改，留个链接好跟过去看看有没有更新
+等等其它
+
+
+出错了，怎么办？
+
+首先，学会搜索，最好实用Google，准确率比X毒高几个数量级。你遇到过的问题，90%以上其他人也遇到过，网上能找到现成的解决方案。
+
+个人独立博客文章质量最高，stackoverflow质量也很非常高，CSDN基本就是垃圾场，普通搜索文章能有50%准确率就非常不错了，独立博客和stackoverflow之类的80%以上的准确率！
+
+
+如何调试博客
+
+需要一定的web开发知识才能做。
+学会一些简单调试及基本html语言很容易，网上教程很多。
+按F12进入调试模式，元素，网络，控制台，是常用的页面。
+
+
+
+通过hexo g -d部署时报Error: Spawn failed错误:
+
+这是由于 git 本地记录的提交版本号与 github 上不一致导致的，通过git reset --hard commitCode即可解决。
+
+
+检查本地最近提交记录，获取最后一次提交记录的更新时间及标识，如280a7fdd46fcfd7d34e652aec15523dcd247fac8
+
+cd .deploy_git
+cat .git/logs/HEAD
+
+获取 github pages 服务所关联分支的最近一次提交记录，获取更新时间及标识。地址一般为：https://github.com/用户名/仓库名/commits/分支名，如https://github.com/lxl80/blog/commits/gh-pages
+如果发现提交最新的提交时间/标识不一致，通过以下命令即可解决:
+
+git reset --hard f085038efdf79546c09641d37b2a2429c1ae8e60 #github上最新的提交标识
+hexo docker 本地访问内容没有更新
+可能是node内部PM2模块的缓存机制导致的。pm2模块重启一下就可以了。
+pm2 restart /hexo_run.js
+
+fsevents报错
+npm ERR! code EBADPLATFORM npm ERR! notsup Unsupported platform for
+fsevents@2.3.2: wanted {"os":"darwin","arch":"any"} (current:
+{"os":"win32","arch":"x64"}) npm ERR! notsup Valid OS:    darwin npm
+ERR! notsup Valid Arch:  any npm ERR! notsup Actual OS:   win32 npm
+ERR! notsup Actual Arch: x64
+解决方法：修改package.json
+"optionalDependencies": {
+  "fsevents": "^2.3.2"
+},
+关于百度无法爬取GitHub内容解决方案
+
+
+使用coding搭建一个可以被百度爬取到的代码托管平台
+使用vps搭建一个hexo 镜像访问，专门针对搜索引擎。
+
+
+
+Tips: 博主用了第二种方法，2个域名，前端域名用dnspod，采用cloudflare parter cname接入。dnspos有选路选择，针对搜索引擎进入vps搭建的blog，对于其它线路到cloudflare parter 加速过的github pages  cname。后端域名用cloudflare parter 以及免费版cloudflare管理。
+
+既然百度无法爬取GitHub，那么我们只需要找个可以被百度爬取到的代码托管平台即可（并且还提供pages服务），基本只有国内的平台了：Gitee和Coding！Gitee自定义域名要花钱（九十多，都可以买服务器了），而Coding是可以免费自定义域名的。这里推介大家使用企业版的Coding，因为企业版的Coding仓库服务器是在香港的，而普通版的服务器是在新加坡。地理原因，理论上企业版的更快一些！
+
+
+将博客同时部署到两个仓库：GitHub和Coding
+deploy:
+- type: git
+  repository: git@github.com:xxx/xxx.github.io.git
+  branch: master
+
+- type: git
+  repository: git@e.coding.net:xxx/xxx.git
+  branch: master
+
+
+在域名那里，配置两个解析
+
+线路类型作用：如果该值填“国内”，国内的IP就会去访问此项对应的记录值地址
+同理，如果该值填写“国外”，国外的IP就会去访问“国外”对应的记录值地址
+
+
+线路类型为百度或者国内，记录值为Coding仓库的地址
+线路类型为默认或者国外，记录值为GitHub仓库地址
+
+
+
+
+这样来自百度的spider就会去爬国内Coding的地址，而两个仓库的内容又都是一样的，如果请求IP来自国外，它又会去访问国外的GitHub，这样还有利于外国华侨和那些科学上网的用户访问，一石二鸟！（我真他妈天才！）
+
+
+如果你只用Coding仓库，那就不需要这么麻烦了
+
+
+测试百度Spider能不能爬你的域名
+
+
+在任意目录下执行以下命令（将“你的域名”换成你的域名）
+curl -A "Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)" -o example.html 你的域名
+
+
+执行完命令，在该目录下会生成一个文件：example.html，打开它，如果显示
+
+
+Moved Permanently，说明301，被重定向了
+
+
+Found，也就是爬到了
+
+
+如果打开是你的首页，说明爬取到的内容就是你的首页HTML内容。
+
+
+如果显示：
+
+说明域名是解析到GitHub的，403Forbidden访问禁止。
+
+
+
+
+
+
+busuanzi不蒜子计数显示异常，一闪就没
+
+
+
+原因可能有两种live2d看板娘和busuanzi不蒜子计数冲突
+
+
+busuanzi不蒜子网络访问异常。
+
+
+
+
+
+不在leancloud安全名单
+
+
+不是正常域名访问
+
+
+各种网络访问错误等等
+
+
+
+
+近日安装了live2d看板娘插件，github项目地址，安装后却意外发现busuanzi不蒜子计数失效了,在页面中不显示，但强制刷新后出现，再刷新又消失。经排查，未发现问题，但事实是网站源码出现了变化。
+
+正常时
+
+&lt;div id="busuanzi_container_page_pv" class="info-break-policy" style="display: inline;"&gt;
+    &lt;i class="far fa-eye fa-fw"&gt;&lt;/i&gt;阅读次数:&amp;nbsp;&amp;nbsp;
+    &lt;span id="busuanzi_value_page_pv"&gt;433&lt;/span&gt;
+
+异常时
+
+&lt;div id="busuanzi_container_page_pv" class="info-break-policy" style="display: none;"&gt;
+    &lt;i class="far fa-eye fa-fw"&gt;&lt;/i&gt;阅读次数:&amp;nbsp;&amp;nbsp;
+    &lt;span id="busuanzi_value_page_pv"&gt;434&lt;/span&gt;
+对比发现出现了多余的style="display: none;。
+经过搜索主题源码，发现这个文件themes\matery\source\libs\others\busuanzi.pure.mini.js控制显示。
+可以直接下载下面这个地址的js替换，来自个人blog的js   busuanzi.pure.mini.js，直接下载这个js替换即可。下面源码经过了展开美化，原始文件是压缩去空格版本的。
+注意： 这是一种破坏性修复，没有解决根本问题，临时修复方案。
+var bszCaller, bszTag;
+! function () {
+    var c, d, e, a = !1,
+        b = [];
+    ready = function (c) {
+        return a || "interactive" === document.readyState || "complete" === document.readyState ? c.call(document) :
+            b.push(function () {
+                return c.call(this)
+            }), this
+    }, d = function () {
+        for (var a = 0, c = b.length; c &gt; a; a++) b[a].apply(document);
+        b = []
+    }, e = function () {
+        a || (a = !0, d.call(window), document.removeEventListener ? document.removeEventListener(
+            "DOMContentLoaded", e, !1) : document.attachEvent &amp;&amp; (document.detachEvent("onreadystatechange",
+            e), window == window.top &amp;&amp; (clearInterval(c), c = null)))
+    }, document.addEventListener ? document.addEventListener("DOMContentLoaded", e, !1) : document.attachEvent &amp;&amp; (
+        document.attachEvent("onreadystatechange", function () {
+            /loaded|complete/.test(document.readyState) &amp;&amp; e()
+        }), window == window.top &amp;&amp; (c = setInterval(function () {
+            try {
+                a || document.documentElement.doScroll("left")
+            } catch (b) {
+                return
+            }
+            e()
+        }, 5)))
+}(), bszCaller = {
+    fetch: function (a, b) {
+        var c = "BusuanziCallback_" + Math.floor(1099511627776 * Math.random());
+        window[c] = this.evalCall(b), a = a.replace("=BusuanziCallback", "=" + c), scriptTag = document.createElement(
+                "SCRIPT"), scriptTag.type = "text/javascript", scriptTag.defer = !0, scriptTag.src = a,
+            document.getElementsByTagName("HEAD")[0].appendChild(scriptTag)
+    },
+    evalCall: function (a) {
+        return function (b) {
+            ready(function () {
+                try {
+                    a(b), scriptTag.parentElement.removeChild(scriptTag)
+                } catch (c) {
+                    bszTag.hides()
+                }
+            })
+        }
+    }
+}, bszCaller.fetch("//busuanzi.ibruce.info/busuanzi?jsonpCallback=BusuanziCallback", function (a) {
+    bszTag.texts(a), bszTag.shows()
+}), bszTag = {
+    bszs: ["site_pv", "page_pv", "site_uv"],
+    texts: function (a) {
+        this.bszs.map(function (b) {
+            var c = document.getElementById("busuanzi_value_" + b);
+            c &amp;&amp; (c.innerHTML = a[b])
+        })
+    },
+    hides: function () {
+        this.bszs.map(function (a) {
+            var b = document.getElementById("busuanzi_container_" + a);
+            b &amp;&amp; (b.style.display = "")
+        })
+    },
+    shows: function () {
+        this.bszs.map(function (a) {
+            var b = document.getElementById("busuanzi_container_" + a);
+            b &amp;&amp; (b.style.display = "inline")
+        })
+    }
+};
+替换的人请操作其实就是把其中的b.style.display="none"中none去掉。
+不蒜子 (busuanzi) 文章计数出错问题
+出现这个原因，和 Chrome 85 版本 Referrer Policy 更改有关。什么是 Referrer，简单理解，就是请求 Web 服务器时，可以在 HTTP Request 的请求头 (header) 中加上当前页面的 URL，例如我们在浏览某个博客页面，需要加载一些图片，从服务器请求这些图片时，referrer 就是当前的博客页面 URL。从这里也可以看出，referrer 可能会暴露请求来源的某些信息或者隐私，有一定的隐私或安全风险。之前版本的 Chrome 浏览器，如果网站没有指定自己的 Referrer Policy，那么 Chrome 默认 policy 是 no-referrer-when-downgrade，在 Chrome 85 版本中，为了保护用户的隐私，默认的 Referrer Policy 则变成了 strict-origin-when-cross-origin。
+
+no-referrer-when-downgrade: 当两个网站的 http 协议安全等级相当，或者目的网站安全协议等级高于当前网站(HTTP –&gt; HTTP, HTTPS –&gt; HTTPS, HTTP –&gt; HTTPS)， referer 将会包含源网站的域名，路径，查询字符串；如果目的网站安全协议等级低于源网站 (HTTPS –&gt; HTTP)，将不会发送这些信息。
+strict-origin-when-cross-origin： 只有当做同一域名请求时 (源网址和目标网址是同一域名），才发送域名，路径和请求字符串，当两个网站安全协议相当时，发送源网站的域名(没有具体路径信息和查询字符串)，如果目标网站安全协议等级低于源网站，不发送 header 信息。
+
+不蒜子统计博客文章访问量就是通过 referer 来计算的，通过上面的分析，如果 Referrer Policy 是 strict-origin-when-cross-origin，不蒜子接收到的只有博客的域名，没有文章的具体路径，所以具体某个文章的 PV 统计会出现错误。
+修复方法：
+在主题文件夹下/layout/_partial/head.ejs中添加
+&lt;meta name="referrer" content="no-referrer-when-downgrade"&gt;
+如何多个域名映射同一个github pages
+可能由于某种原因，换了一个域名，之前又有一些被搜索引擎收录，但是又不想让原来的链接失效，就需要让两个域名都映射到github pages中。本文介绍几种当前可能的方法。欢迎提出更多有效方法。
+直接映射有什么问题？
+你可能会想，两个域名都映射到github pages不就可以了？然而事实并非如此。首先当前github 的CNAME中只支持一个域名。因此CNAME文件中只能有一个域名，而如果在域名映射中将两个域名都映射到username.github.io，那么其中有一个会出现404错误。
+前提
+以下方法的前提是你已经明白如何为自己的github pages添加自定义域名。
+需要注意什么？
+
+需要给各大网站提交新的域名网址，重新被收录
+域名变换前面网站的内容结构不能变，否则重定向也没有意义
+当前单纯的域名没有办法进行备案
+注意修改配置文件里的主域名为新的域名
+由于更换了新的域名，导致原来leancloud统计的访问数据需要重新计算，也就是网站访问量被清零了，leancloud也需要更新域名
+新的com域名可申请免费的SSL证书，保证https可访问，而不会提示不安全
+301重定向会将旧地址的权重转义到新地址上
+百度收录速度较慢
+
+方法一：域名托管平台重定向
+有的域名服务商提供重定向功能，以阿里云为例，在域名映射添加记录的时候，可以选择显性URL或隐性URL。但是自己在尝试这种方法的时候，会提示我URL备案异常。可能是由于这个时候已经用新的域名映射了博客地址，但是新的域名实际上是没有备案的。更无奈的是，目前貌似没有办法单独对域名进行备案。因此本人放弃了该方法。
+如果你的博客也是部署在github上的，那么这种方法就不用尝试了，如果你的博客是部署在自己的服务器上的，那么网上都很多方法，这里就不介绍了。
+方法二：部署两个仓库
+我们注意到，除了github pages，还有coding.net可用。它与github类似。原来的域名映射到这个地址就可以了。而在部署hexo的时候，是可以添加两个仓库地址的：
+deploy:
+- type: git
+  repository: git@github.com:username/username.github.io.git
+  branch: master
+- type: git
+  repository: git@git.coding.net:username/username.git
+  branch: coding-pages
+这两个仓库内容唯一的差别就是域名不一样，即CNAME中的记录值不一样。这样当访问两个不同的域名的时候，是访问不同的两个平台仓库。但是原来域名的权重不会转到新的域名中去。
+方法三：新增项目重定向
+假如你已经有username.github.io项目，新建一个名为blog(名字自定义)的项目，在项目的setting中，开启github pages服务，并且将旧的域名映射到username.github.io。
+实际上，github pages并不是只能有一个，例如，你新创建的仓库访问地址为：username.github.io/blog。
+由于旧的域名映射会导致404错误，那么在我们的新项目中增加一个404.html，在页面中进行跳转即可：
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;meta charset="utf-8"&gt;
+&lt;title&gt;&lt;/title&gt;
+&lt;/head&gt;
+ &lt;script language="javascript"&gt;
+var domain = "换成你自己的新域名";
+var src = window.location.href;
+var prtc = src.substring(0, src.indexOf(':'));
+var target = src.substring(src.indexOf('/', src.indexOf(':') + 3));
+window.location.href = prtc + "://" + domain + target;
+location.href=prtc + "://" + domain + target;
+&lt;/script&gt;
+&lt;body&gt;
+ &lt;h1&gt;&lt;/h1&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+另外，需要利用google的地址更改功能，使得旧网址的权重往新网址转移。
+找到search console中的地址更改工具（设置按钮中找到）。
+除了增加404页面外，还需要增加CNAME文件，里面的内容是你原先的域名。
+Vercel流量超标怎么办？
+
+最近查看了一下Vercel流量使用情况，发现RSS订阅流量太大了，占了30GB流量！
+免费Vercel账户每月只有100G免费流量，怎么办？
+
+有两种解决方法：
+
+使用 DNS 多线路分流，例如DNSPOD 多线路负载均衡
+使用 Vercel 提供的 redirects 或者 rewrites功能，把rss访问重定向到其它部署方式，例如Cloudflare
+
+
+查看方法：dashboard -&gt; usage
+由于个人blog也部署到Cloudflare上面了，https://cfblog.17lai.site，Cloudflare的流量目前看着没限制，如是，可以使用如下重定向方法
+"redirects": [
+		{ "source": "/atom.xml", "destination": "https://cfblog.17lai.site/atom.xml" },
+		{ "source": "/rss.xml", "destination": "https://cfblog.17lai.site/rss.xml" }
+  	]
+更多Vercel部署用法，戳vercel部署
+其它主题
+博主从这些主题学到了很多有用的技巧，大大丰富了个人定制
+
+
+hexo-theme-butterfly
+hexo-theme-next
+hexo-theme-fluid
+Hexo-Theme-MengD
+hexo-theme-itsneko
+
+
+参考&amp;感谢
+
+整个系列花费时间和精力很长，如有遗漏，可以联系添加！
+
+
+easyhexo 文档 easyhexo GIthub
+基于Hexo的matery主题搭建博客并深度优化-悟尘记
+hexo 官方文档
+闪烁之狐
+hexo-theme-matery
+Hexo 进阶之各种优化
+Leancloud+Valine打造Hexo个人博客极简评论系统
+Hexo进阶之各种优化
+自动部署篇
+Hexo搭建(VPS)
+解决live2d看板娘和busuanzi不蒜子计数冲突
+多个域名映射同一个github pages
+hexo博客简单支持PWA
+Hexo 每天自动提交网站url到搜索引擎
+Hexo 博客订阅文章通知功能
+修改 matery 原有主题相册
+关于给hexo博客增加相册页面（实现瀑布流相册，实现加密相册） hexo-theme-itsneko
+Matery主题新手常见问题
+hexo-gitlab-cicd-conf
+更改hexo的主题为Matery,并进行初步的优化
+Hexo之渲染绕过
+使用 gulp 压缩图片
+Hexo+Github博客搭建完全教程 博客开源
+Hexo主题使用Valine-Admin管理评论和评论提醒
+Hexo博客进阶：图片懒加载与代码压缩
+matery主题个性化定制
+crystalblog三部曲 1 2 3
+个人博客搭建 博客开源
+PWA踩坑记-从零到一让你的博客也能离线访问
+Matery主题添加暗色模式 黑夜模式 开源代码hexo-themes-matery-pro
+为网站添加用户友好的深色模式支持 hexo-theme-fluid Dark
+加载动画(吃豆豆) 加载动画旋转方块
+优化search.xml大小
+更好的Live2d Widget
+Waline 评论系统的介绍与基础配置
+Waline 添加 GitHub 社交登录
+waline 邮件通知模板样式一览
+https://www.techgrow.cn/posts/ae18fb85.html
+随机视频背景切换 视频背景 hexo-theme-fluid
+使用视频作为网页背景的技术探讨 英文：Create Fullscreen HTML5 Page Background Video
+写作技巧篇
+折腾：在 Hexo 的 page 中嵌入 iframe
+美化修改文章分类样式
+Hexo魔改记录 各种特效添加
+零成本搭建现代博客之加载速度优化篇
+使用 CardLink 库生产卡片式链接
+使用Service Worker优选请求资源
+Hexo 每天自动提交网站url到搜索引擎
+使用 VS Code 的任务（Tasks）便捷操作 Hexo
+ 为网站添加用户友好的深色模式支持
+实现代码框全屏显示
+谷歌网站收录移动设备易用性有问题  移动设备适合性测试
+
+
+性能
+
+
+图片 lazyload 的学问和在 Hexo 上的最佳实践
+“web资源加载优先级”原来能这么精准控制 
+使 Disqus 不再拖累性能和页面加载
+hexo个人网站优化探索
+lazy-load-iframes
+Hexo架构与优化–Hexo，分区解析，CDN，图像压缩等 hexo-theme-Claudia
+
+系列教程
+全部文章RSS订阅
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+Vercel部署高级用法教程
+
+笔记系列
+Note分类RSS订阅
+
+完美笔记进化论
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Joplin入门指南&amp;实践方案
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+Joplin 插件以及其Markdown语法。All in One!
+Joplin 插件使用推荐
+为知笔记私有化Docker部署
+
+Gitbook使用系列
+Gitbook分类RSS订阅
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+Gitlab 使用系列
+Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+]]></content>
+      <categories>
+        <category>hexo</category>
+      </categories>
+      <tags>
+        <tag>hexo</tag>
+        <tag>github</tag>
+        <tag>matery</tag>
+        <tag>cdn</tag>
+        <tag>seo</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>基于Hexo的matery主题搭建博客网络优化篇3</title>
     <url>/posts/9b056c86/</url>
     <content><![CDATA[
@@ -25180,522 +25696,6 @@ search:
 
 还可以给search.xml添加上jsdelivr cdn 加速！
 
-
-系列教程
-全部文章RSS订阅
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-Vercel部署高级用法教程
-
-笔记系列
-Note分类RSS订阅
-
-完美笔记进化论
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Joplin入门指南&amp;实践方案
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-Joplin 插件以及其Markdown语法。All in One!
-Joplin 插件使用推荐
-为知笔记私有化Docker部署
-
-Gitbook使用系列
-Gitbook分类RSS订阅
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-Gitlab 使用系列
-Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-]]></content>
-      <categories>
-        <category>hexo</category>
-      </categories>
-      <tags>
-        <tag>hexo</tag>
-        <tag>github</tag>
-        <tag>matery</tag>
-        <tag>cdn</tag>
-        <tag>seo</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>基于Hexo的matery主题搭建博客常见问题篇6</title>
-    <url>/posts/84b4059a/</url>
-    <content><![CDATA[Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-Vercel部署高级用法教程
-
-独立博客相关组织
-一些有趣的相关组织介绍。
-
-一个人码文太孤单，但是，别忘了，你还有这么多同路人！
-建立独立博客之后，可以试着加入一些博客联盟，相互学习，引流！
-
-十年之约
-
-十年之约，即从加入这个活动起，我们的博客十年不关闭，保持更新和活力！
-点击加入  点击查看成员
-
-中文博客列表导航项目
-
-尝试链接几乎所有的中文博客
-申请加入
-
-中文独立博客列表
-
-一个自动合并PR,CVS管理博客列表的Github项目
-加入方法，点击 Fork chinese-independent-blogs
-
-在 ./blogs-original.csv 中填入博客的 名称、URL、RSS以及标签
-提交 PR
-(自动) PR 被 merge 之后 README 通过 ./script.js 生成
-
-
-要不要加参考链接？
-
-要加！一定要加！
-本来就是白嫖了别人的成功，去掉署名声称是原创就要下做了。
-
-不加引用后果：
-
-
-本来加个署名可以和原作者成为朋友，不加就弄成了仇人！
-别人不一定告你，告你，输是一定的。但违反人家发布协议，弄臭你很容易
-创作圈不大，很快大家都知道了
-文章人家原创，后续很可能还会更新、修改，留个链接好跟过去看看有没有更新
-等等其它
-
-
-出错了，怎么办？
-
-首先，学会搜索，最好实用Google，准确率比X毒高几个数量级。你遇到过的问题，90%以上其他人也遇到过，网上能找到现成的解决方案。
-
-个人独立博客文章质量最高，stackoverflow质量也很非常高，CSDN基本就是垃圾场，普通搜索文章能有50%准确率就非常不错了，独立博客和stackoverflow之类的80%以上的准确率！
-
-
-如何调试博客
-
-需要一定的web开发知识才能做。
-学会一些简单调试及基本html语言很容易，网上教程很多。
-按F12进入调试模式，元素，网络，控制台，是常用的页面。
-
-
-
-通过hexo g -d部署时报Error: Spawn failed错误:
-
-这是由于 git 本地记录的提交版本号与 github 上不一致导致的，通过git reset --hard commitCode即可解决。
-
-
-检查本地最近提交记录，获取最后一次提交记录的更新时间及标识，如280a7fdd46fcfd7d34e652aec15523dcd247fac8
-
-cd .deploy_git
-cat .git/logs/HEAD
-
-获取 github pages 服务所关联分支的最近一次提交记录，获取更新时间及标识。地址一般为：https://github.com/用户名/仓库名/commits/分支名，如https://github.com/lxl80/blog/commits/gh-pages
-如果发现提交最新的提交时间/标识不一致，通过以下命令即可解决:
-
-git reset --hard f085038efdf79546c09641d37b2a2429c1ae8e60 #github上最新的提交标识
-hexo docker 本地访问内容没有更新
-可能是node内部PM2模块的缓存机制导致的。pm2模块重启一下就可以了。
-pm2 restart /hexo_run.js
-
-fsevents报错
-npm ERR! code EBADPLATFORM npm ERR! notsup Unsupported platform for
-fsevents@2.3.2: wanted {"os":"darwin","arch":"any"} (current:
-{"os":"win32","arch":"x64"}) npm ERR! notsup Valid OS:    darwin npm
-ERR! notsup Valid Arch:  any npm ERR! notsup Actual OS:   win32 npm
-ERR! notsup Actual Arch: x64
-解决方法：修改package.json
-"optionalDependencies": {
-  "fsevents": "^2.3.2"
-},
-关于百度无法爬取GitHub内容解决方案
-
-
-使用coding搭建一个可以被百度爬取到的代码托管平台
-使用vps搭建一个hexo 镜像访问，专门针对搜索引擎。
-
-
-
-Tips: 博主用了第二种方法，2个域名，前端域名用dnspod，采用cloudflare parter cname接入。dnspos有选路选择，针对搜索引擎进入vps搭建的blog，对于其它线路到cloudflare parter 加速过的github pages  cname。后端域名用cloudflare parter 以及免费版cloudflare管理。
-
-既然百度无法爬取GitHub，那么我们只需要找个可以被百度爬取到的代码托管平台即可（并且还提供pages服务），基本只有国内的平台了：Gitee和Coding！Gitee自定义域名要花钱（九十多，都可以买服务器了），而Coding是可以免费自定义域名的。这里推介大家使用企业版的Coding，因为企业版的Coding仓库服务器是在香港的，而普通版的服务器是在新加坡。地理原因，理论上企业版的更快一些！
-
-
-将博客同时部署到两个仓库：GitHub和Coding
-deploy:
-- type: git
-  repository: git@github.com:xxx/xxx.github.io.git
-  branch: master
-
-- type: git
-  repository: git@e.coding.net:xxx/xxx.git
-  branch: master
-
-
-在域名那里，配置两个解析
-
-线路类型作用：如果该值填“国内”，国内的IP就会去访问此项对应的记录值地址
-同理，如果该值填写“国外”，国外的IP就会去访问“国外”对应的记录值地址
-
-
-线路类型为百度或者国内，记录值为Coding仓库的地址
-线路类型为默认或者国外，记录值为GitHub仓库地址
-
-
-
-
-这样来自百度的spider就会去爬国内Coding的地址，而两个仓库的内容又都是一样的，如果请求IP来自国外，它又会去访问国外的GitHub，这样还有利于外国华侨和那些科学上网的用户访问，一石二鸟！（我真他妈天才！）
-
-
-如果你只用Coding仓库，那就不需要这么麻烦了
-
-
-测试百度Spider能不能爬你的域名
-
-
-在任意目录下执行以下命令（将“你的域名”换成你的域名）
-curl -A "Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)" -o example.html 你的域名
-
-
-执行完命令，在该目录下会生成一个文件：example.html，打开它，如果显示
-
-
-Moved Permanently，说明301，被重定向了
-
-
-Found，也就是爬到了
-
-
-如果打开是你的首页，说明爬取到的内容就是你的首页HTML内容。
-
-
-如果显示：
-
-说明域名是解析到GitHub的，403Forbidden访问禁止。
-
-
-
-
-
-
-busuanzi不蒜子计数显示异常，一闪就没
-
-
-
-原因可能有两种live2d看板娘和busuanzi不蒜子计数冲突
-
-
-busuanzi不蒜子网络访问异常。
-
-
-
-
-
-不在leancloud安全名单
-
-
-不是正常域名访问
-
-
-各种网络访问错误等等
-
-
-
-
-近日安装了live2d看板娘插件，github项目地址，安装后却意外发现busuanzi不蒜子计数失效了,在页面中不显示，但强制刷新后出现，再刷新又消失。经排查，未发现问题，但事实是网站源码出现了变化。
-
-正常时
-
-&lt;div id="busuanzi_container_page_pv" class="info-break-policy" style="display: inline;"&gt;
-    &lt;i class="far fa-eye fa-fw"&gt;&lt;/i&gt;阅读次数:&amp;nbsp;&amp;nbsp;
-    &lt;span id="busuanzi_value_page_pv"&gt;433&lt;/span&gt;
-
-异常时
-
-&lt;div id="busuanzi_container_page_pv" class="info-break-policy" style="display: none;"&gt;
-    &lt;i class="far fa-eye fa-fw"&gt;&lt;/i&gt;阅读次数:&amp;nbsp;&amp;nbsp;
-    &lt;span id="busuanzi_value_page_pv"&gt;434&lt;/span&gt;
-对比发现出现了多余的style="display: none;。
-经过搜索主题源码，发现这个文件themes\matery\source\libs\others\busuanzi.pure.mini.js控制显示。
-可以直接下载下面这个地址的js替换，来自个人blog的js   busuanzi.pure.mini.js，直接下载这个js替换即可。下面源码经过了展开美化，原始文件是压缩去空格版本的。
-注意： 这是一种破坏性修复，没有解决根本问题，临时修复方案。
-var bszCaller, bszTag;
-! function () {
-    var c, d, e, a = !1,
-        b = [];
-    ready = function (c) {
-        return a || "interactive" === document.readyState || "complete" === document.readyState ? c.call(document) :
-            b.push(function () {
-                return c.call(this)
-            }), this
-    }, d = function () {
-        for (var a = 0, c = b.length; c &gt; a; a++) b[a].apply(document);
-        b = []
-    }, e = function () {
-        a || (a = !0, d.call(window), document.removeEventListener ? document.removeEventListener(
-            "DOMContentLoaded", e, !1) : document.attachEvent &amp;&amp; (document.detachEvent("onreadystatechange",
-            e), window == window.top &amp;&amp; (clearInterval(c), c = null)))
-    }, document.addEventListener ? document.addEventListener("DOMContentLoaded", e, !1) : document.attachEvent &amp;&amp; (
-        document.attachEvent("onreadystatechange", function () {
-            /loaded|complete/.test(document.readyState) &amp;&amp; e()
-        }), window == window.top &amp;&amp; (c = setInterval(function () {
-            try {
-                a || document.documentElement.doScroll("left")
-            } catch (b) {
-                return
-            }
-            e()
-        }, 5)))
-}(), bszCaller = {
-    fetch: function (a, b) {
-        var c = "BusuanziCallback_" + Math.floor(1099511627776 * Math.random());
-        window[c] = this.evalCall(b), a = a.replace("=BusuanziCallback", "=" + c), scriptTag = document.createElement(
-                "SCRIPT"), scriptTag.type = "text/javascript", scriptTag.defer = !0, scriptTag.src = a,
-            document.getElementsByTagName("HEAD")[0].appendChild(scriptTag)
-    },
-    evalCall: function (a) {
-        return function (b) {
-            ready(function () {
-                try {
-                    a(b), scriptTag.parentElement.removeChild(scriptTag)
-                } catch (c) {
-                    bszTag.hides()
-                }
-            })
-        }
-    }
-}, bszCaller.fetch("//busuanzi.ibruce.info/busuanzi?jsonpCallback=BusuanziCallback", function (a) {
-    bszTag.texts(a), bszTag.shows()
-}), bszTag = {
-    bszs: ["site_pv", "page_pv", "site_uv"],
-    texts: function (a) {
-        this.bszs.map(function (b) {
-            var c = document.getElementById("busuanzi_value_" + b);
-            c &amp;&amp; (c.innerHTML = a[b])
-        })
-    },
-    hides: function () {
-        this.bszs.map(function (a) {
-            var b = document.getElementById("busuanzi_container_" + a);
-            b &amp;&amp; (b.style.display = "")
-        })
-    },
-    shows: function () {
-        this.bszs.map(function (a) {
-            var b = document.getElementById("busuanzi_container_" + a);
-            b &amp;&amp; (b.style.display = "inline")
-        })
-    }
-};
-替换的人请操作其实就是把其中的b.style.display="none"中none去掉。
-不蒜子 (busuanzi) 文章计数出错问题
-出现这个原因，和 Chrome 85 版本 Referrer Policy 更改有关。什么是 Referrer，简单理解，就是请求 Web 服务器时，可以在 HTTP Request 的请求头 (header) 中加上当前页面的 URL，例如我们在浏览某个博客页面，需要加载一些图片，从服务器请求这些图片时，referrer 就是当前的博客页面 URL。从这里也可以看出，referrer 可能会暴露请求来源的某些信息或者隐私，有一定的隐私或安全风险。之前版本的 Chrome 浏览器，如果网站没有指定自己的 Referrer Policy，那么 Chrome 默认 policy 是 no-referrer-when-downgrade，在 Chrome 85 版本中，为了保护用户的隐私，默认的 Referrer Policy 则变成了 strict-origin-when-cross-origin。
-
-no-referrer-when-downgrade: 当两个网站的 http 协议安全等级相当，或者目的网站安全协议等级高于当前网站(HTTP –&gt; HTTP, HTTPS –&gt; HTTPS, HTTP –&gt; HTTPS)， referer 将会包含源网站的域名，路径，查询字符串；如果目的网站安全协议等级低于源网站 (HTTPS –&gt; HTTP)，将不会发送这些信息。
-strict-origin-when-cross-origin： 只有当做同一域名请求时 (源网址和目标网址是同一域名），才发送域名，路径和请求字符串，当两个网站安全协议相当时，发送源网站的域名(没有具体路径信息和查询字符串)，如果目标网站安全协议等级低于源网站，不发送 header 信息。
-
-不蒜子统计博客文章访问量就是通过 referer 来计算的，通过上面的分析，如果 Referrer Policy 是 strict-origin-when-cross-origin，不蒜子接收到的只有博客的域名，没有文章的具体路径，所以具体某个文章的 PV 统计会出现错误。
-修复方法：
-在主题文件夹下/layout/_partial/head.ejs中添加
-&lt;meta name="referrer" content="no-referrer-when-downgrade"&gt;
-如何多个域名映射同一个github pages
-可能由于某种原因，换了一个域名，之前又有一些被搜索引擎收录，但是又不想让原来的链接失效，就需要让两个域名都映射到github pages中。本文介绍几种当前可能的方法。欢迎提出更多有效方法。
-直接映射有什么问题？
-你可能会想，两个域名都映射到github pages不就可以了？然而事实并非如此。首先当前github 的CNAME中只支持一个域名。因此CNAME文件中只能有一个域名，而如果在域名映射中将两个域名都映射到username.github.io，那么其中有一个会出现404错误。
-前提
-以下方法的前提是你已经明白如何为自己的github pages添加自定义域名。
-需要注意什么？
-
-需要给各大网站提交新的域名网址，重新被收录
-域名变换前面网站的内容结构不能变，否则重定向也没有意义
-当前单纯的域名没有办法进行备案
-注意修改配置文件里的主域名为新的域名
-由于更换了新的域名，导致原来leancloud统计的访问数据需要重新计算，也就是网站访问量被清零了，leancloud也需要更新域名
-新的com域名可申请免费的SSL证书，保证https可访问，而不会提示不安全
-301重定向会将旧地址的权重转义到新地址上
-百度收录速度较慢
-
-方法一：域名托管平台重定向
-有的域名服务商提供重定向功能，以阿里云为例，在域名映射添加记录的时候，可以选择显性URL或隐性URL。但是自己在尝试这种方法的时候，会提示我URL备案异常。可能是由于这个时候已经用新的域名映射了博客地址，但是新的域名实际上是没有备案的。更无奈的是，目前貌似没有办法单独对域名进行备案。因此本人放弃了该方法。
-如果你的博客也是部署在github上的，那么这种方法就不用尝试了，如果你的博客是部署在自己的服务器上的，那么网上都很多方法，这里就不介绍了。
-方法二：部署两个仓库
-我们注意到，除了github pages，还有coding.net可用。它与github类似。原来的域名映射到这个地址就可以了。而在部署hexo的时候，是可以添加两个仓库地址的：
-deploy:
-- type: git
-  repository: git@github.com:username/username.github.io.git
-  branch: master
-- type: git
-  repository: git@git.coding.net:username/username.git
-  branch: coding-pages
-这两个仓库内容唯一的差别就是域名不一样，即CNAME中的记录值不一样。这样当访问两个不同的域名的时候，是访问不同的两个平台仓库。但是原来域名的权重不会转到新的域名中去。
-方法三：新增项目重定向
-假如你已经有username.github.io项目，新建一个名为blog(名字自定义)的项目，在项目的setting中，开启github pages服务，并且将旧的域名映射到username.github.io。
-实际上，github pages并不是只能有一个，例如，你新创建的仓库访问地址为：username.github.io/blog。
-由于旧的域名映射会导致404错误，那么在我们的新项目中增加一个404.html，在页面中进行跳转即可：
-&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-&lt;meta charset="utf-8"&gt;
-&lt;title&gt;&lt;/title&gt;
-&lt;/head&gt;
- &lt;script language="javascript"&gt;
-var domain = "换成你自己的新域名";
-var src = window.location.href;
-var prtc = src.substring(0, src.indexOf(':'));
-var target = src.substring(src.indexOf('/', src.indexOf(':') + 3));
-window.location.href = prtc + "://" + domain + target;
-location.href=prtc + "://" + domain + target;
-&lt;/script&gt;
-&lt;body&gt;
- &lt;h1&gt;&lt;/h1&gt;
-&lt;/body&gt;
-&lt;/html&gt;
-另外，需要利用google的地址更改功能，使得旧网址的权重往新网址转移。
-找到search console中的地址更改工具（设置按钮中找到）。
-除了增加404页面外，还需要增加CNAME文件，里面的内容是你原先的域名。
-Vercel流量超标怎么办？
-
-最近查看了一下Vercel流量使用情况，发现RSS订阅流量太大了，占了30GB流量！
-免费Vercel账户每月只有100G免费流量，怎么办？
-
-有两种解决方法：
-
-使用 DNS 多线路分流，例如DNSPOD 多线路负载均衡
-使用 Vercel 提供的 redirects 或者 rewrites功能，把rss访问重定向到其它部署方式，例如Cloudflare
-
-
-查看方法：dashboard -&gt; usage
-由于个人blog也部署到Cloudflare上面了，https://cfblog.17lai.site，Cloudflare的流量目前看着没限制，如是，可以使用如下重定向方法
-"redirects": [
-		{ "source": "/atom.xml", "destination": "https://cfblog.17lai.site/atom.xml" },
-		{ "source": "/rss.xml", "destination": "https://cfblog.17lai.site/rss.xml" }
-  	]
-更多Vercel部署用法，戳vercel部署
-其它主题
-博主从这些主题学到了很多有用的技巧，大大丰富了个人定制
-
-
-hexo-theme-butterfly
-hexo-theme-next
-hexo-theme-fluid
-Hexo-Theme-MengD
-hexo-theme-itsneko
-
-
-参考&amp;感谢
-
-整个系列花费时间和精力很长，如有遗漏，可以联系添加！
-
-
-easyhexo 文档 easyhexo GIthub
-基于Hexo的matery主题搭建博客并深度优化-悟尘记
-hexo 官方文档
-闪烁之狐
-hexo-theme-matery
-Hexo 进阶之各种优化
-Leancloud+Valine打造Hexo个人博客极简评论系统
-Hexo进阶之各种优化
-自动部署篇
-Hexo搭建(VPS)
-解决live2d看板娘和busuanzi不蒜子计数冲突
-多个域名映射同一个github pages
-hexo博客简单支持PWA
-Hexo 每天自动提交网站url到搜索引擎
-Hexo 博客订阅文章通知功能
-修改 matery 原有主题相册
-关于给hexo博客增加相册页面（实现瀑布流相册，实现加密相册） hexo-theme-itsneko
-Matery主题新手常见问题
-hexo-gitlab-cicd-conf
-更改hexo的主题为Matery,并进行初步的优化
-Hexo之渲染绕过
-使用 gulp 压缩图片
-Hexo+Github博客搭建完全教程 博客开源
-Hexo主题使用Valine-Admin管理评论和评论提醒
-Hexo博客进阶：图片懒加载与代码压缩
-matery主题个性化定制
-crystalblog三部曲 1 2 3
-个人博客搭建 博客开源
-PWA踩坑记-从零到一让你的博客也能离线访问
-Matery主题添加暗色模式 黑夜模式 开源代码hexo-themes-matery-pro
-为网站添加用户友好的深色模式支持 hexo-theme-fluid Dark
-加载动画(吃豆豆) 加载动画旋转方块
-优化search.xml大小
-更好的Live2d Widget
-Waline 评论系统的介绍与基础配置
-Waline 添加 GitHub 社交登录
-waline 邮件通知模板样式一览
-https://www.techgrow.cn/posts/ae18fb85.html
-随机视频背景切换 视频背景 hexo-theme-fluid
-使用视频作为网页背景的技术探讨 英文：Create Fullscreen HTML5 Page Background Video
-写作技巧篇
-折腾：在 Hexo 的 page 中嵌入 iframe
-美化修改文章分类样式
-Hexo魔改记录 各种特效添加
-零成本搭建现代博客之加载速度优化篇
-使用 CardLink 库生产卡片式链接
-使用Service Worker优选请求资源
-Hexo 每天自动提交网站url到搜索引擎
-使用 VS Code 的任务（Tasks）便捷操作 Hexo
- 为网站添加用户友好的深色模式支持
-实现代码框全屏显示
-谷歌网站收录移动设备易用性有问题  移动设备适合性测试
-
-
-性能
-
-
-图片 lazyload 的学问和在 Hexo 上的最佳实践
-“web资源加载优先级”原来能这么精准控制 
-使 Disqus 不再拖累性能和页面加载
-hexo个人网站优化探索
-lazy-load-iframes
-Hexo架构与优化–Hexo，分区解析，CDN，图像压缩等 hexo-theme-Claudia
 
 系列教程
 全部文章RSS订阅
@@ -28897,86 +28897,6 @@ Gitlab的安装及使用
         <tag>docker</tag>
         <tag>k8s</tag>
         <tag>harbor</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Git介绍以及分支模型图解</title>
-    <url>/posts/d32a07a7/</url>
-    <content><![CDATA[
-不废话，直接上图。
-由 Drawio 绘制
-
-
-GIT架构
-GIT的架构，可以分为几个部分：
-
-本地工作区(working directory)
-暂存区(stage area, 又称为索引区, index)、
-本地仓库(local repository)、
-远程仓库副本
-远程仓库(remote repository)。
-
-工作区(working directory) 简言之就是你工作的区域。对于git而言，就是的本地工作目录。工作区的内容会包含提交到暂存区和版本库(当前提交点)的内容，同时也包含自己的修改内容。
-暂存区(stage area, 又称为索引区index) 是git中一个非常重要的概念。是我们把修改提交版本库前的一个过渡阶段。查看GIT自带帮助手册的时候，通常以index来表示暂存区。在工作目录下有一个.git的目录，里面有个index文件，存储着关于暂存区的内容。git add命令将工作区内容添加到暂存区。
-本地仓库(local repository) 版本控制系统的仓库，存在于本地。当执行git commit命令后，会将暂存区内容提交到仓库之中。在工作区下面有.git的目录，这个目录下的内容不属于工作区，里面便是仓库的数据信息，暂存区相关内容也在其中。
-远程版本库(remote repository) 与本地仓库概念基本一致，不同之处在于一个存在远程，可用于远程协作，一个却是存在于本地。通过push/pull可实现本地与远程的交互；
-远程仓库副本 可以理解为存在于本地的远程仓库缓存。如需更新，可通过git fetch/pull命令获取远程仓库内容。使用fech获取时，并未合并到本地仓库，此时可使用git merge实现远程仓库副本与本地仓库的合并。
-.git介绍
-.git目录下各个文件中所存放的内容信息：
-
-
-HEAD 当前所在位置，其实就是工作区的在版本库中的那个提交点，最终会指向一个40位的HASH值；
-
-
-config 当前版本库的专有配置文件，如使用命令git config user.name poloxue便会记录在此文件；
-
-
-description 被gitweb (Github的原型)用来显示对repo的描述。
-
-
-hooks git有可自动运行在 git 任有意义阶段的脚本hooks, 如commit/release/pull/push等状态之前或者之后。个人思考的一个用处，如pre-push可以用来强制进行代码检查。
-
-
-index 存放暂存区(stage area)的相关信息；
-
-
-info/exclue 可以做到和.gitignore相同的事情，用于排除不要包含进版本库的文件。区别就是，此文件不会被共享。
-
-
-refs/heads 目录下有关于本地仓库的所有分支；
-
-
-refs/remote 目录下有关于远程仓库的所有分支；
-
-
-object 目录下存放的就是实际的数据文件
-
-
-参考
-Git 教程
-Git book
-系列教程
-全部文章RSS订阅
-Devops系列
-Devops 分类 RSS 订阅
-
-自建全套开源Devops开发系统
-Git介绍以及分支模型图解
-三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
-DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
-项目开发管理工具推荐
-Gitlab的安装及使用教程完全版
-Gitlab的安装及使用
-那些有用的Github工具介绍！Action、app、workflow等
-
-]]></content>
-      <categories>
-        <category>devops</category>
-      </categories>
-      <tags>
-        <tag>git</tag>
-        <tag>devops</tag>
-        <tag>drowio</tag>
       </tags>
   </entry>
   <entry>
@@ -34802,6 +34722,86 @@ SWOT 分析
       </tags>
   </entry>
   <entry>
+    <title>Git介绍以及分支模型图解</title>
+    <url>/posts/d32a07a7/</url>
+    <content><![CDATA[
+不废话，直接上图。
+由 Drawio 绘制
+
+
+GIT架构
+GIT的架构，可以分为几个部分：
+
+本地工作区(working directory)
+暂存区(stage area, 又称为索引区, index)、
+本地仓库(local repository)、
+远程仓库副本
+远程仓库(remote repository)。
+
+工作区(working directory) 简言之就是你工作的区域。对于git而言，就是的本地工作目录。工作区的内容会包含提交到暂存区和版本库(当前提交点)的内容，同时也包含自己的修改内容。
+暂存区(stage area, 又称为索引区index) 是git中一个非常重要的概念。是我们把修改提交版本库前的一个过渡阶段。查看GIT自带帮助手册的时候，通常以index来表示暂存区。在工作目录下有一个.git的目录，里面有个index文件，存储着关于暂存区的内容。git add命令将工作区内容添加到暂存区。
+本地仓库(local repository) 版本控制系统的仓库，存在于本地。当执行git commit命令后，会将暂存区内容提交到仓库之中。在工作区下面有.git的目录，这个目录下的内容不属于工作区，里面便是仓库的数据信息，暂存区相关内容也在其中。
+远程版本库(remote repository) 与本地仓库概念基本一致，不同之处在于一个存在远程，可用于远程协作，一个却是存在于本地。通过push/pull可实现本地与远程的交互；
+远程仓库副本 可以理解为存在于本地的远程仓库缓存。如需更新，可通过git fetch/pull命令获取远程仓库内容。使用fech获取时，并未合并到本地仓库，此时可使用git merge实现远程仓库副本与本地仓库的合并。
+.git介绍
+.git目录下各个文件中所存放的内容信息：
+
+
+HEAD 当前所在位置，其实就是工作区的在版本库中的那个提交点，最终会指向一个40位的HASH值；
+
+
+config 当前版本库的专有配置文件，如使用命令git config user.name poloxue便会记录在此文件；
+
+
+description 被gitweb (Github的原型)用来显示对repo的描述。
+
+
+hooks git有可自动运行在 git 任有意义阶段的脚本hooks, 如commit/release/pull/push等状态之前或者之后。个人思考的一个用处，如pre-push可以用来强制进行代码检查。
+
+
+index 存放暂存区(stage area)的相关信息；
+
+
+info/exclue 可以做到和.gitignore相同的事情，用于排除不要包含进版本库的文件。区别就是，此文件不会被共享。
+
+
+refs/heads 目录下有关于本地仓库的所有分支；
+
+
+refs/remote 目录下有关于远程仓库的所有分支；
+
+
+object 目录下存放的就是实际的数据文件
+
+
+参考
+Git 教程
+Git book
+系列教程
+全部文章RSS订阅
+Devops系列
+Devops 分类 RSS 订阅
+
+自建全套开源Devops开发系统
+Git介绍以及分支模型图解
+三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
+DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
+项目开发管理工具推荐
+Gitlab的安装及使用教程完全版
+Gitlab的安装及使用
+那些有用的Github工具介绍！Action、app、workflow等
+
+]]></content>
+      <categories>
+        <category>devops</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+        <tag>devops</tag>
+        <tag>drowio</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>QNAP添加man pages</title>
     <url>/posts/ba4ef326/</url>
     <content><![CDATA[
@@ -35242,9 +35242,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-COfqZIxzTNIpeHHr").style.height=document.getElementById("mmedia-COfqZIxzTNIpeHHr").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-MOEPGcplDbtuOvBZ").style.height=document.getElementById("mmedia-MOEPGcplDbtuOvBZ").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-COfqZIxzTNIpeHHr").style.height=document.getElementById("mmedia-COfqZIxzTNIpeHHr").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-MOEPGcplDbtuOvBZ").style.height=document.getElementById("mmedia-MOEPGcplDbtuOvBZ").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 
@@ -38723,390 +38723,6 @@ Linux kernel
       </tags>
   </entry>
   <entry>
-    <title>如何编写Linux驱动？</title>
-    <url>/posts/ed364362/</url>
-    <content><![CDATA[
-本文介绍了编写驱动必备基础知识，编写驱动的难点之处。并从按键驱动到Sensor驱动简单介绍示范了驱动编写过程。并给出了驱动学习方法和评价驱动能力的技术指标！
-
-
-
-驱动学习
-•整个内核70%以上是各种驱动代码
-•每一个你日常使用的小功能背后都有复杂的实现！
-
-•Linux 驱动程序设计模式（40%） char，block，net，input，pci，usb，Platform（bus，device，driver），kset，kobject，proc，sysfs，ioctl，mmap，miscdevice, softirq，tasklet，workqueue， console，
-•内核相关知识（30%）：内核目录结构，内存访问，ipc，锁，内核数据结构，不通内核版本api，热拔插netlink，内核线程,中断处理（注册，共享），设备树，
-•硬件相关知识（30%）： 总线，协议（I2C，I2S，SPI，USB，PCI，sensor，bt1120，bt656，LCD），各种CPU、传感器（ADC，sensor，temperature etc）工作原理
-
-
-前置基础知识
-
-
-模拟电路，数字电路
-
-
-硬件总线协议，各种RFC文档；
-
-
-了解硬件电路设计，能看懂电路图。示波器等工具的使用
-
-
-对C语言了如指掌，各种特殊宏的用法，对内核基本数据结构了解。
-
-
-熟悉C系统编程，应用层编程
-
-
-内核软件子系统，各种软件框架
-
-
-
-上述知识你都有了一定了解之后，你才能开始尝试去开发驱动了！
-学习曲线非常陡峭，必须一次性踏上台阶，否则后续又得重新攀爬。
-
-编写驱动困难之处
-
-
-
-打怪升级困难。要有硬件项目才能给你升级涨经验！一个公司硬件项目周期极长，可能几年都做不了几个新硬件项目
-
-
-新手与熟手完成同样任务时间差异极大！强者越强，你有经验，有难度的活都给你，你没经验，练手的机会都不会给你
-
-
-一切都是以懵懂中开始的。内核代码量太大，你不可能都熟悉之后再开始动手修改。内核版本之间接口一直变动，没有稳定的软件方法。接口总线RFC文档太长，一般至少几千页的英文文档，你不可能都看完才开始动手。硬件设计可能有漏洞，不是官方设计出错，而是现实情况是当初设计RFC标准的人就没有考虑到这种异常情况
-
-
-不同总线接口调试方法和工具差异极大，和医院不同科室使用不同工具差不多，你会不会某种工具，可能使你的效率差异几十倍
-
-
-软件开发，你有一台电脑就足够了。硬件驱动开发，必须有对应的硬件开发板，调试工具Jtag，PC端调试工具一整套才能开始工作
-
-
-
-写驱动好比挖隧道
-
-不知道隧道下面什么地质情况，什么岩层结构，是否好施工
-是否有地下水，多大的地下水没法确定
-是否能完工没法确定
-完工时间多久没法确定
-在你完工之前，你不知道还需要多长时间才能完工，是否能完工都不清楚
-等等
-
-
-写驱动，就是给你一个垃圾场，要你组装出来一个能走动的钟表！
-
-不知道是否缺少零件，你要对整个软硬件构架了如指掌，比硬件更熟悉硬件
-零件是否损坏，有可能多个零件，这个损坏，哪个没有损坏，你换一个同样的零件，说不定可行，也可能不可行
-零件是否符合设计规范性能，有可能这个设计错误，根本就是不可能成功的
-这个零件的说明书和零件是否匹配，给错了没有？外行连给到手的资料判断是否正确资料的能力都没有
-由于你的上游一开始拿到的也是错误的资料，所以给你的也是错误资料
-由于商业，保密等各种原因，一开始就给你错误的资料，故意不给你正确资料的情况也有
-零件是否完好，是否工作正常
-在你组装好，能走动之前，你不知道能否组装好手表
-组成的钟表走时快慢是否正常，能够走动起来，说明零件大抵不差了，是驱动开发决定性进展
-钟表能走动了，后续就是走时准确的调整。性能优化，续航优化，软件框架优化，内存优化，稳定性优化，电磁兼容等等
-
-
-从一堆垃圾零件，组装出来一个能走的钟表！从上图到下图的过程！
-
-实现出来
-组装好，把驱动跑起来是第一步
-性能优化
-对于访问外设emmc，不同时序参数访问性能差距很大。对跑分影响很大！
-续航优化
-不用外设时，可以关闭对应外设电源，或者根据负载动态调节
-内存优化
-内存占用，Zero Copy，指针传递
-稳定性优化
-稳定性，眼图，高速性能
-电磁兼容
-电磁兼容测试，各种标准
-等等其它方面
-
-驱动开发深入下去，是一座又一座高山需要攀爬，但基本的驱动开发还是不难的。
-
-驱动案例
-
-每一个外设都有复杂的物理，材料，结构，光学，工艺，版本等等各种复杂因素需要研究，考虑。当然不是每个外设都这么复杂，复杂的摄像头子系统涉及的知识技术几年就研究不完！
-每一款芯片构架差异都很大，会有不同的内核软件构架，德州仪器TI一份完整的芯片手册就有3000多页，至少看完前四章（几百页英文文档）才能说对芯片有基本了解。
-
-简单的按键
-
-按键硬件设计方法常用的就有3、4种。每种硬件设计，内核就要好几种软件框架可以实现它。
-学习驱动可以从它开始。万里长征第一步，后面慢慢学习I2C，SPI, NAND等外设驱动。
-
-摄像头驱动介绍
-
-可以说是整个手机最复杂的外设驱动！研究两年只能说刚入门。
-3A算法是核心： AWB 启动白平衡，AE自动曝光，AF自动对焦
-理论上就没有完善的解决方案，只有近似解决方案。技术理论发展很快，经常有新技术和方法出来。
-感觉这个很复杂？很正常，整套软件系统自己搞定就需要几十人的团队，一般也就是需要修改整套系统种的某一部分。Sensor驱动，ISP tunning等。
-
-下面简单图解ISP驱动相关知识
-
-
-
-
-
-
-涉及到Sensor专有知识点有
-
-黑电平与线性化
-Green Imbalance
-坏点消除
-Vignetting 与 Color shading
-SNR 与 Raw Denoise
-Dynamic Range 与 Tone Mapping
-MTF 与 Demosaic
-色彩空间与色彩重建
-Color Correction Matrix 与 3D LUT
-Gamma与对比度增强
-Sharpening
-Color Space Conversion
-空域降噪
-时域降噪
-Color Aberrance Corrention and Depurple
-闪光灯
-HDR
-Exif 与 DNG
-图像防抖
-编解码知识 H264 H265等
-
-
-Sensor子系统涉及到的知识大概有如上，个人做过的最复杂的子系统就这个了。
-会写简单驱动，到会写sensor驱动，到会写ISP系统，中间都隔了几年时间差距。
-
-驱动的技术级别
-要做好驱动，要熟悉硬件，总线协议，要会怀疑每一处地方，其它每个人给的信息都可能是错误的，如何定位这个错误就是驱动的工作。成功的路径只有一个，而失败的路径千千万万,驱动的的工作就是找到这条成功的路。
-必备：入门水平
-必备：入门水平，能在别人指导下完成一些简单驱动开发。在一些深入，系统学习后进入下一阶段。
-
-
-基本的数电模电基础。
-
-
-熟悉一些常用开发工具。
-
-
-熟悉linux 内核基本驱动框架。懂得基本内核原理。
-
-
-独立实现过char字符设备。
-
-
-调试过一些常见总线接口设备。比如常见的I2C，SPI设备。
-
-
-中等水平
-中等水平：能够按照指示完成任务，需要大量的时间和大量产品开发慢慢积累经验，完成本阶段进阶。
-熟练使用各种开发工具。
-对linux驱动绝大部分常用框架都有研究。
-能够进行ip core外围器件级别的移植。
-熟悉内核锁的使用，了解中断上下文。
-能够分析定位解决时序问题。
-用gpio模拟实现过I2C，SPI等总线驱动。
-对oops定位分析，驱动调试熟悉。
-对proc，sys，debugfs熟悉或者做过。
-能够在现有驱动基础上修改，阅读datasheet对接新硬件。
-在一些行业应用领域能够在fae帮助下完成外围设备驱动。
-了解arm硬件构架，懂得基本arm汇编指令。基本c程序优化。
-懂得基本pcb升级，打板贴片流程。
-能够解决大部分硬件异常问题。
-高手进阶
-高手进阶：能够独当一面，带领团队。
-工具什么的无所谓，有自己一套最高效的配置工具。
-能够进行ip core级别的移植。
-熟悉并懂得使用各种内核锁，能用内核线程实现一些复杂需求，中断上下文实现都有做过。
-对应用层构架各种技术方法也都非常熟悉。
-知道单核、多核同构、异构构架的内核、驱动、应用层设计差异及处理方法，优化方法。
-熟悉arm构架，arm指令集。懂得怎么根据硬件构架，芯片指令集优化程序。
-知道怎么使用汇编，cache优化。知道cache一致性原理及其实现。
-深入研究过linux内核实现机制。
-熟悉编译，汇编，链接原理。能够定位一些复杂问题，知道怎么通过编译器，链接器实现一些非标准的功能。
-独立实现过绝大部分外围驱动。
-能够独立从头开始实现一些复杂框架驱动。例如网络设备，视频设备等。
-在一些具体应用业务上研究的非常深入，达到行业一流水平。
-深入研究过绝大部分总线接口。比如音视频接口，编解码，usb，网络等业务。
-画过pcb，或者至少了解pcb设计，绘制，打板过程中的各种问题。
-能够熟练协助硬件定位解决各种问题。
-超一流高手进阶
-超一流高手进阶：技术方面基本没有什么可以难倒你的了。
-自己去实现基本的uboot，内核。
-能够自己设计实现全新的内核框架。
-开始一些具体应用的结构，物理，数学，光学等方面深入研究。
-一些问题能否解决，怎么解决，更多的从数学角度分析。
-参与主线linux kernel开发。
-对hdl，Verilog深入了解，自己设计芯片ip core。
-
-以上都是个人见解，仅供参考！
-
-参考
-相关书籍
-Linux内核完全注释
-
-    
-        
-        
-        
-            
-            
-            见字如晤
-        
-        
-            书名: Linux内核完全注释
-            作者: 赵炯
-            出版年份: 2005-8
-            评分: 8.5
-        
-    
-
-Linux设备驱动程序
-
-    
-        
-        
-        
-            
-            
-            我读过这本书
-        
-        
-            书名: Linux设备驱动程序
-            作者: 科波特
-            出版年份: 2006-1-1
-            评分: 8.7
-        
-    
-
-Linux设备驱动开发详解
-
-    
-        
-        
-        
-            
-            
-            见字如晤
-        
-        
-            书名: Linux设备驱动开发详解
-            作者: 宋宝华
-            出版年份: 2008-2
-            评分: 8.2
-        
-    
-
-
-上面两本是介绍Linux kernel软件驱动框架的
-
-Link and loader
-
-    
-        
-        
-        
-            
-            
-            见字如晤
-        
-        
-            书名: LinkersandLoaders
-            作者: JohnR.Levine
-            出版年份: October1999
-            评分: 8.9
-        
-    
-
-Linux内核源代码情景分析（上册）
-
-    
-        
-        
-        
-            
-            
-            见字如晤
-        
-        
-            书名: Linux内核源代码情景分析（上册）
-            作者: 毛德操
-            出版年份: 2001-9
-            评分: 8.7
-        
-    
-
-相关文章
-
-    
-        
-    
-    
-        如何编写Linux驱动
-        
-        本文介绍了编写驱动必备基础知识，编写驱动的难点之处。并从按键驱动到Sensor驱动简单介绍示范了驱动编写过程。并给出了驱动学习方法和评价驱动能力的技术指标！
-    
-
-
-    
-        
-    
-    
-        3G,4G,Wifi选型需求分析及技术简介
-        
-        详细介绍了3G，4G，wifi技术类型，选型，移植，性能介绍全过程。写了好多年了，禁止转载，第一次公开发表。
-    
-
-
-    
-        
-    
-    
-        海思MPP&amp;UNF构架源代码级分析
-        
-        行业中分析海思MPP内核构架，源码分析，多年经验总结积累结果。写了好多年了，禁止转载，第一次公开发表。
-    
-
-
-    
-        
-    
-    
-        如何实现自己的操作系统
-        
-        作为一个程序员，你肯定设想过创造属于自己的操作系统，这其中涉及非常多的知识。本文大概介绍了涉及的知识点，并给出了相关书籍和参考源代码仓库！
-    
-
-
-    
-        
-    
-    
-        手把手教你构建 C 语言编译器
-        
-        “手把手教你构建 C 语言编译器” 这一系列教程将带你从头编写一个 C 语言的编译器。希望通过这个系列，我们能对编译器的构建有一定的了解，同时，我们也将构建出一个能用的 C 语言编译器，尽管有许多语法并不支持。
-    
-
-系列教程
-全部文章RSS订阅
-系统编程系列
-
-如何实现自己的操作系统
-手把手教你构建 C 语言编译器
-如何编写Linux驱动？
-
-]]></content>
-      <categories>
-        <category>driver</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>driver</tag>
-        <tag>驱动</tag>
-        <tag>sensor</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>手把手教你构建 C 语言编译器</title>
     <url>/posts/32570315/</url>
     <content><![CDATA[
@@ -41519,6 +41135,390 @@ Linux内核完全注释
       </tags>
   </entry>
   <entry>
+    <title>如何编写Linux驱动？</title>
+    <url>/posts/ed364362/</url>
+    <content><![CDATA[
+本文介绍了编写驱动必备基础知识，编写驱动的难点之处。并从按键驱动到Sensor驱动简单介绍示范了驱动编写过程。并给出了驱动学习方法和评价驱动能力的技术指标！
+
+
+
+驱动学习
+•整个内核70%以上是各种驱动代码
+•每一个你日常使用的小功能背后都有复杂的实现！
+
+•Linux 驱动程序设计模式（40%） char，block，net，input，pci，usb，Platform（bus，device，driver），kset，kobject，proc，sysfs，ioctl，mmap，miscdevice, softirq，tasklet，workqueue， console，
+•内核相关知识（30%）：内核目录结构，内存访问，ipc，锁，内核数据结构，不通内核版本api，热拔插netlink，内核线程,中断处理（注册，共享），设备树，
+•硬件相关知识（30%）： 总线，协议（I2C，I2S，SPI，USB，PCI，sensor，bt1120，bt656，LCD），各种CPU、传感器（ADC，sensor，temperature etc）工作原理
+
+
+前置基础知识
+
+
+模拟电路，数字电路
+
+
+硬件总线协议，各种RFC文档；
+
+
+了解硬件电路设计，能看懂电路图。示波器等工具的使用
+
+
+对C语言了如指掌，各种特殊宏的用法，对内核基本数据结构了解。
+
+
+熟悉C系统编程，应用层编程
+
+
+内核软件子系统，各种软件框架
+
+
+
+上述知识你都有了一定了解之后，你才能开始尝试去开发驱动了！
+学习曲线非常陡峭，必须一次性踏上台阶，否则后续又得重新攀爬。
+
+编写驱动困难之处
+
+
+
+打怪升级困难。要有硬件项目才能给你升级涨经验！一个公司硬件项目周期极长，可能几年都做不了几个新硬件项目
+
+
+新手与熟手完成同样任务时间差异极大！强者越强，你有经验，有难度的活都给你，你没经验，练手的机会都不会给你
+
+
+一切都是以懵懂中开始的。内核代码量太大，你不可能都熟悉之后再开始动手修改。内核版本之间接口一直变动，没有稳定的软件方法。接口总线RFC文档太长，一般至少几千页的英文文档，你不可能都看完才开始动手。硬件设计可能有漏洞，不是官方设计出错，而是现实情况是当初设计RFC标准的人就没有考虑到这种异常情况
+
+
+不同总线接口调试方法和工具差异极大，和医院不同科室使用不同工具差不多，你会不会某种工具，可能使你的效率差异几十倍
+
+
+软件开发，你有一台电脑就足够了。硬件驱动开发，必须有对应的硬件开发板，调试工具Jtag，PC端调试工具一整套才能开始工作
+
+
+
+写驱动好比挖隧道
+
+不知道隧道下面什么地质情况，什么岩层结构，是否好施工
+是否有地下水，多大的地下水没法确定
+是否能完工没法确定
+完工时间多久没法确定
+在你完工之前，你不知道还需要多长时间才能完工，是否能完工都不清楚
+等等
+
+
+写驱动，就是给你一个垃圾场，要你组装出来一个能走动的钟表！
+
+不知道是否缺少零件，你要对整个软硬件构架了如指掌，比硬件更熟悉硬件
+零件是否损坏，有可能多个零件，这个损坏，哪个没有损坏，你换一个同样的零件，说不定可行，也可能不可行
+零件是否符合设计规范性能，有可能这个设计错误，根本就是不可能成功的
+这个零件的说明书和零件是否匹配，给错了没有？外行连给到手的资料判断是否正确资料的能力都没有
+由于你的上游一开始拿到的也是错误的资料，所以给你的也是错误资料
+由于商业，保密等各种原因，一开始就给你错误的资料，故意不给你正确资料的情况也有
+零件是否完好，是否工作正常
+在你组装好，能走动之前，你不知道能否组装好手表
+组成的钟表走时快慢是否正常，能够走动起来，说明零件大抵不差了，是驱动开发决定性进展
+钟表能走动了，后续就是走时准确的调整。性能优化，续航优化，软件框架优化，内存优化，稳定性优化，电磁兼容等等
+
+
+从一堆垃圾零件，组装出来一个能走的钟表！从上图到下图的过程！
+
+实现出来
+组装好，把驱动跑起来是第一步
+性能优化
+对于访问外设emmc，不同时序参数访问性能差距很大。对跑分影响很大！
+续航优化
+不用外设时，可以关闭对应外设电源，或者根据负载动态调节
+内存优化
+内存占用，Zero Copy，指针传递
+稳定性优化
+稳定性，眼图，高速性能
+电磁兼容
+电磁兼容测试，各种标准
+等等其它方面
+
+驱动开发深入下去，是一座又一座高山需要攀爬，但基本的驱动开发还是不难的。
+
+驱动案例
+
+每一个外设都有复杂的物理，材料，结构，光学，工艺，版本等等各种复杂因素需要研究，考虑。当然不是每个外设都这么复杂，复杂的摄像头子系统涉及的知识技术几年就研究不完！
+每一款芯片构架差异都很大，会有不同的内核软件构架，德州仪器TI一份完整的芯片手册就有3000多页，至少看完前四章（几百页英文文档）才能说对芯片有基本了解。
+
+简单的按键
+
+按键硬件设计方法常用的就有3、4种。每种硬件设计，内核就要好几种软件框架可以实现它。
+学习驱动可以从它开始。万里长征第一步，后面慢慢学习I2C，SPI, NAND等外设驱动。
+
+摄像头驱动介绍
+
+可以说是整个手机最复杂的外设驱动！研究两年只能说刚入门。
+3A算法是核心： AWB 启动白平衡，AE自动曝光，AF自动对焦
+理论上就没有完善的解决方案，只有近似解决方案。技术理论发展很快，经常有新技术和方法出来。
+感觉这个很复杂？很正常，整套软件系统自己搞定就需要几十人的团队，一般也就是需要修改整套系统种的某一部分。Sensor驱动，ISP tunning等。
+
+下面简单图解ISP驱动相关知识
+
+
+
+
+
+
+涉及到Sensor专有知识点有
+
+黑电平与线性化
+Green Imbalance
+坏点消除
+Vignetting 与 Color shading
+SNR 与 Raw Denoise
+Dynamic Range 与 Tone Mapping
+MTF 与 Demosaic
+色彩空间与色彩重建
+Color Correction Matrix 与 3D LUT
+Gamma与对比度增强
+Sharpening
+Color Space Conversion
+空域降噪
+时域降噪
+Color Aberrance Corrention and Depurple
+闪光灯
+HDR
+Exif 与 DNG
+图像防抖
+编解码知识 H264 H265等
+
+
+Sensor子系统涉及到的知识大概有如上，个人做过的最复杂的子系统就这个了。
+会写简单驱动，到会写sensor驱动，到会写ISP系统，中间都隔了几年时间差距。
+
+驱动的技术级别
+要做好驱动，要熟悉硬件，总线协议，要会怀疑每一处地方，其它每个人给的信息都可能是错误的，如何定位这个错误就是驱动的工作。成功的路径只有一个，而失败的路径千千万万,驱动的的工作就是找到这条成功的路。
+必备：入门水平
+必备：入门水平，能在别人指导下完成一些简单驱动开发。在一些深入，系统学习后进入下一阶段。
+
+
+基本的数电模电基础。
+
+
+熟悉一些常用开发工具。
+
+
+熟悉linux 内核基本驱动框架。懂得基本内核原理。
+
+
+独立实现过char字符设备。
+
+
+调试过一些常见总线接口设备。比如常见的I2C，SPI设备。
+
+
+中等水平
+中等水平：能够按照指示完成任务，需要大量的时间和大量产品开发慢慢积累经验，完成本阶段进阶。
+熟练使用各种开发工具。
+对linux驱动绝大部分常用框架都有研究。
+能够进行ip core外围器件级别的移植。
+熟悉内核锁的使用，了解中断上下文。
+能够分析定位解决时序问题。
+用gpio模拟实现过I2C，SPI等总线驱动。
+对oops定位分析，驱动调试熟悉。
+对proc，sys，debugfs熟悉或者做过。
+能够在现有驱动基础上修改，阅读datasheet对接新硬件。
+在一些行业应用领域能够在fae帮助下完成外围设备驱动。
+了解arm硬件构架，懂得基本arm汇编指令。基本c程序优化。
+懂得基本pcb升级，打板贴片流程。
+能够解决大部分硬件异常问题。
+高手进阶
+高手进阶：能够独当一面，带领团队。
+工具什么的无所谓，有自己一套最高效的配置工具。
+能够进行ip core级别的移植。
+熟悉并懂得使用各种内核锁，能用内核线程实现一些复杂需求，中断上下文实现都有做过。
+对应用层构架各种技术方法也都非常熟悉。
+知道单核、多核同构、异构构架的内核、驱动、应用层设计差异及处理方法，优化方法。
+熟悉arm构架，arm指令集。懂得怎么根据硬件构架，芯片指令集优化程序。
+知道怎么使用汇编，cache优化。知道cache一致性原理及其实现。
+深入研究过linux内核实现机制。
+熟悉编译，汇编，链接原理。能够定位一些复杂问题，知道怎么通过编译器，链接器实现一些非标准的功能。
+独立实现过绝大部分外围驱动。
+能够独立从头开始实现一些复杂框架驱动。例如网络设备，视频设备等。
+在一些具体应用业务上研究的非常深入，达到行业一流水平。
+深入研究过绝大部分总线接口。比如音视频接口，编解码，usb，网络等业务。
+画过pcb，或者至少了解pcb设计，绘制，打板过程中的各种问题。
+能够熟练协助硬件定位解决各种问题。
+超一流高手进阶
+超一流高手进阶：技术方面基本没有什么可以难倒你的了。
+自己去实现基本的uboot，内核。
+能够自己设计实现全新的内核框架。
+开始一些具体应用的结构，物理，数学，光学等方面深入研究。
+一些问题能否解决，怎么解决，更多的从数学角度分析。
+参与主线linux kernel开发。
+对hdl，Verilog深入了解，自己设计芯片ip core。
+
+以上都是个人见解，仅供参考！
+
+参考
+相关书籍
+Linux内核完全注释
+
+    
+        
+        
+        
+            
+            
+            见字如晤
+        
+        
+            书名: Linux内核完全注释
+            作者: 赵炯
+            出版年份: 2005-8
+            评分: 8.5
+        
+    
+
+Linux设备驱动程序
+
+    
+        
+        
+        
+            
+            
+            我读过这本书
+        
+        
+            书名: Linux设备驱动程序
+            作者: 科波特
+            出版年份: 2006-1-1
+            评分: 8.7
+        
+    
+
+Linux设备驱动开发详解
+
+    
+        
+        
+        
+            
+            
+            见字如晤
+        
+        
+            书名: Linux设备驱动开发详解
+            作者: 宋宝华
+            出版年份: 2008-2
+            评分: 8.2
+        
+    
+
+
+上面两本是介绍Linux kernel软件驱动框架的
+
+Link and loader
+
+    
+        
+        
+        
+            
+            
+            见字如晤
+        
+        
+            书名: LinkersandLoaders
+            作者: JohnR.Levine
+            出版年份: October1999
+            评分: 8.9
+        
+    
+
+Linux内核源代码情景分析（上册）
+
+    
+        
+        
+        
+            
+            
+            见字如晤
+        
+        
+            书名: Linux内核源代码情景分析（上册）
+            作者: 毛德操
+            出版年份: 2001-9
+            评分: 8.7
+        
+    
+
+相关文章
+
+    
+        
+    
+    
+        如何编写Linux驱动
+        
+        本文介绍了编写驱动必备基础知识，编写驱动的难点之处。并从按键驱动到Sensor驱动简单介绍示范了驱动编写过程。并给出了驱动学习方法和评价驱动能力的技术指标！
+    
+
+
+    
+        
+    
+    
+        3G,4G,Wifi选型需求分析及技术简介
+        
+        详细介绍了3G，4G，wifi技术类型，选型，移植，性能介绍全过程。写了好多年了，禁止转载，第一次公开发表。
+    
+
+
+    
+        
+    
+    
+        海思MPP&amp;UNF构架源代码级分析
+        
+        行业中分析海思MPP内核构架，源码分析，多年经验总结积累结果。写了好多年了，禁止转载，第一次公开发表。
+    
+
+
+    
+        
+    
+    
+        如何实现自己的操作系统
+        
+        作为一个程序员，你肯定设想过创造属于自己的操作系统，这其中涉及非常多的知识。本文大概介绍了涉及的知识点，并给出了相关书籍和参考源代码仓库！
+    
+
+
+    
+        
+    
+    
+        手把手教你构建 C 语言编译器
+        
+        “手把手教你构建 C 语言编译器” 这一系列教程将带你从头编写一个 C 语言的编译器。希望通过这个系列，我们能对编译器的构建有一定的了解，同时，我们也将构建出一个能用的 C 语言编译器，尽管有许多语法并不支持。
+    
+
+系列教程
+全部文章RSS订阅
+系统编程系列
+
+如何实现自己的操作系统
+手把手教你构建 C 语言编译器
+如何编写Linux驱动？
+
+]]></content>
+      <categories>
+        <category>driver</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>driver</tag>
+        <tag>驱动</tag>
+        <tag>sensor</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>管理故事锦集</title>
     <url>/posts/a6477052/</url>
     <content><![CDATA[
@@ -42211,7 +42211,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts3106'));
+        var myChart = echarts.init(document.getElementById('echarts3054'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -42305,7 +42305,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts1373'));
+        var myChart = echarts.init(document.getElementById('echarts2016'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -42374,7 +42374,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts4672'));
+        var myChart = echarts.init(document.getElementById('echarts7353'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -42714,301 +42714,6 @@ echarts.util.each(easingFuncs, function (easingFunc, name) {
         <tag>hexo</tag>
         <tag>matery</tag>
         <tag>echarts</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Vercel部署高级用法教程</title>
-    <url>/posts/e922fac8/</url>
-    <content><![CDATA[
-Vercel使用有不少需要仔细配置的地方，可惜的是，自定义Vercel缓存时间，Vercel重定向等使用方法略复杂，不是开箱即用，有一定使用门槛，故这里单独列一篇文章详细说明Vercel的一些高级使用方法！
-
-
-为什么使用 vercel
-
-国内 Github Pages 速度较慢。
-vercel 速度快且能够自定义域名，能实现和 Github Pages 一样的效果
-
-
-vercel 官方地址：vercel.com/
-
-开始使用
-
-首先注册一个账号 https://vercel.com/
-注册成功后进入页面，点击 News Project
-
-
-
-然后通过绑定的 github 或者 gitlab 导入需要部署的项目
-
-
-
-如果导入的项目是打包好的静态页，FRAMEWORK PRESET 选择 Other 。
-
-
-
-点击 deployed 进行部署，如果部署失败可以查看报错信息是不是上一步的某些选项没有覆盖。部署成功后会进入如图所示的界面
-
-
-如何自定义域名
-
-腾讯云域名地址：console.cloud.tencent.com/domain
-vercel 静态页挂载地址：
-进入到 setting 中可对项目进行一些设置，如项目名称
-
-
-
-下面演示如何自定义域名，默认情况下部署成功后 vercel 会给你生成一个默认的域名，如果想要修改成自己的域名可将域名名称修改成自己的。
-当选择修改成自己的域名名称后，vercel 会检查域名指向的 DNS 对不对，如果不对的话会提示你域名的 DNS 应该如何配置，按照 vercel 提示的 DNS 信息
-
-在自己的域名的 DNS 配置中进行配置，如图
-
-配置多个域名
-对其他新增的域名选择重定向到自己的主域名即可
-
-自定义Vercel服务器位置
-
-Vercel线路已经很快了，但是可以通过选择Vercel部署服务器位置，更进一步加快中国大陆，亚洲区域的访问速度！
-
-
-香港服务器虽然没有严格测试，但是中国大陆速度应该是最快的！
-自定义Header缓存时间
-
-vercel.com/docs
-使用Vercel必备配置，本地缓存加速访问！
-
-vercel.json
-{
-  "headers": [
-    {
-      "source": "/sw.js",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, s-maxage=86400, max-age=86400"
-        }
-      ]
-    }
-  ]
-}
-Vercel自定义404
-
-learn how to customize the 404 page.
-
-Vercel流量超标怎么办？
-
-最近查看了一下Vercel流量使用情况，发现RSS订阅流量太大了，占了30GB流量！
-免费Vercel账户每月只有100G免费流量，怎么办？
-
-有两种解决方法：
-
-使用 DNS 多线路分流，例如DNSPOD 多线路负载均衡
-使用 Vercel 提供的 redirects 或者 rewrites功能，把rss访问重定向到其它部署方式，例如Cloudflare
-
-
-查看方法：dashboard -&gt; usage
-由于个人blog也部署到Cloudflare上面了，https://cfblog.17lai.site，Cloudflare的流量目前看着没限制，如是，可以使用如下重定向方法
-"redirects": [
-		{ "source": "/atom.xml", "destination": "https://cfblog.17lai.site/atom.xml" },
-		{ "source": "/rss.xml", "destination": "https://cfblog.17lai.site/rss.xml" }
-  	]
-详细 Cloudflare 部署方法，戳 cloudflare Pages 部署
-个人使用最终版本如下，各位使用修改对应部分即可。文件路径 [hexo]/source/vercel.json
-{
-    "headers": [
-        {
-            "source": "/sw.js",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, max-age=0, must-revalidate"
-                }
-            ]
-        },
-        {
-            "source": "(.*)",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, s-maxage=86400, max-age=86400"
-                }
-            ]
-        },
-        {
-            "source": "/medias/(.*)",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, s-maxage=2592000, max-age=2592000"
-                }
-            ]
-        },
-        {
-            "source": "/medias_webp/(.*)",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, s-maxage=2592000, max-age=2592000"
-                }
-            ]
-        },
-        {
-            "source": "(.*).html",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, s-maxage=1800, max-age=1800"
-                }
-            ]
-        },
-        {
-            "source": "(.*).js",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, s-maxage=2592000, max-age=2592000"
-                }
-            ]
-        },
-        {
-            "source": "(.*).css",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, s-maxage=2592000, max-age=2592000"
-                }
-            ]
-        },
-        {
-            "source": "(.*).json",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, s-maxage=2592000, max-age=2592000"
-                }
-            ]
-        }
-    ],
-    "regions": [
-        "hkg1"
-    ],
-    "redirects": [
-        {
-            "source": "/gtag/js",
-            "destination": "https://www.googletagmanager.com/gtag/js"
-        },
-        {
-            "source": "/atom.xml",
-            "destination": "https://cfblog.17lai.site/atom.xml"
-        },
-        {
-            "source": "/rss.xml",
-            "destination": "https://cfblog.17lai.site/rss.xml"
-        }
-    ]
-}
-乒乓部署
-
-也可以叫旋转门部署。
-解决调试博客插件，修改半成品文章时部署到云端会影响正在查阅博客的用户的问题！
-使用Docker版本本地预览是很不错，但是 jsdelivr 版本发布需要在 Github 生成新 release 这时本地就不行了。乒乓部署可以解决这个问题！
-
-具体方法就是同时部署到两个地方A和B，博客域名在两个服务器之间切换。这里以 Vercel 为例
-准备工作：
-
-创建2个Github仓库，对应服务器A和B的部署
-建立两个服务器A和B，分别关联两个 Github 仓库
-把调试完毕的代码上传到两个仓库
-这时通过服务器A和B都是可以正常浏览的
-
-要调试的时候：
-
-发布到A之前，把博客域名转移到服务器B
-在服务A做一些调试，在线 debug 工作
-特别是在线 pageseed 测试调优，这种事必备方法。简单不需要新的 jsdelivr 版本调试本地 docker-hexo 调试即可！
-
-
-
-调试完毕后：
-
-把域名切换到服务器A
-同时部署到服务器B，服务器B同步A的部署内容，以便下次备用
-
-
-总结就是服务器A现行，服务器B做后备，调试发布使用A，调试A的时候B就顶上前台！
-这样，调试和正常部署网络服务两不误。是不是感觉自己是个大聪明！
-
-参考&amp;致谢
-
-https://vercel.com/docs/project-configuration#project-configuration/redirects
-
-系列教程
-全部文章RSS订阅
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-Vercel部署高级用法教程
-
-笔记系列
-Note分类RSS订阅
-
-完美笔记进化论
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Joplin入门指南&amp;实践方案
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-Joplin 插件以及其Markdown语法。All in One!
-Joplin 插件使用推荐
-为知笔记私有化Docker部署
-
-Gitbook使用系列
-Gitbook分类RSS订阅
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-Gitlab 使用系列
-Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-]]></content>
-      <categories>
-        <category>hexo</category>
-      </categories>
-      <tags>
-        <tag>hexo</tag>
-        <tag>blog</tag>
-        <tag>vercel</tag>
       </tags>
   </entry>
   <entry>
@@ -44550,6 +44255,301 @@ Vercel部署高级用法教程
         <tag>hexo</tag>
         <tag>markdown</tag>
         <tag>写作</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Vercel部署高级用法教程</title>
+    <url>/posts/e922fac8/</url>
+    <content><![CDATA[
+Vercel使用有不少需要仔细配置的地方，可惜的是，自定义Vercel缓存时间，Vercel重定向等使用方法略复杂，不是开箱即用，有一定使用门槛，故这里单独列一篇文章详细说明Vercel的一些高级使用方法！
+
+
+为什么使用 vercel
+
+国内 Github Pages 速度较慢。
+vercel 速度快且能够自定义域名，能实现和 Github Pages 一样的效果
+
+
+vercel 官方地址：vercel.com/
+
+开始使用
+
+首先注册一个账号 https://vercel.com/
+注册成功后进入页面，点击 News Project
+
+
+
+然后通过绑定的 github 或者 gitlab 导入需要部署的项目
+
+
+
+如果导入的项目是打包好的静态页，FRAMEWORK PRESET 选择 Other 。
+
+
+
+点击 deployed 进行部署，如果部署失败可以查看报错信息是不是上一步的某些选项没有覆盖。部署成功后会进入如图所示的界面
+
+
+如何自定义域名
+
+腾讯云域名地址：console.cloud.tencent.com/domain
+vercel 静态页挂载地址：
+进入到 setting 中可对项目进行一些设置，如项目名称
+
+
+
+下面演示如何自定义域名，默认情况下部署成功后 vercel 会给你生成一个默认的域名，如果想要修改成自己的域名可将域名名称修改成自己的。
+当选择修改成自己的域名名称后，vercel 会检查域名指向的 DNS 对不对，如果不对的话会提示你域名的 DNS 应该如何配置，按照 vercel 提示的 DNS 信息
+
+在自己的域名的 DNS 配置中进行配置，如图
+
+配置多个域名
+对其他新增的域名选择重定向到自己的主域名即可
+
+自定义Vercel服务器位置
+
+Vercel线路已经很快了，但是可以通过选择Vercel部署服务器位置，更进一步加快中国大陆，亚洲区域的访问速度！
+
+
+香港服务器虽然没有严格测试，但是中国大陆速度应该是最快的！
+自定义Header缓存时间
+
+vercel.com/docs
+使用Vercel必备配置，本地缓存加速访问！
+
+vercel.json
+{
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=86400, max-age=86400"
+        }
+      ]
+    }
+  ]
+}
+Vercel自定义404
+
+learn how to customize the 404 page.
+
+Vercel流量超标怎么办？
+
+最近查看了一下Vercel流量使用情况，发现RSS订阅流量太大了，占了30GB流量！
+免费Vercel账户每月只有100G免费流量，怎么办？
+
+有两种解决方法：
+
+使用 DNS 多线路分流，例如DNSPOD 多线路负载均衡
+使用 Vercel 提供的 redirects 或者 rewrites功能，把rss访问重定向到其它部署方式，例如Cloudflare
+
+
+查看方法：dashboard -&gt; usage
+由于个人blog也部署到Cloudflare上面了，https://cfblog.17lai.site，Cloudflare的流量目前看着没限制，如是，可以使用如下重定向方法
+"redirects": [
+		{ "source": "/atom.xml", "destination": "https://cfblog.17lai.site/atom.xml" },
+		{ "source": "/rss.xml", "destination": "https://cfblog.17lai.site/rss.xml" }
+  	]
+详细 Cloudflare 部署方法，戳 cloudflare Pages 部署
+个人使用最终版本如下，各位使用修改对应部分即可。文件路径 [hexo]/source/vercel.json
+{
+    "headers": [
+        {
+            "source": "/sw.js",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=0, must-revalidate"
+                }
+            ]
+        },
+        {
+            "source": "(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, s-maxage=86400, max-age=86400"
+                }
+            ]
+        },
+        {
+            "source": "/medias/(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, s-maxage=2592000, max-age=2592000"
+                }
+            ]
+        },
+        {
+            "source": "/medias_webp/(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, s-maxage=2592000, max-age=2592000"
+                }
+            ]
+        },
+        {
+            "source": "(.*).html",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, s-maxage=1800, max-age=1800"
+                }
+            ]
+        },
+        {
+            "source": "(.*).js",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, s-maxage=2592000, max-age=2592000"
+                }
+            ]
+        },
+        {
+            "source": "(.*).css",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, s-maxage=2592000, max-age=2592000"
+                }
+            ]
+        },
+        {
+            "source": "(.*).json",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, s-maxage=2592000, max-age=2592000"
+                }
+            ]
+        }
+    ],
+    "regions": [
+        "hkg1"
+    ],
+    "redirects": [
+        {
+            "source": "/gtag/js",
+            "destination": "https://www.googletagmanager.com/gtag/js"
+        },
+        {
+            "source": "/atom.xml",
+            "destination": "https://cfblog.17lai.site/atom.xml"
+        },
+        {
+            "source": "/rss.xml",
+            "destination": "https://cfblog.17lai.site/rss.xml"
+        }
+    ]
+}
+乒乓部署
+
+也可以叫旋转门部署。
+解决调试博客插件，修改半成品文章时部署到云端会影响正在查阅博客的用户的问题！
+使用Docker版本本地预览是很不错，但是 jsdelivr 版本发布需要在 Github 生成新 release 这时本地就不行了。乒乓部署可以解决这个问题！
+
+具体方法就是同时部署到两个地方A和B，博客域名在两个服务器之间切换。这里以 Vercel 为例
+准备工作：
+
+创建2个Github仓库，对应服务器A和B的部署
+建立两个服务器A和B，分别关联两个 Github 仓库
+把调试完毕的代码上传到两个仓库
+这时通过服务器A和B都是可以正常浏览的
+
+要调试的时候：
+
+发布到A之前，把博客域名转移到服务器B
+在服务A做一些调试，在线 debug 工作
+特别是在线 pageseed 测试调优，这种事必备方法。简单不需要新的 jsdelivr 版本调试本地 docker-hexo 调试即可！
+
+
+
+调试完毕后：
+
+把域名切换到服务器A
+同时部署到服务器B，服务器B同步A的部署内容，以便下次备用
+
+
+总结就是服务器A现行，服务器B做后备，调试发布使用A，调试A的时候B就顶上前台！
+这样，调试和正常部署网络服务两不误。是不是感觉自己是个大聪明！
+
+参考&amp;致谢
+
+https://vercel.com/docs/project-configuration#project-configuration/redirects
+
+系列教程
+全部文章RSS订阅
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+Vercel部署高级用法教程
+
+笔记系列
+Note分类RSS订阅
+
+完美笔记进化论
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Joplin入门指南&amp;实践方案
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+Joplin 插件以及其Markdown语法。All in One!
+Joplin 插件使用推荐
+为知笔记私有化Docker部署
+
+Gitbook使用系列
+Gitbook分类RSS订阅
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+Gitlab 使用系列
+Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+]]></content>
+      <categories>
+        <category>hexo</category>
+      </categories>
+      <tags>
+        <tag>hexo</tag>
+        <tag>blog</tag>
+        <tag>vercel</tag>
       </tags>
   </entry>
   <entry>
