@@ -1,1 +1,35 @@
-var a_idx=0;function delay(){$(".buryit").removeAttr("onclick")}jQuery(document).ready(function(e){e("body").click(function(a){var t=new Array("JavaScript","Java","C","Python","PHP","Ruby","Go","C++","Typescript","C#"),o=e("<span/>").text(t[a_idx]),t=(a_idx=(a_idx+1)%t.length,a.pageX),a=a.pageY;o.css({"z-index":5,top:a-20,left:t,position:"absolute","font-weight":"bold",color:"rgb("+~~(255*Math.random())+","+~~(255*Math.random())+","+~~(255*Math.random())+")"}),e("body").append(o),o.animate({top:a-180,opacity:0},3e3,function(){o.remove()})}),setTimeout("delay()",2e3)});
+// 点击出字
+var a_idx = 0;
+jQuery(document).ready(function ($) {
+  $("body").click(function (e) {
+    // 点击弹出文字数组
+    var a = new Array
+      ("JavaScript", "Java", "C", "Python", "PHP", "Ruby", "Go", "C++", "Typescript", "C#");
+    var $i = $("<span/>").text(a[a_idx]);
+    a_idx = (a_idx + 1) % a.length;
+    var x = e.pageX,
+      y = e.pageY;
+    $i.css({
+      "z-index": 5,
+      "top": y - 20,
+      "left": x,
+      "position": "absolute",
+      "font-weight": "bold",
+      "color": "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+    });
+    $("body").append($i);
+    $i.animate({
+      "top": y - 180,
+      "opacity": 0
+    },
+      3000,
+      function () {
+        $i.remove();
+      });
+  });
+  setTimeout('delay()', 2000);
+});
+
+function delay () {
+  $(".buryit").removeAttr("onclick");
+}

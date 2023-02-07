@@ -1,1 +1,34 @@
-$(function(){for(const o of document.querySelectorAll("[data-lazy-src]"))Matery.utils.waitElementVisible(o,function(){var t=o.dataset.lazySrc,e=(o.removeAttribute("data-lazy-src"),new Image);e.onload=function(){o.classList.add("is-loaded"),o.style.backgroundImage="url("+t+")"},e.src=t},CONFIG.lazyload.offset_factor);for(const t of document.querySelectorAll("[bg-lazy]"))Matery.utils.waitElementVisible(t,function(){t.removeAttribute("bg-lazy")},CONFIG.lazyload.offset_factor);for(const e of document.querySelectorAll("img[lazyload]:not([no-lazy])"))Matery.utils.waitElementVisible(e,function(){e.setAttribute("srcset",e.getAttribute("src")),e.onload=function(){e.removeAttribute("lazyload")}},CONFIG.lazyload.offset_factor)});
+/* global Matery, CONFIG */
+$(function () {
+  for (const each of document.querySelectorAll('[data-lazy-src]')) {
+    Matery.utils.waitElementVisible(each, function() {
+      var url = each.dataset.lazySrc;
+      each.removeAttribute('data-lazy-src');
+      var image = new Image();
+      image.onload = function () {
+        each.classList.add('is-loaded')
+        each.style.backgroundImage = 'url(' + url + ')'
+      }
+      image.src = url
+    }, CONFIG.lazyload.offset_factor);
+  }
+
+  for (const each of document.querySelectorAll('[bg-lazy]')) {
+    Matery.utils.waitElementVisible(each, function() {
+      each.removeAttribute('bg-lazy');
+    }, CONFIG.lazyload.offset_factor);
+  }
+
+  for (const each of document.querySelectorAll('img[lazyload]:not([no-lazy])')) {
+    Matery.utils.waitElementVisible(each, function() {
+      //each.removeAttribute('srcset');
+      //each.removeAttribute('lazyload');
+      each.setAttribute("srcset", each.getAttribute("src"));
+      each.onload = function () {
+        //each.style.width="auto";
+        //each.style.height="auto";
+        each.removeAttribute('lazyload');
+      }
+    }, CONFIG.lazyload.offset_factor);
+  }
+});
