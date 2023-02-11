@@ -1,23 +1,21 @@
 // 使用{uniqueIdentifier}模板，稍后我们将使用hexo的事件机制，替换成ISO时间，作为每次构建的唯一标识符
-var cacheStorageKey = '17lai-cache-20230211203221';
+var cacheStorageKey = '17lai-cache-20230211232401';
 // 在这个数组里面写入您主页加载需要的资源文件
 var cacheList = [
-  '/css/matery.css',
-  '/css/my.css',
-  '/css/post.css',
-  '/css/reward.css',
-  '/css/waline.css',
+  '{cdnUrl}/css/matery.css',
+  '{cdnUrl}/css/my.css',
+  '{cdnUrl}/css/post.css',
+  '{cdnUrl}/css/reward.css',
+  '{cdnUrl}/css/waline.css',
   '/css/highlight.css',
   '/css/highlight-dark.css',
 
-  '/js/img-lazyload.js',
-  '/js/color-schema.js',
-  '/js/plugins.js',
-  '/js/tw_cn.js',
-  '/js/matery.js',
-  '/js/boot.js',
-  '/js/utils.js',
-  '/js/events.js'
+  '{cdnUrl}/js/color-schema.js',
+  '{cdnUrl}/js/plugins.js',
+  '{cdnUrl}/js/tw_cn.js',
+  '{cdnUrl}/js/boot.js',
+  '{cdnUrl}/js/utils.js',
+  '{cdnUrl}/js/events.js'
 ];
 
 // self.addEventListener('install', e => {
