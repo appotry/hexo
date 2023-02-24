@@ -1,1 +1,0 @@
-function loadScript(t,e){var n=document.getElementsByTagName("head")[0]||document.documentElement,a=document.createElement("script");a.setAttribute("type","text/javascript"),e&&(a.onload=e),a.setAttribute("src",t),n.appendChild(a)}loadScript("https://cdn.jsdelivr.net/npm/minivaline@latest");
