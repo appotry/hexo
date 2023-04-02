@@ -1,5 +1,5 @@
 // 使用{uniqueIdentifier}模板，稍后我们将使用hexo的事件机制，替换成ISO时间，作为每次构建的唯一标识符
-var cacheStorageKey = '17lai-cache-20230402054228';
+var cacheStorageKey = '17lai-cache-20230402194842';
 // 在这个数组里面写入您主页加载需要的资源文件
 var cacheList = [
   '/css/matery.css?v=1.0.2',
@@ -15,8 +15,8 @@ var cacheList = [
   '/libs/masonry/masonry.pkgd.min.js',
   '/libs/aos/aos.min.css',
   '/libs/aos/aos.min.js',
-  '/libs/waline/comment.min.mjs',
-  '/libs/waline/pageview.min.mjs',
+  '/libs/waline/comment.mjs',
+  '/libs/waline/pageview.mjs',
   '/libs/waline/waline-count.js',
 
   '/js/color-schema.js?v=1.0.0',
