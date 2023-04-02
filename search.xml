@@ -5048,248 +5048,6 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
-    <title>transmission 使用及其配置</title>
-    <url>/posts/8f76d9dd/</url>
-    <content><![CDATA[安装
-qnapclub
-
-docker
-docker hub
-
-version: "2.1"
-services:
-  transmission:
-    image: ghcr.io/linuxserver/transmission
-    container_name: transmission
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/London
-      - TRANSMISSION_WEB_HOME=/combustion-release/ #optional
-      - USER=username #optional
-      - PASS=password #optional
-      - WHITELIST=iplist #optional
-      - HOST_WHITELIST=dnsnane list #optional
-    volumes:
-      - &lt;path to data&gt;:/config
-      - &lt;path to downloads&gt;:/downloads
-      - &lt;path to watch folder&gt;:/watch
-    ports:
-      - 9091:9091
-      - 51413:51413
-      - 51413:51413/udp
-    restart: unless-stopped
-
-控制脚本
-/etc/init.d/QTransmission.sh start
-/etc/init.d/QTransmission.sh stop
-Transmission 配置详解
-vi /share/CACHEDEV1_DATA/.qpkg/QTransmission/etc/settings.json
-"alt-speed-up": 500, # 限速时段上传限速值
-"alt-speed-down": 500, # 限速时段下载限速值
-"alt-speed-enabled": false,
-"alt-speed-time-begin": 540,
-"alt-speed-time-day": 127, # 时段限速日期（星期几），127 表示每天，更复杂配置参考官网。用 7 位二进制数表示，然后转换成十进制数，0000001 表示周日，1000000 表示周六，0000010 表示周一，0000100 表示周二。如果你只要在周末限速，该数应该 1000001，转换为十进制就是 65
-"alt-speed-time-enabled": true, # 启用限速，为 false 时，以上计划配置则不生效，生效时会自动禁用 alt-speed-enabled 配置，二者只能选一个
-"alt-speed-time-end": 420, # 限速时段结束时间，这个配置表示的是凌晨零点到开始时间的分钟数，比如 7:00 就是 7*60=420。需要注意的是，该时间是用的 GMT 时间，即北京时间 -8 小时。比如你计划北京时间 7 点 30 分开始，这个数字应该是（7-8+24）*60+30=1410
-"bind-address-ipv4": "0.0.0.0", # IPv4 地址绑定，一般不要改动
-"bind-address-ipv6": "::", #IPv6 地址绑定，一般不要改动
-"blocklist-enabled": true, # 启动白名单，默认不启动，需要启动改为 true
-"blocklist-updates-enabled": false,
-"blocklist-url": "http://www.example.com/blocklist",
-"cache-size-mb": 4, #缓存大小，以 MB 为单位，建议设大一些，避免频繁读写硬盘而伤硬盘，建议设为内存大小的 1/6～1/4
-"compact-view": false,
-"dht-enabled": false, #关闭 DHT（不通过 tracker 寻找节点）功能，不少 PT 站的要求，但 BT 下载设置为 true 会使得下载更好
-"download-dir": "/share/Downloads", #下载的内容存放的目录
-"download-queue-enabled": true,  # 下载队列开关
-"download-queue-size": 5, # 下载队列数量
-"encryption": 1, # 加密。指定节点的加密模式，默认 1。0 表示关闭 , 0= 不加密，1= 优先加密，2= 必须加密
-"lazy-bitfield-enabled": true, # 默认为 true，设置为 true 时可以避免某些 ISP 通过查询完整位段来屏蔽 BT，从而破解部分 ISP 对 BT 的封杀，当然不一定完全有效
-"idle-seeding-limit": 30,
-"idle-seeding-limit-enabled": false,
-"incomplete-dir": "/share/Downloads",  # 临时文件路径
-"incomplete-dir-enabled": false,
-"inhibit-desktop-hibernation": true,
-"lpd-enabled": false, #禁用 LDP（本地节点发现，用于在本地网络寻找节点）, 不少 PT 站的要求
-"main-window-height": 500,
-"main-window-is-maximized": 0,
-"main-window-width": 615,
-"main-window-x": 337,
-"main-window-y": 211,
-"message-level": 2,
-"open-dialog-dir": "/share/Download",  # 网页对话框打开的根目录
-"peer-congestion-algorithm": "",
-"peer-limit-global": 240, # 全局连接数
-"peer-limit-per-torrent": 60, # 每个种子最多的连接数
-"peer-port": 51413, # 传入端口，预设的 port 口
-"peer-port-random-high": 65535, # 传入端口随机值范围上限
-"peer-port-random-low": 49152, # 传入端口随机值范围下限
-"peer-port-random-on-start": false, # 启用随机端口，默认关闭，不建议改为 true
-"peer-socket-tos": "default",
-"pex-enabled": false, # 是否启用用户交换，默认为 true，关于 PEX，有兴趣的朋友可参考 http://en.wikipedia.org/wiki/Peer_exchange，对于只用 PT 的朋友，可以设为 false, 禁用 PEX（节点交换，用于同已与您相连接的节点交换节点名单）, 不少 PT 站的要求
-"port-forwarding-enabled": true, # 启用端口转发（uPnP），如果路由支持并且也开启了 uPnP，则路由会自动做端口映射，但是需要注意的是如果内网有几台机器同时使用 transmission，就必须更改 peer-port 值为不一样
-"preallocation": 1, # 预分配文件磁盘空间，0= 关闭，1= 快速，2= 完全。建议取 1 开启该功能，防止下载大半了才发现磁盘不够。取 2 时，可以减少磁盘碎片，但速度较慢。
-"prefetch-enabled": 1,
-"queue-stalled-enabled": true,
-"queue-stalled-minutes": 30,
-"ratio-limit": 2, # 分享率限制
-"ratio-limit-enabled": false, # 启用分享率限制，默认不启用
-"rename-partial-files": true, #在未完成的文件名后添加后缀.part,false= 禁用
-"rpc-authentication-required": true, # 远程控制需要验证，默认为需要
-"rpc-bind-address": "0.0.0.0", # 远程控制地址绑定，允许 IP 通过 RPC 访问，默认值表示任何地址都可以访问
-"rpc-enabled": true, # 启用远程控制，默认启用
-"rpc-host-whitelist-enabled": true, # 是否开启主机白名单
-"rpc-host-whitelist": "", # 白名单，如果需要远程访问，最好配置
-"rpc-password": "{cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaE", #web-ui 的密码，可直接修改，重新运行或者 reload 服务的时候密码会自动 HASH 增加安全性
-"rpc-port": 9091, # 默认 web-ui 的 port 口，也是远程控制端口，可自行更改
-"rpc-url": "/transmission/",
-"rpc-username": "transmission", #默认登入名称，也是远程控制用户名
-"rpc-whitelist": "127.0.0.1", # 远程控制白名单，默认值为所有地址，支持通配符*，如 192.168.2.*
-"rpc-whitelist-enabled": true, # 启用远程控制白名单，如果启用，则仅仅上面列出的地址可以远程连接
-"scrape-paused-torrents-enabled": true,
-"script-torrent-done-enabled": false,
-"script-torrent-done-filename": "/home/",
-"seed-queue-enabled": false,
-"seed-queue-size": 10,
-"show-backup-trackers": true,
-"show-extra-peer-details": false,
-"show-filterbar": true,
-"show-notification-area-icon": false,
-"show-options-window": true,
-"show-statusbar": true,
-"show-toolbar": true,
-"show-tracker-scrapes": true,
-"sort-mode": "sort-by-age",
-"sort-reversed": false,
-"speed-limit-down": 300, #平时的下载限速
-"speed-limit-down-enabled": true, #启用平时下载限速
-"speed-limit-up": 30, #平时上传限速
-"speed-limit-up-enabled": true, #启用平时上传限速
-"start-added-torrents": false,
-"statusbar-stats": "total-ratio",
-"torrent-added-notification-enabled": true,
-"torrent-complete-notification-enabled": true,
-"torrent-complete-sound-enabled": true,
-"trash-can-enabled": true,
-"trash-original-torrent-files": false,
-"umask": 18,
-"upload-slots-per-torrent": 14
-"utp-enabled": true, #启用μTP 协议
-"watch-dir": "/share/bt",  # 监听文件夹目录
-"watch-dir-enabled": false # 是否监听文件夹
-Q：TR提示FILE NAME TOO LONG
-A：TR最大文件名MAX_PATH ,260个字符
-方法1：改路径和保存路径的文件夹名字，越短越好，在web control种子上面右键，修改种子文件或目录名称。次选方法，不勾选下载文件名过长的文件
-方法2：遇到个名字特长的，一直下载失败，使用软连接进一步缩短路径名长度
-#cd /
-#ln -s  /share/CACHEDEV1_DATA/Download/ DL
-方法3：
-上面两种还是不行，换QBittorrent吧
-不过，最近有好消息，这个bug我去看了下源代码，找到原来有人试图修复过它，但是并没有合并到最新版本。发个post提醒bug没有修复，居然有回复了。这个bug将在3.0版本修复，见下图。
-
-Q: transmission 如何修改登陆密码
-A: 第一种方式
-qnap 中，transmission3.0的配置文件路径如下
-/share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
- 
-cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
-vim settings.json
-找到”rpc-password”:
-后面引号内就是经过加密的密码，不要管他怎么加密的，直接把引号内的内容修改为你的新密码就可以了，比如”rpc-password”:”xxorg.com”
-然后按“ESC”键，输入:wq 保存退出，然后重启tr即可
-第二种方式：
-# 1、控制台输入，-u后边是用户名，-v后边跟着的是登陆密码
-transmission-daemon --paused -t -u admin -v 123456
-# 将会把生成的密码保存到：~/.config/transmission-daemon/settings.json
-# 其实是生成配置文件并保存到当前登陆用户的家目录下
-# 2、打开~/.config/transmission-daemon/settings.json并复制加密的密码
-# 3、将加密的密码粘贴到/media/AiCard_01/transmission/config/settings.json
-# 替换掉内容为：rpc-password 后面的密码
-# 4、重启Transmission
-ps:通过ps定位transmission位置
-ps aux | grep trans
-# cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/bin
-# ./transmission-daemon --paused -t -u [name] -v [password]
-# cd ~/.config/transmission-daemon
-[~/.config/transmission-daemon] # vi settings.json
-复制生成的密码到前面的配置文件里面。
-Q: 为Transmission增加种子目录监控，实现自动下载
-/share/CACHEDEV3_DATA/.qpkg/QTransmission3/etc
-改/var/packages/transmission/target/var/settings.json 在最后面增加2行。
-"upload-slots-per-torrent": 14,（原文件最后一行，注意添加个逗号，不添加transmission好像不能启动） 
-"watch-dir": "/XXXXX/XXXXX", （修改成自己nas上的同步目录） 
-"watch-dir-enabled": true（无逗号）
-保存，退出。
-启动Transmission  等待1-2分钟，就好了。
-    "speed-limit-up-enabled": false,
-    "start-added-torrents": true,
-    "trash-original-torrent-files": false,
-    "umask": 18,
-    "upload-slots-per-torrent": 14,
-    "utp-enabled": true,
-    "watch-dir": "/share/Download/Seed/complete",
-    "watch-dir-enabled": true
-}
-Q: Nas 上面 Transmission 如何做种？
-A:
-注意，此方法仅适用于开启了ssh的机器
-可以看到可执行文件目录下有这么几个文件，每个人的安装目录都不一样，自行查找，或用
-我的文件位置是在/volume1/@appstore/transmission/bin，用到的命令是 transmission-create
-方法也很简单，写一个范例
-./transmission-create -p -o /volume1/data/Wi
-kiLeaks-Year-Zero-2017-v1.torrent -t https://announce.XXXXXXXXXX.cc/announce.php -s 2048 /volume1/da
-ta/WikiLeaks-Year-Zero-2017-v1.7z &amp;
-参数
--p 表示这是私用的种子，这个必须要加上
--o 生成的种子输出位置，不要忘记把名字打上
--t tracker的地址，我用的家园的做范本，大家自行修改
--s 每个文件块的大小，单位是KB，我设置的是2M，也就是2048KB
-最后空一格写源文件的位置，也就是文件的存放位置，可以是一个文件或者一整个目录
-最后可以空一行加一个&amp;，这样即使关掉窗口也可以在后台运行
-填完，回车，种子就在制作了
-种子已经躺在这了
-[/opt/QTransmission3/bin] # ./transmission-create -p -o /share/CACHEDEV1_DATA/Download/Seed/海贼王\ \(1999\).torrent -t https://announce.XXXXXXXX.video/announce.php -s 2048 /share/CACHEDEV1_DATA/Download/海贼王\ \(1999\)/ &amp;
-系列教程
-全部文章RSS订阅
-Nas系列
-Nas 分类 RSS 订阅
-
-如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
-音视频图书和音乐自动化管理框架图解
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Potplayer终极优化教程实现PC视频播放最强画质
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列
-Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>bt</tag>
-        <tag>pt</tag>
-        <tag>qnap</tag>
-        <tag>nas</tag>
-        <tag>transmission</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程</title>
     <url>/posts/9912bd5d/</url>
     <content><![CDATA[
@@ -5989,6 +5747,248 @@ Earthly 一个更加强大的镜像构建工具
         <tag>linux</tag>
         <tag>mysql</tag>
         <tag>优化</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>transmission 使用及其配置</title>
+    <url>/posts/8f76d9dd/</url>
+    <content><![CDATA[安装
+qnapclub
+
+docker
+docker hub
+
+version: "2.1"
+services:
+  transmission:
+    image: ghcr.io/linuxserver/transmission
+    container_name: transmission
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+      - TRANSMISSION_WEB_HOME=/combustion-release/ #optional
+      - USER=username #optional
+      - PASS=password #optional
+      - WHITELIST=iplist #optional
+      - HOST_WHITELIST=dnsnane list #optional
+    volumes:
+      - &lt;path to data&gt;:/config
+      - &lt;path to downloads&gt;:/downloads
+      - &lt;path to watch folder&gt;:/watch
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped
+
+控制脚本
+/etc/init.d/QTransmission.sh start
+/etc/init.d/QTransmission.sh stop
+Transmission 配置详解
+vi /share/CACHEDEV1_DATA/.qpkg/QTransmission/etc/settings.json
+"alt-speed-up": 500, # 限速时段上传限速值
+"alt-speed-down": 500, # 限速时段下载限速值
+"alt-speed-enabled": false,
+"alt-speed-time-begin": 540,
+"alt-speed-time-day": 127, # 时段限速日期（星期几），127 表示每天，更复杂配置参考官网。用 7 位二进制数表示，然后转换成十进制数，0000001 表示周日，1000000 表示周六，0000010 表示周一，0000100 表示周二。如果你只要在周末限速，该数应该 1000001，转换为十进制就是 65
+"alt-speed-time-enabled": true, # 启用限速，为 false 时，以上计划配置则不生效，生效时会自动禁用 alt-speed-enabled 配置，二者只能选一个
+"alt-speed-time-end": 420, # 限速时段结束时间，这个配置表示的是凌晨零点到开始时间的分钟数，比如 7:00 就是 7*60=420。需要注意的是，该时间是用的 GMT 时间，即北京时间 -8 小时。比如你计划北京时间 7 点 30 分开始，这个数字应该是（7-8+24）*60+30=1410
+"bind-address-ipv4": "0.0.0.0", # IPv4 地址绑定，一般不要改动
+"bind-address-ipv6": "::", #IPv6 地址绑定，一般不要改动
+"blocklist-enabled": true, # 启动白名单，默认不启动，需要启动改为 true
+"blocklist-updates-enabled": false,
+"blocklist-url": "http://www.example.com/blocklist",
+"cache-size-mb": 4, #缓存大小，以 MB 为单位，建议设大一些，避免频繁读写硬盘而伤硬盘，建议设为内存大小的 1/6～1/4
+"compact-view": false,
+"dht-enabled": false, #关闭 DHT（不通过 tracker 寻找节点）功能，不少 PT 站的要求，但 BT 下载设置为 true 会使得下载更好
+"download-dir": "/share/Downloads", #下载的内容存放的目录
+"download-queue-enabled": true,  # 下载队列开关
+"download-queue-size": 5, # 下载队列数量
+"encryption": 1, # 加密。指定节点的加密模式，默认 1。0 表示关闭 , 0= 不加密，1= 优先加密，2= 必须加密
+"lazy-bitfield-enabled": true, # 默认为 true，设置为 true 时可以避免某些 ISP 通过查询完整位段来屏蔽 BT，从而破解部分 ISP 对 BT 的封杀，当然不一定完全有效
+"idle-seeding-limit": 30,
+"idle-seeding-limit-enabled": false,
+"incomplete-dir": "/share/Downloads",  # 临时文件路径
+"incomplete-dir-enabled": false,
+"inhibit-desktop-hibernation": true,
+"lpd-enabled": false, #禁用 LDP（本地节点发现，用于在本地网络寻找节点）, 不少 PT 站的要求
+"main-window-height": 500,
+"main-window-is-maximized": 0,
+"main-window-width": 615,
+"main-window-x": 337,
+"main-window-y": 211,
+"message-level": 2,
+"open-dialog-dir": "/share/Download",  # 网页对话框打开的根目录
+"peer-congestion-algorithm": "",
+"peer-limit-global": 240, # 全局连接数
+"peer-limit-per-torrent": 60, # 每个种子最多的连接数
+"peer-port": 51413, # 传入端口，预设的 port 口
+"peer-port-random-high": 65535, # 传入端口随机值范围上限
+"peer-port-random-low": 49152, # 传入端口随机值范围下限
+"peer-port-random-on-start": false, # 启用随机端口，默认关闭，不建议改为 true
+"peer-socket-tos": "default",
+"pex-enabled": false, # 是否启用用户交换，默认为 true，关于 PEX，有兴趣的朋友可参考 http://en.wikipedia.org/wiki/Peer_exchange，对于只用 PT 的朋友，可以设为 false, 禁用 PEX（节点交换，用于同已与您相连接的节点交换节点名单）, 不少 PT 站的要求
+"port-forwarding-enabled": true, # 启用端口转发（uPnP），如果路由支持并且也开启了 uPnP，则路由会自动做端口映射，但是需要注意的是如果内网有几台机器同时使用 transmission，就必须更改 peer-port 值为不一样
+"preallocation": 1, # 预分配文件磁盘空间，0= 关闭，1= 快速，2= 完全。建议取 1 开启该功能，防止下载大半了才发现磁盘不够。取 2 时，可以减少磁盘碎片，但速度较慢。
+"prefetch-enabled": 1,
+"queue-stalled-enabled": true,
+"queue-stalled-minutes": 30,
+"ratio-limit": 2, # 分享率限制
+"ratio-limit-enabled": false, # 启用分享率限制，默认不启用
+"rename-partial-files": true, #在未完成的文件名后添加后缀.part,false= 禁用
+"rpc-authentication-required": true, # 远程控制需要验证，默认为需要
+"rpc-bind-address": "0.0.0.0", # 远程控制地址绑定，允许 IP 通过 RPC 访问，默认值表示任何地址都可以访问
+"rpc-enabled": true, # 启用远程控制，默认启用
+"rpc-host-whitelist-enabled": true, # 是否开启主机白名单
+"rpc-host-whitelist": "", # 白名单，如果需要远程访问，最好配置
+"rpc-password": "{cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaE", #web-ui 的密码，可直接修改，重新运行或者 reload 服务的时候密码会自动 HASH 增加安全性
+"rpc-port": 9091, # 默认 web-ui 的 port 口，也是远程控制端口，可自行更改
+"rpc-url": "/transmission/",
+"rpc-username": "transmission", #默认登入名称，也是远程控制用户名
+"rpc-whitelist": "127.0.0.1", # 远程控制白名单，默认值为所有地址，支持通配符*，如 192.168.2.*
+"rpc-whitelist-enabled": true, # 启用远程控制白名单，如果启用，则仅仅上面列出的地址可以远程连接
+"scrape-paused-torrents-enabled": true,
+"script-torrent-done-enabled": false,
+"script-torrent-done-filename": "/home/",
+"seed-queue-enabled": false,
+"seed-queue-size": 10,
+"show-backup-trackers": true,
+"show-extra-peer-details": false,
+"show-filterbar": true,
+"show-notification-area-icon": false,
+"show-options-window": true,
+"show-statusbar": true,
+"show-toolbar": true,
+"show-tracker-scrapes": true,
+"sort-mode": "sort-by-age",
+"sort-reversed": false,
+"speed-limit-down": 300, #平时的下载限速
+"speed-limit-down-enabled": true, #启用平时下载限速
+"speed-limit-up": 30, #平时上传限速
+"speed-limit-up-enabled": true, #启用平时上传限速
+"start-added-torrents": false,
+"statusbar-stats": "total-ratio",
+"torrent-added-notification-enabled": true,
+"torrent-complete-notification-enabled": true,
+"torrent-complete-sound-enabled": true,
+"trash-can-enabled": true,
+"trash-original-torrent-files": false,
+"umask": 18,
+"upload-slots-per-torrent": 14
+"utp-enabled": true, #启用μTP 协议
+"watch-dir": "/share/bt",  # 监听文件夹目录
+"watch-dir-enabled": false # 是否监听文件夹
+Q：TR提示FILE NAME TOO LONG
+A：TR最大文件名MAX_PATH ,260个字符
+方法1：改路径和保存路径的文件夹名字，越短越好，在web control种子上面右键，修改种子文件或目录名称。次选方法，不勾选下载文件名过长的文件
+方法2：遇到个名字特长的，一直下载失败，使用软连接进一步缩短路径名长度
+#cd /
+#ln -s  /share/CACHEDEV1_DATA/Download/ DL
+方法3：
+上面两种还是不行，换QBittorrent吧
+不过，最近有好消息，这个bug我去看了下源代码，找到原来有人试图修复过它，但是并没有合并到最新版本。发个post提醒bug没有修复，居然有回复了。这个bug将在3.0版本修复，见下图。
+
+Q: transmission 如何修改登陆密码
+A: 第一种方式
+qnap 中，transmission3.0的配置文件路径如下
+/share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
+ 
+cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
+vim settings.json
+找到”rpc-password”:
+后面引号内就是经过加密的密码，不要管他怎么加密的，直接把引号内的内容修改为你的新密码就可以了，比如”rpc-password”:”xxorg.com”
+然后按“ESC”键，输入:wq 保存退出，然后重启tr即可
+第二种方式：
+# 1、控制台输入，-u后边是用户名，-v后边跟着的是登陆密码
+transmission-daemon --paused -t -u admin -v 123456
+# 将会把生成的密码保存到：~/.config/transmission-daemon/settings.json
+# 其实是生成配置文件并保存到当前登陆用户的家目录下
+# 2、打开~/.config/transmission-daemon/settings.json并复制加密的密码
+# 3、将加密的密码粘贴到/media/AiCard_01/transmission/config/settings.json
+# 替换掉内容为：rpc-password 后面的密码
+# 4、重启Transmission
+ps:通过ps定位transmission位置
+ps aux | grep trans
+# cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/bin
+# ./transmission-daemon --paused -t -u [name] -v [password]
+# cd ~/.config/transmission-daemon
+[~/.config/transmission-daemon] # vi settings.json
+复制生成的密码到前面的配置文件里面。
+Q: 为Transmission增加种子目录监控，实现自动下载
+/share/CACHEDEV3_DATA/.qpkg/QTransmission3/etc
+改/var/packages/transmission/target/var/settings.json 在最后面增加2行。
+"upload-slots-per-torrent": 14,（原文件最后一行，注意添加个逗号，不添加transmission好像不能启动） 
+"watch-dir": "/XXXXX/XXXXX", （修改成自己nas上的同步目录） 
+"watch-dir-enabled": true（无逗号）
+保存，退出。
+启动Transmission  等待1-2分钟，就好了。
+    "speed-limit-up-enabled": false,
+    "start-added-torrents": true,
+    "trash-original-torrent-files": false,
+    "umask": 18,
+    "upload-slots-per-torrent": 14,
+    "utp-enabled": true,
+    "watch-dir": "/share/Download/Seed/complete",
+    "watch-dir-enabled": true
+}
+Q: Nas 上面 Transmission 如何做种？
+A:
+注意，此方法仅适用于开启了ssh的机器
+可以看到可执行文件目录下有这么几个文件，每个人的安装目录都不一样，自行查找，或用
+我的文件位置是在/volume1/@appstore/transmission/bin，用到的命令是 transmission-create
+方法也很简单，写一个范例
+./transmission-create -p -o /volume1/data/Wi
+kiLeaks-Year-Zero-2017-v1.torrent -t https://announce.XXXXXXXXXX.cc/announce.php -s 2048 /volume1/da
+ta/WikiLeaks-Year-Zero-2017-v1.7z &amp;
+参数
+-p 表示这是私用的种子，这个必须要加上
+-o 生成的种子输出位置，不要忘记把名字打上
+-t tracker的地址，我用的家园的做范本，大家自行修改
+-s 每个文件块的大小，单位是KB，我设置的是2M，也就是2048KB
+最后空一格写源文件的位置，也就是文件的存放位置，可以是一个文件或者一整个目录
+最后可以空一行加一个&amp;，这样即使关掉窗口也可以在后台运行
+填完，回车，种子就在制作了
+种子已经躺在这了
+[/opt/QTransmission3/bin] # ./transmission-create -p -o /share/CACHEDEV1_DATA/Download/Seed/海贼王\ \(1999\).torrent -t https://announce.XXXXXXXX.video/announce.php -s 2048 /share/CACHEDEV1_DATA/Download/海贼王\ \(1999\)/ &amp;
+系列教程
+全部文章RSS订阅
+Nas系列
+Nas 分类 RSS 订阅
+
+如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
+音视频图书和音乐自动化管理框架图解
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Potplayer终极优化教程实现PC视频播放最强画质
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列
+Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>bt</tag>
+        <tag>pt</tag>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>transmission</tag>
       </tags>
   </entry>
   <entry>
@@ -12375,9 +12375,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-lXhkEUNagVOdGYZL").style.height=document.getElementById("mmedia-lXhkEUNagVOdGYZL").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-aIlvnImfzxPSbgyF").style.height=document.getElementById("mmedia-aIlvnImfzxPSbgyF").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-lXhkEUNagVOdGYZL").style.height=document.getElementById("mmedia-lXhkEUNagVOdGYZL").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-aIlvnImfzxPSbgyF").style.height=document.getElementById("mmedia-aIlvnImfzxPSbgyF").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -18135,11 +18135,11 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 单曲
 
 {% mmedia "aplayer" "name:Hotel California" "artist:Camille and Kennerly" "url:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3" "lrc:https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc" "cover:https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp" "volume:0.66" %}
- var DCnXIkepxbSOOqwR_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); DCnXIkepxbSOOqwR_options.container = document.getElementById("mmedia-DCnXIkepxbSOOqwR"); const ap_DCnXIkepxbSOOqwR = new APlayer(DCnXIkepxbSOOqwR_options); 
+ var FBmKLGIKSyCgvwjz_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); FBmKLGIKSyCgvwjz_options.container = document.getElementById("mmedia-FBmKLGIKSyCgvwjz"); const ap_FBmKLGIKSyCgvwjz = new APlayer(FBmKLGIKSyCgvwjz_options); 
 
 - **列表**
 
- var wMAGdRPmTdneNJzR_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"volume\":0.8,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); wMAGdRPmTdneNJzR_options.container = document.getElementById("mmedia-wMAGdRPmTdneNJzR"); const ap_wMAGdRPmTdneNJzR = new APlayer(wMAGdRPmTdneNJzR_options); 
+ var WMFKPLgCneVFiJdt_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"volume\":0.8,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); WMFKPLgCneVFiJdt_options.container = document.getElementById("mmedia-WMFKPLgCneVFiJdt"); const ap_WMFKPLgCneVFiJdt = new APlayer(WMFKPLgCneVFiJdt_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -18391,21 +18391,21 @@ style
 }
 {% endmmedias %}
 bilibili
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-AEiCkwZbMhKSoxxI").style.height=document.getElementById("mmedia-AEiCkwZbMhKSoxxI").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-yYsqfUgdLHqBhPxW").style.height=document.getElementById("mmedia-yYsqfUgdLHqBhPxW").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-AEiCkwZbMhKSoxxI").style.height=document.getElementById("mmedia-AEiCkwZbMhKSoxxI").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-yYsqfUgdLHqBhPxW").style.height=document.getElementById("mmedia-yYsqfUgdLHqBhPxW").scrollWidth*0.76+"px";
     }; 
 
 ##### **xigua**
 
-.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-cvzMnVIlZROuRPhC").style.height=document.getElementById("mmedia-cvzMnVIlZROuRPhC").scrollWidth*0.7+"px";
+.xgplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-jGpKZYKhkeOTouBS").style.height=document.getElementById("mmedia-jGpKZYKhkeOTouBS").scrollWidth*0.7+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-cvzMnVIlZROuRPhC").style.height=document.getElementById("mmedia-cvzMnVIlZROuRPhC").scrollWidth*0.7+"px";
+      document.getElementById("mmedia-jGpKZYKhkeOTouBS").style.height=document.getElementById("mmedia-jGpKZYKhkeOTouBS").scrollWidth*0.7+"px";
     }; 
 
 ##### **artplayer**
 
- var YhLDILlPxcgWvgie_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); YhLDILlPxcgWvgie_options.container = "#mmedia-YhLDILlPxcgWvgie"; const art_YhLDILlPxcgWvgie = new Artplayer(YhLDILlPxcgWvgie_options); 
+ var fuoaHtjRGtWBVoTT_options = JSON.parse('{\"style\":\"width:100%;height:650px;max-width:1200px;center\",\"autoSize\":true,\"autoMini\":true,\"fullscreen\":true,\"fullscreenWeb\":true,\"url\":\"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4\"}'); fuoaHtjRGtWBVoTT_options.container = "#mmedia-fuoaHtjRGtWBVoTT"; const art_fuoaHtjRGtWBVoTT = new Artplayer(fuoaHtjRGtWBVoTT_options); 
 脑图
 
 原作者记录
@@ -19448,11 +19448,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var JepNdBVtfJGogIjX_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); JepNdBVtfJGogIjX_options.container = document.getElementById("mmedia-JepNdBVtfJGogIjX"); const ap_JepNdBVtfJGogIjX = new APlayer(JepNdBVtfJGogIjX_options); 
+ var DuVNGDJKphOmKTIC_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); DuVNGDJKphOmKTIC_options.container = document.getElementById("mmedia-DuVNGDJKphOmKTIC"); const ap_DuVNGDJKphOmKTIC = new APlayer(DuVNGDJKphOmKTIC_options); 
 
 
 
- var bKpyvDCAuIgPukjy_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"volume\":0.8,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); bKpyvDCAuIgPukjy_options.container = document.getElementById("mmedia-bKpyvDCAuIgPukjy"); const ap_bKpyvDCAuIgPukjy = new APlayer(bKpyvDCAuIgPukjy_options); 
+ var mFiwyScdezKCjZdU_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"volume\":0.8,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); mFiwyScdezKCjZdU_options.container = document.getElementById("mmedia-mFiwyScdezKCjZdU"); const ap_mFiwyScdezKCjZdU = new APlayer(mFiwyScdezKCjZdU_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -19703,9 +19703,9 @@ Earthly 一个更加强大的镜像构建工具
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-yyqEURLtFhSjmIBu").style.height=document.getElementById("mmedia-yyqEURLtFhSjmIBu").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-aNAVzpnHsYgwynuR").style.height=document.getElementById("mmedia-aNAVzpnHsYgwynuR").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-yyqEURLtFhSjmIBu").style.height=document.getElementById("mmedia-yyqEURLtFhSjmIBu").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-aNAVzpnHsYgwynuR").style.height=document.getElementById("mmedia-aNAVzpnHsYgwynuR").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -19714,7 +19714,7 @@ Earthly 一个更加强大的镜像构建工具
 
 ## 中文翻唱
 
- var oUEjhHibAhGBrxms_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}'); oUEjhHibAhGBrxms_options.container = document.getElementById("mmedia-oUEjhHibAhGBrxms"); const ap_oUEjhHibAhGBrxms = new APlayer(oUEjhHibAhGBrxms_options); 
+ var VKhNsrzboirNMfkn_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}'); VKhNsrzboirNMfkn_options.container = document.getElementById("mmedia-VKhNsrzboirNMfkn"); const ap_VKhNsrzboirNMfkn = new APlayer(VKhNsrzboirNMfkn_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -43285,7 +43285,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts5755'));
+        var myChart = echarts.init(document.getElementById('echarts7006'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -43379,7 +43379,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts6789'));
+        var myChart = echarts.init(document.getElementById('echarts9340'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -43448,7 +43448,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts8227'));
+        var myChart = echarts.init(document.getElementById('echarts5722'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -47169,6 +47169,7 @@ docker run -d --rm --name wechat-bot -v $(pwd)/config.js:/app/config.js -v $(pwd
 
 
 
+docker compose
 version: '3'
 services:
 
@@ -47206,6 +47207,106 @@ services:
       
       # HTTPS 代理，可选，支持 http，https，socks5
       HTTPS_PROXY: http://xxx:7890
+过 Cloudflare 403
+
+自建代理，适用于 accessToken 的方式（不适用于 apiKey）
+
+可以用现成的镜像，也可以自己打包，有 Java 和 Go 实现的 API，开源
+除了官方 429，没有速率限制，但可能会不稳定，可能会突然失效（失效会尝试更新）
+适合自建自用的场景（多人用会有各种问题）
+结合本项目，可以这样使用
+version: '3'
+
+services:
+  app:
+    image: chenzhaoyu94/chatgpt-web # 总是使用 latest ,更新时重新 pull 该 tag 镜像即可
+    ports:
+      - 127.0.0.1:3002:3002
+    environment:
+      # 二选一
+      OPENAI_API_KEY:
+      # 二选一
+      OPENAI_ACCESS_TOKEN: eyJxxx
+      # API接口地址，可选，设置 OPENAI_API_KEY 时可用
+      OPENAI_API_BASE_URL:
+      # API模型，可选，设置 OPENAI_API_KEY 时可用，https://platform.openai.com/docs/models
+      # gpt-4, gpt-4-0314, gpt-4-32k, gpt-4-32k-0314, gpt-3.5-turbo, gpt-3.5-turbo-0301, text-davinci-003, text-davinci-002, code-davinci-002
+      OPENAI_API_MODEL:
+      # 反向代理，可选
+      API_REVERSE_PROXY: http://go-chatgpt-api:8080/conversation
+      # 访问权限密钥，可选
+      AUTH_SECRET_KEY:
+      # 每小时最大请求次数，可选，默认无限
+      MAX_REQUEST_PER_HOUR: 0
+      # 超时，单位毫秒，可选
+      TIMEOUT_MS: 60000
+      # Socks代理，可选，和 SOCKS_PROXY_PORT 一起时生效
+      SOCKS_PROXY_HOST:
+      # Socks代理端口，可选，和 SOCKS_PROXY_HOST 一起时生效
+      SOCKS_PROXY_PORT:
+      # HTTPS 代理，可选，支持 http，https，socks5
+      HTTPS_PROXY:
+    depends_on:
+      - go-chatgpt-api
+
+  go-chatgpt-api:
+    container_name: go-chatgpt-api
+    image: linweiyuan/go-chatgpt-api
+    environment:
+      - GIN_MODE=release
+      - CHATGPT_PROXY_SERVER=http://chatgpt-proxy-server:9515
+#      - NETWORK_PROXY_SERVER=http://host:port
+#      - NETWORK_PROXY_SERVER=socks5://host:port
+    depends_on:
+      - chatgpt-proxy-server
+    restart: unless-stopped
+
+  chatgpt-proxy-server:
+    container_name: chatgpt-proxy-server
+    image: linweiyuan/chatgpt-proxy-server
+    restart: unless-stopped
+终端 docker-compose up -d
+
+https://github.com/linweiyuan/go-chatgpt-api
+chatgpt-proxy-server
+
+chatgpt-proxy-server
+ChatGPT 代理服务器
+利用 undetected_chromedriver 绕过 Cloudflare 403
+监听 9515 端口，通过原生 JS 发送 XHR 来进行通信
+Dockerfile
+FROM archlinux
+
+ENV SUDO_USER_NAME linweiyuan
+ENV MIRROR_URL 'https://mirrors.bfsu.edu.cn/archlinux/$repo/os/$arch'
+
+RUN echo "Server = ${MIRROR_URL}" &gt; /etc/pacman.d/mirrorlist \
+    &amp;&amp; pacman -Sy --needed --noconfirm \
+    &amp;&amp; pacman -S base-devel git --needed --noconfirm \
+    &amp;&amp; useradd -m ${SUDO_USER_NAME} \
+    &amp;&amp; echo "${SUDO_USER_NAME} ALL=(ALL) NOPASSWD: ALL" &gt; /etc/sudoers \
+    &amp;&amp; su ${SUDO_USER_NAME} -c 'cd \
+        &amp;&amp; git clone https://aur.archlinux.org/google-chrome.git \
+        &amp;&amp; cd google-chrome \
+        &amp;&amp; source PKGBUILD \
+        &amp;&amp; sudo pacman -Syu --asdeps --needed --noconfirm "${makedepends[@]}" "${depends[@]}" \
+        &amp;&amp; makepkg -sir --noconfirm \
+        &amp;&amp; cd \
+        &amp;&amp; git clone https://github.com/ultrafunkamsterdam/undetected-chromedriver \
+        &amp;&amp; cd undetected-chromedriver \
+        &amp;&amp; sudo pacman -S --needed --noconfirm python python-setuptools \
+        &amp;&amp; sudo python setup.py install \
+        &amp;&amp; (python example/example.py &amp;) \
+        &amp;&amp; while true; do [ -f ~/.local/share/undetected_chromedriver/undetected_chromedriver ] &amp;&amp; sudo cp ~/.local/share/undetected_chromedriver/undetected_chromedriver / &amp;&amp; break || sleep 1; done \
+        &amp;&amp; cd \
+        &amp;&amp; sudo rm -rf google-chrome undetected-chromedriver \
+    ' \
+    &amp;&amp; pacman -Rs --noconfirm python-setuptools python git base-devel \
+    &amp;&amp; rm -rf /usr/lib/python* \
+    &amp;&amp; echo -e "y\nY" | pacman -Scc
+
+CMD ["./undetected_chromedriver", "--allowed-ips=", "--allowed-origins=*"]
+修改 MIRROR_URL 为 Arch 最优源的同时，要注意网络环境能正确处理 AUR 和 GitHub 上面的资源
 ChatGPT4 使用
 
 付费用户可以直接体验ChatGPT4
@@ -47267,6 +47368,9 @@ A2:
 WeChat Bot
 OpenAI/ChatGPT Plus信用卡绑定总结，整理了部分支持的信用卡
 0门槛克隆ChatGPT方案再升级，开源模型复现，在线体验无需注册
+一种取巧的方式绕过Cloudflare v2验证
+chatgpt-proxy-server
+使用 Cloudflare Workers 让 OpenAI API 绕过 GFW 且避免被封禁
 
 神经网络原理
 
@@ -47457,9 +47561,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-vfGwxVuZyNNeEPQp").style.height=document.getElementById("mmedia-vfGwxVuZyNNeEPQp").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-zSwNFytMPcsRpDED").style.height=document.getElementById("mmedia-zSwNFytMPcsRpDED").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-vfGwxVuZyNNeEPQp").style.height=document.getElementById("mmedia-vfGwxVuZyNNeEPQp").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-zSwNFytMPcsRpDED").style.height=document.getElementById("mmedia-zSwNFytMPcsRpDED").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 
