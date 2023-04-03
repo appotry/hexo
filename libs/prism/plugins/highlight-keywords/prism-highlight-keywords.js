@@ -1,1 +1,1 @@
-"undefined"!=typeof Prism&&Prism.hooks.add("wrap",function(e){"keyword"===e.type&&e.classes.push("keyword-"+e.content)});
+(function(){if(typeof Prism==="undefined"){return}Prism.hooks.add("wrap",function(e){if(e.type!=="keyword"){return}e.classes.push("keyword-"+e.content)})})();
