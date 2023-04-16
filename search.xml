@@ -139,9 +139,9 @@ Github Pages 并不是无限存储和无限流量的静态站点服务，一些�
         <category>web</category>
       </categories>
       <tags>
+        <tag>blog</tag>
         <tag>github</tag>
         <tag>jekyll</tag>
-        <tag>blog</tag>
       </tags>
   </entry>
   <entry>
@@ -5048,6 +5048,248 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
+    <title>transmission 使用及其配置</title>
+    <url>/posts/8f76d9dd/</url>
+    <content><![CDATA[安装
+qnapclub
+
+docker
+docker hub
+
+version: "2.1"
+services:
+  transmission:
+    image: ghcr.io/linuxserver/transmission
+    container_name: transmission
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+      - TRANSMISSION_WEB_HOME=/combustion-release/ #optional
+      - USER=username #optional
+      - PASS=password #optional
+      - WHITELIST=iplist #optional
+      - HOST_WHITELIST=dnsnane list #optional
+    volumes:
+      - &lt;path to data&gt;:/config
+      - &lt;path to downloads&gt;:/downloads
+      - &lt;path to watch folder&gt;:/watch
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped
+
+控制脚本
+/etc/init.d/QTransmission.sh start
+/etc/init.d/QTransmission.sh stop
+Transmission 配置详解
+vi /share/CACHEDEV1_DATA/.qpkg/QTransmission/etc/settings.json
+"alt-speed-up": 500, # 限速时段上传限速值
+"alt-speed-down": 500, # 限速时段下载限速值
+"alt-speed-enabled": false,
+"alt-speed-time-begin": 540,
+"alt-speed-time-day": 127, # 时段限速日期（星期几），127 表示每天，更复杂配置参考官网。用 7 位二进制数表示，然后转换成十进制数，0000001 表示周日，1000000 表示周六，0000010 表示周一，0000100 表示周二。如果你只要在周末限速，该数应该 1000001，转换为十进制就是 65
+"alt-speed-time-enabled": true, # 启用限速，为 false 时，以上计划配置则不生效，生效时会自动禁用 alt-speed-enabled 配置，二者只能选一个
+"alt-speed-time-end": 420, # 限速时段结束时间，这个配置表示的是凌晨零点到开始时间的分钟数，比如 7:00 就是 7*60=420。需要注意的是，该时间是用的 GMT 时间，即北京时间 -8 小时。比如你计划北京时间 7 点 30 分开始，这个数字应该是（7-8+24）*60+30=1410
+"bind-address-ipv4": "0.0.0.0", # IPv4 地址绑定，一般不要改动
+"bind-address-ipv6": "::", #IPv6 地址绑定，一般不要改动
+"blocklist-enabled": true, # 启动白名单，默认不启动，需要启动改为 true
+"blocklist-updates-enabled": false,
+"blocklist-url": "http://www.example.com/blocklist",
+"cache-size-mb": 4, #缓存大小，以 MB 为单位，建议设大一些，避免频繁读写硬盘而伤硬盘，建议设为内存大小的 1/6～1/4
+"compact-view": false,
+"dht-enabled": false, #关闭 DHT（不通过 tracker 寻找节点）功能，不少 PT 站的要求，但 BT 下载设置为 true 会使得下载更好
+"download-dir": "/share/Downloads", #下载的内容存放的目录
+"download-queue-enabled": true,  # 下载队列开关
+"download-queue-size": 5, # 下载队列数量
+"encryption": 1, # 加密。指定节点的加密模式，默认 1。0 表示关闭 , 0= 不加密，1= 优先加密，2= 必须加密
+"lazy-bitfield-enabled": true, # 默认为 true，设置为 true 时可以避免某些 ISP 通过查询完整位段来屏蔽 BT，从而破解部分 ISP 对 BT 的封杀，当然不一定完全有效
+"idle-seeding-limit": 30,
+"idle-seeding-limit-enabled": false,
+"incomplete-dir": "/share/Downloads",  # 临时文件路径
+"incomplete-dir-enabled": false,
+"inhibit-desktop-hibernation": true,
+"lpd-enabled": false, #禁用 LDP（本地节点发现，用于在本地网络寻找节点）, 不少 PT 站的要求
+"main-window-height": 500,
+"main-window-is-maximized": 0,
+"main-window-width": 615,
+"main-window-x": 337,
+"main-window-y": 211,
+"message-level": 2,
+"open-dialog-dir": "/share/Download",  # 网页对话框打开的根目录
+"peer-congestion-algorithm": "",
+"peer-limit-global": 240, # 全局连接数
+"peer-limit-per-torrent": 60, # 每个种子最多的连接数
+"peer-port": 51413, # 传入端口，预设的 port 口
+"peer-port-random-high": 65535, # 传入端口随机值范围上限
+"peer-port-random-low": 49152, # 传入端口随机值范围下限
+"peer-port-random-on-start": false, # 启用随机端口，默认关闭，不建议改为 true
+"peer-socket-tos": "default",
+"pex-enabled": false, # 是否启用用户交换，默认为 true，关于 PEX，有兴趣的朋友可参考 http://en.wikipedia.org/wiki/Peer_exchange，对于只用 PT 的朋友，可以设为 false, 禁用 PEX（节点交换，用于同已与您相连接的节点交换节点名单）, 不少 PT 站的要求
+"port-forwarding-enabled": true, # 启用端口转发（uPnP），如果路由支持并且也开启了 uPnP，则路由会自动做端口映射，但是需要注意的是如果内网有几台机器同时使用 transmission，就必须更改 peer-port 值为不一样
+"preallocation": 1, # 预分配文件磁盘空间，0= 关闭，1= 快速，2= 完全。建议取 1 开启该功能，防止下载大半了才发现磁盘不够。取 2 时，可以减少磁盘碎片，但速度较慢。
+"prefetch-enabled": 1,
+"queue-stalled-enabled": true,
+"queue-stalled-minutes": 30,
+"ratio-limit": 2, # 分享率限制
+"ratio-limit-enabled": false, # 启用分享率限制，默认不启用
+"rename-partial-files": true, #在未完成的文件名后添加后缀.part,false= 禁用
+"rpc-authentication-required": true, # 远程控制需要验证，默认为需要
+"rpc-bind-address": "0.0.0.0", # 远程控制地址绑定，允许 IP 通过 RPC 访问，默认值表示任何地址都可以访问
+"rpc-enabled": true, # 启用远程控制，默认启用
+"rpc-host-whitelist-enabled": true, # 是否开启主机白名单
+"rpc-host-whitelist": "", # 白名单，如果需要远程访问，最好配置
+"rpc-password": "{cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaE", #web-ui 的密码，可直接修改，重新运行或者 reload 服务的时候密码会自动 HASH 增加安全性
+"rpc-port": 9091, # 默认 web-ui 的 port 口，也是远程控制端口，可自行更改
+"rpc-url": "/transmission/",
+"rpc-username": "transmission", #默认登入名称，也是远程控制用户名
+"rpc-whitelist": "127.0.0.1", # 远程控制白名单，默认值为所有地址，支持通配符*，如 192.168.2.*
+"rpc-whitelist-enabled": true, # 启用远程控制白名单，如果启用，则仅仅上面列出的地址可以远程连接
+"scrape-paused-torrents-enabled": true,
+"script-torrent-done-enabled": false,
+"script-torrent-done-filename": "/home/",
+"seed-queue-enabled": false,
+"seed-queue-size": 10,
+"show-backup-trackers": true,
+"show-extra-peer-details": false,
+"show-filterbar": true,
+"show-notification-area-icon": false,
+"show-options-window": true,
+"show-statusbar": true,
+"show-toolbar": true,
+"show-tracker-scrapes": true,
+"sort-mode": "sort-by-age",
+"sort-reversed": false,
+"speed-limit-down": 300, #平时的下载限速
+"speed-limit-down-enabled": true, #启用平时下载限速
+"speed-limit-up": 30, #平时上传限速
+"speed-limit-up-enabled": true, #启用平时上传限速
+"start-added-torrents": false,
+"statusbar-stats": "total-ratio",
+"torrent-added-notification-enabled": true,
+"torrent-complete-notification-enabled": true,
+"torrent-complete-sound-enabled": true,
+"trash-can-enabled": true,
+"trash-original-torrent-files": false,
+"umask": 18,
+"upload-slots-per-torrent": 14
+"utp-enabled": true, #启用μTP 协议
+"watch-dir": "/share/bt",  # 监听文件夹目录
+"watch-dir-enabled": false # 是否监听文件夹
+Q：TR提示FILE NAME TOO LONG
+A：TR最大文件名MAX_PATH ,260个字符
+方法1：改路径和保存路径的文件夹名字，越短越好，在web control种子上面右键，修改种子文件或目录名称。次选方法，不勾选下载文件名过长的文件
+方法2：遇到个名字特长的，一直下载失败，使用软连接进一步缩短路径名长度
+#cd /
+#ln -s  /share/CACHEDEV1_DATA/Download/ DL
+方法3：
+上面两种还是不行，换QBittorrent吧
+不过，最近有好消息，这个bug我去看了下源代码，找到原来有人试图修复过它，但是并没有合并到最新版本。发个post提醒bug没有修复，居然有回复了。这个bug将在3.0版本修复，见下图。
+
+Q: transmission 如何修改登陆密码
+A: 第一种方式
+qnap 中，transmission3.0的配置文件路径如下
+/share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
+ 
+cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
+vim settings.json
+找到”rpc-password”:
+后面引号内就是经过加密的密码，不要管他怎么加密的，直接把引号内的内容修改为你的新密码就可以了，比如”rpc-password”:”xxorg.com”
+然后按“ESC”键，输入:wq 保存退出，然后重启tr即可
+第二种方式：
+# 1、控制台输入，-u后边是用户名，-v后边跟着的是登陆密码
+transmission-daemon --paused -t -u admin -v 123456
+# 将会把生成的密码保存到：~/.config/transmission-daemon/settings.json
+# 其实是生成配置文件并保存到当前登陆用户的家目录下
+# 2、打开~/.config/transmission-daemon/settings.json并复制加密的密码
+# 3、将加密的密码粘贴到/media/AiCard_01/transmission/config/settings.json
+# 替换掉内容为：rpc-password 后面的密码
+# 4、重启Transmission
+ps:通过ps定位transmission位置
+ps aux | grep trans
+# cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/bin
+# ./transmission-daemon --paused -t -u [name] -v [password]
+# cd ~/.config/transmission-daemon
+[~/.config/transmission-daemon] # vi settings.json
+复制生成的密码到前面的配置文件里面。
+Q: 为Transmission增加种子目录监控，实现自动下载
+/share/CACHEDEV3_DATA/.qpkg/QTransmission3/etc
+改/var/packages/transmission/target/var/settings.json 在最后面增加2行。
+"upload-slots-per-torrent": 14,（原文件最后一行，注意添加个逗号，不添加transmission好像不能启动） 
+"watch-dir": "/XXXXX/XXXXX", （修改成自己nas上的同步目录） 
+"watch-dir-enabled": true（无逗号）
+保存，退出。
+启动Transmission  等待1-2分钟，就好了。
+    "speed-limit-up-enabled": false,
+    "start-added-torrents": true,
+    "trash-original-torrent-files": false,
+    "umask": 18,
+    "upload-slots-per-torrent": 14,
+    "utp-enabled": true,
+    "watch-dir": "/share/Download/Seed/complete",
+    "watch-dir-enabled": true
+}
+Q: Nas 上面 Transmission 如何做种？
+A:
+注意，此方法仅适用于开启了ssh的机器
+可以看到可执行文件目录下有这么几个文件，每个人的安装目录都不一样，自行查找，或用
+我的文件位置是在/volume1/@appstore/transmission/bin，用到的命令是 transmission-create
+方法也很简单，写一个范例
+./transmission-create -p -o /volume1/data/Wi
+kiLeaks-Year-Zero-2017-v1.torrent -t https://announce.XXXXXXXXXX.cc/announce.php -s 2048 /volume1/da
+ta/WikiLeaks-Year-Zero-2017-v1.7z &amp;
+参数
+-p 表示这是私用的种子，这个必须要加上
+-o 生成的种子输出位置，不要忘记把名字打上
+-t tracker的地址，我用的家园的做范本，大家自行修改
+-s 每个文件块的大小，单位是KB，我设置的是2M，也就是2048KB
+最后空一格写源文件的位置，也就是文件的存放位置，可以是一个文件或者一整个目录
+最后可以空一行加一个&amp;，这样即使关掉窗口也可以在后台运行
+填完，回车，种子就在制作了
+种子已经躺在这了
+[/opt/QTransmission3/bin] # ./transmission-create -p -o /share/CACHEDEV1_DATA/Download/Seed/海贼王\ \(1999\).torrent -t https://announce.XXXXXXXX.video/announce.php -s 2048 /share/CACHEDEV1_DATA/Download/海贼王\ \(1999\)/ &amp;
+系列教程
+全部文章RSS订阅
+Nas系列
+Nas 分类 RSS 订阅
+
+如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
+音视频图书和音乐自动化管理框架图解
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Potplayer终极优化教程实现PC视频播放最强画质
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列
+Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>bt</tag>
+        <tag>pt</tag>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>transmission</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程</title>
     <url>/posts/9912bd5d/</url>
     <content><![CDATA[
@@ -5627,248 +5869,6 @@ Earthly 一个更加强大的镜像构建工具
         <tag>sonarr</tag>
         <tag>jeckett</tag>
         <tag>portainer</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>transmission 使用及其配置</title>
-    <url>/posts/8f76d9dd/</url>
-    <content><![CDATA[安装
-qnapclub
-
-docker
-docker hub
-
-version: "2.1"
-services:
-  transmission:
-    image: ghcr.io/linuxserver/transmission
-    container_name: transmission
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/London
-      - TRANSMISSION_WEB_HOME=/combustion-release/ #optional
-      - USER=username #optional
-      - PASS=password #optional
-      - WHITELIST=iplist #optional
-      - HOST_WHITELIST=dnsnane list #optional
-    volumes:
-      - &lt;path to data&gt;:/config
-      - &lt;path to downloads&gt;:/downloads
-      - &lt;path to watch folder&gt;:/watch
-    ports:
-      - 9091:9091
-      - 51413:51413
-      - 51413:51413/udp
-    restart: unless-stopped
-
-控制脚本
-/etc/init.d/QTransmission.sh start
-/etc/init.d/QTransmission.sh stop
-Transmission 配置详解
-vi /share/CACHEDEV1_DATA/.qpkg/QTransmission/etc/settings.json
-"alt-speed-up": 500, # 限速时段上传限速值
-"alt-speed-down": 500, # 限速时段下载限速值
-"alt-speed-enabled": false,
-"alt-speed-time-begin": 540,
-"alt-speed-time-day": 127, # 时段限速日期（星期几），127 表示每天，更复杂配置参考官网。用 7 位二进制数表示，然后转换成十进制数，0000001 表示周日，1000000 表示周六，0000010 表示周一，0000100 表示周二。如果你只要在周末限速，该数应该 1000001，转换为十进制就是 65
-"alt-speed-time-enabled": true, # 启用限速，为 false 时，以上计划配置则不生效，生效时会自动禁用 alt-speed-enabled 配置，二者只能选一个
-"alt-speed-time-end": 420, # 限速时段结束时间，这个配置表示的是凌晨零点到开始时间的分钟数，比如 7:00 就是 7*60=420。需要注意的是，该时间是用的 GMT 时间，即北京时间 -8 小时。比如你计划北京时间 7 点 30 分开始，这个数字应该是（7-8+24）*60+30=1410
-"bind-address-ipv4": "0.0.0.0", # IPv4 地址绑定，一般不要改动
-"bind-address-ipv6": "::", #IPv6 地址绑定，一般不要改动
-"blocklist-enabled": true, # 启动白名单，默认不启动，需要启动改为 true
-"blocklist-updates-enabled": false,
-"blocklist-url": "http://www.example.com/blocklist",
-"cache-size-mb": 4, #缓存大小，以 MB 为单位，建议设大一些，避免频繁读写硬盘而伤硬盘，建议设为内存大小的 1/6～1/4
-"compact-view": false,
-"dht-enabled": false, #关闭 DHT（不通过 tracker 寻找节点）功能，不少 PT 站的要求，但 BT 下载设置为 true 会使得下载更好
-"download-dir": "/share/Downloads", #下载的内容存放的目录
-"download-queue-enabled": true,  # 下载队列开关
-"download-queue-size": 5, # 下载队列数量
-"encryption": 1, # 加密。指定节点的加密模式，默认 1。0 表示关闭 , 0= 不加密，1= 优先加密，2= 必须加密
-"lazy-bitfield-enabled": true, # 默认为 true，设置为 true 时可以避免某些 ISP 通过查询完整位段来屏蔽 BT，从而破解部分 ISP 对 BT 的封杀，当然不一定完全有效
-"idle-seeding-limit": 30,
-"idle-seeding-limit-enabled": false,
-"incomplete-dir": "/share/Downloads",  # 临时文件路径
-"incomplete-dir-enabled": false,
-"inhibit-desktop-hibernation": true,
-"lpd-enabled": false, #禁用 LDP（本地节点发现，用于在本地网络寻找节点）, 不少 PT 站的要求
-"main-window-height": 500,
-"main-window-is-maximized": 0,
-"main-window-width": 615,
-"main-window-x": 337,
-"main-window-y": 211,
-"message-level": 2,
-"open-dialog-dir": "/share/Download",  # 网页对话框打开的根目录
-"peer-congestion-algorithm": "",
-"peer-limit-global": 240, # 全局连接数
-"peer-limit-per-torrent": 60, # 每个种子最多的连接数
-"peer-port": 51413, # 传入端口，预设的 port 口
-"peer-port-random-high": 65535, # 传入端口随机值范围上限
-"peer-port-random-low": 49152, # 传入端口随机值范围下限
-"peer-port-random-on-start": false, # 启用随机端口，默认关闭，不建议改为 true
-"peer-socket-tos": "default",
-"pex-enabled": false, # 是否启用用户交换，默认为 true，关于 PEX，有兴趣的朋友可参考 http://en.wikipedia.org/wiki/Peer_exchange，对于只用 PT 的朋友，可以设为 false, 禁用 PEX（节点交换，用于同已与您相连接的节点交换节点名单）, 不少 PT 站的要求
-"port-forwarding-enabled": true, # 启用端口转发（uPnP），如果路由支持并且也开启了 uPnP，则路由会自动做端口映射，但是需要注意的是如果内网有几台机器同时使用 transmission，就必须更改 peer-port 值为不一样
-"preallocation": 1, # 预分配文件磁盘空间，0= 关闭，1= 快速，2= 完全。建议取 1 开启该功能，防止下载大半了才发现磁盘不够。取 2 时，可以减少磁盘碎片，但速度较慢。
-"prefetch-enabled": 1,
-"queue-stalled-enabled": true,
-"queue-stalled-minutes": 30,
-"ratio-limit": 2, # 分享率限制
-"ratio-limit-enabled": false, # 启用分享率限制，默认不启用
-"rename-partial-files": true, #在未完成的文件名后添加后缀.part,false= 禁用
-"rpc-authentication-required": true, # 远程控制需要验证，默认为需要
-"rpc-bind-address": "0.0.0.0", # 远程控制地址绑定，允许 IP 通过 RPC 访问，默认值表示任何地址都可以访问
-"rpc-enabled": true, # 启用远程控制，默认启用
-"rpc-host-whitelist-enabled": true, # 是否开启主机白名单
-"rpc-host-whitelist": "", # 白名单，如果需要远程访问，最好配置
-"rpc-password": "{cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaE", #web-ui 的密码，可直接修改，重新运行或者 reload 服务的时候密码会自动 HASH 增加安全性
-"rpc-port": 9091, # 默认 web-ui 的 port 口，也是远程控制端口，可自行更改
-"rpc-url": "/transmission/",
-"rpc-username": "transmission", #默认登入名称，也是远程控制用户名
-"rpc-whitelist": "127.0.0.1", # 远程控制白名单，默认值为所有地址，支持通配符*，如 192.168.2.*
-"rpc-whitelist-enabled": true, # 启用远程控制白名单，如果启用，则仅仅上面列出的地址可以远程连接
-"scrape-paused-torrents-enabled": true,
-"script-torrent-done-enabled": false,
-"script-torrent-done-filename": "/home/",
-"seed-queue-enabled": false,
-"seed-queue-size": 10,
-"show-backup-trackers": true,
-"show-extra-peer-details": false,
-"show-filterbar": true,
-"show-notification-area-icon": false,
-"show-options-window": true,
-"show-statusbar": true,
-"show-toolbar": true,
-"show-tracker-scrapes": true,
-"sort-mode": "sort-by-age",
-"sort-reversed": false,
-"speed-limit-down": 300, #平时的下载限速
-"speed-limit-down-enabled": true, #启用平时下载限速
-"speed-limit-up": 30, #平时上传限速
-"speed-limit-up-enabled": true, #启用平时上传限速
-"start-added-torrents": false,
-"statusbar-stats": "total-ratio",
-"torrent-added-notification-enabled": true,
-"torrent-complete-notification-enabled": true,
-"torrent-complete-sound-enabled": true,
-"trash-can-enabled": true,
-"trash-original-torrent-files": false,
-"umask": 18,
-"upload-slots-per-torrent": 14
-"utp-enabled": true, #启用μTP 协议
-"watch-dir": "/share/bt",  # 监听文件夹目录
-"watch-dir-enabled": false # 是否监听文件夹
-Q：TR提示FILE NAME TOO LONG
-A：TR最大文件名MAX_PATH ,260个字符
-方法1：改路径和保存路径的文件夹名字，越短越好，在web control种子上面右键，修改种子文件或目录名称。次选方法，不勾选下载文件名过长的文件
-方法2：遇到个名字特长的，一直下载失败，使用软连接进一步缩短路径名长度
-#cd /
-#ln -s  /share/CACHEDEV1_DATA/Download/ DL
-方法3：
-上面两种还是不行，换QBittorrent吧
-不过，最近有好消息，这个bug我去看了下源代码，找到原来有人试图修复过它，但是并没有合并到最新版本。发个post提醒bug没有修复，居然有回复了。这个bug将在3.0版本修复，见下图。
-
-Q: transmission 如何修改登陆密码
-A: 第一种方式
-qnap 中，transmission3.0的配置文件路径如下
-/share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
- 
-cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
-vim settings.json
-找到”rpc-password”:
-后面引号内就是经过加密的密码，不要管他怎么加密的，直接把引号内的内容修改为你的新密码就可以了，比如”rpc-password”:”xxorg.com”
-然后按“ESC”键，输入:wq 保存退出，然后重启tr即可
-第二种方式：
-# 1、控制台输入，-u后边是用户名，-v后边跟着的是登陆密码
-transmission-daemon --paused -t -u admin -v 123456
-# 将会把生成的密码保存到：~/.config/transmission-daemon/settings.json
-# 其实是生成配置文件并保存到当前登陆用户的家目录下
-# 2、打开~/.config/transmission-daemon/settings.json并复制加密的密码
-# 3、将加密的密码粘贴到/media/AiCard_01/transmission/config/settings.json
-# 替换掉内容为：rpc-password 后面的密码
-# 4、重启Transmission
-ps:通过ps定位transmission位置
-ps aux | grep trans
-# cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/bin
-# ./transmission-daemon --paused -t -u [name] -v [password]
-# cd ~/.config/transmission-daemon
-[~/.config/transmission-daemon] # vi settings.json
-复制生成的密码到前面的配置文件里面。
-Q: 为Transmission增加种子目录监控，实现自动下载
-/share/CACHEDEV3_DATA/.qpkg/QTransmission3/etc
-改/var/packages/transmission/target/var/settings.json 在最后面增加2行。
-"upload-slots-per-torrent": 14,（原文件最后一行，注意添加个逗号，不添加transmission好像不能启动） 
-"watch-dir": "/XXXXX/XXXXX", （修改成自己nas上的同步目录） 
-"watch-dir-enabled": true（无逗号）
-保存，退出。
-启动Transmission  等待1-2分钟，就好了。
-    "speed-limit-up-enabled": false,
-    "start-added-torrents": true,
-    "trash-original-torrent-files": false,
-    "umask": 18,
-    "upload-slots-per-torrent": 14,
-    "utp-enabled": true,
-    "watch-dir": "/share/Download/Seed/complete",
-    "watch-dir-enabled": true
-}
-Q: Nas 上面 Transmission 如何做种？
-A:
-注意，此方法仅适用于开启了ssh的机器
-可以看到可执行文件目录下有这么几个文件，每个人的安装目录都不一样，自行查找，或用
-我的文件位置是在/volume1/@appstore/transmission/bin，用到的命令是 transmission-create
-方法也很简单，写一个范例
-./transmission-create -p -o /volume1/data/Wi
-kiLeaks-Year-Zero-2017-v1.torrent -t https://announce.XXXXXXXXXX.cc/announce.php -s 2048 /volume1/da
-ta/WikiLeaks-Year-Zero-2017-v1.7z &amp;
-参数
--p 表示这是私用的种子，这个必须要加上
--o 生成的种子输出位置，不要忘记把名字打上
--t tracker的地址，我用的家园的做范本，大家自行修改
--s 每个文件块的大小，单位是KB，我设置的是2M，也就是2048KB
-最后空一格写源文件的位置，也就是文件的存放位置，可以是一个文件或者一整个目录
-最后可以空一行加一个&amp;，这样即使关掉窗口也可以在后台运行
-填完，回车，种子就在制作了
-种子已经躺在这了
-[/opt/QTransmission3/bin] # ./transmission-create -p -o /share/CACHEDEV1_DATA/Download/Seed/海贼王\ \(1999\).torrent -t https://announce.XXXXXXXX.video/announce.php -s 2048 /share/CACHEDEV1_DATA/Download/海贼王\ \(1999\)/ &amp;
-系列教程
-全部文章RSS订阅
-Nas系列
-Nas 分类 RSS 订阅
-
-如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
-音视频图书和音乐自动化管理框架图解
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Potplayer终极优化教程实现PC视频播放最强画质
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列
-Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>bt</tag>
-        <tag>pt</tag>
-        <tag>qnap</tag>
-        <tag>nas</tag>
-        <tag>transmission</tag>
       </tags>
   </entry>
   <entry>
@@ -9639,8 +9639,8 @@ CI/CD与Git Flow与GitLab
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>docker</tag>
         <tag>hexo</tag>
+        <tag>docker</tag>
         <tag>matery</tag>
         <tag>npm</tag>
       </tags>
@@ -12375,9 +12375,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-cDzKsWYTaQTcDXxw").style.height=document.getElementById("mmedia-cDzKsWYTaQTcDXxw").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-YtvAIKsCDNFKEYfN").style.height=document.getElementById("mmedia-YtvAIKsCDNFKEYfN").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-cDzKsWYTaQTcDXxw").style.height=document.getElementById("mmedia-cDzKsWYTaQTcDXxw").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-YtvAIKsCDNFKEYfN").style.height=document.getElementById("mmedia-YtvAIKsCDNFKEYfN").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -18138,7 +18138,7 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 列表
 
- var CXBmkNuYivGagneC_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"volume\":0.8,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); CXBmkNuYivGagneC_options.container = document.getElementById("mmedia-CXBmkNuYivGagneC"); const ap_CXBmkNuYivGagneC = new APlayer(CXBmkNuYivGagneC_options); 
+ var AkOvKoLEQXoMaJUV_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"volume\":0.8,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); AkOvKoLEQXoMaJUV_options.container = document.getElementById("mmedia-AkOvKoLEQXoMaJUV"); const ap_AkOvKoLEQXoMaJUV = new APlayer(AkOvKoLEQXoMaJUV_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -18515,8 +18515,8 @@ Text of inline footnote ↩︎
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>mermaid</tag>
         <tag>hexo</tag>
+        <tag>mermaid</tag>
         <tag>plantuml</tag>
         <tag>mathjax</tag>
       </tags>
@@ -19479,11 +19479,11 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var RtFnhRRfMgQLuStP_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); RtFnhRRfMgQLuStP_options.container = document.getElementById("mmedia-RtFnhRRfMgQLuStP"); const ap_RtFnhRRfMgQLuStP = new APlayer(RtFnhRRfMgQLuStP_options); 
+ var rjTYVRJhccwglNya_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}'); rjTYVRJhccwglNya_options.container = document.getElementById("mmedia-rjTYVRJhccwglNya"); const ap_rjTYVRJhccwglNya = new APlayer(rjTYVRJhccwglNya_options); 
 
 
 
- var PfhlmzHMJTNGkIeu_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"volume\":0.8,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); PfhlmzHMJTNGkIeu_options.container = document.getElementById("mmedia-PfhlmzHMJTNGkIeu"); const ap_PfhlmzHMJTNGkIeu = new APlayer(PfhlmzHMJTNGkIeu_options); 
+ var uOmKHrehJYVVggjZ_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"volume\":0.8,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}]}'); uOmKHrehJYVVggjZ_options.container = document.getElementById("mmedia-uOmKHrehJYVVggjZ"); const ap_uOmKHrehJYVVggjZ = new APlayer(uOmKHrehJYVVggjZ_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -19734,9 +19734,9 @@ Earthly 一个更加强大的镜像构建工具
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-FYAHlOrOMmVKISVU").style.height=document.getElementById("mmedia-FYAHlOrOMmVKISVU").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-HIbMnnCSrbrqyPzt").style.height=document.getElementById("mmedia-HIbMnnCSrbrqyPzt").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-FYAHlOrOMmVKISVU").style.height=document.getElementById("mmedia-FYAHlOrOMmVKISVU").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-HIbMnnCSrbrqyPzt").style.height=document.getElementById("mmedia-HIbMnnCSrbrqyPzt").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -19745,7 +19745,7 @@ Earthly 一个更加强大的镜像构建工具
 
 ## 中文翻唱
 
- var mGFRpRltjRcpcPPp_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}'); mGFRpRltjRcpcPPp_options.container = document.getElementById("mmedia-mGFRpRltjRcpcPPp"); const ap_mGFRpRltjRcpcPPp = new APlayer(mGFRpRltjRcpcPPp_options); 
+ var qqaosBejHUnBXPdu_options = JSON.parse('{\"lrcType\":3,\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}'); qqaosBejHUnBXPdu_options.container = document.getElementById("mmedia-qqaosBejHUnBXPdu"); const ap_qqaosBejHUnBXPdu = new APlayer(qqaosBejHUnBXPdu_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -20179,8 +20179,8 @@ jenkins 创建项目
         <category>web</category>
       </categories>
       <tags>
-        <tag>docker</tag>
         <tag>web</tag>
+        <tag>docker</tag>
         <tag>ci/cd</tag>
         <tag>node</tag>
         <tag>jenkins</tag>
@@ -23676,8 +23676,8 @@ CI/CD与Git Flow与GitLab
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>hexo</tag>
+        <tag>github</tag>
         <tag>matery</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
@@ -24900,8 +24900,8 @@ CI/CD与Git Flow与GitLab
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>hexo</tag>
+        <tag>github</tag>
         <tag>matery</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
@@ -25425,852 +25425,8 @@ CI/CD与Git Flow与GitLab
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>hexo</tag>
-        <tag>matery</tag>
-        <tag>cdn</tag>
-        <tag>seo</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>基于Hexo的matery主题搭建博客自定义修改篇2</title>
-    <url>/posts/4d8a0b22/</url>
-    <content><![CDATA[Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-Vercel部署高级用法教程
-在宝塔VPS上面采用docker部署waline全流程图解教程
-
-如果本主题中的诸多功能和主题色彩你不满意，可以在主题中自定义修改，很多更自由的功能和细节点的修改难以在主题的 _config.yml 中完成，需要修改源代码才来完成。以下列出了可能有用的地方：
-自定义Logo
-免费生成 logo 的网站很多，这里给一个个人使用的网站。
-
-找一个喜欢的图片
-https://www.logosc.cn/logo/ 图片上传到这里，然后安装提示生成图片
-下载生成的图标文件，替换主题中对应的文件！
-
-修改主题颜色
-配色包括导航栏，底部栏，a标签等，主题配色是绿色。
-修改themes\Matery\source\css\matery.css样式
-快捷键ctrl+F查找到#4cbf30（浅绿色）和#0f9d58（深绿色）还有首页字体颜色，修改为你喜欢的颜色
-/* 整体背景颜色，包括导航、移动端的导航、页尾、标签页等的背景颜色. */ 
-.bg-color { 
-	background-image: linear-gradient(to right, #4cbf30 0%, #0f9d58 100%); 
-} 
-/*如果想去掉banner图的颜色渐变效果，请将以下的css属性注释掉或者删除掉即可*/ 
-@-webkit-keyframes rainbow { 
-	/* 动态切换背景颜色. */ 
-} 
-@keyframes rainbow { 
-	/* 动态切换背景颜色. */ 
-}
-
-背景樱花飘落效果
-在themes/matery/source/js目录下新建sakura.js文件，打开这个网址传送门，将内容复制粘贴到sakura.js即可。
-然后在themes/matery/layout/layout.ejs文件内添加下面的内容：
-&lt;script type="text/javascript"&gt;
-//只在桌面版网页启用特效
-var windowWidth = $(window).width();
-if (windowWidth &gt; 768) {
-    document.write('&lt;script type="text/javascript" src="/js/sakura.js"&gt;&lt;\/script&gt;');
-}
-&lt;/script&gt;
-修改花瓣的数量
-因为普遍在使用的樱花背景效果花瓣数太多了，一些人不太喜欢。
-于是按不同花瓣数量做了几个新的 js ，并提供如下 cdn 形式的引用：
-https://cdn.jsdelivr.net/gh/fz6m/Private-web@1.2/js/sakura/sakura-small.js
-以上为少量樱花效果，另提供几个不同数量的文件引用名：
-
-
-
-文件名
-说明
-
-
-
-
-sakura-small.js
-少量樱花
-
-
-sakura-half.js
-樱花相对原效果数量减半
-
-
-sakura-reduce.js
-樱花相对原效果减少1/4
-
-
-sakura-original.js
-樱花数量不变（原效果）
-
-
-
-自定义鼠标样式
-首先将鼠标样式下载到本地，推荐大家一个网站：https://zhutix.com/ico/ori-cursors/
-以我的为例，我将鼠标指针样式放在了主题文件夹下的medias目录下，然后打开themes\matery\source\css下的my.css文件，添加内容如下：
-*{
-    cursor: url("/medias/imgs/zhengchang.ico"),auto!important;
-}
-:active{
-    cursor: url("/medias/imgs/dianji.ico"),auto!important;
-}
-取消首页渐变颜色动画
-在themes\Matery\source\css\matery.css，ctrl+F快捷键查找.bg-cover:after，注释掉即可。
-/* .bg-cover:after {
-    -webkit-animation: rainbow 60s infinite;
-    animation: rainbow 60s infinite;
-} */
-首页随机图片轮播
-themes\matery\layout\_partial\bg-cover-content.ejs
-修改随机获取一张图片：
-$('.bg-cover').css('background-image', 'url(&lt;%- theme.featureImages[Math.floor(Math.random() * theme.featureImages.length + 1)-1] %&gt;)');
-优化目录栏，透明化
-目录样式竟然在：themes\Matery\layout\_partial\post-detail-toc.ejs
-.toc-widget {
-    width: 345px;
-    padding-left: 20px;
-    background-color: rgb(255, 255, 255,0.7);
-    border-radius: 10px;
-    box-shadow: 0 10px 35px 2px rgba(0, 0, 0, .15), 0 5px 15px rgba(0, 0, 0, .07), 0 2px 5px -5px rgba(0, 0, 0, .1) !important;
-}
-增加点击跳转评论按钮
-新建文件themes\Matery\layout\_partial\back-comment.ejs,粘贴如下代码
-我这里评论是valine，直接填写的valine的id——href="#vcomments",如果是其他评论，对应修改即可。
-&lt;!-- 直达评论 --&gt;
-&lt;div id="to_comment" class="comment-scroll"&gt;
-    &lt;a class="btn-floating btn-large waves-effect waves-light" href="#vcomments" title="直达评论"&gt;
-        &lt;i class="fas fa-comments"&gt;&lt;/i&gt;
-    &lt;/a&gt;
-&lt;/div&gt;
-在themes\Matery\layout\_partial\valine.ejs文末添加一条，引用第一步的内容；
-&lt;%- partial('_partial/back-comment.ejs') %&gt;
-则只在valine存在的页面才显示直达评论，防止首页其他地方也出现按钮。其实还可以优化为浮动出现，有一点麻烦，我这里没有设置。
-增加样式在themes\Matery\source\css\matery.css添加内容如下：
-/*直达评论按钮样式*/
-.comment-scroll {
-    position: fixed;
-    right: 15px;
-    bottom: 135px;
-    padding-top: 15px;
-    margin-bottom: 0;
-    z-index: 998;
-}
-
-.comment-scroll .btn-floating {
-    background: linear-gradient(to bottom right, #FF9999 0%, #ff6666 100%);
-    width: 48px;
-    height: 48px;
-}
-
-.comment-scroll .btn-floating i {
-    line-height: 48px;
-    font-size: 1.8rem;
-}
-
-bottom: 135px;是距离底部的高度，看看你是否需要修改。
-添加简体繁体一键切换
-
-首先，我们可以在这里右键另存下载简繁字体切换所需的 tw_cn.js 文件，我们把这个文件放到 ~/themes/(你的主题名)/source/js/ 文件夹下。
-修改模板，在我们想要显示简繁转换按钮的地方添加如下代码。例如，我在 NexT 主题的布局文件 ~/themes/(你的主题名)/layout/_partials/footer.ejs 里添加了如下代码：
-
-&lt;div class="translate-style"&gt;
-繁/简：&lt;a id="translateLink" href="javascript:translatePage();"&gt;繁体
-&lt;/a&gt;
-&lt;/div&gt;
-&lt;script type="text/javascript" src="/js/tw_cn.js"&gt;&lt;/script&gt;
-&lt;script type="text/javascript"&gt;
-var defaultEncoding = 2; //网站编写字体是否繁体，1-繁体，2-简体
-var translateDelay = 0; //延迟时间,若不在前, 要设定延迟翻译时间, 如100表示100ms,默认为0
-var cookieDomain = "https://1han.wiki/"; //Cookie地址, 一定要设定, 通常为你的网址
-var msgToTraditionalChinese = "繁体"; //此处可以更改为你想要显示的文字
-var msgToSimplifiedChinese = "简体"; //同上，但两处均不建议更改
-var translateButtonId = "translateLink"; //默认互换id
-translateInitilization();
-&lt;/script&gt;
-读者可以在博客底部点击简体 / 繁体来看具体的切换字体效果。
-修改滑动条
-/* 滚动条 */
-::-webkit-scrollbar-thumb {
-    background-color: #FF2A68;
-    background-image: -webkit-linear-gradient(45deg,rgba(255,255,255,.4) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.4) 50%,rgba(255,255,255,.4) 75%,transparent 75%,transparent);
-    border-radius: 3em;
-}
-::-webkit-scrollbar-track {
-    background-color: #ffcacaff;
-    border-radius: 3em;
-}
-::-webkit-scrollbar {
-    width: 8px;
-    height: 15px;
-}
-文章标题添加打字机效果
-定位到文章标题代码 layout/_partial/post-cover.ejs
-&lt;h1 class="description center-align post-title"&gt;&lt;%= page.title %&gt;&lt;/h1&gt;
-文章标题代码替换成下面的代码
-&lt;script src="&lt;%- theme.jsDelivr.url %&gt;&lt;%- url_for(theme.libs.js.typed) %&gt;"&gt;&lt;/script&gt;
-&lt;% if (theme.post.enable) { %&gt;
-    &lt;script&gt;
-        var typedObj = new Typed("#post-title", {
-            strings: [ '&lt;%= page.title %&gt;' ],
-            startDelay: &lt;%= theme.post.startDelay %&gt;,
-            typeSpeed: &lt;%= theme.post.typeSpeed %&gt;,
-            loop: &lt;%= theme.post.loop %&gt;,
-            backSpeed: &lt;%= theme.post.backSpeed %&gt;,
-            showCursor: &lt;%= theme.post.showCursor %&gt;
-        });
-    &lt;/script&gt;
-&lt;% } %&gt;
-
-最后在主题配置文件中进行配置 _config.yml
-# 文章标题
-post:
-  enable: true
-  loop: false # 是否循环
-  showCursor: true # 是否显示光标
-  startDelay: 500 # 开始延迟
-  typeSpeed: 100 # 打字速度
-  backSpeed: 50 # 删除速度
-现在就完成了为一言和文章标题添加打字机效果
-更换字体
-一般网站的web字体都可以直接从Google-Font获取资源，这样不用担心字体商业带来的法律问题。
-常见的开源字体有：
-思源黑体 、 文泉驿 、 文鼎开放字体 、 柳体 、 cwTeX中文字体 、 濑户字体、江西拙楷体等。
-1）创建web字体引用
-@font-face{
-    font-family: '引用的字体名称';
-    src: url('谷歌字体路径（或者其他什么字体引用）');   
-}
-2）在网页合适的位置进行字体引用
-①利用浏览器检查元素，获取需要定义字体的部分
-②在主体的配置文件中(hexo-theme-matery/layout/…)找到对应的渲染(.ejs)文件，查找需要修改的部分
-①演示一下利用浏览器获取定义字体的部分
-
-对获取到的id选择器：#artDetail进行css渲染
-#artDetail {
-    font-family: '引用的web字体';
-}
-②利用主体的ejs渲染文件找出需要修饰的部分（加入自定义类）
-
-/*使用我在文章内容详情定义的diyFnot类**/
-.diyfont {
-   font-family: '引用的web字体'; 
-}
-
-/*也可以使用自带的id*/
-#artDetail {
-    font-family: '引用的web字体'; 
-}
-网站全局化字体定义
-@font-face{
-    font-family: '引用的字体名称';
-    src: url('谷歌字体路径（或者其他什么字体引用）');   
-}
-
-body {
-    font-family: '引用的web字体名称'; 
-}
-引用本地的字体文件
-当然有时候那个谷歌字体的网站可能登录不上去，需要科学上网，很烦人！我们也可以直接下载下字体文件，将他放在本地，进行直接引用！看下面操作👇
-①在本地的hexo根目录的source文件下创立diy-font文件夹:/source/diy-font
-在该文件下存放你的字体文件，比如：/source/diy-font/IBMPlexMono-Italic.ttf
-②引用本地字体（仍然是在my.css文件中书写代码）
-@font-face{
-    font-family: 'hl';
-    src: url('../diy-font/IBMPlexMono-Italic.ttf');
-}
-
-/** 表示全局使用，如果不想全局使用不要添加该段 */
-body{
-    font-family: 'hl';
-}
-
-
-/* 可以局部使用，建议添加 */
-.diyFont{
-    font-family: 'hl';
-}
-这样我们就可以实现引用本地的字体了，并且在web有效！
-在你想要使用的元素的 class 里面加上 diyFont 即可。
-
-
-直接使用
-F12，找到对应的代码片段即可：
-
-
-&lt;span class="logo-span diyFont"&gt;测试字体&lt;/span&gt;
-
-
-模板使用
-找到对应的模板 header.ejs中的代码片段使用即可：
-
-
-&lt;span class="logo-span diyFont"&gt;&lt;%= config.title %&gt;&lt;/span&gt;
-修改主题颜色
-在主题文件的 /source/css/matery.css 文件中，搜索 .bg-color 来修改背景颜色：
-/* 整体背景颜色，包括导航、移动端的导航、页尾、标签页等的背景颜色. */
-.bg-color {
-  background-image: linear-gradient(to right, #4cbf30 0%, #0f9d58 100%);
-}
-
-@-webkit-keyframes rainbow {
-  /* 动态切换背景颜色. */
-}
-
-@keyframes rainbow {
-  /* 动态切换背景颜色. */
-}
-修改 banner 图和文章特色图
-可以直接在 /source/medias/banner 文件夹中更换喜欢的 banner 图片，主题代码中是每天动态切换一张，只需 7 张即可。如果会 JavaScript 代码，可以修改成自己喜欢切换逻辑，如：随机切换等，banner 切换的代码位置在 /layout/_partial/bg-cover-content.ejs 文件的 &lt;script&gt;&lt;/script&gt; 代码中：
-$(".bg-cover").css("background-image", "url(/medias/banner/" + new Date().getDay() + ".jpg)");
-在 /source/medias/featureimages 文件夹中默认有 24 张特色图片，你可以再增加或者减少，并需要在 _config.yml 做同步修改。
-Hexo 跳过渲染
-在Hexo部署时会默认渲染source下的所有html页面，但有时候想在Hexo博客上单独自定义html页面或README.md时，却不希望被Hexo渲染。因此对某个文件或者目录进行排除渲染是非常必要的。
-方法一：font matter
-Hexo新建网站页面，然后将你的代码直接写入 index.md 中
-在 Front matter 中添加 layout: false，此方法适用于单一的纯HTML
-CSS 页面。
----
-title: tools
-date: 2020-04-28 00:00:00
-type: "tools"
-layout: false
----
-方法二：skip rende
-在博客根目录下的 _config.yml，找到 skip_render，大概在32行左右，写入你想要的跳过渲染的路径，注意缩进和空格。
-# 指定目录跳过hexo渲染
-skip_render:
-  - 'tools/*'
-  - 'tools/**'
-
-注释：tools/* 表示在目录 source/fireworks 下的文件全部跳过渲染，tools/** 表示在博客根目录 source/tools/ 文件夹下的文件全部跳过渲染（例如页面的 js、css 在另一个文件夹中）。
-
-博客中插入音乐
-hexo-tag-aplayer
-hexo-tag-aplayerAPlayer 播放器的 Hexo 标签插件（现已支持 MetingJS）。
-安装
-npm install --save hexo-tag-aplayer
-使用方法——aplayer
-{% aplayer title author url [picture_url, narrow, autoplay, width:xxx, lrc:xxx] %}
-
-title : 曲目标题
-author: 曲目作者
-url: 音乐文件 URL 地址
-picture_url: (可选) 音乐对应的图片地址
-narrow: （可选）播放器袖珍风格
-autoplay: (可选) 自动播放，移动端浏览器暂时不支持此功能
-width:xxx: (可选) 播放器宽度 (默认: 100%)
-lrc:xxx: （可选）歌词文件 URL 地址
-例如：
-
-{% aplayer "她的睫毛" "周杰伦" "http://home.ustc.edu.cn/~mmmwhy/%d6%dc%bd%dc%c2%d7%20-%20%cb%fd%b5%c4%bd%de%c3%ab.mp3"  "http://home.ustc.edu.cn/~mmmwhy/jay.jpg" %}
-如果你觉得前面的方法不太好用，可以用下面的方法，使用MetingJS。
-使用方法——MetingJS
-MetingJS 是基于Meting API 的 APlayer 衍生播放器，支持对于 QQ音乐、网易云音乐、虾米、酷狗、百度等平台的音乐播放。
-第一步：修改_config.yml配置
-在hexo的配置文件_config.yml中添加：
-aplayer:
-	meting: true
-第二步：使用MetingJS 播放器
-&lt;!-- 简单示例 (id, server, type)  --&gt;
-{% meting "571184509" "xiami" "playlist" %}
-有关的选项列表如下:
-
-
-
-选项
-默认值
-描述
-
-
-
-
-id
-必须值
-歌曲 id / 播放列表 id / 相册 id / 搜索关键字
-
-
-server
-必须值
-音乐平台: netease, tencent, kugou, xiami, baidu
-
-
-type
-必须值
-song, playlist, album, search, artist
-
-
-fixed
-false
-开启固定模式
-
-
-mini
-false
-开启迷你模式
-
-
-loop
-all
-列表循环模式：all, one,none
-
-
-order
-list
-列表播放模式： list, random
-
-
-volume
-0.7
-播放器音量
-
-
-lrctype
-0
-歌词格式类型
-
-
-listfolded
-false
-指定音乐播放列表是否折叠
-
-
-storagename
-metingjs
-LocalStorage 中存储播放器设定的键名
-
-
-autoplay
-true
-自动播放，移动端浏览器暂时不支持此功能
-
-
-mutex
-true
-该选项开启时，如果同页面有其他 aplayer 播放，该播放器会暂停
-
-
-listmaxheight
-340px
-播放列表的最大长度
-
-
-preload
-auto
-音乐文件预载入模式，可选项： none, metadata, auto
-
-
-theme
-#ad7a86
-播放器风格色彩设置
-
-
-
-博客中插入视频
-hexo-tag-dplayer
-hexo-tag-dplayer 是 DPlayer 播放器的 Hexo 标签插件
-安装
-npm install --save hexo-tag-dplayer
-使用
-{% dplayer key=value ... %}
-例：
-{% dplayer "url=http://www.nenu.edu.cn/_upload/article/videos/03/5f/7c999eed42e3aadc413d7f851f0e/0f50b3eb-9285-41d2-ac4d-6cc363651aad_B.mp4"  "autoplay=true" "preload=metadata" "hotkey=true" %} 
-有关的选项列表如下:
-
-
-
-选项
-默认值
-描述
-
-
-
-
-url
-必须值
-视频地址
-
-
-loop
-false
-视频循环播放
-
-
-volume
-0.7
-播放器音量
-
-
-hotkey
-true
-开启热键
-
-
-autoplay
-true
-自动播放，移动端浏览器暂时不支持此功能
-
-
-logo
--
-在左上角展示一个 logo，你可以通过 CSS 调整它的大小和位置
-
-
-mutex
-true
-该选项开启时，如果同页面有其他播放，该播放器会暂停
-
-
-highlight
-[]
-自定义进度条提示点
-
-
-preload
-auto
-视频文件预载入模式，可选项： none, metadata, auto
-
-
-theme
-#ad7a86
-播放器风格色彩设置
-
-
-
-注：如果使用腾讯视频、优酷视频等在线视频网站的资源，需要先进行视频地址解析，如点量视频解析，获取到实际的视频地址。
-其他使用方法
-在使用优酷或者腾讯视频时可以直接复制分享代码到文章中，如：
-&lt;iframe height=498 width=510 src='https://player.youku.com/embed/XMjk4ODAyMzIyOA==' frameborder=0 'allowfullscreen'&gt;&lt;/iframe&gt;
-参考文献
-
-
-hexo-tag-aplayer
-hexo-tag-dplayer
-
-
-hexo-tag-videojs
-
-录屏：OBS	OBS Studio录屏教程
-视频切片：FFmpeg
-托管：任何一个支持静态资源访问的都可以，比如跑个 Nginx
-Hexo 插件：hexo-tag-videojs
-
-
-Video标签需要加载完整个视频文件（如mp4）才能开始播放，拖动不便。
-使用bilibili服务，审查手段未知，可能看你白嫖就封号了
-自托管ts切片综合考虑是最佳方案！
-
-FFmpeg m3u8 切片
-要使用FFmpeg将一个MP4文件制作为M3U8文件并使用TS分片，您可以按照以下步骤进行操作：
-
-安装FFmpeg
-
-首先，您需要安装FFmpeg。可以在FFmpeg的官方网站（https://ffmpeg.org/）上下载适用于您的操作系统的二进制文件。
-
-制作M3U8文件和TS分片
-
-使用以下命令，将您的MP4文件制作为M3U8文件和TS分片：
-ffmpeg -i input.mp4 -codec copy -vbsf h264_mp4toannexb -map 0 -f segment -segment_list output.m3u8 -segment_time 10 output%03d.ts
-
--i input.mp4：指定输入文件为input.mp4。
--codec copy：使用与输入文件相同的编解码器。
--vbsf h264_mp4toannexb：将MP4的H.264视频流转换为MPEG-TS格式，以便进行分片。
--map 0：将所有输入流映射到输出中。
--f segment：指定输出格式为segment，表示进行分段。
--segment_list output.m3u8：指定输出的M3U8文件名为output.m3u8。
--segment_time 10：指定每个TS分片的时长为10秒。
-output%03d.ts：指定输出的TS分片文件名为output001.ts、output002.ts等。
-
-执行命令后，FFmpeg将开始处理您的视频，并将其制作为M3U8文件和多个TS分片。
-
-检查输出
-
-完成后，您可以在当前目录下找到一个名为output.m3u8的文件，以及一系列以output001.ts、output002.ts等命名的TS分片文件。您可以使用任何支持M3U8格式的播放器来播放此视频。
-外链跳转插件
-使用 npm 或者 yarn 安装
-## npm 安装
-npm install hexo-external-link --save
-## yarn 安装
-yarn add hexo-external-link
-之后在博客站点根目录下添加如下配置：
-hexo_external_link:
-  enable: true
-  enable_base64_encode: true
-  url_param_name: 'u'
-  html_file_name: 'go.html'
-  target_blank: true
-  link_rel: 'external nofollow noopener noreferrer'
-  domain: 'your_domain' # 如果开启了防盗链，填写你的域名
-  safety_chain: true
-文章生成永久链接
-主题默认的文章链接配置是
-premalink: :year/:month/:day/:title
-这种生成的链接地址很长，文章版权的链接地址会出现一大串字符编码，一点也不好看。因此需要修改文章生成链接的格式。 首先再根目录下执行下面的命令： hexo-abbrlinkGitHub地址
-npm install hexo-abbrlink --save
-然后再站点配置文件下添加如下配置：
-abbrlink: 
-    alg: crc16 #算法：
-    crc16(default) and crc32 rep: hex #进制： dec(default) and hex: dec #输出进制：十进制和十六进制，默认为10进制。丨dec为十进制，hex为十六进制
-再将站点配置文件的permalink的值修改为：
-permalink: posts/:abbrlink.html  # 此处可以自己设置，也可以直接使用 :/abbrlink
-生成完后，原md文件的Front-matter 内会增加abbrlink 字段，值为生成的ID 。这个字段确保了在我们修改了Front-matter 内的博客标题title或创建日期date字段之后而不会改变链接地址.
-Hexo 插件推荐
-
-hexo 的强大之处在于，拥有非常多的免费开源插件给你使用！
-
-
-
-
-插件
-功能
-文档链接
-
-
-
-
-hexo-generator-index-pin-top
-文章置顶
-https://github.com/netcan/hexo-generator-index-pin-top
-
-
-hexo-wordcount
-文章字数统计和阅读时长统计
-https://github.com/willin/hexo-wordcount
-
-
-hexo-abbrlink
-生成URL短链接
-https://github.com/rozbo/hexo-abbrlink
-
-
-hexo-lazyload-image
-图片懒加载
-https://github.com/Troy-Yang/hexo-lazyload-image
-
-
-hexo-generator-baidu-sitemap
-生成baidusitemap.xml
-https://github.com/coneycode/hexo-generator-baidu-sitemap
-
-
-hexo-generator-sitemap
-生成sitemap.xml
-https://github.com/hexojs/hexo-generator-sitemap
-
-
-hexo-generator-feed
-生成RSS文件
-https://github.com/hexojs/hexo-generator-feed
-
-
-hexo-external-link
-外链跳转
-https://github.com/hvnobug/hexo-external-link
-
-
-hexo-autonofollow
-自动对外部链接增加nofollow属性
-https://github.com/liuzc/hexo-autonofollow
-
-
-hexo-filter-nofollow
-为外链添加 rel="noopener external nofollow noreferrer"
-https://github.com/hexojs/hexo-filter-nofollow
-
-
-hexo-prism-plugin
-代码高亮
-https://github.com/ele828/hexo-prism-plugin
-
-
-hexo-neat
-博客压缩
-https://github.com/rozbo/hexo-neat
-
-
-hexo-allminifier
-https://developer.aliyun.com/mirror/npm/package/hexo-all-minifier
-
-
-
-hexo-tag-aplayer
-aplayer音乐播放器
-https://github.com/MoePlayer/hexo-tag-aplayer
-
-
-hexo-tag-dplayer
-dplayer视频播放器
-https://github.com/MoePlayer/hexo-tag-dplayer
-
-
-hexo-douban
-添加豆瓣读书，电影，游戏页面
-https://github.com/mythsman/hexo-douban
-
-
-hexo-generator-searchdb
-本地搜索,生成search.xml
-https://github.com/theme-next/hexo-generator-searchdb
-
-
-hexo-algoliasearch
-搜索系统
-https://github.com/LouisBarranqueiro/hexo-algoliasearch
-
-
-hexo-algolia
-https://github.com/oncletom/hexo-algolia
-
-
-
-hexo-generator-search
-本地搜索系统
-https://github.com/wzpan/hexo-generator-search
-
-
-hexo-baidu-url-submit
-百度站长主动推送
-https://github.com/huiwang/hexo-baidu-url-submit
-
-
-hexo-offline
-开启PWA
-https://github.com/JLHwung/hexo-offline
-
-
-hexo-pwa
-https://github.com/lavas-project/hexo-pwa
-
-
-
-hexo-helper-live2d
-看板娘
-https://github.com/EYHN/hexo-helper-live2d
-
-
-hexo-addlink
-文末添加当前文章链接和版权声明
-https://github.com/acwong00/hexo-addlink
-
-
-hexo-blog-encrypt
-博客文章加密
-https://github.com/MikeCoder/hexo-blog-encrypt
-
-
-hexo-simple-mindmap
-博客添加脑图
-https://github.com/HunterXuan/hexo-simple-mindmap
-
-
-hexo-pdf
-博客展示pdf
-https://github.com/superalsrk/hexo-pdf
-
-
-hexo-tag-echarts
-博客添加图表
-https://github.com/zhoulvjun/hexo-tag-echarts
-
-
-hexo-steam-games
-添加Steam游戏界面
-https://github.com/HCLonely/hexo-steam-games
-
-
-hexo-bilibili-bangumi
-添加bilibili番剧页面
-https://github.com/HCLonely/hexo-bilibili-bangumi
-
-
-hexo-generator-random
-生成随机文章页面
-https://github.com/Drew233/hexo-generator-random
-
-
-hexo-web-push-notification
-web推送插件
-https://github.com/glazec/hexo-web-push-notification
-
-
-
-系列教程
-全部文章RSS订阅
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-Vercel部署高级用法教程
-在宝塔VPS上面采用docker部署waline全流程图解教程
-
-笔记系列
-Note分类RSS订阅
-
-完美笔记进化论
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Joplin入门指南&amp;实践方案
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-Joplin 插件以及其Markdown语法。All in One!
-Joplin 插件使用推荐
-为知笔记私有化Docker部署
-
-Gitbook使用系列
-Gitbook分类RSS订阅
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-Gitlab 使用系列
-Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-]]></content>
-      <categories>
-        <category>hexo</category>
-      </categories>
-      <tags>
         <tag>github</tag>
-        <tag>hexo</tag>
         <tag>matery</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
@@ -27511,8 +26667,852 @@ CI/CD与Git Flow与GitLab
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>github</tag>
         <tag>hexo</tag>
+        <tag>github</tag>
+        <tag>matery</tag>
+        <tag>cdn</tag>
+        <tag>seo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>基于Hexo的matery主题搭建博客自定义修改篇2</title>
+    <url>/posts/4d8a0b22/</url>
+    <content><![CDATA[Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+Vercel部署高级用法教程
+在宝塔VPS上面采用docker部署waline全流程图解教程
+
+如果本主题中的诸多功能和主题色彩你不满意，可以在主题中自定义修改，很多更自由的功能和细节点的修改难以在主题的 _config.yml 中完成，需要修改源代码才来完成。以下列出了可能有用的地方：
+自定义Logo
+免费生成 logo 的网站很多，这里给一个个人使用的网站。
+
+找一个喜欢的图片
+https://www.logosc.cn/logo/ 图片上传到这里，然后安装提示生成图片
+下载生成的图标文件，替换主题中对应的文件！
+
+修改主题颜色
+配色包括导航栏，底部栏，a标签等，主题配色是绿色。
+修改themes\Matery\source\css\matery.css样式
+快捷键ctrl+F查找到#4cbf30（浅绿色）和#0f9d58（深绿色）还有首页字体颜色，修改为你喜欢的颜色
+/* 整体背景颜色，包括导航、移动端的导航、页尾、标签页等的背景颜色. */ 
+.bg-color { 
+	background-image: linear-gradient(to right, #4cbf30 0%, #0f9d58 100%); 
+} 
+/*如果想去掉banner图的颜色渐变效果，请将以下的css属性注释掉或者删除掉即可*/ 
+@-webkit-keyframes rainbow { 
+	/* 动态切换背景颜色. */ 
+} 
+@keyframes rainbow { 
+	/* 动态切换背景颜色. */ 
+}
+
+背景樱花飘落效果
+在themes/matery/source/js目录下新建sakura.js文件，打开这个网址传送门，将内容复制粘贴到sakura.js即可。
+然后在themes/matery/layout/layout.ejs文件内添加下面的内容：
+&lt;script type="text/javascript"&gt;
+//只在桌面版网页启用特效
+var windowWidth = $(window).width();
+if (windowWidth &gt; 768) {
+    document.write('&lt;script type="text/javascript" src="/js/sakura.js"&gt;&lt;\/script&gt;');
+}
+&lt;/script&gt;
+修改花瓣的数量
+因为普遍在使用的樱花背景效果花瓣数太多了，一些人不太喜欢。
+于是按不同花瓣数量做了几个新的 js ，并提供如下 cdn 形式的引用：
+https://cdn.jsdelivr.net/gh/fz6m/Private-web@1.2/js/sakura/sakura-small.js
+以上为少量樱花效果，另提供几个不同数量的文件引用名：
+
+
+
+文件名
+说明
+
+
+
+
+sakura-small.js
+少量樱花
+
+
+sakura-half.js
+樱花相对原效果数量减半
+
+
+sakura-reduce.js
+樱花相对原效果减少1/4
+
+
+sakura-original.js
+樱花数量不变（原效果）
+
+
+
+自定义鼠标样式
+首先将鼠标样式下载到本地，推荐大家一个网站：https://zhutix.com/ico/ori-cursors/
+以我的为例，我将鼠标指针样式放在了主题文件夹下的medias目录下，然后打开themes\matery\source\css下的my.css文件，添加内容如下：
+*{
+    cursor: url("/medias/imgs/zhengchang.ico"),auto!important;
+}
+:active{
+    cursor: url("/medias/imgs/dianji.ico"),auto!important;
+}
+取消首页渐变颜色动画
+在themes\Matery\source\css\matery.css，ctrl+F快捷键查找.bg-cover:after，注释掉即可。
+/* .bg-cover:after {
+    -webkit-animation: rainbow 60s infinite;
+    animation: rainbow 60s infinite;
+} */
+首页随机图片轮播
+themes\matery\layout\_partial\bg-cover-content.ejs
+修改随机获取一张图片：
+$('.bg-cover').css('background-image', 'url(&lt;%- theme.featureImages[Math.floor(Math.random() * theme.featureImages.length + 1)-1] %&gt;)');
+优化目录栏，透明化
+目录样式竟然在：themes\Matery\layout\_partial\post-detail-toc.ejs
+.toc-widget {
+    width: 345px;
+    padding-left: 20px;
+    background-color: rgb(255, 255, 255,0.7);
+    border-radius: 10px;
+    box-shadow: 0 10px 35px 2px rgba(0, 0, 0, .15), 0 5px 15px rgba(0, 0, 0, .07), 0 2px 5px -5px rgba(0, 0, 0, .1) !important;
+}
+增加点击跳转评论按钮
+新建文件themes\Matery\layout\_partial\back-comment.ejs,粘贴如下代码
+我这里评论是valine，直接填写的valine的id——href="#vcomments",如果是其他评论，对应修改即可。
+&lt;!-- 直达评论 --&gt;
+&lt;div id="to_comment" class="comment-scroll"&gt;
+    &lt;a class="btn-floating btn-large waves-effect waves-light" href="#vcomments" title="直达评论"&gt;
+        &lt;i class="fas fa-comments"&gt;&lt;/i&gt;
+    &lt;/a&gt;
+&lt;/div&gt;
+在themes\Matery\layout\_partial\valine.ejs文末添加一条，引用第一步的内容；
+&lt;%- partial('_partial/back-comment.ejs') %&gt;
+则只在valine存在的页面才显示直达评论，防止首页其他地方也出现按钮。其实还可以优化为浮动出现，有一点麻烦，我这里没有设置。
+增加样式在themes\Matery\source\css\matery.css添加内容如下：
+/*直达评论按钮样式*/
+.comment-scroll {
+    position: fixed;
+    right: 15px;
+    bottom: 135px;
+    padding-top: 15px;
+    margin-bottom: 0;
+    z-index: 998;
+}
+
+.comment-scroll .btn-floating {
+    background: linear-gradient(to bottom right, #FF9999 0%, #ff6666 100%);
+    width: 48px;
+    height: 48px;
+}
+
+.comment-scroll .btn-floating i {
+    line-height: 48px;
+    font-size: 1.8rem;
+}
+
+bottom: 135px;是距离底部的高度，看看你是否需要修改。
+添加简体繁体一键切换
+
+首先，我们可以在这里右键另存下载简繁字体切换所需的 tw_cn.js 文件，我们把这个文件放到 ~/themes/(你的主题名)/source/js/ 文件夹下。
+修改模板，在我们想要显示简繁转换按钮的地方添加如下代码。例如，我在 NexT 主题的布局文件 ~/themes/(你的主题名)/layout/_partials/footer.ejs 里添加了如下代码：
+
+&lt;div class="translate-style"&gt;
+繁/简：&lt;a id="translateLink" href="javascript:translatePage();"&gt;繁体
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;script type="text/javascript" src="/js/tw_cn.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript"&gt;
+var defaultEncoding = 2; //网站编写字体是否繁体，1-繁体，2-简体
+var translateDelay = 0; //延迟时间,若不在前, 要设定延迟翻译时间, 如100表示100ms,默认为0
+var cookieDomain = "https://1han.wiki/"; //Cookie地址, 一定要设定, 通常为你的网址
+var msgToTraditionalChinese = "繁体"; //此处可以更改为你想要显示的文字
+var msgToSimplifiedChinese = "简体"; //同上，但两处均不建议更改
+var translateButtonId = "translateLink"; //默认互换id
+translateInitilization();
+&lt;/script&gt;
+读者可以在博客底部点击简体 / 繁体来看具体的切换字体效果。
+修改滑动条
+/* 滚动条 */
+::-webkit-scrollbar-thumb {
+    background-color: #FF2A68;
+    background-image: -webkit-linear-gradient(45deg,rgba(255,255,255,.4) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.4) 50%,rgba(255,255,255,.4) 75%,transparent 75%,transparent);
+    border-radius: 3em;
+}
+::-webkit-scrollbar-track {
+    background-color: #ffcacaff;
+    border-radius: 3em;
+}
+::-webkit-scrollbar {
+    width: 8px;
+    height: 15px;
+}
+文章标题添加打字机效果
+定位到文章标题代码 layout/_partial/post-cover.ejs
+&lt;h1 class="description center-align post-title"&gt;&lt;%= page.title %&gt;&lt;/h1&gt;
+文章标题代码替换成下面的代码
+&lt;script src="&lt;%- theme.jsDelivr.url %&gt;&lt;%- url_for(theme.libs.js.typed) %&gt;"&gt;&lt;/script&gt;
+&lt;% if (theme.post.enable) { %&gt;
+    &lt;script&gt;
+        var typedObj = new Typed("#post-title", {
+            strings: [ '&lt;%= page.title %&gt;' ],
+            startDelay: &lt;%= theme.post.startDelay %&gt;,
+            typeSpeed: &lt;%= theme.post.typeSpeed %&gt;,
+            loop: &lt;%= theme.post.loop %&gt;,
+            backSpeed: &lt;%= theme.post.backSpeed %&gt;,
+            showCursor: &lt;%= theme.post.showCursor %&gt;
+        });
+    &lt;/script&gt;
+&lt;% } %&gt;
+
+最后在主题配置文件中进行配置 _config.yml
+# 文章标题
+post:
+  enable: true
+  loop: false # 是否循环
+  showCursor: true # 是否显示光标
+  startDelay: 500 # 开始延迟
+  typeSpeed: 100 # 打字速度
+  backSpeed: 50 # 删除速度
+现在就完成了为一言和文章标题添加打字机效果
+更换字体
+一般网站的web字体都可以直接从Google-Font获取资源，这样不用担心字体商业带来的法律问题。
+常见的开源字体有：
+思源黑体 、 文泉驿 、 文鼎开放字体 、 柳体 、 cwTeX中文字体 、 濑户字体、江西拙楷体等。
+1）创建web字体引用
+@font-face{
+    font-family: '引用的字体名称';
+    src: url('谷歌字体路径（或者其他什么字体引用）');   
+}
+2）在网页合适的位置进行字体引用
+①利用浏览器检查元素，获取需要定义字体的部分
+②在主体的配置文件中(hexo-theme-matery/layout/…)找到对应的渲染(.ejs)文件，查找需要修改的部分
+①演示一下利用浏览器获取定义字体的部分
+
+对获取到的id选择器：#artDetail进行css渲染
+#artDetail {
+    font-family: '引用的web字体';
+}
+②利用主体的ejs渲染文件找出需要修饰的部分（加入自定义类）
+
+/*使用我在文章内容详情定义的diyFnot类**/
+.diyfont {
+   font-family: '引用的web字体'; 
+}
+
+/*也可以使用自带的id*/
+#artDetail {
+    font-family: '引用的web字体'; 
+}
+网站全局化字体定义
+@font-face{
+    font-family: '引用的字体名称';
+    src: url('谷歌字体路径（或者其他什么字体引用）');   
+}
+
+body {
+    font-family: '引用的web字体名称'; 
+}
+引用本地的字体文件
+当然有时候那个谷歌字体的网站可能登录不上去，需要科学上网，很烦人！我们也可以直接下载下字体文件，将他放在本地，进行直接引用！看下面操作👇
+①在本地的hexo根目录的source文件下创立diy-font文件夹:/source/diy-font
+在该文件下存放你的字体文件，比如：/source/diy-font/IBMPlexMono-Italic.ttf
+②引用本地字体（仍然是在my.css文件中书写代码）
+@font-face{
+    font-family: 'hl';
+    src: url('../diy-font/IBMPlexMono-Italic.ttf');
+}
+
+/** 表示全局使用，如果不想全局使用不要添加该段 */
+body{
+    font-family: 'hl';
+}
+
+
+/* 可以局部使用，建议添加 */
+.diyFont{
+    font-family: 'hl';
+}
+这样我们就可以实现引用本地的字体了，并且在web有效！
+在你想要使用的元素的 class 里面加上 diyFont 即可。
+
+
+直接使用
+F12，找到对应的代码片段即可：
+
+
+&lt;span class="logo-span diyFont"&gt;测试字体&lt;/span&gt;
+
+
+模板使用
+找到对应的模板 header.ejs中的代码片段使用即可：
+
+
+&lt;span class="logo-span diyFont"&gt;&lt;%= config.title %&gt;&lt;/span&gt;
+修改主题颜色
+在主题文件的 /source/css/matery.css 文件中，搜索 .bg-color 来修改背景颜色：
+/* 整体背景颜色，包括导航、移动端的导航、页尾、标签页等的背景颜色. */
+.bg-color {
+  background-image: linear-gradient(to right, #4cbf30 0%, #0f9d58 100%);
+}
+
+@-webkit-keyframes rainbow {
+  /* 动态切换背景颜色. */
+}
+
+@keyframes rainbow {
+  /* 动态切换背景颜色. */
+}
+修改 banner 图和文章特色图
+可以直接在 /source/medias/banner 文件夹中更换喜欢的 banner 图片，主题代码中是每天动态切换一张，只需 7 张即可。如果会 JavaScript 代码，可以修改成自己喜欢切换逻辑，如：随机切换等，banner 切换的代码位置在 /layout/_partial/bg-cover-content.ejs 文件的 &lt;script&gt;&lt;/script&gt; 代码中：
+$(".bg-cover").css("background-image", "url(/medias/banner/" + new Date().getDay() + ".jpg)");
+在 /source/medias/featureimages 文件夹中默认有 24 张特色图片，你可以再增加或者减少，并需要在 _config.yml 做同步修改。
+Hexo 跳过渲染
+在Hexo部署时会默认渲染source下的所有html页面，但有时候想在Hexo博客上单独自定义html页面或README.md时，却不希望被Hexo渲染。因此对某个文件或者目录进行排除渲染是非常必要的。
+方法一：font matter
+Hexo新建网站页面，然后将你的代码直接写入 index.md 中
+在 Front matter 中添加 layout: false，此方法适用于单一的纯HTML
+CSS 页面。
+---
+title: tools
+date: 2020-04-28 00:00:00
+type: "tools"
+layout: false
+---
+方法二：skip rende
+在博客根目录下的 _config.yml，找到 skip_render，大概在32行左右，写入你想要的跳过渲染的路径，注意缩进和空格。
+# 指定目录跳过hexo渲染
+skip_render:
+  - 'tools/*'
+  - 'tools/**'
+
+注释：tools/* 表示在目录 source/fireworks 下的文件全部跳过渲染，tools/** 表示在博客根目录 source/tools/ 文件夹下的文件全部跳过渲染（例如页面的 js、css 在另一个文件夹中）。
+
+博客中插入音乐
+hexo-tag-aplayer
+hexo-tag-aplayerAPlayer 播放器的 Hexo 标签插件（现已支持 MetingJS）。
+安装
+npm install --save hexo-tag-aplayer
+使用方法——aplayer
+{% aplayer title author url [picture_url, narrow, autoplay, width:xxx, lrc:xxx] %}
+
+title : 曲目标题
+author: 曲目作者
+url: 音乐文件 URL 地址
+picture_url: (可选) 音乐对应的图片地址
+narrow: （可选）播放器袖珍风格
+autoplay: (可选) 自动播放，移动端浏览器暂时不支持此功能
+width:xxx: (可选) 播放器宽度 (默认: 100%)
+lrc:xxx: （可选）歌词文件 URL 地址
+例如：
+
+{% aplayer "她的睫毛" "周杰伦" "http://home.ustc.edu.cn/~mmmwhy/%d6%dc%bd%dc%c2%d7%20-%20%cb%fd%b5%c4%bd%de%c3%ab.mp3"  "http://home.ustc.edu.cn/~mmmwhy/jay.jpg" %}
+如果你觉得前面的方法不太好用，可以用下面的方法，使用MetingJS。
+使用方法——MetingJS
+MetingJS 是基于Meting API 的 APlayer 衍生播放器，支持对于 QQ音乐、网易云音乐、虾米、酷狗、百度等平台的音乐播放。
+第一步：修改_config.yml配置
+在hexo的配置文件_config.yml中添加：
+aplayer:
+	meting: true
+第二步：使用MetingJS 播放器
+&lt;!-- 简单示例 (id, server, type)  --&gt;
+{% meting "571184509" "xiami" "playlist" %}
+有关的选项列表如下:
+
+
+
+选项
+默认值
+描述
+
+
+
+
+id
+必须值
+歌曲 id / 播放列表 id / 相册 id / 搜索关键字
+
+
+server
+必须值
+音乐平台: netease, tencent, kugou, xiami, baidu
+
+
+type
+必须值
+song, playlist, album, search, artist
+
+
+fixed
+false
+开启固定模式
+
+
+mini
+false
+开启迷你模式
+
+
+loop
+all
+列表循环模式：all, one,none
+
+
+order
+list
+列表播放模式： list, random
+
+
+volume
+0.7
+播放器音量
+
+
+lrctype
+0
+歌词格式类型
+
+
+listfolded
+false
+指定音乐播放列表是否折叠
+
+
+storagename
+metingjs
+LocalStorage 中存储播放器设定的键名
+
+
+autoplay
+true
+自动播放，移动端浏览器暂时不支持此功能
+
+
+mutex
+true
+该选项开启时，如果同页面有其他 aplayer 播放，该播放器会暂停
+
+
+listmaxheight
+340px
+播放列表的最大长度
+
+
+preload
+auto
+音乐文件预载入模式，可选项： none, metadata, auto
+
+
+theme
+#ad7a86
+播放器风格色彩设置
+
+
+
+博客中插入视频
+hexo-tag-dplayer
+hexo-tag-dplayer 是 DPlayer 播放器的 Hexo 标签插件
+安装
+npm install --save hexo-tag-dplayer
+使用
+{% dplayer key=value ... %}
+例：
+{% dplayer "url=http://www.nenu.edu.cn/_upload/article/videos/03/5f/7c999eed42e3aadc413d7f851f0e/0f50b3eb-9285-41d2-ac4d-6cc363651aad_B.mp4"  "autoplay=true" "preload=metadata" "hotkey=true" %} 
+有关的选项列表如下:
+
+
+
+选项
+默认值
+描述
+
+
+
+
+url
+必须值
+视频地址
+
+
+loop
+false
+视频循环播放
+
+
+volume
+0.7
+播放器音量
+
+
+hotkey
+true
+开启热键
+
+
+autoplay
+true
+自动播放，移动端浏览器暂时不支持此功能
+
+
+logo
+-
+在左上角展示一个 logo，你可以通过 CSS 调整它的大小和位置
+
+
+mutex
+true
+该选项开启时，如果同页面有其他播放，该播放器会暂停
+
+
+highlight
+[]
+自定义进度条提示点
+
+
+preload
+auto
+视频文件预载入模式，可选项： none, metadata, auto
+
+
+theme
+#ad7a86
+播放器风格色彩设置
+
+
+
+注：如果使用腾讯视频、优酷视频等在线视频网站的资源，需要先进行视频地址解析，如点量视频解析，获取到实际的视频地址。
+其他使用方法
+在使用优酷或者腾讯视频时可以直接复制分享代码到文章中，如：
+&lt;iframe height=498 width=510 src='https://player.youku.com/embed/XMjk4ODAyMzIyOA==' frameborder=0 'allowfullscreen'&gt;&lt;/iframe&gt;
+参考文献
+
+
+hexo-tag-aplayer
+hexo-tag-dplayer
+
+
+hexo-tag-videojs
+
+录屏：OBS	OBS Studio录屏教程
+视频切片：FFmpeg
+托管：任何一个支持静态资源访问的都可以，比如跑个 Nginx
+Hexo 插件：hexo-tag-videojs
+
+
+Video标签需要加载完整个视频文件（如mp4）才能开始播放，拖动不便。
+使用bilibili服务，审查手段未知，可能看你白嫖就封号了
+自托管ts切片综合考虑是最佳方案！
+
+FFmpeg m3u8 切片
+要使用FFmpeg将一个MP4文件制作为M3U8文件并使用TS分片，您可以按照以下步骤进行操作：
+
+安装FFmpeg
+
+首先，您需要安装FFmpeg。可以在FFmpeg的官方网站（https://ffmpeg.org/）上下载适用于您的操作系统的二进制文件。
+
+制作M3U8文件和TS分片
+
+使用以下命令，将您的MP4文件制作为M3U8文件和TS分片：
+ffmpeg -i input.mp4 -codec copy -vbsf h264_mp4toannexb -map 0 -f segment -segment_list output.m3u8 -segment_time 10 output%03d.ts
+
+-i input.mp4：指定输入文件为input.mp4。
+-codec copy：使用与输入文件相同的编解码器。
+-vbsf h264_mp4toannexb：将MP4的H.264视频流转换为MPEG-TS格式，以便进行分片。
+-map 0：将所有输入流映射到输出中。
+-f segment：指定输出格式为segment，表示进行分段。
+-segment_list output.m3u8：指定输出的M3U8文件名为output.m3u8。
+-segment_time 10：指定每个TS分片的时长为10秒。
+output%03d.ts：指定输出的TS分片文件名为output001.ts、output002.ts等。
+
+执行命令后，FFmpeg将开始处理您的视频，并将其制作为M3U8文件和多个TS分片。
+
+检查输出
+
+完成后，您可以在当前目录下找到一个名为output.m3u8的文件，以及一系列以output001.ts、output002.ts等命名的TS分片文件。您可以使用任何支持M3U8格式的播放器来播放此视频。
+外链跳转插件
+使用 npm 或者 yarn 安装
+## npm 安装
+npm install hexo-external-link --save
+## yarn 安装
+yarn add hexo-external-link
+之后在博客站点根目录下添加如下配置：
+hexo_external_link:
+  enable: true
+  enable_base64_encode: true
+  url_param_name: 'u'
+  html_file_name: 'go.html'
+  target_blank: true
+  link_rel: 'external nofollow noopener noreferrer'
+  domain: 'your_domain' # 如果开启了防盗链，填写你的域名
+  safety_chain: true
+文章生成永久链接
+主题默认的文章链接配置是
+premalink: :year/:month/:day/:title
+这种生成的链接地址很长，文章版权的链接地址会出现一大串字符编码，一点也不好看。因此需要修改文章生成链接的格式。 首先再根目录下执行下面的命令： hexo-abbrlinkGitHub地址
+npm install hexo-abbrlink --save
+然后再站点配置文件下添加如下配置：
+abbrlink: 
+    alg: crc16 #算法：
+    crc16(default) and crc32 rep: hex #进制： dec(default) and hex: dec #输出进制：十进制和十六进制，默认为10进制。丨dec为十进制，hex为十六进制
+再将站点配置文件的permalink的值修改为：
+permalink: posts/:abbrlink.html  # 此处可以自己设置，也可以直接使用 :/abbrlink
+生成完后，原md文件的Front-matter 内会增加abbrlink 字段，值为生成的ID 。这个字段确保了在我们修改了Front-matter 内的博客标题title或创建日期date字段之后而不会改变链接地址.
+Hexo 插件推荐
+
+hexo 的强大之处在于，拥有非常多的免费开源插件给你使用！
+
+
+
+
+插件
+功能
+文档链接
+
+
+
+
+hexo-generator-index-pin-top
+文章置顶
+https://github.com/netcan/hexo-generator-index-pin-top
+
+
+hexo-wordcount
+文章字数统计和阅读时长统计
+https://github.com/willin/hexo-wordcount
+
+
+hexo-abbrlink
+生成URL短链接
+https://github.com/rozbo/hexo-abbrlink
+
+
+hexo-lazyload-image
+图片懒加载
+https://github.com/Troy-Yang/hexo-lazyload-image
+
+
+hexo-generator-baidu-sitemap
+生成baidusitemap.xml
+https://github.com/coneycode/hexo-generator-baidu-sitemap
+
+
+hexo-generator-sitemap
+生成sitemap.xml
+https://github.com/hexojs/hexo-generator-sitemap
+
+
+hexo-generator-feed
+生成RSS文件
+https://github.com/hexojs/hexo-generator-feed
+
+
+hexo-external-link
+外链跳转
+https://github.com/hvnobug/hexo-external-link
+
+
+hexo-autonofollow
+自动对外部链接增加nofollow属性
+https://github.com/liuzc/hexo-autonofollow
+
+
+hexo-filter-nofollow
+为外链添加 rel="noopener external nofollow noreferrer"
+https://github.com/hexojs/hexo-filter-nofollow
+
+
+hexo-prism-plugin
+代码高亮
+https://github.com/ele828/hexo-prism-plugin
+
+
+hexo-neat
+博客压缩
+https://github.com/rozbo/hexo-neat
+
+
+hexo-allminifier
+https://developer.aliyun.com/mirror/npm/package/hexo-all-minifier
+
+
+
+hexo-tag-aplayer
+aplayer音乐播放器
+https://github.com/MoePlayer/hexo-tag-aplayer
+
+
+hexo-tag-dplayer
+dplayer视频播放器
+https://github.com/MoePlayer/hexo-tag-dplayer
+
+
+hexo-douban
+添加豆瓣读书，电影，游戏页面
+https://github.com/mythsman/hexo-douban
+
+
+hexo-generator-searchdb
+本地搜索,生成search.xml
+https://github.com/theme-next/hexo-generator-searchdb
+
+
+hexo-algoliasearch
+搜索系统
+https://github.com/LouisBarranqueiro/hexo-algoliasearch
+
+
+hexo-algolia
+https://github.com/oncletom/hexo-algolia
+
+
+
+hexo-generator-search
+本地搜索系统
+https://github.com/wzpan/hexo-generator-search
+
+
+hexo-baidu-url-submit
+百度站长主动推送
+https://github.com/huiwang/hexo-baidu-url-submit
+
+
+hexo-offline
+开启PWA
+https://github.com/JLHwung/hexo-offline
+
+
+hexo-pwa
+https://github.com/lavas-project/hexo-pwa
+
+
+
+hexo-helper-live2d
+看板娘
+https://github.com/EYHN/hexo-helper-live2d
+
+
+hexo-addlink
+文末添加当前文章链接和版权声明
+https://github.com/acwong00/hexo-addlink
+
+
+hexo-blog-encrypt
+博客文章加密
+https://github.com/MikeCoder/hexo-blog-encrypt
+
+
+hexo-simple-mindmap
+博客添加脑图
+https://github.com/HunterXuan/hexo-simple-mindmap
+
+
+hexo-pdf
+博客展示pdf
+https://github.com/superalsrk/hexo-pdf
+
+
+hexo-tag-echarts
+博客添加图表
+https://github.com/zhoulvjun/hexo-tag-echarts
+
+
+hexo-steam-games
+添加Steam游戏界面
+https://github.com/HCLonely/hexo-steam-games
+
+
+hexo-bilibili-bangumi
+添加bilibili番剧页面
+https://github.com/HCLonely/hexo-bilibili-bangumi
+
+
+hexo-generator-random
+生成随机文章页面
+https://github.com/Drew233/hexo-generator-random
+
+
+hexo-web-push-notification
+web推送插件
+https://github.com/glazec/hexo-web-push-notification
+
+
+
+系列教程
+全部文章RSS订阅
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+Vercel部署高级用法教程
+在宝塔VPS上面采用docker部署waline全流程图解教程
+
+笔记系列
+Note分类RSS订阅
+
+完美笔记进化论
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Joplin入门指南&amp;实践方案
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+Joplin 插件以及其Markdown语法。All in One!
+Joplin 插件使用推荐
+为知笔记私有化Docker部署
+
+Gitbook使用系列
+Gitbook分类RSS订阅
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+Gitlab 使用系列
+Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+]]></content>
+      <categories>
+        <category>hexo</category>
+      </categories>
+      <tags>
+        <tag>hexo</tag>
+        <tag>github</tag>
         <tag>matery</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
@@ -43446,7 +43446,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts5032'));
+        var myChart = echarts.init(document.getElementById('echarts5930'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -43540,7 +43540,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts5370'));
+        var myChart = echarts.init(document.getElementById('echarts5941'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -43609,7 +43609,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts3811'));
+        var myChart = echarts.init(document.getElementById('echarts5742'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -45488,8 +45488,8 @@ Vercel部署高级用法教程
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>markdown</tag>
         <tag>hexo</tag>
+        <tag>markdown</tag>
         <tag>写作</tag>
       </tags>
   </entry>
@@ -45800,8 +45800,8 @@ CI/CD与Git Flow与GitLab
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>blog</tag>
         <tag>hexo</tag>
+        <tag>blog</tag>
         <tag>vercel</tag>
       </tags>
   </entry>
@@ -47941,9 +47941,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-uptqTAmRxUgTRrmO").style.height=document.getElementById("mmedia-uptqTAmRxUgTRrmO").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-wwsPzedKNvTkoGIh").style.height=document.getElementById("mmedia-wwsPzedKNvTkoGIh").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-uptqTAmRxUgTRrmO").style.height=document.getElementById("mmedia-uptqTAmRxUgTRrmO").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-wwsPzedKNvTkoGIh").style.height=document.getElementById("mmedia-wwsPzedKNvTkoGIh").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 
@@ -48805,9 +48805,9 @@ CI/CD与Git Flow与GitLab
         <category>hexo</category>
       </categories>
       <tags>
+        <tag>hexo</tag>
         <tag>宝塔</tag>
         <tag>docker</tag>
-        <tag>hexo</tag>
         <tag>waline</tag>
       </tags>
   </entry>
