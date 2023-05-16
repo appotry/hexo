@@ -11,6 +11,7 @@
     const robserver = new ResizeObserver((entries) => {
         entries.forEach(entry => entry.target.dispatchEvent(markmapResize))
     })
+    
     const autoFit = (el, obj) => {
         robserver.observe(el.parentNode)
         el.parentNode.addEventListener('markmapResize', debounce(() => obj.fit(), 100))
