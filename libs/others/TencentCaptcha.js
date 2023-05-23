@@ -1,1 +1,0 @@
-onIsOff=true;window.callback=function(e){if(e.ret===0){window.clearInterval(t2)}if(e.ret===2){onIsOff=true}};var t2=window.setInterval(function(){if(onIsOff==true){act=document.activeElement.id;if(act=="veditor"){document.getElementById("TencentCaptcha").click();onIsOff=false}else if(act=="waline-edit"){document.getElementById("TencentCaptcha").click();onIsOff=false}}},1e3);
