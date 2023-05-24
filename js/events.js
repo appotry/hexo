@@ -1,0 +1,14 @@
+HTMLElement.prototype.wrap=function($){this.parentNode.insertBefore($,this);this.parentNode.removeChild(this);$.appendChild(this)};Matery.events={registerNavbarEvent:function(){var $=jQuery("#headNav");if($.length===0){return}Matery.utils.listenScroll(function(){})},registerParallaxEvent:function(){var n=jQuery('#banner[parallax="true"]');if(n.length===0){return}var t=jQuery("main.content");if(t.length===0){return}var $=function(){var $=jQuery(window).scrollTop()/5;var e=parseInt(t.css("margin-top"),10);var r=96+e;if($>r){$=r}n.css({transform:"translate3d(0,"+$+"px,0)"})};Matery.utils.listenScroll($)},registerScrollDownArrowEvent:function(){var $=jQuery(".cover.scroll-down-bar");if($.length===0){return}$.on("click",function(){Matery.utils.scrollToElement("main.content",-jQuery("#headNav").height()+30)})},registerScrollBackCommentEvent:function(){var $=jQuery("#to_comment");if($.length===0){return}$.on("click",function(){Matery.utils.scrollToElement("#comments",-jQuery("#headNav").height());Matery.utils.scrollToElement("#comments",-jQuery("#headNav").height())})},registerScrollTopArrowEvent:function(){var $=jQuery("#backTop");if($.length===0){return}var e=jQuery("main.content");if(e.length===0){return}$.on("click",function(){jQuery("body,html").animate({scrollTop:0,easing:"swing"})})},registerImageLoadedEvent:function(){if(!("NProgress"in window)){return}var $=jQuery("main img:not([lazyload])");var e=$.length;for(const r of $){const n=r.onload;r.onload=function(){n&&n();window.NProgress&&window.NProgress.inc(.5/e)};if(r.complete){r.onload()}}},registerRefreshCallback:function($){if(!Array.isArray(Matery.events._refreshCallbacks)){Matery.events._refreshCallbacks=[]}Matery.events._refreshCallbacks.push($)},refresh:function(){if(Array.isArray(Matery.events._refreshCallbacks)){for(var $ of Matery.events._refreshCallbacks){if($ instanceof Function){$()}}}},billboard:function(){if(!("console"in window)){return}console.log(`
+    __       __   ______   ________  ________  _______   __      __ 
+    /  \     /  | /      \ /        |/        |/       \ /  \    /  |
+    $$  \   /$$ |/$$$$$$  |$$$$$$$$/ $$$$$$$$/ $$$$$$$  |$$  \  /$$/ 
+    $$$  \ /$$$ |$$ |__$$ |   $$ |   $$ |__    $$ |__$$ | $$  \/$$/  
+    $$$$  /$$$$ |$$    $$ |   $$ |   $$    |   $$    $$<   $$  $$/   
+    $$ $$ $$/$$ |$$$$$$$$ |   $$ |   $$$$$/    $$$$$$$  |   $$$$/    
+    $$ |$$$/ $$ |$$ |  $$ |   $$ |   $$ |_____ $$ |  $$ |    $$ |    
+    $$ | $/  $$ |$$ |  $$ |   $$ |   $$       |$$ |  $$ |    $$ |    
+    $$/      $$/ $$/   $$/    $$/    $$$$$$$$/ $$/   $$/     $$/  
+                           
+                欢迎访问 夜法之书 个人博客！
+                  https://blog.17lai.site                                                           
+    `)}};
