@@ -20,6 +20,7 @@
         document.querySelectorAll('.markmap-container>svg').forEach(el => {
           let obj = markmap.Markmap.create(el, { autoFit: true }, JSON.parse(el.getAttribute('data')))
           autoFit(el, obj)
+          
         })
     }
     if (window.markmap && Object.keys(window.markmap).length != 0) { createMarkmap(); return }
