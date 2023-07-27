@@ -23,15 +23,16 @@
           
         })
     }
+    
     if (window.markmap && Object.keys(window.markmap).length != 0) { createMarkmap(); return }
     const CDN = {
       "js": {
-        "d3": 'https://fastly.jsdelivr.net/npm/d3@6',
-        "markmap_view": 'https://fastly.jsdelivr.net/npm/markmap-view@0.2.7',
+        "d3": "https://fastly.jsdelivr.net/npm/d3@6",
+        "markmap_view": "https://fastly.jsdelivr.net/npm/markmap-view@0.2.7",
       },
       "css": [
-        'https://fastly.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css',
-        
+        "https://fastly.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css",
+        "/libs/prism/themes/prism.min.css"
       ],
     }
     const loadElement = (elname, attr) => {
@@ -52,7 +53,7 @@
     await loadScript(CDN.js.d3)
     await loadScript(CDN.js.markmap_view)
     await Promise.all(CDN.css.map(loadCSS))
-
+    
     createMarkmap()
 }
 if(document.querySelector('.markmap-container')) {
