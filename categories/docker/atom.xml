@@ -2064,6 +2064,27 @@ fe80::260:97ff:fe02:6ea5%tun0&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt
 &lt;li&gt;&lt;a href=&#34;/posts/465d2738/&#34;&gt;如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;/posts/462f1e5c/&#34;&gt;通过IPV6访问Qnap NAS中Docker的服务&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
+&lt;h2 id=&#34;附赠&#34;&gt;附赠&lt;/h2&gt;
+&lt;h3 id=&#34;alpine-linux-使用国内镜像源进行加速&#34;&gt;alpine linux 使用国内镜像源进行加速&lt;/h3&gt;
+&lt;p&gt;Alpine 的源文件为：&lt;/p&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-ini&#34; data-language=&#34;ini&#34;&gt;&lt;code class=&#34;language-ini&#34;&gt;/etc/apk/repositories&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;p&gt;这里面的默认配置例如：&lt;/p&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;http://dl-cdn.alpinelinux.org/alpine/v3.11/main
+http://dl-cdn.alpinelinux.org/alpine/v3.11/community&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;p&gt;可以使用以下命令来进行源的切换（阿里云源）：&lt;/p&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;sed -i &#39;s/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g&#39; /etc/apk/repositories&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;p&gt;中国科技大学的源：&lt;/p&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;sed -i &#39;s/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g&#39; /etc/apk/repositories&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;p&gt;清华源：&lt;/p&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;sed -i &#39;s/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g&#39; /etc/apk/repositories&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;p&gt;目前 Docker 官方已开始推荐使用 Alpine 替代之前的 Ubuntu 做为基础镜像环境。&lt;/p&gt;
+&lt;p&gt;Alpine 使用 apk 来进行包管理。&lt;/p&gt;
+&lt;p&gt;可以在 Docker file 中添加以下语句，来加速 apk 的包管理。&lt;/p&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-docker&#34; data-language=&#34;docker&#34;&gt;&lt;code class=&#34;language-docker&#34;&gt;...
+RUN sed -i &#39;s/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g&#39; /etc/apk/repositories
+RUN apk add --no-cache gcc musl-dev linux-headers
+...&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;p&gt;注： sed 可依照脚本的指令来处理、编辑文本文件。 Sed 主要用来自动编辑一个或多个文件、简化对文件的反复操作、编写转换程序等。&lt;/p&gt;
 </content>
         <category term="qnap" />
         <category term="nas" />
