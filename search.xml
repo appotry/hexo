@@ -8518,497 +8518,6 @@ Vercel部署高级用法教程
       </tags>
   </entry>
   <entry>
-    <title>浏览器的渲染过程</title>
-    <url>/posts/69a052c9/</url>
-    <content><![CDATA[
-通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？
-
-首先，请先看一张大图
-浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：
-
-构建对象模型（DOM，CSSOM）
-构建渲染树（RenderTree）
-布局
-渲染
-
-在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：
-
-1.DOMTree的构建
-浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：
-
-
-第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符
-
-
-
-第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是开始标签，还是结束标签，或者文本标签等。
-
-
-
-第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的开始标签，结束标签，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。
-Node包含了这个节点的所有属性。例如&lt;img src="xxx.png" &gt;标签最终生成出的节点对象中会保存图片地址等信息。
-事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取深度遍历算法消耗Token来生成Node，如下图所示：
-图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出html Token,并消耗Token创建出html 节点对象，接着生成head Token并消耗Token创建出head节点对象…，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。
-
-
-这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？
-因为在上述的解析的过程中，如果碰到了script或者link标签，就会根据src对应的地址去加载资源，在script标签没有设置async/defer属性时，这个加载过程是下载并执行完全部的代码，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出找不到该DOM元素的错误。
-值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。
-2.CSSOMTree的构建
-DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：
-假设浏览器收到了下面这样一段css:
-body {font-size: 16px;}
-p {font-weight: bold;}
-p span {display:none;}
-span {color: red;}
-img {float: right;}
-最终会生成如下的CSSOMTree:
-
-从图中可以看出，最开始body有一个样式规则是font-size:16px，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如span又添加了一个样式规则color:red。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置。比如在上面的css代码基础上再添加一行代码p {font-size:12px}，那么之前设置的16px将会被覆盖成12px。
-下面是官方给的一种解释：
-
-未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。
-所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。
-
-那么回到上面生成DOM时提到的JS问题：在标签没有设置async/defer属性时，js会阻塞DOM的生成。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。
-同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在浏览器还未完成CSSOMTree的下载和构建时去操作CSS样式，浏览器会暂停脚本的运行和DOM的构建，直至浏览器完成了CSSOM的下载和构建。也就是说，JS脚本的出现会让CSSOM的构建阻塞DOM的构建。
-
-平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？
-
-举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个link标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：
-
-而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个script标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：
-
-那如果我们把css放到前面，js放到最后引入时，构建时间会变成：
-
-由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。
-简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：
-
-当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕
-JavaScript可以查询和修改DOMTree与CSSOMTree
-直至CSSOM构建完毕，JavaScript才会执行
-脚本在文档中的位置很重要
-
-3.渲染树的构建
-现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树
-
-接下来我们来谈几条概念
-
-
-Render 树上的每一个节点被称为：RenderObject。
-
-
-RenderObject跟 DOM 节点几乎是一一对应的，当一个可见的 DOM 节点被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。
-
-
-其中，可见的DOM节点不包括：
-
-
-一些不会体现在渲染输出中的节点（&lt;html&gt;&lt;script&gt;&lt;link&gt;….），会直接被忽略掉。
-
-
-通过CSS隐藏的节点。例如上图中的span节点，因为有一个CSS显式规则在该节点上设置了display:none属性，那么它在生成RenderObject时会被直接忽略掉。
-
-
-Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。
-
-
-此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？
-RenderObject and RenderLayer
-
-浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing等属性，浏览器需要生成另外一棵树：Layer树
-
-
-浏览器会为一些特定的RenderObject生成对应的RenderLayer，其中的规则是：
-
-是否是页面的根节点 It’s the root object for the page
-是否有css的一些布局属性（relative absolute or a transform) It has explicit CSS position properties (relative, absolute or a transform)
-是否透明 It is transparent
-是否有溢出 Has overflow, an alpha mask or reflection
-是否有css滤镜 Has a CSS filter
-是否包含一个canvas元素使得节点拥有视图上下文 Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context
-是否包含一个video元素 Corresponds to a video element
-
-当满足上面其中一个条件时，这个RrenderObject就会被浏览器选中生成对应的RenderLayer。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。
-浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个RenderLayer，再遍历从属于这个RenderLayer的 RrenderObject，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 RenderLayer 和 RrenderObject 一起就决定了网页在屏幕上最终呈现出来的内容。
-4.布局
-到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。
-布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。
-
-5.渲染
-最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。
-
-至此，我们就能够在浏览器上看到漂亮的网页了
-
-谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？
-
-我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~
-总结：
-
-经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。
-CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。
-同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用async/defer属性异步加载JavaScript。
-重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数
-
-参考文献：
-https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn
-https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn
-https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn
-https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
-        <tag>css</tag>
-        <tag>js</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>在浏览器输入 URL 回车之后发生了什么</title>
-    <url>/posts/656a0abb/</url>
-    <content><![CDATA[前言
-
-这个问题已经是老生常谈了，更是经常被作为面试的压轴题出现，网上也有很多文章，但最近闲的无聊，然后就自己做了一篇笔记，感觉比之前理解更透彻了。
-这篇笔记是我这两天看了数十篇文章总结出来的，所以相对全面一点，但由于我是做前端的，所以会比较重点分析浏览器渲染页面那一部分，至于其他部分我会罗列出关键词，感兴趣的可以自行查阅，
-**注意：**本文的步骤是建立在，请求的是一个简单的 HTTP 请求，没有 HTTPS、HTTP2、最简单的 DNS、没有代理、并且服务器没有任何问题的基础上，尽管这是不切实际的。
-大致流程
-
-URL 解析
-DNS 查询
-TCP 连接
-处理请求
-接受响应
-渲染页面
-
-一、URL 解析
-地址解析：
-首先判断你输入的是一个合法的 URL 还是一个待搜索的关键词，并且根据你输入的内容进行自动完成、字符编码等操作。
-HSTS
-由于安全隐患，会使用 HSTS 强制客户端使用 HTTPS 访问页面。详见：你所不知道的 HSTS (opens new window)。
-其他操作
-浏览器还会进行一些额外的操作，比如安全检查、访问限制（之前国产浏览器限制 996.icu）。
-检查缓存
-
-二、DNS 查询
-基本步骤
-
-1. 浏览器缓存
-浏览器会先检查是否在缓存中，没有则调用系统库函数进行查询。
-2. 操作系统缓存
-操作系统也有自己的 DNS 缓存，但在这之前，会向检查域名是否存在本地的 Hosts 文件里，没有则向 DNS 服务器发送查询请求。
-3. 路由器缓存
-路由器也有自己的缓存。
-4. ISP DNS 缓存
-ISP DNS 就是在客户端电脑上设置的首选 DNS 服务器，它们在大多数情况下都会有缓存。
-根域名服务器查询
-在前面所有步骤没有缓存的情况下，本地 DNS 服务器会将请求转发到互联网上的根域，下面这个图很好的诠释了整个流程：
-
-
-根域名服务器：维基百科 (opens new window)
-
-需要注意的点
-
-递归方式：一路查下去中间不返回，得到最终结果才返回信息（浏览器到本地 DNS 服务器的过程）
-迭代方式，就是本地 DNS 服务器到根域名服务器查询的方式。
-什么是 DNS 劫持
-前端 dns-prefetch 优化
-
-三、TCP 连接
-TCP/IP 分为四层，在发送数据时，每层都要对数据进行封装：
-
-1. 应用层：发送 HTTP 请求
-在前面的步骤我们已经得到服务器的 IP 地址，浏览器会开始构造一个 HTTP 报文，其中包括：
-
-请求报头（Request Header）：请求方法、目标地址、遵循的协议等等
-请求主体（其他参数）
-
-其中需要注意的点：
-
-浏览器只能发送 GET、POST 方法，而打开网页使用的是 GET 方法
-
-2. 传输层：TCP 传输报文
-传输层会发起一条到达服务器的 TCP 连接，为了方便传输，会对数据进行分割（以报文段为单位），并标记编号，方便服务器接受时能够准确地还原报文信息。
-在建立连接前，会先进行 TCP 三次握手。
-
-关于 TCP/IP 三次握手，网上已经有很多段子和图片生动地描述了。
-相关知识点：
-
-SYN 泛洪攻击
-
-
-3. 网络层：IP 协议查询 Mac 地址
-将数据段打包，并加入源及目标的 IP 地址，并且负责寻找传输路线。
-判断目标地址是否与当前地址处于同一网络中，是的话直接根据 Mac 地址发送，否则使用路由表查找下一跳地址，以及使用 ARP 协议查询它的 Mac 地址。
-
-注意：在 OSI 参考模型中 ARP 协议位于链路层，但在 TCP/IP 中，它位于网络层。
-
-4. 链路层：以太网协议
-以太网协议
-根据以太网协议将数据分为以“帧”为单位的数据包，每一帧分为两个部分：
-
-标头：数据包的发送者、接受者、数据类型
-数据：数据包具体内容
-
-Mac 地址
-以太网规定了连入网络的所有设备都必须具备“网卡”接口，数据包都是从一块网卡传递到另一块网卡，网卡的地址就是 Mac 地址。每一个 Mac 地址都是独一无二的，具备了一对一的能力。
-广播
-发送数据的方法很原始，直接把数据通过 ARP 协议，向本网络的所有机器发送，接收方根据标头信息与自身 Mac 地址比较，一致就接受，否则丢弃。
-注意：接收方回应是单播。
-
-相关知识点：
-
-ARP 攻击
-
-
-服务器接受请求
-接受过程就是把以上步骤逆转过来，参见上图。
-四、服务器处理请求
-大致流程
-
-HTTPD
-最常见的 HTTPD 有 Linux 上常用的 Apache 和 Nginx，以及 Windows 上的 IIS。
-它会监听得到的请求，然后开启一个子进程去处理这个请求。
-处理请求
-接受 TCP 报文后，会对连接进行处理，对 HTTP 协议进行解析（请求方法、域名、路径等），并且进行一些验证：
-
-验证是否配置虚拟主机
-验证虚拟主机是否接受此方法
-验证该用户可以使用该方法（根据 IP 地址、身份信息等）
-
-重定向
-假如服务器配置了 HTTP 重定向，就会返回一个 301永久重定向响应，浏览器就会根据响应，重新发送 HTTP 请求（重新执行上面的过程）。
-
-关于更多：详见这篇文章 (opens new window)
-
-URL 重写
-然后会查看 URL 重写规则，如果请求的文件是真实存在的，比如图片、html、css、js 文件等，则会直接把这个文件返回。
-否则服务器会按照规则把请求重写到 一个 REST 风格的 URL 上。
-然后根据动态语言的脚本，来决定调用什么类型的动态文件解释器来处理这个请求。
-以 PHP 语言的 MVC 框架举例，它首先会初始化一些环境的参数，根据 URL 由上到下地去匹配路由，然后让路由所定义的方法去处理请求。
-五、浏览器接受响应
-浏览器接收到来自服务器的响应资源后，会对资源进行分析。
-首先查看 Response header，根据不同状态码做不同的事（比如上面提到的重定向）。
-如果响应资源进行了压缩（比如 gzip），还需要进行解压。
-然后，对响应资源做缓存。
-接下来，根据响应资源里的 MIME (opens new window) 类型去解析响应内容（比如 HTML、Image 各有不同的解析方式）。
-六、渲染页面
-浏览器内核
-
-不同的浏览器内核，渲染过程也不完全相同，但大致流程都差不多。
-基本流程
-
-1. HTML 解析
-首先要知道浏览器解析是从上往下一行一行地解析的。
-解析的过程可以分为四个步骤：
-1. 解码（encoding）
-传输回来的其实都是一些二进制字节数据，浏览器需要根据文件指定编码（例如 UTF-8）转换成字符串，也就是 HTML 代码。
-2. 预解析（pre-parsing）
-预解析做的事情是提前加载资源，减少处理时间，它会识别一些会请求资源的属性，比如img标签的src属性，并将这个请求加到请求队列中。
-3. 符号化（Tokenization）
-符号化是词法分析的过程，将输入解析成符号，HTML 符号包括，开始标签、结束标签、属性名和属性值。
-它通过一个状态机去识别符号的状态，比如遇到&lt;，&gt;状态都会产生变化。
-4. 构建树（tree construction）
-
-注意：符号化和构建树是并行操作的，也就是说只要解析到一个开始标签，就会创建一个 DOM 节点。
-
-在上一步符号化中，解析器获得这些标记，然后以合适的方法创建DOM对象并把这些符号插入到DOM对象中。
-
-浏览器容错进制
-你从来没有在浏览器看过类似"语法无效"的错误，这是因为浏览器去纠正错误的语法，然后继续工作。
-事件
-当整个解析的过程完成以后，浏览器会通过DOMContentLoaded事件来通知DOM解析完成。
-2. CSS 解析
-一旦浏览器下载了 CSS，CSS 解析器就会处理它遇到的任何 CSS，根据语法规范 (opens new window)解析出所有的 CSS 并进行标记化，然后我们得到一个规则表。
-CSS 匹配规则
-在匹配一个节点对应的 CSS 规则时，是按照从右到左的顺序的，例如：div p { font-size :14px }会先寻找所有的p标签然后判断它的父元素是否为div。
-所以我们写 CSS 时，尽量用 id 和 class，千万不要过度层叠。
-3. 渲染树
-其实这就是一个 DOM 树和 CSS 规则树合并的过程。
-
-注意：渲染树会忽略那些不需要渲染的节点，比如设置了display:none的节点。
-
-计算
-通过计算让任何尺寸值都减少到三个可能之一：auto、百分比、px，比如把rem转化为px。
-级联
-浏览器需要一种方法来确定哪些样式才真正需要应用到对应元素，所以它使用一个叫做specificity的公式，这个公式会通过：
-
-标签名、class、id
-是否内联样式
-!important
-
-然后得出一个权重值，取最高的那个。
-渲染阻塞
-当遇到一个script标签时，DOM 构建会被暂停，直至脚本完成执行，然后继续构建 DOM 树。
-但如果 JS 依赖 CSS 样式，而它还没有被下载和构建时，浏览器就会延迟脚本执行，直至 CSS Rules 被构建。
-所有我们知道：
-
-CSS 会阻塞 JS 执行
-JS 会阻塞后面的 DOM 解析
-
-为了避免这种情况，应该以下原则：
-
-CSS 资源排在 JavaScript 资源前面
-JS 放在 HTML 最底部，也就是 &lt;/body&gt;前
-
-另外，如果要改变阻塞模式，可以使用 defer 与 async，详见：这篇文章 (opens new window)
-
-布局与绘制
-
-确定渲染树种所有节点的几何属性，比如：位置、大小等等，最后输入一个盒子模型，它能精准地捕获到每个元素在屏幕内的准确位置与大小。
-然后遍历渲染树，调用渲染器的 paint() 方法在屏幕上显示其内容。
-5. 合并渲染层
-把以上绘制的所有图片合并，最终输出一张图片。
-6. 回流与重绘
-回流(reflow)
-当浏览器发现某个部分发现变化影响了布局时，需要倒回去重新渲染，会从html标签开始递归往下，重新计算位置和大小。
-reflow 基本是无法避免的，因为当你滑动一下鼠标、resize 窗口，页面就会产生变化。
-重绘(repaint)
-改变了某个元素的背景色、文字颜色等等不会影响周围元素的位置变化时，就会发生重绘。
-每次重绘后，浏览器还需要合并渲染层并输出到屏幕上。
-回流的成本要比重绘高很多，所以我们应该尽量避免产生回流。
-比如：
-
-display:none 会触发回流，而 visibility:hidden 只会触发重绘。
-
-
-JavaScript 编译执行
-
-大致流程
-
-可以分为三个阶段：
-1. 词法分析
-JS 脚本加载完毕后，会首先进入语法分析阶段，它首先会分析代码块的语法是否正确，不正确则抛出“语法错误”，停止执行。
-几个步骤：
-
-分词，例如将var a = 2，，分成var、a、=、2这样的词法单元。
-解析，将词法单元转换成抽象语法树（AST）。
-代码生成，将抽象语法树转换成机器指令。
-
-2. 预编译
-JS 有三种运行环境：
-
-全局环境
-函数环境
-eval
-
-每进入一个不同的运行环境都会创建一个对应的执行上下文，根据不同的上下文环境，形成一个函数调用栈，栈底永远是全局执行上下文，栈顶则永远是当前执行上下文。
-创建执行上下文
-创建执行上下文的过程中，主要做了以下三件事：
-
-创建变量对象
-
-参数、函数、变量
-
-
-建立作用域链
-
-确认当前执行环境是否能访问变量
-
-
-确定 This 指向
-
-3. 执行
-JS 线程
-
-虽然 JS 是单线程的，但实际上参与工作的线程一共有四个：
-
-其中三个只是协助，只有 JS 引擎线程是真正执行的
-
-
-JS 引擎线程：也叫 JS 内核，负责解析执行 JS 脚本程序的主线程，例如 V8 引擎
-事件触发线程：属于浏览器内核线程，主要用于控制事件，例如鼠标、键盘等，当事件被触发时，就会把事件的处理函数推进事件队列，等待 JS 引擎线程执行
-定时器触发线程：主要控制setInterval和setTimeout，用来计时，计时完毕后，则把定时器的处理函数推进事件队列中，等待 JS 引擎线程。
-HTTP 异步请求线程：通过 XMLHttpRequest 连接后，通过浏览器新开的一个线程，监控 readyState 状态变更时，如果设置了该状态的回调函数，则将该状态的处理函数推进事件队列中，等待 JS 引擎线程执行。
-
-注：浏览器对同一域名的并发连接数是有限的，通常为 6 个。
-宏任务
-分为：
-
-同步任务：按照顺序执行，只有前一个任务完成后，才能执行后一个任务
-异步任务：不直接执行，只有满足触发条件时，相关的线程将该异步任务推进任务队列中，等待 JS 引擎主线程上的任务执行完毕时才开始执行，例如异步 Ajax、DOM 事件，setTimeout 等。
-
-微任务
-微任务是 ES6 和 Node 环境下的，主要 API 有：Promise，process.nextTick。
-微任务的执行在宏任务的同步任务之后，在异步任务之前。
-
-代码例子
-以上代码输出顺序为：1,3,5,4,2
-参考文档
-
-what-happens-when-zh_CN (opens new window)
-Tags to DOM (opens new window)
-彻底理解浏览器的缓存机制 (opens new window)
-浏览器的工作原理：新式网络浏览器幕后揭秘 (opens new window)
-深入浅出浏览器渲染原理 (opens new window)
-js 引擎的执行过程（一） (opens new window)
-还有一些找不到了。。。。。
-
-From: 4ark.me
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>自动曝光原理</title>
-    <url>/posts/509c7bd3/</url>
-    <content><![CDATA[自动曝光的原理
-曝光是摄影中十分重要的一个环节，它决定了一张图片的明暗，如下图所示，第一张图片太暗，而第三种图片太亮。
-
-曝光由什么来决定
-使用过数码相机的人都知道曝光由光圈、曝光时间、ISO三者共同决定，详细的关系就不赘述。
-光圈：控制进光量；
-曝光时间：光到达的时间长度；
-ISO：增益；
-但是对于手机以及其他电子产品使用的微型摄像头，光圈大小是固定的，所以手机拍照的曝光由曝光时间和**增益(ISO)**来控制。
-什么是自动曝光
-数码相机中有一种手动模式，可手动设置光圈、曝光时间、ISO来控制曝光，该模式的使用对摄影师的要求会比较高。另外 数码相机的全自动模式、光圈优先模式、快门优先模式以及手机等电子产品的曝光都属于自动曝光。
-自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。
-自动曝光的标准
-在此之前需要了解物体的亮度与色彩是由物体对光线的反射率来决定的。例如纯黑色的放射率是0，纯白色的反射率是100%，处于中间的灰度的反射率是18%，这就是18%中间灰度。
-
-具有一定反射率的物体在最终的图像中被还原到了其相应的灰度级，这就意味着达到了正确的曝光。例如摄影师们通常在拍摄之前使用中性灰卡测试曝光是否正常。
-但是相机在各种场景下无法识别物体的反射率，因此采用了一个简单粗暴而又行之有效的方法，统一将图像整体平均亮度设置为中性灰的亮度。该方法基于**科学家认为自然界的平均反射率是18%**这一理论。当然，这个方法也不是走遍天下都不怕，比如拍摄雪景时需要增加曝光补偿，不然会偏暗，因为雪景的亮度远远大于中性灰度。这也就是摄影中的一句口诀的由来“白增黑减”。
-自动曝光算法
-上面已经讲了自动曝光的标准，也就确立了曝光目标，要达到这一目标还要自动曝光算法来实现。
-目前比较常见的算法有平均亮度法、权重均值法、亮度直方图等。其中最普遍的就是平均亮度法。平均亮度法就是对图像所以像素亮度求平均值，通过不断调整曝光参数最终达到目标亮度。而权重均值法是对图像不同区域设置不同权重来计算图像亮度，例如相机中的各种测光模式的选择就是改变不同区域的权重。亮度直方图法是通过为直方图中峰值分配不同权重来计算图像亮度。
-自动曝光实现的过程：
-第一步：对当前图像进行亮度统计；
-第二步：根据当前图像亮度确定曝光值；
-第三步：计算新的曝光参数，曝光时间、光圈、增益；
-第四步：将新的曝光参数应用到相机；
-第五步：重复步骤一到四，直到亮度满足要求。
-曝光参数调整_曝光表
-前面留下两个问题：“第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。” 第一个问题在前面有过解释，第二个问题也就是自动曝光实现步骤的第三步，曝光值由光圈、曝光时间、增益沟通决定，当计算出一个曝光量，曝光三要素有很多种组合方式。一般情况下有曝光曲线，每个曝光量对应一组参数。手机中曝光曲线可以通过Tuning调整。
-From: 积极的悲观主义者
-系列教程
-全部文章RSS订阅
-Embeded系列
-Embeded 分类 RSS 订阅
-
-海思MPP&amp;UNF构架源代码级分析
-3G,4G,Wifi选型需求分析及技术简介
-自动曝光原理
-ISP 数字图像处理 算法概述、工作原理、架构、处理流程
-
-]]></content>
-      <categories>
-        <category>embeded</category>
-      </categories>
-      <tags>
-        <tag>3a</tag>
-        <tag>ae</tag>
-        <tag>image</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>[三万字教程]基于Hexo的matery主题搭建博客并深度优化一站式完全教程</title>
     <url>/posts/40300608/</url>
     <content><![CDATA[
@@ -10405,6 +9914,497 @@ CI/CD与Git Flow与GitLab
         <tag>docker</tag>
         <tag>matery</tag>
         <tag>npm</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>浏览器的渲染过程</title>
+    <url>/posts/69a052c9/</url>
+    <content><![CDATA[
+通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？
+
+首先，请先看一张大图
+浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：
+
+构建对象模型（DOM，CSSOM）
+构建渲染树（RenderTree）
+布局
+渲染
+
+在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：
+
+1.DOMTree的构建
+浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：
+
+
+第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符
+
+
+
+第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是开始标签，还是结束标签，或者文本标签等。
+
+
+
+第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的开始标签，结束标签，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。
+Node包含了这个节点的所有属性。例如&lt;img src="xxx.png" &gt;标签最终生成出的节点对象中会保存图片地址等信息。
+事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取深度遍历算法消耗Token来生成Node，如下图所示：
+图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出html Token,并消耗Token创建出html 节点对象，接着生成head Token并消耗Token创建出head节点对象…，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。
+
+
+这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？
+因为在上述的解析的过程中，如果碰到了script或者link标签，就会根据src对应的地址去加载资源，在script标签没有设置async/defer属性时，这个加载过程是下载并执行完全部的代码，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出找不到该DOM元素的错误。
+值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。
+2.CSSOMTree的构建
+DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：
+假设浏览器收到了下面这样一段css:
+body {font-size: 16px;}
+p {font-weight: bold;}
+p span {display:none;}
+span {color: red;}
+img {float: right;}
+最终会生成如下的CSSOMTree:
+
+从图中可以看出，最开始body有一个样式规则是font-size:16px，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如span又添加了一个样式规则color:red。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置。比如在上面的css代码基础上再添加一行代码p {font-size:12px}，那么之前设置的16px将会被覆盖成12px。
+下面是官方给的一种解释：
+
+未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。
+所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。
+
+那么回到上面生成DOM时提到的JS问题：在标签没有设置async/defer属性时，js会阻塞DOM的生成。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。
+同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在浏览器还未完成CSSOMTree的下载和构建时去操作CSS样式，浏览器会暂停脚本的运行和DOM的构建，直至浏览器完成了CSSOM的下载和构建。也就是说，JS脚本的出现会让CSSOM的构建阻塞DOM的构建。
+
+平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？
+
+举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个link标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：
+
+而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个script标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：
+
+那如果我们把css放到前面，js放到最后引入时，构建时间会变成：
+
+由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。
+简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：
+
+当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕
+JavaScript可以查询和修改DOMTree与CSSOMTree
+直至CSSOM构建完毕，JavaScript才会执行
+脚本在文档中的位置很重要
+
+3.渲染树的构建
+现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树
+
+接下来我们来谈几条概念
+
+
+Render 树上的每一个节点被称为：RenderObject。
+
+
+RenderObject跟 DOM 节点几乎是一一对应的，当一个可见的 DOM 节点被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。
+
+
+其中，可见的DOM节点不包括：
+
+
+一些不会体现在渲染输出中的节点（&lt;html&gt;&lt;script&gt;&lt;link&gt;….），会直接被忽略掉。
+
+
+通过CSS隐藏的节点。例如上图中的span节点，因为有一个CSS显式规则在该节点上设置了display:none属性，那么它在生成RenderObject时会被直接忽略掉。
+
+
+Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。
+
+
+此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？
+RenderObject and RenderLayer
+
+浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing等属性，浏览器需要生成另外一棵树：Layer树
+
+
+浏览器会为一些特定的RenderObject生成对应的RenderLayer，其中的规则是：
+
+是否是页面的根节点 It’s the root object for the page
+是否有css的一些布局属性（relative absolute or a transform) It has explicit CSS position properties (relative, absolute or a transform)
+是否透明 It is transparent
+是否有溢出 Has overflow, an alpha mask or reflection
+是否有css滤镜 Has a CSS filter
+是否包含一个canvas元素使得节点拥有视图上下文 Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context
+是否包含一个video元素 Corresponds to a video element
+
+当满足上面其中一个条件时，这个RrenderObject就会被浏览器选中生成对应的RenderLayer。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。
+浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个RenderLayer，再遍历从属于这个RenderLayer的 RrenderObject，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 RenderLayer 和 RrenderObject 一起就决定了网页在屏幕上最终呈现出来的内容。
+4.布局
+到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。
+布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。
+
+5.渲染
+最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。
+
+至此，我们就能够在浏览器上看到漂亮的网页了
+
+谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？
+
+我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~
+总结：
+
+经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。
+CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。
+同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用async/defer属性异步加载JavaScript。
+重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数
+
+参考文献：
+https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn
+https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn
+https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn
+https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
+        <tag>css</tag>
+        <tag>js</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>在浏览器输入 URL 回车之后发生了什么</title>
+    <url>/posts/656a0abb/</url>
+    <content><![CDATA[前言
+
+这个问题已经是老生常谈了，更是经常被作为面试的压轴题出现，网上也有很多文章，但最近闲的无聊，然后就自己做了一篇笔记，感觉比之前理解更透彻了。
+这篇笔记是我这两天看了数十篇文章总结出来的，所以相对全面一点，但由于我是做前端的，所以会比较重点分析浏览器渲染页面那一部分，至于其他部分我会罗列出关键词，感兴趣的可以自行查阅，
+**注意：**本文的步骤是建立在，请求的是一个简单的 HTTP 请求，没有 HTTPS、HTTP2、最简单的 DNS、没有代理、并且服务器没有任何问题的基础上，尽管这是不切实际的。
+大致流程
+
+URL 解析
+DNS 查询
+TCP 连接
+处理请求
+接受响应
+渲染页面
+
+一、URL 解析
+地址解析：
+首先判断你输入的是一个合法的 URL 还是一个待搜索的关键词，并且根据你输入的内容进行自动完成、字符编码等操作。
+HSTS
+由于安全隐患，会使用 HSTS 强制客户端使用 HTTPS 访问页面。详见：你所不知道的 HSTS (opens new window)。
+其他操作
+浏览器还会进行一些额外的操作，比如安全检查、访问限制（之前国产浏览器限制 996.icu）。
+检查缓存
+
+二、DNS 查询
+基本步骤
+
+1. 浏览器缓存
+浏览器会先检查是否在缓存中，没有则调用系统库函数进行查询。
+2. 操作系统缓存
+操作系统也有自己的 DNS 缓存，但在这之前，会向检查域名是否存在本地的 Hosts 文件里，没有则向 DNS 服务器发送查询请求。
+3. 路由器缓存
+路由器也有自己的缓存。
+4. ISP DNS 缓存
+ISP DNS 就是在客户端电脑上设置的首选 DNS 服务器，它们在大多数情况下都会有缓存。
+根域名服务器查询
+在前面所有步骤没有缓存的情况下，本地 DNS 服务器会将请求转发到互联网上的根域，下面这个图很好的诠释了整个流程：
+
+
+根域名服务器：维基百科 (opens new window)
+
+需要注意的点
+
+递归方式：一路查下去中间不返回，得到最终结果才返回信息（浏览器到本地 DNS 服务器的过程）
+迭代方式，就是本地 DNS 服务器到根域名服务器查询的方式。
+什么是 DNS 劫持
+前端 dns-prefetch 优化
+
+三、TCP 连接
+TCP/IP 分为四层，在发送数据时，每层都要对数据进行封装：
+
+1. 应用层：发送 HTTP 请求
+在前面的步骤我们已经得到服务器的 IP 地址，浏览器会开始构造一个 HTTP 报文，其中包括：
+
+请求报头（Request Header）：请求方法、目标地址、遵循的协议等等
+请求主体（其他参数）
+
+其中需要注意的点：
+
+浏览器只能发送 GET、POST 方法，而打开网页使用的是 GET 方法
+
+2. 传输层：TCP 传输报文
+传输层会发起一条到达服务器的 TCP 连接，为了方便传输，会对数据进行分割（以报文段为单位），并标记编号，方便服务器接受时能够准确地还原报文信息。
+在建立连接前，会先进行 TCP 三次握手。
+
+关于 TCP/IP 三次握手，网上已经有很多段子和图片生动地描述了。
+相关知识点：
+
+SYN 泛洪攻击
+
+
+3. 网络层：IP 协议查询 Mac 地址
+将数据段打包，并加入源及目标的 IP 地址，并且负责寻找传输路线。
+判断目标地址是否与当前地址处于同一网络中，是的话直接根据 Mac 地址发送，否则使用路由表查找下一跳地址，以及使用 ARP 协议查询它的 Mac 地址。
+
+注意：在 OSI 参考模型中 ARP 协议位于链路层，但在 TCP/IP 中，它位于网络层。
+
+4. 链路层：以太网协议
+以太网协议
+根据以太网协议将数据分为以“帧”为单位的数据包，每一帧分为两个部分：
+
+标头：数据包的发送者、接受者、数据类型
+数据：数据包具体内容
+
+Mac 地址
+以太网规定了连入网络的所有设备都必须具备“网卡”接口，数据包都是从一块网卡传递到另一块网卡，网卡的地址就是 Mac 地址。每一个 Mac 地址都是独一无二的，具备了一对一的能力。
+广播
+发送数据的方法很原始，直接把数据通过 ARP 协议，向本网络的所有机器发送，接收方根据标头信息与自身 Mac 地址比较，一致就接受，否则丢弃。
+注意：接收方回应是单播。
+
+相关知识点：
+
+ARP 攻击
+
+
+服务器接受请求
+接受过程就是把以上步骤逆转过来，参见上图。
+四、服务器处理请求
+大致流程
+
+HTTPD
+最常见的 HTTPD 有 Linux 上常用的 Apache 和 Nginx，以及 Windows 上的 IIS。
+它会监听得到的请求，然后开启一个子进程去处理这个请求。
+处理请求
+接受 TCP 报文后，会对连接进行处理，对 HTTP 协议进行解析（请求方法、域名、路径等），并且进行一些验证：
+
+验证是否配置虚拟主机
+验证虚拟主机是否接受此方法
+验证该用户可以使用该方法（根据 IP 地址、身份信息等）
+
+重定向
+假如服务器配置了 HTTP 重定向，就会返回一个 301永久重定向响应，浏览器就会根据响应，重新发送 HTTP 请求（重新执行上面的过程）。
+
+关于更多：详见这篇文章 (opens new window)
+
+URL 重写
+然后会查看 URL 重写规则，如果请求的文件是真实存在的，比如图片、html、css、js 文件等，则会直接把这个文件返回。
+否则服务器会按照规则把请求重写到 一个 REST 风格的 URL 上。
+然后根据动态语言的脚本，来决定调用什么类型的动态文件解释器来处理这个请求。
+以 PHP 语言的 MVC 框架举例，它首先会初始化一些环境的参数，根据 URL 由上到下地去匹配路由，然后让路由所定义的方法去处理请求。
+五、浏览器接受响应
+浏览器接收到来自服务器的响应资源后，会对资源进行分析。
+首先查看 Response header，根据不同状态码做不同的事（比如上面提到的重定向）。
+如果响应资源进行了压缩（比如 gzip），还需要进行解压。
+然后，对响应资源做缓存。
+接下来，根据响应资源里的 MIME (opens new window) 类型去解析响应内容（比如 HTML、Image 各有不同的解析方式）。
+六、渲染页面
+浏览器内核
+
+不同的浏览器内核，渲染过程也不完全相同，但大致流程都差不多。
+基本流程
+
+1. HTML 解析
+首先要知道浏览器解析是从上往下一行一行地解析的。
+解析的过程可以分为四个步骤：
+1. 解码（encoding）
+传输回来的其实都是一些二进制字节数据，浏览器需要根据文件指定编码（例如 UTF-8）转换成字符串，也就是 HTML 代码。
+2. 预解析（pre-parsing）
+预解析做的事情是提前加载资源，减少处理时间，它会识别一些会请求资源的属性，比如img标签的src属性，并将这个请求加到请求队列中。
+3. 符号化（Tokenization）
+符号化是词法分析的过程，将输入解析成符号，HTML 符号包括，开始标签、结束标签、属性名和属性值。
+它通过一个状态机去识别符号的状态，比如遇到&lt;，&gt;状态都会产生变化。
+4. 构建树（tree construction）
+
+注意：符号化和构建树是并行操作的，也就是说只要解析到一个开始标签，就会创建一个 DOM 节点。
+
+在上一步符号化中，解析器获得这些标记，然后以合适的方法创建DOM对象并把这些符号插入到DOM对象中。
+
+浏览器容错进制
+你从来没有在浏览器看过类似"语法无效"的错误，这是因为浏览器去纠正错误的语法，然后继续工作。
+事件
+当整个解析的过程完成以后，浏览器会通过DOMContentLoaded事件来通知DOM解析完成。
+2. CSS 解析
+一旦浏览器下载了 CSS，CSS 解析器就会处理它遇到的任何 CSS，根据语法规范 (opens new window)解析出所有的 CSS 并进行标记化，然后我们得到一个规则表。
+CSS 匹配规则
+在匹配一个节点对应的 CSS 规则时，是按照从右到左的顺序的，例如：div p { font-size :14px }会先寻找所有的p标签然后判断它的父元素是否为div。
+所以我们写 CSS 时，尽量用 id 和 class，千万不要过度层叠。
+3. 渲染树
+其实这就是一个 DOM 树和 CSS 规则树合并的过程。
+
+注意：渲染树会忽略那些不需要渲染的节点，比如设置了display:none的节点。
+
+计算
+通过计算让任何尺寸值都减少到三个可能之一：auto、百分比、px，比如把rem转化为px。
+级联
+浏览器需要一种方法来确定哪些样式才真正需要应用到对应元素，所以它使用一个叫做specificity的公式，这个公式会通过：
+
+标签名、class、id
+是否内联样式
+!important
+
+然后得出一个权重值，取最高的那个。
+渲染阻塞
+当遇到一个script标签时，DOM 构建会被暂停，直至脚本完成执行，然后继续构建 DOM 树。
+但如果 JS 依赖 CSS 样式，而它还没有被下载和构建时，浏览器就会延迟脚本执行，直至 CSS Rules 被构建。
+所有我们知道：
+
+CSS 会阻塞 JS 执行
+JS 会阻塞后面的 DOM 解析
+
+为了避免这种情况，应该以下原则：
+
+CSS 资源排在 JavaScript 资源前面
+JS 放在 HTML 最底部，也就是 &lt;/body&gt;前
+
+另外，如果要改变阻塞模式，可以使用 defer 与 async，详见：这篇文章 (opens new window)
+
+布局与绘制
+
+确定渲染树种所有节点的几何属性，比如：位置、大小等等，最后输入一个盒子模型，它能精准地捕获到每个元素在屏幕内的准确位置与大小。
+然后遍历渲染树，调用渲染器的 paint() 方法在屏幕上显示其内容。
+5. 合并渲染层
+把以上绘制的所有图片合并，最终输出一张图片。
+6. 回流与重绘
+回流(reflow)
+当浏览器发现某个部分发现变化影响了布局时，需要倒回去重新渲染，会从html标签开始递归往下，重新计算位置和大小。
+reflow 基本是无法避免的，因为当你滑动一下鼠标、resize 窗口，页面就会产生变化。
+重绘(repaint)
+改变了某个元素的背景色、文字颜色等等不会影响周围元素的位置变化时，就会发生重绘。
+每次重绘后，浏览器还需要合并渲染层并输出到屏幕上。
+回流的成本要比重绘高很多，所以我们应该尽量避免产生回流。
+比如：
+
+display:none 会触发回流，而 visibility:hidden 只会触发重绘。
+
+
+JavaScript 编译执行
+
+大致流程
+
+可以分为三个阶段：
+1. 词法分析
+JS 脚本加载完毕后，会首先进入语法分析阶段，它首先会分析代码块的语法是否正确，不正确则抛出“语法错误”，停止执行。
+几个步骤：
+
+分词，例如将var a = 2，，分成var、a、=、2这样的词法单元。
+解析，将词法单元转换成抽象语法树（AST）。
+代码生成，将抽象语法树转换成机器指令。
+
+2. 预编译
+JS 有三种运行环境：
+
+全局环境
+函数环境
+eval
+
+每进入一个不同的运行环境都会创建一个对应的执行上下文，根据不同的上下文环境，形成一个函数调用栈，栈底永远是全局执行上下文，栈顶则永远是当前执行上下文。
+创建执行上下文
+创建执行上下文的过程中，主要做了以下三件事：
+
+创建变量对象
+
+参数、函数、变量
+
+
+建立作用域链
+
+确认当前执行环境是否能访问变量
+
+
+确定 This 指向
+
+3. 执行
+JS 线程
+
+虽然 JS 是单线程的，但实际上参与工作的线程一共有四个：
+
+其中三个只是协助，只有 JS 引擎线程是真正执行的
+
+
+JS 引擎线程：也叫 JS 内核，负责解析执行 JS 脚本程序的主线程，例如 V8 引擎
+事件触发线程：属于浏览器内核线程，主要用于控制事件，例如鼠标、键盘等，当事件被触发时，就会把事件的处理函数推进事件队列，等待 JS 引擎线程执行
+定时器触发线程：主要控制setInterval和setTimeout，用来计时，计时完毕后，则把定时器的处理函数推进事件队列中，等待 JS 引擎线程。
+HTTP 异步请求线程：通过 XMLHttpRequest 连接后，通过浏览器新开的一个线程，监控 readyState 状态变更时，如果设置了该状态的回调函数，则将该状态的处理函数推进事件队列中，等待 JS 引擎线程执行。
+
+注：浏览器对同一域名的并发连接数是有限的，通常为 6 个。
+宏任务
+分为：
+
+同步任务：按照顺序执行，只有前一个任务完成后，才能执行后一个任务
+异步任务：不直接执行，只有满足触发条件时，相关的线程将该异步任务推进任务队列中，等待 JS 引擎主线程上的任务执行完毕时才开始执行，例如异步 Ajax、DOM 事件，setTimeout 等。
+
+微任务
+微任务是 ES6 和 Node 环境下的，主要 API 有：Promise，process.nextTick。
+微任务的执行在宏任务的同步任务之后，在异步任务之前。
+
+代码例子
+以上代码输出顺序为：1,3,5,4,2
+参考文档
+
+what-happens-when-zh_CN (opens new window)
+Tags to DOM (opens new window)
+彻底理解浏览器的缓存机制 (opens new window)
+浏览器的工作原理：新式网络浏览器幕后揭秘 (opens new window)
+深入浅出浏览器渲染原理 (opens new window)
+js 引擎的执行过程（一） (opens new window)
+还有一些找不到了。。。。。
+
+From: 4ark.me
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>自动曝光原理</title>
+    <url>/posts/509c7bd3/</url>
+    <content><![CDATA[自动曝光的原理
+曝光是摄影中十分重要的一个环节，它决定了一张图片的明暗，如下图所示，第一张图片太暗，而第三种图片太亮。
+
+曝光由什么来决定
+使用过数码相机的人都知道曝光由光圈、曝光时间、ISO三者共同决定，详细的关系就不赘述。
+光圈：控制进光量；
+曝光时间：光到达的时间长度；
+ISO：增益；
+但是对于手机以及其他电子产品使用的微型摄像头，光圈大小是固定的，所以手机拍照的曝光由曝光时间和**增益(ISO)**来控制。
+什么是自动曝光
+数码相机中有一种手动模式，可手动设置光圈、曝光时间、ISO来控制曝光，该模式的使用对摄影师的要求会比较高。另外 数码相机的全自动模式、光圈优先模式、快门优先模式以及手机等电子产品的曝光都属于自动曝光。
+自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。
+自动曝光的标准
+在此之前需要了解物体的亮度与色彩是由物体对光线的反射率来决定的。例如纯黑色的放射率是0，纯白色的反射率是100%，处于中间的灰度的反射率是18%，这就是18%中间灰度。
+
+具有一定反射率的物体在最终的图像中被还原到了其相应的灰度级，这就意味着达到了正确的曝光。例如摄影师们通常在拍摄之前使用中性灰卡测试曝光是否正常。
+但是相机在各种场景下无法识别物体的反射率，因此采用了一个简单粗暴而又行之有效的方法，统一将图像整体平均亮度设置为中性灰的亮度。该方法基于**科学家认为自然界的平均反射率是18%**这一理论。当然，这个方法也不是走遍天下都不怕，比如拍摄雪景时需要增加曝光补偿，不然会偏暗，因为雪景的亮度远远大于中性灰度。这也就是摄影中的一句口诀的由来“白增黑减”。
+自动曝光算法
+上面已经讲了自动曝光的标准，也就确立了曝光目标，要达到这一目标还要自动曝光算法来实现。
+目前比较常见的算法有平均亮度法、权重均值法、亮度直方图等。其中最普遍的就是平均亮度法。平均亮度法就是对图像所以像素亮度求平均值，通过不断调整曝光参数最终达到目标亮度。而权重均值法是对图像不同区域设置不同权重来计算图像亮度，例如相机中的各种测光模式的选择就是改变不同区域的权重。亮度直方图法是通过为直方图中峰值分配不同权重来计算图像亮度。
+自动曝光实现的过程：
+第一步：对当前图像进行亮度统计；
+第二步：根据当前图像亮度确定曝光值；
+第三步：计算新的曝光参数，曝光时间、光圈、增益；
+第四步：将新的曝光参数应用到相机；
+第五步：重复步骤一到四，直到亮度满足要求。
+曝光参数调整_曝光表
+前面留下两个问题：“第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。” 第一个问题在前面有过解释，第二个问题也就是自动曝光实现步骤的第三步，曝光值由光圈、曝光时间、增益沟通决定，当计算出一个曝光量，曝光三要素有很多种组合方式。一般情况下有曝光曲线，每个曝光量对应一组参数。手机中曝光曲线可以通过Tuning调整。
+From: 积极的悲观主义者
+系列教程
+全部文章RSS订阅
+Embeded系列
+Embeded 分类 RSS 订阅
+
+海思MPP&amp;UNF构架源代码级分析
+3G,4G,Wifi选型需求分析及技术简介
+自动曝光原理
+ISP 数字图像处理 算法概述、工作原理、架构、处理流程
+
+]]></content>
+      <categories>
+        <category>embeded</category>
+      </categories>
+      <tags>
+        <tag>3a</tag>
+        <tag>ae</tag>
+        <tag>image</tag>
       </tags>
   </entry>
   <entry>
@@ -12646,9 +12646,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-hkGFBwkIOBWIaVyX").style.height=document.getElementById("mmedia-hkGFBwkIOBWIaVyX").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-DvtgipYUzuRUXDcJ").style.height=document.getElementById("mmedia-DvtgipYUzuRUXDcJ").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-hkGFBwkIOBWIaVyX").style.height=document.getElementById("mmedia-hkGFBwkIOBWIaVyX").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-DvtgipYUzuRUXDcJ").style.height=document.getElementById("mmedia-DvtgipYUzuRUXDcJ").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -12856,6 +12856,88 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
       </tags>
   </entry>
   <entry>
+    <title>http 错误代码表</title>
+    <url>/posts/80906b88/</url>
+    <content><![CDATA[所有 HTTP 状态代码及其定义。
+　代码&nbsp;&nbsp;指示&nbsp;&nbsp;
+2xx&nbsp;&nbsp;成功&nbsp;&nbsp;
+200&nbsp;&nbsp;正常；请求已完成。&nbsp;&nbsp;
+201&nbsp;&nbsp;正常；紧接 POST 命令。&nbsp;&nbsp;
+202&nbsp;&nbsp;正常；已接受用于处理，但处理尚未完成。&nbsp;&nbsp;
+203&nbsp;&nbsp;正常；部分信息 — 返回的信息只是一部分。&nbsp;&nbsp;
+204&nbsp;&nbsp;正常；无响应 — 已接收请求，但不存在要回送的信息。&nbsp;&nbsp;
+3xx&nbsp;&nbsp;重定向&nbsp;&nbsp;
+301&nbsp;&nbsp;已移动 — 请求的数据具有新的位置且更改是永久的。&nbsp;&nbsp;
+302&nbsp;&nbsp;已找到 — 请求的数据临时具有不同 URI。&nbsp;&nbsp;
+303&nbsp;&nbsp;请参阅其它 — 可在另一 URI 下找到对请求的响应，且应使用 GET 方法检索此响应。&nbsp;&nbsp;
+304&nbsp;&nbsp;未修改 — 未按预期修改文档。&nbsp;&nbsp;
+305&nbsp;&nbsp;使用代理 — 必须通过位置字段中提供的代理来访问请求的资源。&nbsp;&nbsp;
+306&nbsp;&nbsp;未使用 — 不再使用；保留此代码以便将来使用。&nbsp;&nbsp;
+4xx&nbsp;&nbsp;客户机中出现的错误&nbsp;&nbsp;
+400&nbsp;&nbsp;错误请求 — 请求中有语法问题，或不能满足请求。&nbsp;&nbsp;
+401&nbsp;&nbsp;未授权 — 未授权客户机访问数据。&nbsp;&nbsp;
+402&nbsp;&nbsp;需要付款 — 表示计费系统已有效。&nbsp;&nbsp;
+403&nbsp;&nbsp;禁止 — 即使有授权也不需要访问。&nbsp;&nbsp;
+404&nbsp;&nbsp;找不到 — 服务器找不到给定的资源；文档不存在。&nbsp;&nbsp;
+407&nbsp;&nbsp;代理认证请求 — 客户机首先必须使用代理认证自身。&nbsp;&nbsp;
+415&nbsp;&nbsp;介质类型不受支持 — 服务器拒绝服务请求，因为不支持请求实体的格式。&nbsp;&nbsp;
+5xx&nbsp;&nbsp;服务器中出现的错误&nbsp;&nbsp;
+500&nbsp;&nbsp;内部错误 — 因为意外情况，服务器不能完成请求。&nbsp;&nbsp;
+501&nbsp;&nbsp;未执行 — 服务器不支持请求的工具。&nbsp;&nbsp;
+502&nbsp;&nbsp;错误网关 — 服务器接收到来自上游服务器的无效响应。&nbsp;&nbsp;
+503&nbsp;&nbsp;无法获得服务 — 由于临时过载或维护，服务器无法处理请求。
+
+HTTP&nbsp;400&nbsp;-&nbsp;请求无效&nbsp;
+HTTP&nbsp;401.1&nbsp;-&nbsp;未授权：登录失败&nbsp;
+HTTP&nbsp;401.2&nbsp;-&nbsp;未授权：服务器配置问题导致登录失败&nbsp;
+HTTP&nbsp;401.3&nbsp;-&nbsp;ACL&nbsp;禁止访问资源&nbsp;
+HTTP&nbsp;401.4&nbsp;-&nbsp;未授权：授权被筛选器拒绝&nbsp;
+HTTP&nbsp;401.5&nbsp;-&nbsp;未授权：ISAPI&nbsp;或&nbsp;CGI&nbsp;授权失败&nbsp;&nbsp;
+HTTP&nbsp;403&nbsp;-&nbsp;禁止访问&nbsp;
+HTTP&nbsp;403&nbsp;-&nbsp;对&nbsp;Internet&nbsp;服务管理器&nbsp;(HTML)&nbsp;的访问仅限于&nbsp;Localhost&nbsp;
+HTTP&nbsp;403.1&nbsp;禁止访问：禁止可执行访问&nbsp;
+HTTP&nbsp;403.2&nbsp;-&nbsp;禁止访问：禁止读访问&nbsp;
+HTTP&nbsp;403.3&nbsp;-&nbsp;禁止访问：禁止写访问&nbsp;
+HTTP&nbsp;403.4&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;
+HTTP&nbsp;403.5&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;128&nbsp;
+HTTP&nbsp;403.6&nbsp;-&nbsp;禁止访问：IP&nbsp;地址被拒绝&nbsp;
+HTTP&nbsp;403.7&nbsp;-&nbsp;禁止访问：要求客户证书&nbsp;
+HTTP&nbsp;403.8&nbsp;-&nbsp;禁止访问：禁止站点访问&nbsp;
+HTTP&nbsp;403.9&nbsp;-&nbsp;禁止访问：连接的用户过多&nbsp;
+HTTP&nbsp;403.10&nbsp;-&nbsp;禁止访问：配置无效&nbsp;
+HTTP&nbsp;403.11&nbsp;-&nbsp;禁止访问：密码更改&nbsp;
+HTTP&nbsp;403.12&nbsp;-&nbsp;禁止访问：映射器拒绝访问&nbsp;
+HTTP&nbsp;403.13&nbsp;-&nbsp;禁止访问：客户证书已被吊销&nbsp;
+HTTP&nbsp;403.15&nbsp;-&nbsp;禁止访问：客户访问许可过多&nbsp;
+HTTP&nbsp;403.16&nbsp;-&nbsp;禁止访问：客户证书不可信或者无效&nbsp;
+HTTP&nbsp;403.17&nbsp;-&nbsp;禁止访问：客户证书已经到期或者尚未生效&nbsp;
+HTTP&nbsp;404.1&nbsp;-&nbsp;无法找到&nbsp;Web&nbsp;站点&nbsp;
+HTTP&nbsp;404&nbsp;-&nbsp;无法找到文件&nbsp;
+HTTP&nbsp;405&nbsp;-&nbsp;资源被禁止&nbsp;
+HTTP&nbsp;406&nbsp;-&nbsp;无法接受&nbsp;
+HTTP&nbsp;407&nbsp;-&nbsp;要求代理身份验证&nbsp;
+HTTP&nbsp;410&nbsp;-&nbsp;永远不可用&nbsp;
+HTTP&nbsp;412&nbsp;-&nbsp;先决条件失败&nbsp;
+HTTP&nbsp;414&nbsp;-&nbsp;请求&nbsp;-&nbsp;URI&nbsp;太长&nbsp;
+HTTP&nbsp;500&nbsp;-&nbsp;内部服务器错误&nbsp;
+HTTP&nbsp;500.100&nbsp;-&nbsp;内部服务器错误&nbsp;-&nbsp;ASP&nbsp;错误&nbsp;
+HTTP&nbsp;500-11&nbsp;服务器关闭&nbsp;
+HTTP&nbsp;500-12&nbsp;应用程序重新启动&nbsp;
+HTTP&nbsp;500-13&nbsp;-&nbsp;服务器太忙&nbsp;
+HTTP&nbsp;500-14&nbsp;-&nbsp;应用程序无效&nbsp;
+HTTP&nbsp;500-15&nbsp;-&nbsp;不允许请求&nbsp;global.asa&nbsp;
+Error&nbsp;501&nbsp;-&nbsp;未实现&nbsp;
+HTTP&nbsp;502&nbsp;-&nbsp;网关错误
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库</title>
     <url>/posts/3847ad58/</url>
     <content><![CDATA[背景
@@ -13047,186 +13129,6 @@ Earthly 一个更加强大的镜像构建工具
         <tag>刮削</tag>
         <tag>musicbrainz</tag>
         <tag>mp3tag</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>http 错误代码表</title>
-    <url>/posts/80906b88/</url>
-    <content><![CDATA[所有 HTTP 状态代码及其定义。
-　代码&nbsp;&nbsp;指示&nbsp;&nbsp;
-2xx&nbsp;&nbsp;成功&nbsp;&nbsp;
-200&nbsp;&nbsp;正常；请求已完成。&nbsp;&nbsp;
-201&nbsp;&nbsp;正常；紧接 POST 命令。&nbsp;&nbsp;
-202&nbsp;&nbsp;正常；已接受用于处理，但处理尚未完成。&nbsp;&nbsp;
-203&nbsp;&nbsp;正常；部分信息 — 返回的信息只是一部分。&nbsp;&nbsp;
-204&nbsp;&nbsp;正常；无响应 — 已接收请求，但不存在要回送的信息。&nbsp;&nbsp;
-3xx&nbsp;&nbsp;重定向&nbsp;&nbsp;
-301&nbsp;&nbsp;已移动 — 请求的数据具有新的位置且更改是永久的。&nbsp;&nbsp;
-302&nbsp;&nbsp;已找到 — 请求的数据临时具有不同 URI。&nbsp;&nbsp;
-303&nbsp;&nbsp;请参阅其它 — 可在另一 URI 下找到对请求的响应，且应使用 GET 方法检索此响应。&nbsp;&nbsp;
-304&nbsp;&nbsp;未修改 — 未按预期修改文档。&nbsp;&nbsp;
-305&nbsp;&nbsp;使用代理 — 必须通过位置字段中提供的代理来访问请求的资源。&nbsp;&nbsp;
-306&nbsp;&nbsp;未使用 — 不再使用；保留此代码以便将来使用。&nbsp;&nbsp;
-4xx&nbsp;&nbsp;客户机中出现的错误&nbsp;&nbsp;
-400&nbsp;&nbsp;错误请求 — 请求中有语法问题，或不能满足请求。&nbsp;&nbsp;
-401&nbsp;&nbsp;未授权 — 未授权客户机访问数据。&nbsp;&nbsp;
-402&nbsp;&nbsp;需要付款 — 表示计费系统已有效。&nbsp;&nbsp;
-403&nbsp;&nbsp;禁止 — 即使有授权也不需要访问。&nbsp;&nbsp;
-404&nbsp;&nbsp;找不到 — 服务器找不到给定的资源；文档不存在。&nbsp;&nbsp;
-407&nbsp;&nbsp;代理认证请求 — 客户机首先必须使用代理认证自身。&nbsp;&nbsp;
-415&nbsp;&nbsp;介质类型不受支持 — 服务器拒绝服务请求，因为不支持请求实体的格式。&nbsp;&nbsp;
-5xx&nbsp;&nbsp;服务器中出现的错误&nbsp;&nbsp;
-500&nbsp;&nbsp;内部错误 — 因为意外情况，服务器不能完成请求。&nbsp;&nbsp;
-501&nbsp;&nbsp;未执行 — 服务器不支持请求的工具。&nbsp;&nbsp;
-502&nbsp;&nbsp;错误网关 — 服务器接收到来自上游服务器的无效响应。&nbsp;&nbsp;
-503&nbsp;&nbsp;无法获得服务 — 由于临时过载或维护，服务器无法处理请求。
-
-HTTP&nbsp;400&nbsp;-&nbsp;请求无效&nbsp;
-HTTP&nbsp;401.1&nbsp;-&nbsp;未授权：登录失败&nbsp;
-HTTP&nbsp;401.2&nbsp;-&nbsp;未授权：服务器配置问题导致登录失败&nbsp;
-HTTP&nbsp;401.3&nbsp;-&nbsp;ACL&nbsp;禁止访问资源&nbsp;
-HTTP&nbsp;401.4&nbsp;-&nbsp;未授权：授权被筛选器拒绝&nbsp;
-HTTP&nbsp;401.5&nbsp;-&nbsp;未授权：ISAPI&nbsp;或&nbsp;CGI&nbsp;授权失败&nbsp;&nbsp;
-HTTP&nbsp;403&nbsp;-&nbsp;禁止访问&nbsp;
-HTTP&nbsp;403&nbsp;-&nbsp;对&nbsp;Internet&nbsp;服务管理器&nbsp;(HTML)&nbsp;的访问仅限于&nbsp;Localhost&nbsp;
-HTTP&nbsp;403.1&nbsp;禁止访问：禁止可执行访问&nbsp;
-HTTP&nbsp;403.2&nbsp;-&nbsp;禁止访问：禁止读访问&nbsp;
-HTTP&nbsp;403.3&nbsp;-&nbsp;禁止访问：禁止写访问&nbsp;
-HTTP&nbsp;403.4&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;
-HTTP&nbsp;403.5&nbsp;-&nbsp;禁止访问：要求&nbsp;SSL&nbsp;128&nbsp;
-HTTP&nbsp;403.6&nbsp;-&nbsp;禁止访问：IP&nbsp;地址被拒绝&nbsp;
-HTTP&nbsp;403.7&nbsp;-&nbsp;禁止访问：要求客户证书&nbsp;
-HTTP&nbsp;403.8&nbsp;-&nbsp;禁止访问：禁止站点访问&nbsp;
-HTTP&nbsp;403.9&nbsp;-&nbsp;禁止访问：连接的用户过多&nbsp;
-HTTP&nbsp;403.10&nbsp;-&nbsp;禁止访问：配置无效&nbsp;
-HTTP&nbsp;403.11&nbsp;-&nbsp;禁止访问：密码更改&nbsp;
-HTTP&nbsp;403.12&nbsp;-&nbsp;禁止访问：映射器拒绝访问&nbsp;
-HTTP&nbsp;403.13&nbsp;-&nbsp;禁止访问：客户证书已被吊销&nbsp;
-HTTP&nbsp;403.15&nbsp;-&nbsp;禁止访问：客户访问许可过多&nbsp;
-HTTP&nbsp;403.16&nbsp;-&nbsp;禁止访问：客户证书不可信或者无效&nbsp;
-HTTP&nbsp;403.17&nbsp;-&nbsp;禁止访问：客户证书已经到期或者尚未生效&nbsp;
-HTTP&nbsp;404.1&nbsp;-&nbsp;无法找到&nbsp;Web&nbsp;站点&nbsp;
-HTTP&nbsp;404&nbsp;-&nbsp;无法找到文件&nbsp;
-HTTP&nbsp;405&nbsp;-&nbsp;资源被禁止&nbsp;
-HTTP&nbsp;406&nbsp;-&nbsp;无法接受&nbsp;
-HTTP&nbsp;407&nbsp;-&nbsp;要求代理身份验证&nbsp;
-HTTP&nbsp;410&nbsp;-&nbsp;永远不可用&nbsp;
-HTTP&nbsp;412&nbsp;-&nbsp;先决条件失败&nbsp;
-HTTP&nbsp;414&nbsp;-&nbsp;请求&nbsp;-&nbsp;URI&nbsp;太长&nbsp;
-HTTP&nbsp;500&nbsp;-&nbsp;内部服务器错误&nbsp;
-HTTP&nbsp;500.100&nbsp;-&nbsp;内部服务器错误&nbsp;-&nbsp;ASP&nbsp;错误&nbsp;
-HTTP&nbsp;500-11&nbsp;服务器关闭&nbsp;
-HTTP&nbsp;500-12&nbsp;应用程序重新启动&nbsp;
-HTTP&nbsp;500-13&nbsp;-&nbsp;服务器太忙&nbsp;
-HTTP&nbsp;500-14&nbsp;-&nbsp;应用程序无效&nbsp;
-HTTP&nbsp;500-15&nbsp;-&nbsp;不允许请求&nbsp;global.asa&nbsp;
-Error&nbsp;501&nbsp;-&nbsp;未实现&nbsp;
-HTTP&nbsp;502&nbsp;-&nbsp;网关错误
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>CMake快速入门教程</title>
-    <url>/posts/495db4d3/</url>
-    <content><![CDATA[1.cmake简介
-cmake是跨平台的makefile文件生成工具,是为了解决各个平台下面make工具不同造成的makefile文件格式不同的问题.也就是cmake是用来解决跨平台编译问题的.常见的还有autotool工具集，该工具集用于GNU软件协议的makefile文件生成，方便GNU包的编译和安装。
-2.cmake文件编辑规则
-
-1)命令不区分大小写，但是变量区分大小写。
-2)注释使用#符号
-3)命令如果有多个参数，互相之间用空格隔开
-
-3.cmake保留变量
-cmake里面有很多的预定义变量,是程序环境固有的,比如CUDA_NVCC_FLAGS,不同的变量有固定的作用,比如CUDA_NVCC_FLAGS是nvcc的参数list,变量可以使用set命令和list命令进行赋值和追加值,要注意的是变量可能可以有多个值,值与值之间用分号分开,可以使用set(var a b c)给var赋值a b c,还可以使用list命令给var追加删除插入值等,不同的变量有不同的值域,需要查阅手册
-4.cmake变量引用
-cmake里面变量的取值引用要使用${var}的形式,但是在赋值的时候是不需要的,和shell命令有点相似.
-5.cmake指定Debug和Release版本
-指定Debug和Release一共有三种方法：
-1.使用ADD_COMPILE_OPTIONS()加入-g指定Debug版本.
-2.使用SET( CMAKE_BUILD_TYPE Debug/Rrelease)指定Debug
-在下面加入：
-SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
-SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
-上面的设置C++编译选项，对于C语言，设置CMAKE_C_FLAGS_DEBUG、CMAKE_._FLAGS_RELEASE变量，一般来说最好两个都设置原因是CMake 中有一个变量 CMAKE_BUILD_TYPE ,可以的取值是 Debug Release等.当这个变量值为 Debug 的时候,CMake 会使用变量 CMAKE_CXX_FLAGS_DEBUG 和 CMAKE_C_FLAGS_DEBUG 中的字符串作为编译选项生成 Makefile
-编译动态库or静态库时，最好通过修改CXXFLAGS和CFLAGS，以支持-fPIC，这个选项有时是默认开启，有时默认关闭，但为了以后的应用，库文件最好都使用-fPIC编译
-
-在使用cmake命令时加上-DCMAKE_BUILD_TYPE=Debug/Release
-
-5.cmake指定生成文件
-CUDA_ADD_LIBRARY()指明目标文件是库文件,CUDA_ADD_EXECUTABLE()指明生成的文件为可执行文件
-6.配置模板
-通常我们要在工程目录下面创建include、src文件夹，include文件夹里面存放头文件，src文件夹里面存放源代码，注意这时候的源代码里面包含头文件的路径应该是“…/include/xx.h”，然后在工程根目录下面创建CMakeLists.txt文件，里面写入命令.在编译的时候为了不搞乱工程目录，在工程根目录下面创建build文件夹，在里面使用“cmake …”命令创建CMakefile,再make即可。
-#指定cmake最低版本号
-cmake_minimum_required(VERSION 3.2)
-
-#指定项目名称
-PROJECT(Liner_Struct)
-
-#指定头文件目录，不同目录用空格隔开,目录中有空格可用引号
-#如果是相对路径，相对于CMakeLists.txt文件
-INCLUDE_DIRECTORIES(include)
-
-#指定源文件目录，DIR_SRCS值自定义变量，下面的命令对其进行了赋值
-AUX_SOURCE_DIRECTORY(src DIR_SRCS)
-
-#设置变量用于存放所有的编译文件，
-#TEST_LINER_STRUCT是自定义变量，使用SET给其赋值
-SET(TEST_LINER_STRUCT ${DIR_SRCS})
-
-#增加编译选项
-#判断是否为gcc编译器，如果是，增加编译选项
-#c99是c语言的标准，常用的还有c++标准c++11
-#下面的命令判断是否编译器是gcc
-#message命令是输出信息,例如下面的输出“optional:-std=c99”
-if(CMAKE_COMPILER_IS_GNUCXX)
-    ADD_COMPILE_OPTIONS(-std=c99)
-    message(STATUS "optional:-std=c99")
-endif(CMAKE_COMPILER_IS_GNUCXX)
-
-#配置生成文件
-#${PROJECT_NAME}是cmake自带变量，其值和PROJECT()命令指定的一样
-#${TEST_LINER_STRUCT}是自定义变量，上文赋值的
-ADD_EXECUTABLE(${PROJECT_NAME} ${TEST_LINER_STRUCT})
-7.if-else语句
-cmake中的if-else语句
-if(exp)
-     cmdA
-     cmdB
-elseif(exp)
-      cmdC
-endif(exp)
-最简单得到一个应用
-if(ARM)
-   #ARM平台
-else()
-  #非ARM平台 
-endif()
-使用cmake -DARM=1 … 时编译ARM代码，使用cmake -DAMR=0 …编译非ARM代码
-8.与平台编译器的结合
-8.1windows
-在windows上运行cmake可以生成对应的VS的工程文件，然后使用相应的VS打开工程就可以进行编译。要注意的是如果使用VS2010及其以前的版本，C不支持C99，也就是变量的命名必须放在函数或者域的最前面，不能放在中间，特别麻烦。VS2015在安装后可能还需要打开VS，新建工程时选择VC可能相关组件还没有安装，如果这时候使用cmake会提示找不到C、C编译器（类似yuNo CMAKE_CXX_COMPILER could be found）的错误。安装了相关的组件后cmake即不会有错误。
-8.2 为VS2015生成的项目
-打开工程文件后可以看到有3个项目，其中只有一个和我们有直接关系，就是我们在CMakeLists.txt里面定义的PROJECT_NAME,剩下的两个是ALL_BUILD和ZERO_CHECK.
-ZERO_CHECK
-该目标会检查生成工程的 CMake 配置文件（ CMakeLists.txt ）是否更新。如更新，将运行 CMake 重新生成工程文件。
-如果确信 CMakeLists.txt 不会被更新，或者希望手工运行 CMake 重新生成工程文件，可以在 CMakeLists.txt 配置文件中添加 set(CMAKE_SUPPRESS_REGENERATION FALSE) 命令， ZERO_CHECK 目标将不会生成。
-ALL_BUILD
-该目标会导致工程中所有项目被构建，类似 Visual Studio 的 Build All 或者 make 的 make all命令。
-转载 CMake快速入门教程
-]]></content>
-      <categories>
-        <category>linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>cmake</tag>
-        <tag>develop</tag>
       </tags>
   </entry>
   <entry>
@@ -13495,6 +13397,104 @@ Earthly 一个更加强大的镜像构建工具
         <tag>tmm</tag>
         <tag>字幕</tag>
         <tag>plex</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CMake快速入门教程</title>
+    <url>/posts/495db4d3/</url>
+    <content><![CDATA[1.cmake简介
+cmake是跨平台的makefile文件生成工具,是为了解决各个平台下面make工具不同造成的makefile文件格式不同的问题.也就是cmake是用来解决跨平台编译问题的.常见的还有autotool工具集，该工具集用于GNU软件协议的makefile文件生成，方便GNU包的编译和安装。
+2.cmake文件编辑规则
+
+1)命令不区分大小写，但是变量区分大小写。
+2)注释使用#符号
+3)命令如果有多个参数，互相之间用空格隔开
+
+3.cmake保留变量
+cmake里面有很多的预定义变量,是程序环境固有的,比如CUDA_NVCC_FLAGS,不同的变量有固定的作用,比如CUDA_NVCC_FLAGS是nvcc的参数list,变量可以使用set命令和list命令进行赋值和追加值,要注意的是变量可能可以有多个值,值与值之间用分号分开,可以使用set(var a b c)给var赋值a b c,还可以使用list命令给var追加删除插入值等,不同的变量有不同的值域,需要查阅手册
+4.cmake变量引用
+cmake里面变量的取值引用要使用${var}的形式,但是在赋值的时候是不需要的,和shell命令有点相似.
+5.cmake指定Debug和Release版本
+指定Debug和Release一共有三种方法：
+1.使用ADD_COMPILE_OPTIONS()加入-g指定Debug版本.
+2.使用SET( CMAKE_BUILD_TYPE Debug/Rrelease)指定Debug
+在下面加入：
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
+SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+上面的设置C++编译选项，对于C语言，设置CMAKE_C_FLAGS_DEBUG、CMAKE_._FLAGS_RELEASE变量，一般来说最好两个都设置原因是CMake 中有一个变量 CMAKE_BUILD_TYPE ,可以的取值是 Debug Release等.当这个变量值为 Debug 的时候,CMake 会使用变量 CMAKE_CXX_FLAGS_DEBUG 和 CMAKE_C_FLAGS_DEBUG 中的字符串作为编译选项生成 Makefile
+编译动态库or静态库时，最好通过修改CXXFLAGS和CFLAGS，以支持-fPIC，这个选项有时是默认开启，有时默认关闭，但为了以后的应用，库文件最好都使用-fPIC编译
+
+在使用cmake命令时加上-DCMAKE_BUILD_TYPE=Debug/Release
+
+5.cmake指定生成文件
+CUDA_ADD_LIBRARY()指明目标文件是库文件,CUDA_ADD_EXECUTABLE()指明生成的文件为可执行文件
+6.配置模板
+通常我们要在工程目录下面创建include、src文件夹，include文件夹里面存放头文件，src文件夹里面存放源代码，注意这时候的源代码里面包含头文件的路径应该是“…/include/xx.h”，然后在工程根目录下面创建CMakeLists.txt文件，里面写入命令.在编译的时候为了不搞乱工程目录，在工程根目录下面创建build文件夹，在里面使用“cmake …”命令创建CMakefile,再make即可。
+#指定cmake最低版本号
+cmake_minimum_required(VERSION 3.2)
+
+#指定项目名称
+PROJECT(Liner_Struct)
+
+#指定头文件目录，不同目录用空格隔开,目录中有空格可用引号
+#如果是相对路径，相对于CMakeLists.txt文件
+INCLUDE_DIRECTORIES(include)
+
+#指定源文件目录，DIR_SRCS值自定义变量，下面的命令对其进行了赋值
+AUX_SOURCE_DIRECTORY(src DIR_SRCS)
+
+#设置变量用于存放所有的编译文件，
+#TEST_LINER_STRUCT是自定义变量，使用SET给其赋值
+SET(TEST_LINER_STRUCT ${DIR_SRCS})
+
+#增加编译选项
+#判断是否为gcc编译器，如果是，增加编译选项
+#c99是c语言的标准，常用的还有c++标准c++11
+#下面的命令判断是否编译器是gcc
+#message命令是输出信息,例如下面的输出“optional:-std=c99”
+if(CMAKE_COMPILER_IS_GNUCXX)
+    ADD_COMPILE_OPTIONS(-std=c99)
+    message(STATUS "optional:-std=c99")
+endif(CMAKE_COMPILER_IS_GNUCXX)
+
+#配置生成文件
+#${PROJECT_NAME}是cmake自带变量，其值和PROJECT()命令指定的一样
+#${TEST_LINER_STRUCT}是自定义变量，上文赋值的
+ADD_EXECUTABLE(${PROJECT_NAME} ${TEST_LINER_STRUCT})
+7.if-else语句
+cmake中的if-else语句
+if(exp)
+     cmdA
+     cmdB
+elseif(exp)
+      cmdC
+endif(exp)
+最简单得到一个应用
+if(ARM)
+   #ARM平台
+else()
+  #非ARM平台 
+endif()
+使用cmake -DARM=1 … 时编译ARM代码，使用cmake -DAMR=0 …编译非ARM代码
+8.与平台编译器的结合
+8.1windows
+在windows上运行cmake可以生成对应的VS的工程文件，然后使用相应的VS打开工程就可以进行编译。要注意的是如果使用VS2010及其以前的版本，C不支持C99，也就是变量的命名必须放在函数或者域的最前面，不能放在中间，特别麻烦。VS2015在安装后可能还需要打开VS，新建工程时选择VC可能相关组件还没有安装，如果这时候使用cmake会提示找不到C、C编译器（类似yuNo CMAKE_CXX_COMPILER could be found）的错误。安装了相关的组件后cmake即不会有错误。
+8.2 为VS2015生成的项目
+打开工程文件后可以看到有3个项目，其中只有一个和我们有直接关系，就是我们在CMakeLists.txt里面定义的PROJECT_NAME,剩下的两个是ALL_BUILD和ZERO_CHECK.
+ZERO_CHECK
+该目标会检查生成工程的 CMake 配置文件（ CMakeLists.txt ）是否更新。如更新，将运行 CMake 重新生成工程文件。
+如果确信 CMakeLists.txt 不会被更新，或者希望手工运行 CMake 重新生成工程文件，可以在 CMakeLists.txt 配置文件中添加 set(CMAKE_SUPPRESS_REGENERATION FALSE) 命令， ZERO_CHECK 目标将不会生成。
+ALL_BUILD
+该目标会导致工程中所有项目被构建，类似 Visual Studio 的 Build All 或者 make 的 make all命令。
+转载 CMake快速入门教程
+]]></content>
+      <categories>
+        <category>linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>cmake</tag>
+        <tag>develop</tag>
       </tags>
   </entry>
   <entry>
@@ -18407,8 +18407,8 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 列表
 
- var QjDsoTcwqIUvUuDp_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    QjDsoTcwqIUvUuDp_options.container = document.getElementById("mmedia-QjDsoTcwqIUvUuDp");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(QjDsoTcwqIUvUuDp_options); 
+ var rCKekwSuaqaZnpeJ_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    rCKekwSuaqaZnpeJ_options.container = document.getElementById("mmedia-rCKekwSuaqaZnpeJ");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(rCKekwSuaqaZnpeJ_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -19320,6 +19320,159 @@ Gitlab的安装及使用
       </tags>
   </entry>
   <entry>
+    <title>Earthly 一个更加强大的镜像构建工具</title>
+    <url>/posts/593cc323/</url>
+    <content><![CDATA[一、Earthly 介绍
+
+开局一张图，功能全靠吹。
+
+
+Earthly 是一个更加高级的 Docker 镜像构建工具，Earthly 通过自己定义的 Earthfile 来代替传统的 Dockerfile 完成镜像构建；Earthfile 就如同 Earthly 官方所描述:
+**Makefile + Dockerfile = Earthfile**
+在使用 Earthly 进行构建镜像时目前强依赖于 buildkit，Earthly 通过 buildkit 支持了一些 Dockerfile 的扩展语法，同时将 Dockerfile 与 Makefile 整合，使得多平台构建和代码化 Dockerfile 变得更加简单；使用 Earthly 可以更加方便的完成 Dockerfile 的代码复用以及更加友好的 CI 自动集成。
+二、快速开始
+2.1、安装依赖
+Earthly 目前依赖于 Docker 和 Git，所以安装 Earthly 前请确保机器已经安装了 Docker 和 Git。
+2.2、安装 Earthly
+Earthly 采用 Go 编写，所以主要就一个二进制文件，Linux 下安装可以直接参考官方的安装脚本:
+sudo /bin/sh -c 'wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly &amp;&amp; chmod +x /usr/local/bin/earthly &amp;&amp; /usr/local/bin/earthly bootstrap --with-autocomplete'Copy
+安装完成后 Earthly 将会启动一个 buildkitd 容器: earthly-buildkitd。
+2.3、语法高亮
+目前 Earthly 官方支持 VS Code、VIM 以及 Sublime Text 三种编辑器的语法高亮，具体如何安装请参考 官方文档。
+2.4、基本使用
+本示例源于官方 Basic 教程，以下示例以编译 Go 项目为样例:
+首先创建一个任意名称的目录，目录中存在项目源码文件以及一个 Earthfile 文件；
+main.go
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("hello world")
+}Copy
+Earthfile
+FROM golang:1.17-alpine
+WORKDIR /go-example
+
+build:
+    COPY main.go .
+    RUN go build -o build/go-example main.go
+    SAVE ARTIFACT build/go-example /go-example AS LOCAL build/go-example
+
+docker:
+    COPY +build/go-example .
+    ENTRYPOINT ["/go-example/go-example"]
+    SAVE IMAGE go-example:latestCopy
+有了 Earthfile 以后我们就可以使用 Earthly 将其打包为镜像；
+# 目录结构
+~/t/earthlytest ❯❯❯ tree
+.
+├── Earthfile
+└── main.go
+
+0 directories, 2 files
+
+# 通过 earthly 进行构建
+~/t/earthlytest ❯❯❯ earthly +dockerCopy
+
+构建完成后我们就可以直接从 docker 的 images 列表中查看刚刚构建的镜像，并运行:
+
+三、进阶使用
+3.1、多阶段构建
+Earthfile 中包含类似 Makefile 一样的 target，不同的 target 之间还可以通过特定语法进行引用，每个 target 都可以被单独执行，执行过程中 earthly 会自动解析这些依赖关系。
+这种多阶段构建时语法很弹性，我们可以在每个阶段运行独立的命令以及使用不同的基础镜像；从快速开始中可以看到，我们始终使用了一个基础镜像(golang:1.17-alpine)，对于 Go 这种编译后自带运行时不依赖其语言 SDK 的应用，我们事实上可以将 “发布物” 仅放在简单的运行时系统镜像内，从而减少最终镜像体积:
+
+由于使用了多个 target，所以我们可以单独的运行 build 这个 target 来验证我们的编译流程，这种多 target 的设计方便我们构建应用时对编译、打包步骤的细化拆分，同时也方便我们进行单独的验证。 例如我们单独执行 build 这个 target 来验证我们的编译流程是否正确:
+
+在其他阶段验证完成后，我们可以直接运行最终的 target，earthly 会自动识别到这种依赖关系从而自动运行其依赖的 target:
+
+3.2、扩展指令
+3.2.1、SAVE
+SAVE 指令是 Earthly 自己的一个扩展指令，实际上分为 SAVE ARTIFACT 和 SAVE IMAGE；其中 SAVE ARTIFACT 指令格式如下:
+SAVE ARTIFACT [--keep-ts] [--keep-own] [--if-exists] [--force] &lt;src&gt; [&lt;artifact-dest-path&gt;] [AS LOCAL &lt;local-path&gt;]Copy
+SAVE ARTIFACT 指令用于将文件或目录从 build 运行时环境保存到 target 的 artifact 环境；当保存到 artifact 环境后，可以通过 COPY 等命令在其他位置进行引用，类似于 Dockerfile 的 COPY --from... 语法；不同的是 SAVE ARTIFACT 支持 AS LOCAL &lt;local-path&gt; 附加参数，一但指定此参数后，earthly 会同时将文件或目录在宿主机复制一份，一般用于调试等目的。SAVE ARTIFACT 命令在上面的样例中已经展示了，在运行完 earthly +build 命令后实际上会在本地看到被 SAVE 出来的 ARTIFACT:
+
+而另一个 SAVE IMAGE 指令则主要用于将当前的 build 环境 SAVE 为一个 IMAGE，如果指定了 --push 选项，同时在执行 earthly +target 命令时也加入 --push 选项，该镜像将会自动被推送到目标 Registry 上。SAVE IMAGE 指令格式如下:
+SAVE IMAGE [--cache-from=&lt;cache-image&gt;] [--push] &lt;image-name&gt;...Copy
+
+3.2.2、GIT CLONE
+GIT CLONE 指令用于将指定 git 仓库 clone 到 build 环境中；与 RUN git clone... 命令不同的是，GIT CLONE 通过宿主机的 git 命令运行，它不依赖于容器内的 git 命令，同时还可以直接为 earthly 配置 git 认证，从而避免将这些安全信息泄漏到 build 环境中； 关于如何配置 earthly 的 git 认证请参考 官方文档；下面是 GIT CLONE 指令的样例
+
+3.2.3、COPY
+COPY 指令与标准的 Dockerfile COPY 指令类似，除了支持 Dockerfile 标准的 COPY 功能以外，earthly 中的 COPY 指令可以引用其他 target 环节产生的 artifact，在引用时会自动声明依赖关系；即当在 B target 中存在 COPY +A/xxxxx /path/to/copy 类似的指令时，如果只单纯的执行 earthly +B，那么 earthly 根据依赖分析会得出在 COPY 之前需要执行 target A。COPY 指令的语法格式如下:
+# 与 Dockerfile 相同的使用方式，从上下文复制
+COPY [options...] &lt;src&gt;... &lt;dest&gt;
+
+# 扩展支持的从 target 复制方式
+COPY [options...] &lt;src-artifact&gt;... &lt;dest&gt;Copy
+3.2.4、RUN
+RUN 指令在标准使用上与 Dockerfile 里保持一致，除此之外增加了更多的扩展选项，其指令格式如下:
+# shell 方式运行(/bin/sh -c)
+RUN [--push] [--entrypoint] [--privileged] [--secret &lt;env-var&gt;=&lt;secret-ref&gt;] [--ssh] [--mount &lt;mount-spec&gt;] [--] &lt;command&gt;
+
+# exec 方式运行
+RUN [[&lt;flags&gt;...], "&lt;executable&gt;", "&lt;arg1&gt;", "&lt;arg2&gt;", ...]Copy
+其中 --privileged 选项允许运行的命令使用 privileged capabilities，但是需要 earthly 在运行 target 时增加 --allow-privileged 选项；--interactive / --interactive-keep 选项用于交互式执行一些命令，在完成交互后 build 继续进行，在交互过程中进行的操作都会被持久化到 镜像中:
+
+限于篇幅原因，其他的具体指令请查阅官方文档 Earthfile reference。
+3.3、UDCS
+UDCs 全称 “User-defined commands”，即用户定义指令；通过 UDCs 我们可以将 Earthfile 中特定的命令剥离出来，从而实现更加通用和统一的代码复用；下面是一个定义 UDCs 指令的样例:
+# 定义一个 Command
+# ⚠️ 注意: 语法必须满足以下规则
+# 1、名称全大写
+# 2、名称下划线分割
+# 3、首个命令必须为 COMMAND(后面没有冒号)
+MY_COPY:
+    COMMAND
+    ARG src
+    ARG dest=./
+    ARG recursive=false
+    RUN cp $(if $recursive =  "true"; then printf -- -r; fi) "$src" "$dest"
+
+# target 中引用
+build:
+    FROM alpine:3.13
+    WORKDIR /udc-example
+    RUN echo "hello" &gt;./foo
+    # 通过 DO 关键字引用 UDCs
+    DO +MY_COPY --src=./foo --dest=./bar
+    RUN cat ./bar # prints "hello"Copy
+UDCs 不光可以定义在一个 Earthfile 中，UDCs 可以跨文件、跨目录引用:
+
+有了 UDCs 以后，我们可以通过这种方式将对基础镜像的版本统一控制、对特殊镜像的通用处理等操作全部抽象出来，然后每个 Earthfile 根据需要进行引用；关于 UDCs 的使用样例可以参考我的 autobuild 项目，其中的 udcs 目录定义了大量的通用 UDCs，这些 UDCs 被其他目标镜的 Earthfile 批量引用。
+3.4、多平台构建
+在以前使用 Dockerfile 的时候，我们需要自己配置然后开启 buildkit 来实现多平台构建；在配置过程中可能会很繁琐，现在使用 earthly 可以默认帮我们实现多平台的交叉编译，我们需要做的仅仅是在 Earthfile 中声明需要支持哪些平台而已:
+
+以上 Earthfile 在执行 earthly --push +all 构建时，将会自动构建四个平台的镜像，并保持单个 tag，同时由于使用了 --push 选项还会自动推送到 Docker Hub 上:
+
+四、总结
+Earthly 弥补了 Dockerfile 的很多不足，解决了很多痛点问题；但同样可能需要一些学习成本，但是如果已经熟悉了 Dockerfile 其实学习成本不高；所以目前还是比较推荐将 Dockerfile 切换为 Earthfile 进行统一和版本化管理的。本文由于篇幅所限(懒)很多地方没有讲，比如共享缓存等，所以关于 Earthly 更多的详细使用等最好还是仔细阅读一下官方文档。
+
+整理转载：the-best-image-build-tool-earthly
+
+系列教程
+全部文章RSS订阅
+Docker系列
+Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>docker</category>
+      </categories>
+      <tags>
+        <tag>docker</tag>
+        <tag>earthly</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）</title>
     <url>/posts/d6bad1e5/</url>
     <content><![CDATA[前言
@@ -19632,159 +19785,6 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
-    <title>Earthly 一个更加强大的镜像构建工具</title>
-    <url>/posts/593cc323/</url>
-    <content><![CDATA[一、Earthly 介绍
-
-开局一张图，功能全靠吹。
-
-
-Earthly 是一个更加高级的 Docker 镜像构建工具，Earthly 通过自己定义的 Earthfile 来代替传统的 Dockerfile 完成镜像构建；Earthfile 就如同 Earthly 官方所描述:
-**Makefile + Dockerfile = Earthfile**
-在使用 Earthly 进行构建镜像时目前强依赖于 buildkit，Earthly 通过 buildkit 支持了一些 Dockerfile 的扩展语法，同时将 Dockerfile 与 Makefile 整合，使得多平台构建和代码化 Dockerfile 变得更加简单；使用 Earthly 可以更加方便的完成 Dockerfile 的代码复用以及更加友好的 CI 自动集成。
-二、快速开始
-2.1、安装依赖
-Earthly 目前依赖于 Docker 和 Git，所以安装 Earthly 前请确保机器已经安装了 Docker 和 Git。
-2.2、安装 Earthly
-Earthly 采用 Go 编写，所以主要就一个二进制文件，Linux 下安装可以直接参考官方的安装脚本:
-sudo /bin/sh -c 'wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly &amp;&amp; chmod +x /usr/local/bin/earthly &amp;&amp; /usr/local/bin/earthly bootstrap --with-autocomplete'Copy
-安装完成后 Earthly 将会启动一个 buildkitd 容器: earthly-buildkitd。
-2.3、语法高亮
-目前 Earthly 官方支持 VS Code、VIM 以及 Sublime Text 三种编辑器的语法高亮，具体如何安装请参考 官方文档。
-2.4、基本使用
-本示例源于官方 Basic 教程，以下示例以编译 Go 项目为样例:
-首先创建一个任意名称的目录，目录中存在项目源码文件以及一个 Earthfile 文件；
-main.go
-package main
-
-import "fmt"
-
-func main() {
-    fmt.Println("hello world")
-}Copy
-Earthfile
-FROM golang:1.17-alpine
-WORKDIR /go-example
-
-build:
-    COPY main.go .
-    RUN go build -o build/go-example main.go
-    SAVE ARTIFACT build/go-example /go-example AS LOCAL build/go-example
-
-docker:
-    COPY +build/go-example .
-    ENTRYPOINT ["/go-example/go-example"]
-    SAVE IMAGE go-example:latestCopy
-有了 Earthfile 以后我们就可以使用 Earthly 将其打包为镜像；
-# 目录结构
-~/t/earthlytest ❯❯❯ tree
-.
-├── Earthfile
-└── main.go
-
-0 directories, 2 files
-
-# 通过 earthly 进行构建
-~/t/earthlytest ❯❯❯ earthly +dockerCopy
-
-构建完成后我们就可以直接从 docker 的 images 列表中查看刚刚构建的镜像，并运行:
-
-三、进阶使用
-3.1、多阶段构建
-Earthfile 中包含类似 Makefile 一样的 target，不同的 target 之间还可以通过特定语法进行引用，每个 target 都可以被单独执行，执行过程中 earthly 会自动解析这些依赖关系。
-这种多阶段构建时语法很弹性，我们可以在每个阶段运行独立的命令以及使用不同的基础镜像；从快速开始中可以看到，我们始终使用了一个基础镜像(golang:1.17-alpine)，对于 Go 这种编译后自带运行时不依赖其语言 SDK 的应用，我们事实上可以将 “发布物” 仅放在简单的运行时系统镜像内，从而减少最终镜像体积:
-
-由于使用了多个 target，所以我们可以单独的运行 build 这个 target 来验证我们的编译流程，这种多 target 的设计方便我们构建应用时对编译、打包步骤的细化拆分，同时也方便我们进行单独的验证。 例如我们单独执行 build 这个 target 来验证我们的编译流程是否正确:
-
-在其他阶段验证完成后，我们可以直接运行最终的 target，earthly 会自动识别到这种依赖关系从而自动运行其依赖的 target:
-
-3.2、扩展指令
-3.2.1、SAVE
-SAVE 指令是 Earthly 自己的一个扩展指令，实际上分为 SAVE ARTIFACT 和 SAVE IMAGE；其中 SAVE ARTIFACT 指令格式如下:
-SAVE ARTIFACT [--keep-ts] [--keep-own] [--if-exists] [--force] &lt;src&gt; [&lt;artifact-dest-path&gt;] [AS LOCAL &lt;local-path&gt;]Copy
-SAVE ARTIFACT 指令用于将文件或目录从 build 运行时环境保存到 target 的 artifact 环境；当保存到 artifact 环境后，可以通过 COPY 等命令在其他位置进行引用，类似于 Dockerfile 的 COPY --from... 语法；不同的是 SAVE ARTIFACT 支持 AS LOCAL &lt;local-path&gt; 附加参数，一但指定此参数后，earthly 会同时将文件或目录在宿主机复制一份，一般用于调试等目的。SAVE ARTIFACT 命令在上面的样例中已经展示了，在运行完 earthly +build 命令后实际上会在本地看到被 SAVE 出来的 ARTIFACT:
-
-而另一个 SAVE IMAGE 指令则主要用于将当前的 build 环境 SAVE 为一个 IMAGE，如果指定了 --push 选项，同时在执行 earthly +target 命令时也加入 --push 选项，该镜像将会自动被推送到目标 Registry 上。SAVE IMAGE 指令格式如下:
-SAVE IMAGE [--cache-from=&lt;cache-image&gt;] [--push] &lt;image-name&gt;...Copy
-
-3.2.2、GIT CLONE
-GIT CLONE 指令用于将指定 git 仓库 clone 到 build 环境中；与 RUN git clone... 命令不同的是，GIT CLONE 通过宿主机的 git 命令运行，它不依赖于容器内的 git 命令，同时还可以直接为 earthly 配置 git 认证，从而避免将这些安全信息泄漏到 build 环境中； 关于如何配置 earthly 的 git 认证请参考 官方文档；下面是 GIT CLONE 指令的样例
-
-3.2.3、COPY
-COPY 指令与标准的 Dockerfile COPY 指令类似，除了支持 Dockerfile 标准的 COPY 功能以外，earthly 中的 COPY 指令可以引用其他 target 环节产生的 artifact，在引用时会自动声明依赖关系；即当在 B target 中存在 COPY +A/xxxxx /path/to/copy 类似的指令时，如果只单纯的执行 earthly +B，那么 earthly 根据依赖分析会得出在 COPY 之前需要执行 target A。COPY 指令的语法格式如下:
-# 与 Dockerfile 相同的使用方式，从上下文复制
-COPY [options...] &lt;src&gt;... &lt;dest&gt;
-
-# 扩展支持的从 target 复制方式
-COPY [options...] &lt;src-artifact&gt;... &lt;dest&gt;Copy
-3.2.4、RUN
-RUN 指令在标准使用上与 Dockerfile 里保持一致，除此之外增加了更多的扩展选项，其指令格式如下:
-# shell 方式运行(/bin/sh -c)
-RUN [--push] [--entrypoint] [--privileged] [--secret &lt;env-var&gt;=&lt;secret-ref&gt;] [--ssh] [--mount &lt;mount-spec&gt;] [--] &lt;command&gt;
-
-# exec 方式运行
-RUN [[&lt;flags&gt;...], "&lt;executable&gt;", "&lt;arg1&gt;", "&lt;arg2&gt;", ...]Copy
-其中 --privileged 选项允许运行的命令使用 privileged capabilities，但是需要 earthly 在运行 target 时增加 --allow-privileged 选项；--interactive / --interactive-keep 选项用于交互式执行一些命令，在完成交互后 build 继续进行，在交互过程中进行的操作都会被持久化到 镜像中:
-
-限于篇幅原因，其他的具体指令请查阅官方文档 Earthfile reference。
-3.3、UDCS
-UDCs 全称 “User-defined commands”，即用户定义指令；通过 UDCs 我们可以将 Earthfile 中特定的命令剥离出来，从而实现更加通用和统一的代码复用；下面是一个定义 UDCs 指令的样例:
-# 定义一个 Command
-# ⚠️ 注意: 语法必须满足以下规则
-# 1、名称全大写
-# 2、名称下划线分割
-# 3、首个命令必须为 COMMAND(后面没有冒号)
-MY_COPY:
-    COMMAND
-    ARG src
-    ARG dest=./
-    ARG recursive=false
-    RUN cp $(if $recursive =  "true"; then printf -- -r; fi) "$src" "$dest"
-
-# target 中引用
-build:
-    FROM alpine:3.13
-    WORKDIR /udc-example
-    RUN echo "hello" &gt;./foo
-    # 通过 DO 关键字引用 UDCs
-    DO +MY_COPY --src=./foo --dest=./bar
-    RUN cat ./bar # prints "hello"Copy
-UDCs 不光可以定义在一个 Earthfile 中，UDCs 可以跨文件、跨目录引用:
-
-有了 UDCs 以后，我们可以通过这种方式将对基础镜像的版本统一控制、对特殊镜像的通用处理等操作全部抽象出来，然后每个 Earthfile 根据需要进行引用；关于 UDCs 的使用样例可以参考我的 autobuild 项目，其中的 udcs 目录定义了大量的通用 UDCs，这些 UDCs 被其他目标镜的 Earthfile 批量引用。
-3.4、多平台构建
-在以前使用 Dockerfile 的时候，我们需要自己配置然后开启 buildkit 来实现多平台构建；在配置过程中可能会很繁琐，现在使用 earthly 可以默认帮我们实现多平台的交叉编译，我们需要做的仅仅是在 Earthfile 中声明需要支持哪些平台而已:
-
-以上 Earthfile 在执行 earthly --push +all 构建时，将会自动构建四个平台的镜像，并保持单个 tag，同时由于使用了 --push 选项还会自动推送到 Docker Hub 上:
-
-四、总结
-Earthly 弥补了 Dockerfile 的很多不足，解决了很多痛点问题；但同样可能需要一些学习成本，但是如果已经熟悉了 Dockerfile 其实学习成本不高；所以目前还是比较推荐将 Dockerfile 切换为 Earthfile 进行统一和版本化管理的。本文由于篇幅所限(懒)很多地方没有讲，比如共享缓存等，所以关于 Earthly 更多的详细使用等最好还是仔细阅读一下官方文档。
-
-整理转载：the-best-image-build-tool-earthly
-
-系列教程
-全部文章RSS订阅
-Docker系列
-Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>docker</category>
-      </categories>
-      <tags>
-        <tag>docker</tag>
-        <tag>earthly</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>私人在线音乐服务器搭建与使用介绍</title>
     <url>/posts/2b9325d0/</url>
     <content><![CDATA[
@@ -19815,13 +19815,13 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var nrRIcGJbpQCCxpeJ_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
-    nrRIcGJbpQCCxpeJ_options.container = document.getElementById("mmedia-nrRIcGJbpQCCxpeJ");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(nrRIcGJbpQCCxpeJ_options); 
+ var aqMxbDAwIzZFDzcz_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
+    aqMxbDAwIzZFDzcz_options.container = document.getElementById("mmedia-aqMxbDAwIzZFDzcz");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(aqMxbDAwIzZFDzcz_options); 
 
 
 
- var wmjXhgTWvHgMJirf_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    wmjXhgTWvHgMJirf_options.container = document.getElementById("mmedia-wmjXhgTWvHgMJirf");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(wmjXhgTWvHgMJirf_options); 
+ var wkBqhqXeKNuRjhNW_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    wkBqhqXeKNuRjhNW_options.container = document.getElementById("mmedia-wkBqhqXeKNuRjhNW");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(wkBqhqXeKNuRjhNW_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -20072,9 +20072,9 @@ Earthly 一个更加强大的镜像构建工具
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-wMBAlPcVGxSjvbRa").style.height=document.getElementById("mmedia-wMBAlPcVGxSjvbRa").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-bUZxQpxGYbjLAPjw").style.height=document.getElementById("mmedia-bUZxQpxGYbjLAPjw").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-wMBAlPcVGxSjvbRa").style.height=document.getElementById("mmedia-wMBAlPcVGxSjvbRa").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-bUZxQpxGYbjLAPjw").style.height=document.getElementById("mmedia-bUZxQpxGYbjLAPjw").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -20083,8 +20083,8 @@ Earthly 一个更加强大的镜像构建工具
 
 ## 中文翻唱
 
- var pVjFFXrFocxbtRxx_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
-    pVjFFXrFocxbtRxx_options.container = document.getElementById("mmedia-pVjFFXrFocxbtRxx");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(pVjFFXrFocxbtRxx_options); 
+ var fwwvVOelwpsmAiIa_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
+    fwwvVOelwpsmAiIa_options.container = document.getElementById("mmedia-fwwvVOelwpsmAiIa");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(fwwvVOelwpsmAiIa_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -27014,6 +27014,259 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
+    <title>健身从基础常识到实践指导！</title>
+    <url>/posts/4159851c/</url>
+    <content><![CDATA[
+有哪些相见恨晚的运动常识？接下来将从分别从基础概念、减肥、腹肌，训练，实操几个方面去分享。
+本文修订增补中！
+
+
+基本概念
+01. RM
+RM是英文"repetition maximum"的缩写，中文意义是"最大重复值"。以8RM为例，意思是，某个重量你最多完成8次。一般而言1～6RM侧重锻炼力量，8～12RM侧重锻炼肌肉围度，15RM以上侧重锻炼肌肉耐力。
+02 升糖指数
+升糖指数全称为“血糖生成指数”，简称，它反映了某种食物与葡萄糖相比升高血糖的速度和能力。是反映通过进食引起人体血糖升高程度的指标，高gi为70以上，中gi为55～70，低gi为55以下。
+03 马甲线、人鱼线和腹肌
+图一是人鱼线，是在髋关节上侧，图二是马甲线，通常是腹直肌两侧两到往下的线，图三是常说的腹肌，其实只是腹直肌，是肚脐眼两侧的腹部肌肉。
+
+04 BMI
+身体质量指数 (Body Mass Index, 简称BMI), 亦叫做克托莱指数, 是目前国际上常用的衡量人体胖瘦程度以及是否健康的一个标准。计算公式为：BMI=体重（千克）除以身高（米）的平方。
+05 心率
+心率是指正常人安静状态下每分钟心跳的次数，也叫安静心率，一般为60～100次/分，最大心率通常用220-年龄来计算率。运动时心率达到90%～95%的最大心率，此时供能物质主要为糖原，而心率大致在45%～60%的最大心率，此时供能物质主要是脂肪和糖原。而我们常说的减脂心率为65%～80%的最大心率。
+06 有氧运动和无氧运动的区别
+一张图给你解释清楚
+
+07 减肥
+减肥字面上的意思是减去肥肉，也就是脂肪，看的是体脂率，而不是体重，体重包括了肌肉、肥肉、水。因此体重下降不等于减肥成功。
+08 蛋白粉
+蛋白粉不是药，不是谁吃了都能变成施瓦辛格，蛋白粉也没什么神奇配方，基本上可以理解为瘦肉粉加水面粉，而且普通人不需要蛋白粉，蛋白粉是用于日常营养摄入不足才补充的。
+09 减肥原理
+减肥的原理是实现热量差，摄入的要低于消耗的，不管你是什么方式减肥，脱离了这个原则，都不要相信，因此在别人给你介绍减肥方法的时候，先想清楚，这个方法是怎样增加热量消耗或者减少热量摄入的。
+
+10 增肌
+增肌需要三个方面，首先是需要不断给肌肉新的刺激，也就是“渐进超负荷原则”，在训练完后则需要高蛋白高碳水的饮食和48～72小时的恢复时间让肌肉实现超量恢复。训练、饮食、休息，三者缺一不可。
+11 三大供能系统
+第一个是磷酸原系统，主要在运动开始后6秒内进行供能，在短时间高强度运动中，磷酸原系统是主要的供能系统。
+第二是糖酵解系统，主要在运动开始后6秒～2分钟内为身体供能，在中高强度的运动中主要由糖酵解系统参与。而糖酵解系统分为快速糖酵解和慢速糖酵解。
+第三是有氧氧化系统，主要在运动开始后2分钟内由糖、碳水化合物、脂肪和蛋白质氧化为身体进行供能，它需要大量的氧气参与。有氧系统的强度最低。
+当然需要注意的是，这三者运动开始都会工作，区别是供能比例不同。
+
+12 基础代谢
+减脂的人都会经常听到基础代谢这个词，基础代谢是指人体维持生命的所有器官所需要的最低能量需要，也就是你啥也不干，都得消耗的热量。测定方法是在人体在清醒而又极端安静的状态下，不受肌肉活动、环境温度、食物及精神紧张等影响时的能量代谢率。
+代谢指数和年龄相关，要健身，需要增加代谢指数。
+13 超级组
+超级组训练是指练完一组训练动作后尽可能没有休息地做另外一组主动肌与前一组训练的主动肌相反方向用力的训练。这种训练方式可以在最短时间内刺激更多肌肉群，强度非常大。
+14 金字塔训练
+做某一个动作时，逐渐增加或减少每组的重量，相应减少或增加每组的重复次数，直到重量加到预先安排训练目标，比如15 RM、12 RM、10 RM、 8RM。
+再比如徒手耐力训练，以做俯卧撑最高次数组为10，那么第1组1个，第2组2个，直到第10组10个，11组9个，12组8个，倒回去做到第19组1个完成训练，总计100个。
+
+15 HIIT
+高强度间歇性训练（HIIT)，是一种让你在短时间内进行全力、快速、爆发式锻炼的一种训练方式。这种技术让你在短期内心率提高并且燃烧更多热量。运动时，心率要控制在最大心率的84%以上，中间间歇时心率不要低于70%。这就使得HIIT不适合没训练经验的人，毕竟强度太大，跟不上。
+16 开窗理论
+开窗理论指的是大强度运动时，淋巴细胞浓度降低，增值分化及活动降低，免疫球蛋白含量及功能也受到影响，出现免疫低下期。据研究，受一次性急性运动的影响，免疫地下其可持续3～7小时不等。在这一免疫低下期，各种细菌、病毒等病原体极易入侵人体，最常见的就是高强度训练后出现感冒。
+17 核心力量
+目前主流的观点认为，核心指的是腰椎到骨盆这个整体，核心也分为内核心和外核心。而核心力量最重要的作用就是稳定，我们的日常活动都需要核心力量。
+
+减肥篇
+01 流汗多不等于减肥
+运动时你流汗多和减肥没有直接关系，减肥减的是脂肪，流汗虽然有助于排除废物，但终归是水，只要你正常饮水，体重就会回去的。
+因此，所谓的爆汗服或者在身上裹上保鲜膜减肥，都是在骗自己。
+02 青汁不是用来减肥的
+从青汁的配料来看，它其实就是一堆草叶子，或者蔬菜叶子，磨成粉，再泡水喝。而且青汁本身是给日本人喝的，毕竟他们那里蔬菜水果缺乏还特别贵，日常生活缺乏维生素和膳食纤维，说白了青汁就是给日常蔬菜摄入不足的日本人补充膳食纤维平衡一下营养。
+至于那些所谓的减肥功效什么的，或者其他类似的产品，基本都是商家的过度营销宣传。
+
+03 新手尽量不要空腹做有氧运动
+虽然说空腹有氧对于脂肪消耗的有利的，尤其是空腹晨跑，但是，在空腹状态下身体中的血糖水平会比较低，就有可能出现低血糖，这可是很危险的。新手的话建议在训练前半小时左右适当吃一些全麦面包等低GI碳水，防止训练中的低血糖。
+04 变肥不是因为吃肉
+就我们中国人的饮食习惯来说，其实大部分是主食吃多的，比如米饭，馒头，面条这些，热量高，饱腹感低。而肉类，只要不是肥肉，减脂期间吃了不仅能帮助身体维持基础代谢，而且肉类的饱腹感比主食还高。
+05 低gi饮食更减顽固脂肪
+常见的顽固脂肪有肚子，大腿，臀部，这些部位的肥肉受胰岛素影响大，而血糖升高又会导致胰岛素分泌增加，而碳水化合物的升糖指数通常比较高。因此想减少顽固脂肪，主食还需要多吃低升糖指数（gi）的五谷杂粮。
+
+06 只要你运动就在消耗脂肪
+不要认为只有有氧运动才能减肥，只要你在运动，脂肪和糖都在消耗，区别只是比例不同，因此你即使是力量训练，脂肪也在燃烧。
+07 先力量训练后有氧减肥效率更高
+力量训练主要消耗糖，而有氧系统包括糖，脂肪，蛋白质，先用力量训练消耗掉糖，再用有氧消耗脂肪，这样有氧效率就会得到提高。
+08 没有局部减脂
+运动时全身的脂肪是同步分解的，不存在局部脂肪分解给局部肌肉供能的情况。这就好比，你能只抽空泳池一个角的水吗？因此如果你见到网上教你某个动作瘦小腿，某个动作瘦肚子，你可以直接不理他。
+09 没有负热量食物
+食物吃进去都有食物热效应，也就是进去的时候，消化食物你需要消耗的能量，那如果你摄入的热量还没有消化食物用得多，那人岂不是越吃越瘦，吃到最后身体都没能量日常活动了。而吃东西最起码的需要满足活下去这个要求，既然热量都负了，那人咋活下来的？
+
+腹肌篇
+01 胖子的胸肌和瘦子的腹肌一样毫无意义
+虽然说体脂率是腹肌的关键因素，但是如果你从来没练过腹肌，即使你再瘦，腹肌也不可能变得饱满，结实。而胖子的胸都是脂肪，并不是肌肉，光是好吃懒做就能有的。
+02 光练腹肌也是不行的
+结合上一条，腹肌要明显的两大因素，体脂率和腹肌围度，也就是说减脂和训练都需要，你光练也不行，就拿健美选手来说，腹肌围度够大了吧，非赛季一样看不到腹肌。
+03 仰卧起坐练不出腹肌
+虽然体育老师都说，仰卧起坐是练腹肌的，但实际上这是错误的，标准仰卧起坐腰背部是挺直的，腹肌长度没有变化，仰卧起坐主要在做屈髋，而不是卷曲腰部，因此仰卧起坐是练核心和屈髋肌肉的。
+
+04 腹肌不代表核心力量强
+前面提到了，腹肌明不明显主要和腹肌训练以及体脂率有关，比如大力士选手的核心力量，足够强悍了吧，但是他们也看不到腹肌，核心力量包括腰腹部、髋关节这一个整体的，腹肌只是属于核心肌肉的一部分。
+05 腹肌是天生的
+腹肌是否对称是肌划决定的，而肌划是由基因决定的，也就是你出生是几块就是几块，出生不对称，那么这辈子都不对称。任何说帮你矫正不对称腹肌的都是骗子。
+腹肌是否显现，最重要的是体脂率，体脂率低于一定数值，就可以看到一些腹肌。腹肌不需要专门锻炼，在其它锻炼过程中掺杂锻炼就够了！
+训练篇
+01 健身不需要天天练
+许多人认为多练就一定是好的，不能休息，但实际上，不管是肌肉力量，还是肌肉围度，都是需要休息的，正常来说，我们运动后身体的力量水平会下降，然后在休息的时候慢慢恢复，如果休息和营养补充得好，就会超量恢复，超过之前的水平，短期恢复需要24～72小时。
+正常来说，一周起码给自己休息一天。
+
+02 热身不限于跑步
+虽然说跑步是最简单的热身方式，但跑跑步，压压腿是远远不够的，正常来说，热身需要分为三部分，首先是关节热身，然后是动态热身体（开合跳，跑步这类），然后则是针对训练内容的热身，比如要练卧推，可以先做做空杠卧推，俯卧撑之类的。
+03 不要盲目追求大重量
+虽然说重量越大，训练的刺激越大，但是对于身体来说，受伤风险也越大，新手最好还是把训练的重点放在学会动作，把动作做标准。
+06 跑步不会腿粗
+一些女生在跑完步后，感觉腿部比之前更粗了，那是因为你本身训练少，而且此时肌肉充血，只需要多拉伸放松即可，慢跑是不会让腿变粗的，反而你看马拉松运动员，腿个个都很细。
+
+05 训练不要追求酸痛
+训练过后的酸痛越明显说明练得越到位，这是典型的误区，如果你只是第二天的酸痛还是正常的，如果是训练后隔天才开始酸痛，那很可能就是延迟性酸痛，这会导致身体抵抗力的下降，容易生病。而且正常的力量训练只要强度不是非常高也可以不酸痛。
+06 女生练肌肉不会变成金刚芭比
+如果有关注一些健身女网红你就会发现，其实好多人练了5年，6年，其实也没有多少围度，体重也是100来斤，而且长肌肉需要雄性激素，而女性的雄性激素很低，即使是正常男性，练个三四年也不一定能练成健美选手。
+对于女生而言，肌肉训练更多的是塑形。
+
+很多人怕练畸形了，但事实是，没有大重量锻炼几年，休想练畸形！一些无量教练以此威胁不买课的！
+
+
+07 脂肪不能转化成肌肉
+肌肉和脂肪是不会相互转化的，它们原本就是两种不同的组织，肌肉是人生下来就有的，有些小伙伴摸着自己肉肉的，觉得全身肥肉，事实上是那是因为你脂肪太多，遮住肌肉了。肌肉长期不锻炼，是会退化松弛的，而不是直接转化为脂肪。
+也就是说，一些认为的瘦子想长肉，就得先吃胖，再练，其实是错误的，健身并不能把肥肉变成肌肉。
+08 深蹲膝盖可以超脚尖
+深蹲膝盖不是绝对不能超过脚尖的，这和每个人的身体结构相关，练臀基本都会刺激到腿的，绝对不粗腿的臀部训练是基本做不到。
+09 健身不会吸引女孩子
+当你练 得越久，你会发现，你身边的肌肉男越来越多，女的越来越少。
+
+
+但是，有人把男人健身和女性美甲类比，这就过分了。健身要看到效果，至少不要3个月集中锻炼，每周3次以上，每次至少一个小时，科学的吃，锻炼，休息，健身房投入几百个小时，几个W的金钱才能看到效果。而美甲，2个小时，几百块就够了！
+
+实操篇
+
+健身是需要持续投入，长期坚持，自我折磨的。没有坚强的意志力根本坚持不下来，说白了，就是自虐！还要，长期的、有计划的，持续性的自虐，才能有效果！这是意志，与体力，与耐力的抗争。
+有不少健身App，可以跟着学，比大多数私教专业。
+
+1 逆呼吸法
+所谓顺腹式呼吸法是指吸气时让腹部凸起，吐气时压缩腹部使之凹入的呼吸法。
+而逆腹式呼吸方法则相反：吸气时腹部凹进，而呼气时腹部突出。
+健身大多采用逆呼吸法。
+2 发力技巧
+健身大多采用逆呼吸法。配合发力技巧，一般肢体远离躯干时，吐气，发力，肢体靠近驱赶时，吸气，不主动发力（被动发力）。
+3 肌肉充血
+健身要想有效果，要集中锻炼某一个部位，达到感觉肌肉明显充血，发烫的感觉！
+一般来说，一个部位至少锻炼4组，每组12个，增肌是大重量rm递减。减肥是小重量，rm 15以上。
+4 锻炼，营养，和休息
+三分练，七分吃。健身营养一定要补充好。
+6：2：2 碳水，蛋白质，脂肪。
+两分锻炼，三分营养，五分休息！要想看到锻炼效果，营养和休息非常重要！
+没有三个月集中锻炼，你几乎看不到效果，但有三个月大强度锻炼之后，旁边人能明显感觉你的不同！健身没法速成！
+补剂：
+
+谷氨酸：可以帮助恢复肌肉酸痛。
+蛋白粉：补充蛋白质，大多数人日常饮食蛋白质摄入量不足以满足健身要求！
+
+5 穷文富武
+没钱没闲没法健身！真的！
+每周三次2小时空闲锻炼时间，大量补充蛋白质，充足的睡眠时间。普通人真的很难负担得起。
+6 日常锻炼
+专门锻炼难以抽取时间，但是日常办公的椅子上，就可以做不少锻炼动作的。工作空闲时间，可以稍加锻炼，比完全不做锻炼，素质要强上百倍！
+7 简单训练计划
+一个简单的每周5次健身计划，如下：
+
+肱二头肌，背
+胸，腿
+背，肱二头肌
+腿，肩
+胸，肱三头肌
+
+每个部位至少4组，增肌每组12个，减少到8个，力竭为止。减肥15个以上，小重量。
+每次健身力量锻炼越45分钟到一小时，前后5到10分钟跑步，热身和放松。
+锻炼完，肌肉拉伸放松，帮助恢复疲劳！
+锻炼中可以补充水分和蛋白质，带上蛋白粉饮品。少量，多次，不要一次大量喝水！
+
+练腿非常重要，特别是对于增肌来说。可以促睾，提高体内睾酮激素水平。对于想增肌来说，是必不可少的。
+
+8 心率 控制
+健康且体质较好的，心跳可以控制在120~180次/每分钟。
+中老年或慢性病人群，心跳可以控制在（170 - 年龄）~（180 - 年龄）之间。
+最大心率 = 220 - 实际年龄。
+燃脂区： 慢跑时，控制心率在最大心率的60%~ 70%。
+健身要有效果，需要三个基本指标：
+
+持续20分钟以上
+心率120次/分钟以上（青年）
+频率一周3~4次
+
+9 代谢指数控制
+代谢指数和体重和肌肉含量高相关，还和年龄有关，减肥就是要增加代谢指数，有氧运动最有效。
+10 理论指导
+不管实际锻炼，丰富你的理论知识，同样非常重要！可以达到事半功倍的效果，没有理论指导，就事倍功半了！
+
+大量健身教练非常不专业，都是业余的。可能还没你看几篇文章理论知识丰富。
+
+11 健身装备
+运动手套，健身服，吸汗毛巾，水杯等等。一些必要的投入是必须的。
+12 关于做C
+这是个专业用语，指打激素等药物，打了药物之后还要加强锻炼，才能看到明显效果。
+这个效果非常显著！正常锻炼几年的效果，药物几个月半年就可以达到。但是对身体伤害非常大！每年你都能在新闻上看到好几个用药的突然死亡的新闻！
+
+普通人不要做！
+
+徒手健身
+
+胸肌————俯卧撑
+胸厚————臂屈伸
+背阔肌————普通引体向上
+倒三角————宽距引体向上
+二头肌————窄距俯卧撑
+腹肌————卷腹
+核心力量————举腿
+肩宽————折刀俯卧撑
+腿部爆发力————蹲跳
+腿瘦————拉伸
+
+腹部脂肪
+
+提膝击掌
+单侧提膝
+抬腿击膝
+开合跳
+
+常见误区
+
+1.仰卧起坐练不了腹肌，和腹肌完全没关系，还伤身，尤其抱头，杀伤性无极大。从小学体育课就这么错误的教，健身界和别的国家早都知道的并淘汰的一个错误的动作，中国用了这么多年，直到今年部队大纲才发现并取消。只能呵呵了。
+2.引体向上不是练胳膊的，是练背。俯卧
+撑练的是胸
+3.节食不能减肥，只会越来越胖，吃的多才能减脂
+4.睡觉也能减肥
+5.只跑步不做力量训练，永远也跑不出有肌肉的好身材
+6.女性跑步跑死腿也跑不粗，跑完变粗那是充血发涨的。
+7.局部减肥是伪科学，没有局部减肥，不要再问我某个部位肉多怎么减，也不要再信什么局部减肥的广告了，那都是骗人的，全球现在也没研究出局部减肥的办法，不知道为什么有那么多人还信。
+8.想永远保持好身材必须要有肌肉，有肌肉才会瘦，运动以外任何方法减脂都是暂时的。
+9.女性只要你不注射药物，永远也练不成肌肉男，只会前凸后翘
+10.没有减肥这个词，只有减脂，只有体型变瘦体重不变才是正确的，很多人却只看体重，请看体型不要看体重。
+11.体重快速下降那减少的是你身体里的水，不是肉。
+12.腹肌有个屁用，体脂率低都会显现，大小不一而已，但你可以练的更大，但必须体脂率低，胖人你就不要练腹肌了，没用，先减脂再说。
+13.跑步减脂请看时间不要看距离，跑步前期消耗的是身体里的糖，不是脂肪，请至少20分钟以上
+14.力量训练胖人减脂轻重量多组数，瘦人增肌大重量少次数。
+15.腿也要练，练下半身才能促睾，睾酮才能帮助你全身的肌肉锻炼，女性没有睾丸，睾酮低的可怜，所以练不出肌肉。
+16.一周5天不锻炼，只集中一两天猛练反而对身体有害，不如别练
+17.肌肉就是肌肉，脂肪就是脂肪，没有不锻炼肌肉就变脂肪的说法，不锻炼肌肉只会松弛变软，也还是瘦肉，再接着锻炼很快就能恢复。
+18.平板支撑练不出腹肌，练的是核心稳定性
+19.出汗多少和训练量和减脂没半毛钱关系，那是体质问题。
+20.夏天晚上尽量不要夜跑，太危险，出门到处都是烧烤摊，一吃一晚上。
+
+健身漫画
+这里推荐一部漫画： 肌肉少女：哑铃，能举多少公斤？
+青春美少女健身漫画，介绍了很多基础常识！想健身的可以去看看，非常有趣的漫画，让你在娱乐中学会很多健身知识。这个番动画化了，2019年7月出的，大家可以搜索去看。
+
+
+]]></content>
+      <categories>
+        <category>fitness</category>
+      </categories>
+      <tags>
+        <tag>fitness</tag>
+        <tag>健身</tag>
+        <tag>运动</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>基于Hexo的matery主题搭建博客自定义修改篇2</title>
     <url>/posts/4d8a0b22/</url>
     <content><![CDATA[Hexo系列
@@ -27855,259 +28108,6 @@ CI/CD与Git Flow与GitLab
         <tag>matery</tag>
         <tag>cdn</tag>
         <tag>seo</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>健身从基础常识到实践指导！</title>
-    <url>/posts/4159851c/</url>
-    <content><![CDATA[
-有哪些相见恨晚的运动常识？接下来将从分别从基础概念、减肥、腹肌，训练，实操几个方面去分享。
-本文修订增补中！
-
-
-基本概念
-01. RM
-RM是英文"repetition maximum"的缩写，中文意义是"最大重复值"。以8RM为例，意思是，某个重量你最多完成8次。一般而言1～6RM侧重锻炼力量，8～12RM侧重锻炼肌肉围度，15RM以上侧重锻炼肌肉耐力。
-02 升糖指数
-升糖指数全称为“血糖生成指数”，简称，它反映了某种食物与葡萄糖相比升高血糖的速度和能力。是反映通过进食引起人体血糖升高程度的指标，高gi为70以上，中gi为55～70，低gi为55以下。
-03 马甲线、人鱼线和腹肌
-图一是人鱼线，是在髋关节上侧，图二是马甲线，通常是腹直肌两侧两到往下的线，图三是常说的腹肌，其实只是腹直肌，是肚脐眼两侧的腹部肌肉。
-
-04 BMI
-身体质量指数 (Body Mass Index, 简称BMI), 亦叫做克托莱指数, 是目前国际上常用的衡量人体胖瘦程度以及是否健康的一个标准。计算公式为：BMI=体重（千克）除以身高（米）的平方。
-05 心率
-心率是指正常人安静状态下每分钟心跳的次数，也叫安静心率，一般为60～100次/分，最大心率通常用220-年龄来计算率。运动时心率达到90%～95%的最大心率，此时供能物质主要为糖原，而心率大致在45%～60%的最大心率，此时供能物质主要是脂肪和糖原。而我们常说的减脂心率为65%～80%的最大心率。
-06 有氧运动和无氧运动的区别
-一张图给你解释清楚
-
-07 减肥
-减肥字面上的意思是减去肥肉，也就是脂肪，看的是体脂率，而不是体重，体重包括了肌肉、肥肉、水。因此体重下降不等于减肥成功。
-08 蛋白粉
-蛋白粉不是药，不是谁吃了都能变成施瓦辛格，蛋白粉也没什么神奇配方，基本上可以理解为瘦肉粉加水面粉，而且普通人不需要蛋白粉，蛋白粉是用于日常营养摄入不足才补充的。
-09 减肥原理
-减肥的原理是实现热量差，摄入的要低于消耗的，不管你是什么方式减肥，脱离了这个原则，都不要相信，因此在别人给你介绍减肥方法的时候，先想清楚，这个方法是怎样增加热量消耗或者减少热量摄入的。
-
-10 增肌
-增肌需要三个方面，首先是需要不断给肌肉新的刺激，也就是“渐进超负荷原则”，在训练完后则需要高蛋白高碳水的饮食和48～72小时的恢复时间让肌肉实现超量恢复。训练、饮食、休息，三者缺一不可。
-11 三大供能系统
-第一个是磷酸原系统，主要在运动开始后6秒内进行供能，在短时间高强度运动中，磷酸原系统是主要的供能系统。
-第二是糖酵解系统，主要在运动开始后6秒～2分钟内为身体供能，在中高强度的运动中主要由糖酵解系统参与。而糖酵解系统分为快速糖酵解和慢速糖酵解。
-第三是有氧氧化系统，主要在运动开始后2分钟内由糖、碳水化合物、脂肪和蛋白质氧化为身体进行供能，它需要大量的氧气参与。有氧系统的强度最低。
-当然需要注意的是，这三者运动开始都会工作，区别是供能比例不同。
-
-12 基础代谢
-减脂的人都会经常听到基础代谢这个词，基础代谢是指人体维持生命的所有器官所需要的最低能量需要，也就是你啥也不干，都得消耗的热量。测定方法是在人体在清醒而又极端安静的状态下，不受肌肉活动、环境温度、食物及精神紧张等影响时的能量代谢率。
-代谢指数和年龄相关，要健身，需要增加代谢指数。
-13 超级组
-超级组训练是指练完一组训练动作后尽可能没有休息地做另外一组主动肌与前一组训练的主动肌相反方向用力的训练。这种训练方式可以在最短时间内刺激更多肌肉群，强度非常大。
-14 金字塔训练
-做某一个动作时，逐渐增加或减少每组的重量，相应减少或增加每组的重复次数，直到重量加到预先安排训练目标，比如15 RM、12 RM、10 RM、 8RM。
-再比如徒手耐力训练，以做俯卧撑最高次数组为10，那么第1组1个，第2组2个，直到第10组10个，11组9个，12组8个，倒回去做到第19组1个完成训练，总计100个。
-
-15 HIIT
-高强度间歇性训练（HIIT)，是一种让你在短时间内进行全力、快速、爆发式锻炼的一种训练方式。这种技术让你在短期内心率提高并且燃烧更多热量。运动时，心率要控制在最大心率的84%以上，中间间歇时心率不要低于70%。这就使得HIIT不适合没训练经验的人，毕竟强度太大，跟不上。
-16 开窗理论
-开窗理论指的是大强度运动时，淋巴细胞浓度降低，增值分化及活动降低，免疫球蛋白含量及功能也受到影响，出现免疫低下期。据研究，受一次性急性运动的影响，免疫地下其可持续3～7小时不等。在这一免疫低下期，各种细菌、病毒等病原体极易入侵人体，最常见的就是高强度训练后出现感冒。
-17 核心力量
-目前主流的观点认为，核心指的是腰椎到骨盆这个整体，核心也分为内核心和外核心。而核心力量最重要的作用就是稳定，我们的日常活动都需要核心力量。
-
-减肥篇
-01 流汗多不等于减肥
-运动时你流汗多和减肥没有直接关系，减肥减的是脂肪，流汗虽然有助于排除废物，但终归是水，只要你正常饮水，体重就会回去的。
-因此，所谓的爆汗服或者在身上裹上保鲜膜减肥，都是在骗自己。
-02 青汁不是用来减肥的
-从青汁的配料来看，它其实就是一堆草叶子，或者蔬菜叶子，磨成粉，再泡水喝。而且青汁本身是给日本人喝的，毕竟他们那里蔬菜水果缺乏还特别贵，日常生活缺乏维生素和膳食纤维，说白了青汁就是给日常蔬菜摄入不足的日本人补充膳食纤维平衡一下营养。
-至于那些所谓的减肥功效什么的，或者其他类似的产品，基本都是商家的过度营销宣传。
-
-03 新手尽量不要空腹做有氧运动
-虽然说空腹有氧对于脂肪消耗的有利的，尤其是空腹晨跑，但是，在空腹状态下身体中的血糖水平会比较低，就有可能出现低血糖，这可是很危险的。新手的话建议在训练前半小时左右适当吃一些全麦面包等低GI碳水，防止训练中的低血糖。
-04 变肥不是因为吃肉
-就我们中国人的饮食习惯来说，其实大部分是主食吃多的，比如米饭，馒头，面条这些，热量高，饱腹感低。而肉类，只要不是肥肉，减脂期间吃了不仅能帮助身体维持基础代谢，而且肉类的饱腹感比主食还高。
-05 低gi饮食更减顽固脂肪
-常见的顽固脂肪有肚子，大腿，臀部，这些部位的肥肉受胰岛素影响大，而血糖升高又会导致胰岛素分泌增加，而碳水化合物的升糖指数通常比较高。因此想减少顽固脂肪，主食还需要多吃低升糖指数（gi）的五谷杂粮。
-
-06 只要你运动就在消耗脂肪
-不要认为只有有氧运动才能减肥，只要你在运动，脂肪和糖都在消耗，区别只是比例不同，因此你即使是力量训练，脂肪也在燃烧。
-07 先力量训练后有氧减肥效率更高
-力量训练主要消耗糖，而有氧系统包括糖，脂肪，蛋白质，先用力量训练消耗掉糖，再用有氧消耗脂肪，这样有氧效率就会得到提高。
-08 没有局部减脂
-运动时全身的脂肪是同步分解的，不存在局部脂肪分解给局部肌肉供能的情况。这就好比，你能只抽空泳池一个角的水吗？因此如果你见到网上教你某个动作瘦小腿，某个动作瘦肚子，你可以直接不理他。
-09 没有负热量食物
-食物吃进去都有食物热效应，也就是进去的时候，消化食物你需要消耗的能量，那如果你摄入的热量还没有消化食物用得多，那人岂不是越吃越瘦，吃到最后身体都没能量日常活动了。而吃东西最起码的需要满足活下去这个要求，既然热量都负了，那人咋活下来的？
-
-腹肌篇
-01 胖子的胸肌和瘦子的腹肌一样毫无意义
-虽然说体脂率是腹肌的关键因素，但是如果你从来没练过腹肌，即使你再瘦，腹肌也不可能变得饱满，结实。而胖子的胸都是脂肪，并不是肌肉，光是好吃懒做就能有的。
-02 光练腹肌也是不行的
-结合上一条，腹肌要明显的两大因素，体脂率和腹肌围度，也就是说减脂和训练都需要，你光练也不行，就拿健美选手来说，腹肌围度够大了吧，非赛季一样看不到腹肌。
-03 仰卧起坐练不出腹肌
-虽然体育老师都说，仰卧起坐是练腹肌的，但实际上这是错误的，标准仰卧起坐腰背部是挺直的，腹肌长度没有变化，仰卧起坐主要在做屈髋，而不是卷曲腰部，因此仰卧起坐是练核心和屈髋肌肉的。
-
-04 腹肌不代表核心力量强
-前面提到了，腹肌明不明显主要和腹肌训练以及体脂率有关，比如大力士选手的核心力量，足够强悍了吧，但是他们也看不到腹肌，核心力量包括腰腹部、髋关节这一个整体的，腹肌只是属于核心肌肉的一部分。
-05 腹肌是天生的
-腹肌是否对称是肌划决定的，而肌划是由基因决定的，也就是你出生是几块就是几块，出生不对称，那么这辈子都不对称。任何说帮你矫正不对称腹肌的都是骗子。
-腹肌是否显现，最重要的是体脂率，体脂率低于一定数值，就可以看到一些腹肌。腹肌不需要专门锻炼，在其它锻炼过程中掺杂锻炼就够了！
-训练篇
-01 健身不需要天天练
-许多人认为多练就一定是好的，不能休息，但实际上，不管是肌肉力量，还是肌肉围度，都是需要休息的，正常来说，我们运动后身体的力量水平会下降，然后在休息的时候慢慢恢复，如果休息和营养补充得好，就会超量恢复，超过之前的水平，短期恢复需要24～72小时。
-正常来说，一周起码给自己休息一天。
-
-02 热身不限于跑步
-虽然说跑步是最简单的热身方式，但跑跑步，压压腿是远远不够的，正常来说，热身需要分为三部分，首先是关节热身，然后是动态热身体（开合跳，跑步这类），然后则是针对训练内容的热身，比如要练卧推，可以先做做空杠卧推，俯卧撑之类的。
-03 不要盲目追求大重量
-虽然说重量越大，训练的刺激越大，但是对于身体来说，受伤风险也越大，新手最好还是把训练的重点放在学会动作，把动作做标准。
-06 跑步不会腿粗
-一些女生在跑完步后，感觉腿部比之前更粗了，那是因为你本身训练少，而且此时肌肉充血，只需要多拉伸放松即可，慢跑是不会让腿变粗的，反而你看马拉松运动员，腿个个都很细。
-
-05 训练不要追求酸痛
-训练过后的酸痛越明显说明练得越到位，这是典型的误区，如果你只是第二天的酸痛还是正常的，如果是训练后隔天才开始酸痛，那很可能就是延迟性酸痛，这会导致身体抵抗力的下降，容易生病。而且正常的力量训练只要强度不是非常高也可以不酸痛。
-06 女生练肌肉不会变成金刚芭比
-如果有关注一些健身女网红你就会发现，其实好多人练了5年，6年，其实也没有多少围度，体重也是100来斤，而且长肌肉需要雄性激素，而女性的雄性激素很低，即使是正常男性，练个三四年也不一定能练成健美选手。
-对于女生而言，肌肉训练更多的是塑形。
-
-很多人怕练畸形了，但事实是，没有大重量锻炼几年，休想练畸形！一些无量教练以此威胁不买课的！
-
-
-07 脂肪不能转化成肌肉
-肌肉和脂肪是不会相互转化的，它们原本就是两种不同的组织，肌肉是人生下来就有的，有些小伙伴摸着自己肉肉的，觉得全身肥肉，事实上是那是因为你脂肪太多，遮住肌肉了。肌肉长期不锻炼，是会退化松弛的，而不是直接转化为脂肪。
-也就是说，一些认为的瘦子想长肉，就得先吃胖，再练，其实是错误的，健身并不能把肥肉变成肌肉。
-08 深蹲膝盖可以超脚尖
-深蹲膝盖不是绝对不能超过脚尖的，这和每个人的身体结构相关，练臀基本都会刺激到腿的，绝对不粗腿的臀部训练是基本做不到。
-09 健身不会吸引女孩子
-当你练 得越久，你会发现，你身边的肌肉男越来越多，女的越来越少。
-
-
-但是，有人把男人健身和女性美甲类比，这就过分了。健身要看到效果，至少不要3个月集中锻炼，每周3次以上，每次至少一个小时，科学的吃，锻炼，休息，健身房投入几百个小时，几个W的金钱才能看到效果。而美甲，2个小时，几百块就够了！
-
-实操篇
-
-健身是需要持续投入，长期坚持，自我折磨的。没有坚强的意志力根本坚持不下来，说白了，就是自虐！还要，长期的、有计划的，持续性的自虐，才能有效果！这是意志，与体力，与耐力的抗争。
-有不少健身App，可以跟着学，比大多数私教专业。
-
-1 逆呼吸法
-所谓顺腹式呼吸法是指吸气时让腹部凸起，吐气时压缩腹部使之凹入的呼吸法。
-而逆腹式呼吸方法则相反：吸气时腹部凹进，而呼气时腹部突出。
-健身大多采用逆呼吸法。
-2 发力技巧
-健身大多采用逆呼吸法。配合发力技巧，一般肢体远离躯干时，吐气，发力，肢体靠近驱赶时，吸气，不主动发力（被动发力）。
-3 肌肉充血
-健身要想有效果，要集中锻炼某一个部位，达到感觉肌肉明显充血，发烫的感觉！
-一般来说，一个部位至少锻炼4组，每组12个，增肌是大重量rm递减。减肥是小重量，rm 15以上。
-4 锻炼，营养，和休息
-三分练，七分吃。健身营养一定要补充好。
-6：2：2 碳水，蛋白质，脂肪。
-两分锻炼，三分营养，五分休息！要想看到锻炼效果，营养和休息非常重要！
-没有三个月集中锻炼，你几乎看不到效果，但有三个月大强度锻炼之后，旁边人能明显感觉你的不同！健身没法速成！
-补剂：
-
-谷氨酸：可以帮助恢复肌肉酸痛。
-蛋白粉：补充蛋白质，大多数人日常饮食蛋白质摄入量不足以满足健身要求！
-
-5 穷文富武
-没钱没闲没法健身！真的！
-每周三次2小时空闲锻炼时间，大量补充蛋白质，充足的睡眠时间。普通人真的很难负担得起。
-6 日常锻炼
-专门锻炼难以抽取时间，但是日常办公的椅子上，就可以做不少锻炼动作的。工作空闲时间，可以稍加锻炼，比完全不做锻炼，素质要强上百倍！
-7 简单训练计划
-一个简单的每周5次健身计划，如下：
-
-肱二头肌，背
-胸，腿
-背，肱二头肌
-腿，肩
-胸，肱三头肌
-
-每个部位至少4组，增肌每组12个，减少到8个，力竭为止。减肥15个以上，小重量。
-每次健身力量锻炼越45分钟到一小时，前后5到10分钟跑步，热身和放松。
-锻炼完，肌肉拉伸放松，帮助恢复疲劳！
-锻炼中可以补充水分和蛋白质，带上蛋白粉饮品。少量，多次，不要一次大量喝水！
-
-练腿非常重要，特别是对于增肌来说。可以促睾，提高体内睾酮激素水平。对于想增肌来说，是必不可少的。
-
-8 心率 控制
-健康且体质较好的，心跳可以控制在120~180次/每分钟。
-中老年或慢性病人群，心跳可以控制在（170 - 年龄）~（180 - 年龄）之间。
-最大心率 = 220 - 实际年龄。
-燃脂区： 慢跑时，控制心率在最大心率的60%~ 70%。
-健身要有效果，需要三个基本指标：
-
-持续20分钟以上
-心率120次/分钟以上（青年）
-频率一周3~4次
-
-9 代谢指数控制
-代谢指数和体重和肌肉含量高相关，还和年龄有关，减肥就是要增加代谢指数，有氧运动最有效。
-10 理论指导
-不管实际锻炼，丰富你的理论知识，同样非常重要！可以达到事半功倍的效果，没有理论指导，就事倍功半了！
-
-大量健身教练非常不专业，都是业余的。可能还没你看几篇文章理论知识丰富。
-
-11 健身装备
-运动手套，健身服，吸汗毛巾，水杯等等。一些必要的投入是必须的。
-12 关于做C
-这是个专业用语，指打激素等药物，打了药物之后还要加强锻炼，才能看到明显效果。
-这个效果非常显著！正常锻炼几年的效果，药物几个月半年就可以达到。但是对身体伤害非常大！每年你都能在新闻上看到好几个用药的突然死亡的新闻！
-
-普通人不要做！
-
-徒手健身
-
-胸肌————俯卧撑
-胸厚————臂屈伸
-背阔肌————普通引体向上
-倒三角————宽距引体向上
-二头肌————窄距俯卧撑
-腹肌————卷腹
-核心力量————举腿
-肩宽————折刀俯卧撑
-腿部爆发力————蹲跳
-腿瘦————拉伸
-
-腹部脂肪
-
-提膝击掌
-单侧提膝
-抬腿击膝
-开合跳
-
-常见误区
-
-1.仰卧起坐练不了腹肌，和腹肌完全没关系，还伤身，尤其抱头，杀伤性无极大。从小学体育课就这么错误的教，健身界和别的国家早都知道的并淘汰的一个错误的动作，中国用了这么多年，直到今年部队大纲才发现并取消。只能呵呵了。
-2.引体向上不是练胳膊的，是练背。俯卧
-撑练的是胸
-3.节食不能减肥，只会越来越胖，吃的多才能减脂
-4.睡觉也能减肥
-5.只跑步不做力量训练，永远也跑不出有肌肉的好身材
-6.女性跑步跑死腿也跑不粗，跑完变粗那是充血发涨的。
-7.局部减肥是伪科学，没有局部减肥，不要再问我某个部位肉多怎么减，也不要再信什么局部减肥的广告了，那都是骗人的，全球现在也没研究出局部减肥的办法，不知道为什么有那么多人还信。
-8.想永远保持好身材必须要有肌肉，有肌肉才会瘦，运动以外任何方法减脂都是暂时的。
-9.女性只要你不注射药物，永远也练不成肌肉男，只会前凸后翘
-10.没有减肥这个词，只有减脂，只有体型变瘦体重不变才是正确的，很多人却只看体重，请看体型不要看体重。
-11.体重快速下降那减少的是你身体里的水，不是肉。
-12.腹肌有个屁用，体脂率低都会显现，大小不一而已，但你可以练的更大，但必须体脂率低，胖人你就不要练腹肌了，没用，先减脂再说。
-13.跑步减脂请看时间不要看距离，跑步前期消耗的是身体里的糖，不是脂肪，请至少20分钟以上
-14.力量训练胖人减脂轻重量多组数，瘦人增肌大重量少次数。
-15.腿也要练，练下半身才能促睾，睾酮才能帮助你全身的肌肉锻炼，女性没有睾丸，睾酮低的可怜，所以练不出肌肉。
-16.一周5天不锻炼，只集中一两天猛练反而对身体有害，不如别练
-17.肌肉就是肌肉，脂肪就是脂肪，没有不锻炼肌肉就变脂肪的说法，不锻炼肌肉只会松弛变软，也还是瘦肉，再接着锻炼很快就能恢复。
-18.平板支撑练不出腹肌，练的是核心稳定性
-19.出汗多少和训练量和减脂没半毛钱关系，那是体质问题。
-20.夏天晚上尽量不要夜跑，太危险，出门到处都是烧烤摊，一吃一晚上。
-
-健身漫画
-这里推荐一部漫画： 肌肉少女：哑铃，能举多少公斤？
-青春美少女健身漫画，介绍了很多基础常识！想健身的可以去看看，非常有趣的漫画，让你在娱乐中学会很多健身知识。这个番动画化了，2019年7月出的，大家可以搜索去看。
-
-
-]]></content>
-      <categories>
-        <category>fitness</category>
-      </categories>
-      <tags>
-        <tag>fitness</tag>
-        <tag>健身</tag>
-        <tag>运动</tag>
       </tags>
   </entry>
   <entry>
@@ -43885,7 +43885,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts8739'));
+        var myChart = echarts.init(document.getElementById('echarts9439'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -43979,7 +43979,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts9038'));
+        var myChart = echarts.init(document.getElementById('echarts45'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44048,7 +44048,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts4221'));
+        var myChart = echarts.init(document.getElementById('echarts5981'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -47019,6 +47019,7 @@ Earthly 一个更加强大的镜像构建工具
 所有金融的手段，说到底，都是怎么把别人口袋里的钱弄到自己口袋里！
 财富自由，说到底，是找到一条合理合法剥削别人劳动成果的途径！
 冥冥之中，你得到的任何东西，背后都标有价格！
+获得财富的本质是对生产资料的不断占有！所谓的身产资料就是能够让资本持续增值的东西，比如说土地，矿产，房子，工厂，股份，商标。大部分人掌握的技能，比如说读工科或者读文学医学，或者学习其它的技术，这些都不是身产资料，这是生产工具，都是以出卖劳动技能或者劳动时间来获取收益。
 
 金融基础
 金融历史
@@ -48620,9 +48621,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-QyWJRFtAzogHvUFv").style.height=document.getElementById("mmedia-QyWJRFtAzogHvUFv").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-DgEGFUuAXqgsPywR").style.height=document.getElementById("mmedia-DgEGFUuAXqgsPywR").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-QyWJRFtAzogHvUFv").style.height=document.getElementById("mmedia-QyWJRFtAzogHvUFv").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-DgEGFUuAXqgsPywR").style.height=document.getElementById("mmedia-DgEGFUuAXqgsPywR").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 
@@ -52182,9 +52183,9 @@ chatGPT
 
 视频讲解
 B站
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-BZptxNdlmdwLZEsf").style.height=document.getElementById("mmedia-BZptxNdlmdwLZEsf").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-NlQjfLhsgLianAWv").style.height=document.getElementById("mmedia-NlQjfLhsgLianAWv").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-BZptxNdlmdwLZEsf").style.height=document.getElementById("mmedia-BZptxNdlmdwLZEsf").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-NlQjfLhsgLianAWv").style.height=document.getElementById("mmedia-NlQjfLhsgLianAWv").scrollWidth*0.76+"px";
     }; 
 youtube
 
