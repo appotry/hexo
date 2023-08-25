@@ -6698,375 +6698,6 @@ Github mdBook
       </tags>
   </entry>
   <entry>
-    <title>Mariadb/Mysql命令行常用命令</title>
-    <url>/posts/f0b0af52/</url>
-    <content><![CDATA[一、初始化等
-1、登陆数据库方法
-mysql -u用户名 -p用户密码
-2、修改root及用户密码
-use mysql;
-update user set password=password('11111111') where user='root' and host='localhost';
-flush privileges;
-MariaDB [mysql]&gt; update user set password=password('11111111') where user='root' and host='localhost';
-Query OK, 1 row affected (0.01 sec)
-Rows matched: 1  Changed: 1  Warnings: 0
- 
-MariaDB [mysql]&gt; flush privileges;
-Query OK, 0 rows affected (0.01 sec)
- 
-MariaDB [mysql]&gt; exit
-3、创建用户
-insert into mysql.user(host,user,password)values("localhost","test",password("password"));
-flush privileges;
-4、删除用户
-DELETE FROM user WHERE User="test" and Host="localhost";
-flush privileges;　　
-5、删除用户的数据库
-drop database test1;
-6、交互模式初始化
-mysql_secure_installation
-二、 常用操作
-1、显示数据库列表
-show databases;:查看所有的数据库
-2、创建数据库
-create database zxg;：创建名尾zxg的数据库
-3、进入数据库
-use zxg;:进入zxg的数据库
-4、显示库中的数据表
-show tables;：查看数据库里有多少张表
-5、创建数据表
-create table t1 (id varchar(20),name varchar(20));:创建名为t1表，并创建两两个字段，id、name，varchar表示设置数据长度，用字符来定义长度单位，其
-6、插入数据
-insert into t1 values（"1"，"zxg"）;:向表中插入数据
-7、查看数据表
-select * from t1; ：查看t1表数据内容
-8、多条件查询
-select * from t1 where id=1 and age = 'zxg ' ;: id、age 多个条件查询
-9、查看字段内容
-desc t1;:查看t1 表字段内容
-10、修改字段长度
-alter table t1 modify column name varchar(20);:修改name字段的长度
-11、修改该字段内容
-update t1 set name='zxg.net' where id=1;：修改name字段的内容
-12、权限刷新
-flush privileges; :刷新权限
-13、清空表单
-delete from t1;` :清空表内容
-14、删除数据表
-`drop table t1:删除表
-15、删除数据库
-drop database zxg;：删除zxg数据库
-16、查看数据库字符集
-show variables like '%char%';:查看数据库字符集
-17、查看存储引擎
-show engines;:查看MySQL存储引擎。
-18、查看默认存储引擎
-show variables like '%storage_engine%';:查看MySQL默认的存储引擎
-19、修改存储引擎
-alter table t1 engine=innodb;:修改MySQL t1表存储引擎
-[root@web2 ~]# mysql
-Welcome to the MariaDB monitor.  Commands end with ; or \g.
-Your MariaDB connection id is 2
-Server version: 5.5.60-MariaDB MariaDB Server
- 
-Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
- 
-Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
- 
-MariaDB [(none)]&gt; show databases;
-+--------------------+
-| Database           |
-+--------------------+
-| information_schema |
-| mysql              |
-| performance_schema |
-| test               |
-+--------------------+
-4 rows in set (0.00 sec)
- 
-MariaDB [(none)]&gt;  create database zxg;                 
-Query OK, 1 row affected (0.00 sec)
- 
-MariaDB [(none)]&gt; use zxg;
-Database changed
-MariaDB [zxg]&gt; show tables;
-Empty set (0.00 sec)
- 
-MariaDB [zxg]&gt; create table t1(id varchar(20),name varchar(20));
-Query OK, 0 rows affected (0.00 sec)
- 
-MariaDB [zxg]&gt; show tables;
-+---------------+
-| Tables_in_zxg |
-+---------------+
-| t1            |
-+---------------+
-1 row in set (0.00 sec)
- 
-MariaDB [zxg]&gt;
-MariaDB [zxg]&gt; insert into t1 values ("1","zxg");
-Query OK, 1 row affected (0.01 sec)
- 
-MariaDB [zxg]&gt; select *from t1;
-+------+------+
-| id | name |
-+------+------+
-| 1 | zxg |
-+------+------+
-1 row in set (0.00 sec)
- 
-MariaDB [zxg]&gt; select *from t1 where id=1;
-+------+------+
-| id | name |
-+------+------+
-| 1 | zxg |
-+------+------+
-1 row in set (0.00 sec)
- 
-MariaDB [zxg]&gt; select *from t1 where id=1 and name='zxg';
-+------+------+
-| id | name |
-+------+------+
-| 1 | zxg |
-+------+------+
-1 row in set (0.01 sec)
- 
-MariaDB [zxg]&gt; desc t1;
-+-------+-------------+------+-----+---------+-------+
-| Field | Type | Null | Key | Default | Extra |
-+-------+-------------+------+-----+---------+-------+
-| id | varchar(20) | YES | | NULL | |
-| name | varchar(20) | YES | | NULL | |
-+-------+-------------+------+-----+---------+-------+
-2 rows in set (0.00 sec)
- 
-MariaDB [zxg]&gt; alter table t1 modify column name varchar(20);
-Query OK, 0 rows affected (0.00 sec)
-Records: 0 Duplicates: 0 Warnings: 0
- 
-MariaDB [zxg]&gt; update t1 set name='zxg.net' where id=1;
-Query OK, 1 row affected (0.00 sec)
-Rows matched: 1 Changed: 1 Warnings: 0
-MariaDB [zxg]&gt;
- 
-三、mysql 数据库字符集设置
-mysql数据库存储数据时，默认编码为latinl，存储中文字符时，在调用时会显示为乱码，为了解决该乱码问题，需修改该mysql默认字符集为UTE-8
-装mariadb的是时候看已经默认为ute-8
-MariaDB [(none)]&gt; show variables like '%char%';
-+--------------------------+----------------------------+
-| Variable_name            | Value                      |
-+--------------------------+----------------------------+
-| character_set_client     | utf8                       |
-| character_set_connection | utf8                       |
-| character_set_database   | latin1                     |
-| character_set_filesystem | binary                     |
-| character_set_results    | utf8                       |
-| character_set_server     | latin1                     |
-| character_set_system     | utf8                       |
-| character_sets_dir       | /usr/share/mysql/charsets/ |
-+--------------------------+----------------------------+
-8 rows in set (0.00 sec)
-如不是，可以设置
-SET character_set_client = utf8;
-SET character_set_results = utf8;
-SET character_set_connection = utf8;
-四、mysql 数据库密码管理
-设置密码访问，密码破解、密码权限、修改密码；
-1、创建用户及授权
-grant all on zxg.* to test@localhost identified by 'pas';
-grant select,insert,update,delete on *.*to test@"%" identified by 'pas';
-grant all on zxg.* to test@`192.168.216.53` identified by 'pas'
-2、破解密码方法
-停止服务—》跳过权限方式启动—》单开一个窗口登陆—》登陆修改密码即可
-1）systemctl stop mariadb
-2）mysqld_safe --skip-grant-tables &amp;
-[root@web2 ~]# mysqld_safe --skip-grant-tables &amp;
-[1] 47542
-[root@web2 ~]# 190520 15:45:22 mysqld_safe Logging to '/var/log/mariadb/mariadb.log'.
-190520 15:45:22 mysqld_safe Starting mysqld daemon with databases from /var/lib/mysql
-[root@web2 ~]# mysql
-Welcome to the MariaDB monitor.  Commands end with ; or \g.
-Your MariaDB connection id is 1
-Server version: 5.5.60-MariaDB MariaDB Server
- 
-Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
- 
-Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
- 
-MariaDB [(none)]&gt; use mysql;
-Reading table information for completion of table and column names
-You can turn off this feature to get a quicker startup with -A
- 
-Database changed
-MariaDB [mysql]&gt; update user set password=password('11111111') where user='root' ;
-Query OK, 3 rows affected (0.01 sec)
-Rows matched: 4  Changed: 3  Warnings: 0
- 
-MariaDB [mysql]&gt; flush privileges;
-Query OK, 0 rows affected (0.00 sec)
- 
-MariaDB [mysql]&gt; exit
-Bye
-[root@web2 ~]#
-然后退出”跳过权限方式“ ctrl+c ，正常启动mysql就可以了
-五、mysql 配置文件详解
-1、参数说明
-[mysqld]                                                              #服务端配置
-port        = 3306                                                    #监听端口
-socket      = /tmp/mysql.sock                                         #通信设置
-user    = mariadb                                                     #使用mariadb用户启动
-basedir = /usr/local/mariadb                                          #安装路径
-datadir = /data/mysql                                                 #数据目录
-log_error = /data/mysql/mariadb.err                             　　　 #错误日志
-pid-file = /data/mysql/mariadb.pid                             　　　　#pid进程文件
-skip-external-locking                                                 #避免mysql的外部锁定，减少出错几率提高稳定性
-key_buffer_size = 64M                                                 #缓存存储引擎参数，这个参数可以设置为64M
-max_allowed_packet = 1M                                               #允许最大接收数据包的大小，防止服务器发送过大的数据包，可以设置为16MB或者更大，但设置太大也可能有危险
-table_open_cache = 256                                                #mysql每打开一个表，都会读入一些数据到table_open_cache缓存中，当MYSQL在这个缓存中找不到相应的信息时，才会去磁盘读取，默认值64，假设系统有200个并发连接，则需将此参数设置为200*N（N为每个连接所需的文件描述符数目）；当设置为很大时，如果系统处理不了那么多文件描述符，那么就会出现客户端失效，连接不上
-sort_buffer_size = 1M                                                 #在表进行order by和group by 排序操作时，由于排序的字段没有索引，会出现Using filesort，为了提高性能，可用此参数增加每个线程分配的缓存区大小，默认时256k，这个参数不要设置过大，一般128~256k，另外一般出现using filesort的时候，要通过增加索引来解决
-net_buffer_length = 8K                                                #包消息缓冲区初始化net_buffer_length字节，但需要时可以增长到max_allowed_packet字节
-read_buffer_size = 1M                                                 #该参数用于表的顺序扫描，表示每个线程分配的缓冲区大小，比如在进行全表扫描时，mysql会按照数据的存储顺序一次读取数据块，每次读取的数据块首先会暂存在read_buffer_size中，当buffer空间被写满或者全部数据读取结束后，在将buffer中的数据返回给上层调用者，以提高效率默认128k，也不要设置过大
-read_rnd_buffer_size = 512K                                           #该参数用于表的随机读取，表示每个线程分配的缓冲区大小，比如，按照一个非索引字段做order by排序操作时，就会利用这个缓冲区来暂存读取的数据，默认时256k，也不要设置过大
-myisam_sort_buffer_size = 16M                                         #当myisam表执行repair table或创建索引时，用以缓冲排序索引，设置太小可能会遇到"myisam_sort_buffer_size is to small"
-thread_cache_size = 32                                                #线程池，线程缓冲。用来缓冲空闲的线程，以至于不被销毁，如果线程缓冲在的空闲线程，需要重新建立新连接，则会优先调用线程池中的缓冲，很快就能相应连接请求，每建立一个连接，都需要一个线程与之匹配。
-query_cache_size = 32M                                                #缓存select语句和结果集大小的参数。查询缓存会存储一个select查询的文本与被传送到客户端的相应结果。如果之后接收到一个相同的查询，服务器会从查询缓存中检索结果，而不是再次分析和执行这个同样的查询。如果你的环境中写操作很少，读操作频繁，那么打开query_cache_type=1，会对性能有明显提升。如果写操作频繁，则应该关闭它（query_cache_type=0）。
-tmp_table_size = 64M                                                  #临时HEAP数据表的最大长度(默认设置是32M); 超过这个长度的临时数据表将被转换为MyISAM数据表并存入一个临时文件。
-                                                                      #
-explicit_defaults_for_timestamp = true                     　　　　　　 #是否显示默认时间戳
-#skip-networking                                                      #
-max_connections = 500                                                 #该参数用来设置最大连接数，告诉你当前你的服务器允许多少并发连接。默认为100，一般设置为512-1000即可。请记住，太多的连接会导致内存的使用量过高并且会锁住你的 MySQL 服务器。一般小网站需要 100-200 的连接数，而较大可能需要 500-800 甚至更多。这里的值很大程度上取决于你 MySQL/MariaDB 的使用情况。
-max_connect_errors = 100                                              #如果有时网络抽风，或者应用配置错误，或者其他原因导致客户端短时间内不断的尝试连接，客户端可能会被列入黑名单，然后将无法连接，直到再次刷新主机缓存。这个选项默认值太小了，可以考虑设的足够大（如果你的服务器配置够强大的话）。
-open_files_limit = 65535                                              #mysql打开最大文件数
-                                                                      #
-log-bin=mysql-bin                                                     #这些路径相对于datadir
-binlog_format=mixed                                                   #日志格式
-server-id   = 1                                                       #给服务器分配一个独一无二的ID编号; n的取值范围是1~2的32次方启用二进制日志功能。在复制数据同步的时候会用到，Helloweba后面会有文章介绍。
-expire_logs_days = 10                                                 #启用二进制日志后，保留日志的天数。服务器会自动清理指定天数前的日志文件，如果不设置则会导致服务器空间耗尽。一般设置为7～14天。
-                                                                       #
-default_storage_engine = InnoDB                                     　#新数据表的默认存储引擎(默认设置是MyISAM)。这项设置还可以通过–default-table-type选项来设置。
-innodb_file_per_table = 1                                             #提供了更灵活的方式，它把每个数据库的信息保存在一个 .ibd 数据文件中。每个 .idb 文件代表它自己的表空间。通过这样的方式可以更快地完成类似 “TRUNCATE” 的数据库操作，当删除或截断一个数据库表时，你也可以回收未使用的空间。这样配置的另一个好处是你可以将某些数据库表放在一个单独的存储设备。这可以大大提升你磁盘的 I/O 负载。
-innodb_data_home_dir = /data/mysql                             　　　　#InnoDB主目录，所有与InnoDB数据表有关的目录或文件路径都相对于这个路径。在默认的情况下，这个主目录就是MySQL的数据目录。
-innodb_data_file_path = ibdata1:10M:autoextend     　　　　　　　　　　　#用来容纳InnoDB为数据表的表空间: 可能涉及一个以上的文件; 每一个表空间文件的最大长度都必须以字节(B)、兆字节(MB)或千兆字节(GB)为单位给出; 表空间文件的名字必须以分号隔开; 最后一个表空间文件还可以带一个autoextend属性和一个最大长度(max:n)。
-innodb_log_group_home_dir = /data/mysql                     　　　　　　#用来存放InnoDB日志文件的目录路径(如ib_logfile0、ib_logfile1等)。在默认的情况下，InnoDB驱动程序将使用 MySQL数据目录作为自己保存日志文件的位置。
-innodb_buffer_pool_size = 256M                                     　　#这个参数是InnoDB存储引擎的核心参数，默认为128KB，这个参数要设置为物理内存的60%～70%。
-innodb_log_file_size = 64M                                            #事务日志文件写操作缓存区的最大长度(默认设置是1MB)。
-innodb_log_buffer_size = 8M                                           #事务日志所使用的缓存区。InnoDB在写事务日志的时候，为了提高性能，先将信息写入Innodb Log Buffer中，当满足innodb_flush_log_trx_commit参数所设置的相应条件（或者日志缓冲区写满）时，再将日志写到文件（或者同步到磁盘）中。可以通过innodb_log_buffer_size参数设置其可以使用的最大内存空间。默认是8MB，一般为16～64MB即可。
-innodb_flush_log_at_trx_commit = 1                             　　　　#这个选项决定着什么时候把日志信息写入日志文件以及什么时候把这些文件物理地写(术语称为”同步”)到硬盘上。设置值0的意思是每隔一秒写一次日 志并进行 同步，这可以减少硬盘写操作次数，但可能造成数据丢失; 设置值1(设置设置)的意思是在每执行完一条COMMIT命令就写一次日志并进行同步，这可以防止数据丢失，但硬盘写操作可能会很频繁; 设置值2是一般折衷的办法，即每执行完一条COMMIT命令写一次日志，每隔一秒进行一次同步。
-innodb_lock_wait_timeout = 50                                         #如果某个事务在等待n秒(s)后还没有获得所需要的资源，就使用ROLLBACK命令放弃这个事务。这项设置对于发现和处理未能被InnoDB数据表驱动 程序识别出来的死锁条件有着重要的意义。这个选项的默认设置是50s。
-                                                                      #
-[mysqldump]                                                           #
-quick                                                                 #
-max_allowed_packet = 16M                                              #          
-                                                                      #
-[mysql]                                                               #
-no-auto-rehash                                                        #
-                                                                      #
-[myisamchk]                                                           #
-key_buffer_size = 64M                                                 #  
-sort_buffer_size = 1M                                                 #  
-read_buffer = 2M                                                      #
-write_buffer = 2M                                                     #
-                                                                      #
-[mysqlhotcopy]                                                        #
-interactive-timeout                                                   #
-2、mysql数据库索引案例（百万量级）
-[client]
-port    =3306                                  
-socket    =/tmp/mysql.sock                     
- 
- 
- 
-[mysqld]                                                                             
-port        = 3306                                                         
-socket      = /tmp/mysql.sock                                   
-user    = mysql  
-server_id　　= 10
-datadir　　= /data/mysql/
-old_passwords　　= 1
-lower_case_table_names　　= 1
-character-set-server　　= utf8
-default-storage-engine　　= MYISAM
-log-bin　　= bin.log
-log-error　　= error.log
-pid-file　　= mysql.pid
-long_query_time　　= 2
-slow_query_time　　= 2
-slow_query_log　
-slow_query_log_file　　= slow.log
-binlog_cache_size　　= 4MB
-binlog_format　　= mixed
-max_binlog_cache_size　　= 16MB
-max_binlog_size　　= 1GB
-expire_logs_days　　= 30
-ft_min_word_len　　= 4
-back_log　　= 512
-max_allowed_packet　　= 64MB
-max_connections　　= 4096
-max_connect_errors　　= 100
-join_buffer_size　　= 2MB
-read_buffer_size　　= 2MB
-read_rnd_buffer_size　　= 2MB
-sort_buffer_size　　　　= 2MB
-query_cache_size　　= 2MB
-table_open_cache　　= 10000
-thread_cache_size　　= 256
-max_heap_table_size　　= 64MB
-tmp_table_size　　= 64MB
-thread_stack　　= 192KB
-thread_concurrency　　= 24
-local-infile　　= 0
-skip-show-database
-skip-name-resolve
-skip-external-locking
-connect_timeout　　= 600
-interactive_timeout　　= 600
-wait_timeout　　= 600
-#MyISAM
-key_buffer_size　　= 512MB
-bulk_insert_buffer_size　　= 64MB
-mysiam_sort_buffer_size　　= 64MB
-mysiam_max_sort_file_size　　= 1GB
-mysiam_repair_threads　　= 1
-concurrent_insert　　= 2
-myisam_recover
-#INNODB
-innodb_buffer_pool_size　　= 64G
-innodb_additional_mem_pool_size　　= 32MB
-innodb_data_file_path　　=　ibdata1:1G;ibdata2:1G:autoextend
-innodb_read_io_threads　　= 8
-innodb_write_io_threads 　　= 8
-innodb_file_per_table　　= 1
-innodb_flush_log_at_thx_commit　　= 2
-innodb_lock_wait_timeout　　= 120
-innodb_log_buffer_size　　= 8MB
-innodb_log_file_size　　= 256MB
-innodb_log_files_in_group　　= 3
-innodb_max_dirty_pages_pct　　= 90
-innodb_thread_concurrency　　= 16
-innodb_open_files　　= 10000
-#innodb_force_recovery　　= 4
-#replication slave
-read-only
-#skip-salve-start
-relay-log　　= relay.log
-log-slave-updates
-本文参考：
-mariadb-mysql配置文件my-cnf解读
-MySQL教程
-《曝光：Linux企业运维实战》
-夜法之书 整理编辑 From: zhangxingeng
-]]></content>
-      <categories>
-        <category>mysql</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>mysql</tag>
-        <tag>docker</tag>
-        <tag>mariadb</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Joplin 入门指南&amp;实践方案</title>
     <url>/posts/e6086437/</url>
     <content><![CDATA[Evernote笔记是我们常用的一个笔记服务，国内叫印象笔记，免费版本的Evernote笔记其实已经足够我们使用了，但是对于重度的笔记用户，Evernote某些功能可能需要付费升级才可以使用，而且你的笔记是存放在Evernote的服务器上。
@@ -7653,6 +7284,375 @@ Vercel部署高级用法教程
         <tag>joplin</tag>
         <tag>note</tag>
         <tag>mermaid</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Mariadb/Mysql命令行常用命令</title>
+    <url>/posts/f0b0af52/</url>
+    <content><![CDATA[一、初始化等
+1、登陆数据库方法
+mysql -u用户名 -p用户密码
+2、修改root及用户密码
+use mysql;
+update user set password=password('11111111') where user='root' and host='localhost';
+flush privileges;
+MariaDB [mysql]&gt; update user set password=password('11111111') where user='root' and host='localhost';
+Query OK, 1 row affected (0.01 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+ 
+MariaDB [mysql]&gt; flush privileges;
+Query OK, 0 rows affected (0.01 sec)
+ 
+MariaDB [mysql]&gt; exit
+3、创建用户
+insert into mysql.user(host,user,password)values("localhost","test",password("password"));
+flush privileges;
+4、删除用户
+DELETE FROM user WHERE User="test" and Host="localhost";
+flush privileges;　　
+5、删除用户的数据库
+drop database test1;
+6、交互模式初始化
+mysql_secure_installation
+二、 常用操作
+1、显示数据库列表
+show databases;:查看所有的数据库
+2、创建数据库
+create database zxg;：创建名尾zxg的数据库
+3、进入数据库
+use zxg;:进入zxg的数据库
+4、显示库中的数据表
+show tables;：查看数据库里有多少张表
+5、创建数据表
+create table t1 (id varchar(20),name varchar(20));:创建名为t1表，并创建两两个字段，id、name，varchar表示设置数据长度，用字符来定义长度单位，其
+6、插入数据
+insert into t1 values（"1"，"zxg"）;:向表中插入数据
+7、查看数据表
+select * from t1; ：查看t1表数据内容
+8、多条件查询
+select * from t1 where id=1 and age = 'zxg ' ;: id、age 多个条件查询
+9、查看字段内容
+desc t1;:查看t1 表字段内容
+10、修改字段长度
+alter table t1 modify column name varchar(20);:修改name字段的长度
+11、修改该字段内容
+update t1 set name='zxg.net' where id=1;：修改name字段的内容
+12、权限刷新
+flush privileges; :刷新权限
+13、清空表单
+delete from t1;` :清空表内容
+14、删除数据表
+`drop table t1:删除表
+15、删除数据库
+drop database zxg;：删除zxg数据库
+16、查看数据库字符集
+show variables like '%char%';:查看数据库字符集
+17、查看存储引擎
+show engines;:查看MySQL存储引擎。
+18、查看默认存储引擎
+show variables like '%storage_engine%';:查看MySQL默认的存储引擎
+19、修改存储引擎
+alter table t1 engine=innodb;:修改MySQL t1表存储引擎
+[root@web2 ~]# mysql
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 2
+Server version: 5.5.60-MariaDB MariaDB Server
+ 
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+ 
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+ 
+MariaDB [(none)]&gt; show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| test               |
++--------------------+
+4 rows in set (0.00 sec)
+ 
+MariaDB [(none)]&gt;  create database zxg;                 
+Query OK, 1 row affected (0.00 sec)
+ 
+MariaDB [(none)]&gt; use zxg;
+Database changed
+MariaDB [zxg]&gt; show tables;
+Empty set (0.00 sec)
+ 
+MariaDB [zxg]&gt; create table t1(id varchar(20),name varchar(20));
+Query OK, 0 rows affected (0.00 sec)
+ 
+MariaDB [zxg]&gt; show tables;
++---------------+
+| Tables_in_zxg |
++---------------+
+| t1            |
++---------------+
+1 row in set (0.00 sec)
+ 
+MariaDB [zxg]&gt;
+MariaDB [zxg]&gt; insert into t1 values ("1","zxg");
+Query OK, 1 row affected (0.01 sec)
+ 
+MariaDB [zxg]&gt; select *from t1;
++------+------+
+| id | name |
++------+------+
+| 1 | zxg |
++------+------+
+1 row in set (0.00 sec)
+ 
+MariaDB [zxg]&gt; select *from t1 where id=1;
++------+------+
+| id | name |
++------+------+
+| 1 | zxg |
++------+------+
+1 row in set (0.00 sec)
+ 
+MariaDB [zxg]&gt; select *from t1 where id=1 and name='zxg';
++------+------+
+| id | name |
++------+------+
+| 1 | zxg |
++------+------+
+1 row in set (0.01 sec)
+ 
+MariaDB [zxg]&gt; desc t1;
++-------+-------------+------+-----+---------+-------+
+| Field | Type | Null | Key | Default | Extra |
++-------+-------------+------+-----+---------+-------+
+| id | varchar(20) | YES | | NULL | |
+| name | varchar(20) | YES | | NULL | |
++-------+-------------+------+-----+---------+-------+
+2 rows in set (0.00 sec)
+ 
+MariaDB [zxg]&gt; alter table t1 modify column name varchar(20);
+Query OK, 0 rows affected (0.00 sec)
+Records: 0 Duplicates: 0 Warnings: 0
+ 
+MariaDB [zxg]&gt; update t1 set name='zxg.net' where id=1;
+Query OK, 1 row affected (0.00 sec)
+Rows matched: 1 Changed: 1 Warnings: 0
+MariaDB [zxg]&gt;
+ 
+三、mysql 数据库字符集设置
+mysql数据库存储数据时，默认编码为latinl，存储中文字符时，在调用时会显示为乱码，为了解决该乱码问题，需修改该mysql默认字符集为UTE-8
+装mariadb的是时候看已经默认为ute-8
+MariaDB [(none)]&gt; show variables like '%char%';
++--------------------------+----------------------------+
+| Variable_name            | Value                      |
++--------------------------+----------------------------+
+| character_set_client     | utf8                       |
+| character_set_connection | utf8                       |
+| character_set_database   | latin1                     |
+| character_set_filesystem | binary                     |
+| character_set_results    | utf8                       |
+| character_set_server     | latin1                     |
+| character_set_system     | utf8                       |
+| character_sets_dir       | /usr/share/mysql/charsets/ |
++--------------------------+----------------------------+
+8 rows in set (0.00 sec)
+如不是，可以设置
+SET character_set_client = utf8;
+SET character_set_results = utf8;
+SET character_set_connection = utf8;
+四、mysql 数据库密码管理
+设置密码访问，密码破解、密码权限、修改密码；
+1、创建用户及授权
+grant all on zxg.* to test@localhost identified by 'pas';
+grant select,insert,update,delete on *.*to test@"%" identified by 'pas';
+grant all on zxg.* to test@`192.168.216.53` identified by 'pas'
+2、破解密码方法
+停止服务—》跳过权限方式启动—》单开一个窗口登陆—》登陆修改密码即可
+1）systemctl stop mariadb
+2）mysqld_safe --skip-grant-tables &amp;
+[root@web2 ~]# mysqld_safe --skip-grant-tables &amp;
+[1] 47542
+[root@web2 ~]# 190520 15:45:22 mysqld_safe Logging to '/var/log/mariadb/mariadb.log'.
+190520 15:45:22 mysqld_safe Starting mysqld daemon with databases from /var/lib/mysql
+[root@web2 ~]# mysql
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 1
+Server version: 5.5.60-MariaDB MariaDB Server
+ 
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+ 
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+ 
+MariaDB [(none)]&gt; use mysql;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+ 
+Database changed
+MariaDB [mysql]&gt; update user set password=password('11111111') where user='root' ;
+Query OK, 3 rows affected (0.01 sec)
+Rows matched: 4  Changed: 3  Warnings: 0
+ 
+MariaDB [mysql]&gt; flush privileges;
+Query OK, 0 rows affected (0.00 sec)
+ 
+MariaDB [mysql]&gt; exit
+Bye
+[root@web2 ~]#
+然后退出”跳过权限方式“ ctrl+c ，正常启动mysql就可以了
+五、mysql 配置文件详解
+1、参数说明
+[mysqld]                                                              #服务端配置
+port        = 3306                                                    #监听端口
+socket      = /tmp/mysql.sock                                         #通信设置
+user    = mariadb                                                     #使用mariadb用户启动
+basedir = /usr/local/mariadb                                          #安装路径
+datadir = /data/mysql                                                 #数据目录
+log_error = /data/mysql/mariadb.err                             　　　 #错误日志
+pid-file = /data/mysql/mariadb.pid                             　　　　#pid进程文件
+skip-external-locking                                                 #避免mysql的外部锁定，减少出错几率提高稳定性
+key_buffer_size = 64M                                                 #缓存存储引擎参数，这个参数可以设置为64M
+max_allowed_packet = 1M                                               #允许最大接收数据包的大小，防止服务器发送过大的数据包，可以设置为16MB或者更大，但设置太大也可能有危险
+table_open_cache = 256                                                #mysql每打开一个表，都会读入一些数据到table_open_cache缓存中，当MYSQL在这个缓存中找不到相应的信息时，才会去磁盘读取，默认值64，假设系统有200个并发连接，则需将此参数设置为200*N（N为每个连接所需的文件描述符数目）；当设置为很大时，如果系统处理不了那么多文件描述符，那么就会出现客户端失效，连接不上
+sort_buffer_size = 1M                                                 #在表进行order by和group by 排序操作时，由于排序的字段没有索引，会出现Using filesort，为了提高性能，可用此参数增加每个线程分配的缓存区大小，默认时256k，这个参数不要设置过大，一般128~256k，另外一般出现using filesort的时候，要通过增加索引来解决
+net_buffer_length = 8K                                                #包消息缓冲区初始化net_buffer_length字节，但需要时可以增长到max_allowed_packet字节
+read_buffer_size = 1M                                                 #该参数用于表的顺序扫描，表示每个线程分配的缓冲区大小，比如在进行全表扫描时，mysql会按照数据的存储顺序一次读取数据块，每次读取的数据块首先会暂存在read_buffer_size中，当buffer空间被写满或者全部数据读取结束后，在将buffer中的数据返回给上层调用者，以提高效率默认128k，也不要设置过大
+read_rnd_buffer_size = 512K                                           #该参数用于表的随机读取，表示每个线程分配的缓冲区大小，比如，按照一个非索引字段做order by排序操作时，就会利用这个缓冲区来暂存读取的数据，默认时256k，也不要设置过大
+myisam_sort_buffer_size = 16M                                         #当myisam表执行repair table或创建索引时，用以缓冲排序索引，设置太小可能会遇到"myisam_sort_buffer_size is to small"
+thread_cache_size = 32                                                #线程池，线程缓冲。用来缓冲空闲的线程，以至于不被销毁，如果线程缓冲在的空闲线程，需要重新建立新连接，则会优先调用线程池中的缓冲，很快就能相应连接请求，每建立一个连接，都需要一个线程与之匹配。
+query_cache_size = 32M                                                #缓存select语句和结果集大小的参数。查询缓存会存储一个select查询的文本与被传送到客户端的相应结果。如果之后接收到一个相同的查询，服务器会从查询缓存中检索结果，而不是再次分析和执行这个同样的查询。如果你的环境中写操作很少，读操作频繁，那么打开query_cache_type=1，会对性能有明显提升。如果写操作频繁，则应该关闭它（query_cache_type=0）。
+tmp_table_size = 64M                                                  #临时HEAP数据表的最大长度(默认设置是32M); 超过这个长度的临时数据表将被转换为MyISAM数据表并存入一个临时文件。
+                                                                      #
+explicit_defaults_for_timestamp = true                     　　　　　　 #是否显示默认时间戳
+#skip-networking                                                      #
+max_connections = 500                                                 #该参数用来设置最大连接数，告诉你当前你的服务器允许多少并发连接。默认为100，一般设置为512-1000即可。请记住，太多的连接会导致内存的使用量过高并且会锁住你的 MySQL 服务器。一般小网站需要 100-200 的连接数，而较大可能需要 500-800 甚至更多。这里的值很大程度上取决于你 MySQL/MariaDB 的使用情况。
+max_connect_errors = 100                                              #如果有时网络抽风，或者应用配置错误，或者其他原因导致客户端短时间内不断的尝试连接，客户端可能会被列入黑名单，然后将无法连接，直到再次刷新主机缓存。这个选项默认值太小了，可以考虑设的足够大（如果你的服务器配置够强大的话）。
+open_files_limit = 65535                                              #mysql打开最大文件数
+                                                                      #
+log-bin=mysql-bin                                                     #这些路径相对于datadir
+binlog_format=mixed                                                   #日志格式
+server-id   = 1                                                       #给服务器分配一个独一无二的ID编号; n的取值范围是1~2的32次方启用二进制日志功能。在复制数据同步的时候会用到，Helloweba后面会有文章介绍。
+expire_logs_days = 10                                                 #启用二进制日志后，保留日志的天数。服务器会自动清理指定天数前的日志文件，如果不设置则会导致服务器空间耗尽。一般设置为7～14天。
+                                                                       #
+default_storage_engine = InnoDB                                     　#新数据表的默认存储引擎(默认设置是MyISAM)。这项设置还可以通过–default-table-type选项来设置。
+innodb_file_per_table = 1                                             #提供了更灵活的方式，它把每个数据库的信息保存在一个 .ibd 数据文件中。每个 .idb 文件代表它自己的表空间。通过这样的方式可以更快地完成类似 “TRUNCATE” 的数据库操作，当删除或截断一个数据库表时，你也可以回收未使用的空间。这样配置的另一个好处是你可以将某些数据库表放在一个单独的存储设备。这可以大大提升你磁盘的 I/O 负载。
+innodb_data_home_dir = /data/mysql                             　　　　#InnoDB主目录，所有与InnoDB数据表有关的目录或文件路径都相对于这个路径。在默认的情况下，这个主目录就是MySQL的数据目录。
+innodb_data_file_path = ibdata1:10M:autoextend     　　　　　　　　　　　#用来容纳InnoDB为数据表的表空间: 可能涉及一个以上的文件; 每一个表空间文件的最大长度都必须以字节(B)、兆字节(MB)或千兆字节(GB)为单位给出; 表空间文件的名字必须以分号隔开; 最后一个表空间文件还可以带一个autoextend属性和一个最大长度(max:n)。
+innodb_log_group_home_dir = /data/mysql                     　　　　　　#用来存放InnoDB日志文件的目录路径(如ib_logfile0、ib_logfile1等)。在默认的情况下，InnoDB驱动程序将使用 MySQL数据目录作为自己保存日志文件的位置。
+innodb_buffer_pool_size = 256M                                     　　#这个参数是InnoDB存储引擎的核心参数，默认为128KB，这个参数要设置为物理内存的60%～70%。
+innodb_log_file_size = 64M                                            #事务日志文件写操作缓存区的最大长度(默认设置是1MB)。
+innodb_log_buffer_size = 8M                                           #事务日志所使用的缓存区。InnoDB在写事务日志的时候，为了提高性能，先将信息写入Innodb Log Buffer中，当满足innodb_flush_log_trx_commit参数所设置的相应条件（或者日志缓冲区写满）时，再将日志写到文件（或者同步到磁盘）中。可以通过innodb_log_buffer_size参数设置其可以使用的最大内存空间。默认是8MB，一般为16～64MB即可。
+innodb_flush_log_at_trx_commit = 1                             　　　　#这个选项决定着什么时候把日志信息写入日志文件以及什么时候把这些文件物理地写(术语称为”同步”)到硬盘上。设置值0的意思是每隔一秒写一次日 志并进行 同步，这可以减少硬盘写操作次数，但可能造成数据丢失; 设置值1(设置设置)的意思是在每执行完一条COMMIT命令就写一次日志并进行同步，这可以防止数据丢失，但硬盘写操作可能会很频繁; 设置值2是一般折衷的办法，即每执行完一条COMMIT命令写一次日志，每隔一秒进行一次同步。
+innodb_lock_wait_timeout = 50                                         #如果某个事务在等待n秒(s)后还没有获得所需要的资源，就使用ROLLBACK命令放弃这个事务。这项设置对于发现和处理未能被InnoDB数据表驱动 程序识别出来的死锁条件有着重要的意义。这个选项的默认设置是50s。
+                                                                      #
+[mysqldump]                                                           #
+quick                                                                 #
+max_allowed_packet = 16M                                              #          
+                                                                      #
+[mysql]                                                               #
+no-auto-rehash                                                        #
+                                                                      #
+[myisamchk]                                                           #
+key_buffer_size = 64M                                                 #  
+sort_buffer_size = 1M                                                 #  
+read_buffer = 2M                                                      #
+write_buffer = 2M                                                     #
+                                                                      #
+[mysqlhotcopy]                                                        #
+interactive-timeout                                                   #
+2、mysql数据库索引案例（百万量级）
+[client]
+port    =3306                                  
+socket    =/tmp/mysql.sock                     
+ 
+ 
+ 
+[mysqld]                                                                             
+port        = 3306                                                         
+socket      = /tmp/mysql.sock                                   
+user    = mysql  
+server_id　　= 10
+datadir　　= /data/mysql/
+old_passwords　　= 1
+lower_case_table_names　　= 1
+character-set-server　　= utf8
+default-storage-engine　　= MYISAM
+log-bin　　= bin.log
+log-error　　= error.log
+pid-file　　= mysql.pid
+long_query_time　　= 2
+slow_query_time　　= 2
+slow_query_log　
+slow_query_log_file　　= slow.log
+binlog_cache_size　　= 4MB
+binlog_format　　= mixed
+max_binlog_cache_size　　= 16MB
+max_binlog_size　　= 1GB
+expire_logs_days　　= 30
+ft_min_word_len　　= 4
+back_log　　= 512
+max_allowed_packet　　= 64MB
+max_connections　　= 4096
+max_connect_errors　　= 100
+join_buffer_size　　= 2MB
+read_buffer_size　　= 2MB
+read_rnd_buffer_size　　= 2MB
+sort_buffer_size　　　　= 2MB
+query_cache_size　　= 2MB
+table_open_cache　　= 10000
+thread_cache_size　　= 256
+max_heap_table_size　　= 64MB
+tmp_table_size　　= 64MB
+thread_stack　　= 192KB
+thread_concurrency　　= 24
+local-infile　　= 0
+skip-show-database
+skip-name-resolve
+skip-external-locking
+connect_timeout　　= 600
+interactive_timeout　　= 600
+wait_timeout　　= 600
+#MyISAM
+key_buffer_size　　= 512MB
+bulk_insert_buffer_size　　= 64MB
+mysiam_sort_buffer_size　　= 64MB
+mysiam_max_sort_file_size　　= 1GB
+mysiam_repair_threads　　= 1
+concurrent_insert　　= 2
+myisam_recover
+#INNODB
+innodb_buffer_pool_size　　= 64G
+innodb_additional_mem_pool_size　　= 32MB
+innodb_data_file_path　　=　ibdata1:1G;ibdata2:1G:autoextend
+innodb_read_io_threads　　= 8
+innodb_write_io_threads 　　= 8
+innodb_file_per_table　　= 1
+innodb_flush_log_at_thx_commit　　= 2
+innodb_lock_wait_timeout　　= 120
+innodb_log_buffer_size　　= 8MB
+innodb_log_file_size　　= 256MB
+innodb_log_files_in_group　　= 3
+innodb_max_dirty_pages_pct　　= 90
+innodb_thread_concurrency　　= 16
+innodb_open_files　　= 10000
+#innodb_force_recovery　　= 4
+#replication slave
+read-only
+#skip-salve-start
+relay-log　　= relay.log
+log-slave-updates
+本文参考：
+mariadb-mysql配置文件my-cnf解读
+MySQL教程
+《曝光：Linux企业运维实战》
+夜法之书 整理编辑 From: zhangxingeng
+]]></content>
+      <categories>
+        <category>mysql</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>mysql</tag>
+        <tag>docker</tag>
+        <tag>mariadb</tag>
       </tags>
   </entry>
   <entry>
@@ -12634,9 +12634,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-jGMJqxMGDzsCffRL").style.height=document.getElementById("mmedia-jGMJqxMGDzsCffRL").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-bgwOzIvybDRYQkMY").style.height=document.getElementById("mmedia-bgwOzIvybDRYQkMY").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-jGMJqxMGDzsCffRL").style.height=document.getElementById("mmedia-jGMJqxMGDzsCffRL").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-bgwOzIvybDRYQkMY").style.height=document.getElementById("mmedia-bgwOzIvybDRYQkMY").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -18397,8 +18397,8 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 列表
 
- var MGKUhMShftIlSFIw_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    MGKUhMShftIlSFIw_options.container = document.getElementById("mmedia-MGKUhMShftIlSFIw");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(MGKUhMShftIlSFIw_options); 
+ var dxFFUxDNFSItkOch_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    dxFFUxDNFSItkOch_options.container = document.getElementById("mmedia-dxFFUxDNFSItkOch");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(dxFFUxDNFSItkOch_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -19805,13 +19805,13 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var RwrNcGaIwotDrkLj_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
-    RwrNcGaIwotDrkLj_options.container = document.getElementById("mmedia-RwrNcGaIwotDrkLj");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(RwrNcGaIwotDrkLj_options); 
+ var xeLQEdJFeaatSCeG_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
+    xeLQEdJFeaatSCeG_options.container = document.getElementById("mmedia-xeLQEdJFeaatSCeG");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(xeLQEdJFeaatSCeG_options); 
 
 
 
- var aizSiqwluEfOddHi_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    aizSiqwluEfOddHi_options.container = document.getElementById("mmedia-aizSiqwluEfOddHi");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(aizSiqwluEfOddHi_options); 
+ var uHtMsXrZCoxrlUNG_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    uHtMsXrZCoxrlUNG_options.container = document.getElementById("mmedia-uHtMsXrZCoxrlUNG");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(uHtMsXrZCoxrlUNG_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -20063,9 +20063,9 @@ Earthly 一个更加强大的镜像构建工具
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-nOBkcPgNHzJdlYGK").style.height=document.getElementById("mmedia-nOBkcPgNHzJdlYGK").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-UtntVxKSiQCHYbLW").style.height=document.getElementById("mmedia-UtntVxKSiQCHYbLW").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-nOBkcPgNHzJdlYGK").style.height=document.getElementById("mmedia-nOBkcPgNHzJdlYGK").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-UtntVxKSiQCHYbLW").style.height=document.getElementById("mmedia-UtntVxKSiQCHYbLW").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -20074,8 +20074,8 @@ Earthly 一个更加强大的镜像构建工具
 
 ## 中文翻唱
 
- var BCqmDogzIioJaBSR_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
-    BCqmDogzIioJaBSR_options.container = document.getElementById("mmedia-BCqmDogzIioJaBSR");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(BCqmDogzIioJaBSR_options); 
+ var SItLmgMrEbCSVLzT_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
+    SItLmgMrEbCSVLzT_options.container = document.getElementById("mmedia-SItLmgMrEbCSVLzT");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(SItLmgMrEbCSVLzT_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -21627,167 +21627,6 @@ RAR registration data``Federal Agency ``for` `Education``1000000 PC usage licens
       </tags>
   </entry>
   <entry>
-    <title>emoji表情符号</title>
-    <url>/posts/80938cfe/</url>
-    <content><![CDATA[
-emoji表情符号是非常流行的表情符号，几乎没有地方都会支持。这里列举出常用的emoji表情不好，方便大家使用与查阅。
-
-
-常用符号
-❤❥웃유♋☮✌☏☢☠✔☑♚▲♪✈✞÷↑↓◆◇⊙■□△▽¿─│♥❣♂♀☿Ⓐ✍✉☣☤✘☒♛▼♫⌘☪≈←→◈◎☉★☆⊿※¡━┃♡ღ ツ
-
-☼☁❅♒✎©®™Σ✪✯☭➳ 卐 √↖↗●◐Θ◤◥︻〖〗┄┆℃℉°✿ϟ☃☂✄¢€£∞✫★½✡×↙↘○◑⊕◣◢︼【】┅┇☽☾✚〓
-
-▂▃▄▅▆▇█▉▊▋▌▍▎▏↔↕☽☾ の•▸◂▴▾┈┊①②③④⑤⑥⑦⑧⑨⑩ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ ㍿ ▓♨♛❖♓☪✙
-
-┉┋☹☺☻ت ヅツッシ Üϡﭢ™℠℗©®♥❤❥❣❦❧♡۵웃유ღ♋♂♀☿☼☀☁☂☄☾☽❄☃☈⊙☉℃℉❅✺ϟ☇♤♧♡♢♠♣
-
-♥♦☜☞☝✍☚☛☟✌✽✾✿❁❃❋❀⚘☑✓✔√☐☒✗✘ ㄨ ✕✖✖⋆✢✣✤✥❋✦✧✩✰✪✫✬✭✮✯❂✡★✱✲✳✴✵✶✷✸✹✺✻✼❄❅❆❇❈❉❊†☨✞✝☥☦☓☩☯☧☬
-
-☸✡♁✙♆。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴々﹟#
-
-﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼☩☨☦✞✛✜✝✙✠✚†‡◉○◌◍◎●◐◑◒◓◔◕◖◗❂☢⊗⊙◘◙◍⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌
-
-≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱㊣㊎㊍㊌㊋㊏㊐㊊㊚㊛㊤㊥
-
-㊦㊧㊨㊒㊞㊑㊒㊓㊔㊕㊖㊗㊘㊜㊝㊟㊠㊡㊢㊩㊪㊫㊬㊭㊮㊯㊰㊙ ㉿ 囍 ♔♕♖♗♘♙♚♛♜♝♞♟ℂℍℕℙℚℝℤℬℰℯℱℊℋℎℐℒℓℳℴ℘ℛℭ℮ℌℑℜℨ♪♫♩♬♭♮♯°øⒶ☮✌☪✡☭✯ 卐 ✐✎✏
-
-✑✒✍✉✁✂✃✄✆✉☎☏➟➡➢➣➤➥➦➧➨➚➘➙➛➜➝➞➸♐➲➳⏎➴➵➶➷➸➹➺➻➼➽←↑→↓↔↕↖↗↘↙↚↛↜↝
-
-↞↟↠↡↢↣↤↥↦↧↨➫➬➩➪➭➮➯➱↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹↺↻↼↽↾↿⇀⇁⇂⇃⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇕
-
-⇖⇗⇘⇙⇚⇛⇜⇝⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪➀➁➂➃➄➅➆➇➈➉➊➋➌➍➎➏➐➑➒➓㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡ
-
-ⓢⓣⓤⓥⓦⓧⓨⓩ⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵ⅠⅡⅢⅣⅤ
-
-ⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹⅺⅻⅼⅽⅾⅿ┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫
-┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽
-┾┿╀╁╂╃╄╅╆╇╈╉╊╋╌╍╎╏
-═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬◤◥◄►▶◀◣◢▲
-
-▼◥▸◂▴▾△▽▷◁⊿▻◅▵▿▹◃❏❐❑❒▀▁▂▃▄▅▆▇▉▊▋█▌▍▎▏▐░▒▓▔▕■□▢▣▤▥▦▧
-
-▨▩▪▫▬▭▮▯ ㋀㋁㋂㋃㋄㋅㋆㋇㋈㋉㋊㋋㏠㏡㏢㏣㏤㏥㏦㏧㏨㏩㏪㏫㏬㏭㏮㏯㏰㏱㏲
-
-㏳㏴㏵㏶㏷㏸㏹㏺㏻㏼㏽㏾㍙㍚㍛㍜㍝㍞㍟㍠㍡㍢㍣㍤㍥㍦㍧㍨㍩㍪㍫㍬㍭㍮㍯㍰㍘
-
-☰☲☱☴☵☶☳☷☯
-特殊符号
-♠♣♧♡♥❤❥❣♂♀✲☀☼☾☽◐◑☺☻☎☏✿❀№↑↓←→√×÷★℃℉°◆◇⊙■□△▽¿½☯✡ ㍿卍卐 ♂♀✚〓㎡♪♫♩♬
-
-㊚㊛囍㊒㊖ Φ♀♂‖KaTeX parse error: Expected ‘EOF’, got ‘&amp;’ at position 3: @*&amp;̲#※卍卐 Ψ♫♬♭♩♪♯♮⌒¶∮…
-编号序号
-①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳⓪
-
-❶❷❸❹❺❻❼❽❾❿⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴
-
-㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉㈠㈡㈢㈣㈤㈥㈦㈧㈨㈩⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇
-
-⒈⒉⒊⒋⒌⒍⒎⒏⒐⒑⒒⒓⒔⒕⒖⒗⒘⒙⒚⒛
-
-ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹ
-
-ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ
-
-⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵
-数学符号
-﹢﹣×÷±/=≌∽≦≧≒ ﹤﹥ ≈≡≠=≤≥&lt;&gt;≮≯∷∶∫∮∝∞∧∨∑∏∪∩∈∵∴⊥∥∠⌒⊙√∟⊿㏒㏑%
-
-‰⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟
-
-≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱øØπ
-爱心符号
-♥❣ღ♠♡♤❤❥
-标点符号
-。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴
-
-々﹟#﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊
-
-（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】
-
-︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼❝❞
-单位符号
-°′″＄￥〒￠￡％＠℃℉ ﹩﹪‰﹫㎡㏕㎜㎝㎞㏎m³㎎㎏㏄º○¤%$º¹²³
-货币符号
-€£Ұ₴$₰¢₤¥₳₲₪₵ 元 ₣₱฿¤₡₮₭₩ރ 円 ₢₥₫₦zł﷼₠₧₯₨Kčर₹ƒ₸ ￠
-箭头符号（含推导&amp;转换符号）
-↑↓←→↖↗↘↙↔↕➻➼➽➸➳➺➻➴➵➶➷➹▶►▷◁◀◄«
-
-»➩➪➫➬➭➮➯➱⏎➲➾➔➘➙➚➛➜➝➞➟➠➡➢➣➤➥➦➧➨
-
-↚↛↜↝↞↟↠↠↡↢↣↤↤↥↦↧↨⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇖⇗⇘⇙
-
-⇜↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹☇☈↼↽↾↿⇀⇁⇂⇃⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪↺↻⇚⇛♐
-符号图案
-✐✎✏✑✒✍✉✁✂✃✄✆✉☎☏☑✓✔√☐☒✗✘ ㄨ ✕✖✖☢☠☣✈★☆✡ 囍㍿ ☯☰☲☱☴☵☶☳☷
-
-☜☞☝✍☚☛☟✌♤♧♡♢♠♣♥♦☀☁☂❄☃♨웃유❖☽☾☪✿♂♀✪✯☭➳ 卍卐 √×■◆●○◐◑✙☺☻
-
-❀⚘♔♕♖♗♘♙♚♛♜♝♞♟♧♡♂♀♠♣♥❤☜☞☎☏⊙◎☺☻☼▧▨♨◐◑↔↕▪▒◊◦▣▤▥▦▩◘◈◇
-
-♬♪♩♭♪ の ★☆→ あぃ￡ Ю〓§♤♥▶¤✲❈✿✲❈➹☀☂☁【】┱┲❣✚✪✣✤✥✦❉❥❦❧❃❂❁❀✄☪☣☢☠☭ღ▶▷◀◁
-
-☀☁☂☃☄★☆☇☈⊙☊☋☌☍ⓛⓞⓥⓔ╬『』∴☀♫♬♩♭♪☆∷﹌の ★◎▶☺☻►◄▧▨♨◐◑↔↕↘▀▄█▌
-
-◦☼♪ の ☆→♧ ぃ￡ ❤▒▬♦◊◦♠♣▣۰•❤•۰►◄▧▨♨◐◑↔↕▪▫☼♦⊙●○①⊕◎Θ⊙¤ ㊣ ★☆♀◆◇◣◢◥▲▼△▽⊿◤◥
-
-✐✌✍✡✓✔✕✖♂♀♥♡☜☞☎☏⊙◎☺☻►◄▧▨♨◐◑↔↕♥♡▪▫☼♦▀▄█▌▐░▒▬♦◊◘◙◦☼♠♣▣▤▥▦▩◘◙◈
-
-♫♬♪♩♭♪✄☪☣☢☠♯♩♪♫♬♭♮☎☏☪♈ºº₪¤큐«»™♂✿♥ 　 ◕‿-｡　｡◕‿◕｡
-希腊字母
-ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ
-
-αβγδεζνξοπρσηθικλμτυφχψω
-俄语字母
-АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвг
-
-деёжзийклмнопрстуфхцчшщъыьэюя
-汉语拼音
-āáǎàōóǒòēéěèīíǐìūúǔùǖǘǚǜüêɑńňɡ ㄅㄆㄇㄈㄉ
-
-ㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄚㄛㄜㄝㄞ
-
-ㄟㄠㄡㄢㄣㄤㄥㄦㄧㄨㄩ
-中文字符
-零壹贰叁肆伍陆柒捌玖拾佰仟万亿吉太拍艾分厘毫微
-
-卍卐卄巜弍弎弐朤氺曱甴囍兀々〆のぁ〡〢〣〤〥〦〧〨〩
-
-㊎㊍㊌㊋㊏㊚㊛㊐㊊㊣㊤㊥㊦㊧㊨㊒㊫㊑㊓㊔㊕㊖㊗㊘㊜㊝㊞㊟㊠㊡㊢㊩㊪㊬㊭㊮㊯㊰
-
-㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉
-日文符号
-ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてで
-
-とどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎ
-
-わゐゑをんゔゕゖァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタ
-
-ダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユ
-
-ョヨラリルレロヮワヰヱヲンヴヵヶヷヸヹヺ・ーヽヾヿ゠ㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇺㇻㇼㇽㇾㇿ
-制表符号
-─ ━│┃╌╍╎╏┄ ┅┆┇┈ ┉┊┋┌┍┎┏┐┑┒┓└ ┕┖┗ ┘┙┚┛├┝┞┟┠┡┢┣ ┤┥┦┧┨┩┪┫┬ ┭ ┮ ┯ ┰ ┱ ┲ ┳
-
-┴ ┵ ┶ ┷ ┸ ┹ ┺ ┻┼ ┽ ┾ ┿ ╀ ╁ ╂ ╃ ╄ ╅ ╆ ╇ ╈ ╉ ╊ ╋ ╪ ╫ ╬═║╒╓╔ ╕╖╗╘╙╚ ╛╜╝╞╟╠ ╡╢╣
-
-╤ ╥ ╦ ╧ ╨ ╩ ╳╔ ╗╝╚ ╬ ═ ╓ ╩ ┠ ┨┯ ┷┏ ┓┗ ┛┳ ⊥ ﹃ ﹄┌ ╮ ╭ ╯╰
-皇冠符号
-♚ 　 ♛ 　 ♝ 　 ♞ 　 ♜ 　 ♟ 　 ♔ 　 ♕ 　 ♗ 　 ♘ 　 ♖ 　 ♟
-彩色表情符号
-🌹🍀🍎💰📱🌙🍁🍂🍃🌷💎🔪🔫🏀⚽⚡👄👍🔥
-常用 emoji 符号
-😀😁😂😃😄😅😆😉😊😋😎😍😘😗😙😚☺😇😐😑😶😏😣😥😮😯😪😫😴😌😛😜😝😒😓😔😕😲😷😖😞😟😤😢😭😦😧😨😬😰😱😳😵😡😠😈👿👹👺💀👻👽👦👧👨👩👴👵👶👱👮👲👳👷👸💂🎅👰👼💆💇🙍🙎🙅🙆💁🙋🙇🙌🙏👤👥🚶🏃👯💃👫👬👭💏💑👪💪👈👉☝👆👇✌✋👌👍👎✊👊👋👏👐✍👣👀👂👃👅👄💋👓👔👕👖👗👘👙👚👛👜👝🎒💼👞👟👠👡👢👑👒🎩🎓💄💅💍🌂🙈🙉🙊🐵🐒🐶🐕🐩🐺🐱😺😸😹😻😼😽🙀😿😾🐈🐯🐅🐆🐴🐎🐮🐂🐃🐄🐷🐖🐗🐽🐏🐑🐐🐪🐫🐘🐭🐁🐀🐹🐰🐇🐻🐨🐼🐾🐔🐓🐣🐤🐥🐦🐧🐸🐊🐢🐍🐲🐉🐳🐋🐬🐟🐠🐡🐙🐚🐌🐛🐜🐝🐞🦋💐🌸💮🌹🌺🌻🌼🌷🌱🌲🌳🌴🌵🌾🌿🍀🍁🍂🍃🌍🌎🌏🌐🌑🌒🌓🌔🌕🌖🌗🌘🌙🌚🌛🌜☀🌝🌞⭐🌟🌠☁⛅☔⚡❄🔥💧🌊💩🍇🍈🍉🍊🍋🍌🍍🍎🍏🍐🍑🍒🍓🍅🍆🌽🍄🌰🍞🍖🍗🍔🍟🍕🍳🍲🍱🍘🍙🍚🍛🍜🍝🍠🍢🍣🍤🍥🍡🍦🍧🍨🍩🍪🎂🍰🍫🍬🍭🍮🍯🍼☕🍵🍶🍷🍸🍹🍺🍻🍴🎪🎭🎨🎰🚣🛀🎫🏆⚽⚾🏀🏈🏉🎾🎱🎳⛳🎣🎽🎿🏂🏄🏇🏊🚴🚵🎯🎮🎲🎷🎸🎺🎻🎬👾🌋🗻🏠🏡🏢🏣🏤🏥🏦🏨🏩🏪🏫🏬🏭🏯🏰💒🗼🗽⛪⛲🌁🌃🌆🌇🌉🌌🎠🎡🎢🚂🚃🚄🚅🚆🚇🚈🚉🚊🚝🚞🚋🚌🚍🚎🚏🚐🚑🚒🚓🚔🚕🚖🚗🚘🚚🚛🚜🚲⛽🚨🚥🚦🚧⚓⛵🚤🚢✈💺🚁🚟🚠🚡🚀🎑🗿🛂🛃🛄🛅💌💎🔪💈🚪🚽🚿🛁⌛⏳⌚⏰🎈🎉🎊🎎🎏🎐🎀🎁📯📻📱📲☎📞📟📠🔋🔌💻💽💾💿📀🎥📺📷📹📼🔍🔎🔬🔭📡💡🔦🏮📔📕📖📗📘📙📚📓📃📜📄📰📑🔖💰💴💵💶💷💸💳✉📧📨📩📤📥📦📫📪📬📭📮✏✒📝📁📂📅📆📇📈📉📊📋📌📍📎📏📐✂🔒🔓🔏🔐🔑🔨🔫🔧🔩🔗💉💊🚬🔮🚩🎌💦💨💣☠♠♥♦♣🀄🎴🔇🔈🔉🔊📢📣💤💢💬💭♨🌀🔔🔕✡✝🔯📛🔰🔱⭕✅☑✔✖❌❎➕➖➗➰➿〽✳✴❇‼⁉❓❔❕❗©®™🎦🔅🔆💯🔠🔡🔢🔣🔤🅰🆎🅱🆑🆒🆓ℹ🆔Ⓜ🆕🆖🅾🆗🅿🆘🆙🆚🈁🈂🈷🈶🈯 🉐 🈹🈚🈲 🉑 🈸🈴🈳 ㊗㊙ 🈺🈵▪▫◻◼◽◾⬛⬜🔶🔷🔸🔹🔺🔻💠🔲🔳⚪⚫🔴🔵♈♉♊♋♌♍♎♏♐♑♒♓⛎💘❤💓💔💕💖💗💙💚💛💜💝💞💟❣🌿🚧💒☎📟💽⬆↗➡↘⬇↙⬅↖↕↔↩↪⤴⤵🔃🔄🔙🔚🔛🔜🔝🔀🔁🔂▶⏩◀⏪🔼⏫🔽⏬📱📶📳📴♻🏧🚮🚰♿🚹🚺🚻🚼🚾⚠🚸⛔🚫🚳🚭🚯🚱🚷🔞
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>emoji</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>ISP 数字图像处理 算法概述、工作原理、架构、处理流程</title>
     <url>/posts/798e6e62/</url>
     <content><![CDATA[
@@ -21809,1428 +21648,6 @@ emoji表情符号是非常流行的表情符号，几乎没有地方都会支持
         <tag>isp</tag>
         <tag>awb</tag>
         <tag>mywork</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>基于Hexo的matery主题搭建博客增强部署篇4</title>
-    <url>/posts/5311b619/</url>
-    <content><![CDATA[各种部署方式
-
-静态博客的部署方式多种多样，免费部署资源非常多。
-如果DNS支持多线路，还可以设置多路负载均衡！
-注意：这些免费的部署都没法做ICP备案，或者国内CDN套着备案。不过，都免费了，你还要求那么多？
-
-
-
-
-部署方式
-费用
-限制
-难易度
-多域名
-
-
-
-
-Github
-0 $
-100G/M
-简单
-单域名
-
-
-VPS
-约2~5$/M
-看购买套餐
-复杂
-支持
-
-
-Vercel
-0 $
-100G/M
-简单
-支持
-
-
-Netlify
-0 $
-100G/M
-简单
-支持
-
-
-Cloudflare pages
-0 $
-无
-简单
-支持
-
-
-Gitlab
-0 $
-无
-简单
-支持（？）
-
-
-
-更详细对比
-
-
-
-特性
-GitHub
-GitLab
-Netlify
-Vercel
-CloudFlare
-Firebase
-Render
-
-
-
-
-Build Limit
-10/hour
-None
-3/Minute
-32/hour
-500/month
-Not Applicable
-Unlisted
-
-
-Build Time to Error
-10 minutes
-3 Hours
-15 minutes
-30 minutes
-Unlisted
-Not Applicable
-120 minutes
-
-
-Build Time per Month
-NA
-400 Minutes
-300 Minutes
-6000 Minutes
-Unlisted
-Not Applicable
-Unlisted
-
-
-Concurrent Builds
-🤷‍♂️
-Yes
-One
-One
-One
-Not Applicable
-Unlisted
-
-
-Deploy Limits
-NA
-No
-Not Applicable
-100/Day
-Unlisted
-Not Applicable
-Unlisted
-
-
-Deploy Previews
-No
-No
-Yes
-Yes
-Yes
-Yes
-Yes
-
-
-Serverless Functions
-No
-No
-Yes
-Yes
-Yes
-Yes
-Not for free
-
-
-Invocations/Month
-
-
-125k/per site/mo
-100GB hours/mo
-100k/day
-125k/mo
-
-
-
-Duration Allowed
-
-
-10s
-10s
-10ms
-540s
-
-
-
-DNS Management
-No
-No
-Yes
-Yes
-Yes
-No
-No
-
-
-HTTPS Available
-Yes
-Yes
-Yes
-Yes
-Yes
-Yes
-Yes
-
-
-Bandwidth/Month
-100GB/Mo
-No limit
-100GB/Mo
-100GB/Mo
-No Limit
-10GB/Mo
-100GB/Mo
-
-
-Site Limit
-1GB
-10GB
-100GB
-12.5K Files
-20K Files
-10GB
-None listed
-
-
-Default URL
-github.io
-gitlab.io
-netlify.app
-vercel.app
-pages.dev
-web.app and firebaseapp.com
-onrender.com
-
-
-# of Team Members
-Unlimited
-Unlimited
-One
-One
-Unlimited
-
-Unlimited
-
-
-Team SSO Available
-Yes
-Yes
-Yes
-Not for Free
-Unlisted
-Yes
-No
-
-
-# of Users
-Yes
-Yes
-1000/site/month
-No
-No
-Yes
-Planned
-
-
-User SSO Available
-[Yes]
-Yes
-Not for free
-No
-No
-Yes
-
-
-
-Form Submissions/Month
-No
-No
-100
-No
-Yes and No
-No
-Yes - via Formspree integration
-
-
-Analytics
-No
-Not Yet
-Not for free
-Free is only good for 1 day
-Yes
-Yes
-No
-
-
-Split A/B Testing
-No
-No
-Yes
-No
-No
-Yes
-No
-
-
-Allowed for Business Use
-No
-Yes
-Yes
-No for hobby
-Yes
-Yes
-Yes
-
-
-
-
-Github可以通过同样代码仓库，多个仓库同时部署，不同仓库设置不同的域名来支持多域名！
-
-
-Tips: Github有每个账户1000个仓库限制，每个仓库大小超过1G，就会被人工审查！所以撸羊毛可以，注意仓库个数和大小限制！
-
-GitHub Pages
-
-
-速度：尚可，并不很慢，但有时候会抽风。
-
-
-自定义域名：一个。
-
-
-限制：
-
-
-
-单个文件大于50MB将受到警告。
-单个文件大于100MB无法上传。
-仓库大小「强烈建议」少于1GB。
-每小时可构建10次。https://help.github.com/articles/what-is-my-disk-quota/#file-and-repository-size-limitations
-每月流量100GB 或者 100,000 次请求。
-详情可见：https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#guidelines-for-using-github-pages
-
-
-
-
-
-优点：简单方便
-缺点：国内速度慢，直连CNAME会泄露GitHub用户名，免费版私有仓库无法使用
-
-
-Netlify
-控制台无法访问。
-
-
-部署方式：GitHub、GitLab、BitBucket仓库自动拉取以及本地CLI直接推送。
-
-
-速度：较GitHub Pages要快，但是稳定性差上不少，部分时候可能直接出现无法访问。
-
-
-自定义域名：多个。
-
-
-限制：
-对于每个账户：
-
-
-
-同时只能构建一个站点。
-每月流量100GB。
-每月构建时间300分钟。
-详情可见：https://www.netlify.com/pricing
-
-
-
-
-
-优点：pr单独部署，速度还可以，有免费的serverless
-缺点：直连CNAME会泄露分配域名
-对比Vercel，Netlify在国内的速度确实要比Vercel慢很多，但前者有许多后者没有的服务或插件，比如Algolia、表单等等
-
-
-Cloudflare Pages
-
-
-部署方式：GitHub仓库。
-
-
-速度：与GitHub Pages相似。
-
-
-自定义域名：最多10个；
-
-
-限制：
-
-
-
-每月构可构建500次。
-每日所有Functions 和 Workers 总计限制 100,000 次请求。
-文件数量最多2w个。
-单个文件大小不得超过25MB。
-详情可见：https://developers.cloudflare.com/pages/platform/limits
-
-
-
-Vercel
-
-
-部署方式：与Netlify相同，支持GitHub、GitLab、BitBucket仓库自动拉取以及本地CLI直接推送。
-
-
-速度：在所有方案中最快且最稳定。
-
-
-自定义域名：多个。
-
-
-限制：
-
-
-
-每日可构建100次，但每小时不超过32次。
-单个Git仓库支持连接3个Vercel项目。
-每次构建时长最多45min。每月总计不超过100h。
-每月带宽100G。
-详情可见：https://vercel.com/docs/platform/limits
-
-
-
-
-
-优点：pr单独部署，速度快，CNAME无隐私问题，有免费的serverless
-缺点：嗯，免费的能做到这样还指望啥？
-
-
-Cloudflare CDN
-Cloudflare CDN本身并非博客托管服务，但是可以与上文任意一个服务进行搭配。
-使用CF CDN时访问速度大多数时候较快，遇高峰期将减速。总体来说速度不如Vercel。稳定性尚可，但曾出现过无法访问的情况。
-最主要的是将获得非常多的扩展功能，如HSTS、访问限制，以及HTTP/3等前沿网络技术。他们对IETF的跟进是很快的。同时还会获得DDoS清洗、网站分析等服务。
-
-注意，套上CF CDN之后，可能访问速度会下降，例如Vercel，CF pages
-最佳方法是使用Vercel+CF Partner？不过现在能用的CF Partner几乎没有了
-
-gcore CDN
-gcore
-每月 1000G 免费流量！
-免费节点在中国访问速度比 cloudflare 更快
-jsDelivr CDN
-官网
-
-支持 HTTPS，支持 HTTP2，提供 SRI
-网宿、Fastly、Stackpath、Cloudflare Business Plan
-非常丰富的国内节点
-非常丰富的海外节点
-全球的速度都非常优秀
-cdn.jsdelivr.net，NS1 和 Rage4 主从 DNS
-便捷性：★★★★★
-
-jsDelivr 支持从 NPM、GitHub Tag 和 WordPress SVN 上抓取文件并分发，大大降低了开发者使用的难度——直接发个 Release 就可以用了。jsDelivr 每个月会被调用上百亿次，服务 620+ TB 的流量，意味着如果你不是通过 jsDelivr 加载较为热门的库，那么缓存命中率是不会太理想的。
-
-公用库采用jsDelivr加速，自定义修改的js，css使用自己的部署服务
-
-其它CDN测评
-VPS
-一句话，VPS的超能力就是有钱。配置更好的服务器速度更快，对国内外来说，地理位置最理想的是香港VPS。当然，价格也是相当感人！
-
-
-优点：钱越多，速度越快。自定义性最高，想做什么服务都可以
-缺点：很花钱，网站较大时考虑这个。不够稳定，要稳定性就要多点部署，需要自己维护服务器
-
-
-RackNerd VPS 推荐
-目前个人能找到的最便宜的 VPS 服务商: racknerd VPS
-双11，或者6.18 活动价更优惠！几年前买的一个 1核1G 的，一年不到10刀！现在已经绝版了，并且后续每年循环账单续费没有涨价！
-如果你发现了更便宜的服务商，务必留言告诉我！
-
-Hexo Docker 本地部署
-在最前面的篇章介绍了Hexo Docker 环境的使用方法。具体使用方法见本文系列Hexo Docker 环境篇。
-优点：本地使用可定制化成都更高
-缺点：必须要有Docker 环境。异地使用麻烦，除非ssh,vpn等远程链接方法。
-Hexo Docker VPS 部署
-和 Hexo Docker 本地部署基本一样，最后反向代理设置域名。
-具体参考 Hexo Docker 环境篇
-Hexo IPFS 部署
-
-全面拥抱 web 3.0。静态部署 hexo blog！
-本节待完善！
-
-4everland
-https://4everland.org/
-私有部署 IPFS
-hexo 插件 hexo-deployer-ipfs
-Docker 配置 IPFS
-Hexo+IPFS搭建个人免服务器独立博客
-Docker linuxserver/ipfs
-Docker private-network-ipfs 利用 Docker 搭建 IPFS 私有网络
-IPFS在windows平台下的安装与简单使用
-Win10 配置IPFS
-IPFS是点对点协议InterPlanetary File System的简称，它是一个面向全球的、点对点的分布式版本文件系统，试图将所有具有相同文件系统的计算设备连接在一起。
-近日，IFPS宣布了一个未来web发展计划，它用基于内容的地址替代基于域名的地址，也就是用户寻找的不是某个地址而是储存在某个地方的内容，不需要验证发送者的身份，而只需要验证内容的哈希，通过这样可以让网页的速度更快、更安全、更健壮、更持久。IPFS表示，IPFS未来将替代HTTP（以及其他的许多东西）。
-2.1 安装IPFS
-至官网下载对应版本，一路安装即可，win10系统，下载对应zip解压后，将ipfs.exe添加到%PATH%。
-测试是否安装成功：ipfs help
-出现 USAGE:
-ipfs - Global p2p merkle-dag filesystem.
-…
-即可。
-2.2 启动本地IPFS节点
-第一步:先初始化IPFS
-ipfs init
-第二部：打开节点
-ipfs daemon
-此时，你可以在http://localhost:5001/webui，打开自己的操作台。
-2.3 将Hexo博客部署到IPFS节点上
-Hexo是一个静态博客生成器，执行hexo generate后，会在博客目录生成/Public目录,该目录即为全部博客内容
-执行 ipfs add -r public
-得到：added QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx public
-QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx即为博客网站的site_hash,你可以通过任意运行IPFS的节点访问，如：http://localhost:8080/ipfs/$SITE_HASH，也可以通过官方运行的节点访问：http://gateway.ipfs.io/ipfs/$SITE_HASH。
-2.4 绑定独立域名
-刚才，我们通过ipfs add，将博客发布到了IPFS运行的区块链节点上，但复杂的site_hash并不友好，我们可以使用IPNS技术，通过绑定独立域名来实现与现有的网站访问并无任何不一样的体现。我们假设你已经有一个可以正常使用的域名，如aa.com，没有域名的可以到任意域名服务商初购买。
-首先，我们将网站发布
-执行 ipfs name publish QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx
-得到 Published to QmV61ui6H9qX3126yGH846dPkMgSe7SZcDxrVwm2gxTidu: /ipfs/QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx
-记住QmV61ui6H9qX3126yGH846dPkMgSe7SZcDxrVwm2gxTidu为你的peerid，该hash是保持不变的。
-那好，我们现在只需要将aa.com解析到上述地址即可，添加TXT记录为dnslink=/ipns/QmV61ui6H9qX3126yGH846dPkMgSe7SZcDxrVwm2gxTidu,同时将域名A记录指向任意ipfs节点的ip，如gateway.ipfs.io。
-现在访问aa.com，你是不是发现已经可以正常访问你刚才生成的博客了。当然，在没有优化之前，访问会很慢，但可以打开。
-由于IPNS还不稳定，你可以在http://ipfs.io/ipfs/QmeaNWtacNyWZxEphYCdVmF6bcMg7Bjn6e5sGdK6fr1nMx 查看本页面。
-将Hexo部署到VPS实现自动发布
-搭建流程
-
-服务器环境配置，安装Git、Nginx配置、创建git用户
-本地hexo初始化
-使用Git自动部署并发布博客
-
-服务器环境搭建
-
-安装Git和NodeJS(Centos环境)
-
-yum install git
-# 安装NodeJS 
-curl --silent --location https://rpm.nodesource.com/setup_5.x | bash -
-
-创建git账号
-
-adduser git
-chmod 740 /etc/sudoers
-vim /etc/sudoers
-
-添加内容
-找到
-
-## Allow root to run any commands anywhere
-root    ALL=(ALL)     ALL
-
-添加以下内容
-
-git     ALL=(ALL)     ALL
-
-保存退出并改回权限
-
-chmod 400 /etc/sudoers
-
-设置git账号密码
-
-sudo passwd git
-
-使用su git切换到git用户，再执行下列操作：
-
-# 切换到git用户目录
-cd /home/git
-# 创建.ssh文件夹
-mkdir ~/.ssh
-# 创建authorized_keys文件并编辑
-vim ~/.ssh/authorized_keys
-# 如果你还没有生成公钥，那么首先在本地电脑中执行 cat ~/.ssh/id_rsa.pub | pbcopy生成公钥
-# 再将公钥复制粘贴到authorized_keys
-# 保存关闭authorized_keys后，修改相应权限
-chmod 600 ~/.ssh/authorized_keys
-chmod 700 ~/.ssh
-
-然后可以通过本地Git Bash执行ssh命令测试是否可以免密登录
-
-ssh -v git@服务器ip地址
-这样git用户就添加好了。
-
-Tips: 将公钥拷贝到服务器的~/.ssh/authorized_keys文件中方法有如下几种：
-
-将公钥通过scp拷贝到服务器上，然后追加到~/.ssh/authorized_keys文件中，这种方式比较麻烦。scp -P 22 ~/.ssh/id_rsa.pub user@host:~/。
-通过ssh-copy-id程序，就是我演示的方法，ssh-copyid user@host即可
-可以通过cat ~/.ssh/id_rsa.pub | ssh username@host "mkdir ~/.ssh; cat &gt;&gt; ~/.ssh/authorized_keys"，这个也是比较常用的方法，因为可以更改端口号。
-
-
-
-安装Nginx
-准备工作
-首先由于nginx的一些模块依赖一些lib库，所以在安装nginx之前，必须先安装这些lib库，这些依赖库主要有g++、gcc、openssl-devel、pcre-devel和zlib-devel 所以执行如下命令安装
-
-yum install gcc-c++
-yum install pcre pcre-devel
-yum install zlib zlib-devel
-yum install openssl openssl--devel
-Ubuntu系统安装命令如下：
-sudo apt-get install libpcre3 libpcre3-dev
-sudo apt-get install zlib1g-dev
-sudo apt-get install openssl libssl-dev
-
-安装Nginx
-安装之前，最好检查一下是否已经安装有nginx
-
-find -name nginx
-如果系统已经安装了nginx，那么就先卸载
-yum remove nginx
-然后开始安装
-首先进入/usr/local目录
-cd /usr/local
-从官网下载最新版的nginx
-wget -c https://nginx.org/download/nginx-1.14.2.tar.gz 
-（注：版本号可更改，去官网查看最新版本号修改即可）
-解压nginx压缩包
-tar -zxvf nginx-1.14.2.tar.gz
-会产生一个nginx-1.14.2 目录，这时进入nginx-1.14.2 目录
-cd  nginx-1.14.2
-接下来安装，使用–prefix参数指定nginx安装的目录,make、make install安装
-./configure
-（默认安装在/usr/local/nginx，推荐使用默认设置）
-
-make
-
-make install
-
-如果没有报错，顺利完成后，最好看一下nginx的安装目录
-whereis nginx
-（where和is要连这些，中间没有空格）
-
-
-启动和停止nginx
-
-cd /usr/local/nginx/sbin/
-./nginx 
-./nginx -s stop
-./nginx -s quit
-./nginx -s reload
-./nginx -s quit: 此方式停止步骤是待nginx进程处理任务完毕进行停止。
-./nginx -s stop: 此方式相当于先查出nginx进程id再使用kill命令强制杀掉进程。
-查询nginx进程：
-ps aux | grep nginx
-
-
-重启 nginx
-
-
-先停止再启动（推荐）：
-对 nginx 进行重启相当于先停止再启动，即先执行停止命令再执行启动命令。如下：
-
-./nginx -s quit
-./nginx
-
-重新加载配置文件：
-当 nginx 的配置文件 nginx.conf 修改后，要想让配置生效需要重启 nginx，使用 -s reload 不用先停止 nginx 再启动 nginx 即可将配置信息在 nginx 中生效，如下：
-
-./nginx -s reload
-启动成功后，在浏览器可以看到如下页面：
-
-
-开机自启动
-
-即在rc.local增加启动代码就可以了。
-vim /etc/rc.local
-增加一行
-/usr/local/nginx/sbin/nginx
-到这里，nginx安装完毕，启动、停止、重启操作也都完成。
-建立git裸库
-# 回到git目录
-cd /home/git
-# 使用git用户创建git裸仓库，以blog.git为例
-git init --bare blog.git
-检查用户组权限
-我们的git裸仓库已经建立好了，离成功又近了一步。为了以防万一，我们要检查一下之前的blog.git、.ssh、blog目录的用户组权限是否都为git:git
-# 还记得/var/www/吗？这是之前配置nginx时，我们自己选定的网站根目录，请依据你自己的设置更改，如果没有的话自己
-ll -a /www/wwwroot/hexo
-ll -a /home/git/
-如果有哪个不是，执行下面相应的命令后再查看
-sudo chown -R git:git /www/wwwroot/hexo
-sudo chmod -R 755 /www/wwwroot/hexo
-sudo chown git:git -R /home/git/blog.git
-使用git-hooks同步网站根目录
-简单来说，我们使用一个钩子文件：post-receive，每当git仓库接收到内容的时候，就会自动调用这个钩子，把内容同步到网站根目录。
-在git用户下执行：
-# 新建一个post-receive文件并编辑
-vim ~/blog.git/hooks/post-receive
-在里面输入以下内容，注意修改为自己的设置：
-#!/bin/bash
-set -e
-GIT_REPO=/home/git/blog.git
-TMP_GIT_CLONE=/tmp/blog
-PUBLIC_WWW=/www/wwwroot/hexo
-rm -rf ${TMP_GIT_CLONE}
-git clone -b main $GIT_REPO $TMP_GIT_CLONE
-cd $TMP_GIT_CLONE
-#for b in `git branch -r | grep -v -- '-&gt;'`; do git branch --track ${b##origin/} $b; done
-#git checkout main
-rm -rf ${PUBLIC_WWW}/*
-cp -rf ${TMP_GIT_CLONE}/* ${PUBLIC_WWW}
-echo "update web done!"
-#ls -al ${PUBLIC_WWW}
-rm -rf ${TMP_GIT_CLONE}
-保存退出后，执行以下赋予这个文件可执行权限。
-chown -R git:git ~/blog.git/hooks/post-receive
-chmod +x ~/blog.git/hooks/post-receive
-好了，以上就是服务器端需要配置的内容。我们还差最后一步就可以完成整个部署了！
-修改配置文件nginx.conf
-修改上面的配置文件：
-vim /usr/local/nginx/conf/nginx_config
-然后修改其中两个部分，如下所示：
-
-然后重启nginx，方法见nginx安装部分。
-配置本地Hexo的_config.yml
-非常简单，只需要找到本地Hexo博客的站点配置文件_config.yml，找到以下内容并修改：
-deploy: 
-  type: git
-  repo: git@你的服务器IP:/home/git/blog.git
-  branch: master
-保存后，剩下的就是Hexo的日常操作了，这里就不赘述了，写完文章后，在你的本地博客根目录执行以下命令：
-hexo c &amp;&amp; hexo g -d
-就可以实现线上博客的自动更新了！一切搞定！
-Rsync同步部署静态文件方法
-
-使用rsync同步
-
-本地生成静态文件后rsync同步到vps网页目录，lnap使用宝塔配置，这里只需要一个nginx。
-# rsync [options] from_dir to_dir
-# 替换这里的ip为你的服务器ip
-rsync -avzP  /home/17lai.blog  root@8.8.8.8:/www/wwwroot/hexo
-Hexo Github Action 自动部署
-准备
-
-Hexo 博客源码的仓库，在 GitHub 上。
-ssh 密钥，参考文章：Windows 下利用 Git 生成 SSH KEY 并配置到 GitHub
-
-步骤
-
-为需要部署的平台添加密钥
-修改 _config.yml 中的 deploy 配置
-在 GitHub 上设置 Secrets
-创建 GitHub Action
-
-为需要部署的平台添加密钥
-按照之前的教程，只要你之前成功将 Hexo 的博客部署到 GitHub 上，那你电脑在 ~/.ssh 目录下一定有以下三个文件：
-
-id_rsa：私钥
-id_rsa.pub：公钥
-known_hosts：记录对所有用户都可信赖的远程主机的公钥
-
-将 id_rsa.pub（公钥）添加到不同平台中即可，参考文章：Windows 下利用 Git 生成 SSH KEY 并配置到 GitHub
-下面是不同平台添加的地址：
-
-GitHub
-GitLab
-Coding
-Gitee
-
-修改 _config.yml 中的 deploy 配置
-请使用 ssh (即以 git@ 开头的 clone 链接) 的连接方式，根据直接的实际地址填写。
-deploy:
-  - type: git
-    repo:
-      github: git@github.com:Sitoi/Sitoi.github.io.git
-      coding: git@e.coding.net:Sitoi/Sitoi.git
-      gitee: git@gitee.com:sitoi/sitoi.git
-      gitlab: git@gitlab.com:Sitoi/sitoi.gitlab.io.git
-    branch: master
-在 GitHub 上设置 Secrets
-
-
-进入到你在 GitHub 上面的源码仓库
-
-
-点击右上角的 Settings
-
-
-
-Settings
-
-
-点击左侧的 Secrets
-
-
-点击右上角的 New secret
-
-
-
-New secret
-
-在 Name 中输入 HEXO_DEPLOY_PRI，在 Value 中填入 id_rsa（私钥）的全部内容
-
-
-Add secret
-创建 GitHub Action
-
-点击项目上方的 Action 按钮
-
-
-Action
-
-点击 set up a workflow yourself 创建 Workflow
-
-
-Workflow
-
-修改 main.yaml 的内容
-
-
-Create Workflow
-
-根据实际情况修改成你自己的内容
-
-
-Git 推送使用的用户名：git config –global user.name ‘sitoi’：
-Git 推送使用的邮箱：git config –global user.email ‘133397418@qq.com‘
-Hexo 的版本：npm i hexo@4.1.1 -g
-
-name: Hexo CI
-
-on:
-  push:
-    branches:
-      - butterfly
-
-jobs:
-  butterfly-build:
-
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [10.x]
-
-    steps:
-      - uses: actions/checkout@v1
-      - name: Use Node.js 10.x
-        uses: actions/setup-node@v1
-        with:
-          node-version: '10.x'
-      - name: env prepare
-        env:
-          HEXO_DEPLOY_PRI: ${{ secrets.HEXO_DEPLOY_PRI }}
-        run: |
-          mkdir -p ~/.ssh/
-          echo "$HEXO_DEPLOY_PRI" &gt; ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com &gt;&gt; ~/.ssh/known_hosts
-          ssh-keyscan gitlab.com &gt;&gt; ~/.ssh/known_hosts
-          ssh-keyscan e.coding.net &gt;&gt; ~/.ssh/known_hosts
-          ssh-keyscan gitee.com &gt;&gt; ~/.ssh/known_hosts
-          git config --global user.name 'sito'
-          git config --global user.email '133397418@qq.com'
-          npm i
-          npm i hexo@4.1.1 -g
-      - name: gen
-        run: |
-          hexo clean
-          hexo generate
-          hexo deploy
-
-将你的源码推送到 GitHub 上，你的博客一会就会自动更新了。
-
-Hexo Gitlab CI/CD自动部署
-啥都不说，直接上代码，请参考 Gitlab 官方项目 Gitlab hexo
-更多关于 Gitlab CICD 介绍，请看下面文章
-
-CI/CD与Git Flow与GitLab
-
-vercel 部署
-
-jsdelivr被封了，怎么办？vercel 部署可以加速访问
-
-为什么使用 vercel
-
-国内 Github Pages 速度较慢。
-vercel 速度快且能够自定义域名，能实现和 Github Pages 一样的效果
-
-
-vercel 官方地址：vercel.com/
-
-如何部署
-
-首先注册一个账号
-注册成功后进入页面，点击 News Project
-
-
-
-然后通过绑定的 github 或者 gitlab 导入需要部署的项目
-
-
-
-如果导入的项目是打包好的静态页，在 Build and Output Settings 的 override 都勾上，表示不执行它的默认命令。
-
-
-
-点击 deployed 进行部署，如果部署失败可以查看报错信息是不是上一步的某些选项没有覆盖。部署成功后会进入如图所示的界面
-
-
-如何自定义域名
-
-腾讯云域名地址：console.cloud.tencent.com/domain
-vercel 静态页挂载地址：
-进入到 setting 中可对项目进行一些设置，如项目名称
-
-
-
-下面演示如何自定义域名，默认情况下部署成功后 vercel 会给你生成一个默认的域名，如果想要修改成自己的域名可将域名名称修改成自己的。
-当选择修改成自己的域名名称后，vercel 会检查域名指向的 DNS 对不对，如果不对的话会提示你域名的 DNS 应该如何配置，按照 vercel 提示的 DNS 信息
-
-在自己的域名的 DNS 配置中进行配置，如图
-
-配置多个域名
-对其他新增的域名选择重定向到自己的主域名即可
-
-自定义Header缓存时间
-
-vercel.com/docs
-使用Vercel必备配置，本地缓存加速访问！
-
-vercel.json
-{
-  "headers": [
-    {
-      "source": "/sw.js",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, s-maxage=86400, max-age=86400"
-        }
-      ]
-    }
-  ]
-}
-Vercel自定义404
-
-learn how to customize the 404 page.
-
-cloudflare Pages 部署
-jsdelivr被封了，怎么办？cloudflare Pages 部署可以加速访问
-
-强烈推荐！
-全球CDN，静态加速，可以说是最佳部署方案！就是有每日100000次请求限制！可以使用dnspod多线路负载均衡来帮助分流。
-
-
-官网 cloudflare  首先注册一个账号
-
-
-
-
-
-
-错过了CloudFlare Partner的时代，官方的CloudFlare for SaaS也提供了一种更灵活的CNAME接入方式
-https://blog.cloudflare.com/zh-cn/waf-for-saas-zh-cn/
-
-Cloudflare访问速率限制
-
-我们一直不怕网站内容被爬走，但怕服务器被疯狂的爬虫爬垮，所以希望能限制恶意爬虫速度，而又不影响用户访问和搜索引擎爬虫抓取，这是个两难的事情。不过 Cloudflare 提供了 DNS 级别控制的速率限制！
-Rate limiting rules  各计划的速率限制额度
-
-
-
-
-计划
-规则数
-操作
-操作持续时间
-请求期间
-
-
-
-
-免费
-1
-阻止
-1 分钟或 1 小时
-10 秒钟或 1 分钟
-
-
-Pro
-10
-阻止、旧版 CAPTCHA、JS 质询、托管质询或记录
-1 分钟或 1 小时
-10 秒钟或 1 分钟
-
-
-Business
-15
-阻止、旧版 CAPTCHA、JS 质询、托管质询或记录
-1 分钟、1 小时或 24 小时
-10 秒钟、1 分钟或 10 分钟
-
-
-企业
-100
-阻止、旧版 CAPTCHA、JS 质询、托管质询或记录
-可以输入 10 秒到 86400 秒（24 小时）范围内的任何时间长度
-可以输入 10 秒到 3600 秒（1 小时）范围内的任何值。
-
-
-
-设置方法
-该功能是防御 CC 强有效的功能，可以从【安全性】-【WAF-】【速率限制规则】进入配置页面。
-
-针对免费用户来说可以配置的参数比较少，主要实现的是同个 IP（10 秒内请求数&gt;n）时对其返回 429 阻止访问。如图填写 / 可对 zone 下所有域名进行保护，正常情况下 n 建议设置为 50-100，资源更多的站点可以考虑适当放大（以不影响正常访问为准）。
-
-在“安全性” - “WAF” - “防火墙规则”中添加排除跳过速率限制只能老版本的速率限制有效，但新版本的速率限制无效，可以采取在“安全性” - “WAF” - “工具”中添加IP 访问规则，将常见的AS15169（Google）、AS8075（Microsoft）等IP段设置为“允许”，这些IP就不会受到速率限制的影响；
-所有版本都在过滤条件中增加了Verified Bot，可以让通过验证的好爬虫跳过速率限制，设置截图如下：
-
-
-以 token 方式部署到 Github
-deploy:
-  type: git
-  repo:
-    github:
-      url: &lt;repository url&gt;
-      branch: [branch]
-      token: ''
-  message: [message]
-  name: [git user]
-  email: [git email]
-  extend_dirs: [extend directory]
-  ignore_hidden: false # default is true
-  ignore_pattern: regexp  # whatever file that matches the 
-travis 自动部署配置
-
-travis是第三方CICD服务，比action更加强大，下面只是参考，请查阅travis 文档，并结合自己的环境修改！
-
-sudo: false
-language: node_js
-node_js:
-- 10.16.3
-cache: npm
-branches:
-  only:
-  - master # build master branch only
-
-env:
-  global:
-  - GIT_USER: appotry
-  - HEXO_BACKUP_REPO: github.com/appotry/hexo-backup.git
-  - HEXO_THEME_REPO: github.com/appotry/hexo-theme-matery.git
-  - GITHUB_PAGES_REPO: github.com/appotry/hexo.github.io.git
-  - APPOTRY_REPO: github.com/appotry/hexo.git
-
-before_install:
-- export TZ='Asia/Shanghai'
-- npm install hexo -g
-- npm install gulp-cli -g
-
-install:
-- npm install
-
-script:
-- git clone https://${HEXO_THEME_REPO} themes/next
-- git clone https://${GIT_USER}:${GITHUB_TOKEN}@${HEXO_BACKUP_REPO} hexo-backup
-- mv hexo-backup/source .
-- rm -rf source/private
-- npm run build
-
-after_success:
-- git config --global user.name "appotry"
-- git config --global user.email "email@qq.com"
-- git clone https://${GIT_USER}:${GITHUB_TOKEN}@${GITHUB_PAGES_REPO} voidking
-- unalias cp
-- cp -rf public/. 17lai.blog
-- cd 17lai.blog
-- git add .
-- git commit -m "Travis CI Auto Builder"
-- git push --force --quiet "https://${GIT_USER}:${GITHUB_TOKEN}@${GITHUB_PAGES_REPO}" master:master
-利用 GitLab 实现 Hexo 博客的 CI/CD
-Portainer 提供了对服务在线更新的 WebHook，所以基于 GitLab 自带的 CI/CD 功能实现 Hexo 博客的持续部署，就非常轻松了。
-CI/CD 其实本质上是一套流程，流程规则可以自行定义。在本文研究的主题下，流程分为三步：第一步是编译 Hexo 博客并生成静态文件；第二步是将静态文件打包成可提供 Web 服务的镜像；第三步则是通过 Portainer 的钩子触发服务更新。
-.gitlab-ci.yml
-stages:
-  - compile
-  - build
-  - deploy
-
-# CONTAINER_RELEASE_IMAGE 根据自己的仓库名修改
-variables:
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_DRIVER: overlay2
-  CONTAINER_RELEASE_IMAGE: registry.gitlab.com/xxx/xxx:latest
-
-compile:
-  stage: compile
-  image: node:lts-alpine
-  script:
-    - npm install
-    - ./node_modules/hexo/bin/hexo generate
-  artifacts:
-    paths:
-      - public/
-    expire_in: 20 minutes
-
-build:
-  stage: build
-  image: docker:stable
-  services:
-    - docker:dind
-  script:
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
-    - docker info
-    - docker build -f ./Dockerfile -t $CONTAINER_RELEASE_IMAGE public
-    - docker push $CONTAINER_RELEASE_IMAGE
-
-# 根据自己的钩子修改下方的 URL
-deploy:
-  stage: deploy
-  script:
-    - curl https://xxx.xxx.xxx/api/webhooks/xxx -X POST
-
-为了保证服务更新的成功率，可以在 deploy 环节加个错误判断和重试次数，具体的看 GitLab 官方文档即可。
-下面给出我的 Dockerfile 文件，供参考。
-FROM nginx:alpine
-
-COPY . /usr/share/nginx/html
-
-RUN chmod 777 /usr/share/nginx/html -R \
-    &amp;&amp; sed -i 's/#error_page  404/error_page  404/' /etc/nginx/conf.d/default.conf
-部署图床
-
-有很多上传图片的方法，如果使用第三方服务，不知道什么时候就跑路了。所以还是自己部署图床比较稳妥
-
-github pages
-使用git 管理图片仓库。github 上传，保存图片，github pages 或者 vercel，netlify，cloudflare pages来作为网络访问。
-vercel 托管github上面的图片仓库。 每月免费100G流量。 还有netlify托管，github托管，都有每月免费100G流量使用dns分流，每月就有300G免费流量了。
-300G流量，足够每天几千PV访问量了
-npm托管
-还有一个完全不要钱的方案。图片使用npm包管理，上传到npm仓库，各个npm镜像仓库就都是你的图床了。没有流量限制，就怕什么时候npm封闭你的账号 O(∩_∩)O哈哈~
-
-本文假设您已有 NPM 账号、GitHub 账号。
-下面是一个使用GithubAction和NPM搭建自动转换webp图床的完整教程
-
-准备工作
-新建仓库
-新建一个 GitHub 仓库，公开或是私人都可以，此处不再赘述。
-在 Git 仓库中新建 rawimg/.gitkeep 与 webpimg/.gitkeep 两个文件。
-获取令牌
-登录 https://npmjs.com ，点击右上角的头像，进入 Access Token。
-
-点击页面中的 Generate New Token 获取新的令牌。
-
-选择 Automation，点击 Generate Token 生成令牌。
-
-将生成的令牌复制下来。
-进入 GitHub 仓库，点击 Settings。
-
-点击菜单栏中的 Secrets。
-
-点击 New repository secret 新建一个 Secret。
-
-Secret Name 为 NPM_TOKEN，Value 是你的 NPM 令牌，点击 Add secret 添加。
-
-在仓库中新建 package.json 文件，参考如下：
-{
-  "name": "ocoke-osg",
-  "version": "0.0.0",
-  "description": "Somewhere to save the file from @oCoke",
-  "author": "YFun(@oCoke)"
-}
-图片转换与发布
-为了方便多端写作，我使用 GitHub 临时存储所需的图片，GitHub Action 发布 NPM 包。
-WebP 可以大大缩减图片的尺寸，我们还可以借助 GitHub Action 在发布前自动转换。
-name: NPM &amp; WebP
-
-# 在 Release 发布时 或手动执行
-
-on:
-  release:
-     types:
-       - published
-
-  workflow_dispatch:
-
-jobs:
-  publish-npm:
-    runs-on: ubuntu-latest
-    # Clone 仓库
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: master
-      # 安装 Node.js    
-      - name: Setup Node
-        uses: actions/setup-node@v1
-        with:
-          node-version: "12.x"
-          registry-url: https://registry.npmjs.org/
-        
-      # rawimg/ 作为原始图片存储，webpimg/ 作为压缩图片存储处，最后合并。
-      # 安装相关插件，转换图片。
-      - name: Install &amp; Convert
-        run: |
-          npm install -g webp-batch-convert
-          cwebp-batch --in rawimg --out webpimg -q 75 -quiet
-          mv webpimg/*.webp rawimg/
-          
-      # 发布 NPM 包
-      - name: Publish Package
-        run: |
-          git config --global user.email "icolabot@e.yfun.top"
-          git config --global user.name "iColaBot"
-          npm version patch
-          npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
-          
-      # 删除 rawimg/ 和 webpimg/ 下的所有文件
-      - name: Delete Files
-        run: |
-          rm -rf webpimg/*
-          rm -rf rawimg/*
-          touch webpimg/.gitkeep
-          touch rawimg/.gitkeep
-          
-      - name: Push
-        run: |
-          git add -A
-          git commit -m "Publish"
-          git push origin master
-使用
-上传
-将图片文件上传至仓库的 rawimg/ 文件夹下即可。
-当然也可以使用 PicGo / UPic / HexoPlusPlus 等工具上传。
-发布
-在 GitHub 中新建 Release，将自动修改版本号并发布 NPM 包，无需手动修改 package.json。
-
-
-访问
-推荐的镜像
-https://cdn.jsdelivr.net/npm/  # jsDelivr
-https://unpkg.zhimg.com/ # 知乎
-https://code.bdstatic.com/npm/ # 百度 (不推荐)
-https://shadow.elemecdn.com/npm/ # 饿了么
-https://unpkg.com/ # Unpkg
-镜像推荐选择访问速度快的，比较稳定的，拉取速度快的。
-我选择的是 jsDelivr，国内外速度都很优秀。
-链接
-以 jsDelivr 为例，原图链接为：
-https://cdn.jsdelivr.net/npm/[package-name]@[version]/rawimg/[filename].[suffix]
-WebP 图片链接为：
-https://cdn.jsdelivr.net/npm/[package-name]@[version]/rawimg/[filename].webp
-
-
-
-[值]
-说明
-
-
-
-
-package-name
-NPM 包的名称 (package.json 文件中 name 的值)
-
-
-version
-当前版本 (package.json 文件中 version 的值，通常需要在发布 Release 1 分钟后更新)
-
-
-filename
-文件名
-
-
-suffix
-文件后缀名
-
-
-
-vps自建图床
-lychee , chevereto      等免费图床工具有很多。就是需要自己配置vps
-
-https://hub.docker.com/r/nmtan/chevereto
-https://hub.docker.com/r/linuxserver/lychee
-
-下面是一个 docker compose 创建Lychee图床的示例
-version: "3"
-services:
-  mariadb:
-    image: lscr.io/linuxserver/mariadb:latest
-    container_name: lychee_mariadb
-    restart: always
-    volumes:
-      - /path/to/mariadb/data:/config
-    environment:
-      - MYSQL_ROOT_PASSWORD=rootpassword
-      - MYSQL_DATABASE=lychee
-      - MYSQL_USER=lychee
-      - MYSQL_PASSWORD=dbpassword
-      - PGID=1000
-      - PUID=1000
-      - TZ=Europe/London
-  lychee:
-    image: lscr.io/linuxserver/lychee:latest
-    container_name: lychee
-    restart: always
-    depends_on:
-      - mariadb
-    volumes:
-      - /path/to/config:/config
-      - /path/to/pictures:/pictures
-    environment:
-      - DB_CONNECTION=mysql
-      - DB_HOST=mariadb
-      - DB_PORT=3306
-      - DB_USERNAME=lychee
-      - DB_PASSWORD=dbpassword
-      - DB_DATABASE=lychee
-      - PGID=1000
-      - PUID=1000
-      - TZ=Europe/London
-    ports:
-      - 80:80
-
-DNSPOD 多线路负载均衡
-
-DNSPOD官网 console.dnspod.cn
-
-
-
-
-dnspod对cname数目有限制。
-这里使用权重来分配各条线路访问比例！
-
-乒乓部署
-
-也可以叫旋转门部署。
-解决调试博客插件，修改半成品文章时部署到云端会影响正在查阅博客的用户的问题！
-使用Docker版本本地预览是很不错，但是 jsdelivr 版本发布需要在 Github 生成新 release 这时本地就不行了。乒乓部署可以解决这个问题！
-
-具体方法就是同时部署到两个地方A和B，博客域名在两个服务器之间切换。这里以 Vercel 为例
-准备工作：
-
-创建2个Github仓库，对应服务器A和B的部署
-建立两个服务器A和B，分别关联两个 Github 仓库
-把调试完毕的代码上传到两个仓库
-这时通过服务器A和B都是可以正常浏览的
-
-要调试的时候：
-
-发布到A之前，把博客域名转移到服务器B
-在服务A做一些调试，在线 debug 工作
-特别是在线 pageseed 测试调优，这种事必备方法。简单不需要新的 jsdelivr 版本调试本地 docker-hexo 调试即可！
-
-
-
-调试完毕后：
-
-把域名切换到服务器A
-同时部署到服务器B，服务器B同步A的部署内容，以便下次备用
-
-
-总结就是服务器A现行，服务器B做后备，调试发布使用A，调试A的时候B就顶上前台！
-这样，调试和正常部署网络服务两不误。是不是感觉自己是个大聪明！
-
-
-本教程还有其它五大部分，更多内容请见Hexo系列教程
-
-系列教程
-全部文章RSS订阅
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-Vercel部署高级用法教程
-在宝塔VPS上面采用docker部署waline全流程图解教程
-
-笔记系列
-Note分类RSS订阅
-
-完美笔记进化论
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Joplin入门指南&amp;实践方案
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-Joplin 插件以及其Markdown语法。All in One!
-Joplin 插件使用推荐
-为知笔记私有化Docker部署
-
-Gitbook使用系列
-Gitbook分类RSS订阅
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-Gitlab 使用系列
-Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-]]></content>
-      <categories>
-        <category>hexo</category>
-      </categories>
-      <tags>
-        <tag>hexo</tag>
-        <tag>github</tag>
-        <tag>matery</tag>
-        <tag>cdn</tag>
-        <tag>seo</tag>
       </tags>
   </entry>
   <entry>
@@ -25370,6 +23787,1428 @@ IcoMoon: https://icomoon.io/app/#/select (How To)
 Fontastic: http://fontastic.me/
 
 
+
+
+本教程还有其它五大部分，更多内容请见Hexo系列教程
+
+系列教程
+全部文章RSS订阅
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+Vercel部署高级用法教程
+在宝塔VPS上面采用docker部署waline全流程图解教程
+
+笔记系列
+Note分类RSS订阅
+
+完美笔记进化论
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Joplin入门指南&amp;实践方案
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+Joplin 插件以及其Markdown语法。All in One!
+Joplin 插件使用推荐
+为知笔记私有化Docker部署
+
+Gitbook使用系列
+Gitbook分类RSS订阅
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+Gitlab 使用系列
+Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+]]></content>
+      <categories>
+        <category>hexo</category>
+      </categories>
+      <tags>
+        <tag>hexo</tag>
+        <tag>github</tag>
+        <tag>matery</tag>
+        <tag>cdn</tag>
+        <tag>seo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>基于Hexo的matery主题搭建博客增强部署篇4</title>
+    <url>/posts/5311b619/</url>
+    <content><![CDATA[各种部署方式
+
+静态博客的部署方式多种多样，免费部署资源非常多。
+如果DNS支持多线路，还可以设置多路负载均衡！
+注意：这些免费的部署都没法做ICP备案，或者国内CDN套着备案。不过，都免费了，你还要求那么多？
+
+
+
+
+部署方式
+费用
+限制
+难易度
+多域名
+
+
+
+
+Github
+0 $
+100G/M
+简单
+单域名
+
+
+VPS
+约2~5$/M
+看购买套餐
+复杂
+支持
+
+
+Vercel
+0 $
+100G/M
+简单
+支持
+
+
+Netlify
+0 $
+100G/M
+简单
+支持
+
+
+Cloudflare pages
+0 $
+无
+简单
+支持
+
+
+Gitlab
+0 $
+无
+简单
+支持（？）
+
+
+
+更详细对比
+
+
+
+特性
+GitHub
+GitLab
+Netlify
+Vercel
+CloudFlare
+Firebase
+Render
+
+
+
+
+Build Limit
+10/hour
+None
+3/Minute
+32/hour
+500/month
+Not Applicable
+Unlisted
+
+
+Build Time to Error
+10 minutes
+3 Hours
+15 minutes
+30 minutes
+Unlisted
+Not Applicable
+120 minutes
+
+
+Build Time per Month
+NA
+400 Minutes
+300 Minutes
+6000 Minutes
+Unlisted
+Not Applicable
+Unlisted
+
+
+Concurrent Builds
+🤷‍♂️
+Yes
+One
+One
+One
+Not Applicable
+Unlisted
+
+
+Deploy Limits
+NA
+No
+Not Applicable
+100/Day
+Unlisted
+Not Applicable
+Unlisted
+
+
+Deploy Previews
+No
+No
+Yes
+Yes
+Yes
+Yes
+Yes
+
+
+Serverless Functions
+No
+No
+Yes
+Yes
+Yes
+Yes
+Not for free
+
+
+Invocations/Month
+
+
+125k/per site/mo
+100GB hours/mo
+100k/day
+125k/mo
+
+
+
+Duration Allowed
+
+
+10s
+10s
+10ms
+540s
+
+
+
+DNS Management
+No
+No
+Yes
+Yes
+Yes
+No
+No
+
+
+HTTPS Available
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+
+
+Bandwidth/Month
+100GB/Mo
+No limit
+100GB/Mo
+100GB/Mo
+No Limit
+10GB/Mo
+100GB/Mo
+
+
+Site Limit
+1GB
+10GB
+100GB
+12.5K Files
+20K Files
+10GB
+None listed
+
+
+Default URL
+github.io
+gitlab.io
+netlify.app
+vercel.app
+pages.dev
+web.app and firebaseapp.com
+onrender.com
+
+
+# of Team Members
+Unlimited
+Unlimited
+One
+One
+Unlimited
+
+Unlimited
+
+
+Team SSO Available
+Yes
+Yes
+Yes
+Not for Free
+Unlisted
+Yes
+No
+
+
+# of Users
+Yes
+Yes
+1000/site/month
+No
+No
+Yes
+Planned
+
+
+User SSO Available
+[Yes]
+Yes
+Not for free
+No
+No
+Yes
+
+
+
+Form Submissions/Month
+No
+No
+100
+No
+Yes and No
+No
+Yes - via Formspree integration
+
+
+Analytics
+No
+Not Yet
+Not for free
+Free is only good for 1 day
+Yes
+Yes
+No
+
+
+Split A/B Testing
+No
+No
+Yes
+No
+No
+Yes
+No
+
+
+Allowed for Business Use
+No
+Yes
+Yes
+No for hobby
+Yes
+Yes
+Yes
+
+
+
+
+Github可以通过同样代码仓库，多个仓库同时部署，不同仓库设置不同的域名来支持多域名！
+
+
+Tips: Github有每个账户1000个仓库限制，每个仓库大小超过1G，就会被人工审查！所以撸羊毛可以，注意仓库个数和大小限制！
+
+GitHub Pages
+
+
+速度：尚可，并不很慢，但有时候会抽风。
+
+
+自定义域名：一个。
+
+
+限制：
+
+
+
+单个文件大于50MB将受到警告。
+单个文件大于100MB无法上传。
+仓库大小「强烈建议」少于1GB。
+每小时可构建10次。https://help.github.com/articles/what-is-my-disk-quota/#file-and-repository-size-limitations
+每月流量100GB 或者 100,000 次请求。
+详情可见：https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#guidelines-for-using-github-pages
+
+
+
+
+
+优点：简单方便
+缺点：国内速度慢，直连CNAME会泄露GitHub用户名，免费版私有仓库无法使用
+
+
+Netlify
+控制台无法访问。
+
+
+部署方式：GitHub、GitLab、BitBucket仓库自动拉取以及本地CLI直接推送。
+
+
+速度：较GitHub Pages要快，但是稳定性差上不少，部分时候可能直接出现无法访问。
+
+
+自定义域名：多个。
+
+
+限制：
+对于每个账户：
+
+
+
+同时只能构建一个站点。
+每月流量100GB。
+每月构建时间300分钟。
+详情可见：https://www.netlify.com/pricing
+
+
+
+
+
+优点：pr单独部署，速度还可以，有免费的serverless
+缺点：直连CNAME会泄露分配域名
+对比Vercel，Netlify在国内的速度确实要比Vercel慢很多，但前者有许多后者没有的服务或插件，比如Algolia、表单等等
+
+
+Cloudflare Pages
+
+
+部署方式：GitHub仓库。
+
+
+速度：与GitHub Pages相似。
+
+
+自定义域名：最多10个；
+
+
+限制：
+
+
+
+每月构可构建500次。
+每日所有Functions 和 Workers 总计限制 100,000 次请求。
+文件数量最多2w个。
+单个文件大小不得超过25MB。
+详情可见：https://developers.cloudflare.com/pages/platform/limits
+
+
+
+Vercel
+
+
+部署方式：与Netlify相同，支持GitHub、GitLab、BitBucket仓库自动拉取以及本地CLI直接推送。
+
+
+速度：在所有方案中最快且最稳定。
+
+
+自定义域名：多个。
+
+
+限制：
+
+
+
+每日可构建100次，但每小时不超过32次。
+单个Git仓库支持连接3个Vercel项目。
+每次构建时长最多45min。每月总计不超过100h。
+每月带宽100G。
+详情可见：https://vercel.com/docs/platform/limits
+
+
+
+
+
+优点：pr单独部署，速度快，CNAME无隐私问题，有免费的serverless
+缺点：嗯，免费的能做到这样还指望啥？
+
+
+Cloudflare CDN
+Cloudflare CDN本身并非博客托管服务，但是可以与上文任意一个服务进行搭配。
+使用CF CDN时访问速度大多数时候较快，遇高峰期将减速。总体来说速度不如Vercel。稳定性尚可，但曾出现过无法访问的情况。
+最主要的是将获得非常多的扩展功能，如HSTS、访问限制，以及HTTP/3等前沿网络技术。他们对IETF的跟进是很快的。同时还会获得DDoS清洗、网站分析等服务。
+
+注意，套上CF CDN之后，可能访问速度会下降，例如Vercel，CF pages
+最佳方法是使用Vercel+CF Partner？不过现在能用的CF Partner几乎没有了
+
+gcore CDN
+gcore
+每月 1000G 免费流量！
+免费节点在中国访问速度比 cloudflare 更快
+jsDelivr CDN
+官网
+
+支持 HTTPS，支持 HTTP2，提供 SRI
+网宿、Fastly、Stackpath、Cloudflare Business Plan
+非常丰富的国内节点
+非常丰富的海外节点
+全球的速度都非常优秀
+cdn.jsdelivr.net，NS1 和 Rage4 主从 DNS
+便捷性：★★★★★
+
+jsDelivr 支持从 NPM、GitHub Tag 和 WordPress SVN 上抓取文件并分发，大大降低了开发者使用的难度——直接发个 Release 就可以用了。jsDelivr 每个月会被调用上百亿次，服务 620+ TB 的流量，意味着如果你不是通过 jsDelivr 加载较为热门的库，那么缓存命中率是不会太理想的。
+
+公用库采用jsDelivr加速，自定义修改的js，css使用自己的部署服务
+
+其它CDN测评
+VPS
+一句话，VPS的超能力就是有钱。配置更好的服务器速度更快，对国内外来说，地理位置最理想的是香港VPS。当然，价格也是相当感人！
+
+
+优点：钱越多，速度越快。自定义性最高，想做什么服务都可以
+缺点：很花钱，网站较大时考虑这个。不够稳定，要稳定性就要多点部署，需要自己维护服务器
+
+
+RackNerd VPS 推荐
+目前个人能找到的最便宜的 VPS 服务商: racknerd VPS
+双11，或者6.18 活动价更优惠！几年前买的一个 1核1G 的，一年不到10刀！现在已经绝版了，并且后续每年循环账单续费没有涨价！
+如果你发现了更便宜的服务商，务必留言告诉我！
+
+Hexo Docker 本地部署
+在最前面的篇章介绍了Hexo Docker 环境的使用方法。具体使用方法见本文系列Hexo Docker 环境篇。
+优点：本地使用可定制化成都更高
+缺点：必须要有Docker 环境。异地使用麻烦，除非ssh,vpn等远程链接方法。
+Hexo Docker VPS 部署
+和 Hexo Docker 本地部署基本一样，最后反向代理设置域名。
+具体参考 Hexo Docker 环境篇
+Hexo IPFS 部署
+
+全面拥抱 web 3.0。静态部署 hexo blog！
+本节待完善！
+
+4everland
+https://4everland.org/
+私有部署 IPFS
+hexo 插件 hexo-deployer-ipfs
+Docker 配置 IPFS
+Hexo+IPFS搭建个人免服务器独立博客
+Docker linuxserver/ipfs
+Docker private-network-ipfs 利用 Docker 搭建 IPFS 私有网络
+IPFS在windows平台下的安装与简单使用
+Win10 配置IPFS
+IPFS是点对点协议InterPlanetary File System的简称，它是一个面向全球的、点对点的分布式版本文件系统，试图将所有具有相同文件系统的计算设备连接在一起。
+近日，IFPS宣布了一个未来web发展计划，它用基于内容的地址替代基于域名的地址，也就是用户寻找的不是某个地址而是储存在某个地方的内容，不需要验证发送者的身份，而只需要验证内容的哈希，通过这样可以让网页的速度更快、更安全、更健壮、更持久。IPFS表示，IPFS未来将替代HTTP（以及其他的许多东西）。
+2.1 安装IPFS
+至官网下载对应版本，一路安装即可，win10系统，下载对应zip解压后，将ipfs.exe添加到%PATH%。
+测试是否安装成功：ipfs help
+出现 USAGE:
+ipfs - Global p2p merkle-dag filesystem.
+…
+即可。
+2.2 启动本地IPFS节点
+第一步:先初始化IPFS
+ipfs init
+第二部：打开节点
+ipfs daemon
+此时，你可以在http://localhost:5001/webui，打开自己的操作台。
+2.3 将Hexo博客部署到IPFS节点上
+Hexo是一个静态博客生成器，执行hexo generate后，会在博客目录生成/Public目录,该目录即为全部博客内容
+执行 ipfs add -r public
+得到：added QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx public
+QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx即为博客网站的site_hash,你可以通过任意运行IPFS的节点访问，如：http://localhost:8080/ipfs/$SITE_HASH，也可以通过官方运行的节点访问：http://gateway.ipfs.io/ipfs/$SITE_HASH。
+2.4 绑定独立域名
+刚才，我们通过ipfs add，将博客发布到了IPFS运行的区块链节点上，但复杂的site_hash并不友好，我们可以使用IPNS技术，通过绑定独立域名来实现与现有的网站访问并无任何不一样的体现。我们假设你已经有一个可以正常使用的域名，如aa.com，没有域名的可以到任意域名服务商初购买。
+首先，我们将网站发布
+执行 ipfs name publish QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx
+得到 Published to QmV61ui6H9qX3126yGH846dPkMgSe7SZcDxrVwm2gxTidu: /ipfs/QmXJJm7aydK22eF1BdKVozcXH5Ltm8ZwbFHo3c36hi9qUx
+记住QmV61ui6H9qX3126yGH846dPkMgSe7SZcDxrVwm2gxTidu为你的peerid，该hash是保持不变的。
+那好，我们现在只需要将aa.com解析到上述地址即可，添加TXT记录为dnslink=/ipns/QmV61ui6H9qX3126yGH846dPkMgSe7SZcDxrVwm2gxTidu,同时将域名A记录指向任意ipfs节点的ip，如gateway.ipfs.io。
+现在访问aa.com，你是不是发现已经可以正常访问你刚才生成的博客了。当然，在没有优化之前，访问会很慢，但可以打开。
+由于IPNS还不稳定，你可以在http://ipfs.io/ipfs/QmeaNWtacNyWZxEphYCdVmF6bcMg7Bjn6e5sGdK6fr1nMx 查看本页面。
+将Hexo部署到VPS实现自动发布
+搭建流程
+
+服务器环境配置，安装Git、Nginx配置、创建git用户
+本地hexo初始化
+使用Git自动部署并发布博客
+
+服务器环境搭建
+
+安装Git和NodeJS(Centos环境)
+
+yum install git
+# 安装NodeJS 
+curl --silent --location https://rpm.nodesource.com/setup_5.x | bash -
+
+创建git账号
+
+adduser git
+chmod 740 /etc/sudoers
+vim /etc/sudoers
+
+添加内容
+找到
+
+## Allow root to run any commands anywhere
+root    ALL=(ALL)     ALL
+
+添加以下内容
+
+git     ALL=(ALL)     ALL
+
+保存退出并改回权限
+
+chmod 400 /etc/sudoers
+
+设置git账号密码
+
+sudo passwd git
+
+使用su git切换到git用户，再执行下列操作：
+
+# 切换到git用户目录
+cd /home/git
+# 创建.ssh文件夹
+mkdir ~/.ssh
+# 创建authorized_keys文件并编辑
+vim ~/.ssh/authorized_keys
+# 如果你还没有生成公钥，那么首先在本地电脑中执行 cat ~/.ssh/id_rsa.pub | pbcopy生成公钥
+# 再将公钥复制粘贴到authorized_keys
+# 保存关闭authorized_keys后，修改相应权限
+chmod 600 ~/.ssh/authorized_keys
+chmod 700 ~/.ssh
+
+然后可以通过本地Git Bash执行ssh命令测试是否可以免密登录
+
+ssh -v git@服务器ip地址
+这样git用户就添加好了。
+
+Tips: 将公钥拷贝到服务器的~/.ssh/authorized_keys文件中方法有如下几种：
+
+将公钥通过scp拷贝到服务器上，然后追加到~/.ssh/authorized_keys文件中，这种方式比较麻烦。scp -P 22 ~/.ssh/id_rsa.pub user@host:~/。
+通过ssh-copy-id程序，就是我演示的方法，ssh-copyid user@host即可
+可以通过cat ~/.ssh/id_rsa.pub | ssh username@host "mkdir ~/.ssh; cat &gt;&gt; ~/.ssh/authorized_keys"，这个也是比较常用的方法，因为可以更改端口号。
+
+
+
+安装Nginx
+准备工作
+首先由于nginx的一些模块依赖一些lib库，所以在安装nginx之前，必须先安装这些lib库，这些依赖库主要有g++、gcc、openssl-devel、pcre-devel和zlib-devel 所以执行如下命令安装
+
+yum install gcc-c++
+yum install pcre pcre-devel
+yum install zlib zlib-devel
+yum install openssl openssl--devel
+Ubuntu系统安装命令如下：
+sudo apt-get install libpcre3 libpcre3-dev
+sudo apt-get install zlib1g-dev
+sudo apt-get install openssl libssl-dev
+
+安装Nginx
+安装之前，最好检查一下是否已经安装有nginx
+
+find -name nginx
+如果系统已经安装了nginx，那么就先卸载
+yum remove nginx
+然后开始安装
+首先进入/usr/local目录
+cd /usr/local
+从官网下载最新版的nginx
+wget -c https://nginx.org/download/nginx-1.14.2.tar.gz 
+（注：版本号可更改，去官网查看最新版本号修改即可）
+解压nginx压缩包
+tar -zxvf nginx-1.14.2.tar.gz
+会产生一个nginx-1.14.2 目录，这时进入nginx-1.14.2 目录
+cd  nginx-1.14.2
+接下来安装，使用–prefix参数指定nginx安装的目录,make、make install安装
+./configure
+（默认安装在/usr/local/nginx，推荐使用默认设置）
+
+make
+
+make install
+
+如果没有报错，顺利完成后，最好看一下nginx的安装目录
+whereis nginx
+（where和is要连这些，中间没有空格）
+
+
+启动和停止nginx
+
+cd /usr/local/nginx/sbin/
+./nginx 
+./nginx -s stop
+./nginx -s quit
+./nginx -s reload
+./nginx -s quit: 此方式停止步骤是待nginx进程处理任务完毕进行停止。
+./nginx -s stop: 此方式相当于先查出nginx进程id再使用kill命令强制杀掉进程。
+查询nginx进程：
+ps aux | grep nginx
+
+
+重启 nginx
+
+
+先停止再启动（推荐）：
+对 nginx 进行重启相当于先停止再启动，即先执行停止命令再执行启动命令。如下：
+
+./nginx -s quit
+./nginx
+
+重新加载配置文件：
+当 nginx 的配置文件 nginx.conf 修改后，要想让配置生效需要重启 nginx，使用 -s reload 不用先停止 nginx 再启动 nginx 即可将配置信息在 nginx 中生效，如下：
+
+./nginx -s reload
+启动成功后，在浏览器可以看到如下页面：
+
+
+开机自启动
+
+即在rc.local增加启动代码就可以了。
+vim /etc/rc.local
+增加一行
+/usr/local/nginx/sbin/nginx
+到这里，nginx安装完毕，启动、停止、重启操作也都完成。
+建立git裸库
+# 回到git目录
+cd /home/git
+# 使用git用户创建git裸仓库，以blog.git为例
+git init --bare blog.git
+检查用户组权限
+我们的git裸仓库已经建立好了，离成功又近了一步。为了以防万一，我们要检查一下之前的blog.git、.ssh、blog目录的用户组权限是否都为git:git
+# 还记得/var/www/吗？这是之前配置nginx时，我们自己选定的网站根目录，请依据你自己的设置更改，如果没有的话自己
+ll -a /www/wwwroot/hexo
+ll -a /home/git/
+如果有哪个不是，执行下面相应的命令后再查看
+sudo chown -R git:git /www/wwwroot/hexo
+sudo chmod -R 755 /www/wwwroot/hexo
+sudo chown git:git -R /home/git/blog.git
+使用git-hooks同步网站根目录
+简单来说，我们使用一个钩子文件：post-receive，每当git仓库接收到内容的时候，就会自动调用这个钩子，把内容同步到网站根目录。
+在git用户下执行：
+# 新建一个post-receive文件并编辑
+vim ~/blog.git/hooks/post-receive
+在里面输入以下内容，注意修改为自己的设置：
+#!/bin/bash
+set -e
+GIT_REPO=/home/git/blog.git
+TMP_GIT_CLONE=/tmp/blog
+PUBLIC_WWW=/www/wwwroot/hexo
+rm -rf ${TMP_GIT_CLONE}
+git clone -b main $GIT_REPO $TMP_GIT_CLONE
+cd $TMP_GIT_CLONE
+#for b in `git branch -r | grep -v -- '-&gt;'`; do git branch --track ${b##origin/} $b; done
+#git checkout main
+rm -rf ${PUBLIC_WWW}/*
+cp -rf ${TMP_GIT_CLONE}/* ${PUBLIC_WWW}
+echo "update web done!"
+#ls -al ${PUBLIC_WWW}
+rm -rf ${TMP_GIT_CLONE}
+保存退出后，执行以下赋予这个文件可执行权限。
+chown -R git:git ~/blog.git/hooks/post-receive
+chmod +x ~/blog.git/hooks/post-receive
+好了，以上就是服务器端需要配置的内容。我们还差最后一步就可以完成整个部署了！
+修改配置文件nginx.conf
+修改上面的配置文件：
+vim /usr/local/nginx/conf/nginx_config
+然后修改其中两个部分，如下所示：
+
+然后重启nginx，方法见nginx安装部分。
+配置本地Hexo的_config.yml
+非常简单，只需要找到本地Hexo博客的站点配置文件_config.yml，找到以下内容并修改：
+deploy: 
+  type: git
+  repo: git@你的服务器IP:/home/git/blog.git
+  branch: master
+保存后，剩下的就是Hexo的日常操作了，这里就不赘述了，写完文章后，在你的本地博客根目录执行以下命令：
+hexo c &amp;&amp; hexo g -d
+就可以实现线上博客的自动更新了！一切搞定！
+Rsync同步部署静态文件方法
+
+使用rsync同步
+
+本地生成静态文件后rsync同步到vps网页目录，lnap使用宝塔配置，这里只需要一个nginx。
+# rsync [options] from_dir to_dir
+# 替换这里的ip为你的服务器ip
+rsync -avzP  /home/17lai.blog  root@8.8.8.8:/www/wwwroot/hexo
+Hexo Github Action 自动部署
+准备
+
+Hexo 博客源码的仓库，在 GitHub 上。
+ssh 密钥，参考文章：Windows 下利用 Git 生成 SSH KEY 并配置到 GitHub
+
+步骤
+
+为需要部署的平台添加密钥
+修改 _config.yml 中的 deploy 配置
+在 GitHub 上设置 Secrets
+创建 GitHub Action
+
+为需要部署的平台添加密钥
+按照之前的教程，只要你之前成功将 Hexo 的博客部署到 GitHub 上，那你电脑在 ~/.ssh 目录下一定有以下三个文件：
+
+id_rsa：私钥
+id_rsa.pub：公钥
+known_hosts：记录对所有用户都可信赖的远程主机的公钥
+
+将 id_rsa.pub（公钥）添加到不同平台中即可，参考文章：Windows 下利用 Git 生成 SSH KEY 并配置到 GitHub
+下面是不同平台添加的地址：
+
+GitHub
+GitLab
+Coding
+Gitee
+
+修改 _config.yml 中的 deploy 配置
+请使用 ssh (即以 git@ 开头的 clone 链接) 的连接方式，根据直接的实际地址填写。
+deploy:
+  - type: git
+    repo:
+      github: git@github.com:Sitoi/Sitoi.github.io.git
+      coding: git@e.coding.net:Sitoi/Sitoi.git
+      gitee: git@gitee.com:sitoi/sitoi.git
+      gitlab: git@gitlab.com:Sitoi/sitoi.gitlab.io.git
+    branch: master
+在 GitHub 上设置 Secrets
+
+
+进入到你在 GitHub 上面的源码仓库
+
+
+点击右上角的 Settings
+
+
+
+Settings
+
+
+点击左侧的 Secrets
+
+
+点击右上角的 New secret
+
+
+
+New secret
+
+在 Name 中输入 HEXO_DEPLOY_PRI，在 Value 中填入 id_rsa（私钥）的全部内容
+
+
+Add secret
+创建 GitHub Action
+
+点击项目上方的 Action 按钮
+
+
+Action
+
+点击 set up a workflow yourself 创建 Workflow
+
+
+Workflow
+
+修改 main.yaml 的内容
+
+
+Create Workflow
+
+根据实际情况修改成你自己的内容
+
+
+Git 推送使用的用户名：git config –global user.name ‘sitoi’：
+Git 推送使用的邮箱：git config –global user.email ‘133397418@qq.com‘
+Hexo 的版本：npm i hexo@4.1.1 -g
+
+name: Hexo CI
+
+on:
+  push:
+    branches:
+      - butterfly
+
+jobs:
+  butterfly-build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [10.x]
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Use Node.js 10.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+      - name: env prepare
+        env:
+          HEXO_DEPLOY_PRI: ${{ secrets.HEXO_DEPLOY_PRI }}
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$HEXO_DEPLOY_PRI" &gt; ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com &gt;&gt; ~/.ssh/known_hosts
+          ssh-keyscan gitlab.com &gt;&gt; ~/.ssh/known_hosts
+          ssh-keyscan e.coding.net &gt;&gt; ~/.ssh/known_hosts
+          ssh-keyscan gitee.com &gt;&gt; ~/.ssh/known_hosts
+          git config --global user.name 'sito'
+          git config --global user.email '133397418@qq.com'
+          npm i
+          npm i hexo@4.1.1 -g
+      - name: gen
+        run: |
+          hexo clean
+          hexo generate
+          hexo deploy
+
+将你的源码推送到 GitHub 上，你的博客一会就会自动更新了。
+
+Hexo Gitlab CI/CD自动部署
+啥都不说，直接上代码，请参考 Gitlab 官方项目 Gitlab hexo
+更多关于 Gitlab CICD 介绍，请看下面文章
+
+CI/CD与Git Flow与GitLab
+
+vercel 部署
+
+jsdelivr被封了，怎么办？vercel 部署可以加速访问
+
+为什么使用 vercel
+
+国内 Github Pages 速度较慢。
+vercel 速度快且能够自定义域名，能实现和 Github Pages 一样的效果
+
+
+vercel 官方地址：vercel.com/
+
+如何部署
+
+首先注册一个账号
+注册成功后进入页面，点击 News Project
+
+
+
+然后通过绑定的 github 或者 gitlab 导入需要部署的项目
+
+
+
+如果导入的项目是打包好的静态页，在 Build and Output Settings 的 override 都勾上，表示不执行它的默认命令。
+
+
+
+点击 deployed 进行部署，如果部署失败可以查看报错信息是不是上一步的某些选项没有覆盖。部署成功后会进入如图所示的界面
+
+
+如何自定义域名
+
+腾讯云域名地址：console.cloud.tencent.com/domain
+vercel 静态页挂载地址：
+进入到 setting 中可对项目进行一些设置，如项目名称
+
+
+
+下面演示如何自定义域名，默认情况下部署成功后 vercel 会给你生成一个默认的域名，如果想要修改成自己的域名可将域名名称修改成自己的。
+当选择修改成自己的域名名称后，vercel 会检查域名指向的 DNS 对不对，如果不对的话会提示你域名的 DNS 应该如何配置，按照 vercel 提示的 DNS 信息
+
+在自己的域名的 DNS 配置中进行配置，如图
+
+配置多个域名
+对其他新增的域名选择重定向到自己的主域名即可
+
+自定义Header缓存时间
+
+vercel.com/docs
+使用Vercel必备配置，本地缓存加速访问！
+
+vercel.json
+{
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=86400, max-age=86400"
+        }
+      ]
+    }
+  ]
+}
+Vercel自定义404
+
+learn how to customize the 404 page.
+
+cloudflare Pages 部署
+jsdelivr被封了，怎么办？cloudflare Pages 部署可以加速访问
+
+强烈推荐！
+全球CDN，静态加速，可以说是最佳部署方案！就是有每日100000次请求限制！可以使用dnspod多线路负载均衡来帮助分流。
+
+
+官网 cloudflare  首先注册一个账号
+
+
+
+
+
+
+错过了CloudFlare Partner的时代，官方的CloudFlare for SaaS也提供了一种更灵活的CNAME接入方式
+https://blog.cloudflare.com/zh-cn/waf-for-saas-zh-cn/
+
+Cloudflare访问速率限制
+
+我们一直不怕网站内容被爬走，但怕服务器被疯狂的爬虫爬垮，所以希望能限制恶意爬虫速度，而又不影响用户访问和搜索引擎爬虫抓取，这是个两难的事情。不过 Cloudflare 提供了 DNS 级别控制的速率限制！
+Rate limiting rules  各计划的速率限制额度
+
+
+
+
+计划
+规则数
+操作
+操作持续时间
+请求期间
+
+
+
+
+免费
+1
+阻止
+1 分钟或 1 小时
+10 秒钟或 1 分钟
+
+
+Pro
+10
+阻止、旧版 CAPTCHA、JS 质询、托管质询或记录
+1 分钟或 1 小时
+10 秒钟或 1 分钟
+
+
+Business
+15
+阻止、旧版 CAPTCHA、JS 质询、托管质询或记录
+1 分钟、1 小时或 24 小时
+10 秒钟、1 分钟或 10 分钟
+
+
+企业
+100
+阻止、旧版 CAPTCHA、JS 质询、托管质询或记录
+可以输入 10 秒到 86400 秒（24 小时）范围内的任何时间长度
+可以输入 10 秒到 3600 秒（1 小时）范围内的任何值。
+
+
+
+设置方法
+该功能是防御 CC 强有效的功能，可以从【安全性】-【WAF-】【速率限制规则】进入配置页面。
+
+针对免费用户来说可以配置的参数比较少，主要实现的是同个 IP（10 秒内请求数&gt;n）时对其返回 429 阻止访问。如图填写 / 可对 zone 下所有域名进行保护，正常情况下 n 建议设置为 50-100，资源更多的站点可以考虑适当放大（以不影响正常访问为准）。
+
+在“安全性” - “WAF” - “防火墙规则”中添加排除跳过速率限制只能老版本的速率限制有效，但新版本的速率限制无效，可以采取在“安全性” - “WAF” - “工具”中添加IP 访问规则，将常见的AS15169（Google）、AS8075（Microsoft）等IP段设置为“允许”，这些IP就不会受到速率限制的影响；
+所有版本都在过滤条件中增加了Verified Bot，可以让通过验证的好爬虫跳过速率限制，设置截图如下：
+
+
+以 token 方式部署到 Github
+deploy:
+  type: git
+  repo:
+    github:
+      url: &lt;repository url&gt;
+      branch: [branch]
+      token: ''
+  message: [message]
+  name: [git user]
+  email: [git email]
+  extend_dirs: [extend directory]
+  ignore_hidden: false # default is true
+  ignore_pattern: regexp  # whatever file that matches the 
+travis 自动部署配置
+
+travis是第三方CICD服务，比action更加强大，下面只是参考，请查阅travis 文档，并结合自己的环境修改！
+
+sudo: false
+language: node_js
+node_js:
+- 10.16.3
+cache: npm
+branches:
+  only:
+  - master # build master branch only
+
+env:
+  global:
+  - GIT_USER: appotry
+  - HEXO_BACKUP_REPO: github.com/appotry/hexo-backup.git
+  - HEXO_THEME_REPO: github.com/appotry/hexo-theme-matery.git
+  - GITHUB_PAGES_REPO: github.com/appotry/hexo.github.io.git
+  - APPOTRY_REPO: github.com/appotry/hexo.git
+
+before_install:
+- export TZ='Asia/Shanghai'
+- npm install hexo -g
+- npm install gulp-cli -g
+
+install:
+- npm install
+
+script:
+- git clone https://${HEXO_THEME_REPO} themes/next
+- git clone https://${GIT_USER}:${GITHUB_TOKEN}@${HEXO_BACKUP_REPO} hexo-backup
+- mv hexo-backup/source .
+- rm -rf source/private
+- npm run build
+
+after_success:
+- git config --global user.name "appotry"
+- git config --global user.email "email@qq.com"
+- git clone https://${GIT_USER}:${GITHUB_TOKEN}@${GITHUB_PAGES_REPO} voidking
+- unalias cp
+- cp -rf public/. 17lai.blog
+- cd 17lai.blog
+- git add .
+- git commit -m "Travis CI Auto Builder"
+- git push --force --quiet "https://${GIT_USER}:${GITHUB_TOKEN}@${GITHUB_PAGES_REPO}" master:master
+利用 GitLab 实现 Hexo 博客的 CI/CD
+Portainer 提供了对服务在线更新的 WebHook，所以基于 GitLab 自带的 CI/CD 功能实现 Hexo 博客的持续部署，就非常轻松了。
+CI/CD 其实本质上是一套流程，流程规则可以自行定义。在本文研究的主题下，流程分为三步：第一步是编译 Hexo 博客并生成静态文件；第二步是将静态文件打包成可提供 Web 服务的镜像；第三步则是通过 Portainer 的钩子触发服务更新。
+.gitlab-ci.yml
+stages:
+  - compile
+  - build
+  - deploy
+
+# CONTAINER_RELEASE_IMAGE 根据自己的仓库名修改
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_DRIVER: overlay2
+  CONTAINER_RELEASE_IMAGE: registry.gitlab.com/xxx/xxx:latest
+
+compile:
+  stage: compile
+  image: node:lts-alpine
+  script:
+    - npm install
+    - ./node_modules/hexo/bin/hexo generate
+  artifacts:
+    paths:
+      - public/
+    expire_in: 20 minutes
+
+build:
+  stage: build
+  image: docker:stable
+  services:
+    - docker:dind
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+    - docker info
+    - docker build -f ./Dockerfile -t $CONTAINER_RELEASE_IMAGE public
+    - docker push $CONTAINER_RELEASE_IMAGE
+
+# 根据自己的钩子修改下方的 URL
+deploy:
+  stage: deploy
+  script:
+    - curl https://xxx.xxx.xxx/api/webhooks/xxx -X POST
+
+为了保证服务更新的成功率，可以在 deploy 环节加个错误判断和重试次数，具体的看 GitLab 官方文档即可。
+下面给出我的 Dockerfile 文件，供参考。
+FROM nginx:alpine
+
+COPY . /usr/share/nginx/html
+
+RUN chmod 777 /usr/share/nginx/html -R \
+    &amp;&amp; sed -i 's/#error_page  404/error_page  404/' /etc/nginx/conf.d/default.conf
+部署图床
+
+有很多上传图片的方法，如果使用第三方服务，不知道什么时候就跑路了。所以还是自己部署图床比较稳妥
+
+github pages
+使用git 管理图片仓库。picgo + github 上传，保存图片，github pages 或者 vercel，netlify，cloudflare pages来作为网络访问。
+vercel 托管github上面的图片仓库。 每月免费100G流量。 还有netlify托管，github托管，都有每月免费100G流量使用dns分流，每月就有300G免费流量了。
+300G流量，足够每天几千PV访问量了
+npm托管
+还有一个完全不要钱的方案。图片使用npm包管理，上传到npm仓库，各个npm镜像仓库就都是你的图床了。没有流量限制，就怕什么时候npm封闭你的账号 O(∩_∩)O哈哈~
+
+本文假设您已有 NPM 账号、GitHub 账号。
+下面是一个使用GithubAction和NPM搭建自动转换webp图床的完整教程
+
+准备工作
+新建仓库
+新建一个 GitHub 仓库，公开或是私人都可以，此处不再赘述。
+在 Git 仓库中新建 rawimg/.gitkeep 与 webpimg/.gitkeep 两个文件。
+获取令牌
+登录 https://npmjs.com ，点击右上角的头像，进入 Access Token。
+
+点击页面中的 Generate New Token 获取新的令牌。
+
+选择 Automation，点击 Generate Token 生成令牌。
+
+将生成的令牌复制下来。
+进入 GitHub 仓库，点击 Settings。
+
+点击菜单栏中的 Secrets。
+
+点击 New repository secret 新建一个 Secret。
+
+Secret Name 为 NPM_TOKEN，Value 是你的 NPM 令牌，点击 Add secret 添加。
+
+在仓库中新建 package.json 文件，参考如下：
+{
+  "name": "ocoke-osg",
+  "version": "0.0.0",
+  "description": "Somewhere to save the file from @oCoke",
+  "author": "YFun(@oCoke)"
+}
+图片转换与发布
+为了方便多端写作，我使用 GitHub 临时存储所需的图片，GitHub Action 发布 NPM 包。
+WebP 可以大大缩减图片的尺寸，我们还可以借助 GitHub Action 在发布前自动转换。
+name: NPM &amp; WebP
+
+# 在 Release 发布时 或手动执行
+
+on:
+  release:
+     types:
+       - published
+
+  workflow_dispatch:
+
+jobs:
+  publish-npm:
+    runs-on: ubuntu-latest
+    # Clone 仓库
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: master
+      # 安装 Node.js    
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: "12.x"
+          registry-url: https://registry.npmjs.org/
+        
+      # rawimg/ 作为原始图片存储，webpimg/ 作为压缩图片存储处，最后合并。
+      # 安装相关插件，转换图片。
+      - name: Install &amp; Convert
+        run: |
+          npm install -g webp-batch-convert
+          cwebp-batch --in rawimg --out webpimg -q 75 -quiet
+          mv webpimg/*.webp rawimg/
+          
+      # 发布 NPM 包
+      - name: Publish Package
+        run: |
+          git config --global user.email "icolabot@e.yfun.top"
+          git config --global user.name "iColaBot"
+          npm version patch
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+          
+      # 删除 rawimg/ 和 webpimg/ 下的所有文件
+      - name: Delete Files
+        run: |
+          rm -rf webpimg/*
+          rm -rf rawimg/*
+          touch webpimg/.gitkeep
+          touch rawimg/.gitkeep
+          
+      - name: Push
+        run: |
+          git add -A
+          git commit -m "Publish"
+          git push origin master
+使用
+上传
+将图片文件上传至仓库的 rawimg/ 文件夹下即可。
+当然也可以使用 PicGo / UPic / HexoPlusPlus 等工具上传。
+发布
+在 GitHub 中新建 Release，将自动修改版本号并发布 NPM 包，无需手动修改 package.json。
+
+
+访问
+推荐的镜像
+https://cdn.jsdelivr.net/npm/  # jsDelivr
+https://unpkg.zhimg.com/ # 知乎
+https://code.bdstatic.com/npm/ # 百度 (不推荐)
+https://shadow.elemecdn.com/npm/ # 饿了么
+https://unpkg.com/ # Unpkg
+镜像推荐选择访问速度快的，比较稳定的，拉取速度快的。
+我选择的是 jsDelivr，国内外速度都很优秀。
+链接
+以 jsDelivr 为例，原图链接为：
+https://cdn.jsdelivr.net/npm/[package-name]@[version]/rawimg/[filename].[suffix]
+WebP 图片链接为：
+https://cdn.jsdelivr.net/npm/[package-name]@[version]/rawimg/[filename].webp
+
+
+
+[值]
+说明
+
+
+
+
+package-name
+NPM 包的名称 (package.json 文件中 name 的值)
+
+
+version
+当前版本 (package.json 文件中 version 的值，通常需要在发布 Release 1 分钟后更新)
+
+
+filename
+文件名
+
+
+suffix
+文件后缀名
+
+
+
+vps自建图床
+lychee , chevereto      等免费图床工具有很多。就是需要自己配置vps
+
+https://hub.docker.com/r/nmtan/chevereto
+https://hub.docker.com/r/linuxserver/lychee
+
+下面是一个 docker compose 创建Lychee图床的示例
+version: "3"
+services:
+  mariadb:
+    image: lscr.io/linuxserver/mariadb:latest
+    container_name: lychee_mariadb
+    restart: always
+    volumes:
+      - /path/to/mariadb/data:/config
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=lychee
+      - MYSQL_USER=lychee
+      - MYSQL_PASSWORD=dbpassword
+      - PGID=1000
+      - PUID=1000
+      - TZ=Europe/London
+  lychee:
+    image: lscr.io/linuxserver/lychee:latest
+    container_name: lychee
+    restart: always
+    depends_on:
+      - mariadb
+    volumes:
+      - /path/to/config:/config
+      - /path/to/pictures:/pictures
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USERNAME=lychee
+      - DB_PASSWORD=dbpassword
+      - DB_DATABASE=lychee
+      - PGID=1000
+      - PUID=1000
+      - TZ=Europe/London
+    ports:
+      - 80:80
+
+DNSPOD 多线路负载均衡
+
+DNSPOD官网 console.dnspod.cn
+
+
+
+
+dnspod对cname数目有限制。
+这里使用权重来分配各条线路访问比例！
+
+乒乓部署
+
+也可以叫旋转门部署。
+解决调试博客插件，修改半成品文章时部署到云端会影响正在查阅博客的用户的问题！
+使用Docker版本本地预览是很不错，但是 jsdelivr 版本发布需要在 Github 生成新 release 这时本地就不行了。乒乓部署可以解决这个问题！
+
+具体方法就是同时部署到两个地方A和B，博客域名在两个服务器之间切换。这里以 Vercel 为例
+准备工作：
+
+创建2个Github仓库，对应服务器A和B的部署
+建立两个服务器A和B，分别关联两个 Github 仓库
+把调试完毕的代码上传到两个仓库
+这时通过服务器A和B都是可以正常浏览的
+
+要调试的时候：
+
+发布到A之前，把博客域名转移到服务器B
+在服务A做一些调试，在线 debug 工作
+特别是在线 pageseed 测试调优，这种事必备方法。简单不需要新的 jsdelivr 版本调试本地 docker-hexo 调试即可！
+
+
+
+调试完毕后：
+
+把域名切换到服务器A
+同时部署到服务器B，服务器B同步A的部署内容，以便下次备用
+
+
+总结就是服务器A现行，服务器B做后备，调试发布使用A，调试A的时候B就顶上前台！
+这样，调试和正常部署网络服务两不误。是不是感觉自己是个大聪明！
 
 
 本教程还有其它五大部分，更多内容请见Hexo系列教程
@@ -30628,729 +30467,6 @@ Gitlab的安装及使用
         <tag>docker</tag>
         <tag>k8s</tag>
         <tag>harbor</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Git介绍以及分支模型图解</title>
-    <url>/posts/d32a07a7/</url>
-    <content><![CDATA[
-不废话，直接上图。
-由 Drawio 绘制
-
-
-GIT架构
-GIT的架构，可以分为几个部分：
-
-本地工作区(working directory)
-暂存区(stage area, 又称为索引区, index)、
-本地仓库(local repository)、
-远程仓库副本
-远程仓库(remote repository)。
-
-工作区(working directory) 简言之就是你工作的区域。对于git而言，就是的本地工作目录。工作区的内容会包含提交到暂存区和版本库(当前提交点)的内容，同时也包含自己的修改内容。
-暂存区(stage area, 又称为索引区index) 是git中一个非常重要的概念。是我们把修改提交版本库前的一个过渡阶段。查看GIT自带帮助手册的时候，通常以index来表示暂存区。在工作目录下有一个.git的目录，里面有个index文件，存储着关于暂存区的内容。git add命令将工作区内容添加到暂存区。
-本地仓库(local repository) 版本控制系统的仓库，存在于本地。当执行git commit命令后，会将暂存区内容提交到仓库之中。在工作区下面有.git的目录，这个目录下的内容不属于工作区，里面便是仓库的数据信息，暂存区相关内容也在其中。
-远程版本库(remote repository) 与本地仓库概念基本一致，不同之处在于一个存在远程，可用于远程协作，一个却是存在于本地。通过push/pull可实现本地与远程的交互；
-远程仓库副本 可以理解为存在于本地的远程仓库缓存。如需更新，可通过git fetch/pull命令获取远程仓库内容。使用fech获取时，并未合并到本地仓库，此时可使用git merge实现远程仓库副本与本地仓库的合并。
-.git介绍
-.git目录下各个文件中所存放的内容信息：
-
-
-HEAD 当前所在位置，其实就是工作区的在版本库中的那个提交点，最终会指向一个40位的HASH值；
-
-
-config 当前版本库的专有配置文件，如使用命令git config user.name poloxue便会记录在此文件；
-
-
-description 被gitweb (Github的原型)用来显示对repo的描述。
-
-
-hooks git有可自动运行在 git 任有意义阶段的脚本hooks, 如commit/release/pull/push等状态之前或者之后。个人思考的一个用处，如pre-push可以用来强制进行代码检查。
-
-
-index 存放暂存区(stage area)的相关信息；
-
-
-info/exclue 可以做到和.gitignore相同的事情，用于排除不要包含进版本库的文件。区别就是，此文件不会被共享。
-
-
-refs/heads 目录下有关于本地仓库的所有分支；
-
-
-refs/remote 目录下有关于远程仓库的所有分支；
-
-
-object 目录下存放的就是实际的数据文件
-
-
-参考
-Git 教程
-Git book
-系列教程
-全部文章RSS订阅
-Devops系列
-Devops 分类 RSS 订阅
-
-自建全套开源Devops开发系统
-Git介绍以及分支模型图解
-三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
-DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
-项目开发管理工具推荐
-Gitlab的安装及使用教程完全版
-Gitlab的安装及使用
-那些有用的Github工具介绍！Action、app、workflow等
-
-]]></content>
-      <categories>
-        <category>devops</category>
-      </categories>
-      <tags>
-        <tag>git</tag>
-        <tag>devops</tag>
-        <tag>drowio</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>QNAP添加man pages</title>
-    <url>/posts/ba4ef326/</url>
-    <content><![CDATA[
-默认QNAP是不带man命令的，但是，作为一个Linux重度用户怎么能忍？得想办法安装man啊！经过一番努力，最终成功安装man pages!
-
-
-需求
-默认QNAP是不带man命令的，但是，作为一个Linux重度用户怎么能忍？
-
-得想办法安装man啊！
-
-验证
-先试一下
-# man
--sh: man: command not found
-基本可以死心了。
-看看busybox版本
-# /bin/busybox 
-BusyBox v1.24.1 (2022-03-24 03:13:07 CST) multi-call binary.
-BusyBox is copyrighted by many authors between 1998-2015.
-Licensed under GPLv2. See source distribution for detailed
-copyright notices.
-
-Usage: busybox [function [arguments]...]
-   or: busybox --list
-   or: function [arguments]...
-
-        BusyBox is a multi-call binary that combines many common Unix
-        utilities into a single executable.  Most people will create a
-        link to busybox for each function they wish to use and BusyBox
-        will act like whatever it was invoked as.
-
-Currently defined functions:
-        [, [[, addgroup, adduser, arping, ash, awk, base64, basename, bunzip2, bzcat, bzip2, cat, chattr, chgrp, chmod, chown,
-        chroot, chvt, cksum, clear, cmp, cp, cpio, crond, crontab, cut, date, dc, dd, deallocvt, delgroup, deluser, depmod, df,
-        diff, dirname, dmesg, dnsdomainname, dos2unix, du, echo, egrep, env, expr, false, fdisk, fgrep, find, free, fsync, getty,
-        grep, groups, gunzip, gzip, halt, hd, head, hexdump, hostname, hwclock, id, ifconfig, init, insmod, install, ip, ipaddr,
-        iplink, iproute, iprule, iptunnel, kill, killall, killall5, klogd, less, linuxrc, ln, logger, login, logread, ls, lsattr,
-        lsmod, lspci, md5sum, mkdir, mknod, mktemp, modprobe, more, mount, mv, nameif, netstat, nslookup, openvt, passwd, pidof,
-        ping, ping6, pivot_root, poweroff, printf, ps, pwd, rdate, readlink, realpath, reboot, renice, reset, resize, rm, rmdir,
-        rmmod, route, sed, seq, sh, sha1sum, sleep, sort, split, start-stop-daemon, stat, strings, swapoff, swapon, switch_root,
-        sync, sysctl, syslogd, tail, tar, taskset, tee, telnet, test, tftp, time, top, touch, tr, traceroute, traceroute6, true,
-        tty, umount, uname, uniq, unix2dos, unzip, uptime, usleep, vi, watch, wc, wget, which, whoami, xargs, yes, zcat
-可以看到内置busybox不支持man的。
-寻找解决方案
-去看看官方Busybox是否支持
-
-Busybox : https://busybox.net/downloads/BusyBox.html
-
-发现是支持man的，只是QNAP没有编译进去。
-解决思路
-
-给QNAP提需求单？ 是一个选择，但是太慢了，想官方内置，不知道等到猴年马月了。
-QNAP似乎开发了底层SDK，记得有下载过，还没有仔细研究怎么使用。不过记得有附带编译工具链，自己动手编译一个busybox版本替代系统内置的，应该也是可行的。
-
-去看看别人有啥解决方案？
-
-Optware has man but only for the optware installed packages (if supplied) and or manually added files in the man folder.
-https://forum.qnap.com/viewtopic.php?t=49961
-
-柳暗花明又一村， entware 支持man pages，可以直接安装了。
-
-插入entware安装方法：
-打开App Center，源选择刚添加的Qnapclub，点击搜索框输入entware，选Entware-std 1.03
-
-一条命令解决：
-opkg install man-db man-pages
-安装完之后验证：
-# man fopen
-FOPEN(3)                                            Linux Programmer's Manual                                            FOPEN(3)
-
-NAME
-       fopen, fdopen, freopen - stream open functions
-
-SYNOPSIS
-       #include &lt;stdio.h&gt;
-
-       FILE *fopen(const char *restrict pathname, const char *restrict mode);
-       FILE *fdopen(int fd, const char *mode);
-       FILE *freopen(const char *restrict pathname, const char *restrict mode,
-                     FILE *restrict stream);
-
-   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
-
-       fdopen():
-           _POSIX_C_SOURCE
-
-DESCRIPTION
-       The fopen() function opens the file whose name is the string pointed to by pathname and associates a stream with it.
-
-       The  argument mode points to a string beginning with one of the following sequences (possibly followed by additional char‐
-       acters, as described below):
-
-       r      Open text file for reading.  The stream is positioned at the beginning of the file.
-
-       r+     Open for reading and writing.  The stream is positioned at the beginning of the file.
-
-       w      Truncate file to zero length or create text file for writing.  The stream is positioned at  the  beginning  of  the
-              file.
-
-       w+     Open  for reading and writing.  The file is created if it does not exist, otherwise it is truncated.  The stream is
-              positioned at the beginning of the file.
-问题就这么解决了。
-
-一个问题，我有很多其它手册，想要安装，怎么办？
-
-安装其它man手册
-已经有了man命令，只要把手册安装到entware man命令目录中就行了。
-找到enteware man手册目录。
-cd /share/CACHEDEV3_DATA/.qpkg/Entware
-find . -name "*man*"
-
-TIPS：CACHEDEV3_DATA/.qpkg这个是安装qpkg软件的磁盘。CACHEDEV3似乎是表示第三块插入机器的磁盘。
-
-结果输出：
-./bin/catman
-./bin/go/misc/chrome/gophertool/manifest.json
-./bin/go/pkg/linux_amd64/cmd/vendor/github.com/ianlancetaylor/demangle.a
-./bin/go/src/cmd/compile/internal/types2/testdata/manual.go2
-./bin/go/src/cmd/go/internal/modconv/testdata/dockerman.glide
-./bin/go/src/cmd/go/internal/modconv/testdata/dockerman.out
-./bin/go/src/cmd/go/internal/modconv/testdata/govmomi.vmanifest
-./bin/go/src/cmd/go/internal/modconv/vmanifest.go
-./bin/go/src/cmd/go/testdata/script/mod_convert_vendor_manifest.txt
-./bin/go/src/cmd/go/testdata/script/mod_list_command_line_arguments.txt
-./bin/go/src/cmd/go/testdata/script/mod_download_too_many_redirects.txt
-./bin/go/src/cmd/go/testdata/script/gccgo_mangle.txt
-./bin/go/src/cmd/vendor/github.com/google/pprof/internal/driver/commands.go
-./bin/go/src/cmd/vendor/github.com/ianlancetaylor/demangle
-./bin/go/src/cmd/vendor/github.com/ianlancetaylor/demangle/demangle.go
-./bin/go/src/compress/bzip2/huffman.go
-./bin/go/src/compress/flate/huffman_bit_writer.go
-./bin/go/src/compress/flate/huffman_bit_writer_test.go
-./bin/go/src/compress/flate/huffman_code.go
-./bin/go/src/compress/flate/testdata/huffman-null-max.dyn.expect
-./bin/go/src/compress/flate/testdata/huffman-null-max.dyn.expect-noinput
-./bin/go/src/compress/flate/testdata/huffman-null-max.golden
-./bin/go/src/compress/flate/testdata/huffman-null-max.in
-./bin/go/src/compress/flate/testdata/huffman-null-max.wb.expect
-./bin/go/src/compress/flate/testdata/huffman-null-max.wb.expect-noinput
-./bin/go/src/compress/flate/testdata/huffman-pi.dyn.expect
-./bin/go/src/compress/flate/testdata/huffman-pi.dyn.expect-noinput
-./bin/go/src/compress/flate/testdata/huffman-pi.golden
-./bin/go/src/compress/flate/testdata/huffman-pi.in
-./bin/go/src/compress/flate/testdata/huffman-pi.wb.expect
-./bin/go/src/compress/flate/testdata/huffman-pi.wb.expect-noinput
-./bin/go/src/compress/flate/testdata/huffman-rand-1k.dyn.expect
-./bin/go/src/compress/flate/testdata/huffman-rand-1k.dyn.expect-noinput
-./bin/go/src/compress/flate/testdata/huffman-rand-1k.golden
-./bin/go/src/compress/flate/testdata/huffman-rand-1k.in
-./bin/go/src/compress/flate/testdata/huffman-rand-1k.wb.expect
-./bin/go/src/compress/flate/testdata/huffman-rand-1k.wb.expect-noinput
-./bin/go/src/compress/flate/testdata/huffman-rand-limit.dyn.expect
-./bin/go/src/compress/flate/testdata/huffman-rand-limit.dyn.expect-noinput
-./bin/go/src/compress/flate/testdata/huffman-rand-limit.golden
-./bin/go/src/compress/flate/testdata/huffman-rand-limit.in
-./bin/go/src/compress/flate/testdata/huffman-rand-limit.wb.expect
-./bin/go/src/compress/flate/testdata/huffman-rand-limit.wb.expect-noinput
-./bin/go/src/compress/flate/testdata/huffman-rand-max.golden
-./bin/go/src/compress/flate/testdata/huffman-rand-max.in
-./bin/go/src/compress/flate/testdata/huffman-shifts.dyn.expect
-./bin/go/src/compress/flate/testdata/huffman-shifts.dyn.expect-noinput
-./bin/go/src/compress/flate/testdata/huffman-shifts.golden
-./bin/go/src/compress/flate/testdata/huffman-shifts.in
-./bin/go/src/compress/flate/testdata/huffman-shifts.wb.expect
-./bin/go/src/compress/flate/testdata/huffman-shifts.wb.expect-noinput
-./bin/go/src/compress/flate/testdata/huffman-text-shift.dyn.expect
-./bin/go/src/compress/flate/testdata/huffman-text-shift.dyn.expect-noinput
-./bin/go/src/compress/flate/testdata/huffman-text-shift.golden
-./bin/go/src/compress/flate/testdata/huffman-text-shift.in
-./bin/go/src/compress/flate/testdata/huffman-text-shift.wb.expect
-./bin/go/src/compress/flate/testdata/huffman-text-shift.wb.expect-noinput
-./bin/go/src/compress/flate/testdata/huffman-text.dyn.expect
-./bin/go/src/compress/flate/testdata/huffman-text.dyn.expect-noinput
-./bin/go/src/compress/flate/testdata/huffman-text.golden
-./bin/go/src/compress/flate/testdata/huffman-text.in
-./bin/go/src/compress/flate/testdata/huffman-text.wb.expect
-./bin/go/src/compress/flate/testdata/huffman-text.wb.expect-noinput
-./bin/go/src/compress/flate/testdata/huffman-zero.dyn.expect
-./bin/go/src/compress/flate/testdata/huffman-zero.dyn.expect-noinput
-./bin/go/src/compress/flate/testdata/huffman-zero.golden
-./bin/go/src/compress/flate/testdata/huffman-zero.in
-./bin/go/src/compress/flate/testdata/huffman-zero.wb.expect
-./bin/go/src/compress/flate/testdata/huffman-zero.wb.expect-noinput
-./bin/go/src/go/parser/performance_test.go
-./bin/go/src/go/printer/performance_test.go
-./bin/go/src/go/types/testdata/manual.go2
-./bin/go/src/image/jpeg/huffman.go
-./bin/go/src/vendor/golang.org/x/net/http2/hpack/huffman.go
-./bin/go/test/bench/go1/mandel_test.go
-./bin/go/test/abi/many_int_input.go
-./bin/go/test/abi/many_int_input.out
-./bin/go/test/abi/many_intstar_input.go
-./bin/go/test/abi/many_intstar_input.out
-./bin/man
-./bin/mandb
-./bin/manpath
-./etc/man_db.conf
-./lib/opkg/info/man-db.conffiles
-./lib/opkg/info/man-db.control
-./lib/opkg/info/man-pages.list
-./lib/opkg/info/man-db.list
-./lib/opkg/info/man-pages.control
-./lib/opkg/info/man-pages.postinst
-./lib/python3.10/encodings/__pycache__/hp_roman8.cpython-310.opt-1.pyc
-./lib/python3.10/encodings/__pycache__/hp_roman8.cpython-310.opt-2.pyc
-./lib/python3.10/encodings/__pycache__/mac_roman.cpython-310.opt-2.pyc
-./lib/python3.10/encodings/__pycache__/mac_roman.cpython-310.pyc
-./lib/python3.10/encodings/__pycache__/hp_roman8.cpython-310.pyc
-./lib/python3.10/encodings/__pycache__/mac_romanian.cpython-310.pyc
-./lib/python3.10/encodings/__pycache__/mac_roman.cpython-310.opt-1.pyc
-./lib/python3.10/encodings/__pycache__/mac_romanian.cpython-310.opt-1.pyc
-./lib/python3.10/encodings/__pycache__/mac_romanian.cpython-310.opt-2.pyc
-./lib/python3.10/encodings/hp_roman8.pyc
-./lib/python3.10/encodings/mac_roman.pyc
-./lib/python3.10/encodings/mac_romanian.pyc
-./lib/tcl8.5/encoding/macRoman.enc
-./lib/tcl8.5/encoding/macRomania.enc
-./lib/groff/groffer/man.pl
-./lib/man-db
-./lib/man-db/libman-2.10.2.so
-./lib/man-db/libman.so
-./lib/man-db/libmandb-2.10.2.so
-./lib/man-db/libmandb.so
-./lib/man-db/manconv
-./share/zoneinfo/Asia/Amman
-./share/zoneinfo/Asia/Kathmandu
-./share/zoneinfo/Asia/Katmandu
-./share/doc/man-db
-./share/doc/man-db/man-db-manual.ps
-./share/doc/man-db/man-db-manual.txt
-./share/groff/1.22.4/tmac/man.tmac
-./share/groff/1.22.4/tmac/mandoc.tmac
-./share/groff/site-tmac/man.local
-./share/man
-./share/man/man1
-./share/man/man1/man-recode.1
-./share/man/man1/man.1
-./share/man/man1/manconv.1
-./share/man/man1/manpath.1
-./share/man/man5
-./share/man/man5/manpath.5
-./share/man/man8
-./share/man/man8/catman.8
-./share/man/man8/mandb.8
-./share/man/man2
-./share/man/man3
-./share/man/man4
-./share/man/man6
-./share/man/man7
-./share/man/man7/man-pages.7
-./share/man/man7/man.7
-./var/cache/man
-很显然，路径就在/share/CACHEDEV3_DATA/.qpkg/Entware/share//man/中了。
-那么，安装完entware之后，其它的man 手册放到 /share/CACHEDEV3_DATA/.qpkg/Entware/share/man这个目录中就行了。
-把gh git等手册放进去。再次验证
-man gh
-GH(1)                                                   GitHub CLI manual                                                   GH(1)
-
-NAME
-       gh - GitHub CLI
-
-SYNOPSIS
-       gh &lt;command&gt; &lt;subcommand&gt; [flags]
-
-DESCRIPTION
-       Work seamlessly with GitHub from the command line.
-
-CORE COMMANDS
-       gh-auth(1)
-              Authenticate gh and git with GitHub
-
-       gh-browse(1)
-              Open the repository in the browser
-
-       gh-codespace(1)
-              Connect to and manage your codespaces
-
-       gh-gist(1)
-              Manage gists
-
-       gh-issue(1)
-              Manage issues
-
-       gh-pr(1)
-              Manage pull requests
-
-       gh-release(1)
-              Manage releases
-
-       gh-repo(1)
-              Manage repositories
-
-ACTIONS COMMANDS
-完美收工！
-可能需要注意的地方，注意man手册的权限644，如果手册copy进去了，发现使用不了。运行下面命令。
-chmod 644 -R /share/CACHEDEV3_DATA/.qpkg/Entware/share/man
-安装更多的man pages
-
-
-Git手册下载地址： https://mirrors.edge.kernel.org/pub/software/scm/git/
-中文man手册： https://github.com/man-pages-zh/manpages-zh
-
-
-
-PS: 中文man手册有不少依赖需要解决，在Docker中已经可以查询中文man了，qnap中试了下，解决依赖搞得头大，暂时就docker中用中文man好了
-
-真正收工了！
-附录
-man介绍
-man命令并非仅仅能查看命令或者函数的介绍，在linux中，有丰富的帮助手册信息，并且每一个手册都有一个编号。编号和对应内容如下：
-
-
-
-编号
-代表内容
-
-
-
-
-1
-可执行程序或shell命令，如ls
-
-
-2
-系统调用，如chdir
-
-
-3
-库函数，如printf
-
-
-4
-设备或特殊文件，如tty
-
-
-5
-配置文件格式或约定
-
-
-6
-游戏
-
-
-7
-杂项
-
-
-8
-管理命令，通常只有root用户可以使用
-
-
-9
-内核例程
-
-
-n
-内置命令，如cd
-
-
-
-常用快捷键
-
-手册内容
-多数手册包含以下几部分内容：
-
-NAME 功能的简单描述
-SYNOPSIS 语法格式
-DESCRIPTION 描述
-OPTIONS 选项
-ERRORS 描述出错场景，这在排查错误时很有帮助
-NOTES 注意事项
-FILES 相关文件，例如对于man命令的FILES部分内容显示了它的配置文件位置等信息
-EXAMPLES 使用示例，会提供一些简单的示例
-BUGS 存在的bug，当遇到奇怪的问题时，不妨看看当前命令是否有已知的bug
-
-基本查看
-手册的查看和less查看文本类似，可以参考《文本查看篇》或查看less命令的使用，这里介绍基本操作：
-
-空格 向下翻页
-Home 回到第一页
-End 跳到最后一页
-/string 向前搜索string字符串
-?string 向后搜索string字符串
-n 下一个匹配字符
-N 上一个匹配字符
-q 退出
-
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>embeded</tag>
-        <tag>qnap</tag>
-        <tag>nas</tag>
-        <tag>man</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>自建全套开源Devops开发系统</title>
-    <url>/posts/ab63eb8f/</url>
-    <content><![CDATA[
-国内的Devops云平台动辄封号，删库，屏蔽，还多次发生数据泄密，项目被云平台克隆事件，国内云平台devops已死！数据安全没法保证，自建私有Devops平台才靠谱。这里采用开源项目建立一个完善的低成本Devops系统，基本运行良好！
-
-
-目标：单节点，以最低成本，最低消耗，使用开源软件实现一个可用的DevOps！满足中小企业的研发、测试、运维需求。并对后续如何扩展本套DevOps系统做了项目，成本，路线升级规划，可以一直扩展到业界最前沿最大系统。
-整套系统已经跑起来很长时间了！单节点Nas服务器，32G内存，共运行了约80个Docker，优化到平均负载10以下。
-
-
-
-Devops框架图解
-
-下面系统大多可以做负载平衡，多节点备份，可以扩展为一个高可用，大中央平台。
-珍爱生命，使用Docker！
-
-
-开源云平台生死连问
-
-珍爱生命，不建议使用国内云平台。
-
-什么是大教堂？
-什么是集市？
-什么是信任链？
-什么是开源生态？
-为什么要做开源生态？
-怎么做开源生态？
-开源生态的土壤肥力维护如何做？
-这些问题没想明白，没想到如何做的是没法做开源的。
-国内平台连种子嫩芽都要收割，到处收费，动辄删库，屏蔽，封号，注定做不了开源生态。
-Consul自动负载均衡
-
-基于服务自动发现和注册的负载均衡，负载均衡的方式没有变，只是多了一些外围组件，当然这些组件对 Client 是不可见的，client 依然只能看到 Nginx 入口，访问方式也没变化。
-
-
-Github仓库备份
-
-最优秀的资源，大多只在短时间内出现！
-平时多备份你重要的仓库，以及你使用的仓库的重要上下游仓库！
-
-
-
-github-backup Githb
-github-backup Dockerhub
-
-
-githubback:
-  image: lnxd/github-backup
-  container_name: "githubback"
-  hostname: githubback
-  # ports:
-    # - "80:80"
-  volumes:
-    - "${USERDIR}/githubback/data:/home/docker/backups:rw"
-  env_file:
-    - .env
-  environment:
-    - HTTP_PROXY=http://[ip]:[port]
-    - HTTPS_PROXY=http://[ip]:[port]
-  restart: always
-配置要求
-个人Nas配置
-
-
-cpu j4125 4 核 14nm 2.00 GHz ~2.70 GHz
-SSD sata 接口的 读写 500MB/S
-32G DDR4. 2x16G 双通道
-
-
-上图中介绍的系统都是上面配置的单服务器中可以运行的。
-如何以最低的配置，最少的内存运行起来最多的功能才是本文的追求，花费更多金钱去满足极少数情况的高压力是钱多的没处花。
-
-8G内存的nas 就可以运行 gitea + drone ，zentao 想用就用
-gitlab 要跑起来至少要2核 8G 内存，jenkins 也是内存 cpu 占用大户。大于 16G 内存时考虑上这个
-4核 32G 内存的nas，图片中介绍的可以全都跑起来！
-
-可靠性
-ELK集群监控对于单服务器来说完全多余，netdata监控也不错，portainer就够用了，以后为了节约资源，portainer说不定也会被干掉，大多数时候命令行监控就够了。少于200节点K8S就是多余的。
-数据安全
-
-云平台把数据交给别人，赌别人的道德不会私自偷拿你的数据？真是想多了。
-某垄断社交平台内部有专门的团队分析客户的数据，看有什么有价值的没有，是很多年前就爆出来的消息。
-自建DevOps成本其实相当的低！
-
-整套系统可以从少到多，从小到大，慢慢优化，扩展的。硬件成本也是随着需求变化而变化的，随着业务扩展而增加成本，一开始单节点单服务器就可以满足要求了，后面业务增加慢慢扩展为集群，k8s 等。
-数据，代码是公司核心资产与竞争力的公司，上云赌别人的人品就是找死。你注册账户的时候，就同意了，无论别人随意删除你的数据，或者窃取你的数据都是不用付任何责任的，再说，整个系统数据都在别人手上，你要维权也没有证据。
-备份
-
-UPS电源，防止意外断电
-rsync 备份，对于大多数人，已经够用了
-文件系统快照
-离线每日，或者每周冷备份
-大系统，多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群
-
-扩展性
-
-上面说的都可以单服务器搞定。多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群。
-多于200节点，大于3台服务器以后考虑上K8S。ELK监控之类的这时候可以上了。蓝鲸智云标准运维这时候也可以考虑了。
-再次扩大的时候可以考虑Proxmox VE（PVE） + ceph
-更大的系统，或者对外提供云平台服务的时候可以考虑上OpenStack
-
-项目介绍
-ELK
-
-消耗资源很多，至少上百节点以上再考虑上这个
-portainer -&gt; netdata -&gt; ELK，zabbix 
-
-
-cacti
-
-  
-
-
-
-
-  
-
-
-
-zabbix
-
-  
-
-
-
-
-  
-
-
-
-ansible
-
-  
-
-
-
-
-  
-
-
-
-CMDB
-
-  
-
-
-
-
-  
-
-
-
-PVE
-
-Proxmox VE（PVE）
-
-
-  
-
-
-
-CEPH
-
-  
-
-
-
-
-  
-
-
-
-OpenStack
-
-  
-
-
-
-
-  
-
-
-
-其它项目
-
-大家还有啥好项目建议？
-
-onedev
-onedev 是替代Gitlab的极佳候补，看文档介绍，潜力无限！
-
-  
-
-
-
-smartdns
-
-一个本地DNS服务器，获取最快的网站IP，获得最佳上网体验。
-
-
-  
-
-
-
-awesome-selfhosted
-
-这里你能找到各种各样的自建 Docker 服务
-
-
-  
-
-
-
-系列教程
-全部文章RSS订阅
-Devops系列
-Devops 分类 RSS 订阅
-
-自建全套开源Devops开发系统
-Git介绍以及分支模型图解
-三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
-DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
-项目开发管理工具推荐
-Gitlab的安装及使用教程完全版
-Gitlab的安装及使用
-那些有用的Github工具介绍！Action、app、workflow等
-
-相关文档
-
-Devops
-
-]]></content>
-      <categories>
-        <category>devops</category>
-      </categories>
-      <tags>
-        <tag>docker</tag>
-        <tag>devops</tag>
-        <tag>框架</tag>
-        <tag>图解</tag>
       </tags>
   </entry>
   <entry>
@@ -37230,6 +36346,729 @@ SWOT 分析
       </tags>
   </entry>
   <entry>
+    <title>Git介绍以及分支模型图解</title>
+    <url>/posts/d32a07a7/</url>
+    <content><![CDATA[
+不废话，直接上图。
+由 Drawio 绘制
+
+
+GIT架构
+GIT的架构，可以分为几个部分：
+
+本地工作区(working directory)
+暂存区(stage area, 又称为索引区, index)、
+本地仓库(local repository)、
+远程仓库副本
+远程仓库(remote repository)。
+
+工作区(working directory) 简言之就是你工作的区域。对于git而言，就是的本地工作目录。工作区的内容会包含提交到暂存区和版本库(当前提交点)的内容，同时也包含自己的修改内容。
+暂存区(stage area, 又称为索引区index) 是git中一个非常重要的概念。是我们把修改提交版本库前的一个过渡阶段。查看GIT自带帮助手册的时候，通常以index来表示暂存区。在工作目录下有一个.git的目录，里面有个index文件，存储着关于暂存区的内容。git add命令将工作区内容添加到暂存区。
+本地仓库(local repository) 版本控制系统的仓库，存在于本地。当执行git commit命令后，会将暂存区内容提交到仓库之中。在工作区下面有.git的目录，这个目录下的内容不属于工作区，里面便是仓库的数据信息，暂存区相关内容也在其中。
+远程版本库(remote repository) 与本地仓库概念基本一致，不同之处在于一个存在远程，可用于远程协作，一个却是存在于本地。通过push/pull可实现本地与远程的交互；
+远程仓库副本 可以理解为存在于本地的远程仓库缓存。如需更新，可通过git fetch/pull命令获取远程仓库内容。使用fech获取时，并未合并到本地仓库，此时可使用git merge实现远程仓库副本与本地仓库的合并。
+.git介绍
+.git目录下各个文件中所存放的内容信息：
+
+
+HEAD 当前所在位置，其实就是工作区的在版本库中的那个提交点，最终会指向一个40位的HASH值；
+
+
+config 当前版本库的专有配置文件，如使用命令git config user.name poloxue便会记录在此文件；
+
+
+description 被gitweb (Github的原型)用来显示对repo的描述。
+
+
+hooks git有可自动运行在 git 任有意义阶段的脚本hooks, 如commit/release/pull/push等状态之前或者之后。个人思考的一个用处，如pre-push可以用来强制进行代码检查。
+
+
+index 存放暂存区(stage area)的相关信息；
+
+
+info/exclue 可以做到和.gitignore相同的事情，用于排除不要包含进版本库的文件。区别就是，此文件不会被共享。
+
+
+refs/heads 目录下有关于本地仓库的所有分支；
+
+
+refs/remote 目录下有关于远程仓库的所有分支；
+
+
+object 目录下存放的就是实际的数据文件
+
+
+参考
+Git 教程
+Git book
+系列教程
+全部文章RSS订阅
+Devops系列
+Devops 分类 RSS 订阅
+
+自建全套开源Devops开发系统
+Git介绍以及分支模型图解
+三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
+DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
+项目开发管理工具推荐
+Gitlab的安装及使用教程完全版
+Gitlab的安装及使用
+那些有用的Github工具介绍！Action、app、workflow等
+
+]]></content>
+      <categories>
+        <category>devops</category>
+      </categories>
+      <tags>
+        <tag>git</tag>
+        <tag>devops</tag>
+        <tag>drowio</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>QNAP添加man pages</title>
+    <url>/posts/ba4ef326/</url>
+    <content><![CDATA[
+默认QNAP是不带man命令的，但是，作为一个Linux重度用户怎么能忍？得想办法安装man啊！经过一番努力，最终成功安装man pages!
+
+
+需求
+默认QNAP是不带man命令的，但是，作为一个Linux重度用户怎么能忍？
+
+得想办法安装man啊！
+
+验证
+先试一下
+# man
+-sh: man: command not found
+基本可以死心了。
+看看busybox版本
+# /bin/busybox 
+BusyBox v1.24.1 (2022-03-24 03:13:07 CST) multi-call binary.
+BusyBox is copyrighted by many authors between 1998-2015.
+Licensed under GPLv2. See source distribution for detailed
+copyright notices.
+
+Usage: busybox [function [arguments]...]
+   or: busybox --list
+   or: function [arguments]...
+
+        BusyBox is a multi-call binary that combines many common Unix
+        utilities into a single executable.  Most people will create a
+        link to busybox for each function they wish to use and BusyBox
+        will act like whatever it was invoked as.
+
+Currently defined functions:
+        [, [[, addgroup, adduser, arping, ash, awk, base64, basename, bunzip2, bzcat, bzip2, cat, chattr, chgrp, chmod, chown,
+        chroot, chvt, cksum, clear, cmp, cp, cpio, crond, crontab, cut, date, dc, dd, deallocvt, delgroup, deluser, depmod, df,
+        diff, dirname, dmesg, dnsdomainname, dos2unix, du, echo, egrep, env, expr, false, fdisk, fgrep, find, free, fsync, getty,
+        grep, groups, gunzip, gzip, halt, hd, head, hexdump, hostname, hwclock, id, ifconfig, init, insmod, install, ip, ipaddr,
+        iplink, iproute, iprule, iptunnel, kill, killall, killall5, klogd, less, linuxrc, ln, logger, login, logread, ls, lsattr,
+        lsmod, lspci, md5sum, mkdir, mknod, mktemp, modprobe, more, mount, mv, nameif, netstat, nslookup, openvt, passwd, pidof,
+        ping, ping6, pivot_root, poweroff, printf, ps, pwd, rdate, readlink, realpath, reboot, renice, reset, resize, rm, rmdir,
+        rmmod, route, sed, seq, sh, sha1sum, sleep, sort, split, start-stop-daemon, stat, strings, swapoff, swapon, switch_root,
+        sync, sysctl, syslogd, tail, tar, taskset, tee, telnet, test, tftp, time, top, touch, tr, traceroute, traceroute6, true,
+        tty, umount, uname, uniq, unix2dos, unzip, uptime, usleep, vi, watch, wc, wget, which, whoami, xargs, yes, zcat
+可以看到内置busybox不支持man的。
+寻找解决方案
+去看看官方Busybox是否支持
+
+Busybox : https://busybox.net/downloads/BusyBox.html
+
+发现是支持man的，只是QNAP没有编译进去。
+解决思路
+
+给QNAP提需求单？ 是一个选择，但是太慢了，想官方内置，不知道等到猴年马月了。
+QNAP似乎开发了底层SDK，记得有下载过，还没有仔细研究怎么使用。不过记得有附带编译工具链，自己动手编译一个busybox版本替代系统内置的，应该也是可行的。
+
+去看看别人有啥解决方案？
+
+Optware has man but only for the optware installed packages (if supplied) and or manually added files in the man folder.
+https://forum.qnap.com/viewtopic.php?t=49961
+
+柳暗花明又一村， entware 支持man pages，可以直接安装了。
+
+插入entware安装方法：
+打开App Center，源选择刚添加的Qnapclub，点击搜索框输入entware，选Entware-std 1.03
+
+一条命令解决：
+opkg install man-db man-pages
+安装完之后验证：
+# man fopen
+FOPEN(3)                                            Linux Programmer's Manual                                            FOPEN(3)
+
+NAME
+       fopen, fdopen, freopen - stream open functions
+
+SYNOPSIS
+       #include &lt;stdio.h&gt;
+
+       FILE *fopen(const char *restrict pathname, const char *restrict mode);
+       FILE *fdopen(int fd, const char *mode);
+       FILE *freopen(const char *restrict pathname, const char *restrict mode,
+                     FILE *restrict stream);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       fdopen():
+           _POSIX_C_SOURCE
+
+DESCRIPTION
+       The fopen() function opens the file whose name is the string pointed to by pathname and associates a stream with it.
+
+       The  argument mode points to a string beginning with one of the following sequences (possibly followed by additional char‐
+       acters, as described below):
+
+       r      Open text file for reading.  The stream is positioned at the beginning of the file.
+
+       r+     Open for reading and writing.  The stream is positioned at the beginning of the file.
+
+       w      Truncate file to zero length or create text file for writing.  The stream is positioned at  the  beginning  of  the
+              file.
+
+       w+     Open  for reading and writing.  The file is created if it does not exist, otherwise it is truncated.  The stream is
+              positioned at the beginning of the file.
+问题就这么解决了。
+
+一个问题，我有很多其它手册，想要安装，怎么办？
+
+安装其它man手册
+已经有了man命令，只要把手册安装到entware man命令目录中就行了。
+找到enteware man手册目录。
+cd /share/CACHEDEV3_DATA/.qpkg/Entware
+find . -name "*man*"
+
+TIPS：CACHEDEV3_DATA/.qpkg这个是安装qpkg软件的磁盘。CACHEDEV3似乎是表示第三块插入机器的磁盘。
+
+结果输出：
+./bin/catman
+./bin/go/misc/chrome/gophertool/manifest.json
+./bin/go/pkg/linux_amd64/cmd/vendor/github.com/ianlancetaylor/demangle.a
+./bin/go/src/cmd/compile/internal/types2/testdata/manual.go2
+./bin/go/src/cmd/go/internal/modconv/testdata/dockerman.glide
+./bin/go/src/cmd/go/internal/modconv/testdata/dockerman.out
+./bin/go/src/cmd/go/internal/modconv/testdata/govmomi.vmanifest
+./bin/go/src/cmd/go/internal/modconv/vmanifest.go
+./bin/go/src/cmd/go/testdata/script/mod_convert_vendor_manifest.txt
+./bin/go/src/cmd/go/testdata/script/mod_list_command_line_arguments.txt
+./bin/go/src/cmd/go/testdata/script/mod_download_too_many_redirects.txt
+./bin/go/src/cmd/go/testdata/script/gccgo_mangle.txt
+./bin/go/src/cmd/vendor/github.com/google/pprof/internal/driver/commands.go
+./bin/go/src/cmd/vendor/github.com/ianlancetaylor/demangle
+./bin/go/src/cmd/vendor/github.com/ianlancetaylor/demangle/demangle.go
+./bin/go/src/compress/bzip2/huffman.go
+./bin/go/src/compress/flate/huffman_bit_writer.go
+./bin/go/src/compress/flate/huffman_bit_writer_test.go
+./bin/go/src/compress/flate/huffman_code.go
+./bin/go/src/compress/flate/testdata/huffman-null-max.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-null-max.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-null-max.golden
+./bin/go/src/compress/flate/testdata/huffman-null-max.in
+./bin/go/src/compress/flate/testdata/huffman-null-max.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-null-max.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-pi.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-pi.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-pi.golden
+./bin/go/src/compress/flate/testdata/huffman-pi.in
+./bin/go/src/compress/flate/testdata/huffman-pi.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-pi.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.golden
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.in
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-rand-1k.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.golden
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.in
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-rand-limit.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-rand-max.golden
+./bin/go/src/compress/flate/testdata/huffman-rand-max.in
+./bin/go/src/compress/flate/testdata/huffman-shifts.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-shifts.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-shifts.golden
+./bin/go/src/compress/flate/testdata/huffman-shifts.in
+./bin/go/src/compress/flate/testdata/huffman-shifts.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-shifts.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-text-shift.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-text-shift.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-text-shift.golden
+./bin/go/src/compress/flate/testdata/huffman-text-shift.in
+./bin/go/src/compress/flate/testdata/huffman-text-shift.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-text-shift.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-text.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-text.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-text.golden
+./bin/go/src/compress/flate/testdata/huffman-text.in
+./bin/go/src/compress/flate/testdata/huffman-text.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-text.wb.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-zero.dyn.expect
+./bin/go/src/compress/flate/testdata/huffman-zero.dyn.expect-noinput
+./bin/go/src/compress/flate/testdata/huffman-zero.golden
+./bin/go/src/compress/flate/testdata/huffman-zero.in
+./bin/go/src/compress/flate/testdata/huffman-zero.wb.expect
+./bin/go/src/compress/flate/testdata/huffman-zero.wb.expect-noinput
+./bin/go/src/go/parser/performance_test.go
+./bin/go/src/go/printer/performance_test.go
+./bin/go/src/go/types/testdata/manual.go2
+./bin/go/src/image/jpeg/huffman.go
+./bin/go/src/vendor/golang.org/x/net/http2/hpack/huffman.go
+./bin/go/test/bench/go1/mandel_test.go
+./bin/go/test/abi/many_int_input.go
+./bin/go/test/abi/many_int_input.out
+./bin/go/test/abi/many_intstar_input.go
+./bin/go/test/abi/many_intstar_input.out
+./bin/man
+./bin/mandb
+./bin/manpath
+./etc/man_db.conf
+./lib/opkg/info/man-db.conffiles
+./lib/opkg/info/man-db.control
+./lib/opkg/info/man-pages.list
+./lib/opkg/info/man-db.list
+./lib/opkg/info/man-pages.control
+./lib/opkg/info/man-pages.postinst
+./lib/python3.10/encodings/__pycache__/hp_roman8.cpython-310.opt-1.pyc
+./lib/python3.10/encodings/__pycache__/hp_roman8.cpython-310.opt-2.pyc
+./lib/python3.10/encodings/__pycache__/mac_roman.cpython-310.opt-2.pyc
+./lib/python3.10/encodings/__pycache__/mac_roman.cpython-310.pyc
+./lib/python3.10/encodings/__pycache__/hp_roman8.cpython-310.pyc
+./lib/python3.10/encodings/__pycache__/mac_romanian.cpython-310.pyc
+./lib/python3.10/encodings/__pycache__/mac_roman.cpython-310.opt-1.pyc
+./lib/python3.10/encodings/__pycache__/mac_romanian.cpython-310.opt-1.pyc
+./lib/python3.10/encodings/__pycache__/mac_romanian.cpython-310.opt-2.pyc
+./lib/python3.10/encodings/hp_roman8.pyc
+./lib/python3.10/encodings/mac_roman.pyc
+./lib/python3.10/encodings/mac_romanian.pyc
+./lib/tcl8.5/encoding/macRoman.enc
+./lib/tcl8.5/encoding/macRomania.enc
+./lib/groff/groffer/man.pl
+./lib/man-db
+./lib/man-db/libman-2.10.2.so
+./lib/man-db/libman.so
+./lib/man-db/libmandb-2.10.2.so
+./lib/man-db/libmandb.so
+./lib/man-db/manconv
+./share/zoneinfo/Asia/Amman
+./share/zoneinfo/Asia/Kathmandu
+./share/zoneinfo/Asia/Katmandu
+./share/doc/man-db
+./share/doc/man-db/man-db-manual.ps
+./share/doc/man-db/man-db-manual.txt
+./share/groff/1.22.4/tmac/man.tmac
+./share/groff/1.22.4/tmac/mandoc.tmac
+./share/groff/site-tmac/man.local
+./share/man
+./share/man/man1
+./share/man/man1/man-recode.1
+./share/man/man1/man.1
+./share/man/man1/manconv.1
+./share/man/man1/manpath.1
+./share/man/man5
+./share/man/man5/manpath.5
+./share/man/man8
+./share/man/man8/catman.8
+./share/man/man8/mandb.8
+./share/man/man2
+./share/man/man3
+./share/man/man4
+./share/man/man6
+./share/man/man7
+./share/man/man7/man-pages.7
+./share/man/man7/man.7
+./var/cache/man
+很显然，路径就在/share/CACHEDEV3_DATA/.qpkg/Entware/share//man/中了。
+那么，安装完entware之后，其它的man 手册放到 /share/CACHEDEV3_DATA/.qpkg/Entware/share/man这个目录中就行了。
+把gh git等手册放进去。再次验证
+man gh
+GH(1)                                                   GitHub CLI manual                                                   GH(1)
+
+NAME
+       gh - GitHub CLI
+
+SYNOPSIS
+       gh &lt;command&gt; &lt;subcommand&gt; [flags]
+
+DESCRIPTION
+       Work seamlessly with GitHub from the command line.
+
+CORE COMMANDS
+       gh-auth(1)
+              Authenticate gh and git with GitHub
+
+       gh-browse(1)
+              Open the repository in the browser
+
+       gh-codespace(1)
+              Connect to and manage your codespaces
+
+       gh-gist(1)
+              Manage gists
+
+       gh-issue(1)
+              Manage issues
+
+       gh-pr(1)
+              Manage pull requests
+
+       gh-release(1)
+              Manage releases
+
+       gh-repo(1)
+              Manage repositories
+
+ACTIONS COMMANDS
+完美收工！
+可能需要注意的地方，注意man手册的权限644，如果手册copy进去了，发现使用不了。运行下面命令。
+chmod 644 -R /share/CACHEDEV3_DATA/.qpkg/Entware/share/man
+安装更多的man pages
+
+
+Git手册下载地址： https://mirrors.edge.kernel.org/pub/software/scm/git/
+中文man手册： https://github.com/man-pages-zh/manpages-zh
+
+
+
+PS: 中文man手册有不少依赖需要解决，在Docker中已经可以查询中文man了，qnap中试了下，解决依赖搞得头大，暂时就docker中用中文man好了
+
+真正收工了！
+附录
+man介绍
+man命令并非仅仅能查看命令或者函数的介绍，在linux中，有丰富的帮助手册信息，并且每一个手册都有一个编号。编号和对应内容如下：
+
+
+
+编号
+代表内容
+
+
+
+
+1
+可执行程序或shell命令，如ls
+
+
+2
+系统调用，如chdir
+
+
+3
+库函数，如printf
+
+
+4
+设备或特殊文件，如tty
+
+
+5
+配置文件格式或约定
+
+
+6
+游戏
+
+
+7
+杂项
+
+
+8
+管理命令，通常只有root用户可以使用
+
+
+9
+内核例程
+
+
+n
+内置命令，如cd
+
+
+
+常用快捷键
+
+手册内容
+多数手册包含以下几部分内容：
+
+NAME 功能的简单描述
+SYNOPSIS 语法格式
+DESCRIPTION 描述
+OPTIONS 选项
+ERRORS 描述出错场景，这在排查错误时很有帮助
+NOTES 注意事项
+FILES 相关文件，例如对于man命令的FILES部分内容显示了它的配置文件位置等信息
+EXAMPLES 使用示例，会提供一些简单的示例
+BUGS 存在的bug，当遇到奇怪的问题时，不妨看看当前命令是否有已知的bug
+
+基本查看
+手册的查看和less查看文本类似，可以参考《文本查看篇》或查看less命令的使用，这里介绍基本操作：
+
+空格 向下翻页
+Home 回到第一页
+End 跳到最后一页
+/string 向前搜索string字符串
+?string 向后搜索string字符串
+n 下一个匹配字符
+N 上一个匹配字符
+q 退出
+
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>embeded</tag>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>man</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>自建全套开源Devops开发系统</title>
+    <url>/posts/ab63eb8f/</url>
+    <content><![CDATA[
+国内的Devops云平台动辄封号，删库，屏蔽，还多次发生数据泄密，项目被云平台克隆事件，国内云平台devops已死！数据安全没法保证，自建私有Devops平台才靠谱。这里采用开源项目建立一个完善的低成本Devops系统，基本运行良好！
+
+
+目标：单节点，以最低成本，最低消耗，使用开源软件实现一个可用的DevOps！满足中小企业的研发、测试、运维需求。并对后续如何扩展本套DevOps系统做了项目，成本，路线升级规划，可以一直扩展到业界最前沿最大系统。
+整套系统已经跑起来很长时间了！单节点Nas服务器，32G内存，共运行了约80个Docker，优化到平均负载10以下。
+
+
+
+Devops框架图解
+
+下面系统大多可以做负载平衡，多节点备份，可以扩展为一个高可用，大中央平台。
+珍爱生命，使用Docker！
+
+
+开源云平台生死连问
+
+珍爱生命，不建议使用国内云平台。
+
+什么是大教堂？
+什么是集市？
+什么是信任链？
+什么是开源生态？
+为什么要做开源生态？
+怎么做开源生态？
+开源生态的土壤肥力维护如何做？
+这些问题没想明白，没想到如何做的是没法做开源的。
+国内平台连种子嫩芽都要收割，到处收费，动辄删库，屏蔽，封号，注定做不了开源生态。
+Consul自动负载均衡
+
+基于服务自动发现和注册的负载均衡，负载均衡的方式没有变，只是多了一些外围组件，当然这些组件对 Client 是不可见的，client 依然只能看到 Nginx 入口，访问方式也没变化。
+
+
+Github仓库备份
+
+最优秀的资源，大多只在短时间内出现！
+平时多备份你重要的仓库，以及你使用的仓库的重要上下游仓库！
+
+
+
+github-backup Githb
+github-backup Dockerhub
+
+
+githubback:
+  image: lnxd/github-backup
+  container_name: "githubback"
+  hostname: githubback
+  # ports:
+    # - "80:80"
+  volumes:
+    - "${USERDIR}/githubback/data:/home/docker/backups:rw"
+  env_file:
+    - .env
+  environment:
+    - HTTP_PROXY=http://[ip]:[port]
+    - HTTPS_PROXY=http://[ip]:[port]
+  restart: always
+配置要求
+个人Nas配置
+
+
+cpu j4125 4 核 14nm 2.00 GHz ~2.70 GHz
+SSD sata 接口的 读写 500MB/S
+32G DDR4. 2x16G 双通道
+
+
+上图中介绍的系统都是上面配置的单服务器中可以运行的。
+如何以最低的配置，最少的内存运行起来最多的功能才是本文的追求，花费更多金钱去满足极少数情况的高压力是钱多的没处花。
+
+8G内存的nas 就可以运行 gitea + drone ，zentao 想用就用
+gitlab 要跑起来至少要2核 8G 内存，jenkins 也是内存 cpu 占用大户。大于 16G 内存时考虑上这个
+4核 32G 内存的nas，图片中介绍的可以全都跑起来！
+
+可靠性
+ELK集群监控对于单服务器来说完全多余，netdata监控也不错，portainer就够用了，以后为了节约资源，portainer说不定也会被干掉，大多数时候命令行监控就够了。少于200节点K8S就是多余的。
+数据安全
+
+云平台把数据交给别人，赌别人的道德不会私自偷拿你的数据？真是想多了。
+某垄断社交平台内部有专门的团队分析客户的数据，看有什么有价值的没有，是很多年前就爆出来的消息。
+自建DevOps成本其实相当的低！
+
+整套系统可以从少到多，从小到大，慢慢优化，扩展的。硬件成本也是随着需求变化而变化的，随着业务扩展而增加成本，一开始单节点单服务器就可以满足要求了，后面业务增加慢慢扩展为集群，k8s 等。
+数据，代码是公司核心资产与竞争力的公司，上云赌别人的人品就是找死。你注册账户的时候，就同意了，无论别人随意删除你的数据，或者窃取你的数据都是不用付任何责任的，再说，整个系统数据都在别人手上，你要维权也没有证据。
+备份
+
+UPS电源，防止意外断电
+rsync 备份，对于大多数人，已经够用了
+文件系统快照
+离线每日，或者每周冷备份
+大系统，多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群
+
+扩展性
+
+上面说的都可以单服务器搞定。多台服务器的时候可以用多节点集群备灾。nginx,harbor，gitlab，elasticsearch等都可以使用集群。
+多于200节点，大于3台服务器以后考虑上K8S。ELK监控之类的这时候可以上了。蓝鲸智云标准运维这时候也可以考虑了。
+再次扩大的时候可以考虑Proxmox VE（PVE） + ceph
+更大的系统，或者对外提供云平台服务的时候可以考虑上OpenStack
+
+项目介绍
+ELK
+
+消耗资源很多，至少上百节点以上再考虑上这个
+portainer -&gt; netdata -&gt; ELK，zabbix 
+
+
+cacti
+
+  
+
+
+
+
+  
+
+
+
+zabbix
+
+  
+
+
+
+
+  
+
+
+
+ansible
+
+  
+
+
+
+
+  
+
+
+
+CMDB
+
+  
+
+
+
+
+  
+
+
+
+PVE
+
+Proxmox VE（PVE）
+
+
+  
+
+
+
+CEPH
+
+  
+
+
+
+
+  
+
+
+
+OpenStack
+
+  
+
+
+
+
+  
+
+
+
+其它项目
+
+大家还有啥好项目建议？
+
+onedev
+onedev 是替代Gitlab的极佳候补，看文档介绍，潜力无限！
+
+  
+
+
+
+smartdns
+
+一个本地DNS服务器，获取最快的网站IP，获得最佳上网体验。
+
+
+  
+
+
+
+awesome-selfhosted
+
+这里你能找到各种各样的自建 Docker 服务
+
+
+  
+
+
+
+系列教程
+全部文章RSS订阅
+Devops系列
+Devops 分类 RSS 订阅
+
+自建全套开源Devops开发系统
+Git介绍以及分支模型图解
+三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
+DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
+项目开发管理工具推荐
+Gitlab的安装及使用教程完全版
+Gitlab的安装及使用
+那些有用的Github工具介绍！Action、app、workflow等
+
+相关文档
+
+Devops
+
+]]></content>
+      <categories>
+        <category>devops</category>
+      </categories>
+      <tags>
+        <tag>docker</tag>
+        <tag>devops</tag>
+        <tag>框架</tag>
+        <tag>图解</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>视频图书和音乐完全自动化管理框架图解</title>
     <url>/posts/db7bf49b/</url>
     <content><![CDATA[
@@ -38147,230 +37986,6 @@ Gitlab CI/CD doxygen
       <tags>
         <tag>tools</tag>
         <tag>doxygen</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>中西医的优缺点</title>
-    <url>/posts/a2a43504/</url>
-    <content><![CDATA[
-中医西医谁更科学，总是争论不休，这里说说个人的一些看法，中西医都是非科学，都只是经验科学，各有各自的优缺点
-
-
-
-中医治疗调理费用低，见效慢，但是把人体作为整体调理，治疗疾病的根本原因。西医通过药物提取，化学合成，见效快，但是有耐药性，常常头痛医头，脚痛医脚，哪里有问题，就切除哪里。
-中医西医都是非科学
-
-按照现代科学定义，中医西医都非1+1=2这样类似数学的严格意义上面的科学。都只是经验科学！
-
-人体是非科学的
-
-现代科学远远不能解释人体运行机制，在系统性人体解释方面西医还不如中医。
-张三心率60，身体健康。李四心率80，身体也是健康的。人体几乎所有的指标都是没法科学量化的，现代仪器检测的指标几乎都是盲人摸象，用现代的科学的手段去研究非科学的人体本身就是反科学的。
-
-
-中医治病于未然
-
-防患于未然，机体稍有功能上的变化，中医即认为是阴阳失衡，就要适当的调整。治病求本，发现问题就要找到发病的根本，从根本上去除疾病，从而使机体恢复正常状态。
-而西医，你的身体不出问题就认为没有问题。而不知道疾病隐患已经在身体慢慢积累，就等某一天爆发
-
-中药没有耐药性
-
-你找不到两株一模一样的药材，吃中医永远不会有抗药性问题。而西医通过提纯，化学合成看似疗效快，但会有抗药性问题，长期来看，几乎所有的西药都可能失去作用！而中药，几千年后，如果还有人类，还是会吃和今天一样的中药。
-
-中药虽然没有抗药性，但现代中药种植导致药效远不如以前，通过加大剂量可以解决。
-中医是生命学，西医是死物学
-
-中医整体观念，中医认为人与自然是统一的整体，自然界的变化对人体的影响是不容忽视的；人体本身是不可分割的统一整体，一个位置有病，其根本不一定在这里，多数是两三个脏器或经络功能失衡的结果。而西医几百年了，还是在研究分子化学，下药手术都只是作用与复杂人体的一部分区域。
-
-
-西医分析分子结构，但没搞明白同样是水，味道也是不同的。
-同样的纯净水，热水冷水混合的，开水，冰水，恒温静置一晚的水，经过祝福或者咒骂的水，味道都是不同的。对人的作用也是差异极大。
-有兴趣的可以去了解一下酸性食物，碱性食物；寒性食物，热性食物的差异与区分方法。
-同样是水，可以是寒性的，也可以是热性的。同样的茶叶，不同生长环境价值相差上万倍。同一种草药，必须是特定地域生长的才能治病！西医对这一块几乎没啥研究。
-
-双盲实验是非科学的
-
-人体本身是复杂的，多样的，没法量化的。用一批各种年龄，性别，身体条件的人去做双盲实验是初中生生物化学知识都可以判断是不科学的。除非用一堆基因一样，生活成长条件一样的克隆人做双盲实验。
-
-
-现代的双盲实验非常容易操控结果。
-通过选择特定年龄，性别，胖瘦等身体条件，可以很容易的控制实验结果！这也是西方制药公司经常干的事，历史上比比皆是！
-
-西医也有很多荒诞无知的历史
-
-早期西医是理发师兼任的，现在理发店外面红白相间旋转的是纪念以前理发师给病人放血治疗的染血绷带。老美创建者乔治.华盛顿就是放血过多死亡的！
-扁桃体，十二指肠西医以前都是建议切除。现在发现了其重要生理功能，建议保留了。
-镭元素发现后，被制作为各种保健品，饮料发售，很长时间都是"科学"背书。
-骇人听闻的脑前额切除术，得了诺贝尔奖，把无数正常人变成痴呆，都是以西医科学的名义造成的！
-等等。
-请不要对这些历史视而不见！
-现代医学过度治疗，很多反而不如带病生活的时间长。没见到很多医生自己得了癌症不治疗么？
-
-
-医生一罢工，全国死亡率下降50%！（援引）
-这听起来是个笑话，但确是真实的历史事实。各种解释很多，但这个现象足够引人深思！
-
-中医费用低导致被黑
-
-对于医药公司来说，中医费用低是缺点。它们恨不得你的疾病需要天天服药，一辈子服药。
-费用低，怎么拿回扣？
-费用低，怎么上市圈钱？
-费用低，怎么养写手去黑对手？
-国内各大交流平台，基本都被国外势力操控，连说一点中医中立的观点都会被删帖，封号。其中一部分人拿钱办事，是坏，还有一部分人是智商低，蠢，要注意分辨。
-请警醒，中医国宝一边在被国外势力有计划的抹黑，打压，一边又在偷窃中医的成果。
-
-
-鬼才倪海厦
-
-中医鬼才，是因其一人身兼医， 命，星，山，卜五术，是海外中医界的风云人物。
-最近发现的一个中医大师！有全套中医教程！是目前中医讲解的最好的中医教程！
-
-tree -F -L 2 ./自学倪海厦人纪
-./自学倪海厦人纪/
-├── 10自学第十课-文章与医案汇总/
-│&nbsp;&nbsp; ├── 【02】倪海厦专题/
-│&nbsp;&nbsp; ├── 【03】倪海厦事实评论/
-│&nbsp;&nbsp; ├── 1倪海厦汉唐中医经典文章医案集.pdf
-│&nbsp;&nbsp; ├── 2人纪班学生的诊疗案例.pdf
-│&nbsp;&nbsp; ├── 倪海厦人纪班学生医桉1.pdf
-│&nbsp;&nbsp; ├── 倪海厦传统中医跟诊过程.pdf
-│&nbsp;&nbsp; ├── 倪海厦内部案例100篇.pdf
-│&nbsp;&nbsp; ├── 倪海厦文集及医桉最新版.pdf
-│&nbsp;&nbsp; ├── 倪海廈汉唐中医文章全集1.pdf
-│&nbsp;&nbsp; ├── 医案/
-│&nbsp;&nbsp; ├── 学员医案.pdf
-│&nbsp;&nbsp; ├── 【文】倪海厦医案１（文集和日志）文集（2005年07月25日）.pdf
-│&nbsp;&nbsp; ├── 【文】倪海厦医案２（诊疗日志）日志（2006年09月01日）.pdf
-│&nbsp;&nbsp; ├── 【文】倪海厦文集(2006年06月06日).pdf
-│&nbsp;&nbsp; ├── 汉唐中医倪海厦医师对猪流感的分析及其处方[1].pdf
-│&nbsp;&nbsp; ├── 【汉唐中医内容】倪海厦传统中医跟诊过程.pdf
-│&nbsp;&nbsp; └── 汉唐方剂/
-├── 1自学第一课-梁冬对话倪海厦/
-│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》01（字幕版）_标清.flv
-│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》02（字幕版）_标清.flv
-│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》03（字幕版）_标清.flv
-│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》04（字幕版）_标清.flv
-│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》05（字幕版）_标清.flv
-│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》06（字幕版）_标清.flv
-│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》07（字幕版）_标清.flv
-│&nbsp;&nbsp; └── 梁冬对话倪海厦字幕稿.pdf
-├── 2自学第二课-倪海厦斯坦福演讲/
-│&nbsp;&nbsp; ├── 倪海厦斯坦福大学演讲：从感冒一路治到癌症.mp4
-│&nbsp;&nbsp; └── 倪海厦斯坦福大学演讲字幕稿.docx
-├── 3自学第三课-倪海厦原版《针灸教程》全集11DVD（含字幕版视频）/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​01/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​02/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​03/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​04/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​05/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​06/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​07/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​08/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​09/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​10/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​11/
-│&nbsp;&nbsp; └── 倪海厦针灸大成字幕版视频/
-├── 4自学第四课-倪海厦：原版《黄帝内经》全集11DVD（新增字幕版视频）/
-│&nbsp;&nbsp; ├── 02.倪海厦《黄帝内经》（79集全）无风制作【公众号：汉唐倪师传承】/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​01​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​02​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​03​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​04​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​05​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​06​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​07​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​08​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​09​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​10​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​11​/
-│&nbsp;&nbsp; ├── 倪海夏-人纪-黄帝内经讲义.pdf
-│&nbsp;&nbsp; ├── 【视频同步文稿】倪海厦人纪系列书籍之《黄帝内经上册》 .pdf
-│&nbsp;&nbsp; └── 【视频同步文稿】倪海厦人纪系列书籍之《黄帝内经下册》.pdf
-├── 5自学第五课-倪海厦：原版《神农本草经》全集8DVD（含字幕版视频）/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD01​/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD02​/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD03​/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD04​/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD05​/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD06​/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD07​/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD08​/
-│&nbsp;&nbsp; ├── 倪海厦神农本草字幕稿.pdf
-│&nbsp;&nbsp; ├── 倪海厦神农本草经视频字幕版/
-│&nbsp;&nbsp; └── 倪海厦神农本草经讲义.pdf
-├── 6自学第六课-倪海厦：原版《伤寒论》全集8DVD/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​01​/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​02​/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​03​/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​04​/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​05​/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​06​/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​07​/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​08​/
-│&nbsp;&nbsp; ├── 倪海厦伤寒论视频字幕.pdf
-│&nbsp;&nbsp; └── 倪海厦伤寒论讲义.pdf
-├── 7自学第七课-倪海厦：原版《金匮要略》全集11DVD/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​01​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​02​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​03​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​04​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​05​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​06​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​07​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​08​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​09​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​10​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​11​/
-│&nbsp;&nbsp; ├── 倪海厦金匮要略视频字幕PDF.pdf
-│&nbsp;&nbsp; └── 倪海厦金匮要略讲义.pdf
-├── 8自学第八课-倪海厦扶阳论坛演讲/
-│&nbsp;&nbsp; ├── 倪海厦扶阳论坛演讲文字稿.doc
-│&nbsp;&nbsp; ├── 第三届扶阳论坛-倪海厦-上.mp4
-│&nbsp;&nbsp; └── 第三届扶阳论坛-倪海厦-下.mp4
-├── 9自学第九课-倪海厦仲景心法传讲/
-│&nbsp;&nbsp; ├── 仲景心法傳講01.mp4
-│&nbsp;&nbsp; ├── 仲景心法傳講02.mp4
-│&nbsp;&nbsp; ├── 仲景心法傳講03.mp4
-│&nbsp;&nbsp; ├── 仲景心法傳講04.mp4
-│&nbsp;&nbsp; ├── 仲景心法傳講05.mp4
-│&nbsp;&nbsp; └── 倪海厦仲景心法传讲 同步文稿85页_1.pdf
-├── 其他2-《天纪》《人纪》正版影印版文档/
-│&nbsp;&nbsp; ├── 倪海厦《天纪》.pdf
-│&nbsp;&nbsp; ├── 倪海夏伤寒论.pdf
-│&nbsp;&nbsp; ├── 倪海夏金匮.pdf
-│&nbsp;&nbsp; ├── 倪海夏针炙.pdf
-│&nbsp;&nbsp; ├── 天纪 人间道.pdf
-│&nbsp;&nbsp; ├── 天纪 地脉道.pdf
-│&nbsp;&nbsp; ├── 天纪 天机道（终稿）.pdf
-│&nbsp;&nbsp; ├── 神农本草经.PDF
-│&nbsp;&nbsp; └── 黄帝内经.pdf
-└── 捕获.PNG
-
-以上资源网络上有下载，版权原因，这里就不提供链接了！Bilibili 上面就有大部分相关资源了。
-供中医相关人士及爱好者学习！
-
-自学中医方法
-自学的话，从学校的教材入手比较好，先学《中基》，至少看三遍，然后学《中药》，《方剂学》，方剂学可以看邓中甲的视频，多看几遍，边看边记，并背一下《汤头歌诀》，这样打下中医基础。再学《中诊》，后面研究伤寒金贵，李东恒等等。基本就入门了。
-总结
-
-生老病死都是生命旅途中的一部分，我们要学会接受它。
-中医是几千年的经验总结，其中虽然有一些荒诞的部分，但也有非常多的宝藏等待我们去挖掘。
-西医几百年发展虽然有不少见效快的治疗手段，但是由于现代科学本身科学性就有局限性，所以现代西医的科学性也要批判的接受。
-
-个人见解，也请理性接收！
-
-名言赏析
-谁控制了石油，谁就控制了所有国家；谁控制了粮食，谁就控制了人类；谁掌握了货币发行权，谁就掌握了世界。
-​																																					——亨利·基辛格
-
-]]></content>
-      <categories>
-        <category>社会观察</category>
-      </categories>
-      <tags>
-        <tag>中医</tag>
-        <tag>西医</tag>
-        <tag>社会观察</tag>
       </tags>
   </entry>
   <entry>
@@ -39557,6 +39172,230 @@ Useful Tutorials on Linux and UNIX for Beginners and Experts Alike
       <tags>
         <tag>linux</tag>
         <tag>bash</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>中西医的优缺点</title>
+    <url>/posts/a2a43504/</url>
+    <content><![CDATA[
+中医西医谁更科学，总是争论不休，这里说说个人的一些看法，中西医都是非科学，都只是经验科学，各有各自的优缺点
+
+
+
+中医治疗调理费用低，见效慢，但是把人体作为整体调理，治疗疾病的根本原因。西医通过药物提取，化学合成，见效快，但是有耐药性，常常头痛医头，脚痛医脚，哪里有问题，就切除哪里。
+中医西医都是非科学
+
+按照现代科学定义，中医西医都非1+1=2这样类似数学的严格意义上面的科学。都只是经验科学！
+
+人体是非科学的
+
+现代科学远远不能解释人体运行机制，在系统性人体解释方面西医还不如中医。
+张三心率60，身体健康。李四心率80，身体也是健康的。人体几乎所有的指标都是没法科学量化的，现代仪器检测的指标几乎都是盲人摸象，用现代的科学的手段去研究非科学的人体本身就是反科学的。
+
+
+中医治病于未然
+
+防患于未然，机体稍有功能上的变化，中医即认为是阴阳失衡，就要适当的调整。治病求本，发现问题就要找到发病的根本，从根本上去除疾病，从而使机体恢复正常状态。
+而西医，你的身体不出问题就认为没有问题。而不知道疾病隐患已经在身体慢慢积累，就等某一天爆发
+
+中药没有耐药性
+
+你找不到两株一模一样的药材，吃中医永远不会有抗药性问题。而西医通过提纯，化学合成看似疗效快，但会有抗药性问题，长期来看，几乎所有的西药都可能失去作用！而中药，几千年后，如果还有人类，还是会吃和今天一样的中药。
+
+中药虽然没有抗药性，但现代中药种植导致药效远不如以前，通过加大剂量可以解决。
+中医是生命学，西医是死物学
+
+中医整体观念，中医认为人与自然是统一的整体，自然界的变化对人体的影响是不容忽视的；人体本身是不可分割的统一整体，一个位置有病，其根本不一定在这里，多数是两三个脏器或经络功能失衡的结果。而西医几百年了，还是在研究分子化学，下药手术都只是作用与复杂人体的一部分区域。
+
+
+西医分析分子结构，但没搞明白同样是水，味道也是不同的。
+同样的纯净水，热水冷水混合的，开水，冰水，恒温静置一晚的水，经过祝福或者咒骂的水，味道都是不同的。对人的作用也是差异极大。
+有兴趣的可以去了解一下酸性食物，碱性食物；寒性食物，热性食物的差异与区分方法。
+同样是水，可以是寒性的，也可以是热性的。同样的茶叶，不同生长环境价值相差上万倍。同一种草药，必须是特定地域生长的才能治病！西医对这一块几乎没啥研究。
+
+双盲实验是非科学的
+
+人体本身是复杂的，多样的，没法量化的。用一批各种年龄，性别，身体条件的人去做双盲实验是初中生生物化学知识都可以判断是不科学的。除非用一堆基因一样，生活成长条件一样的克隆人做双盲实验。
+
+
+现代的双盲实验非常容易操控结果。
+通过选择特定年龄，性别，胖瘦等身体条件，可以很容易的控制实验结果！这也是西方制药公司经常干的事，历史上比比皆是！
+
+西医也有很多荒诞无知的历史
+
+早期西医是理发师兼任的，现在理发店外面红白相间旋转的是纪念以前理发师给病人放血治疗的染血绷带。老美创建者乔治.华盛顿就是放血过多死亡的！
+扁桃体，十二指肠西医以前都是建议切除。现在发现了其重要生理功能，建议保留了。
+镭元素发现后，被制作为各种保健品，饮料发售，很长时间都是"科学"背书。
+骇人听闻的脑前额切除术，得了诺贝尔奖，把无数正常人变成痴呆，都是以西医科学的名义造成的！
+等等。
+请不要对这些历史视而不见！
+现代医学过度治疗，很多反而不如带病生活的时间长。没见到很多医生自己得了癌症不治疗么？
+
+
+医生一罢工，全国死亡率下降50%！（援引）
+这听起来是个笑话，但确是真实的历史事实。各种解释很多，但这个现象足够引人深思！
+
+中医费用低导致被黑
+
+对于医药公司来说，中医费用低是缺点。它们恨不得你的疾病需要天天服药，一辈子服药。
+费用低，怎么拿回扣？
+费用低，怎么上市圈钱？
+费用低，怎么养写手去黑对手？
+国内各大交流平台，基本都被国外势力操控，连说一点中医中立的观点都会被删帖，封号。其中一部分人拿钱办事，是坏，还有一部分人是智商低，蠢，要注意分辨。
+请警醒，中医国宝一边在被国外势力有计划的抹黑，打压，一边又在偷窃中医的成果。
+
+
+鬼才倪海厦
+
+中医鬼才，是因其一人身兼医， 命，星，山，卜五术，是海外中医界的风云人物。
+最近发现的一个中医大师！有全套中医教程！是目前中医讲解的最好的中医教程！
+
+tree -F -L 2 ./自学倪海厦人纪
+./自学倪海厦人纪/
+├── 10自学第十课-文章与医案汇总/
+│&nbsp;&nbsp; ├── 【02】倪海厦专题/
+│&nbsp;&nbsp; ├── 【03】倪海厦事实评论/
+│&nbsp;&nbsp; ├── 1倪海厦汉唐中医经典文章医案集.pdf
+│&nbsp;&nbsp; ├── 2人纪班学生的诊疗案例.pdf
+│&nbsp;&nbsp; ├── 倪海厦人纪班学生医桉1.pdf
+│&nbsp;&nbsp; ├── 倪海厦传统中医跟诊过程.pdf
+│&nbsp;&nbsp; ├── 倪海厦内部案例100篇.pdf
+│&nbsp;&nbsp; ├── 倪海厦文集及医桉最新版.pdf
+│&nbsp;&nbsp; ├── 倪海廈汉唐中医文章全集1.pdf
+│&nbsp;&nbsp; ├── 医案/
+│&nbsp;&nbsp; ├── 学员医案.pdf
+│&nbsp;&nbsp; ├── 【文】倪海厦医案１（文集和日志）文集（2005年07月25日）.pdf
+│&nbsp;&nbsp; ├── 【文】倪海厦医案２（诊疗日志）日志（2006年09月01日）.pdf
+│&nbsp;&nbsp; ├── 【文】倪海厦文集(2006年06月06日).pdf
+│&nbsp;&nbsp; ├── 汉唐中医倪海厦医师对猪流感的分析及其处方[1].pdf
+│&nbsp;&nbsp; ├── 【汉唐中医内容】倪海厦传统中医跟诊过程.pdf
+│&nbsp;&nbsp; └── 汉唐方剂/
+├── 1自学第一课-梁冬对话倪海厦/
+│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》01（字幕版）_标清.flv
+│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》02（字幕版）_标清.flv
+│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》03（字幕版）_标清.flv
+│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》04（字幕版）_标清.flv
+│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》05（字幕版）_标清.flv
+│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》06（字幕版）_标清.flv
+│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》07（字幕版）_标清.flv
+│&nbsp;&nbsp; └── 梁冬对话倪海厦字幕稿.pdf
+├── 2自学第二课-倪海厦斯坦福演讲/
+│&nbsp;&nbsp; ├── 倪海厦斯坦福大学演讲：从感冒一路治到癌症.mp4
+│&nbsp;&nbsp; └── 倪海厦斯坦福大学演讲字幕稿.docx
+├── 3自学第三课-倪海厦原版《针灸教程》全集11DVD（含字幕版视频）/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​01/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​02/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​03/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​04/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​05/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​06/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​07/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​08/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​09/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​10/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​11/
+│&nbsp;&nbsp; └── 倪海厦针灸大成字幕版视频/
+├── 4自学第四课-倪海厦：原版《黄帝内经》全集11DVD（新增字幕版视频）/
+│&nbsp;&nbsp; ├── 02.倪海厦《黄帝内经》（79集全）无风制作【公众号：汉唐倪师传承】/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​01​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​02​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​03​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​04​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​05​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​06​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​07​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​08​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​09​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​10​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​11​/
+│&nbsp;&nbsp; ├── 倪海夏-人纪-黄帝内经讲义.pdf
+│&nbsp;&nbsp; ├── 【视频同步文稿】倪海厦人纪系列书籍之《黄帝内经上册》 .pdf
+│&nbsp;&nbsp; └── 【视频同步文稿】倪海厦人纪系列书籍之《黄帝内经下册》.pdf
+├── 5自学第五课-倪海厦：原版《神农本草经》全集8DVD（含字幕版视频）/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD01​/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD02​/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD03​/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD04​/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD05​/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD06​/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD07​/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD08​/
+│&nbsp;&nbsp; ├── 倪海厦神农本草字幕稿.pdf
+│&nbsp;&nbsp; ├── 倪海厦神农本草经视频字幕版/
+│&nbsp;&nbsp; └── 倪海厦神农本草经讲义.pdf
+├── 6自学第六课-倪海厦：原版《伤寒论》全集8DVD/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​01​/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​02​/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​03​/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​04​/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​05​/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​06​/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​07​/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​08​/
+│&nbsp;&nbsp; ├── 倪海厦伤寒论视频字幕.pdf
+│&nbsp;&nbsp; └── 倪海厦伤寒论讲义.pdf
+├── 7自学第七课-倪海厦：原版《金匮要略》全集11DVD/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​01​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​02​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​03​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​04​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​05​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​06​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​07​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​08​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​09​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​10​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​11​/
+│&nbsp;&nbsp; ├── 倪海厦金匮要略视频字幕PDF.pdf
+│&nbsp;&nbsp; └── 倪海厦金匮要略讲义.pdf
+├── 8自学第八课-倪海厦扶阳论坛演讲/
+│&nbsp;&nbsp; ├── 倪海厦扶阳论坛演讲文字稿.doc
+│&nbsp;&nbsp; ├── 第三届扶阳论坛-倪海厦-上.mp4
+│&nbsp;&nbsp; └── 第三届扶阳论坛-倪海厦-下.mp4
+├── 9自学第九课-倪海厦仲景心法传讲/
+│&nbsp;&nbsp; ├── 仲景心法傳講01.mp4
+│&nbsp;&nbsp; ├── 仲景心法傳講02.mp4
+│&nbsp;&nbsp; ├── 仲景心法傳講03.mp4
+│&nbsp;&nbsp; ├── 仲景心法傳講04.mp4
+│&nbsp;&nbsp; ├── 仲景心法傳講05.mp4
+│&nbsp;&nbsp; └── 倪海厦仲景心法传讲 同步文稿85页_1.pdf
+├── 其他2-《天纪》《人纪》正版影印版文档/
+│&nbsp;&nbsp; ├── 倪海厦《天纪》.pdf
+│&nbsp;&nbsp; ├── 倪海夏伤寒论.pdf
+│&nbsp;&nbsp; ├── 倪海夏金匮.pdf
+│&nbsp;&nbsp; ├── 倪海夏针炙.pdf
+│&nbsp;&nbsp; ├── 天纪 人间道.pdf
+│&nbsp;&nbsp; ├── 天纪 地脉道.pdf
+│&nbsp;&nbsp; ├── 天纪 天机道（终稿）.pdf
+│&nbsp;&nbsp; ├── 神农本草经.PDF
+│&nbsp;&nbsp; └── 黄帝内经.pdf
+└── 捕获.PNG
+
+以上资源网络上有下载，版权原因，这里就不提供链接了！Bilibili 上面就有大部分相关资源了。
+供中医相关人士及爱好者学习！
+
+自学中医方法
+自学的话，从学校的教材入手比较好，先学《中基》，至少看三遍，然后学《中药》，《方剂学》，方剂学可以看邓中甲的视频，多看几遍，边看边记，并背一下《汤头歌诀》，这样打下中医基础。再学《中诊》，后面研究伤寒金贵，李东恒等等。基本就入门了。
+总结
+
+生老病死都是生命旅途中的一部分，我们要学会接受它。
+中医是几千年的经验总结，其中虽然有一些荒诞的部分，但也有非常多的宝藏等待我们去挖掘。
+西医几百年发展虽然有不少见效快的治疗手段，但是由于现代科学本身科学性就有局限性，所以现代西医的科学性也要批判的接受。
+
+个人见解，也请理性接收！
+
+名言赏析
+谁控制了石油，谁就控制了所有国家；谁控制了粮食，谁就控制了人类；谁掌握了货币发行权，谁就掌握了世界。
+​																																					——亨利·基辛格
+
+]]></content>
+      <categories>
+        <category>社会观察</category>
+      </categories>
+      <tags>
+        <tag>中医</tag>
+        <tag>西医</tag>
+        <tag>社会观察</tag>
       </tags>
   </entry>
   <entry>
@@ -44124,7 +43963,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts6003'));
+        var myChart = echarts.init(document.getElementById('echarts3651'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44218,7 +44057,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts3157'));
+        var myChart = echarts.init(document.getElementById('echarts9046'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44287,7 +44126,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts2179'));
+        var myChart = echarts.init(document.getElementById('echarts753'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -48954,9 +48793,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-wCjqoKQUkmlBxmVO").style.height=document.getElementById("mmedia-wCjqoKQUkmlBxmVO").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-gWJuQALCSyXJDfJq").style.height=document.getElementById("mmedia-gWJuQALCSyXJDfJq").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-wCjqoKQUkmlBxmVO").style.height=document.getElementById("mmedia-wCjqoKQUkmlBxmVO").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-gWJuQALCSyXJDfJq").style.height=document.getElementById("mmedia-gWJuQALCSyXJDfJq").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 
@@ -52517,9 +52356,9 @@ chatGPT
 
 视频讲解
 B站
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ndDMQzqKdYCKGbBs").style.height=document.getElementById("mmedia-ndDMQzqKdYCKGbBs").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-uKgxYZBQPaEFbrky").style.height=document.getElementById("mmedia-uKgxYZBQPaEFbrky").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-ndDMQzqKdYCKGbBs").style.height=document.getElementById("mmedia-ndDMQzqKdYCKGbBs").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-uKgxYZBQPaEFbrky").style.height=document.getElementById("mmedia-uKgxYZBQPaEFbrky").scrollWidth*0.76+"px";
     }; 
 youtube
 
@@ -54325,6 +54164,167 @@ Earthly 一个更加强大的镜像构建工具
         <tag>bt</tag>
         <tag>pt</tag>
         <tag>nas</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>emoji表情符号</title>
+    <url>/posts/80938cfe/</url>
+    <content><![CDATA[
+emoji表情符号是非常流行的表情符号，几乎没有地方都会支持。这里列举出常用的emoji表情不好，方便大家使用与查阅。
+
+
+常用符号
+❤❥웃유♋☮✌☏☢☠✔☑♚▲♪✈✞÷↑↓◆◇⊙■□△▽¿─│♥❣♂♀☿Ⓐ✍✉☣☤✘☒♛▼♫⌘☪≈←→◈◎☉★☆⊿※¡━┃♡ღ ツ
+
+☼☁❅♒✎©®™Σ✪✯☭➳ 卐 √↖↗●◐Θ◤◥︻〖〗┄┆℃℉°✿ϟ☃☂✄¢€£∞✫★½✡×↙↘○◑⊕◣◢︼【】┅┇☽☾✚〓
+
+▂▃▄▅▆▇█▉▊▋▌▍▎▏↔↕☽☾ の•▸◂▴▾┈┊①②③④⑤⑥⑦⑧⑨⑩ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ ㍿ ▓♨♛❖♓☪✙
+
+┉┋☹☺☻ت ヅツッシ Üϡﭢ™℠℗©®♥❤❥❣❦❧♡۵웃유ღ♋♂♀☿☼☀☁☂☄☾☽❄☃☈⊙☉℃℉❅✺ϟ☇♤♧♡♢♠♣
+
+♥♦☜☞☝✍☚☛☟✌✽✾✿❁❃❋❀⚘☑✓✔√☐☒✗✘ ㄨ ✕✖✖⋆✢✣✤✥❋✦✧✩✰✪✫✬✭✮✯❂✡★✱✲✳✴✵✶✷✸✹✺✻✼❄❅❆❇❈❉❊†☨✞✝☥☦☓☩☯☧☬
+
+☸✡♁✙♆。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴々﹟#
+
+﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼☩☨☦✞✛✜✝✙✠✚†‡◉○◌◍◎●◐◑◒◓◔◕◖◗❂☢⊗⊙◘◙◍⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌
+
+≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱㊣㊎㊍㊌㊋㊏㊐㊊㊚㊛㊤㊥
+
+㊦㊧㊨㊒㊞㊑㊒㊓㊔㊕㊖㊗㊘㊜㊝㊟㊠㊡㊢㊩㊪㊫㊬㊭㊮㊯㊰㊙ ㉿ 囍 ♔♕♖♗♘♙♚♛♜♝♞♟ℂℍℕℙℚℝℤℬℰℯℱℊℋℎℐℒℓℳℴ℘ℛℭ℮ℌℑℜℨ♪♫♩♬♭♮♯°øⒶ☮✌☪✡☭✯ 卐 ✐✎✏
+
+✑✒✍✉✁✂✃✄✆✉☎☏➟➡➢➣➤➥➦➧➨➚➘➙➛➜➝➞➸♐➲➳⏎➴➵➶➷➸➹➺➻➼➽←↑→↓↔↕↖↗↘↙↚↛↜↝
+
+↞↟↠↡↢↣↤↥↦↧↨➫➬➩➪➭➮➯➱↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹↺↻↼↽↾↿⇀⇁⇂⇃⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇕
+
+⇖⇗⇘⇙⇚⇛⇜⇝⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪➀➁➂➃➄➅➆➇➈➉➊➋➌➍➎➏➐➑➒➓㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡ
+
+ⓢⓣⓤⓥⓦⓧⓨⓩ⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵ⅠⅡⅢⅣⅤ
+
+ⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹⅺⅻⅼⅽⅾⅿ┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫
+┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽
+┾┿╀╁╂╃╄╅╆╇╈╉╊╋╌╍╎╏
+═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬◤◥◄►▶◀◣◢▲
+
+▼◥▸◂▴▾△▽▷◁⊿▻◅▵▿▹◃❏❐❑❒▀▁▂▃▄▅▆▇▉▊▋█▌▍▎▏▐░▒▓▔▕■□▢▣▤▥▦▧
+
+▨▩▪▫▬▭▮▯ ㋀㋁㋂㋃㋄㋅㋆㋇㋈㋉㋊㋋㏠㏡㏢㏣㏤㏥㏦㏧㏨㏩㏪㏫㏬㏭㏮㏯㏰㏱㏲
+
+㏳㏴㏵㏶㏷㏸㏹㏺㏻㏼㏽㏾㍙㍚㍛㍜㍝㍞㍟㍠㍡㍢㍣㍤㍥㍦㍧㍨㍩㍪㍫㍬㍭㍮㍯㍰㍘
+
+☰☲☱☴☵☶☳☷☯
+特殊符号
+♠♣♧♡♥❤❥❣♂♀✲☀☼☾☽◐◑☺☻☎☏✿❀№↑↓←→√×÷★℃℉°◆◇⊙■□△▽¿½☯✡ ㍿卍卐 ♂♀✚〓㎡♪♫♩♬
+
+㊚㊛囍㊒㊖ Φ♀♂‖KaTeX parse error: Expected ‘EOF’, got ‘&amp;’ at position 3: @*&amp;̲#※卍卐 Ψ♫♬♭♩♪♯♮⌒¶∮…
+编号序号
+①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳⓪
+
+❶❷❸❹❺❻❼❽❾❿⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴
+
+㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉㈠㈡㈢㈣㈤㈥㈦㈧㈨㈩⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇
+
+⒈⒉⒊⒋⒌⒍⒎⒏⒐⒑⒒⒓⒔⒕⒖⒗⒘⒙⒚⒛
+
+ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹ
+
+ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ
+
+⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵
+数学符号
+﹢﹣×÷±/=≌∽≦≧≒ ﹤﹥ ≈≡≠=≤≥&lt;&gt;≮≯∷∶∫∮∝∞∧∨∑∏∪∩∈∵∴⊥∥∠⌒⊙√∟⊿㏒㏑%
+
+‰⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟
+
+≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱øØπ
+爱心符号
+♥❣ღ♠♡♤❤❥
+标点符号
+。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴
+
+々﹟#﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊
+
+（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】
+
+︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼❝❞
+单位符号
+°′″＄￥〒￠￡％＠℃℉ ﹩﹪‰﹫㎡㏕㎜㎝㎞㏎m³㎎㎏㏄º○¤%$º¹²³
+货币符号
+€£Ұ₴$₰¢₤¥₳₲₪₵ 元 ₣₱฿¤₡₮₭₩ރ 円 ₢₥₫₦zł﷼₠₧₯₨Kčर₹ƒ₸ ￠
+箭头符号（含推导&amp;转换符号）
+↑↓←→↖↗↘↙↔↕➻➼➽➸➳➺➻➴➵➶➷➹▶►▷◁◀◄«
+
+»➩➪➫➬➭➮➯➱⏎➲➾➔➘➙➚➛➜➝➞➟➠➡➢➣➤➥➦➧➨
+
+↚↛↜↝↞↟↠↠↡↢↣↤↤↥↦↧↨⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇖⇗⇘⇙
+
+⇜↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹☇☈↼↽↾↿⇀⇁⇂⇃⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪↺↻⇚⇛♐
+符号图案
+✐✎✏✑✒✍✉✁✂✃✄✆✉☎☏☑✓✔√☐☒✗✘ ㄨ ✕✖✖☢☠☣✈★☆✡ 囍㍿ ☯☰☲☱☴☵☶☳☷
+
+☜☞☝✍☚☛☟✌♤♧♡♢♠♣♥♦☀☁☂❄☃♨웃유❖☽☾☪✿♂♀✪✯☭➳ 卍卐 √×■◆●○◐◑✙☺☻
+
+❀⚘♔♕♖♗♘♙♚♛♜♝♞♟♧♡♂♀♠♣♥❤☜☞☎☏⊙◎☺☻☼▧▨♨◐◑↔↕▪▒◊◦▣▤▥▦▩◘◈◇
+
+♬♪♩♭♪ の ★☆→ あぃ￡ Ю〓§♤♥▶¤✲❈✿✲❈➹☀☂☁【】┱┲❣✚✪✣✤✥✦❉❥❦❧❃❂❁❀✄☪☣☢☠☭ღ▶▷◀◁
+
+☀☁☂☃☄★☆☇☈⊙☊☋☌☍ⓛⓞⓥⓔ╬『』∴☀♫♬♩♭♪☆∷﹌の ★◎▶☺☻►◄▧▨♨◐◑↔↕↘▀▄█▌
+
+◦☼♪ の ☆→♧ ぃ￡ ❤▒▬♦◊◦♠♣▣۰•❤•۰►◄▧▨♨◐◑↔↕▪▫☼♦⊙●○①⊕◎Θ⊙¤ ㊣ ★☆♀◆◇◣◢◥▲▼△▽⊿◤◥
+
+✐✌✍✡✓✔✕✖♂♀♥♡☜☞☎☏⊙◎☺☻►◄▧▨♨◐◑↔↕♥♡▪▫☼♦▀▄█▌▐░▒▬♦◊◘◙◦☼♠♣▣▤▥▦▩◘◙◈
+
+♫♬♪♩♭♪✄☪☣☢☠♯♩♪♫♬♭♮☎☏☪♈ºº₪¤큐«»™♂✿♥ 　 ◕‿-｡　｡◕‿◕｡
+希腊字母
+ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ
+
+αβγδεζνξοπρσηθικλμτυφχψω
+俄语字母
+АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвг
+
+деёжзийклмнопрстуфхцчшщъыьэюя
+汉语拼音
+āáǎàōóǒòēéěèīíǐìūúǔùǖǘǚǜüêɑńňɡ ㄅㄆㄇㄈㄉ
+
+ㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄚㄛㄜㄝㄞ
+
+ㄟㄠㄡㄢㄣㄤㄥㄦㄧㄨㄩ
+中文字符
+零壹贰叁肆伍陆柒捌玖拾佰仟万亿吉太拍艾分厘毫微
+
+卍卐卄巜弍弎弐朤氺曱甴囍兀々〆のぁ〡〢〣〤〥〦〧〨〩
+
+㊎㊍㊌㊋㊏㊚㊛㊐㊊㊣㊤㊥㊦㊧㊨㊒㊫㊑㊓㊔㊕㊖㊗㊘㊜㊝㊞㊟㊠㊡㊢㊩㊪㊬㊭㊮㊯㊰
+
+㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉
+日文符号
+ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてで
+
+とどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎ
+
+わゐゑをんゔゕゖァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタ
+
+ダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユ
+
+ョヨラリルレロヮワヰヱヲンヴヵヶヷヸヹヺ・ーヽヾヿ゠ㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇺㇻㇼㇽㇾㇿ
+制表符号
+─ ━│┃╌╍╎╏┄ ┅┆┇┈ ┉┊┋┌┍┎┏┐┑┒┓└ ┕┖┗ ┘┙┚┛├┝┞┟┠┡┢┣ ┤┥┦┧┨┩┪┫┬ ┭ ┮ ┯ ┰ ┱ ┲ ┳
+
+┴ ┵ ┶ ┷ ┸ ┹ ┺ ┻┼ ┽ ┾ ┿ ╀ ╁ ╂ ╃ ╄ ╅ ╆ ╇ ╈ ╉ ╊ ╋ ╪ ╫ ╬═║╒╓╔ ╕╖╗╘╙╚ ╛╜╝╞╟╠ ╡╢╣
+
+╤ ╥ ╦ ╧ ╨ ╩ ╳╔ ╗╝╚ ╬ ═ ╓ ╩ ┠ ┨┯ ┷┏ ┓┗ ┛┳ ⊥ ﹃ ﹄┌ ╮ ╭ ╯╰
+皇冠符号
+♚ 　 ♛ 　 ♝ 　 ♞ 　 ♜ 　 ♟ 　 ♔ 　 ♕ 　 ♗ 　 ♘ 　 ♖ 　 ♟
+彩色表情符号
+🌹🍀🍎💰📱🌙🍁🍂🍃🌷💎🔪🔫🏀⚽⚡👄👍🔥
+常用 emoji 符号
+😀😁😂😃😄😅😆😉😊😋😎😍😘😗😙😚☺😇😐😑😶😏😣😥😮😯😪😫😴😌😛😜😝😒😓😔😕😲😷😖😞😟😤😢😭😦😧😨😬😰😱😳😵😡😠😈👿👹👺💀👻👽👦👧👨👩👴👵👶👱👮👲👳👷👸💂🎅👰👼💆💇🙍🙎🙅🙆💁🙋🙇🙌🙏👤👥🚶🏃👯💃👫👬👭💏💑👪💪👈👉☝👆👇✌✋👌👍👎✊👊👋👏👐✍👣👀👂👃👅👄💋👓👔👕👖👗👘👙👚👛👜👝🎒💼👞👟👠👡👢👑👒🎩🎓💄💅💍🌂🙈🙉🙊🐵🐒🐶🐕🐩🐺🐱😺😸😹😻😼😽🙀😿😾🐈🐯🐅🐆🐴🐎🐮🐂🐃🐄🐷🐖🐗🐽🐏🐑🐐🐪🐫🐘🐭🐁🐀🐹🐰🐇🐻🐨🐼🐾🐔🐓🐣🐤🐥🐦🐧🐸🐊🐢🐍🐲🐉🐳🐋🐬🐟🐠🐡🐙🐚🐌🐛🐜🐝🐞🦋💐🌸💮🌹🌺🌻🌼🌷🌱🌲🌳🌴🌵🌾🌿🍀🍁🍂🍃🌍🌎🌏🌐🌑🌒🌓🌔🌕🌖🌗🌘🌙🌚🌛🌜☀🌝🌞⭐🌟🌠☁⛅☔⚡❄🔥💧🌊💩🍇🍈🍉🍊🍋🍌🍍🍎🍏🍐🍑🍒🍓🍅🍆🌽🍄🌰🍞🍖🍗🍔🍟🍕🍳🍲🍱🍘🍙🍚🍛🍜🍝🍠🍢🍣🍤🍥🍡🍦🍧🍨🍩🍪🎂🍰🍫🍬🍭🍮🍯🍼☕🍵🍶🍷🍸🍹🍺🍻🍴🎪🎭🎨🎰🚣🛀🎫🏆⚽⚾🏀🏈🏉🎾🎱🎳⛳🎣🎽🎿🏂🏄🏇🏊🚴🚵🎯🎮🎲🎷🎸🎺🎻🎬👾🌋🗻🏠🏡🏢🏣🏤🏥🏦🏨🏩🏪🏫🏬🏭🏯🏰💒🗼🗽⛪⛲🌁🌃🌆🌇🌉🌌🎠🎡🎢🚂🚃🚄🚅🚆🚇🚈🚉🚊🚝🚞🚋🚌🚍🚎🚏🚐🚑🚒🚓🚔🚕🚖🚗🚘🚚🚛🚜🚲⛽🚨🚥🚦🚧⚓⛵🚤🚢✈💺🚁🚟🚠🚡🚀🎑🗿🛂🛃🛄🛅💌💎🔪💈🚪🚽🚿🛁⌛⏳⌚⏰🎈🎉🎊🎎🎏🎐🎀🎁📯📻📱📲☎📞📟📠🔋🔌💻💽💾💿📀🎥📺📷📹📼🔍🔎🔬🔭📡💡🔦🏮📔📕📖📗📘📙📚📓📃📜📄📰📑🔖💰💴💵💶💷💸💳✉📧📨📩📤📥📦📫📪📬📭📮✏✒📝📁📂📅📆📇📈📉📊📋📌📍📎📏📐✂🔒🔓🔏🔐🔑🔨🔫🔧🔩🔗💉💊🚬🔮🚩🎌💦💨💣☠♠♥♦♣🀄🎴🔇🔈🔉🔊📢📣💤💢💬💭♨🌀🔔🔕✡✝🔯📛🔰🔱⭕✅☑✔✖❌❎➕➖➗➰➿〽✳✴❇‼⁉❓❔❕❗©®™🎦🔅🔆💯🔠🔡🔢🔣🔤🅰🆎🅱🆑🆒🆓ℹ🆔Ⓜ🆕🆖🅾🆗🅿🆘🆙🆚🈁🈂🈷🈶🈯 🉐 🈹🈚🈲 🉑 🈸🈴🈳 ㊗㊙ 🈺🈵▪▫◻◼◽◾⬛⬜🔶🔷🔸🔹🔺🔻💠🔲🔳⚪⚫🔴🔵♈♉♊♋♌♍♎♏♐♑♒♓⛎💘❤💓💔💕💖💗💙💚💛💜💝💞💟❣🌿🚧💒☎📟💽⬆↗➡↘⬇↙⬅↖↕↔↩↪⤴⤵🔃🔄🔙🔚🔛🔜🔝🔀🔁🔂▶⏩◀⏪🔼⏫🔽⏬📱📶📳📴♻🏧🚮🚰♿🚹🚺🚻🚼🚾⚠🚸⛔🚫🚳🚭🚯🚱🚷🔞
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>emoji</tag>
       </tags>
   </entry>
 </search>
