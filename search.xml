@@ -1102,429 +1102,6 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
       </tags>
   </entry>
   <entry>
-    <title>Gitlab的安装及使用</title>
-    <url>/posts/d08eb7b/</url>
-    <content><![CDATA[Gitlab概述
-1.1 GitLab介绍
-GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。
-GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。
-它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找
-1.2 Gitlab服务构成
-
-
-Nginx：静态web服务器。
-
-
-gitlab-shell：用于处理Git命令和修改authorized keys列表。
-
-
-gitlab-workhorse: 轻量级的反向代理服务器。
-
-
-logrotate：日志文件管理工具。
-
-
-postgresql：数据库。
-
-
-redis：缓存数据库。
-
-
-sidekiq：用于在后台执行队列任务（异步执行）。
-
-
-unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。
-
-
-1.3 Gitlab工作流程
-
-1.4 GitLab Shell
-GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表
-当通过SSH访问GitLab Server时，GitLab Shell会：
-
-限制执行预定义好的Git命令（git push，git pull，git annex）
-调用GitLab Rails API检查权限
-执行pre-receive钩子（在企业版中叫做Git钩子）
-执行用户请求的动作，处理GitLab的post-receive动作
-处理自定义的post-receive动作
-
-当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：
-如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作
-如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：
-
-调用GitLab Rails API 检查权限
-执行pre-receive钩子（在GitLab企业版中叫做Git钩子）
-执行你请求的动作
-处理GitLab的post-receive动作
-处理自定义的post-receive动作
-
-1.5 GitLab Workhorse
-GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。
-Gitlab的安装部署
-
-
-Gitlab要求服务器内存2G以上
-
-2.1 方式一:下载gitlab-ce的rpm包
-
-gitlab官方rpm包下载
-清华的源
-
-将对应版本的gitlab-ce下载到本地后，直接yum安装即可
-要先将这个rpm包下载到本地
-yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm
-2.2 方式二:配置yum源
-在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：
-[gitlab-ce]
-name=gitlab-ce
-baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/ Repo_gpgcheck=0
-Enabled=1 Gpgkey=https://packages.gitlab.com/gpg.key
-然后创建cache，再直接安装gitlab-ce
-yum makecache  # 这一步会创建大量的数据
-直接安装最新版
-yum install -y gitlab-ce # 如果要安装指定的版本，在后面填上版本号即可
-yum install -y  gitlab-ce-13.6.1
-如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
-yum install gitlab-ce -y --nogpgcheck
-2.3 gitlab的配置
-配置文件位置  /etc/gitlab/gitlab.rb
-[root@centos7 test]# vim /etc/gitlab/gitlab.rb
-[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
-external_url 'http://10.0.0.51'  # 这里一定要加上http://
-配置邮件服务
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.qq.com" gitlab_rails['smtp_port'] = 25 gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
-gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
-gitlab_rails['smtp_domain'] = "qq.com" gitlab_rails['smtp_authentication'] = "login" gitlab_rails['smtp_enable_starttls_auto'] = true
-gitlab_rails['smtp_tls'] = false
-gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
-user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址
-修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。
-gitlab-ctl reconfigure # 重载配置文件
-2.4 Gitlab常用命令
-gitlab-ctl start         # 启动所有 gitlab 组件
-gitlab-ctl stop          # 停止所有 gitlab 组件
-gitlab-ctl restart       # 重启所有 gitlab 组件
-gitlab-ctl status        # 查看服务状态
-gitlab-ctl reconfigure   # 启动服务
-gitlab-ctl show-config   # 验证配置文件
-gitlab-ctl tail          # 查看日志
-gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
-vim /etc/gitlab/gitlab.rb # 修改默认的配置文件
-Gitlab的使用
-
-
-Gitlab安装好后，设置密码，管理账户为root
-
-3.1 创建Group
-
-填上组名即可，这里组名为java
-
-
-
-3.2 创建User
-
-创建四个User：pm、dev1、dev2、dev3
-
-
-
-3.3 添加User到Group中并授权
-
-3.4 创建Project并配置SSH
-
-
-
-
-3.5 在项目中添加成员
-
-
-3.6 将本地文件推送到Gitlab
-将app01项目克隆下来
-git clone git@10.0.0.51:java/app01.git # 初始化配置
-git config --global user.name "hgzero" git config --global user.email "hgzero@qq.com"
-在app01目录下新建一些文件
-推送到gitlab
-git add .
-git commit -m "first edition" git push origin master
-
-
-制定开发计划
-
-
-4.1 创建开发计划
-
-项目：app01
-版本：v1.0
-
-
-4.2 创建里程碑Milestones
-
-用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）
-要根据开发计划来创建Milestones
-
-
-
-
-
-4.3 根据开发计划创建issue
-
-创建4个issue，分派给dev1和dev2这两个开发人员
-
-
-
-
-
-
-
-**4.4 开发者登录账号查看分派的任务 **
-
-然后开发dev1登录gitlab，就能看到任务已经分配过来了
-
-
-4.5 开发流程
-
-公司里的开发开始任务
-
-1. 先从仓库把项目拉下来
-git clone git@10.0.0.51:java/app01.git
-cd app01/
-2.先创建一个自己的分支，然后进行开发
-git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
-git status # 3. 开始开发首页
-echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
-4. 开发完成后，把项目传到仓库
-git add .
-git commit -m "index"
-如果写成 git commit -m “close #2” ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
-传到index分支
-git push origin index
-4.6 合并分支
-1）开发dev1发送合并分支请求给pm
-
-
-
-2）pm收到开发的Merge请求后进行处理
-
-使用pm登录，就可以看到pm已经收到了合并请求merge request
-
-
-
-
-
-3）开发dev1确认任务完成
-
-退出pm账户，登入dev1账户：
-
-
-
-或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close
-
-
-
-这个时候Milestones的进度已经往前进了一些了：
-
-
-4.7 开发其他功能
-
-然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发
-
-git checkout master  # 切换到master
-git pull             # 从远端仓库拉取数据
-然后再进行其他操作
-Gitlab备份恢复
-
-5.1 备份gitlab
-1）修改配置文件
-
-/etc/gitlab/gitlab.rb
-
-备份保存的位置，这里是默认位置，可修改成指定的位置
-gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
-设置备份保存的时间，超过此时间的日志将会被新覆盖
-gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
-特别注意： # 如果自定义了备份保存位置，则要修改备份目录的权限，比如： # chown -R git.git /data/backup/gitlab
-
-配置完成后要重启以使配置生效
-
-重读配置文件
-gitlab-ctl reconfigure # 重启gitlab
-gitlab-ctl restart
-2）设置定时任务
-每天凌晨2点定时创建备份 # 将一下内容写入到定时任务中 crontab -e
-0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create # 备份策略建议： # 本地保留3到7天，在异地备份永久保存
-3）备份时间的识别
-备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
-data -d  @1494170842
-5.2 恢复gitlab
-1）停止数据写入服务
-停止数据写入服务
-gitlab-ctl stop unicorn
-gitlab-ctl stop sidekiq
-2）进行数据恢复并重启
-进行恢复
-gitlab-rake gitlab:backup:restore BACKUP=1494170842  # 这个时间戳就是刚刚备份的文件前面的时间戳
-重启
-gitlab-ctl restart
-gitlab邮件通知配置
-
-
-vim  /etc/gitlab/gitlab.rb
-
-gitlab_rails['time_zone'] = 'Asia/Shanghai' gitlab_rails['gitlab_email_enabled'] = true
-gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
-gitlab_rails['gitlab_email_display_name'] = 'gitlab' gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
-gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
-gitlab_rails['smtp_user_name'] = "smtp用户名" gitlab_rails['smtp_password'] = "smtp用户密码" gitlab_rails['smtp_domain'] = "163.com" gitlab_rails['smtp_authentication'] = "login"
-
-
-使用SourceTree进行项目开发
-
-
-
-7.1 项目拉取
-
-先把项目克隆下来
-
-
-
-
-如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加
-
-
-
-7.2 创建分支进行功能开发
-1）新建立一个叫“pay”的分支
-
-
-2）进行功能开发
-
-7.3 提交项目
-1）开发pay功能完成后进行提交
-
-可以看到SourceTree中已经有“未提交的更改”
-
-
-
-2）添加“用户信息”
-
-** 3）进行提交**
-
-
-注释也可以写成  close #3    ，作用是提交完成后关闭3号issue
-
-7.4 推送到仓库
-
-
-
-然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了
-
-7.5 项目上线
-1）当所有工作完成之后，就可以进行上线了
-
-2）打标签
-
-上线先打个标签
-
-
-
-
-** 3）删除无用分支**
-
-然后删除已经合并到主干中的不必要的分支，如index、pay等
-最后一定要注意时间一定要同步，不然会错乱
-
-参考
-
-Praywu
-
-系列教程
-全部文章RSS订阅
-Gitlab 使用系列
-Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-Devops系列
-Devops 分类 RSS 订阅
-
-自建全套开源Devops开发系统
-Git介绍以及分支模型图解
-三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
-DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
-项目开发管理工具推荐
-Gitlab的安装及使用教程完全版
-Gitlab的安装及使用
-那些有用的Github工具介绍！Action、app、workflow等
-
-项目管理系列介绍锦集
-
-快速全面的介绍现代企业中项目管理相关知识！
-
-
-    
-        
-    
-    
-        如何做一个完整的硬件项目的项目管理之简明教程
-        
-        以一个硬件项目开发为例，介绍现代公司项目管理的一些基本工具和方法，给行业内外朋友一个初步印象，为广大从业者入门相关管理打下一个初步的，全局的基础！最后给出一个IPD端到端管理项目示例
-    
-
-
-    
-        
-    
-    
-        几种常用管理模型和方法
-        
-        几种常用管理模型和方法：PDCA, 5W2H, SMART, SWOT, GROW, OKR, WBS 等，职场人员需要了解的知识。
-    
-
-
-    
-        
-    
-    
-        PMBOK指南（第6版）
-        
-        PMBOK 只是一套悬在空中的方法论，要想具体落地还需要具体的行业知识。两条腿，缺一不可！PMBOK 是基础中的基础知识，了解总是没有坏处的。是常识，不懂就没法做，但要做项目管理，光靠PMBOK远远不够。
-    
-
-
-    
-        
-    
-    
-        如何做好竞品分析
-        
-        竞品分析可以帮助我们更好地找准自身产品定位，发现自己产品的优劣所在，进而推动产品的优化迭代。
-    
-
-
-    
-        
-    
-    
-        一大堆寓意深刻的管理故事锦集
-        
-        几十个关于管理，经营的故事。寓教于乐，寓意深刻，在自己遗忘之前，记录保存下来。包括 扁鹊三兄弟，曲突徒薪，猎人与狗等等
-    
-
-]]></content>
-      <categories>
-        <category>devops</category>
-      </categories>
-      <tags>
-        <tag>gitlab</tag>
-        <tag>git</tag>
-        <tag>crack</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>PT 工具集，Linux硬链接助手</title>
     <url>/posts/bb600b4b/</url>
     <content><![CDATA[由于自我需求，写了两个脚本完成PT下载和保种两全其美的硬链接 Linux shell 脚本方案。
@@ -1985,6 +1562,429 @@ Earthly 一个更加强大的镜像构建工具
         <tag>qnap</tag>
         <tag>硬盘</tag>
         <tag>nas</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Gitlab的安装及使用</title>
+    <url>/posts/d08eb7b/</url>
+    <content><![CDATA[Gitlab概述
+1.1 GitLab介绍
+GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。
+GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。
+它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找
+1.2 Gitlab服务构成
+
+
+Nginx：静态web服务器。
+
+
+gitlab-shell：用于处理Git命令和修改authorized keys列表。
+
+
+gitlab-workhorse: 轻量级的反向代理服务器。
+
+
+logrotate：日志文件管理工具。
+
+
+postgresql：数据库。
+
+
+redis：缓存数据库。
+
+
+sidekiq：用于在后台执行队列任务（异步执行）。
+
+
+unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。
+
+
+1.3 Gitlab工作流程
+
+1.4 GitLab Shell
+GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表
+当通过SSH访问GitLab Server时，GitLab Shell会：
+
+限制执行预定义好的Git命令（git push，git pull，git annex）
+调用GitLab Rails API检查权限
+执行pre-receive钩子（在企业版中叫做Git钩子）
+执行用户请求的动作，处理GitLab的post-receive动作
+处理自定义的post-receive动作
+
+当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：
+如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作
+如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：
+
+调用GitLab Rails API 检查权限
+执行pre-receive钩子（在GitLab企业版中叫做Git钩子）
+执行你请求的动作
+处理GitLab的post-receive动作
+处理自定义的post-receive动作
+
+1.5 GitLab Workhorse
+GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。
+Gitlab的安装部署
+
+
+Gitlab要求服务器内存2G以上
+
+2.1 方式一:下载gitlab-ce的rpm包
+
+gitlab官方rpm包下载
+清华的源
+
+将对应版本的gitlab-ce下载到本地后，直接yum安装即可
+要先将这个rpm包下载到本地
+yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm
+2.2 方式二:配置yum源
+在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：
+[gitlab-ce]
+name=gitlab-ce
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/ Repo_gpgcheck=0
+Enabled=1 Gpgkey=https://packages.gitlab.com/gpg.key
+然后创建cache，再直接安装gitlab-ce
+yum makecache  # 这一步会创建大量的数据
+直接安装最新版
+yum install -y gitlab-ce # 如果要安装指定的版本，在后面填上版本号即可
+yum install -y  gitlab-ce-13.6.1
+如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
+yum install gitlab-ce -y --nogpgcheck
+2.3 gitlab的配置
+配置文件位置  /etc/gitlab/gitlab.rb
+[root@centos7 test]# vim /etc/gitlab/gitlab.rb
+[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
+external_url 'http://10.0.0.51'  # 这里一定要加上http://
+配置邮件服务
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.qq.com" gitlab_rails['smtp_port'] = 25 gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
+gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
+gitlab_rails['smtp_domain'] = "qq.com" gitlab_rails['smtp_authentication'] = "login" gitlab_rails['smtp_enable_starttls_auto'] = true
+gitlab_rails['smtp_tls'] = false
+gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
+user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址
+修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。
+gitlab-ctl reconfigure # 重载配置文件
+2.4 Gitlab常用命令
+gitlab-ctl start         # 启动所有 gitlab 组件
+gitlab-ctl stop          # 停止所有 gitlab 组件
+gitlab-ctl restart       # 重启所有 gitlab 组件
+gitlab-ctl status        # 查看服务状态
+gitlab-ctl reconfigure   # 启动服务
+gitlab-ctl show-config   # 验证配置文件
+gitlab-ctl tail          # 查看日志
+gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
+vim /etc/gitlab/gitlab.rb # 修改默认的配置文件
+Gitlab的使用
+
+
+Gitlab安装好后，设置密码，管理账户为root
+
+3.1 创建Group
+
+填上组名即可，这里组名为java
+
+
+
+3.2 创建User
+
+创建四个User：pm、dev1、dev2、dev3
+
+
+
+3.3 添加User到Group中并授权
+
+3.4 创建Project并配置SSH
+
+
+
+
+3.5 在项目中添加成员
+
+
+3.6 将本地文件推送到Gitlab
+将app01项目克隆下来
+git clone git@10.0.0.51:java/app01.git # 初始化配置
+git config --global user.name "hgzero" git config --global user.email "hgzero@qq.com"
+在app01目录下新建一些文件
+推送到gitlab
+git add .
+git commit -m "first edition" git push origin master
+
+
+制定开发计划
+
+
+4.1 创建开发计划
+
+项目：app01
+版本：v1.0
+
+
+4.2 创建里程碑Milestones
+
+用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）
+要根据开发计划来创建Milestones
+
+
+
+
+
+4.3 根据开发计划创建issue
+
+创建4个issue，分派给dev1和dev2这两个开发人员
+
+
+
+
+
+
+
+**4.4 开发者登录账号查看分派的任务 **
+
+然后开发dev1登录gitlab，就能看到任务已经分配过来了
+
+
+4.5 开发流程
+
+公司里的开发开始任务
+
+1. 先从仓库把项目拉下来
+git clone git@10.0.0.51:java/app01.git
+cd app01/
+2.先创建一个自己的分支，然后进行开发
+git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
+git status # 3. 开始开发首页
+echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
+4. 开发完成后，把项目传到仓库
+git add .
+git commit -m "index"
+如果写成 git commit -m “close #2” ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
+传到index分支
+git push origin index
+4.6 合并分支
+1）开发dev1发送合并分支请求给pm
+
+
+
+2）pm收到开发的Merge请求后进行处理
+
+使用pm登录，就可以看到pm已经收到了合并请求merge request
+
+
+
+
+
+3）开发dev1确认任务完成
+
+退出pm账户，登入dev1账户：
+
+
+
+或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close
+
+
+
+这个时候Milestones的进度已经往前进了一些了：
+
+
+4.7 开发其他功能
+
+然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发
+
+git checkout master  # 切换到master
+git pull             # 从远端仓库拉取数据
+然后再进行其他操作
+Gitlab备份恢复
+
+5.1 备份gitlab
+1）修改配置文件
+
+/etc/gitlab/gitlab.rb
+
+备份保存的位置，这里是默认位置，可修改成指定的位置
+gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
+设置备份保存的时间，超过此时间的日志将会被新覆盖
+gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
+特别注意： # 如果自定义了备份保存位置，则要修改备份目录的权限，比如： # chown -R git.git /data/backup/gitlab
+
+配置完成后要重启以使配置生效
+
+重读配置文件
+gitlab-ctl reconfigure # 重启gitlab
+gitlab-ctl restart
+2）设置定时任务
+每天凌晨2点定时创建备份 # 将一下内容写入到定时任务中 crontab -e
+0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create # 备份策略建议： # 本地保留3到7天，在异地备份永久保存
+3）备份时间的识别
+备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
+data -d  @1494170842
+5.2 恢复gitlab
+1）停止数据写入服务
+停止数据写入服务
+gitlab-ctl stop unicorn
+gitlab-ctl stop sidekiq
+2）进行数据恢复并重启
+进行恢复
+gitlab-rake gitlab:backup:restore BACKUP=1494170842  # 这个时间戳就是刚刚备份的文件前面的时间戳
+重启
+gitlab-ctl restart
+gitlab邮件通知配置
+
+
+vim  /etc/gitlab/gitlab.rb
+
+gitlab_rails['time_zone'] = 'Asia/Shanghai' gitlab_rails['gitlab_email_enabled'] = true
+gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
+gitlab_rails['gitlab_email_display_name'] = 'gitlab' gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
+gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
+gitlab_rails['smtp_user_name'] = "smtp用户名" gitlab_rails['smtp_password'] = "smtp用户密码" gitlab_rails['smtp_domain'] = "163.com" gitlab_rails['smtp_authentication'] = "login"
+
+
+使用SourceTree进行项目开发
+
+
+
+7.1 项目拉取
+
+先把项目克隆下来
+
+
+
+
+如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加
+
+
+
+7.2 创建分支进行功能开发
+1）新建立一个叫“pay”的分支
+
+
+2）进行功能开发
+
+7.3 提交项目
+1）开发pay功能完成后进行提交
+
+可以看到SourceTree中已经有“未提交的更改”
+
+
+
+2）添加“用户信息”
+
+** 3）进行提交**
+
+
+注释也可以写成  close #3    ，作用是提交完成后关闭3号issue
+
+7.4 推送到仓库
+
+
+
+然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了
+
+7.5 项目上线
+1）当所有工作完成之后，就可以进行上线了
+
+2）打标签
+
+上线先打个标签
+
+
+
+
+** 3）删除无用分支**
+
+然后删除已经合并到主干中的不必要的分支，如index、pay等
+最后一定要注意时间一定要同步，不然会错乱
+
+参考
+
+Praywu
+
+系列教程
+全部文章RSS订阅
+Gitlab 使用系列
+Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+Devops系列
+Devops 分类 RSS 订阅
+
+自建全套开源Devops开发系统
+Git介绍以及分支模型图解
+三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
+DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
+项目开发管理工具推荐
+Gitlab的安装及使用教程完全版
+Gitlab的安装及使用
+那些有用的Github工具介绍！Action、app、workflow等
+
+项目管理系列介绍锦集
+
+快速全面的介绍现代企业中项目管理相关知识！
+
+
+    
+        
+    
+    
+        如何做一个完整的硬件项目的项目管理之简明教程
+        
+        以一个硬件项目开发为例，介绍现代公司项目管理的一些基本工具和方法，给行业内外朋友一个初步印象，为广大从业者入门相关管理打下一个初步的，全局的基础！最后给出一个IPD端到端管理项目示例
+    
+
+
+    
+        
+    
+    
+        几种常用管理模型和方法
+        
+        几种常用管理模型和方法：PDCA, 5W2H, SMART, SWOT, GROW, OKR, WBS 等，职场人员需要了解的知识。
+    
+
+
+    
+        
+    
+    
+        PMBOK指南（第6版）
+        
+        PMBOK 只是一套悬在空中的方法论，要想具体落地还需要具体的行业知识。两条腿，缺一不可！PMBOK 是基础中的基础知识，了解总是没有坏处的。是常识，不懂就没法做，但要做项目管理，光靠PMBOK远远不够。
+    
+
+
+    
+        
+    
+    
+        如何做好竞品分析
+        
+        竞品分析可以帮助我们更好地找准自身产品定位，发现自己产品的优劣所在，进而推动产品的优化迭代。
+    
+
+
+    
+        
+    
+    
+        一大堆寓意深刻的管理故事锦集
+        
+        几十个关于管理，经营的故事。寓教于乐，寓意深刻，在自己遗忘之前，记录保存下来。包括 扁鹊三兄弟，曲突徒薪，猎人与狗等等
+    
+
+]]></content>
+      <categories>
+        <category>devops</category>
+      </categories>
+      <tags>
+        <tag>gitlab</tag>
+        <tag>git</tag>
+        <tag>crack</tag>
       </tags>
   </entry>
   <entry>
@@ -12664,9 +12664,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-hGPsCmtUuCqAdkrk").style.height=document.getElementById("mmedia-hGPsCmtUuCqAdkrk").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ioNaquLwncKgmTtz").style.height=document.getElementById("mmedia-ioNaquLwncKgmTtz").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-hGPsCmtUuCqAdkrk").style.height=document.getElementById("mmedia-hGPsCmtUuCqAdkrk").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-ioNaquLwncKgmTtz").style.height=document.getElementById("mmedia-ioNaquLwncKgmTtz").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -13449,6 +13449,104 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
+    <title>CMake快速入门教程</title>
+    <url>/posts/495db4d3/</url>
+    <content><![CDATA[1.cmake简介
+cmake是跨平台的makefile文件生成工具,是为了解决各个平台下面make工具不同造成的makefile文件格式不同的问题.也就是cmake是用来解决跨平台编译问题的.常见的还有autotool工具集，该工具集用于GNU软件协议的makefile文件生成，方便GNU包的编译和安装。
+2.cmake文件编辑规则
+
+1)命令不区分大小写，但是变量区分大小写。
+2)注释使用#符号
+3)命令如果有多个参数，互相之间用空格隔开
+
+3.cmake保留变量
+cmake里面有很多的预定义变量,是程序环境固有的,比如CUDA_NVCC_FLAGS,不同的变量有固定的作用,比如CUDA_NVCC_FLAGS是nvcc的参数list,变量可以使用set命令和list命令进行赋值和追加值,要注意的是变量可能可以有多个值,值与值之间用分号分开,可以使用set(var a b c)给var赋值a b c,还可以使用list命令给var追加删除插入值等,不同的变量有不同的值域,需要查阅手册
+4.cmake变量引用
+cmake里面变量的取值引用要使用${var}的形式,但是在赋值的时候是不需要的,和shell命令有点相似.
+5.cmake指定Debug和Release版本
+指定Debug和Release一共有三种方法：
+1.使用ADD_COMPILE_OPTIONS()加入-g指定Debug版本.
+2.使用SET( CMAKE_BUILD_TYPE Debug/Rrelease)指定Debug
+在下面加入：
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
+SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+上面的设置C++编译选项，对于C语言，设置CMAKE_C_FLAGS_DEBUG、CMAKE_._FLAGS_RELEASE变量，一般来说最好两个都设置原因是CMake 中有一个变量 CMAKE_BUILD_TYPE ,可以的取值是 Debug Release等.当这个变量值为 Debug 的时候,CMake 会使用变量 CMAKE_CXX_FLAGS_DEBUG 和 CMAKE_C_FLAGS_DEBUG 中的字符串作为编译选项生成 Makefile
+编译动态库or静态库时，最好通过修改CXXFLAGS和CFLAGS，以支持-fPIC，这个选项有时是默认开启，有时默认关闭，但为了以后的应用，库文件最好都使用-fPIC编译
+
+在使用cmake命令时加上-DCMAKE_BUILD_TYPE=Debug/Release
+
+5.cmake指定生成文件
+CUDA_ADD_LIBRARY()指明目标文件是库文件,CUDA_ADD_EXECUTABLE()指明生成的文件为可执行文件
+6.配置模板
+通常我们要在工程目录下面创建include、src文件夹，include文件夹里面存放头文件，src文件夹里面存放源代码，注意这时候的源代码里面包含头文件的路径应该是“…/include/xx.h”，然后在工程根目录下面创建CMakeLists.txt文件，里面写入命令.在编译的时候为了不搞乱工程目录，在工程根目录下面创建build文件夹，在里面使用“cmake …”命令创建CMakefile,再make即可。
+#指定cmake最低版本号
+cmake_minimum_required(VERSION 3.2)
+
+#指定项目名称
+PROJECT(Liner_Struct)
+
+#指定头文件目录，不同目录用空格隔开,目录中有空格可用引号
+#如果是相对路径，相对于CMakeLists.txt文件
+INCLUDE_DIRECTORIES(include)
+
+#指定源文件目录，DIR_SRCS值自定义变量，下面的命令对其进行了赋值
+AUX_SOURCE_DIRECTORY(src DIR_SRCS)
+
+#设置变量用于存放所有的编译文件，
+#TEST_LINER_STRUCT是自定义变量，使用SET给其赋值
+SET(TEST_LINER_STRUCT ${DIR_SRCS})
+
+#增加编译选项
+#判断是否为gcc编译器，如果是，增加编译选项
+#c99是c语言的标准，常用的还有c++标准c++11
+#下面的命令判断是否编译器是gcc
+#message命令是输出信息,例如下面的输出“optional:-std=c99”
+if(CMAKE_COMPILER_IS_GNUCXX)
+    ADD_COMPILE_OPTIONS(-std=c99)
+    message(STATUS "optional:-std=c99")
+endif(CMAKE_COMPILER_IS_GNUCXX)
+
+#配置生成文件
+#${PROJECT_NAME}是cmake自带变量，其值和PROJECT()命令指定的一样
+#${TEST_LINER_STRUCT}是自定义变量，上文赋值的
+ADD_EXECUTABLE(${PROJECT_NAME} ${TEST_LINER_STRUCT})
+7.if-else语句
+cmake中的if-else语句
+if(exp)
+     cmdA
+     cmdB
+elseif(exp)
+      cmdC
+endif(exp)
+最简单得到一个应用
+if(ARM)
+   #ARM平台
+else()
+  #非ARM平台 
+endif()
+使用cmake -DARM=1 … 时编译ARM代码，使用cmake -DAMR=0 …编译非ARM代码
+8.与平台编译器的结合
+8.1windows
+在windows上运行cmake可以生成对应的VS的工程文件，然后使用相应的VS打开工程就可以进行编译。要注意的是如果使用VS2010及其以前的版本，C不支持C99，也就是变量的命名必须放在函数或者域的最前面，不能放在中间，特别麻烦。VS2015在安装后可能还需要打开VS，新建工程时选择VC可能相关组件还没有安装，如果这时候使用cmake会提示找不到C、C编译器（类似yuNo CMAKE_CXX_COMPILER could be found）的错误。安装了相关的组件后cmake即不会有错误。
+8.2 为VS2015生成的项目
+打开工程文件后可以看到有3个项目，其中只有一个和我们有直接关系，就是我们在CMakeLists.txt里面定义的PROJECT_NAME,剩下的两个是ALL_BUILD和ZERO_CHECK.
+ZERO_CHECK
+该目标会检查生成工程的 CMake 配置文件（ CMakeLists.txt ）是否更新。如更新，将运行 CMake 重新生成工程文件。
+如果确信 CMakeLists.txt 不会被更新，或者希望手工运行 CMake 重新生成工程文件，可以在 CMakeLists.txt 配置文件中添加 set(CMAKE_SUPPRESS_REGENERATION FALSE) 命令， ZERO_CHECK 目标将不会生成。
+ALL_BUILD
+该目标会导致工程中所有项目被构建，类似 Visual Studio 的 Build All 或者 make 的 make all命令。
+转载 CMake快速入门教程
+]]></content>
+      <categories>
+        <category>linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>cmake</tag>
+        <tag>develop</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>如何通过IPV6访问Qnap NAS中Docker的服务</title>
     <url>/posts/462f1e5c/</url>
     <content><![CDATA[
@@ -13746,104 +13844,6 @@ RUN apk add --no-cache gcc musl-dev linux-headers
         <tag>nas</tag>
         <tag>docker</tag>
         <tag>ipv6</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>CMake快速入门教程</title>
-    <url>/posts/495db4d3/</url>
-    <content><![CDATA[1.cmake简介
-cmake是跨平台的makefile文件生成工具,是为了解决各个平台下面make工具不同造成的makefile文件格式不同的问题.也就是cmake是用来解决跨平台编译问题的.常见的还有autotool工具集，该工具集用于GNU软件协议的makefile文件生成，方便GNU包的编译和安装。
-2.cmake文件编辑规则
-
-1)命令不区分大小写，但是变量区分大小写。
-2)注释使用#符号
-3)命令如果有多个参数，互相之间用空格隔开
-
-3.cmake保留变量
-cmake里面有很多的预定义变量,是程序环境固有的,比如CUDA_NVCC_FLAGS,不同的变量有固定的作用,比如CUDA_NVCC_FLAGS是nvcc的参数list,变量可以使用set命令和list命令进行赋值和追加值,要注意的是变量可能可以有多个值,值与值之间用分号分开,可以使用set(var a b c)给var赋值a b c,还可以使用list命令给var追加删除插入值等,不同的变量有不同的值域,需要查阅手册
-4.cmake变量引用
-cmake里面变量的取值引用要使用${var}的形式,但是在赋值的时候是不需要的,和shell命令有点相似.
-5.cmake指定Debug和Release版本
-指定Debug和Release一共有三种方法：
-1.使用ADD_COMPILE_OPTIONS()加入-g指定Debug版本.
-2.使用SET( CMAKE_BUILD_TYPE Debug/Rrelease)指定Debug
-在下面加入：
-SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
-SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
-上面的设置C++编译选项，对于C语言，设置CMAKE_C_FLAGS_DEBUG、CMAKE_._FLAGS_RELEASE变量，一般来说最好两个都设置原因是CMake 中有一个变量 CMAKE_BUILD_TYPE ,可以的取值是 Debug Release等.当这个变量值为 Debug 的时候,CMake 会使用变量 CMAKE_CXX_FLAGS_DEBUG 和 CMAKE_C_FLAGS_DEBUG 中的字符串作为编译选项生成 Makefile
-编译动态库or静态库时，最好通过修改CXXFLAGS和CFLAGS，以支持-fPIC，这个选项有时是默认开启，有时默认关闭，但为了以后的应用，库文件最好都使用-fPIC编译
-
-在使用cmake命令时加上-DCMAKE_BUILD_TYPE=Debug/Release
-
-5.cmake指定生成文件
-CUDA_ADD_LIBRARY()指明目标文件是库文件,CUDA_ADD_EXECUTABLE()指明生成的文件为可执行文件
-6.配置模板
-通常我们要在工程目录下面创建include、src文件夹，include文件夹里面存放头文件，src文件夹里面存放源代码，注意这时候的源代码里面包含头文件的路径应该是“…/include/xx.h”，然后在工程根目录下面创建CMakeLists.txt文件，里面写入命令.在编译的时候为了不搞乱工程目录，在工程根目录下面创建build文件夹，在里面使用“cmake …”命令创建CMakefile,再make即可。
-#指定cmake最低版本号
-cmake_minimum_required(VERSION 3.2)
-
-#指定项目名称
-PROJECT(Liner_Struct)
-
-#指定头文件目录，不同目录用空格隔开,目录中有空格可用引号
-#如果是相对路径，相对于CMakeLists.txt文件
-INCLUDE_DIRECTORIES(include)
-
-#指定源文件目录，DIR_SRCS值自定义变量，下面的命令对其进行了赋值
-AUX_SOURCE_DIRECTORY(src DIR_SRCS)
-
-#设置变量用于存放所有的编译文件，
-#TEST_LINER_STRUCT是自定义变量，使用SET给其赋值
-SET(TEST_LINER_STRUCT ${DIR_SRCS})
-
-#增加编译选项
-#判断是否为gcc编译器，如果是，增加编译选项
-#c99是c语言的标准，常用的还有c++标准c++11
-#下面的命令判断是否编译器是gcc
-#message命令是输出信息,例如下面的输出“optional:-std=c99”
-if(CMAKE_COMPILER_IS_GNUCXX)
-    ADD_COMPILE_OPTIONS(-std=c99)
-    message(STATUS "optional:-std=c99")
-endif(CMAKE_COMPILER_IS_GNUCXX)
-
-#配置生成文件
-#${PROJECT_NAME}是cmake自带变量，其值和PROJECT()命令指定的一样
-#${TEST_LINER_STRUCT}是自定义变量，上文赋值的
-ADD_EXECUTABLE(${PROJECT_NAME} ${TEST_LINER_STRUCT})
-7.if-else语句
-cmake中的if-else语句
-if(exp)
-     cmdA
-     cmdB
-elseif(exp)
-      cmdC
-endif(exp)
-最简单得到一个应用
-if(ARM)
-   #ARM平台
-else()
-  #非ARM平台 
-endif()
-使用cmake -DARM=1 … 时编译ARM代码，使用cmake -DAMR=0 …编译非ARM代码
-8.与平台编译器的结合
-8.1windows
-在windows上运行cmake可以生成对应的VS的工程文件，然后使用相应的VS打开工程就可以进行编译。要注意的是如果使用VS2010及其以前的版本，C不支持C99，也就是变量的命名必须放在函数或者域的最前面，不能放在中间，特别麻烦。VS2015在安装后可能还需要打开VS，新建工程时选择VC可能相关组件还没有安装，如果这时候使用cmake会提示找不到C、C编译器（类似yuNo CMAKE_CXX_COMPILER could be found）的错误。安装了相关的组件后cmake即不会有错误。
-8.2 为VS2015生成的项目
-打开工程文件后可以看到有3个项目，其中只有一个和我们有直接关系，就是我们在CMakeLists.txt里面定义的PROJECT_NAME,剩下的两个是ALL_BUILD和ZERO_CHECK.
-ZERO_CHECK
-该目标会检查生成工程的 CMake 配置文件（ CMakeLists.txt ）是否更新。如更新，将运行 CMake 重新生成工程文件。
-如果确信 CMakeLists.txt 不会被更新，或者希望手工运行 CMake 重新生成工程文件，可以在 CMakeLists.txt 配置文件中添加 set(CMAKE_SUPPRESS_REGENERATION FALSE) 命令， ZERO_CHECK 目标将不会生成。
-ALL_BUILD
-该目标会导致工程中所有项目被构建，类似 Visual Studio 的 Build All 或者 make 的 make all命令。
-转载 CMake快速入门教程
-]]></content>
-      <categories>
-        <category>linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>cmake</tag>
-        <tag>develop</tag>
       </tags>
   </entry>
   <entry>
@@ -18481,8 +18481,8 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 列表
 
- var btzBrnscMnPvawZI_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    btzBrnscMnPvawZI_options.container = document.getElementById("mmedia-btzBrnscMnPvawZI");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(btzBrnscMnPvawZI_options); 
+ var mxfHbGsCMxVJNBja_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    mxfHbGsCMxVJNBja_options.container = document.getElementById("mmedia-mxfHbGsCMxVJNBja");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(mxfHbGsCMxVJNBja_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -19889,13 +19889,13 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var aozDbPxstzhJwUVr_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
-    aozDbPxstzhJwUVr_options.container = document.getElementById("mmedia-aozDbPxstzhJwUVr");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(aozDbPxstzhJwUVr_options); 
+ var drIxEfaLJFXZVVUm_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
+    drIxEfaLJFXZVVUm_options.container = document.getElementById("mmedia-drIxEfaLJFXZVVUm");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(drIxEfaLJFXZVVUm_options); 
 
 
 
- var ldONvSsqnAroPjgb_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    ldONvSsqnAroPjgb_options.container = document.getElementById("mmedia-ldONvSsqnAroPjgb");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(ldONvSsqnAroPjgb_options); 
+ var lnNRrfVhxcXyluuC_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    lnNRrfVhxcXyluuC_options.container = document.getElementById("mmedia-lnNRrfVhxcXyluuC");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(lnNRrfVhxcXyluuC_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -20147,9 +20147,9 @@ Earthly 一个更加强大的镜像构建工具
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-mAqTNsZEFJVkxuFJ").style.height=document.getElementById("mmedia-mAqTNsZEFJVkxuFJ").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-nFOFsYocspXqdTBy").style.height=document.getElementById("mmedia-nFOFsYocspXqdTBy").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-mAqTNsZEFJVkxuFJ").style.height=document.getElementById("mmedia-mAqTNsZEFJVkxuFJ").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-nFOFsYocspXqdTBy").style.height=document.getElementById("mmedia-nFOFsYocspXqdTBy").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -20158,8 +20158,8 @@ Earthly 一个更加强大的镜像构建工具
 
 ## 中文翻唱
 
- var SURuvwxHqWUHmJGf_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
-    SURuvwxHqWUHmJGf_options.container = document.getElementById("mmedia-SURuvwxHqWUHmJGf");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(SURuvwxHqWUHmJGf_options); 
+ var BitBDaumlwZJWGuV_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
+    BitBDaumlwZJWGuV_options.container = document.getElementById("mmedia-BitBDaumlwZJWGuV");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(BitBDaumlwZJWGuV_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -44384,7 +44384,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts9812'));
+        var myChart = echarts.init(document.getElementById('echarts1482'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44478,7 +44478,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts3704'));
+        var myChart = echarts.init(document.getElementById('echarts592'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44547,7 +44547,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts3497'));
+        var myChart = echarts.init(document.getElementById('echarts6818'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -49328,9 +49328,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-uiWTMpRRvhjQHCXb").style.height=document.getElementById("mmedia-uiWTMpRRvhjQHCXb").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-RFhoutSkPxFdmiJv").style.height=document.getElementById("mmedia-RFhoutSkPxFdmiJv").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-uiWTMpRRvhjQHCXb").style.height=document.getElementById("mmedia-uiWTMpRRvhjQHCXb").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-RFhoutSkPxFdmiJv").style.height=document.getElementById("mmedia-RFhoutSkPxFdmiJv").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 
@@ -52945,9 +52945,9 @@ chatGPT
 
 视频讲解
 B站
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-vekncRMraCkDDVXf").style.height=document.getElementById("mmedia-vekncRMraCkDDVXf").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-SLrkREzsGAOveTfU").style.height=document.getElementById("mmedia-SLrkREzsGAOveTfU").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-vekncRMraCkDDVXf").style.height=document.getElementById("mmedia-vekncRMraCkDDVXf").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-SLrkREzsGAOveTfU").style.height=document.getElementById("mmedia-SLrkREzsGAOveTfU").scrollWidth*0.76+"px";
     }; 
 youtube
 
@@ -53974,303 +53974,6 @@ c9名单
       </tags>
   </entry>
   <entry>
-    <title>从零开始玩PT-入门到精通</title>
-    <url>/posts/9806d7f1/</url>
-    <content><![CDATA[
-前言
-PT 是个小圈子，重分享，有规矩的地方。如果你不愿意与别人共享你的资源与带宽且对所谓的规则不满（实在不合理可以 PM 管理协商），那么请出门左拐，X 宝付费拷资源和充值迅雷是你的好选择。
-另外 PT 是非营利的，捐赠被用于租用服务器和购买原盘、购买压制机器等。您的捐赠是为了网站的更好发展。所以捐赠与购买视频网站 VIP 是有本质上的区别的。
-玩 PT 不是被 PT 玩，不要因为玩 PT 花费太多时间，而影响到你的工作和生活。
-有问题尽量自己先百度或查看站内规则和常见问题，不要直接问，提问也要说明你遇到了什么样的问题，之前做了什么操作等。这样别人才好帮助你更好的解决问题，节省大家的时间。一定不要发生。别人说了半天，你来一句，恩我明白了，那你能帮帮我吗？
-PT是什么？
-先说说 BT
-首先介绍一下BT，BT是用在对等网络中文件分享的网络协议程序。和点对点(point-to-point)的协议程序不同， 最大特点就是下载的人越多，下载速度就越快，因为在你下载的同时，会把下载到的部分文件上传给其他人，其他人下载了也会把下载的部分分享出来。因为 BT 有太多下了就跑，不愿意做分享的人，所以催生了 PT(Private Tracker)的产生。
-PT 和 BT 有什么不同
-PT就是一个打造我为人人，人人为我的下载协议，最早出现的是BT，我们经常下载的种子就是这种，有人会说那我平时下电影下自愿者直接用迅雷或百度网盘下不就行了嘛，为什么要用PT呢？首先，总所周知迅雷和百度网盘的下载速度是多么的无语，他们的程序在后台其实也是间接的把本机的资源分享给了别人，其实原理上都是一样的，只不过他们从中限速做会员割韭菜。此外，你不一定能找到相关资源的BT种子，正所谓无规矩不成方圆，如果有一些规则加以限制，这个圈子才能越来越好，形成良好的闭环。
-PT 想对于 BT 有两个明显的改进:一是私密的小范围下载，二是进行流量统计，其根据上传量决定你的权限。
-因此提供 PT 服务的网站是不公开的，采用邀请制或是不定时开放注册。用户注册后会 得到一个 passkey，服务器由 passkey 识别每个用户，用户从某 PT 站下载种子后，该种子即 带有用户的 passkey。因此 PT 的种子是不可外流到其他地方
-所以在出现问题询问时，一定要隐藏好你的 passkey 值。例如:截 图是用马赛克遮挡 passkey 值，因为如果你的 key 泄露某些别用用心的人就可以使用你的 key进行下载，这比你账号密码泄露更加可怕。
-
-由于有 passkey，用户上传及下载即可统计，在大多数的 PT 站会以上下载比例(分享率) 规定用户需上传多少后才可下载多少，分享率过低者会被系统取消使用 PT 的资格。由于需 有足够的上传方可下载，因此有些用户会租用网络上有大带宽的 Seedbox 以冲高自己的上传率。Seedbox就是租用一个大硬盘大带宽的服务器，在上面发布资源供别人下载，这样别下载的流量都会统计到你的账号里上传量会很高，就意味着你自己可以随便下你想下的资源。
-名词解释
-其实和你平时在网上下载资源一样，我们都会得到一个XXX.torrent的种子文件，无非是BT不带key，PT带key而已。在正式开始之前，我们来补充一下相关理论知识。
-BT
-是用在对等网络中文件分享的网络协议程序。和点对点(point-to-point)的协议程序不同， 最大特点就是下载的人越多，下载速度就越快，因为在你下载的同时，会把下载到的部分文件上传给其他人，其他人下载了也会把下载的部分分享出来。
-PT
-因为BT 有太多下了就跑不愿意做分享的人，所以催生了 PT(PrivateTracker)的产生。 PT 对于 BT 有两个明显的改进:一是私密的小范围下载，二是进行流量统计，其根据下载量决定你的权限。因此提供 PT 服务的网站是不公开的，采用邀请制或是不定时开放注册。用户注册后会得到一个passkey，服务器由 passkey识别每个用户，用户从某PT站下载种子后，该种子即带有用户的passkey。因此PT的种子是不可外流到其他地方的。所以一定要隐藏好你的 passkey 值，因为如果你的 key泄露某些别用用心的人就可以使用你的key进行下载，这比你帐号密码泄露更可怕
-种子
-根据 BitTorrent 协议，文件发布者会根据要发布的文件生成提供一个.torrent 文件，即种子文件，也简称为“种子”。种子文件本质上是文本文件，包含 Tracker信息和文件信息两部分。Tracker 信息主要是 BT 下载中需要用到的 Tracker 服务器的地址和针对 Tracker 服务器的设置，文件信息是根据 对目标文件的计算生成的，计算结果根据 BitTorrent 协议内的 Bencode 规则进行编码。它的 主要原理是需要把提供下载的文件虚拟分成大小相等的块，块大小必须为 2k 的整数次方(由 于是虚拟分块，硬盘上并不产生各个块文件)，并把每个块的索引信息和 Hash 验证码写入种 子文件中;所以，种子文件就是被下载文件的“索引”。
-下载者要下载文件内容，需要先得到相应的种子文件，然后使用 BT 客户端软件进行下载。下载时，BT 客户端首先解析种子文件得到 Tracker 地址，然后连接 Tracker 服务器。Tracker 服务器回应下载者的请求，提供下载者其他下载者(包括发布者)的 IP。下载者再连接其他 下载者，根据种子文件，两者分别告知对方自己已经有的块，然后交换对方所没有的数据。 此时不需要其他服务器参与，分散了单个线路上的数据流量，因此减轻了服务器负担。 下载者每得到一个块，需要算出下载块的 Hash 验证码与种子文件中的对比，如果一样则说 明块正确，不一样则需要重新下载这个块。这种规定是为了解决下载内容准确性的问题。 一般的 HTTP/FTP 下载，发布文件仅在某个或某几个服务器，下载的人太多，服务器的带宽 很易不胜负荷，变得很慢。而 BitTorrent 协议下载的特点是，下载的人越多，提供的带宽也 越多，下载速度就越快。同时，拥有完整文件的用户也会越来越多，使文件的“寿命”不断延长。
-在使用PT的时候你可能也会遇到一些专业词，这里给出基本的解释：
-Tarcker: 收集下载者信息的服务器，并将此信息提供给其他下载者，可以理解为电话总机。
-Tarcker
-收集下载者信息的服务器，并将此信息提供给其他下载者，可以理解为电话总机。
-DHT
-全称为分布式哈希表(Distributed Hash Table)，是一种分布式存储方法。在不需要中心
-服务器，每个客户端负责一个小范围的路由，并负责存储一小部分数据，从而实现整个 DHT 网络的寻址和存储。使用支持该技术的 BT 下载软件，用户无需连上 Tracker 就可以下载，因 为软件会在 DHT 网络中寻找下载同一文件的其他用户并与之通讯，开始下载任务。 这种技术好处十分明显，就是大大减轻了 Tracker 的负担(甚至不需要)。用户之间可以更快 速创建通讯(特别是与 Tracker 连接不上的时候)
-PXE
-是 Peer Exchange(用户交换)的简写，我们可以将其理解为“节点信息交换”
-前面说到了 DHT 网络是没有中心服务器的，那么我们的客户端总不能满世界去喊:“我在下 载这个文件，快来连我吧.”(很大声)。所以就通过各个 BT 客户端自带的节点去同步路由表 实现 DHT 网络接。
-辅种
-其他人发布了资源，你手里刚好也有这个资源，那么你下载种子之后。只要数据通过了 hash 校验就会变成做种状态。
-初始做种/超级种子/超级种子模式:
-有些 BitTorrent 客户端用户下载完成后就关掉下载任务，全过程只提供了较少量数据给其他用户。为尽量避免这种行为，在非官方 BitTorrent 协议中存在超级种子的算法。这种算 法对文件发布者的种子文件有要求。文件发布者可以分几步发布文件，发布者不需要一次提 供文件所有内容，而是慢慢开放的下载内容的比例，延长下载时间。此时，速度快的人由于 未下载完必须提供给他人数据，速度慢的人有更多机会得到数据
-魔力值
-PT 站的货币，用于站内购买邀请码。上传下载量，勋章等。由做种产生，具体与做种数 量、种子大小等有关
-图床
-可以提供外链的网络相册，目前在用 Z4A。某些 PT 站点也会自建图床。
-做种率
-做种率 = 做种时间 ÷ 下载时间
-分享率:
-分享率 = 上传量 ÷ 下载量
-盒子(Seedbox):
-大带宽(1Gbps 或更高的带宽)服务器，用于刷上传量，或快速下载 推荐 OP 独服。使用盒子有利有弊
-优点:快速出种，对内网用户友好，别人连不上你时，你会发现盒子大佬已经连上你了。
-缺点:对小水管不友好。因为带宽大，上传下载速度快导致很多小水管玩家根本抢不到 上传量只能默默看着盒子大佬数据飞涨，所以很多站点开始对盒子进行限制。
-资源的标识:
-
-如上图所示(注意看标题后面的小图标):
-
-
-无标记：表示为普通资源，计算正常的下载量，上传量
-Free：表示免费下载，不计算下载量
-2xFree：表示免费下载，不计算下载量，计算两倍的上传量
-50%：表示计算 50%的下载量
-2x50%：表示计算 50%的下载量，计算两倍的上传量
-30%：表示只计算 30%的下载量
-H&amp;R：hit and run 打击下完就跑，有 H&amp;R 标识的资源会要求在一定时间内需做种时间满足一定小时，不达标会记录一个 HR，HR 达到一定的量会被 ban 号
-
-
-PT站点介绍
-每一个PT站点，都有自己独一无二的属性，不是千篇一律的，根据你的需要可选择加入不同的PT站点，比如：
-天雪动漫高清论坛：资源方面以高清动漫资源为主，下载方面以PT下载为主、网盘分享为辅，网站基于Discuz构建。
-U2动漫花园：国内最为知名的动漫PT站,动漫资源很全，发布速度很快。
-M-Team：以特色资源(限制级内容)为主的PT站点
-PT站点大全如图所示，可以根据选择入站。
-
-如何注册某个PT站点的账号？
-捐助
-通过支付宝、微信、PayPal等常见支付方式向网站捐助一定金额，或者在网站官方开设的店铺里面购买邀请码。
-捐助的金额一般用来维护服务器费用。
-开放注册
-一般的PT站点会在特定的节假日期间开放注册。
-在活动期间，注册账号后，完成新手考核即可加入。
-通过邀请码加入
-
-
-如果你认识某个PT站点的朋友，这个朋友可以发放邀请码，你可以通过他的邀请码加入该PT站点。
-
-
-一般PT站点的官方会在其他PT站点发放官方邀请，只要你满足一定要求（比如说达到一定等级，上传量、下载量、做种时间分别达到多少）就可以得到邀请码。你也可以在你所在的PT站点的PT邀请区，向其他成员求一个邀请码，一般要展示你的数据（上传量、下载量、做种时间、HR等等）。
-
-
-你可以在百度PT吧发帖，向其他成员求一个邀请码，一般要展示你的数据（上传量、下载量、做种时间、HR等等）。或者在贴吧的官方长期邀请楼下面，讲一下你的故事，求一个邀请码，同上。
-
-
-新手考核
-进入PT站后一般新用户都会面对新手考核，也有些站点没有新手考核，但全站 H&amp;R。
-在开始完成新手考核之前，一定要看网站的规则和常见问题。
-
-
-里面规定了你可以使用的客户端，可以上传的资源类型等等。很多规定和教程会被写在论 坛里面，说起来对新人就不是那么友好的。但也要大致的看一遍，了解了规则之后，将事 半功倍。
-新手考核明面上考察的是如下几项：做种率、上传量、下载量、魔力值。
-
-但有一个隐藏的，伴随你整个 PT 生涯的考核就是 。分享率过低会限制可链接数量 同时只能下载一个种子等等。如果你做好了打一枪换一地疯狂吸血的想法，那不妨试试。
-那么应该如何通过新手考核呢?
-最快的方法捐赠:大多数网站都可以通过捐赠免除新手考核，并赠送一定的上传流量和魔 力值。但不建议第一次玩 PT 的新人就直接捐赠过考核，因为即使通过了考核也可能因为不 了解 PT 的规则而把账号玩死。
-完成考核的顺序如下:
-01、刷上传量，别着急下载自己喜欢的电影或电视剧，经常见到有第一次玩 PT 的人在抱 怨，为什么我要下载自己不喜欢的视频来刷上传呢，每个人都有自己喜欢的资源也不会断 种啊，这个问题问的极好。为啥您就自己用脚趾头想想吧。这些疯狂吸血的大哥们，你觉 得号还会在吗? 当然实在不愿意下载不喜欢的资源，那可以上传你自己资源嘛，这样刷上传更快。。
-那怎么刷上传呢，刷上传不代表不下载，但要先下载带有 free 或 2xfree 做种人数少的种子，通过前面 BT 的介绍就可以知道为什么要这么干了。什么你没看?那就记照 这做就好了。 如果你直接下载普通或 50%的种子，这些种子往往大家都已经下过了， 你下载完了做种根本赚不到什么上传，就会造成你的分享率就会过低，过低就会被限制连 接数，限制了连接数就不好过考核，过不了考核号就没了!
-02、做种率，前面提到了做种率 = 做种时间 ÷ 下载时间，那么怎么快速提高做种率呢。 如果你第一次玩 PT，手里没有什么资源，那么就下载体积小做种人数多的 free 种子，快速 完成下载做种，提高做种时间。如果你别的站有账号，对新注册的站点，可以靠辅种来快 速通过做种率。(一个优质的非禁转资源，基本上各个网站都会转载)
-03、魔力值，魔力值的产生跟做种数量、种子体积、种子生存时间等等有关。具体自己计 算。如何查看你自己每小时会产生多少魔力值呢，鼠标左键点击魔力值旁边的使用进入下 拉页面查看当前每小时产生魔力值，一句话多做种、挂着就可以了。
-
-04、下载量，下载一点自己喜欢的电影电视剧保证分享率&gt;1 就可以了。这样新手考核就很 快的通过了
-对于不喜欢就是用来过考核的资源呢，建议过了新手考核再删除，毕竟还能帮你赚魔力。
-其实新手的考核非常简单，设置这个考核的核心目的就是检验你是否肯为人人付出，你就找那些即免费又有人下的资源，下载好后保种等待别人来下，挂个一周就过了。
-制作种子、添加候选、发布
-命名规范
-尽量保持三一致，即视频（文件夹）名称、种子名称、发布标题名称保持一致转载资源请保持原名！！！
-
-电影命名规范：英文名 年份 来源 分辨率 视频编码 音轨编码-制作组例：Operation Red Sea 2018 BluRay 1080p x265.10bit MNHD-FRDS
-电视剧命名规范：英文名 年份 季数/集数 来源 分辨率 视频编码 音轨编码-制作组例：The Golden Eyes 2019 EP11-EP14 WEB-DL 2160P H265 AAC
-视频或文件夹命名时将空格使用 “.”代替，避免 linux 等系统下载文件时对文件夹名称进行修改。如图：windows 下 1 2.txt 文件上传到 centos 后文件名中空格被修改为
-
-来源类型：UHD Blu-ray（4K 蓝光原盘）、Blu-ray（蓝光原盘）、
-HDTV（电视录制）、DVD、WEB-DL（视频网站下载）
-制作种子：
-根据命名规范修改好本地的资源名称后，开始制作种子，这里只介绍 windows 下如何制作，linux 请自行百度 mktorrent 的用法。为了保证别人辅种方便，建议制作种子时使用文件夹制作，而不是选择单独视频文件。
-qBittorrent 制作种子
-工具—生成 Torrent，将文件或文件夹拖动到窗口汇总，勾选私有 torrent，优化对齐，tracker 网址中如果知道 tarcker 地址则填写，不知道填写任意字符即可，上传种子后网站会自动添加 tarcker 信息—制作 Torrent
-
-添加候选、发布种子
-登录网站—点击候选—添加候选—第一次发找了好久，没错那是一个按钮
-
-
-整个候选页就是你看到的这个样子，仅需要选择类型、填写标题、资源信息、视频编码等就可以了，在发布时才会有上传种子等其他选项。如下图发布编辑页所示。
-
-
-在编辑候选之前，我的建议是为每个要发布的资源创建一个 txt 文件，方便多个站点发布及其他原因造成的种子被删除后的重新发布。
-这个 txt 中包含如下条目，如下图所示。
-01 主标题名称
-02 副标题名称
-03 IMDB 链接
-04 影片资源简介 —填写在简介的文本框中 使用ptgen 获取，见下文
-05 影片编码信息 —填写在简介的文本框中，在影片资源简介下，使用 mediainfo 获取使用一对[quote]标签括起
-例：[quote]获取到的视频编码信息 [/quote]
-06 上传到图床的缩略图链接使用一对[img]标签括起来 【可选非必须】
-例：[img] https://www.z4a.net/images/2019/02/22/p2545583652.jpg [/img]
-
-候选页仅填写 01、04、05、【06 非必须】几项即可。
-因为我们获取影片简介时会带一张海报图，所以在候选的海报位置无需填写。点击添加等待候选通过即可。
-
-通过候选后，点击发布，按提示编辑，并上传种子，填写好类型、质量、内容信息，选中你要发布的候选，如需匿名发布则勾选不要在发布者项目中显示我的用户名。检查无误后点击发布，发布后需要重新下载网站上的种子到本地做种。详见下文如何辅种
-
-编辑候选及发布种子时，我们可能会用到如下工具的：
-01、ptgen（用于获取影片资源简介）
-可使用站点如下：
-
-https://rhilip.github.io/PT-help/ptgen
-https://www.2bmi.com/ https://ptbox.club/PT-help/ptgen.html
-https://www.bfdz.ink/tools/ptgen
-
-
-
-
-02、mediainfo/potplayer：获取视频编码、及音频编码信息
-
-
-下载绿色版 mediainfo 客户端，打开后如图设置语言英文，输出格式 text。回车，将资源拖动到软件中，就会生成视频编码信息，右键全选，复制粘贴到[quote][/quote]这对标签中即可。然后删除 Complete name 中的路径信息，仅保留视频文件名称。其他不用变
-例：Complete name ：黄金瞳 01.mp4
-Potplayer 获取视频编码信息方法：打开视频，Ctrl+F1 （或邮件属性）— 文件信息—点击复制到粘贴板。
-
-同样复制并粘贴视频编码信息后将 Complete name 中的路径信息删除
-03、bdinfo：获取蓝光原盘视频编码信息 推荐使用 0.7.5.5 版本比 0.5.8 增加了 ISO 选项
-
-
-
-04、DVDFab Virtual Drive（虚拟光驱）：用于直接挂载蓝光原盘 ISO
-如上图，bdinfo 查询速度相对于 mediainfo 慢的多，ISO 镜像推荐使用 DVDFab Virtual Drive 挂载后使用 mediainfo 查看，查看文件路径如下：原盘名\BDMV\STREAM\找到体积最大的文件拖到 mediainfo 中，右键全选复制）
-当然对于蓝光原盘在不着急的情况下，还是建议使用 BDinfo 去获取编码信息，显得更加正式。
-05、BEncode Editor 种子编辑器，修改种子名称，tracker 地址等。
-常用工具
-下载工具
-
-
-Windows：推荐 ut 2.0.4、qBittorrent 4.1.x
-
-
-Linux：推荐 Transmission  transmission 使用及其配置教程
-
-
-Transmission 增加跳过校验: https://github.com/superlukia/transmission-2.92_skiphashcheck Deluge、qBttorrent-nox、rTorrent
-
-
-群晖：推荐 Transmission
-
-
-更换 web 页面 https://github.com/ronggang/transmission-web-control 或Docker 安装 qBittorrent
-
-
-威联通：推荐 Transmission、 使用第三方源安装 qBittorrent-nox
-
-
-参考教程：qBittorrent 参数详细设置教程qBittorrent
-
-
-下载地址：https://www.qnapclub.eu/en/qpkg/507
-
-
-搜索工具
-如果想快速搜索资源或者站点比较多想分类搜索，可以使用：
-PT-Plugin-Plus：https://github.com/ronggang/PT-Plugin-Plus
-辅种工具
-IYUUAutoReseed：https://github.com/ledccn/IYUUAutoReseed
-Reseed-backend：https://github.com/tongyifan/Reseed-backend
-红种原因及 tracker 状态排查：
-错误：  You already are downloadingthe same torrent.You may only leech from one location at a time.
-原因：意外断网，意外重启，非法关闭客户端软件造成的服务器数据不同步，通常表现为：PT 站里任务统计数比实际数多。
-解决方法：暂停所有下载，等待半小时网站系统刷新下载显示为 0，在开始下载。未避免这种情况，在关机之前先暂停所有做种及下载任务然后关闭设备
-错误： Sorry，minimum announce interval=30 sec.Plesae retry after 30 sec
-原因：频繁更新 TRACKER 地址导致，在手工更新 TRACKER 地址后，停止任务，且马上重新开始任务，就会造成 minimum announce interval=30 sec 的红种。
-解决方法：勿频繁更新 TRACKER，停止任务后不要急于手工更新 tracker
-错误： Invalid passkey
-原因：PASSKEY 泄露或被盗，或者重置自己的 PASSKEY 之后没有重新下载种子
-解决方法：如果是自己没有修改过 PT 账户的密码，那可能被盗号了，请尽快重置自己的 PT 密码！无论如何都要再重新下载该 PT 种子，自动进行校验后会继续下载或者做种。前面也提到了，截图一定要给 passkey 打码
-错误：  error：Unregistered torrent
-原因：已下载的种子文件由于各种原因被删除。如果是剧集，可以搜索该剧集查看是否集中发布了合集。
-解决方法：删除任务，重新下载新的合集种子文件，查看合集中的任务文件是否与自己之前下的文件相同如果相同，文件相同重新命名后直接辅种即可。
-错误： Client is banned
-原因：1、PT 网站与你所用的的客户端软件版本不符，一般 PT 站都禁止使用测试版软件，在网站常见问题中查看允许使用的客户端
-2、你的帐号已被禁止解决方法：
-请安装该 PT 网站支持的客户端软件联系你的 PT 网站或重新注册其他网站
-错误： PL ERR 2
-原因：红种问题，Traker 有错误
-解决方法：可手工更新 tracker 并向该 PT 网站论坛反映情况，待其更新。
-注意事项
-1.多IP下载
-对于一般用户来说，可以从不同的电脑登录下载。
-但有一定的限制，对于某个种子你一次只能在一个地方下载。
-如果你频繁变动IP，最好在论坛的相应板块进行报备，说明一下情况。
-2.禁止发布种子到别的Tracker服务器。
-一般发生这样的情况，会追究责任，相应的责任人会被封禁账号。
-但你已经下载的文件发布者明确说明为独占的资源除外），你可以自己制作另一个种子，发布到别的Tracker服务器。
-3.严禁公开分享你的种子（带有你私人passkey的种子）
-一旦你在网站上公开分享，只要被管理员发现或者其他用户举报，基本上会被封禁账号
-4.不要分享邀请码给那些不值得信任的人
-一般的PT站点实行的是连坐制度，一旦你邀请的那个人违反规则被封禁或者没有通过新手考核被封禁，你同样也会受到相应的处罚。
-一般用户达到一定等级后，就可以得到一定的邀请名额，可以通过邮箱发送邀请码。
-几个禁忌：
-01、  转载资源更改后缀（制作人、压制组）会被 ban 号
-02、  转载资源更改原目录及文件名称，造成其他人无法辅种
-03、  转载明显标注为禁转的资源
-04、  尊重发种人，不要在下面评论上传速度慢，种子体积较大，因上传速度慢无法在 free 时间内完成的，PM 管理申请延长 free 时间。
-05、  对资源进行修改或压制时，在挣得原作者同意后再进行发布。
-参考&amp;致谢
-
-从零开始玩PT-新人指南
-从零开始玩PT LASTGL
-从零开始玩PT
-
-系列教程
-全部文章RSS订阅
-Nas系列
-Nas 分类 RSS 订阅
-
-从零开始玩PT-入门到精通
-如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
-音视频图书和音乐自动化管理框架图解
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Potplayer终极优化教程实现PC视频播放最强画质
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列
-Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>bt</tag>
-        <tag>pt</tag>
-        <tag>nas</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>信息时代必备的搜索引擎高级技巧使用指南</title>
     <url>/posts/f12af66/</url>
     <content><![CDATA[
@@ -54793,6 +54496,303 @@ Topbook：高效生活视频书。
         <tag>教程</tag>
         <tag>tools</tag>
         <tag>google</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>从零开始玩PT-入门到精通</title>
+    <url>/posts/9806d7f1/</url>
+    <content><![CDATA[
+前言
+PT 是个小圈子，重分享，有规矩的地方。如果你不愿意与别人共享你的资源与带宽且对所谓的规则不满（实在不合理可以 PM 管理协商），那么请出门左拐，X 宝付费拷资源和充值迅雷是你的好选择。
+另外 PT 是非营利的，捐赠被用于租用服务器和购买原盘、购买压制机器等。您的捐赠是为了网站的更好发展。所以捐赠与购买视频网站 VIP 是有本质上的区别的。
+玩 PT 不是被 PT 玩，不要因为玩 PT 花费太多时间，而影响到你的工作和生活。
+有问题尽量自己先百度或查看站内规则和常见问题，不要直接问，提问也要说明你遇到了什么样的问题，之前做了什么操作等。这样别人才好帮助你更好的解决问题，节省大家的时间。一定不要发生。别人说了半天，你来一句，恩我明白了，那你能帮帮我吗？
+PT是什么？
+先说说 BT
+首先介绍一下BT，BT是用在对等网络中文件分享的网络协议程序。和点对点(point-to-point)的协议程序不同， 最大特点就是下载的人越多，下载速度就越快，因为在你下载的同时，会把下载到的部分文件上传给其他人，其他人下载了也会把下载的部分分享出来。因为 BT 有太多下了就跑，不愿意做分享的人，所以催生了 PT(Private Tracker)的产生。
+PT 和 BT 有什么不同
+PT就是一个打造我为人人，人人为我的下载协议，最早出现的是BT，我们经常下载的种子就是这种，有人会说那我平时下电影下自愿者直接用迅雷或百度网盘下不就行了嘛，为什么要用PT呢？首先，总所周知迅雷和百度网盘的下载速度是多么的无语，他们的程序在后台其实也是间接的把本机的资源分享给了别人，其实原理上都是一样的，只不过他们从中限速做会员割韭菜。此外，你不一定能找到相关资源的BT种子，正所谓无规矩不成方圆，如果有一些规则加以限制，这个圈子才能越来越好，形成良好的闭环。
+PT 想对于 BT 有两个明显的改进:一是私密的小范围下载，二是进行流量统计，其根据上传量决定你的权限。
+因此提供 PT 服务的网站是不公开的，采用邀请制或是不定时开放注册。用户注册后会 得到一个 passkey，服务器由 passkey 识别每个用户，用户从某 PT 站下载种子后，该种子即 带有用户的 passkey。因此 PT 的种子是不可外流到其他地方
+所以在出现问题询问时，一定要隐藏好你的 passkey 值。例如:截 图是用马赛克遮挡 passkey 值，因为如果你的 key 泄露某些别用用心的人就可以使用你的 key进行下载，这比你账号密码泄露更加可怕。
+
+由于有 passkey，用户上传及下载即可统计，在大多数的 PT 站会以上下载比例(分享率) 规定用户需上传多少后才可下载多少，分享率过低者会被系统取消使用 PT 的资格。由于需 有足够的上传方可下载，因此有些用户会租用网络上有大带宽的 Seedbox 以冲高自己的上传率。Seedbox就是租用一个大硬盘大带宽的服务器，在上面发布资源供别人下载，这样别下载的流量都会统计到你的账号里上传量会很高，就意味着你自己可以随便下你想下的资源。
+名词解释
+其实和你平时在网上下载资源一样，我们都会得到一个XXX.torrent的种子文件，无非是BT不带key，PT带key而已。在正式开始之前，我们来补充一下相关理论知识。
+BT
+是用在对等网络中文件分享的网络协议程序。和点对点(point-to-point)的协议程序不同， 最大特点就是下载的人越多，下载速度就越快，因为在你下载的同时，会把下载到的部分文件上传给其他人，其他人下载了也会把下载的部分分享出来。
+PT
+因为BT 有太多下了就跑不愿意做分享的人，所以催生了 PT(PrivateTracker)的产生。 PT 对于 BT 有两个明显的改进:一是私密的小范围下载，二是进行流量统计，其根据下载量决定你的权限。因此提供 PT 服务的网站是不公开的，采用邀请制或是不定时开放注册。用户注册后会得到一个passkey，服务器由 passkey识别每个用户，用户从某PT站下载种子后，该种子即带有用户的passkey。因此PT的种子是不可外流到其他地方的。所以一定要隐藏好你的 passkey 值，因为如果你的 key泄露某些别用用心的人就可以使用你的key进行下载，这比你帐号密码泄露更可怕
+种子
+根据 BitTorrent 协议，文件发布者会根据要发布的文件生成提供一个.torrent 文件，即种子文件，也简称为“种子”。种子文件本质上是文本文件，包含 Tracker信息和文件信息两部分。Tracker 信息主要是 BT 下载中需要用到的 Tracker 服务器的地址和针对 Tracker 服务器的设置，文件信息是根据 对目标文件的计算生成的，计算结果根据 BitTorrent 协议内的 Bencode 规则进行编码。它的 主要原理是需要把提供下载的文件虚拟分成大小相等的块，块大小必须为 2k 的整数次方(由 于是虚拟分块，硬盘上并不产生各个块文件)，并把每个块的索引信息和 Hash 验证码写入种 子文件中;所以，种子文件就是被下载文件的“索引”。
+下载者要下载文件内容，需要先得到相应的种子文件，然后使用 BT 客户端软件进行下载。下载时，BT 客户端首先解析种子文件得到 Tracker 地址，然后连接 Tracker 服务器。Tracker 服务器回应下载者的请求，提供下载者其他下载者(包括发布者)的 IP。下载者再连接其他 下载者，根据种子文件，两者分别告知对方自己已经有的块，然后交换对方所没有的数据。 此时不需要其他服务器参与，分散了单个线路上的数据流量，因此减轻了服务器负担。 下载者每得到一个块，需要算出下载块的 Hash 验证码与种子文件中的对比，如果一样则说 明块正确，不一样则需要重新下载这个块。这种规定是为了解决下载内容准确性的问题。 一般的 HTTP/FTP 下载，发布文件仅在某个或某几个服务器，下载的人太多，服务器的带宽 很易不胜负荷，变得很慢。而 BitTorrent 协议下载的特点是，下载的人越多，提供的带宽也 越多，下载速度就越快。同时，拥有完整文件的用户也会越来越多，使文件的“寿命”不断延长。
+在使用PT的时候你可能也会遇到一些专业词，这里给出基本的解释：
+Tarcker: 收集下载者信息的服务器，并将此信息提供给其他下载者，可以理解为电话总机。
+Tarcker
+收集下载者信息的服务器，并将此信息提供给其他下载者，可以理解为电话总机。
+DHT
+全称为分布式哈希表(Distributed Hash Table)，是一种分布式存储方法。在不需要中心
+服务器，每个客户端负责一个小范围的路由，并负责存储一小部分数据，从而实现整个 DHT 网络的寻址和存储。使用支持该技术的 BT 下载软件，用户无需连上 Tracker 就可以下载，因 为软件会在 DHT 网络中寻找下载同一文件的其他用户并与之通讯，开始下载任务。 这种技术好处十分明显，就是大大减轻了 Tracker 的负担(甚至不需要)。用户之间可以更快 速创建通讯(特别是与 Tracker 连接不上的时候)
+PXE
+是 Peer Exchange(用户交换)的简写，我们可以将其理解为“节点信息交换”
+前面说到了 DHT 网络是没有中心服务器的，那么我们的客户端总不能满世界去喊:“我在下 载这个文件，快来连我吧.”(很大声)。所以就通过各个 BT 客户端自带的节点去同步路由表 实现 DHT 网络接。
+辅种
+其他人发布了资源，你手里刚好也有这个资源，那么你下载种子之后。只要数据通过了 hash 校验就会变成做种状态。
+初始做种/超级种子/超级种子模式:
+有些 BitTorrent 客户端用户下载完成后就关掉下载任务，全过程只提供了较少量数据给其他用户。为尽量避免这种行为，在非官方 BitTorrent 协议中存在超级种子的算法。这种算 法对文件发布者的种子文件有要求。文件发布者可以分几步发布文件，发布者不需要一次提 供文件所有内容，而是慢慢开放的下载内容的比例，延长下载时间。此时，速度快的人由于 未下载完必须提供给他人数据，速度慢的人有更多机会得到数据
+魔力值
+PT 站的货币，用于站内购买邀请码。上传下载量，勋章等。由做种产生，具体与做种数 量、种子大小等有关
+图床
+可以提供外链的网络相册，目前在用 Z4A。某些 PT 站点也会自建图床。
+做种率
+做种率 = 做种时间 ÷ 下载时间
+分享率:
+分享率 = 上传量 ÷ 下载量
+盒子(Seedbox):
+大带宽(1Gbps 或更高的带宽)服务器，用于刷上传量，或快速下载 推荐 OP 独服。使用盒子有利有弊
+优点:快速出种，对内网用户友好，别人连不上你时，你会发现盒子大佬已经连上你了。
+缺点:对小水管不友好。因为带宽大，上传下载速度快导致很多小水管玩家根本抢不到 上传量只能默默看着盒子大佬数据飞涨，所以很多站点开始对盒子进行限制。
+资源的标识:
+
+如上图所示(注意看标题后面的小图标):
+
+
+无标记：表示为普通资源，计算正常的下载量，上传量
+Free：表示免费下载，不计算下载量
+2xFree：表示免费下载，不计算下载量，计算两倍的上传量
+50%：表示计算 50%的下载量
+2x50%：表示计算 50%的下载量，计算两倍的上传量
+30%：表示只计算 30%的下载量
+H&amp;R：hit and run 打击下完就跑，有 H&amp;R 标识的资源会要求在一定时间内需做种时间满足一定小时，不达标会记录一个 HR，HR 达到一定的量会被 ban 号
+
+
+PT站点介绍
+每一个PT站点，都有自己独一无二的属性，不是千篇一律的，根据你的需要可选择加入不同的PT站点，比如：
+天雪动漫高清论坛：资源方面以高清动漫资源为主，下载方面以PT下载为主、网盘分享为辅，网站基于Discuz构建。
+U2动漫花园：国内最为知名的动漫PT站,动漫资源很全，发布速度很快。
+M-Team：以特色资源(限制级内容)为主的PT站点
+PT站点大全如图所示，可以根据选择入站。
+
+如何注册某个PT站点的账号？
+捐助
+通过支付宝、微信、PayPal等常见支付方式向网站捐助一定金额，或者在网站官方开设的店铺里面购买邀请码。
+捐助的金额一般用来维护服务器费用。
+开放注册
+一般的PT站点会在特定的节假日期间开放注册。
+在活动期间，注册账号后，完成新手考核即可加入。
+通过邀请码加入
+
+
+如果你认识某个PT站点的朋友，这个朋友可以发放邀请码，你可以通过他的邀请码加入该PT站点。
+
+
+一般PT站点的官方会在其他PT站点发放官方邀请，只要你满足一定要求（比如说达到一定等级，上传量、下载量、做种时间分别达到多少）就可以得到邀请码。你也可以在你所在的PT站点的PT邀请区，向其他成员求一个邀请码，一般要展示你的数据（上传量、下载量、做种时间、HR等等）。
+
+
+你可以在百度PT吧发帖，向其他成员求一个邀请码，一般要展示你的数据（上传量、下载量、做种时间、HR等等）。或者在贴吧的官方长期邀请楼下面，讲一下你的故事，求一个邀请码，同上。
+
+
+新手考核
+进入PT站后一般新用户都会面对新手考核，也有些站点没有新手考核，但全站 H&amp;R。
+在开始完成新手考核之前，一定要看网站的规则和常见问题。
+
+
+里面规定了你可以使用的客户端，可以上传的资源类型等等。很多规定和教程会被写在论 坛里面，说起来对新人就不是那么友好的。但也要大致的看一遍，了解了规则之后，将事 半功倍。
+新手考核明面上考察的是如下几项：做种率、上传量、下载量、魔力值。
+
+但有一个隐藏的，伴随你整个 PT 生涯的考核就是 。分享率过低会限制可链接数量 同时只能下载一个种子等等。如果你做好了打一枪换一地疯狂吸血的想法，那不妨试试。
+那么应该如何通过新手考核呢?
+最快的方法捐赠:大多数网站都可以通过捐赠免除新手考核，并赠送一定的上传流量和魔 力值。但不建议第一次玩 PT 的新人就直接捐赠过考核，因为即使通过了考核也可能因为不 了解 PT 的规则而把账号玩死。
+完成考核的顺序如下:
+01、刷上传量，别着急下载自己喜欢的电影或电视剧，经常见到有第一次玩 PT 的人在抱 怨，为什么我要下载自己不喜欢的视频来刷上传呢，每个人都有自己喜欢的资源也不会断 种啊，这个问题问的极好。为啥您就自己用脚趾头想想吧。这些疯狂吸血的大哥们，你觉 得号还会在吗? 当然实在不愿意下载不喜欢的资源，那可以上传你自己资源嘛，这样刷上传更快。。
+那怎么刷上传呢，刷上传不代表不下载，但要先下载带有 free 或 2xfree 做种人数少的种子，通过前面 BT 的介绍就可以知道为什么要这么干了。什么你没看?那就记照 这做就好了。 如果你直接下载普通或 50%的种子，这些种子往往大家都已经下过了， 你下载完了做种根本赚不到什么上传，就会造成你的分享率就会过低，过低就会被限制连 接数，限制了连接数就不好过考核，过不了考核号就没了!
+02、做种率，前面提到了做种率 = 做种时间 ÷ 下载时间，那么怎么快速提高做种率呢。 如果你第一次玩 PT，手里没有什么资源，那么就下载体积小做种人数多的 free 种子，快速 完成下载做种，提高做种时间。如果你别的站有账号，对新注册的站点，可以靠辅种来快 速通过做种率。(一个优质的非禁转资源，基本上各个网站都会转载)
+03、魔力值，魔力值的产生跟做种数量、种子体积、种子生存时间等等有关。具体自己计 算。如何查看你自己每小时会产生多少魔力值呢，鼠标左键点击魔力值旁边的使用进入下 拉页面查看当前每小时产生魔力值，一句话多做种、挂着就可以了。
+
+04、下载量，下载一点自己喜欢的电影电视剧保证分享率&gt;1 就可以了。这样新手考核就很 快的通过了
+对于不喜欢就是用来过考核的资源呢，建议过了新手考核再删除，毕竟还能帮你赚魔力。
+其实新手的考核非常简单，设置这个考核的核心目的就是检验你是否肯为人人付出，你就找那些即免费又有人下的资源，下载好后保种等待别人来下，挂个一周就过了。
+制作种子、添加候选、发布
+命名规范
+尽量保持三一致，即视频（文件夹）名称、种子名称、发布标题名称保持一致转载资源请保持原名！！！
+
+电影命名规范：英文名 年份 来源 分辨率 视频编码 音轨编码-制作组例：Operation Red Sea 2018 BluRay 1080p x265.10bit MNHD-FRDS
+电视剧命名规范：英文名 年份 季数/集数 来源 分辨率 视频编码 音轨编码-制作组例：The Golden Eyes 2019 EP11-EP14 WEB-DL 2160P H265 AAC
+视频或文件夹命名时将空格使用 “.”代替，避免 linux 等系统下载文件时对文件夹名称进行修改。如图：windows 下 1 2.txt 文件上传到 centos 后文件名中空格被修改为
+
+来源类型：UHD Blu-ray（4K 蓝光原盘）、Blu-ray（蓝光原盘）、
+HDTV（电视录制）、DVD、WEB-DL（视频网站下载）
+制作种子：
+根据命名规范修改好本地的资源名称后，开始制作种子，这里只介绍 windows 下如何制作，linux 请自行百度 mktorrent 的用法。为了保证别人辅种方便，建议制作种子时使用文件夹制作，而不是选择单独视频文件。
+qBittorrent 制作种子
+工具—生成 Torrent，将文件或文件夹拖动到窗口汇总，勾选私有 torrent，优化对齐，tracker 网址中如果知道 tarcker 地址则填写，不知道填写任意字符即可，上传种子后网站会自动添加 tarcker 信息—制作 Torrent
+
+添加候选、发布种子
+登录网站—点击候选—添加候选—第一次发找了好久，没错那是一个按钮
+
+
+整个候选页就是你看到的这个样子，仅需要选择类型、填写标题、资源信息、视频编码等就可以了，在发布时才会有上传种子等其他选项。如下图发布编辑页所示。
+
+
+在编辑候选之前，我的建议是为每个要发布的资源创建一个 txt 文件，方便多个站点发布及其他原因造成的种子被删除后的重新发布。
+这个 txt 中包含如下条目，如下图所示。
+01 主标题名称
+02 副标题名称
+03 IMDB 链接
+04 影片资源简介 —填写在简介的文本框中 使用ptgen 获取，见下文
+05 影片编码信息 —填写在简介的文本框中，在影片资源简介下，使用 mediainfo 获取使用一对[quote]标签括起
+例：[quote]获取到的视频编码信息 [/quote]
+06 上传到图床的缩略图链接使用一对[img]标签括起来 【可选非必须】
+例：[img] https://www.z4a.net/images/2019/02/22/p2545583652.jpg [/img]
+
+候选页仅填写 01、04、05、【06 非必须】几项即可。
+因为我们获取影片简介时会带一张海报图，所以在候选的海报位置无需填写。点击添加等待候选通过即可。
+
+通过候选后，点击发布，按提示编辑，并上传种子，填写好类型、质量、内容信息，选中你要发布的候选，如需匿名发布则勾选不要在发布者项目中显示我的用户名。检查无误后点击发布，发布后需要重新下载网站上的种子到本地做种。详见下文如何辅种
+
+编辑候选及发布种子时，我们可能会用到如下工具的：
+01、ptgen（用于获取影片资源简介）
+可使用站点如下：
+
+https://rhilip.github.io/PT-help/ptgen
+https://www.2bmi.com/ https://ptbox.club/PT-help/ptgen.html
+https://www.bfdz.ink/tools/ptgen
+
+
+
+
+02、mediainfo/potplayer：获取视频编码、及音频编码信息
+
+
+下载绿色版 mediainfo 客户端，打开后如图设置语言英文，输出格式 text。回车，将资源拖动到软件中，就会生成视频编码信息，右键全选，复制粘贴到[quote][/quote]这对标签中即可。然后删除 Complete name 中的路径信息，仅保留视频文件名称。其他不用变
+例：Complete name ：黄金瞳 01.mp4
+Potplayer 获取视频编码信息方法：打开视频，Ctrl+F1 （或邮件属性）— 文件信息—点击复制到粘贴板。
+
+同样复制并粘贴视频编码信息后将 Complete name 中的路径信息删除
+03、bdinfo：获取蓝光原盘视频编码信息 推荐使用 0.7.5.5 版本比 0.5.8 增加了 ISO 选项
+
+
+
+04、DVDFab Virtual Drive（虚拟光驱）：用于直接挂载蓝光原盘 ISO
+如上图，bdinfo 查询速度相对于 mediainfo 慢的多，ISO 镜像推荐使用 DVDFab Virtual Drive 挂载后使用 mediainfo 查看，查看文件路径如下：原盘名\BDMV\STREAM\找到体积最大的文件拖到 mediainfo 中，右键全选复制）
+当然对于蓝光原盘在不着急的情况下，还是建议使用 BDinfo 去获取编码信息，显得更加正式。
+05、BEncode Editor 种子编辑器，修改种子名称，tracker 地址等。
+常用工具
+下载工具
+
+
+Windows：推荐 ut 2.0.4、qBittorrent 4.1.x
+
+
+Linux：推荐 Transmission  transmission 使用及其配置教程
+
+
+Transmission 增加跳过校验: https://github.com/superlukia/transmission-2.92_skiphashcheck Deluge、qBttorrent-nox、rTorrent
+
+
+群晖：推荐 Transmission
+
+
+更换 web 页面 https://github.com/ronggang/transmission-web-control 或Docker 安装 qBittorrent
+
+
+威联通：推荐 Transmission、 使用第三方源安装 qBittorrent-nox
+
+
+参考教程：qBittorrent 参数详细设置教程qBittorrent
+
+
+下载地址：https://www.qnapclub.eu/en/qpkg/507
+
+
+搜索工具
+如果想快速搜索资源或者站点比较多想分类搜索，可以使用：
+PT-Plugin-Plus：https://github.com/ronggang/PT-Plugin-Plus
+辅种工具
+IYUUAutoReseed：https://github.com/ledccn/IYUUAutoReseed
+Reseed-backend：https://github.com/tongyifan/Reseed-backend
+红种原因及 tracker 状态排查：
+错误：  You already are downloadingthe same torrent.You may only leech from one location at a time.
+原因：意外断网，意外重启，非法关闭客户端软件造成的服务器数据不同步，通常表现为：PT 站里任务统计数比实际数多。
+解决方法：暂停所有下载，等待半小时网站系统刷新下载显示为 0，在开始下载。未避免这种情况，在关机之前先暂停所有做种及下载任务然后关闭设备
+错误： Sorry，minimum announce interval=30 sec.Plesae retry after 30 sec
+原因：频繁更新 TRACKER 地址导致，在手工更新 TRACKER 地址后，停止任务，且马上重新开始任务，就会造成 minimum announce interval=30 sec 的红种。
+解决方法：勿频繁更新 TRACKER，停止任务后不要急于手工更新 tracker
+错误： Invalid passkey
+原因：PASSKEY 泄露或被盗，或者重置自己的 PASSKEY 之后没有重新下载种子
+解决方法：如果是自己没有修改过 PT 账户的密码，那可能被盗号了，请尽快重置自己的 PT 密码！无论如何都要再重新下载该 PT 种子，自动进行校验后会继续下载或者做种。前面也提到了，截图一定要给 passkey 打码
+错误：  error：Unregistered torrent
+原因：已下载的种子文件由于各种原因被删除。如果是剧集，可以搜索该剧集查看是否集中发布了合集。
+解决方法：删除任务，重新下载新的合集种子文件，查看合集中的任务文件是否与自己之前下的文件相同如果相同，文件相同重新命名后直接辅种即可。
+错误： Client is banned
+原因：1、PT 网站与你所用的的客户端软件版本不符，一般 PT 站都禁止使用测试版软件，在网站常见问题中查看允许使用的客户端
+2、你的帐号已被禁止解决方法：
+请安装该 PT 网站支持的客户端软件联系你的 PT 网站或重新注册其他网站
+错误： PL ERR 2
+原因：红种问题，Traker 有错误
+解决方法：可手工更新 tracker 并向该 PT 网站论坛反映情况，待其更新。
+注意事项
+1.多IP下载
+对于一般用户来说，可以从不同的电脑登录下载。
+但有一定的限制，对于某个种子你一次只能在一个地方下载。
+如果你频繁变动IP，最好在论坛的相应板块进行报备，说明一下情况。
+2.禁止发布种子到别的Tracker服务器。
+一般发生这样的情况，会追究责任，相应的责任人会被封禁账号。
+但你已经下载的文件发布者明确说明为独占的资源除外），你可以自己制作另一个种子，发布到别的Tracker服务器。
+3.严禁公开分享你的种子（带有你私人passkey的种子）
+一旦你在网站上公开分享，只要被管理员发现或者其他用户举报，基本上会被封禁账号
+4.不要分享邀请码给那些不值得信任的人
+一般的PT站点实行的是连坐制度，一旦你邀请的那个人违反规则被封禁或者没有通过新手考核被封禁，你同样也会受到相应的处罚。
+一般用户达到一定等级后，就可以得到一定的邀请名额，可以通过邮箱发送邀请码。
+几个禁忌：
+01、  转载资源更改后缀（制作人、压制组）会被 ban 号
+02、  转载资源更改原目录及文件名称，造成其他人无法辅种
+03、  转载明显标注为禁转的资源
+04、  尊重发种人，不要在下面评论上传速度慢，种子体积较大，因上传速度慢无法在 free 时间内完成的，PM 管理申请延长 free 时间。
+05、  对资源进行修改或压制时，在挣得原作者同意后再进行发布。
+参考&amp;致谢
+
+从零开始玩PT-新人指南
+从零开始玩PT LASTGL
+从零开始玩PT
+
+系列教程
+全部文章RSS订阅
+Nas系列
+Nas 分类 RSS 订阅
+
+从零开始玩PT-入门到精通
+如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
+音视频图书和音乐自动化管理框架图解
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Potplayer终极优化教程实现PC视频播放最强画质
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列
+Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>bt</tag>
+        <tag>pt</tag>
+        <tag>nas</tag>
       </tags>
   </entry>
   <entry>
