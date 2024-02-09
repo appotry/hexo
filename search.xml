@@ -1102,6 +1102,429 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
       </tags>
   </entry>
   <entry>
+    <title>Gitlab的安装及使用</title>
+    <url>/posts/d08eb7b/</url>
+    <content><![CDATA[Gitlab概述
+1.1 GitLab介绍
+GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。
+GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。
+它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找
+1.2 Gitlab服务构成
+
+
+Nginx：静态web服务器。
+
+
+gitlab-shell：用于处理Git命令和修改authorized keys列表。
+
+
+gitlab-workhorse: 轻量级的反向代理服务器。
+
+
+logrotate：日志文件管理工具。
+
+
+postgresql：数据库。
+
+
+redis：缓存数据库。
+
+
+sidekiq：用于在后台执行队列任务（异步执行）。
+
+
+unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。
+
+
+1.3 Gitlab工作流程
+
+1.4 GitLab Shell
+GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表
+当通过SSH访问GitLab Server时，GitLab Shell会：
+
+限制执行预定义好的Git命令（git push，git pull，git annex）
+调用GitLab Rails API检查权限
+执行pre-receive钩子（在企业版中叫做Git钩子）
+执行用户请求的动作，处理GitLab的post-receive动作
+处理自定义的post-receive动作
+
+当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：
+如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作
+如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：
+
+调用GitLab Rails API 检查权限
+执行pre-receive钩子（在GitLab企业版中叫做Git钩子）
+执行你请求的动作
+处理GitLab的post-receive动作
+处理自定义的post-receive动作
+
+1.5 GitLab Workhorse
+GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。
+Gitlab的安装部署
+
+
+Gitlab要求服务器内存2G以上
+
+2.1 方式一:下载gitlab-ce的rpm包
+
+gitlab官方rpm包下载
+清华的源
+
+将对应版本的gitlab-ce下载到本地后，直接yum安装即可
+要先将这个rpm包下载到本地
+yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm
+2.2 方式二:配置yum源
+在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：
+[gitlab-ce]
+name=gitlab-ce
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/ Repo_gpgcheck=0
+Enabled=1 Gpgkey=https://packages.gitlab.com/gpg.key
+然后创建cache，再直接安装gitlab-ce
+yum makecache  # 这一步会创建大量的数据
+直接安装最新版
+yum install -y gitlab-ce # 如果要安装指定的版本，在后面填上版本号即可
+yum install -y  gitlab-ce-13.6.1
+如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
+yum install gitlab-ce -y --nogpgcheck
+2.3 gitlab的配置
+配置文件位置  /etc/gitlab/gitlab.rb
+[root@centos7 test]# vim /etc/gitlab/gitlab.rb
+[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
+external_url 'http://10.0.0.51'  # 这里一定要加上http://
+配置邮件服务
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.qq.com" gitlab_rails['smtp_port'] = 25 gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
+gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
+gitlab_rails['smtp_domain'] = "qq.com" gitlab_rails['smtp_authentication'] = "login" gitlab_rails['smtp_enable_starttls_auto'] = true
+gitlab_rails['smtp_tls'] = false
+gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
+user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址
+修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。
+gitlab-ctl reconfigure # 重载配置文件
+2.4 Gitlab常用命令
+gitlab-ctl start         # 启动所有 gitlab 组件
+gitlab-ctl stop          # 停止所有 gitlab 组件
+gitlab-ctl restart       # 重启所有 gitlab 组件
+gitlab-ctl status        # 查看服务状态
+gitlab-ctl reconfigure   # 启动服务
+gitlab-ctl show-config   # 验证配置文件
+gitlab-ctl tail          # 查看日志
+gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
+vim /etc/gitlab/gitlab.rb # 修改默认的配置文件
+Gitlab的使用
+
+
+Gitlab安装好后，设置密码，管理账户为root
+
+3.1 创建Group
+
+填上组名即可，这里组名为java
+
+
+
+3.2 创建User
+
+创建四个User：pm、dev1、dev2、dev3
+
+
+
+3.3 添加User到Group中并授权
+
+3.4 创建Project并配置SSH
+
+
+
+
+3.5 在项目中添加成员
+
+
+3.6 将本地文件推送到Gitlab
+将app01项目克隆下来
+git clone git@10.0.0.51:java/app01.git # 初始化配置
+git config --global user.name "hgzero" git config --global user.email "hgzero@qq.com"
+在app01目录下新建一些文件
+推送到gitlab
+git add .
+git commit -m "first edition" git push origin master
+
+
+制定开发计划
+
+
+4.1 创建开发计划
+
+项目：app01
+版本：v1.0
+
+
+4.2 创建里程碑Milestones
+
+用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）
+要根据开发计划来创建Milestones
+
+
+
+
+
+4.3 根据开发计划创建issue
+
+创建4个issue，分派给dev1和dev2这两个开发人员
+
+
+
+
+
+
+
+**4.4 开发者登录账号查看分派的任务 **
+
+然后开发dev1登录gitlab，就能看到任务已经分配过来了
+
+
+4.5 开发流程
+
+公司里的开发开始任务
+
+1. 先从仓库把项目拉下来
+git clone git@10.0.0.51:java/app01.git
+cd app01/
+2.先创建一个自己的分支，然后进行开发
+git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
+git status # 3. 开始开发首页
+echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
+4. 开发完成后，把项目传到仓库
+git add .
+git commit -m "index"
+如果写成 git commit -m “close #2” ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
+传到index分支
+git push origin index
+4.6 合并分支
+1）开发dev1发送合并分支请求给pm
+
+
+
+2）pm收到开发的Merge请求后进行处理
+
+使用pm登录，就可以看到pm已经收到了合并请求merge request
+
+
+
+
+
+3）开发dev1确认任务完成
+
+退出pm账户，登入dev1账户：
+
+
+
+或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close
+
+
+
+这个时候Milestones的进度已经往前进了一些了：
+
+
+4.7 开发其他功能
+
+然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发
+
+git checkout master  # 切换到master
+git pull             # 从远端仓库拉取数据
+然后再进行其他操作
+Gitlab备份恢复
+
+5.1 备份gitlab
+1）修改配置文件
+
+/etc/gitlab/gitlab.rb
+
+备份保存的位置，这里是默认位置，可修改成指定的位置
+gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
+设置备份保存的时间，超过此时间的日志将会被新覆盖
+gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
+特别注意： # 如果自定义了备份保存位置，则要修改备份目录的权限，比如： # chown -R git.git /data/backup/gitlab
+
+配置完成后要重启以使配置生效
+
+重读配置文件
+gitlab-ctl reconfigure # 重启gitlab
+gitlab-ctl restart
+2）设置定时任务
+每天凌晨2点定时创建备份 # 将一下内容写入到定时任务中 crontab -e
+0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create # 备份策略建议： # 本地保留3到7天，在异地备份永久保存
+3）备份时间的识别
+备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
+data -d  @1494170842
+5.2 恢复gitlab
+1）停止数据写入服务
+停止数据写入服务
+gitlab-ctl stop unicorn
+gitlab-ctl stop sidekiq
+2）进行数据恢复并重启
+进行恢复
+gitlab-rake gitlab:backup:restore BACKUP=1494170842  # 这个时间戳就是刚刚备份的文件前面的时间戳
+重启
+gitlab-ctl restart
+gitlab邮件通知配置
+
+
+vim  /etc/gitlab/gitlab.rb
+
+gitlab_rails['time_zone'] = 'Asia/Shanghai' gitlab_rails['gitlab_email_enabled'] = true
+gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
+gitlab_rails['gitlab_email_display_name'] = 'gitlab' gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
+gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
+gitlab_rails['smtp_user_name'] = "smtp用户名" gitlab_rails['smtp_password'] = "smtp用户密码" gitlab_rails['smtp_domain'] = "163.com" gitlab_rails['smtp_authentication'] = "login"
+
+
+使用SourceTree进行项目开发
+
+
+
+7.1 项目拉取
+
+先把项目克隆下来
+
+
+
+
+如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加
+
+
+
+7.2 创建分支进行功能开发
+1）新建立一个叫“pay”的分支
+
+
+2）进行功能开发
+
+7.3 提交项目
+1）开发pay功能完成后进行提交
+
+可以看到SourceTree中已经有“未提交的更改”
+
+
+
+2）添加“用户信息”
+
+** 3）进行提交**
+
+
+注释也可以写成  close #3    ，作用是提交完成后关闭3号issue
+
+7.4 推送到仓库
+
+
+
+然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了
+
+7.5 项目上线
+1）当所有工作完成之后，就可以进行上线了
+
+2）打标签
+
+上线先打个标签
+
+
+
+
+** 3）删除无用分支**
+
+然后删除已经合并到主干中的不必要的分支，如index、pay等
+最后一定要注意时间一定要同步，不然会错乱
+
+参考
+
+Praywu
+
+系列教程
+全部文章RSS订阅
+Gitlab 使用系列
+Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+Devops系列
+Devops 分类 RSS 订阅
+
+自建全套开源Devops开发系统
+Git介绍以及分支模型图解
+三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
+DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
+项目开发管理工具推荐
+Gitlab的安装及使用教程完全版
+Gitlab的安装及使用
+那些有用的Github工具介绍！Action、app、workflow等
+
+项目管理系列介绍锦集
+
+快速全面的介绍现代企业中项目管理相关知识！
+
+
+    
+        
+    
+    
+        如何做一个完整的硬件项目的项目管理之简明教程
+        
+        以一个硬件项目开发为例，介绍现代公司项目管理的一些基本工具和方法，给行业内外朋友一个初步印象，为广大从业者入门相关管理打下一个初步的，全局的基础！最后给出一个IPD端到端管理项目示例
+    
+
+
+    
+        
+    
+    
+        几种常用管理模型和方法
+        
+        几种常用管理模型和方法：PDCA, 5W2H, SMART, SWOT, GROW, OKR, WBS 等，职场人员需要了解的知识。
+    
+
+
+    
+        
+    
+    
+        PMBOK指南（第6版）
+        
+        PMBOK 只是一套悬在空中的方法论，要想具体落地还需要具体的行业知识。两条腿，缺一不可！PMBOK 是基础中的基础知识，了解总是没有坏处的。是常识，不懂就没法做，但要做项目管理，光靠PMBOK远远不够。
+    
+
+
+    
+        
+    
+    
+        如何做好竞品分析
+        
+        竞品分析可以帮助我们更好地找准自身产品定位，发现自己产品的优劣所在，进而推动产品的优化迭代。
+    
+
+
+    
+        
+    
+    
+        一大堆寓意深刻的管理故事锦集
+        
+        几十个关于管理，经营的故事。寓教于乐，寓意深刻，在自己遗忘之前，记录保存下来。包括 扁鹊三兄弟，曲突徒薪，猎人与狗等等
+    
+
+]]></content>
+      <categories>
+        <category>devops</category>
+      </categories>
+      <tags>
+        <tag>gitlab</tag>
+        <tag>git</tag>
+        <tag>crack</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>PT 工具集，Linux硬链接助手</title>
     <url>/posts/bb600b4b/</url>
     <content><![CDATA[由于自我需求，写了两个脚本完成PT下载和保种两全其美的硬链接 Linux shell 脚本方案。
@@ -1562,429 +1985,6 @@ Earthly 一个更加强大的镜像构建工具
         <tag>qnap</tag>
         <tag>硬盘</tag>
         <tag>nas</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Gitlab的安装及使用</title>
-    <url>/posts/d08eb7b/</url>
-    <content><![CDATA[Gitlab概述
-1.1 GitLab介绍
-GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。
-GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。
-它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找
-1.2 Gitlab服务构成
-
-
-Nginx：静态web服务器。
-
-
-gitlab-shell：用于处理Git命令和修改authorized keys列表。
-
-
-gitlab-workhorse: 轻量级的反向代理服务器。
-
-
-logrotate：日志文件管理工具。
-
-
-postgresql：数据库。
-
-
-redis：缓存数据库。
-
-
-sidekiq：用于在后台执行队列任务（异步执行）。
-
-
-unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。
-
-
-1.3 Gitlab工作流程
-
-1.4 GitLab Shell
-GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表
-当通过SSH访问GitLab Server时，GitLab Shell会：
-
-限制执行预定义好的Git命令（git push，git pull，git annex）
-调用GitLab Rails API检查权限
-执行pre-receive钩子（在企业版中叫做Git钩子）
-执行用户请求的动作，处理GitLab的post-receive动作
-处理自定义的post-receive动作
-
-当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：
-如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作
-如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：
-
-调用GitLab Rails API 检查权限
-执行pre-receive钩子（在GitLab企业版中叫做Git钩子）
-执行你请求的动作
-处理GitLab的post-receive动作
-处理自定义的post-receive动作
-
-1.5 GitLab Workhorse
-GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。
-Gitlab的安装部署
-
-
-Gitlab要求服务器内存2G以上
-
-2.1 方式一:下载gitlab-ce的rpm包
-
-gitlab官方rpm包下载
-清华的源
-
-将对应版本的gitlab-ce下载到本地后，直接yum安装即可
-要先将这个rpm包下载到本地
-yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm
-2.2 方式二:配置yum源
-在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：
-[gitlab-ce]
-name=gitlab-ce
-baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/ Repo_gpgcheck=0
-Enabled=1 Gpgkey=https://packages.gitlab.com/gpg.key
-然后创建cache，再直接安装gitlab-ce
-yum makecache  # 这一步会创建大量的数据
-直接安装最新版
-yum install -y gitlab-ce # 如果要安装指定的版本，在后面填上版本号即可
-yum install -y  gitlab-ce-13.6.1
-如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
-yum install gitlab-ce -y --nogpgcheck
-2.3 gitlab的配置
-配置文件位置  /etc/gitlab/gitlab.rb
-[root@centos7 test]# vim /etc/gitlab/gitlab.rb
-[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
-external_url 'http://10.0.0.51'  # 这里一定要加上http://
-配置邮件服务
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.qq.com" gitlab_rails['smtp_port'] = 25 gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
-gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
-gitlab_rails['smtp_domain'] = "qq.com" gitlab_rails['smtp_authentication'] = "login" gitlab_rails['smtp_enable_starttls_auto'] = true
-gitlab_rails['smtp_tls'] = false
-gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
-user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址
-修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。
-gitlab-ctl reconfigure # 重载配置文件
-2.4 Gitlab常用命令
-gitlab-ctl start         # 启动所有 gitlab 组件
-gitlab-ctl stop          # 停止所有 gitlab 组件
-gitlab-ctl restart       # 重启所有 gitlab 组件
-gitlab-ctl status        # 查看服务状态
-gitlab-ctl reconfigure   # 启动服务
-gitlab-ctl show-config   # 验证配置文件
-gitlab-ctl tail          # 查看日志
-gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
-vim /etc/gitlab/gitlab.rb # 修改默认的配置文件
-Gitlab的使用
-
-
-Gitlab安装好后，设置密码，管理账户为root
-
-3.1 创建Group
-
-填上组名即可，这里组名为java
-
-
-
-3.2 创建User
-
-创建四个User：pm、dev1、dev2、dev3
-
-
-
-3.3 添加User到Group中并授权
-
-3.4 创建Project并配置SSH
-
-
-
-
-3.5 在项目中添加成员
-
-
-3.6 将本地文件推送到Gitlab
-将app01项目克隆下来
-git clone git@10.0.0.51:java/app01.git # 初始化配置
-git config --global user.name "hgzero" git config --global user.email "hgzero@qq.com"
-在app01目录下新建一些文件
-推送到gitlab
-git add .
-git commit -m "first edition" git push origin master
-
-
-制定开发计划
-
-
-4.1 创建开发计划
-
-项目：app01
-版本：v1.0
-
-
-4.2 创建里程碑Milestones
-
-用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）
-要根据开发计划来创建Milestones
-
-
-
-
-
-4.3 根据开发计划创建issue
-
-创建4个issue，分派给dev1和dev2这两个开发人员
-
-
-
-
-
-
-
-**4.4 开发者登录账号查看分派的任务 **
-
-然后开发dev1登录gitlab，就能看到任务已经分配过来了
-
-
-4.5 开发流程
-
-公司里的开发开始任务
-
-1. 先从仓库把项目拉下来
-git clone git@10.0.0.51:java/app01.git
-cd app01/
-2.先创建一个自己的分支，然后进行开发
-git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
-git status # 3. 开始开发首页
-echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
-4. 开发完成后，把项目传到仓库
-git add .
-git commit -m "index"
-如果写成 git commit -m “close #2” ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
-传到index分支
-git push origin index
-4.6 合并分支
-1）开发dev1发送合并分支请求给pm
-
-
-
-2）pm收到开发的Merge请求后进行处理
-
-使用pm登录，就可以看到pm已经收到了合并请求merge request
-
-
-
-
-
-3）开发dev1确认任务完成
-
-退出pm账户，登入dev1账户：
-
-
-
-或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close
-
-
-
-这个时候Milestones的进度已经往前进了一些了：
-
-
-4.7 开发其他功能
-
-然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发
-
-git checkout master  # 切换到master
-git pull             # 从远端仓库拉取数据
-然后再进行其他操作
-Gitlab备份恢复
-
-5.1 备份gitlab
-1）修改配置文件
-
-/etc/gitlab/gitlab.rb
-
-备份保存的位置，这里是默认位置，可修改成指定的位置
-gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
-设置备份保存的时间，超过此时间的日志将会被新覆盖
-gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
-特别注意： # 如果自定义了备份保存位置，则要修改备份目录的权限，比如： # chown -R git.git /data/backup/gitlab
-
-配置完成后要重启以使配置生效
-
-重读配置文件
-gitlab-ctl reconfigure # 重启gitlab
-gitlab-ctl restart
-2）设置定时任务
-每天凌晨2点定时创建备份 # 将一下内容写入到定时任务中 crontab -e
-0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create # 备份策略建议： # 本地保留3到7天，在异地备份永久保存
-3）备份时间的识别
-备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
-data -d  @1494170842
-5.2 恢复gitlab
-1）停止数据写入服务
-停止数据写入服务
-gitlab-ctl stop unicorn
-gitlab-ctl stop sidekiq
-2）进行数据恢复并重启
-进行恢复
-gitlab-rake gitlab:backup:restore BACKUP=1494170842  # 这个时间戳就是刚刚备份的文件前面的时间戳
-重启
-gitlab-ctl restart
-gitlab邮件通知配置
-
-
-vim  /etc/gitlab/gitlab.rb
-
-gitlab_rails['time_zone'] = 'Asia/Shanghai' gitlab_rails['gitlab_email_enabled'] = true
-gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
-gitlab_rails['gitlab_email_display_name'] = 'gitlab' gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
-gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
-gitlab_rails['smtp_user_name'] = "smtp用户名" gitlab_rails['smtp_password'] = "smtp用户密码" gitlab_rails['smtp_domain'] = "163.com" gitlab_rails['smtp_authentication'] = "login"
-
-
-使用SourceTree进行项目开发
-
-
-
-7.1 项目拉取
-
-先把项目克隆下来
-
-
-
-
-如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加
-
-
-
-7.2 创建分支进行功能开发
-1）新建立一个叫“pay”的分支
-
-
-2）进行功能开发
-
-7.3 提交项目
-1）开发pay功能完成后进行提交
-
-可以看到SourceTree中已经有“未提交的更改”
-
-
-
-2）添加“用户信息”
-
-** 3）进行提交**
-
-
-注释也可以写成  close #3    ，作用是提交完成后关闭3号issue
-
-7.4 推送到仓库
-
-
-
-然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了
-
-7.5 项目上线
-1）当所有工作完成之后，就可以进行上线了
-
-2）打标签
-
-上线先打个标签
-
-
-
-
-** 3）删除无用分支**
-
-然后删除已经合并到主干中的不必要的分支，如index、pay等
-最后一定要注意时间一定要同步，不然会错乱
-
-参考
-
-Praywu
-
-系列教程
-全部文章RSS订阅
-Gitlab 使用系列
-Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-Devops系列
-Devops 分类 RSS 订阅
-
-自建全套开源Devops开发系统
-Git介绍以及分支模型图解
-三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
-DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
-项目开发管理工具推荐
-Gitlab的安装及使用教程完全版
-Gitlab的安装及使用
-那些有用的Github工具介绍！Action、app、workflow等
-
-项目管理系列介绍锦集
-
-快速全面的介绍现代企业中项目管理相关知识！
-
-
-    
-        
-    
-    
-        如何做一个完整的硬件项目的项目管理之简明教程
-        
-        以一个硬件项目开发为例，介绍现代公司项目管理的一些基本工具和方法，给行业内外朋友一个初步印象，为广大从业者入门相关管理打下一个初步的，全局的基础！最后给出一个IPD端到端管理项目示例
-    
-
-
-    
-        
-    
-    
-        几种常用管理模型和方法
-        
-        几种常用管理模型和方法：PDCA, 5W2H, SMART, SWOT, GROW, OKR, WBS 等，职场人员需要了解的知识。
-    
-
-
-    
-        
-    
-    
-        PMBOK指南（第6版）
-        
-        PMBOK 只是一套悬在空中的方法论，要想具体落地还需要具体的行业知识。两条腿，缺一不可！PMBOK 是基础中的基础知识，了解总是没有坏处的。是常识，不懂就没法做，但要做项目管理，光靠PMBOK远远不够。
-    
-
-
-    
-        
-    
-    
-        如何做好竞品分析
-        
-        竞品分析可以帮助我们更好地找准自身产品定位，发现自己产品的优劣所在，进而推动产品的优化迭代。
-    
-
-
-    
-        
-    
-    
-        一大堆寓意深刻的管理故事锦集
-        
-        几十个关于管理，经营的故事。寓教于乐，寓意深刻，在自己遗忘之前，记录保存下来。包括 扁鹊三兄弟，曲突徒薪，猎人与狗等等
-    
-
-]]></content>
-      <categories>
-        <category>devops</category>
-      </categories>
-      <tags>
-        <tag>gitlab</tag>
-        <tag>git</tag>
-        <tag>crack</tag>
       </tags>
   </entry>
   <entry>
@@ -12664,9 +12664,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ioNaquLwncKgmTtz").style.height=document.getElementById("mmedia-ioNaquLwncKgmTtz").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-FxKReccShgIyBXKh").style.height=document.getElementById("mmedia-FxKReccShgIyBXKh").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-ioNaquLwncKgmTtz").style.height=document.getElementById("mmedia-ioNaquLwncKgmTtz").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-FxKReccShgIyBXKh").style.height=document.getElementById("mmedia-FxKReccShgIyBXKh").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -18481,8 +18481,8 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 列表
 
- var mxfHbGsCMxVJNBja_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    mxfHbGsCMxVJNBja_options.container = document.getElementById("mmedia-mxfHbGsCMxVJNBja");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(mxfHbGsCMxVJNBja_options); 
+ var mvTyfCnMFGIhSunN_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    mvTyfCnMFGIhSunN_options.container = document.getElementById("mmedia-mvTyfCnMFGIhSunN");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(mvTyfCnMFGIhSunN_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -19889,13 +19889,13 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var drIxEfaLJFXZVVUm_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
-    drIxEfaLJFXZVVUm_options.container = document.getElementById("mmedia-drIxEfaLJFXZVVUm");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(drIxEfaLJFXZVVUm_options); 
+ var yVkuDDgJldkvrkFo_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
+    yVkuDDgJldkvrkFo_options.container = document.getElementById("mmedia-yVkuDDgJldkvrkFo");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(yVkuDDgJldkvrkFo_options); 
 
 
 
- var lnNRrfVhxcXyluuC_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    lnNRrfVhxcXyluuC_options.container = document.getElementById("mmedia-lnNRrfVhxcXyluuC");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(lnNRrfVhxcXyluuC_options); 
+ var CXGHfrdTbpmbhJVb_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    CXGHfrdTbpmbhJVb_options.container = document.getElementById("mmedia-CXGHfrdTbpmbhJVb");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(CXGHfrdTbpmbhJVb_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -20147,9 +20147,9 @@ Earthly 一个更加强大的镜像构建工具
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-nFOFsYocspXqdTBy").style.height=document.getElementById("mmedia-nFOFsYocspXqdTBy").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-vOKNlMqttqeEazuR").style.height=document.getElementById("mmedia-vOKNlMqttqeEazuR").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-nFOFsYocspXqdTBy").style.height=document.getElementById("mmedia-nFOFsYocspXqdTBy").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-vOKNlMqttqeEazuR").style.height=document.getElementById("mmedia-vOKNlMqttqeEazuR").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -20158,8 +20158,8 @@ Earthly 一个更加强大的镜像构建工具
 
 ## 中文翻唱
 
- var BitBDaumlwZJWGuV_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
-    BitBDaumlwZJWGuV_options.container = document.getElementById("mmedia-BitBDaumlwZJWGuV");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(BitBDaumlwZJWGuV_options); 
+ var oqkEqrkgBLJGECVV_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
+    oqkEqrkgBLJGECVV_options.container = document.getElementById("mmedia-oqkEqrkgBLJGECVV");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(oqkEqrkgBLJGECVV_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -44384,7 +44384,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts1482'));
+        var myChart = echarts.init(document.getElementById('echarts1715'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44478,7 +44478,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts592'));
+        var myChart = echarts.init(document.getElementById('echarts8185'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -44547,7 +44547,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts6818'));
+        var myChart = echarts.init(document.getElementById('echarts2545'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -49328,9 +49328,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-RFhoutSkPxFdmiJv").style.height=document.getElementById("mmedia-RFhoutSkPxFdmiJv").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-nIuXBDchjtSfYyXo").style.height=document.getElementById("mmedia-nIuXBDchjtSfYyXo").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-RFhoutSkPxFdmiJv").style.height=document.getElementById("mmedia-RFhoutSkPxFdmiJv").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-nIuXBDchjtSfYyXo").style.height=document.getElementById("mmedia-nIuXBDchjtSfYyXo").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 
@@ -52945,9 +52945,9 @@ chatGPT
 
 视频讲解
 B站
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-SLrkREzsGAOveTfU").style.height=document.getElementById("mmedia-SLrkREzsGAOveTfU").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-BapRGsXGJLnnUYpI").style.height=document.getElementById("mmedia-BapRGsXGJLnnUYpI").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-SLrkREzsGAOveTfU").style.height=document.getElementById("mmedia-SLrkREzsGAOveTfU").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-BapRGsXGJLnnUYpI").style.height=document.getElementById("mmedia-BapRGsXGJLnnUYpI").scrollWidth*0.76+"px";
     }; 
 youtube
 
