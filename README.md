@@ -107,3 +107,12 @@
 - [使用 Shell 脚本实现一个简单 Docker](https://blog.17lai.site/posts/90e60aac/)
 - [如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers](https://blog.17lai.site/posts/465d2738/) 
 - [通过IPV6访问Qnap NAS中Docker的服务](https://blog.17lai.site/posts/462f1e5c/)
+
+### **项目管理系列** 
+
+- [如何做一个完整的硬件项目的项目管理之简明教程](https://blog.17lai.site/posts/d8b1e381/)
+- [几种常用管理模型和方法](https://blog.17lai.site/posts/ca630feb/)
+- [PMBOK指南（第6版）](https://blog.17lai.site/posts/ac0df556/)
+- [如何做好竞品分析](https://blog.17lai.site/posts/99be6dfb/)
+- [一大堆寓意深刻的管理故事锦集](https://blog.17lai.site/posts/a6477052/)
+- [人格类型分类总结归纳](https://blog.17lai.site/posts/ec34b111/) 
