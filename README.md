@@ -116,3 +116,41 @@
 - [如何做好竞品分析](https://blog.17lai.site/posts/99be6dfb/)
 - [一大堆寓意深刻的管理故事锦集](https://blog.17lai.site/posts/a6477052/)
 - [人格类型分类总结归纳](https://blog.17lai.site/posts/ec34b111/) 
+
+### **AI系列**
+
+  [**AI 分类 RSS 订阅**](https://blog.17lai.site/categories/ai/atom.xml)
+
+  - [深度学习之视频人脸识别系列](https://blog.17lai.site/posts/a0f3c838/)
+  - [中国区注册ChatGPT并使用全流程图解教程](https://blog.17lai.site/posts/1336c869/)
+  - [关于普朗克概率的的讨论](https://blog.17lai.site/posts/60146716/)
+  - [信用卡对个人、社会以及国家的影响——ChatGPT辅助编写](https://blog.17lai.site/posts/b648bb9c/)
+
+### **笔记系列**
+
+  [**Note分类RSS订阅**](https://blog.17lai.site/categories/note/atom.xml)
+
+  - [完美笔记进化论](https://blog.17lai.site/posts/a8535f26/)
+  - [hexo博客博文撰写篇之完美笔记大攻略终极完全版](https://blog.17lai.site/posts/253706ff/)
+  - [Joplin入门指南&实践方案](https://blog.17lai.site/posts/e6086437/)
+  - [替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化](https://blog.17lai.site/posts/45f878cd/)
+  - [Joplin 插件以及其Markdown语法。All in One!](https://blog.17lai.site/posts/92d347d6/)
+  - [Joplin 插件使用推荐](https://blog.17lai.site/posts/e3ee7f8b/)
+  - [为知笔记私有化Docker部署](https://blog.17lai.site/posts/1802a8a7/)
+
+### **Gitbook使用系列**
+
+  [Gitbook分类RSS订阅](https://blog.17lai.site/categories/gitbook/atom.xml)
+
+  - [GitBook+GitLab撰写发布技术文档-Part1:GitBook篇](https://blog.17lai.site/posts/7fe86002/)
+  - [GitBook+GitLab撰写发布技术文档-Part2:GitLab篇](https://blog.17lai.site/posts/7790e989/)
+  - [自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）](https://blog.17lai.site/posts/d6bad1e5/)
+
+### **Gitlab 使用系列**
+
+  [**Gitlab RSS 分类订阅**](https://blog.17lai.site/categories/gitlab/atom.xml)
+
+  - [**Gitlab的安装及使用教程完全版**](https://blog.17lai.site/posts/acc13b70/)
+  - [破解Gitlab EE](https://blog.17lai.site/posts/29a820b3/)
+  - [Gitlab的安装及使用](https://blog.17lai.site/posts/d08eb7b/)
+  - [CI/CD与Git Flow与GitLab](https://blog.17lai.site/posts/1879721e/)
