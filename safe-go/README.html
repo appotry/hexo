@@ -1,0 +1,278 @@
+<h1>safeGo</h1>
+<h4 id="介绍">介绍</h4>
+<p>安全跳转中台页面</p>
+<h4 id="软件架构">软件架构</h4>
+<p><img src="https://article.biliimg.com/bfs/article/30b3e938da6c5da306d53096b3cb0b6a379003cf.png@1e_1c.webp" alt="下载"></p>
+<p><img src="https://article.biliimg.com/bfs/article/cb3929a921106804bd7180938b05073b82857c53.png@1e_1c.webp" alt="安全跳转"></p>
+<h4 id="安装教程">安装教程</h4>
+<h4 id="使用说明">使用说明</h4>
+<p>直接访问小波的博客文章即可。。<a href="https://blog.ganxb2.com/25482.html">安全跳转中台</a></p>
+<h2 id="🙂前言">🙂前言</h2>
+<p>网络安全的问题这些年越来越被关注，所以各大平台网站例如微博，微信，qq，网易等，都在这几年为自家的网络产品添加了一个安全跳转的中台页面，甚至微博对于跳转链接必须是企业认证才能进入微博的安全白名单，可以说是把安全做到了极致(真是可恶啊，草根博主的博客那就别想加入到微博的白名单中…)</p>
+<p>当然除了安全问题，对于 SEO 也是必要的一项加分操作。例如早年小波博客的好友链接转卖后，被用于不好的产品推广网站，而小波未能从博客上及时去掉，这样就会连累自己的博客很容易被搜索引擎拉入黑名单中，就算及时处理，也可能在外链的权重上或多或少受到波及。</p>
+<p>加了安全跳转中台以后，这样可以让自己的产品主域名成功与外链间接通过中台串联，而不是直接关系。</p>
+<p>最后的最后，当然所有的功能初衷都是以人为本，之所以网络安全问题愈发被关注，也是因为网络带来了很多好处，同时也带来不好的影响，所以增加安全跳转中台页面也间接提升了网络产品的用户体验。</p>
+<h2 id="😍廿壴博客安全跳转中台页面成品效果">😍廿壴博客安全跳转中台页面成品效果</h2>
+<p>gitee仓库地址：<a href="https://blog.ganxb2.com/go.html?goUrl=https%3A%2F%2Fgitee.com%2Fganxb2%2Fsafe-go">safeGo</a></p>
+<h2 id="🧐仓库文件说明">🧐仓库文件说明</h2>
+<h3 id="go-html-安全跳转中台html页面"><code>go.html</code> 安全跳转中台html页面</h3>
+<p><em>因为小波个人有分享素材提供下载，所以除了支持作为安全跳转中台，也是提供下载相关操作的功能页面。</em></p>
+<h4 id="配置说明-config">配置说明 <code>config</code></h4>
+<table>
+<thead>
+<tr>
+<th>键名</th>
+<th>描述</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>title</td>
+<td>标题</td>
+<td>string</td>
+</tr>
+<tr>
+<td>iconFavicon</td>
+<td>地址栏图标</td>
+<td>string</td>
+</tr>
+<tr>
+<td>mpImgSrc</td>
+<td>二维码图片地址</td>
+<td>string</td>
+</tr>
+<tr>
+<td>blogName</td>
+<td>博客名称</td>
+<td>string</td>
+</tr>
+<tr>
+<td>blogDescription</td>
+<td>博客描述</td>
+<td>string</td>
+</tr>
+<tr>
+<td>safeUrl</td>
+<td>白名单</td>
+<td>array</td>
+</tr>
+<tr>
+<td>tipsTextError</td>
+<td>错误提示文案</td>
+<td>string</td>
+</tr>
+<tr>
+<td>tipsTextDownload</td>
+<td>下载提示文案</td>
+<td>string</td>
+</tr>
+<tr>
+<td>tipsTextDanger</td>
+<td>不在安全范围的文案</td>
+<td>string</td>
+</tr>
+<tr>
+<td>tipsTextSuccess</td>
+<td>安全范围的文案</td>
+<td>string</td>
+</tr>
+<tr>
+<td>textDanger</td>
+<td>不在安全范围的跳转提示文案</td>
+<td>string</td>
+</tr>
+<tr>
+<td>textSuccess</td>
+<td>安全范围的跳转提示文案</td>
+<td>string</td>
+</tr>
+<tr>
+<td>wpValidate</td>
+<td>下载功能的验证码</td>
+<td>string</td>
+</tr>
+</tbody>
+</table>
+<h4 id="go-js-博客调用的跳转方法"><code>go.js</code> 博客调用的跳转方法</h4>
+<h5 id="代码说明">代码说明</h5>
+<pre><code class="language-js">const safeGoFun = {
+  // TODO: a链接安全跳转（只对文章页，关于页评论 -- 评论要单独丢到waline回调中）
+  NzcheckLink: async (domName) =&gt; {
+    // 获取文章页非社会分享的a标签
+    const links = document.querySelectorAll(domName);
+    if (links) {
+      // 锚点正则
+      let reg = new RegExp(/^[#].*/);
+      for (let i = 0; i &lt; links.length; i++) {
+        const ele = links[i];
+        let eleHref = ele.getAttribute(&quot;href&quot;),
+          eleIsDownLoad = ele.getAttribute(&quot;data-download&quot;),
+          eleRel = ele.getAttribute(&quot;rel&quot;);
+
+        // 排除：锚点、上下翻页、按钮类、分类、标签
+        if (
+          !reg.test(eleHref) &amp;&amp;
+          eleRel !== &quot;prev&quot; &amp;&amp;
+          eleRel !== &quot;next&quot; &amp;&amp;
+          eleRel !== &quot;category&quot; &amp;&amp;
+          eleRel !== &quot;tag&quot; &amp;&amp;
+          eleHref !== &quot;javascript:void(0);&quot;
+        ) {
+          // 判断是否下载地址和白名单，是下载拼接 &amp;type=goDown
+          if (!(await safeGoFun.NzcheckLocalSite(eleHref)) &amp;&amp; !eleIsDownLoad) {
+            // encodeURIComponent() URI编码
+            ele.setAttribute(
+              &quot;href&quot;,
+              &quot;/go.html?goUrl=&quot; + encodeURIComponent(eleHref)
+            );
+          } else if (
+            !(await safeGoFun.NzcheckLocalSite(eleHref)) &amp;&amp;
+            eleIsDownLoad === &quot;goDown&quot;
+          ) {
+            ele.setAttribute(
+              &quot;href&quot;,
+              &quot;/go.html?goUrl=&quot; + encodeURIComponent(eleHref) + &quot;&amp;type=goDown&quot;
+            );
+          }
+        }
+      }
+    }
+  },
+  // 校验白名单，自己博客，local测试
+  NzcheckLocalSite: async (url) =&gt; {
+    try {
+      // 白名单地址则不修改href
+      const safeUrls = [&quot;localhost:4000&quot;, &quot;ganxb2.com&quot;, &quot;blog.ganxb2.com&quot;];
+      let isOthers = false;
+      for (let i = 0; i &lt; safeUrls.length; i++) {
+        const ele = safeUrls[i];
+        if (url.includes(ele)) {
+          isOthers = true;
+          break;
+        }
+      }
+      return isOthers;
+    } catch (err) {
+      return true;
+    }
+  },
+};
+
+Object.keys(safeGoFun).forEach((key) =&gt; {
+  window[key] = safeGoFun[key];
+});
+
+// 页面dom加载完成后，文章页不是分享按钮，不是图片灯箱，class类名不含有 not-check-link
+// not-check-link 是小波自己设计的约定类名class，用来排除不调用跳转方法的链接
+document.addEventListener(&quot;DOMContentLoaded&quot;, function () {
+  window.NzcheckLink(
+    &quot;.post-content a:not(.social-share-icon):not(.fancybox):not(.not-check-link)&quot;
+  );
+});
+
+</code></pre>
+<blockquote>
+<p>提示</p>
+<p><code>NzcheckLink</code> 方法：</p>
+<ol>
+<li>
+<p>小波设计博客和中台的跳转链接约定：如果是下载则方法给跳转地址后补上<code>type=goDown</code>，所以页面的超链接 a 标签需要增加属性 <code>data-download=&quot;goDown&quot;</code></p>
+<p>eg:</p>
+<pre><code class="language-routeros">&lt;a href=&quot;https://pan.baidu.com/s/1jShRisVX9H9_LHqch_V_lQ?pwd=mfsq&quot; target=&quot;_blank&quot; rel=&quot;noopener external nofollow noreferrer&quot; data-download=&quot;goDown&quot;&gt;点我去廿壴博客的百度云下载&lt;/a&gt;
+</code></pre>
+</li>
+<li>
+<p>排除规则如果小波代码默认条件的不能全面覆盖你的站点超链接类型，请自己根据情况补充(PS: 这里小波偷懒了没有搞成方法的参数传入…嘎嘎)</p>
+</li>
+</ol>
+<p><code>NzcheckLocalSite</code> 方法：</p>
+<ol>
+<li>把 <code>safeUrls</code> 域名改成自己博客的</li>
+</ol>
+</blockquote>
+<h3 id="🤔博客如何调用">🤔博客如何调用</h3>
+<ol>
+<li>
+<h4 id="首先把仓库文件复制贴入hexo博客-source文件夹下">首先把仓库文件复制贴入hexo博客 <code>source</code>文件夹下</h4>
+<p>非hexo博客则贴入博客的根目录</p>
+</li>
+<li>
+<h4 id="增加调用代码">增加调用代码</h4>
+<p>① 不采用引入 js 文件，减少1次请求</p>
+<pre><code class="language-js">// 通常是 layout.ejs 在 &lt;/body&gt; 前贴入以下代码
+&lt;script&gt;
+  // 把 go.js 中代码贴入
+  const safeGoFun = {
+    NzcheckLink: () =&gt; {},
+    NzcheckLocalSite: () =&gt; {}
+  }
+
+  document.addEventListener(&quot;DOMContentLoaded&quot;, function () {
+    safeGoFun.NzcheckLink(
+      &quot;.post-content a:not(.social-share-icon):not(.fancybox):not(.not-check-link)&quot;
+    );
+  });
+&lt;/script&gt;
+</code></pre>
+<p><em>代码解释：页面 dom 加载完成后，文章页不是分享按钮，不是图片灯箱，<code>class</code> 类名不含有 <code>not-check-link</code> 执行调用，所以 <code>.post-content</code> 根据自己的博客修改，可改成 <code>body</code> 的 <code>class</code> 类名，则全局覆盖</em><br>
+<em><code>not-check-link</code> 是小波自己设计的约定类名 <code>class</code>，用来统一排除不调用跳转方法的链接</em></p>
+<pre><code class="language-js">// 如果只给文章页添加，则需要判断只在文章页调用
+// fluid主题 栗子🌰：
+&lt;% if(is_post()) { %&gt;
+  &lt;script&gt;
+    ... 同上
+  &lt;/script&gt;
+&lt;% } %&gt;
+</code></pre>
+<p>② 直接引用 js 文件 推荐</p>
+<pre><code class="language-js">// 通常是 layout.ejs 在 &lt;/body&gt; 前贴入以下代码
+&lt;script src=&quot;/go.js&quot;&gt;&lt;/script&gt;
+
+</code></pre>
+<blockquote>
+<p>注意</p>
+<p><strong>go.js</strong> 文件：</p>
+<ol>
+<li>
+<p><code>.NzcheckLink(&quot;.post-content a:not(.social-share-icon):not(.fancybox):not(.not-check-link)&quot;</code> 的 <code>.post-content</code> 同 ① 手动一样，根据自己博客文章页或整站 <code>body</code> 的 <code>class</code> 名字修改</p>
+</li>
+<li>
+<p>文章标题等超链接不需要被调用的统一+个<code>class</code> <code>&lt;a class=&quot;not-check-link&quot;&gt;&lt;/a&gt;</code> ,如果本来有 <code>class</code> 则里面追加</p>
+</li>
+<li>
+<p><code>safeUrls</code> 域名改成自己博客的</p>
+</li>
+</ol>
+<p><strong>go.html</strong> 文件：</p>
+<ol>
+<li><code>config</code> 根据自己博客文案修改，添加友链白名单</li>
+</ol>
+</blockquote>
+<blockquote>
+<p>提示</p>
+<p>如果你的博客也是 fluid 并使用 waline 评论，则还需要在 <code>waline.init(options)</code> 后再为 waline 评论补上调用，因为 fluid 主题这里采用了懒加载</p>
+<pre><code class="language-js">// fluid主题 栗子🌰：
+...
+waline.init(options);
+// 监控滚动到留言板执行回调 -- 添加外链跳转页面
+Fluid.utils.waitElementVisible('#waline .wl-cards .wl-item', () =&gt; {
+  setTimeout(() =&gt; {
+   	window.NzcheckLink(&quot;#waline .wl-cards .wl-item a&quot;);
+  }, 1500);
+});
+</code></pre>
+<p><em>代码解释：因为 waline 的初始方法异步，所以需要自己监控判断 waline 的评论 dom 显示以后再执行调用</em></p>
+</blockquote>
+</li>
+</ol>
+<h3 id="😚未来扩展">😚未来扩展</h3>
+<ol>
+<li>可以充分利用 <code>github</code> 或者 <code>vercel</code>，把安全跳转中台页面部署上去，这样可作为独立的安全中台站点使用，更灵活、更易后期扩展。</li>
+<li>下载的安全验证码可扩展为通过其他后端服务返回。</li>
+<li>安全白名单参考微博等网络产品，通过数据库维护而非前端页面维护。</li>
+</ol>
+<h3 id="😊hexo同类产品插件">😊hexo同类产品插件</h3>
+<p><em>一开始小波也想找 <code>hexo</code>的插件，例如 <code>hexo-external-link</code></em></p>
+<p><em>但是发现都集成太多，太重了，像<a href="https://blog.ganxb2.com/11388.html">超链接末尾增加小图标尾巴</a>，很早小波就写了文章用css即实现。</em></p>
+<p><em>考虑对于我自己来讲需求不太对口，所以最后选择自己开发写了一个页面。</em></p>
