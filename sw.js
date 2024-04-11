@@ -24,20 +24,11 @@ var cacheList = [
   '/js/events.js?v=1.0.0'
 ];
 
-// self.addEventListener('install', e => {
-//   e.waitUntil(
-//     caches.open(cacheStorageKey).then(cache => {
-//       return cache.addAll(cacheList)
-//         .then(() => self.skipWaiting());
-//     })
-//   );
-// });
-
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(cacheStorageKey)
-    .then(cache => cache.addAll(cacheList))
-    .then(() => self.skipWaiting())
+      .then(cache => cache.addAll(cacheList))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -58,72 +49,79 @@ self.addEventListener('activate', function (e) {
   return self.clients.claim();
 });
 
-// self.addEventListener('fetch', event => {
-//   event.respondWith(
-//     caches.open(cacheStorageKey)
-//       .then(cache => cache.match(event.request, {ignoreSearch: true}))
-//       .then(response => {
-//         // 使用缓存而不是进行网络请求，实现app秒开
-//         return response || fetch(event.request);
-//       })
-//       .catch(error => {
-//         // console.error('Fetch error:', error);
-//         // throw error;
-//         console.error('Fetch failed, serving online response:', error);
-//         return fetch(event.request);
-//       })
-//   );
-// });
+const proxyMap = {
+  'https://cdn.17lai.fun/': 'https://cdn.17lai.site/',
+  'https://cdn.webpushr.com/': 'https://cdn-push.17lai.site/',
+  'https://bot.webpushr.com/': 'https://bot-push.17lai.site/',
+  'https://analytics.webpushr.com/': 'https://analytics-push.17lai.site/',
+  'https://notevents.webpushr.com/': 'https://notevents-push.17lai.site/'
+};
 
-self.addEventListener('fetch', event => {
-  const requestUrl = new URL(event.request.url);
-  const proxyMap = {
-    'https://cdn.webpushr.com/': 'https://cdn-push.17lai.site/',
-    'https://bot.webpushr.com/': 'https://bot-push.17lai.site/',
-    'https://analytics.webpushr.com/': 'https://analytics-push.17lai.site/',
-    'https://notevents.webpushr.com/': 'https://notevents-push.17lai.site/'
-  };
-
-  // 检查是否需要代理请求
-  const proxyUrl = proxyMap[requestUrl.origin];
-  if (proxyUrl) {
-    event.respondWith(handleWebPushrRequest(event.request, proxyUrl));
-    return;
+function isProxyRequired(url) {
+  const requestUrl = new URL(url);
+  for (const [origin, proxyUrl] of Object.entries(proxyMap)) {
+    if (requestUrl.origin.endsWith(new URL(origin).hostname)) {
+      return proxyUrl;
+    }
   }
+  return null;
+}
+
+async function checkWebPushrConnection(timeout) {
+  try {
+    const controller = new AbortController();
+    const { signal } = controller;
+    const response = await fetch('https://webpushr.com', { signal, timeout });
+    return response.ok;
+  } catch (error) {
+    console.error('Failed to connect to webpushr.com:', error);
+    return false;
+  }
+}
+
+self.addEventListener('fetch', async event => {
+  const requestUrl = new URL(event.request.url);
 
   // 处理 PWA 缓存逻辑
   event.respondWith(
     caches.open(cacheStorageKey)
       .then(cache => cache.match(event.request, { ignoreSearch: true }))
       .then(response => {
-        return response || fetch(event.request).catch(() => {
-          // 如果网络请求失败,尝试代理请求
-          const proxyUrl = proxyMap[requestUrl.origin];
-          if (proxyUrl) {
-            return handleWebPushrRequest(event.request, proxyUrl);
-          }
-          return new Response('Network request failed', { status: 408 });
-        });
+        if (response) {
+          return response;
+        } else {
+          // 如果缓存中没有找到资源，尝试原始请求
+          return fetch(event.request)
+            .then(originalResponse => {
+              if (!originalResponse.ok) {
+                // 如果原始请求失败，尝试使用代理请求
+                const proxyUrl = isProxyRequired(event.request.url);
+                if (proxyUrl) {
+                  return handleProxyrRequest(event.request, proxyUrl);
+                } else {
+                  // 如果没有可用的代理，直接返回原始请求的响应
+                  return originalResponse;
+                }
+              } else {
+                // 如果原始请求成功，直接返回原始请求的响应
+                return originalResponse;
+              }
+            });
+        }
       })
       .catch(error => {
         console.error('Fetch failed, serving online response:', error);
-        // 如果缓存请求失败,尝试代理请求
-        const proxyUrl = proxyMap[requestUrl.origin];
-        if (proxyUrl) {
-          return handleWebPushrRequest(event.request, proxyUrl);
-        }
-        // 否则,尝试从网络获取资源
         return fetch(event.request);
       })
   );
 });
 
-async function handleWebPushrRequest(request, proxyUrl) {
+async function handleProxyrRequest(request, proxyUrl) {
   try {
     const proxyResponse = await fetch(proxyUrl + request.url.replace(request.referrer, ''), request);
     return proxyResponse;
   } catch (err) {
     console.error('Error proxying request:', err);
-    return new Response('Error proxying request', { status: 500 });
+    throw err;
   }
 }
