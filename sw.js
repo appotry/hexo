@@ -1,5 +1,5 @@
 // 使用{uniqueIdentifier}模板，稍后我们将使用hexo的事件机制，替换成ISO时间，作为每次构建的唯一标识符
-var cacheStorageKey = '17lai-cache-20240412132200';
+var cacheStorageKey = '17lai-cache-20240412181547';
 
 // 在这个数组里面写入您主页加载需要的资源文件
 var cacheList = [
@@ -7,7 +7,8 @@ var cacheList = [
   '/css/my.css?v=1.0.1',
   '/css/highlight.css?v=1.0.0',
   '/css/highlight-dark.css?v=1.0.0',
-
+  '/libs/awesome/css/all.min.css?v=5.15.4',
+  
   '/libs/jquery/jquery.min.js',
   '/libs/materialize/materialize.min.js?v=1.2.2',
   '/libs/materialize/materialize.min.css?v=1.2.2',
@@ -32,6 +33,13 @@ self.addEventListener('install', e => {
       .then(() => self.skipWaiting())
   );
 });
+// 处理 skipWaiting 消息
+self.addEventListener('message', event => {
+  if (event.data && event.data.action === 'skipWaiting') {
+    self.skipWaiting();
+    console.log('[PWA] rec message skipWaiting');
+  }
+});
 
 self.addEventListener('activate', function (e) {
   console.log('[ServiceWorker] Activate');
@@ -49,6 +57,17 @@ self.addEventListener('activate', function (e) {
   // 更新客户端
   return self.clients.claim();
 });
+
+// 在 Service Worker 中设置的标识符
+const customIdentifier = '17laiIdentifier';
+self.addEventListener('message', event => {
+  if (event.data && event.data.action === 'checkIdentifier') {
+    // 发送带有标识符的消息给客户端
+    event.source.postMessage({ identifier: customIdentifier });
+  }
+});
+
+
 
 const proxyMap = {
   'https://cdn.jsdelivr.net': 'https://fastly.jsdelivr.net',
