@@ -4994,6 +4994,370 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
+    <title>qnap IO 错误消除</title>
+    <url>/posts/5b1993ac/</url>
+    <content><![CDATA[问题
+[Storage &amp; Snapshots] Failed to check file system of volume "SYS". Storage pool: 1. Volume could not be unmounted.
+检测问题
+检测问题可选命令有
+md_checker
+
+pvdisplay
+
+vgdisplay
+
+lvdisplay
+处理步骤
+备份
+先备份数据，rsync比HBS3好用多了。
+如果没有坏块
+如果没有坏块，就在下图位置扫描坏块，扫描完，自动清除异常标志
+
+如果有坏块
+坏块修复
+如果有坏块，可以使用 “DiskGenius”扫描修复
+
+
+强制消除异常标志
+
+
+開啟SSH
+登入 console
+# sed -i '/pd_err_wwn_/d' /mnt/HDA_ROOT/.conf
+重啟 NAS.
+
+
+The Solution
+
+
+Change the “/etc/lvm/lvm.conf” as described above
+
+
+In general one should configure the LVM to filter out all sd* devices and only see the /dev/emcpower* or /dev/mapper/* devices. If there are other non-mutipathed SCSI devices LVM volumes, e.g: /dev/cciss/*, then set the filter accordingly, for example:
+
+
+filter = [ "r/sd.*/" "a/dev/cciss/*/" "a/dev/emcpower.*/" "a/dev/mapper/*/" ]
+With this setting, the ‘lvmdiskscan’ and ‘pvscan’ commands should only find the /dev/ccisss/, /dev/emcpower and /dev/mapper/* devices.
+
+
+Stop any applications/services that access LVM managed devices/filesystems.
+
+
+Unmount all LVM-based filesystems.
+
+
+Deactivate all Volume Groups.
+
+
+# vgchange -an
+
+Rescan Volume Groups.
+
+# vgscan
+
+Re-activate Volume Groups.
+
+# vgchange -ay
+\8. Mount any LVM-based filesystems.
+
+Start any applications/services requring access to LVM managed devices/filesystems.
+
+总结：
+为了安全和稳定性，有坏块后，备份数据，使用DiskGenius修复坏块，（只能修复逻辑坏块，不能修复物理坏块），然后最好全盘格式化再使用。
+SDD可以使用低级格式化，但会全盘减少一次写寿命。尽量少用。
+进入维护模式，在进行修复，有可能解决问题！
+参考
+
+[I always get a failed to check Filesystem message](https://forum.qnap.com/viewtopic.php?t=162182)
+Duplicate PV Warnings for Multipathed Devices
+‘Found duplicate PV’ warnings when using LVM with multipath storage in RHEL/CentOS
+pvdisplay shows “Found duplicate PV” on multipath device
+
+系列教程
+全部文章RSS订阅
+Nas系列
+Nas 分类 RSS 订阅
+
+从零开始玩PT-入门到精通
+如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
+音视频图书和音乐自动化管理框架图解
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Potplayer终极优化教程实现PC视频播放最强画质
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列
+Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>ssd</tag>
+        <tag>hdd</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>transmission 使用及其配置</title>
+    <url>/posts/8f76d9dd/</url>
+    <content><![CDATA[安装
+qnapclub
+
+docker
+docker hub
+
+version: "2.1"
+services:
+  transmission:
+    image: ghcr.io/linuxserver/transmission
+    container_name: transmission
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+      - TRANSMISSION_WEB_HOME=/combustion-release/ #optional
+      - USER=username #optional
+      - PASS=password #optional
+      - WHITELIST=iplist #optional
+      - HOST_WHITELIST=dnsnane list #optional
+    volumes:
+      - &lt;path to data&gt;:/config
+      - &lt;path to downloads&gt;:/downloads
+      - &lt;path to watch folder&gt;:/watch
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped
+
+控制脚本
+/etc/init.d/QTransmission.sh start
+/etc/init.d/QTransmission.sh stop
+Transmission 配置详解
+vi /share/CACHEDEV1_DATA/.qpkg/QTransmission/etc/settings.json
+"alt-speed-up": 500, # 限速时段上传限速值
+"alt-speed-down": 500, # 限速时段下载限速值
+"alt-speed-enabled": false,
+"alt-speed-time-begin": 540,
+"alt-speed-time-day": 127, # 时段限速日期（星期几），127 表示每天，更复杂配置参考官网。用 7 位二进制数表示，然后转换成十进制数，0000001 表示周日，1000000 表示周六，0000010 表示周一，0000100 表示周二。如果你只要在周末限速，该数应该 1000001，转换为十进制就是 65
+"alt-speed-time-enabled": true, # 启用限速，为 false 时，以上计划配置则不生效，生效时会自动禁用 alt-speed-enabled 配置，二者只能选一个
+"alt-speed-time-end": 420, # 限速时段结束时间，这个配置表示的是凌晨零点到开始时间的分钟数，比如 7:00 就是 7*60=420。需要注意的是，该时间是用的 GMT 时间，即北京时间 -8 小时。比如你计划北京时间 7 点 30 分开始，这个数字应该是（7-8+24）*60+30=1410
+"bind-address-ipv4": "0.0.0.0", # IPv4 地址绑定，一般不要改动
+"bind-address-ipv6": "::", #IPv6 地址绑定，一般不要改动
+"blocklist-enabled": true, # 启动白名单，默认不启动，需要启动改为 true
+"blocklist-updates-enabled": false,
+"blocklist-url": "http://www.example.com/blocklist",
+"cache-size-mb": 4, #缓存大小，以 MB 为单位，建议设大一些，避免频繁读写硬盘而伤硬盘，建议设为内存大小的 1/6～1/4
+"compact-view": false,
+"dht-enabled": false, #关闭 DHT（不通过 tracker 寻找节点）功能，不少 PT 站的要求，但 BT 下载设置为 true 会使得下载更好
+"download-dir": "/share/Downloads", #下载的内容存放的目录
+"download-queue-enabled": true,  # 下载队列开关
+"download-queue-size": 5, # 下载队列数量
+"encryption": 1, # 加密。指定节点的加密模式，默认 1。0 表示关闭 , 0= 不加密，1= 优先加密，2= 必须加密
+"lazy-bitfield-enabled": true, # 默认为 true，设置为 true 时可以避免某些 ISP 通过查询完整位段来屏蔽 BT，从而破解部分 ISP 对 BT 的封杀，当然不一定完全有效
+"idle-seeding-limit": 30,
+"idle-seeding-limit-enabled": false,
+"incomplete-dir": "/share/Downloads",  # 临时文件路径
+"incomplete-dir-enabled": false,
+"inhibit-desktop-hibernation": true,
+"lpd-enabled": false, #禁用 LDP（本地节点发现，用于在本地网络寻找节点）, 不少 PT 站的要求
+"main-window-height": 500,
+"main-window-is-maximized": 0,
+"main-window-width": 615,
+"main-window-x": 337,
+"main-window-y": 211,
+"message-level": 2,
+"open-dialog-dir": "/share/Download",  # 网页对话框打开的根目录
+"peer-congestion-algorithm": "",
+"peer-limit-global": 240, # 全局连接数
+"peer-limit-per-torrent": 60, # 每个种子最多的连接数
+"peer-port": 51413, # 传入端口，预设的 port 口
+"peer-port-random-high": 65535, # 传入端口随机值范围上限
+"peer-port-random-low": 49152, # 传入端口随机值范围下限
+"peer-port-random-on-start": false, # 启用随机端口，默认关闭，不建议改为 true
+"peer-socket-tos": "default",
+"pex-enabled": false, # 是否启用用户交换，默认为 true，关于 PEX，有兴趣的朋友可参考 http://en.wikipedia.org/wiki/Peer_exchange，对于只用 PT 的朋友，可以设为 false, 禁用 PEX（节点交换，用于同已与您相连接的节点交换节点名单）, 不少 PT 站的要求
+"port-forwarding-enabled": true, # 启用端口转发（uPnP），如果路由支持并且也开启了 uPnP，则路由会自动做端口映射，但是需要注意的是如果内网有几台机器同时使用 transmission，就必须更改 peer-port 值为不一样
+"preallocation": 1, # 预分配文件磁盘空间，0= 关闭，1= 快速，2= 完全。建议取 1 开启该功能，防止下载大半了才发现磁盘不够。取 2 时，可以减少磁盘碎片，但速度较慢。
+"prefetch-enabled": 1,
+"queue-stalled-enabled": true,
+"queue-stalled-minutes": 30,
+"ratio-limit": 2, # 分享率限制
+"ratio-limit-enabled": false, # 启用分享率限制，默认不启用
+"rename-partial-files": true, #在未完成的文件名后添加后缀.part,false= 禁用
+"rpc-authentication-required": true, # 远程控制需要验证，默认为需要
+"rpc-bind-address": "0.0.0.0", # 远程控制地址绑定，允许 IP 通过 RPC 访问，默认值表示任何地址都可以访问
+"rpc-enabled": true, # 启用远程控制，默认启用
+"rpc-host-whitelist-enabled": true, # 是否开启主机白名单
+"rpc-host-whitelist": "", # 白名单，如果需要远程访问，最好配置
+"rpc-password": "{cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaE", #web-ui 的密码，可直接修改，重新运行或者 reload 服务的时候密码会自动 HASH 增加安全性
+"rpc-port": 9091, # 默认 web-ui 的 port 口，也是远程控制端口，可自行更改
+"rpc-url": "/transmission/",
+"rpc-username": "transmission", #默认登入名称，也是远程控制用户名
+"rpc-whitelist": "127.0.0.1", # 远程控制白名单，默认值为所有地址，支持通配符*，如 192.168.2.*
+"rpc-whitelist-enabled": true, # 启用远程控制白名单，如果启用，则仅仅上面列出的地址可以远程连接
+"scrape-paused-torrents-enabled": true,
+"script-torrent-done-enabled": false,
+"script-torrent-done-filename": "/home/",
+"seed-queue-enabled": false,
+"seed-queue-size": 10,
+"show-backup-trackers": true,
+"show-extra-peer-details": false,
+"show-filterbar": true,
+"show-notification-area-icon": false,
+"show-options-window": true,
+"show-statusbar": true,
+"show-toolbar": true,
+"show-tracker-scrapes": true,
+"sort-mode": "sort-by-age",
+"sort-reversed": false,
+"speed-limit-down": 300, #平时的下载限速
+"speed-limit-down-enabled": true, #启用平时下载限速
+"speed-limit-up": 30, #平时上传限速
+"speed-limit-up-enabled": true, #启用平时上传限速
+"start-added-torrents": false,
+"statusbar-stats": "total-ratio",
+"torrent-added-notification-enabled": true,
+"torrent-complete-notification-enabled": true,
+"torrent-complete-sound-enabled": true,
+"trash-can-enabled": true,
+"trash-original-torrent-files": false,
+"umask": 18,
+"upload-slots-per-torrent": 14
+"utp-enabled": true, #启用μTP 协议
+"watch-dir": "/share/bt",  # 监听文件夹目录
+"watch-dir-enabled": false # 是否监听文件夹
+Q：TR提示FILE NAME TOO LONG
+A：TR最大文件名MAX_PATH ,260个字符
+方法1：改路径和保存路径的文件夹名字，越短越好，在web control种子上面右键，修改种子文件或目录名称。次选方法，不勾选下载文件名过长的文件
+方法2：遇到个名字特长的，一直下载失败，使用软连接进一步缩短路径名长度
+#cd /
+#ln -s  /share/CACHEDEV1_DATA/Download/ DL
+方法3：
+上面两种还是不行，换QBittorrent吧
+不过，最近有好消息，这个bug我去看了下源代码，找到原来有人试图修复过它，但是并没有合并到最新版本。发个post提醒bug没有修复，居然有回复了。这个bug将在3.0版本修复，见下图。
+
+Q: transmission 如何修改登陆密码
+A: 第一种方式
+qnap 中，transmission3.0的配置文件路径如下
+/share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
+ 
+cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
+vim settings.json
+找到”rpc-password”:
+后面引号内就是经过加密的密码，不要管他怎么加密的，直接把引号内的内容修改为你的新密码就可以了，比如”rpc-password”:”xxorg.com”
+然后按“ESC”键，输入:wq 保存退出，然后重启tr即可
+第二种方式：
+# 1、控制台输入，-u后边是用户名，-v后边跟着的是登陆密码
+transmission-daemon --paused -t -u admin -v 123456
+# 将会把生成的密码保存到：~/.config/transmission-daemon/settings.json
+# 其实是生成配置文件并保存到当前登陆用户的家目录下
+# 2、打开~/.config/transmission-daemon/settings.json并复制加密的密码
+# 3、将加密的密码粘贴到/media/AiCard_01/transmission/config/settings.json
+# 替换掉内容为：rpc-password 后面的密码
+# 4、重启Transmission
+ps:通过ps定位transmission位置
+ps aux | grep trans
+# cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/bin
+# ./transmission-daemon --paused -t -u [name] -v [password]
+# cd ~/.config/transmission-daemon
+[~/.config/transmission-daemon] # vi settings.json
+复制生成的密码到前面的配置文件里面。
+Q: 为Transmission增加种子目录监控，实现自动下载
+/share/CACHEDEV3_DATA/.qpkg/QTransmission3/etc
+改/var/packages/transmission/target/var/settings.json 在最后面增加2行。
+"upload-slots-per-torrent": 14,（原文件最后一行，注意添加个逗号，不添加transmission好像不能启动） 
+"watch-dir": "/XXXXX/XXXXX", （修改成自己nas上的同步目录） 
+"watch-dir-enabled": true（无逗号）
+保存，退出。
+启动Transmission  等待1-2分钟，就好了。
+    "speed-limit-up-enabled": false,
+    "start-added-torrents": true,
+    "trash-original-torrent-files": false,
+    "umask": 18,
+    "upload-slots-per-torrent": 14,
+    "utp-enabled": true,
+    "watch-dir": "/share/Download/Seed/complete",
+    "watch-dir-enabled": true
+}
+Q: Nas 上面 Transmission 如何做种？
+A:
+注意，此方法仅适用于开启了ssh的机器
+可以看到可执行文件目录下有这么几个文件，每个人的安装目录都不一样，自行查找，或用
+我的文件位置是在/volume1/@appstore/transmission/bin，用到的命令是 transmission-create
+方法也很简单，写一个范例
+./transmission-create -p -o /volume1/data/Wi
+kiLeaks-Year-Zero-2017-v1.torrent -t https://announce.XXXXXXXXXX.cc/announce.php -s 2048 /volume1/da
+ta/WikiLeaks-Year-Zero-2017-v1.7z &amp;
+参数
+-p 表示这是私用的种子，这个必须要加上
+-o 生成的种子输出位置，不要忘记把名字打上
+-t tracker的地址，我用的家园的做范本，大家自行修改
+-s 每个文件块的大小，单位是KB，我设置的是2M，也就是2048KB
+最后空一格写源文件的位置，也就是文件的存放位置，可以是一个文件或者一整个目录
+最后可以空一行加一个&amp;，这样即使关掉窗口也可以在后台运行
+填完，回车，种子就在制作了
+种子已经躺在这了
+[/opt/QTransmission3/bin] # ./transmission-create -p -o /share/CACHEDEV1_DATA/Download/Seed/海贼王\ \(1999\).torrent -t https://announce.XXXXXXXX.video/announce.php -s 2048 /share/CACHEDEV1_DATA/Download/海贼王\ \(1999\)/ &amp;
+系列教程
+全部文章RSS订阅
+Nas系列
+Nas 分类 RSS 订阅
+
+从零开始玩PT-入门到精通
+如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
+音视频图书和音乐自动化管理框架图解
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Potplayer终极优化教程实现PC视频播放最强画质
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列
+Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>nas</category>
+      </categories>
+      <tags>
+        <tag>bt</tag>
+        <tag>pt</tag>
+        <tag>qnap</tag>
+        <tag>nas</tag>
+        <tag>transmission</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>几种常用管理模型和方法</title>
     <url>/posts/ca630feb/</url>
     <content><![CDATA[这些只是基本的工具，你需要了解。但是，和行业相关的知识更重要。就像做数学题，把一堆错综复杂的线索中归纳总结出来问题，提出解决方法，这中间需要丰富的行业知识，这个没法速成。总结完后，执行阶段，就像数学加减乘除一样，这些是基本的工具和方法。
@@ -9984,124 +10348,293 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
-    <title>qnap IO 错误消除</title>
-    <url>/posts/5b1993ac/</url>
-    <content><![CDATA[问题
-[Storage &amp; Snapshots] Failed to check file system of volume "SYS". Storage pool: 1. Volume could not be unmounted.
-检测问题
-检测问题可选命令有
-md_checker
+    <title>在浏览器输入 URL 回车之后发生了什么</title>
+    <url>/posts/656a0abb/</url>
+    <content><![CDATA[前言
 
-pvdisplay
+这个问题已经是老生常谈了，更是经常被作为面试的压轴题出现，网上也有很多文章，但最近闲的无聊，然后就自己做了一篇笔记，感觉比之前理解更透彻了。
+这篇笔记是我这两天看了数十篇文章总结出来的，所以相对全面一点，但由于我是做前端的，所以会比较重点分析浏览器渲染页面那一部分，至于其他部分我会罗列出关键词，感兴趣的可以自行查阅，
+**注意：**本文的步骤是建立在，请求的是一个简单的 HTTP 请求，没有 HTTPS、HTTP2、最简单的 DNS、没有代理、并且服务器没有任何问题的基础上，尽管这是不切实际的。
+大致流程
 
-vgdisplay
+URL 解析
+DNS 查询
+TCP 连接
+处理请求
+接受响应
+渲染页面
 
-lvdisplay
-处理步骤
-备份
-先备份数据，rsync比HBS3好用多了。
-如果没有坏块
-如果没有坏块，就在下图位置扫描坏块，扫描完，自动清除异常标志
+一、URL 解析
+地址解析：
+首先判断你输入的是一个合法的 URL 还是一个待搜索的关键词，并且根据你输入的内容进行自动完成、字符编码等操作。
+HSTS
+由于安全隐患，会使用 HSTS 强制客户端使用 HTTPS 访问页面。详见：你所不知道的 HSTS (opens new window)。
+其他操作
+浏览器还会进行一些额外的操作，比如安全检查、访问限制（之前国产浏览器限制 996.icu）。
+检查缓存
 
-如果有坏块
-坏块修复
-如果有坏块，可以使用 “DiskGenius”扫描修复
+二、DNS 查询
+基本步骤
 
-
-强制消除异常标志
-
-
-開啟SSH
-登入 console
-# sed -i '/pd_err_wwn_/d' /mnt/HDA_ROOT/.conf
-重啟 NAS.
-
-
-The Solution
-
-
-Change the “/etc/lvm/lvm.conf” as described above
-
-
-In general one should configure the LVM to filter out all sd* devices and only see the /dev/emcpower* or /dev/mapper/* devices. If there are other non-mutipathed SCSI devices LVM volumes, e.g: /dev/cciss/*, then set the filter accordingly, for example:
+1. 浏览器缓存
+浏览器会先检查是否在缓存中，没有则调用系统库函数进行查询。
+2. 操作系统缓存
+操作系统也有自己的 DNS 缓存，但在这之前，会向检查域名是否存在本地的 Hosts 文件里，没有则向 DNS 服务器发送查询请求。
+3. 路由器缓存
+路由器也有自己的缓存。
+4. ISP DNS 缓存
+ISP DNS 就是在客户端电脑上设置的首选 DNS 服务器，它们在大多数情况下都会有缓存。
+根域名服务器查询
+在前面所有步骤没有缓存的情况下，本地 DNS 服务器会将请求转发到互联网上的根域，下面这个图很好的诠释了整个流程：
 
 
-filter = [ "r/sd.*/" "a/dev/cciss/*/" "a/dev/emcpower.*/" "a/dev/mapper/*/" ]
-With this setting, the ‘lvmdiskscan’ and ‘pvscan’ commands should only find the /dev/ccisss/, /dev/emcpower and /dev/mapper/* devices.
+根域名服务器：维基百科 (opens new window)
+
+需要注意的点
+
+递归方式：一路查下去中间不返回，得到最终结果才返回信息（浏览器到本地 DNS 服务器的过程）
+迭代方式，就是本地 DNS 服务器到根域名服务器查询的方式。
+什么是 DNS 劫持
+前端 dns-prefetch 优化
+
+三、TCP 连接
+TCP/IP 分为四层，在发送数据时，每层都要对数据进行封装：
+
+1. 应用层：发送 HTTP 请求
+在前面的步骤我们已经得到服务器的 IP 地址，浏览器会开始构造一个 HTTP 报文，其中包括：
+
+请求报头（Request Header）：请求方法、目标地址、遵循的协议等等
+请求主体（其他参数）
+
+其中需要注意的点：
+
+浏览器只能发送 GET、POST 方法，而打开网页使用的是 GET 方法
+
+2. 传输层：TCP 传输报文
+传输层会发起一条到达服务器的 TCP 连接，为了方便传输，会对数据进行分割（以报文段为单位），并标记编号，方便服务器接受时能够准确地还原报文信息。
+在建立连接前，会先进行 TCP 三次握手。
+
+关于 TCP/IP 三次握手，网上已经有很多段子和图片生动地描述了。
+相关知识点：
+
+SYN 泛洪攻击
 
 
-Stop any applications/services that access LVM managed devices/filesystems.
+3. 网络层：IP 协议查询 Mac 地址
+将数据段打包，并加入源及目标的 IP 地址，并且负责寻找传输路线。
+判断目标地址是否与当前地址处于同一网络中，是的话直接根据 Mac 地址发送，否则使用路由表查找下一跳地址，以及使用 ARP 协议查询它的 Mac 地址。
+
+注意：在 OSI 参考模型中 ARP 协议位于链路层，但在 TCP/IP 中，它位于网络层。
+
+4. 链路层：以太网协议
+以太网协议
+根据以太网协议将数据分为以“帧”为单位的数据包，每一帧分为两个部分：
+
+标头：数据包的发送者、接受者、数据类型
+数据：数据包具体内容
+
+Mac 地址
+以太网规定了连入网络的所有设备都必须具备“网卡”接口，数据包都是从一块网卡传递到另一块网卡，网卡的地址就是 Mac 地址。每一个 Mac 地址都是独一无二的，具备了一对一的能力。
+广播
+发送数据的方法很原始，直接把数据通过 ARP 协议，向本网络的所有机器发送，接收方根据标头信息与自身 Mac 地址比较，一致就接受，否则丢弃。
+注意：接收方回应是单播。
+
+相关知识点：
+
+ARP 攻击
 
 
-Unmount all LVM-based filesystems.
+服务器接受请求
+接受过程就是把以上步骤逆转过来，参见上图。
+四、服务器处理请求
+大致流程
+
+HTTPD
+最常见的 HTTPD 有 Linux 上常用的 Apache 和 Nginx，以及 Windows 上的 IIS。
+它会监听得到的请求，然后开启一个子进程去处理这个请求。
+处理请求
+接受 TCP 报文后，会对连接进行处理，对 HTTP 协议进行解析（请求方法、域名、路径等），并且进行一些验证：
+
+验证是否配置虚拟主机
+验证虚拟主机是否接受此方法
+验证该用户可以使用该方法（根据 IP 地址、身份信息等）
+
+重定向
+假如服务器配置了 HTTP 重定向，就会返回一个 301永久重定向响应，浏览器就会根据响应，重新发送 HTTP 请求（重新执行上面的过程）。
+
+关于更多：详见这篇文章 (opens new window)
+
+URL 重写
+然后会查看 URL 重写规则，如果请求的文件是真实存在的，比如图片、html、css、js 文件等，则会直接把这个文件返回。
+否则服务器会按照规则把请求重写到 一个 REST 风格的 URL 上。
+然后根据动态语言的脚本，来决定调用什么类型的动态文件解释器来处理这个请求。
+以 PHP 语言的 MVC 框架举例，它首先会初始化一些环境的参数，根据 URL 由上到下地去匹配路由，然后让路由所定义的方法去处理请求。
+五、浏览器接受响应
+浏览器接收到来自服务器的响应资源后，会对资源进行分析。
+首先查看 Response header，根据不同状态码做不同的事（比如上面提到的重定向）。
+如果响应资源进行了压缩（比如 gzip），还需要进行解压。
+然后，对响应资源做缓存。
+接下来，根据响应资源里的 MIME (opens new window) 类型去解析响应内容（比如 HTML、Image 各有不同的解析方式）。
+六、渲染页面
+浏览器内核
+
+不同的浏览器内核，渲染过程也不完全相同，但大致流程都差不多。
+基本流程
+
+1. HTML 解析
+首先要知道浏览器解析是从上往下一行一行地解析的。
+解析的过程可以分为四个步骤：
+1. 解码（encoding）
+传输回来的其实都是一些二进制字节数据，浏览器需要根据文件指定编码（例如 UTF-8）转换成字符串，也就是 HTML 代码。
+2. 预解析（pre-parsing）
+预解析做的事情是提前加载资源，减少处理时间，它会识别一些会请求资源的属性，比如img标签的src属性，并将这个请求加到请求队列中。
+3. 符号化（Tokenization）
+符号化是词法分析的过程，将输入解析成符号，HTML 符号包括，开始标签、结束标签、属性名和属性值。
+它通过一个状态机去识别符号的状态，比如遇到&lt;，&gt;状态都会产生变化。
+4. 构建树（tree construction）
+
+注意：符号化和构建树是并行操作的，也就是说只要解析到一个开始标签，就会创建一个 DOM 节点。
+
+在上一步符号化中，解析器获得这些标记，然后以合适的方法创建DOM对象并把这些符号插入到DOM对象中。
+
+浏览器容错进制
+你从来没有在浏览器看过类似"语法无效"的错误，这是因为浏览器去纠正错误的语法，然后继续工作。
+事件
+当整个解析的过程完成以后，浏览器会通过DOMContentLoaded事件来通知DOM解析完成。
+2. CSS 解析
+一旦浏览器下载了 CSS，CSS 解析器就会处理它遇到的任何 CSS，根据语法规范 (opens new window)解析出所有的 CSS 并进行标记化，然后我们得到一个规则表。
+CSS 匹配规则
+在匹配一个节点对应的 CSS 规则时，是按照从右到左的顺序的，例如：div p { font-size :14px }会先寻找所有的p标签然后判断它的父元素是否为div。
+所以我们写 CSS 时，尽量用 id 和 class，千万不要过度层叠。
+3. 渲染树
+其实这就是一个 DOM 树和 CSS 规则树合并的过程。
+
+注意：渲染树会忽略那些不需要渲染的节点，比如设置了display:none的节点。
+
+计算
+通过计算让任何尺寸值都减少到三个可能之一：auto、百分比、px，比如把rem转化为px。
+级联
+浏览器需要一种方法来确定哪些样式才真正需要应用到对应元素，所以它使用一个叫做specificity的公式，这个公式会通过：
+
+标签名、class、id
+是否内联样式
+!important
+
+然后得出一个权重值，取最高的那个。
+渲染阻塞
+当遇到一个script标签时，DOM 构建会被暂停，直至脚本完成执行，然后继续构建 DOM 树。
+但如果 JS 依赖 CSS 样式，而它还没有被下载和构建时，浏览器就会延迟脚本执行，直至 CSS Rules 被构建。
+所有我们知道：
+
+CSS 会阻塞 JS 执行
+JS 会阻塞后面的 DOM 解析
+
+为了避免这种情况，应该以下原则：
+
+CSS 资源排在 JavaScript 资源前面
+JS 放在 HTML 最底部，也就是 &lt;/body&gt;前
+
+另外，如果要改变阻塞模式，可以使用 defer 与 async，详见：这篇文章 (opens new window)
+
+布局与绘制
+
+确定渲染树种所有节点的几何属性，比如：位置、大小等等，最后输入一个盒子模型，它能精准地捕获到每个元素在屏幕内的准确位置与大小。
+然后遍历渲染树，调用渲染器的 paint() 方法在屏幕上显示其内容。
+5. 合并渲染层
+把以上绘制的所有图片合并，最终输出一张图片。
+6. 回流与重绘
+回流(reflow)
+当浏览器发现某个部分发现变化影响了布局时，需要倒回去重新渲染，会从html标签开始递归往下，重新计算位置和大小。
+reflow 基本是无法避免的，因为当你滑动一下鼠标、resize 窗口，页面就会产生变化。
+重绘(repaint)
+改变了某个元素的背景色、文字颜色等等不会影响周围元素的位置变化时，就会发生重绘。
+每次重绘后，浏览器还需要合并渲染层并输出到屏幕上。
+回流的成本要比重绘高很多，所以我们应该尽量避免产生回流。
+比如：
+
+display:none 会触发回流，而 visibility:hidden 只会触发重绘。
 
 
-Deactivate all Volume Groups.
+JavaScript 编译执行
+
+大致流程
+
+可以分为三个阶段：
+1. 词法分析
+JS 脚本加载完毕后，会首先进入语法分析阶段，它首先会分析代码块的语法是否正确，不正确则抛出“语法错误”，停止执行。
+几个步骤：
+
+分词，例如将var a = 2，，分成var、a、=、2这样的词法单元。
+解析，将词法单元转换成抽象语法树（AST）。
+代码生成，将抽象语法树转换成机器指令。
+
+2. 预编译
+JS 有三种运行环境：
+
+全局环境
+函数环境
+eval
+
+每进入一个不同的运行环境都会创建一个对应的执行上下文，根据不同的上下文环境，形成一个函数调用栈，栈底永远是全局执行上下文，栈顶则永远是当前执行上下文。
+创建执行上下文
+创建执行上下文的过程中，主要做了以下三件事：
+
+创建变量对象
+
+参数、函数、变量
 
 
-# vgchange -an
+建立作用域链
 
-Rescan Volume Groups.
-
-# vgscan
-
-Re-activate Volume Groups.
-
-# vgchange -ay
-\8. Mount any LVM-based filesystems.
-
-Start any applications/services requring access to LVM managed devices/filesystems.
-
-总结：
-为了安全和稳定性，有坏块后，备份数据，使用DiskGenius修复坏块，（只能修复逻辑坏块，不能修复物理坏块），然后最好全盘格式化再使用。
-SDD可以使用低级格式化，但会全盘减少一次写寿命。尽量少用。
-进入维护模式，在进行修复，有可能解决问题！
-参考
-
-[I always get a failed to check Filesystem message](https://forum.qnap.com/viewtopic.php?t=162182)
-Duplicate PV Warnings for Multipathed Devices
-‘Found duplicate PV’ warnings when using LVM with multipath storage in RHEL/CentOS
-pvdisplay shows “Found duplicate PV” on multipath device
-
-系列教程
-全部文章RSS订阅
-Nas系列
-Nas 分类 RSS 订阅
-
-从零开始玩PT-入门到精通
-如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
-音视频图书和音乐自动化管理框架图解
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Potplayer终极优化教程实现PC视频播放最强画质
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列
-Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
+确认当前执行环境是否能访问变量
 
 
+确定 This 指向
+
+3. 执行
+JS 线程
+
+虽然 JS 是单线程的，但实际上参与工作的线程一共有四个：
+
+其中三个只是协助，只有 JS 引擎线程是真正执行的
+
+
+JS 引擎线程：也叫 JS 内核，负责解析执行 JS 脚本程序的主线程，例如 V8 引擎
+事件触发线程：属于浏览器内核线程，主要用于控制事件，例如鼠标、键盘等，当事件被触发时，就会把事件的处理函数推进事件队列，等待 JS 引擎线程执行
+定时器触发线程：主要控制setInterval和setTimeout，用来计时，计时完毕后，则把定时器的处理函数推进事件队列中，等待 JS 引擎线程。
+HTTP 异步请求线程：通过 XMLHttpRequest 连接后，通过浏览器新开的一个线程，监控 readyState 状态变更时，如果设置了该状态的回调函数，则将该状态的处理函数推进事件队列中，等待 JS 引擎线程执行。
+
+注：浏览器对同一域名的并发连接数是有限的，通常为 6 个。
+宏任务
+分为：
+
+同步任务：按照顺序执行，只有前一个任务完成后，才能执行后一个任务
+异步任务：不直接执行，只有满足触发条件时，相关的线程将该异步任务推进任务队列中，等待 JS 引擎主线程上的任务执行完毕时才开始执行，例如异步 Ajax、DOM 事件，setTimeout 等。
+
+微任务
+微任务是 ES6 和 Node 环境下的，主要 API 有：Promise，process.nextTick。
+微任务的执行在宏任务的同步任务之后，在异步任务之前。
+
+代码例子
+以上代码输出顺序为：1,3,5,4,2
+参考文档
+
+what-happens-when-zh_CN (opens new window)
+Tags to DOM (opens new window)
+彻底理解浏览器的缓存机制 (opens new window)
+浏览器的工作原理：新式网络浏览器幕后揭秘 (opens new window)
+深入浅出浏览器渲染原理 (opens new window)
+js 引擎的执行过程（一） (opens new window)
+还有一些找不到了。。。。。
+
+From: 4ark.me
 ]]></content>
       <categories>
-        <category>nas</category>
+        <category>web</category>
       </categories>
       <tags>
-        <tag>qnap</tag>
-        <tag>nas</tag>
-        <tag>ssd</tag>
-        <tag>hdd</tag>
+        <tag>web</tag>
+        <tag>http</tag>
       </tags>
   </entry>
   <entry>
@@ -12546,9 +13079,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-DSJqjxIeFiLkAZne").style.height=document.getElementById("mmedia-DSJqjxIeFiLkAZne").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-DTAWEhMzYMsnuTEm").style.height=document.getElementById("mmedia-DTAWEhMzYMsnuTEm").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-DSJqjxIeFiLkAZne").style.height=document.getElementById("mmedia-DSJqjxIeFiLkAZne").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-DTAWEhMzYMsnuTEm").style.height=document.getElementById("mmedia-DTAWEhMzYMsnuTEm").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -18470,8 +19003,8 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 列表
 
- var rPcRtNFxduxCUkMq_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    rPcRtNFxduxCUkMq_options.container = document.getElementById("mmedia-rPcRtNFxduxCUkMq");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(rPcRtNFxduxCUkMq_options); 
+ var aBmLMGgQfaiGAVYR_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    aBmLMGgQfaiGAVYR_options.container = document.getElementById("mmedia-aBmLMGgQfaiGAVYR");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(aBmLMGgQfaiGAVYR_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -19890,13 +20423,13 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var VazyvrJsqSEryCqn_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
-    VazyvrJsqSEryCqn_options.container = document.getElementById("mmedia-VazyvrJsqSEryCqn");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(VazyvrJsqSEryCqn_options); 
+ var UWGdJmAAYtvGYLgL_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
+    UWGdJmAAYtvGYLgL_options.container = document.getElementById("mmedia-UWGdJmAAYtvGYLgL");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(UWGdJmAAYtvGYLgL_options); 
 
 
 
- var vOtxhyHyvmTvXLgJ_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    vOtxhyHyvmTvXLgJ_options.container = document.getElementById("mmedia-vOtxhyHyvmTvXLgJ");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(vOtxhyHyvmTvXLgJ_options); 
+ var XQHyzMWABoLTHCMF_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    XQHyzMWABoLTHCMF_options.container = document.getElementById("mmedia-XQHyzMWABoLTHCMF");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(XQHyzMWABoLTHCMF_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -20148,9 +20681,9 @@ Earthly 一个更加强大的镜像构建工具
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-VYKCReufashanMnL").style.height=document.getElementById("mmedia-VYKCReufashanMnL").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-fLtlmWNqOfqsfWOg").style.height=document.getElementById("mmedia-fLtlmWNqOfqsfWOg").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-VYKCReufashanMnL").style.height=document.getElementById("mmedia-VYKCReufashanMnL").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-fLtlmWNqOfqsfWOg").style.height=document.getElementById("mmedia-fLtlmWNqOfqsfWOg").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -20159,8 +20692,8 @@ Earthly 一个更加强大的镜像构建工具
 
 ## 中文翻唱
 
- var NzyIeGxcZOqMYCvc_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
-    NzyIeGxcZOqMYCvc_options.container = document.getElementById("mmedia-NzyIeGxcZOqMYCvc");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(NzyIeGxcZOqMYCvc_options); 
+ var ZGOjYqvwjaJEUvLj_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
+    ZGOjYqvwjaJEUvLj_options.container = document.getElementById("mmedia-ZGOjYqvwjaJEUvLj");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(ZGOjYqvwjaJEUvLj_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -21714,246 +22247,164 @@ RAR registration data``Federal Agency ``for` `Education``1000000 PC usage licens
       </tags>
   </entry>
   <entry>
-    <title>transmission 使用及其配置</title>
-    <url>/posts/8f76d9dd/</url>
-    <content><![CDATA[安装
-qnapclub
+    <title>emoji表情符号</title>
+    <url>/posts/80938cfe/</url>
+    <content><![CDATA[
+emoji表情符号是非常流行的表情符号，几乎没有地方都会支持。这里列举出常用的emoji表情不好，方便大家使用与查阅。
 
-docker
-docker hub
 
-version: "2.1"
-services:
-  transmission:
-    image: ghcr.io/linuxserver/transmission
-    container_name: transmission
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/London
-      - TRANSMISSION_WEB_HOME=/combustion-release/ #optional
-      - USER=username #optional
-      - PASS=password #optional
-      - WHITELIST=iplist #optional
-      - HOST_WHITELIST=dnsnane list #optional
-    volumes:
-      - &lt;path to data&gt;:/config
-      - &lt;path to downloads&gt;:/downloads
-      - &lt;path to watch folder&gt;:/watch
-    ports:
-      - 9091:9091
-      - 51413:51413
-      - 51413:51413/udp
-    restart: unless-stopped
+常用符号
+❤❥웃유♋☮✌☏☢☠✔☑♚▲♪✈✞÷↑↓◆◇⊙■□△▽¿─│♥❣♂♀☿Ⓐ✍✉☣☤✘☒♛▼♫⌘☪≈←→◈◎☉★☆⊿※¡━┃♡ღ ツ
 
-控制脚本
-/etc/init.d/QTransmission.sh start
-/etc/init.d/QTransmission.sh stop
-Transmission 配置详解
-vi /share/CACHEDEV1_DATA/.qpkg/QTransmission/etc/settings.json
-"alt-speed-up": 500, # 限速时段上传限速值
-"alt-speed-down": 500, # 限速时段下载限速值
-"alt-speed-enabled": false,
-"alt-speed-time-begin": 540,
-"alt-speed-time-day": 127, # 时段限速日期（星期几），127 表示每天，更复杂配置参考官网。用 7 位二进制数表示，然后转换成十进制数，0000001 表示周日，1000000 表示周六，0000010 表示周一，0000100 表示周二。如果你只要在周末限速，该数应该 1000001，转换为十进制就是 65
-"alt-speed-time-enabled": true, # 启用限速，为 false 时，以上计划配置则不生效，生效时会自动禁用 alt-speed-enabled 配置，二者只能选一个
-"alt-speed-time-end": 420, # 限速时段结束时间，这个配置表示的是凌晨零点到开始时间的分钟数，比如 7:00 就是 7*60=420。需要注意的是，该时间是用的 GMT 时间，即北京时间 -8 小时。比如你计划北京时间 7 点 30 分开始，这个数字应该是（7-8+24）*60+30=1410
-"bind-address-ipv4": "0.0.0.0", # IPv4 地址绑定，一般不要改动
-"bind-address-ipv6": "::", #IPv6 地址绑定，一般不要改动
-"blocklist-enabled": true, # 启动白名单，默认不启动，需要启动改为 true
-"blocklist-updates-enabled": false,
-"blocklist-url": "http://www.example.com/blocklist",
-"cache-size-mb": 4, #缓存大小，以 MB 为单位，建议设大一些，避免频繁读写硬盘而伤硬盘，建议设为内存大小的 1/6～1/4
-"compact-view": false,
-"dht-enabled": false, #关闭 DHT（不通过 tracker 寻找节点）功能，不少 PT 站的要求，但 BT 下载设置为 true 会使得下载更好
-"download-dir": "/share/Downloads", #下载的内容存放的目录
-"download-queue-enabled": true,  # 下载队列开关
-"download-queue-size": 5, # 下载队列数量
-"encryption": 1, # 加密。指定节点的加密模式，默认 1。0 表示关闭 , 0= 不加密，1= 优先加密，2= 必须加密
-"lazy-bitfield-enabled": true, # 默认为 true，设置为 true 时可以避免某些 ISP 通过查询完整位段来屏蔽 BT，从而破解部分 ISP 对 BT 的封杀，当然不一定完全有效
-"idle-seeding-limit": 30,
-"idle-seeding-limit-enabled": false,
-"incomplete-dir": "/share/Downloads",  # 临时文件路径
-"incomplete-dir-enabled": false,
-"inhibit-desktop-hibernation": true,
-"lpd-enabled": false, #禁用 LDP（本地节点发现，用于在本地网络寻找节点）, 不少 PT 站的要求
-"main-window-height": 500,
-"main-window-is-maximized": 0,
-"main-window-width": 615,
-"main-window-x": 337,
-"main-window-y": 211,
-"message-level": 2,
-"open-dialog-dir": "/share/Download",  # 网页对话框打开的根目录
-"peer-congestion-algorithm": "",
-"peer-limit-global": 240, # 全局连接数
-"peer-limit-per-torrent": 60, # 每个种子最多的连接数
-"peer-port": 51413, # 传入端口，预设的 port 口
-"peer-port-random-high": 65535, # 传入端口随机值范围上限
-"peer-port-random-low": 49152, # 传入端口随机值范围下限
-"peer-port-random-on-start": false, # 启用随机端口，默认关闭，不建议改为 true
-"peer-socket-tos": "default",
-"pex-enabled": false, # 是否启用用户交换，默认为 true，关于 PEX，有兴趣的朋友可参考 http://en.wikipedia.org/wiki/Peer_exchange，对于只用 PT 的朋友，可以设为 false, 禁用 PEX（节点交换，用于同已与您相连接的节点交换节点名单）, 不少 PT 站的要求
-"port-forwarding-enabled": true, # 启用端口转发（uPnP），如果路由支持并且也开启了 uPnP，则路由会自动做端口映射，但是需要注意的是如果内网有几台机器同时使用 transmission，就必须更改 peer-port 值为不一样
-"preallocation": 1, # 预分配文件磁盘空间，0= 关闭，1= 快速，2= 完全。建议取 1 开启该功能，防止下载大半了才发现磁盘不够。取 2 时，可以减少磁盘碎片，但速度较慢。
-"prefetch-enabled": 1,
-"queue-stalled-enabled": true,
-"queue-stalled-minutes": 30,
-"ratio-limit": 2, # 分享率限制
-"ratio-limit-enabled": false, # 启用分享率限制，默认不启用
-"rename-partial-files": true, #在未完成的文件名后添加后缀.part,false= 禁用
-"rpc-authentication-required": true, # 远程控制需要验证，默认为需要
-"rpc-bind-address": "0.0.0.0", # 远程控制地址绑定，允许 IP 通过 RPC 访问，默认值表示任何地址都可以访问
-"rpc-enabled": true, # 启用远程控制，默认启用
-"rpc-host-whitelist-enabled": true, # 是否开启主机白名单
-"rpc-host-whitelist": "", # 白名单，如果需要远程访问，最好配置
-"rpc-password": "{cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxaE", #web-ui 的密码，可直接修改，重新运行或者 reload 服务的时候密码会自动 HASH 增加安全性
-"rpc-port": 9091, # 默认 web-ui 的 port 口，也是远程控制端口，可自行更改
-"rpc-url": "/transmission/",
-"rpc-username": "transmission", #默认登入名称，也是远程控制用户名
-"rpc-whitelist": "127.0.0.1", # 远程控制白名单，默认值为所有地址，支持通配符*，如 192.168.2.*
-"rpc-whitelist-enabled": true, # 启用远程控制白名单，如果启用，则仅仅上面列出的地址可以远程连接
-"scrape-paused-torrents-enabled": true,
-"script-torrent-done-enabled": false,
-"script-torrent-done-filename": "/home/",
-"seed-queue-enabled": false,
-"seed-queue-size": 10,
-"show-backup-trackers": true,
-"show-extra-peer-details": false,
-"show-filterbar": true,
-"show-notification-area-icon": false,
-"show-options-window": true,
-"show-statusbar": true,
-"show-toolbar": true,
-"show-tracker-scrapes": true,
-"sort-mode": "sort-by-age",
-"sort-reversed": false,
-"speed-limit-down": 300, #平时的下载限速
-"speed-limit-down-enabled": true, #启用平时下载限速
-"speed-limit-up": 30, #平时上传限速
-"speed-limit-up-enabled": true, #启用平时上传限速
-"start-added-torrents": false,
-"statusbar-stats": "total-ratio",
-"torrent-added-notification-enabled": true,
-"torrent-complete-notification-enabled": true,
-"torrent-complete-sound-enabled": true,
-"trash-can-enabled": true,
-"trash-original-torrent-files": false,
-"umask": 18,
-"upload-slots-per-torrent": 14
-"utp-enabled": true, #启用μTP 协议
-"watch-dir": "/share/bt",  # 监听文件夹目录
-"watch-dir-enabled": false # 是否监听文件夹
-Q：TR提示FILE NAME TOO LONG
-A：TR最大文件名MAX_PATH ,260个字符
-方法1：改路径和保存路径的文件夹名字，越短越好，在web control种子上面右键，修改种子文件或目录名称。次选方法，不勾选下载文件名过长的文件
-方法2：遇到个名字特长的，一直下载失败，使用软连接进一步缩短路径名长度
-#cd /
-#ln -s  /share/CACHEDEV1_DATA/Download/ DL
-方法3：
-上面两种还是不行，换QBittorrent吧
-不过，最近有好消息，这个bug我去看了下源代码，找到原来有人试图修复过它，但是并没有合并到最新版本。发个post提醒bug没有修复，居然有回复了。这个bug将在3.0版本修复，见下图。
+☼☁❅♒✎©®™Σ✪✯☭➳ 卐 √↖↗●◐Θ◤◥︻〖〗┄┆℃℉°✿ϟ☃☂✄¢€£∞✫★½✡×↙↘○◑⊕◣◢︼【】┅┇☽☾✚〓
 
-Q: transmission 如何修改登陆密码
-A: 第一种方式
-qnap 中，transmission3.0的配置文件路径如下
-/share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
- 
-cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/etc/settings.json
-vim settings.json
-找到”rpc-password”:
-后面引号内就是经过加密的密码，不要管他怎么加密的，直接把引号内的内容修改为你的新密码就可以了，比如”rpc-password”:”xxorg.com”
-然后按“ESC”键，输入:wq 保存退出，然后重启tr即可
-第二种方式：
-# 1、控制台输入，-u后边是用户名，-v后边跟着的是登陆密码
-transmission-daemon --paused -t -u admin -v 123456
-# 将会把生成的密码保存到：~/.config/transmission-daemon/settings.json
-# 其实是生成配置文件并保存到当前登陆用户的家目录下
-# 2、打开~/.config/transmission-daemon/settings.json并复制加密的密码
-# 3、将加密的密码粘贴到/media/AiCard_01/transmission/config/settings.json
-# 替换掉内容为：rpc-password 后面的密码
-# 4、重启Transmission
-ps:通过ps定位transmission位置
-ps aux | grep trans
-# cd /share/CACHEDEV1_DATA/.qpkg/QTransmission3/bin
-# ./transmission-daemon --paused -t -u [name] -v [password]
-# cd ~/.config/transmission-daemon
-[~/.config/transmission-daemon] # vi settings.json
-复制生成的密码到前面的配置文件里面。
-Q: 为Transmission增加种子目录监控，实现自动下载
-/share/CACHEDEV3_DATA/.qpkg/QTransmission3/etc
-改/var/packages/transmission/target/var/settings.json 在最后面增加2行。
-"upload-slots-per-torrent": 14,（原文件最后一行，注意添加个逗号，不添加transmission好像不能启动） 
-"watch-dir": "/XXXXX/XXXXX", （修改成自己nas上的同步目录） 
-"watch-dir-enabled": true（无逗号）
-保存，退出。
-启动Transmission  等待1-2分钟，就好了。
-    "speed-limit-up-enabled": false,
-    "start-added-torrents": true,
-    "trash-original-torrent-files": false,
-    "umask": 18,
-    "upload-slots-per-torrent": 14,
-    "utp-enabled": true,
-    "watch-dir": "/share/Download/Seed/complete",
-    "watch-dir-enabled": true
-}
-Q: Nas 上面 Transmission 如何做种？
-A:
-注意，此方法仅适用于开启了ssh的机器
-可以看到可执行文件目录下有这么几个文件，每个人的安装目录都不一样，自行查找，或用
-我的文件位置是在/volume1/@appstore/transmission/bin，用到的命令是 transmission-create
-方法也很简单，写一个范例
-./transmission-create -p -o /volume1/data/Wi
-kiLeaks-Year-Zero-2017-v1.torrent -t https://announce.XXXXXXXXXX.cc/announce.php -s 2048 /volume1/da
-ta/WikiLeaks-Year-Zero-2017-v1.7z &amp;
-参数
--p 表示这是私用的种子，这个必须要加上
--o 生成的种子输出位置，不要忘记把名字打上
--t tracker的地址，我用的家园的做范本，大家自行修改
--s 每个文件块的大小，单位是KB，我设置的是2M，也就是2048KB
-最后空一格写源文件的位置，也就是文件的存放位置，可以是一个文件或者一整个目录
-最后可以空一行加一个&amp;，这样即使关掉窗口也可以在后台运行
-填完，回车，种子就在制作了
-种子已经躺在这了
-[/opt/QTransmission3/bin] # ./transmission-create -p -o /share/CACHEDEV1_DATA/Download/Seed/海贼王\ \(1999\).torrent -t https://announce.XXXXXXXX.video/announce.php -s 2048 /share/CACHEDEV1_DATA/Download/海贼王\ \(1999\)/ &amp;
-系列教程
-全部文章RSS订阅
-Nas系列
-Nas 分类 RSS 订阅
+▂▃▄▅▆▇█▉▊▋▌▍▎▏↔↕☽☾ の•▸◂▴▾┈┊①②③④⑤⑥⑦⑧⑨⑩ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ ㍿ ▓♨♛❖♓☪✙
 
-从零开始玩PT-入门到精通
-如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
-音视频图书和音乐自动化管理框架图解
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Potplayer终极优化教程实现PC视频播放最强画质
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
+┉┋☹☺☻ت ヅツッシ Üϡﭢ™℠℗©®♥❤❥❣❦❧♡۵웃유ღ♋♂♀☿☼☀☁☂☄☾☽❄☃☈⊙☉℃℉❅✺ϟ☇♤♧♡♢♠♣
 
-Docker系列
-Docker 分类 RSS 订阅
+♥♦☜☞☝✍☚☛☟✌✽✾✿❁❃❋❀⚘☑✓✔√☐☒✗✘ ㄨ ✕✖✖⋆✢✣✤✥❋✦✧✩✰✪✫✬✭✮✯❂✡★✱✲✳✴✵✶✷✸✹✺✻✼❄❅❆❇❈❉❊†☨✞✝☥☦☓☩☯☧☬
 
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
+☸✡♁✙♆。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴々﹟#
 
+﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼☩☨☦✞✛✜✝✙✠✚†‡◉○◌◍◎●◐◑◒◓◔◕◖◗❂☢⊗⊙◘◙◍⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌
+
+≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱㊣㊎㊍㊌㊋㊏㊐㊊㊚㊛㊤㊥
+
+㊦㊧㊨㊒㊞㊑㊒㊓㊔㊕㊖㊗㊘㊜㊝㊟㊠㊡㊢㊩㊪㊫㊬㊭㊮㊯㊰㊙ ㉿ 囍 ♔♕♖♗♘♙♚♛♜♝♞♟ℂℍℕℙℚℝℤℬℰℯℱℊℋℎℐℒℓℳℴ℘ℛℭ℮ℌℑℜℨ♪♫♩♬♭♮♯°øⒶ☮✌☪✡☭✯ 卐 ✐✎✏
+
+✑✒✍✉✁✂✃✄✆✉☎☏➟➡➢➣➤➥➦➧➨➚➘➙➛➜➝➞➸♐➲➳⏎➴➵➶➷➸➹➺➻➼➽←↑→↓↔↕↖↗↘↙↚↛↜↝
+
+↞↟↠↡↢↣↤↥↦↧↨➫➬➩➪➭➮➯➱↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹↺↻↼↽↾↿⇀⇁⇂⇃⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇕
+
+⇖⇗⇘⇙⇚⇛⇜⇝⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪➀➁➂➃➄➅➆➇➈➉➊➋➌➍➎➏➐➑➒➓㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡ
+
+ⓢⓣⓤⓥⓦⓧⓨⓩ⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵ⅠⅡⅢⅣⅤ
+
+ⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹⅺⅻⅼⅽⅾⅿ┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫
+┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽
+┾┿╀╁╂╃╄╅╆╇╈╉╊╋╌╍╎╏
+═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬◤◥◄►▶◀◣◢▲
+
+▼◥▸◂▴▾△▽▷◁⊿▻◅▵▿▹◃❏❐❑❒▀▁▂▃▄▅▆▇▉▊▋█▌▍▎▏▐░▒▓▔▕■□▢▣▤▥▦▧
+
+▨▩▪▫▬▭▮▯ ㋀㋁㋂㋃㋄㋅㋆㋇㋈㋉㋊㋋㏠㏡㏢㏣㏤㏥㏦㏧㏨㏩㏪㏫㏬㏭㏮㏯㏰㏱㏲
+
+㏳㏴㏵㏶㏷㏸㏹㏺㏻㏼㏽㏾㍙㍚㍛㍜㍝㍞㍟㍠㍡㍢㍣㍤㍥㍦㍧㍨㍩㍪㍫㍬㍭㍮㍯㍰㍘
+
+☰☲☱☴☵☶☳☷☯
+特殊符号
+♠♣♧♡♥❤❥❣♂♀✲☀☼☾☽◐◑☺☻☎☏✿❀№↑↓←→√×÷★℃℉°◆◇⊙■□△▽¿½☯✡ ㍿卍卐 ♂♀✚〓㎡♪♫♩♬
+
+㊚㊛囍㊒㊖ Φ♀♂‖KaTeX parse error: Expected ‘EOF’, got ‘&amp;’ at position 3: @*&amp;̲#※卍卐 Ψ♫♬♭♩♪♯♮⌒¶∮…
+编号序号
+①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳⓪
+
+❶❷❸❹❺❻❼❽❾❿⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴
+
+㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉㈠㈡㈢㈣㈤㈥㈦㈧㈨㈩⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇
+
+⒈⒉⒊⒋⒌⒍⒎⒏⒐⒑⒒⒓⒔⒕⒖⒗⒘⒙⒚⒛
+
+ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹ
+
+ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ
+
+⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵
+数学符号
+﹢﹣×÷±/=≌∽≦≧≒ ﹤﹥ ≈≡≠=≤≥&lt;&gt;≮≯∷∶∫∮∝∞∧∨∑∏∪∩∈∵∴⊥∥∠⌒⊙√∟⊿㏒㏑%
+
+‰⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟
+
+≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱øØπ
+爱心符号
+♥❣ღ♠♡♤❤❥
+标点符号
+。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴
+
+々﹟#﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊
+
+（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】
+
+︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼❝❞
+单位符号
+°′″＄￥〒￠￡％＠℃℉ ﹩﹪‰﹫㎡㏕㎜㎝㎞㏎m³㎎㎏㏄º○¤%$º¹²³
+货币符号
+€£Ұ₴$₰¢₤¥₳₲₪₵ 元 ₣₱฿¤₡₮₭₩ރ 円 ₢₥₫₦zł﷼₠₧₯₨Kčर₹ƒ₸ ￠
+箭头符号（含推导&amp;转换符号）
+↑↓←→↖↗↘↙↔↕➻➼➽➸➳➺➻➴➵➶➷➹▶►▷◁◀◄«
+
+»➩➪➫➬➭➮➯➱⏎➲➾➔➘➙➚➛➜➝➞➟➠➡➢➣➤➥➦➧➨
+
+↚↛↜↝↞↟↠↠↡↢↣↤↤↥↦↧↨⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇖⇗⇘⇙
+
+⇜↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹☇☈↼↽↾↿⇀⇁⇂⇃⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪↺↻⇚⇛♐
+符号图案
+✐✎✏✑✒✍✉✁✂✃✄✆✉☎☏☑✓✔√☐☒✗✘ ㄨ ✕✖✖☢☠☣✈★☆✡ 囍㍿ ☯☰☲☱☴☵☶☳☷
+
+☜☞☝✍☚☛☟✌♤♧♡♢♠♣♥♦☀☁☂❄☃♨웃유❖☽☾☪✿♂♀✪✯☭➳ 卍卐 √×■◆●○◐◑✙☺☻
+
+❀⚘♔♕♖♗♘♙♚♛♜♝♞♟♧♡♂♀♠♣♥❤☜☞☎☏⊙◎☺☻☼▧▨♨◐◑↔↕▪▒◊◦▣▤▥▦▩◘◈◇
+
+♬♪♩♭♪ の ★☆→ あぃ￡ Ю〓§♤♥▶¤✲❈✿✲❈➹☀☂☁【】┱┲❣✚✪✣✤✥✦❉❥❦❧❃❂❁❀✄☪☣☢☠☭ღ▶▷◀◁
+
+☀☁☂☃☄★☆☇☈⊙☊☋☌☍ⓛⓞⓥⓔ╬『』∴☀♫♬♩♭♪☆∷﹌の ★◎▶☺☻►◄▧▨♨◐◑↔↕↘▀▄█▌
+
+◦☼♪ の ☆→♧ ぃ￡ ❤▒▬♦◊◦♠♣▣۰•❤•۰►◄▧▨♨◐◑↔↕▪▫☼♦⊙●○①⊕◎Θ⊙¤ ㊣ ★☆♀◆◇◣◢◥▲▼△▽⊿◤◥
+
+✐✌✍✡✓✔✕✖♂♀♥♡☜☞☎☏⊙◎☺☻►◄▧▨♨◐◑↔↕♥♡▪▫☼♦▀▄█▌▐░▒▬♦◊◘◙◦☼♠♣▣▤▥▦▩◘◙◈
+
+♫♬♪♩♭♪✄☪☣☢☠♯♩♪♫♬♭♮☎☏☪♈ºº₪¤큐«»™♂✿♥ 　 ◕‿-｡　｡◕‿◕｡
+希腊字母
+ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ
+
+αβγδεζνξοπρσηθικλμτυφχψω
+俄语字母
+АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвг
+
+деёжзийклмнопрстуфхцчшщъыьэюя
+汉语拼音
+āáǎàōóǒòēéěèīíǐìūúǔùǖǘǚǜüêɑńňɡ ㄅㄆㄇㄈㄉ
+
+ㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄚㄛㄜㄝㄞ
+
+ㄟㄠㄡㄢㄣㄤㄥㄦㄧㄨㄩ
+中文字符
+零壹贰叁肆伍陆柒捌玖拾佰仟万亿吉太拍艾分厘毫微
+
+卍卐卄巜弍弎弐朤氺曱甴囍兀々〆のぁ〡〢〣〤〥〦〧〨〩
+
+㊎㊍㊌㊋㊏㊚㊛㊐㊊㊣㊤㊥㊦㊧㊨㊒㊫㊑㊓㊔㊕㊖㊗㊘㊜㊝㊞㊟㊠㊡㊢㊩㊪㊬㊭㊮㊯㊰
+
+㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉
+日文符号
+ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてで
+
+とどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎ
+
+わゐゑをんゔゕゖァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタ
+
+ダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユ
+
+ョヨラリルレロヮワヰヱヲンヴヵヶヷヸヹヺ・ーヽヾヿ゠ㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇺㇻㇼㇽㇾㇿ
+制表符号
+─ ━│┃╌╍╎╏┄ ┅┆┇┈ ┉┊┋┌┍┎┏┐┑┒┓└ ┕┖┗ ┘┙┚┛├┝┞┟┠┡┢┣ ┤┥┦┧┨┩┪┫┬ ┭ ┮ ┯ ┰ ┱ ┲ ┳
+
+┴ ┵ ┶ ┷ ┸ ┹ ┺ ┻┼ ┽ ┾ ┿ ╀ ╁ ╂ ╃ ╄ ╅ ╆ ╇ ╈ ╉ ╊ ╋ ╪ ╫ ╬═║╒╓╔ ╕╖╗╘╙╚ ╛╜╝╞╟╠ ╡╢╣
+
+╤ ╥ ╦ ╧ ╨ ╩ ╳╔ ╗╝╚ ╬ ═ ╓ ╩ ┠ ┨┯ ┷┏ ┓┗ ┛┳ ⊥ ﹃ ﹄┌ ╮ ╭ ╯╰
+皇冠符号
+♚ 　 ♛ 　 ♝ 　 ♞ 　 ♜ 　 ♟ 　 ♔ 　 ♕ 　 ♗ 　 ♘ 　 ♖ 　 ♟
+彩色表情符号
+🌹🍀🍎💰📱🌙🍁🍂🍃🌷💎🔪🔫🏀⚽⚡👄👍🔥
+常用 emoji 符号
+😀😁😂😃😄😅😆😉😊😋😎😍😘😗😙😚☺😇😐😑😶😏😣😥😮😯😪😫😴😌😛😜😝😒😓😔😕😲😷😖😞😟😤😢😭😦😧😨😬😰😱😳😵😡😠😈👿👹👺💀👻👽👦👧👨👩👴👵👶👱👮👲👳👷👸💂🎅👰👼💆💇🙍🙎🙅🙆💁🙋🙇🙌🙏👤👥🚶🏃👯💃👫👬👭💏💑👪💪👈👉☝👆👇✌✋👌👍👎✊👊👋👏👐✍👣👀👂👃👅👄💋👓👔👕👖👗👘👙👚👛👜👝🎒💼👞👟👠👡👢👑👒🎩🎓💄💅💍🌂🙈🙉🙊🐵🐒🐶🐕🐩🐺🐱😺😸😹😻😼😽🙀😿😾🐈🐯🐅🐆🐴🐎🐮🐂🐃🐄🐷🐖🐗🐽🐏🐑🐐🐪🐫🐘🐭🐁🐀🐹🐰🐇🐻🐨🐼🐾🐔🐓🐣🐤🐥🐦🐧🐸🐊🐢🐍🐲🐉🐳🐋🐬🐟🐠🐡🐙🐚🐌🐛🐜🐝🐞🦋💐🌸💮🌹🌺🌻🌼🌷🌱🌲🌳🌴🌵🌾🌿🍀🍁🍂🍃🌍🌎🌏🌐🌑🌒🌓🌔🌕🌖🌗🌘🌙🌚🌛🌜☀🌝🌞⭐🌟🌠☁⛅☔⚡❄🔥💧🌊💩🍇🍈🍉🍊🍋🍌🍍🍎🍏🍐🍑🍒🍓🍅🍆🌽🍄🌰🍞🍖🍗🍔🍟🍕🍳🍲🍱🍘🍙🍚🍛🍜🍝🍠🍢🍣🍤🍥🍡🍦🍧🍨🍩🍪🎂🍰🍫🍬🍭🍮🍯🍼☕🍵🍶🍷🍸🍹🍺🍻🍴🎪🎭🎨🎰🚣🛀🎫🏆⚽⚾🏀🏈🏉🎾🎱🎳⛳🎣🎽🎿🏂🏄🏇🏊🚴🚵🎯🎮🎲🎷🎸🎺🎻🎬👾🌋🗻🏠🏡🏢🏣🏤🏥🏦🏨🏩🏪🏫🏬🏭🏯🏰💒🗼🗽⛪⛲🌁🌃🌆🌇🌉🌌🎠🎡🎢🚂🚃🚄🚅🚆🚇🚈🚉🚊🚝🚞🚋🚌🚍🚎🚏🚐🚑🚒🚓🚔🚕🚖🚗🚘🚚🚛🚜🚲⛽🚨🚥🚦🚧⚓⛵🚤🚢✈💺🚁🚟🚠🚡🚀🎑🗿🛂🛃🛄🛅💌💎🔪💈🚪🚽🚿🛁⌛⏳⌚⏰🎈🎉🎊🎎🎏🎐🎀🎁📯📻📱📲☎📞📟📠🔋🔌💻💽💾💿📀🎥📺📷📹📼🔍🔎🔬🔭📡💡🔦🏮📔📕📖📗📘📙📚📓📃📜📄📰📑🔖💰💴💵💶💷💸💳✉📧📨📩📤📥📦📫📪📬📭📮✏✒📝📁📂📅📆📇📈📉📊📋📌📍📎📏📐✂🔒🔓🔏🔐🔑🔨🔫🔧🔩🔗💉💊🚬🔮🚩🎌💦💨💣☠♠♥♦♣🀄🎴🔇🔈🔉🔊📢📣💤💢💬💭♨🌀🔔🔕✡✝🔯📛🔰🔱⭕✅☑✔✖❌❎➕➖➗➰➿〽✳✴❇‼⁉❓❔❕❗©®™🎦🔅🔆💯🔠🔡🔢🔣🔤🅰🆎🅱🆑🆒🆓ℹ🆔Ⓜ🆕🆖🅾🆗🅿🆘🆙🆚🈁🈂🈷🈶🈯 🉐 🈹🈚🈲 🉑 🈸🈴🈳 ㊗㊙ 🈺🈵▪▫◻◼◽◾⬛⬜🔶🔷🔸🔹🔺🔻💠🔲🔳⚪⚫🔴🔵♈♉♊♋♌♍♎♏♐♑♒♓⛎💘❤💓💔💕💖💗💙💚💛💜💝💞💟❣🌿🚧💒☎📟💽⬆↗➡↘⬇↙⬅↖↕↔↩↪⤴⤵🔃🔄🔙🔚🔛🔜🔝🔀🔁🔂▶⏩◀⏪🔼⏫🔽⏬📱📶📳📴♻🏧🚮🚰♿🚹🚺🚻🚼🚾⚠🚸⛔🚫🚳🚭🚯🚱🚷🔞
 ]]></content>
       <categories>
-        <category>nas</category>
+        <category>web</category>
       </categories>
       <tags>
-        <tag>bt</tag>
-        <tag>pt</tag>
-        <tag>qnap</tag>
-        <tag>nas</tag>
-        <tag>transmission</tag>
+        <tag>web</tag>
+        <tag>emoji</tag>
       </tags>
   </entry>
   <entry>
@@ -45313,7 +45764,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts1850'));
+        var myChart = echarts.init(document.getElementById('echarts787'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -45407,7 +45858,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts785'));
+        var myChart = echarts.init(document.getElementById('echarts8110'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -45476,7 +45927,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts8329'));
+        var myChart = echarts.init(document.getElementById('echarts9187'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -48149,6 +48600,83 @@ upscaling refinement：锐化算法，目的是在于改善放大运算后造成
 可以看到非常明显的画面色彩对比，HDR内容在不正确播放的情况下显示出的是灰蒙蒙的画面，而正确输出之后，颜色非常亮丽。
 希望本次教程可以帮助到一些读者朋友，我以后可能还会写个VapourSynth啊x265啊什么的压制教程。
 另外，虽然现在新版的PotPlayer已经支持将HDR信息直接传输到显示器，但在这篇教程中我仍然提倡大家使用LAV Filters和madVR，因为这两个滤镜拥有更高的处理精度。PotPlayer经常被压制圈诟病的一点就是其内建的解码器和大部分情况下自动使用的EVRCP渲染器的内部处理精度不够，尤其是在HDR这种片源为原生10bit的情况下，更是不够用了。
+视频补帧
+**补帧，**即利用电脑上的补帧软件，将原视频从24FPS提升至60FPS或者更高。帧数越多，所显示的动作便会越流畅，视频的清晰度、饱和度也会更佳。
+所以，我们补帧的目的就是把把视频从24帧提升到60帧或者更高，能够很直观欣赏到流畅的画面。
+PotPlayer倍帧
+这个补帧是PotPlayer播放器自带的补帧方法，能直接让当前原视频的帧数翻倍，只需要简单的设置即可。
+
+dmitrirender 补帧
+
+dmitrirender 官网](http://www.dmitrirender.ru/)
+
+dmitrirender这一款这一款软件实际上并不是插帧领域中最为常见的软件，但其有着自身的优势: 首先采用GPU运算，无论是AMD、NVIDIA还是INTEL的核显通通都支持，对CPU的负担较低，对整体配置的需求也比较低
+SVP4 补帧
+
+SVP4 需要付费。SVP4是一款专业版视频补帧软件，提供GPU加速，并允许使用中档CPU和几乎任何GPU硬件为60Hz的FullHD 1080p视频重新计算，能将一些画面模糊和不流畅的的视频进行自动补帧，让你的视频流畅起来。
+SVP下载地址：https://www.svp-team.com/wiki/Download
+
+SVP还有一项优势就是它并不依赖特定的播放器，其本身可以看做是在视频解码过程中的一个滤镜，只要能调用相应解码器播放视频，便可以进行视频插帧
+SVP4 安装
+
+评估版本下载地址 https://alist.17lai.site/tools/video
+
+1.解压SVP.RAR到C:\SVP
+2.运行 svp4-cracked.exe
+3.运行后在弹出窗口内点击settings
+
+4.切换到 Repositories 标签
+5.点击 Temporary respoitories，再点击 Add，把下列内容添加进去（两条！）
+file:///C:/SVP/free
+file:///C:/SVP/common
+
+6.然后勾选 Use temporary repositories only，确认安装
+
+7.【重要】将SVPManager.exe复制到程序目录，替换原文件。
+SVP4 设置
+点击如图所示的部分可以进行一些简单设置
+
+
+视频帧处理选项按下图进行设置。（检测并切掉黑边这个不要勾选，因为有可能会切掉部分字幕）
+
+
+
+背景灯效果按下图设置（不禁用的话会出现动态模糊的边框）
+
+
+PotPlayer 设定
+1.右击potplayer的播放界面，进入选项页面****。****
+
+2.*先点击*滤镜，再点击全局滤镜优先权**，最后点击添加系统滤镜
+
+3.选择『ffdshow raw video filter』，然后点击确定
+
+
+选中 ffdshow raw video filter，点击強制使用(重要)，别忘了点击应用，然后再点击确定。此時已经完成基本设置。
+
+
+完成以上设置完基本参数后，就可以使用potplayer+svp4 pro组合来看视频了
+播放影片前几秒左下角会出現SVP启用的标志，这就说明配置成功了。
+AMD显卡专用补帧
+**必要条件：**确保你有GNC或者Vega 架构的AMD显卡，并下载最新的AMD驱动。
+
+AMD在2014年12月9号发布Omega驱动时也宣布了Fluid Motion技术，基于显卡的运算插帧，大大降低CPU负担，同时使视频播放更加流畅。相比传统的SVP插帧需下载安装多款外挂软件且需繁杂的手续设定，需要消耗CPU资源，耗电量比较大，SVP部份画面呈现会有抖动情况。
+Fluid Motion就是只需按一键就开启，CPU跟本没有在处理(使用率都在个位数) 全程就交给GPU去处理就好。Fluid Motion部份比SVP呈现出来的动作还要比较自然，可以说是看动画的神器，不过官方只支持在蓝光播放时开启插帧，不过网友基于AMD Fluid Motion以DirectShow开发出了Bluesky Frame Rate Converte，方便了我们在普通视频上也能实现补帧的效果。
+
+下载Bluesky Frame Rate Converte
+下载好以后直接默认安装即可！
+安装完成之后，还需要对FRC 设置， AMD 驱动设置，以及 Potplayer 滤镜设置
+
+Nvidia显卡专用补帧
+既然有AMD显卡专用补帧，肯定也有Nvidia显卡专用补帧了！它名字叫做：Dain-App
+需要说明的是：本软件是一款补帧****转换工具，而不是和以上介绍的可以实时渲染同步补帧！但是通过它补帧后的效果还是很明显的！
+
+Dain-App基于Nvidia CUDA开发，是上海交大开源的 DAIN（Depth-Aware Video Frame Interpolation）是一款可以AI深度学习，使用AI预测新帧并提高视频或gif帧率的插帧算法。可让您采用任何形式的媒体，例如电影，定格动画，动漫，卡通，精灵等，并插值新帧，从而从原始文件生成更大的帧率。
+
+需要注意的是：目前它需要CUDA，因此任何不支持CUDA的计算机都将无法运行此应用程序（AMD和较早的Nvidia卡）。它极度吃显卡及显存资源，依据视频长度/分辨率等决定计算时间，整体耗时较为漫长，低端Ｎ卡不建议使用。
+Dain-App介绍地址：https://github.com/baowenbo/DAIN
+下载地址：https://grisk.itch.io/dain-app
+下载完毕后直接解压缩，运行DAINAPP.exe即可。
 常见 Bug 解决篇
 1、为什么使用 madVR 全屏时候会黑屏？
 答：黑短短几秒是正常的，表明 madVR 正在切换至全屏独占模式（fullscreen exlucsive mode，简称 FSE 模式 ），这个模式有一些好处，比如防止画面撕裂。但实际上，我们推荐你关闭 FSE 模式，因为它带来的麻烦远多于好处。
@@ -48197,6 +48725,7 @@ MPC 目前有两个分支版本：MPC-HC 和 MPC-BE，都值得推荐。我们�
 有问有答：如何正确播放HDR视频 
 potplayer + LAV + madVR 组PC高清播放器
 基于 PotPlayer 和 madVR 的播放器教程 | VCB-Studio
+https://github.com/hooke007/MPV_lazy/ 懒人专用，新手推荐
 
 系列教程
 全部文章RSS订阅
@@ -50501,6 +51030,7 @@ Tortoise-TTS 克隆目标语音
 Deepfake 视频伪造
 bark Text-Prompted Generative Audio Model
 openvoice
+myshell-ai/OpenVoice
 facefusion/facefusion
 视频生成
 harry0703/MoneyPrinterTurbo: 利用AI大模型，一键生成高清短视频
@@ -50667,9 +51197,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-hkoLKihGbgndUOTh").style.height=document.getElementById("mmedia-hkoLKihGbgndUOTh").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-CelCUQtkIFidqtIX").style.height=document.getElementById("mmedia-CelCUQtkIFidqtIX").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-hkoLKihGbgndUOTh").style.height=document.getElementById("mmedia-hkoLKihGbgndUOTh").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-CelCUQtkIFidqtIX").style.height=document.getElementById("mmedia-CelCUQtkIFidqtIX").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 
@@ -53661,363 +54191,6 @@ sci-hub https://sci-hub.se/
       </tags>
   </entry>
   <entry>
-    <title>开源观察之到底是谁在主导开源软件生态的发展？</title>
-    <url>/posts/bd70a73c/</url>
-    <content><![CDATA[前言
-
-很多人对于开源生态误解很深，这里对开源软件生态的一些介绍和解释，使用ChatGPT辅助编写了一篇对于外行的介绍，使其可以快速了解开源生态
-
-
-
-对话开源
-
-使用了很多很久的开源软件，也参与了一些开源软件的发展，现在软件的选择首选的就是开源软件，对于开源软件生态算是有一个初步的了解和映像。很多外行对于开源有一些错误的认知，很早就有写一篇关于开源生态的文章了，最近使用ChatGPT辅助，很快就完成了一篇文章。
-在思考是否把对话过程整理成文之后，最终决定还是保留交流对话的过程！
-ChatGPT很强大，但你也得具备很多专业知识才能用好它
-
-
-          
-            
-            开源软件是什么
-
-          
-        
-          
-            
-            开源软件指的是源代码可以被公开查看、使用、修改和分发的软件。与之相对的是闭源软件，它的源代码是私有的，不公开供大众使用和修改。
-开源软件的特点是：
-
-
-可以被公开查看和修改：任何人都可以查看开源软件的源代码，并且可以根据自己的需要进行修改和定制。
-
-
-可以被免费使用：大部分开源软件都是免费提供给用户使用的，用户不需要支付版权费用。
-
-
-具有较高的安全性：由于源代码公开，开源软件的漏洞和安全问题可以被更多人发现和修复，从而提高了软件的安全性。
-
-
-具有良好的社区支持：开源软件通常有一个庞大的社区支持，用户可以通过社区获得帮助、交流和分享。
-
-
-可以被广泛应用和推广：由于开源软件具有免费和开放的特点，它可以被广泛应用和推广，从而提高了软件的影响力和普及率。
-
-
-常见的开源软件有Linux操作系统、Apache Web服务器、MySQL数据库、Firefox浏览器、WordPress网站建设平台等等。开源软件已经成为现代软件开发中的重要组成部分，为用户和开发者带来了诸多的好处。
-
-          
-        
-          
-            
-            开源软件的优点是什么
-
-          
-        
-          
-            
-            开源软件有以下优点：
-
-
-透明性：开源软件的源代码是公开的，用户可以查看代码并了解软件的实现原理，这种透明性使得用户可以更好地理解软件的功能和运行机制。
-
-
-自由度：开源软件的用户可以自由地复制、分发、修改和使用软件，而且不需要支付任何费用。这种自由度使得用户可以根据自己的需要来定制软件，从而更好地满足自己的需求。
-
-
-安全性：由于开源软件的源代码是公开的，任何人都可以查看代码并发现其中的漏洞和安全问题，这种开放的审查机制可以使得开源软件具有更高的安全性和稳定性。
-
-
-可定制性：开源软件通常具有很好的可定制性，用户可以根据自己的需求和特定的场景对软件进行修改和定制，从而更好地满足自己的需求。
-
-
-社区支持：由于开源软件的用户和开发者通常组成一个庞大的社区，这种社区可以为用户提供技术支持、问题解答、开发经验和资源共享等支持。
-
-
-兼容性：开源软件通常具有更好的兼容性，因为开源软件通常遵循开放标准，不受私有标准的限制，可以更好地与其他软件和系统进行协作。
-
-
-综上所述，开源软件的优点包括透明性、自由度、安全性、可定制性、社区支持和兼容性等。这些优点使得开源软件成为现代软件开发中不可或缺的一部分，为用户和开发者带来了巨大的价值和好处。
-
-          
-        
-          
-            
-            那么，开源软件有什么缺点了？
-
-          
-        
-          
-            
-            虽然开源软件具有很多优点，但也存在一些缺点，包括以下几个方面：
-
-
-缺乏专业支持：开源软件通常由社区维护和支持，缺乏专业支持，这可能导致用户在使用和维护软件时遇到困难。
-
-
-可能存在安全问题：虽然开源软件的源代码可以被公开审查，但这也可能导致黑客更容易找到软件中的漏洞和安全问题，因此开源软件也需要及时修复漏洞以保障安全。
-
-
-兼容性问题：虽然开源软件通常遵循开放标准，但在实际应用中，与其他软件或系统的兼容性可能存在问题，这可能会导致软件无法正常工作。
-
-
-学习成本较高：由于开源软件的源代码是公开的，用户可能需要具有一定的编程知识和技能才能进行定制和修改，因此需要付出一定的学习成本。
-
-
-可能存在版本更新不及时的问题：由于开源软件通常由社区维护，因此可能存在版本更新不及时的问题，用户需要自己去维护和更新软件，这可能会增加用户的工作量。
-
-
-综上所述，开源软件的缺点包括缺乏专业支持、安全问题、兼容性问题、学习成本较高和版本更新不及时等。对于这些缺点，用户可以通过选择专业的开源软件提供商、参与社区维护和支持、及时更新软件版本等方式来解决。
-
-          
-        
-          
-            
-            只要投入金钱，开源软件的这些问题可以解决么
-
-          
-        
-          
-            
-            投入金钱确实可以解决一些开源软件存在的问题，例如提供专业支持、加强软件安全等，但并不能完全解决所有问题。以下是一些例子：
-
-
-提供专业支持：企业可以选择购买专业的开源软件支持服务，获得专业的技术支持、问题解答和定制服务，从而解决由于缺乏专业支持而导致的困难。
-
-
-加强软件安全：企业可以选择购买安全软件，对开源软件进行加固和安全管理，从而提高软件的安全性。
-
-
-定制和维护：企业可以选择雇佣开源软件开发人员，进行定制和维护，从而解决开源软件的兼容性和版本更新等问题。
-
-
-增加社区投入：企业可以向开源社区投入资金，促进社区的发展和维护，从而帮助解决一些开源软件存在的问题。
-
-
-然而，开源软件的自由性和透明性也意味着，用户可以根据自己的需求和资源选择是否投入金钱。在一些情况下，投入金钱可能并不是必要的，用户可以通过自己的努力和学习来解决开源软件存在的问题。
-
-          
-        
-          
-            
-            redhat就是一家很成功的开源软件公司，并创造了巨大的利润，redhat的商业模式是否解决了开源软件的问题
-
-          
-        
-          
-            
-            Red Hat 确实是一家非常成功的开源软件公司，它的商业模式可以说是解决了开源软件的问题之一。Red Hat 的商业模式主要是基于以下两个方面：
-
-
-提供专业支持：Red Hat 提供针对企业级用户的 Linux 操作系统和其他开源软件的专业支持，包括技术支持、培训、咨询和服务等，这可以解决企业在使用和维护开源软件时遇到的困难。
-
-
-付费订阅服务：Red Hat 基于其开源软件产品提供付费订阅服务，订阅用户可以获得 Red Hat 官方提供的软件更新、安全修复、新功能和技术支持等服务，这可以解决开源软件版本更新和安全性问题。
-
-
-Red Hat 的商业模式的成功不仅在于它提供了专业的支持和服务，而且在于其能够让企业在同时获得开源软件的好处和商业化的优势。Red Hat 的开源软件产品在大多数情况下是免费的，但企业需要付费订阅服务才能获得更好的服务和支持，这既保证了开源软件的自由性和透明性，又能够为企业提供可靠的商业支持。
-总之，Red Hat 的商业模式是非常成功的，但并不能完全解决所有开源软件存在的问题。其他开源软件公司和社区也在不断探索和创新商业模式，以解决开源软件存在的问题。
-
-          
-        
-          
-            
-            在互联网领域，几乎都是使用的开源软件，未来，开源软件会统治所有的互联网标准么？
-
-          
-        
-          
-            
-            开源软件在互联网领域确实得到了广泛的应用，成为了很多公司和组织选择的首选。然而，要说开源软件会统治所有的互联网标准，还是有一定的困难。
-首先，虽然开源软件在很多领域已经达到了很高的水平，但在某些特定领域，闭源软件仍然具有更好的性能和效率。例如，在一些高性能计算领域，闭源软件仍然是不可替代的选择。
-其次，开源软件也存在一些问题和限制。例如，开源软件的发展和更新速度可能会比较慢，有时候可能存在安全和兼容性问题，需要用户花费时间和精力进行自我调试和维护。
-最后，由于开源软件的自由性和透明性，它们存在着无法控制的风险。如果在开源软件的代码中存在漏洞或安全问题，攻击者可以很容易地获取代码并利用其中的漏洞进行攻击。这可能会对企业和组织的安全带来潜在风险。
-综上所述，虽然开源软件在互联网领域中得到了广泛应用，但是它们并不一定会成为统治所有互联网标准的唯一选择。在未来，我们可能会看到开源软件和闭源软件之间的协同发展，以提供更好的解决方案。
-
-          
-        
-          
-            
-            但是，我看到，越来越多的闭源软件公司倒闭了，或者转为开源软件模式，例如firefox，谷歌的chrome，开源软件的占比越来越高，你有什么看法
-
-          
-        
-          
-            
-            是的，确实有越来越多的闭源软件公司倒闭或者转为开源软件模式，而开源软件在互联网领域中的占比也越来越高。这是因为开源软件具有很多优势，包括透明性、自由性、灵活性、可定制性等，而这些优势正好能够满足当前互联网应用的需求。
-另外，随着云计算和开放云平台的发展，开源软件也得到了更多的应用机会。云计算和开放云平台为开源软件提供了更好的部署和使用方式，同时也提高了开源软件在企业和组织中的接受度和应用价值。
-最后，开源软件社区的活跃度和贡献者数量也在不断增加，这进一步促进了开源软件的发展和普及。开源软件社区的活跃度和贡献者数量越多，开源软件的功能和性能就越强大，这也让更多的企业和组织愿意选择开源软件。
-综上所述，开源软件在互联网领域中的占比确实越来越高，这是因为开源软件具有很多优势，并且得到了更多的应用机会和社区支持。不过，仍然需要注意开源软件本身的一些问题和限制，并且需要根据实际情况选择最适合自己的软件解决方案。
-
-          
-        
-          
-            
-            开源软件是由谁主导的？
-
-          
-        
-          
-            
-            开源软件的开发和推广通常是由开源社区和贡献者主导的。这些社区由一群热爱技术和开源理念的人组成，他们相信共享和协作的力量，致力于开发和维护开源软件项目。
-开源社区是由志愿者、爱好者、开发者和公司等组成的多方参与的群体，其成员之间通过互相交流和合作来推动软件的开发和改进。开源社区通常拥有完善的组织结构和开发流程，例如开发者的代码提交、审查和合并流程、用户的反馈和贡献流程等，这些流程可以帮助开发者更好地协作、沟通和共同推进软件的发展。
-除了开源社区，一些公司也在开源软件的发展中扮演了重要的角色。这些公司可以是开源软件的赞助者、贡献者或用户，也可以是基于开源软件构建自己产品和服务的企业。一些知名的开源软件公司，例如Red Hat、Canonical、MongoDB等，不仅为开源社区提供了财务和技术上的支持，同时也为企业用户提供了开源软件的商业服务和支持，从而帮助开源软件在企业中得到更广泛的应用。
-总之，开源软件的开发和推广主要由开源社区和贡献者主导，同时得到了一些公司的支持和参与。这种多方参与的开发模式可以使得开源软件具有更广泛的用户和应用范围，也可以让软件得到更多人的参与和贡献，从而推动软件的不断发展和完善。
-
-          
-        
-          
-            
-            有人或者组织能够独裁控制开源软件走向么？例如只支持某个操作系统，或者不准某些企业或国家使用
-
-          
-        
-          
-            
-            在开源软件的开发和推广过程中，由于开放的自由性和民主性，很难有人或组织能够完全独裁控制开源软件的走向和应用范围。这是因为开源软件是基于开放源代码的共享和协作模式，其代码和文档等资源都是公开的，并且可以被其他人自由地使用、修改和再分发。
-开源软件通常采用自由软件许可证进行授权，这些许可证保障了用户的自由，例如选择软件的使用、复制、修改和再分发等。这些自由是在法律框架下保护的，因此，无论是个人、企业还是国家，都可以使用和参与开源软件的开发和推广。
-开源软件的发展和应用也是一个开放和民主的过程，任何人都可以参与到开源社区中，提交代码、提出建议和反馈、进行讨论等等，从而共同推动软件的发展和改进。在开源社区中，没有人或组织能够完全控制软件的走向和应用范围，而是基于开放和民主的原则，通过共同协作和讨论来制定和决定软件的发展方向和应用范围。
-因此，开源软件的开放性和民主性是其成功的关键之一，也是其能够避免独裁控制的重要保障。
-
-          
-        
-          
-            
-            你对谷歌禁止华为使用android，导致华为开发鸿蒙操作系统有什么看法
-
-          
-        
-          
-            
-            谷歌决定禁止向华为提供Android许可证，导致华为无法获得最新的Android更新和支持。这一决定是由于华为与美国政府的关系引起的，谷歌也只是在执行美国政府的规定。这对华为造成了一定的影响，需要花费更多的时间和资源开发自己的操作系统。
-从另一个角度来看，这也提醒了人们开源软件的优势，即开放的自由性和可控性。由于Android的源代码是公开的，华为可以根据自身需求自主开发和修改操作系统，降低了对其他公司的依赖和控制。这也促使华为加快了自主操作系统鸿蒙的研发和推广，增强了技术自主性和可控性。
-总的来说，谷歌禁止华为使用Android虽然给华为带来了一定的困扰，但也加快了自主操作系统的研发和推广，体现了开源软件的优势和技术自主性的重要性。
-
-          
-        
-          
-            
-            我看到现实生活中，谁掌握了金钱，谁有大量的工程师开发人员，谁就有能力创建分支，或者主导开源软件的走向，对么？
-
-          
-        
-          
-            
-            在某种程度上，金钱和人力资源的掌控确实可以对开源软件的走向产生一定的影响。但是，开源软件的社区是由广泛的利益相关方组成的，不仅包括了公司和组织，也包括了个人用户和开发者。在这个社区中，每个人都有权利和能力发表自己的意见和建议，参与到开源软件的开发和讨论中。
-因此，即使某些公司或组织拥有更多的资源和影响力，但是也需要考虑到广泛的利益相关方的需求和利益。如果一个公司或组织试图独断地掌控开源软件的走向，可能会面临社区成员的反对和抵制。此外，开源软件的代码是公开的，任何人都可以自由地复制、修改和分支，因此即使某个公司或组织试图掌控某个开源软件，也无法完全控制其走向。
-因此，开源软件的发展是由整个社区共同推动和影响的，任何单一的利益相关方都无法完全控制其走向。
-
-          
-        
-          
-            
-            你对oracle收购mysql后，mysql的创始人出走，创建mariadb，有什么看法
-
-          
-        
-          
-            
-            Oracle收购MySQL后，MySQL的创始人Michael Widenius确实离开了Oracle，随后创建了MariaDB这个分支，这也是开源软件的一种特点，任何人都可以基于原有代码分支出去创建一个新的项目，这样可以实现更加个性化的需求和自由度。
-从MariaDB的角度来看，他们希望继续发展MySQL所代表的关系数据库的优点，并且希望推出一些新的功能和特性，以此吸引更多的用户。同时，MariaDB也注重开源社区的参与和贡献，这一点和MySQL的开源文化类似。在开源软件的世界里，分支和创新是非常普遍的现象，而这些分支往往会针对特定的用户需求，从而推出更加优秀的解决方案。
-总的来说，Oracle收购MySQL后，MySQL的创始人离开创建MariaDB，也展现了开源软件的另外一种特点，即开源社区的自由度和创新性，任何人都可以基于原有代码进行修改和分支，从而创建出更适合自己需求的解决方案。
-
-          
-        
-          
-            
-            我看到，越来越多的大公司采用开源的模式开发软件，谁不做开源，谁就会被业界淘汰，这种说法对么
-
-          
-        
-          
-            
-            在当前的软件开发领域，开源软件确实已经变得越来越普遍，越来越多的大公司也开始采用开源的模式进行软件开发，这是因为开源软件具有很多优点，比如可以节约成本、提高软件质量、增加开发效率等等。因此，采用开源的模式来开发软件的公司和项目越来越多，这也是一种趋势。
-然而，不能简单地说谁不做开源就会被业界淘汰。闭源软件也有其存在的合理性，比如有些公司需要保护商业机密或是保持技术优势等等，因此不会选择开源软件。此外，对于某些领域或特定的应用场景，闭源软件可能会更为适合。
-总之，开源软件的普及是一个趋势，但是不能简单地说谁不做开源就会被业界淘汰，应该根据具体情况来选择采用开源还是闭源的方式。
-
-          
-        
-          
-            
-            你了解v2ray, v2fly, xray之间的关系么，这对于了解开源软件的分裂和发展是一个很好地观察对象
-
-          
-        
-          
-            
-            是的，我了解v2ray、v2fly和xray之间的关系。这三个项目都是开源的代理软件，都基于v2ray核心代码开发而来，但是它们之间又有一些不同之处。
-v2ray是最早的一个项目，由一个叫做"逆向太阳"的开发者发起，并得到了很多社区贡献者的支持。后来，由于一些开发方面的分歧，v2ray的主要开发者"逆向太阳"和其他核心开发者决裂，最终导致了v2ray项目的分裂。
-v2fly是在v2ray分裂后成立的一个新项目，由一些原来的v2ray社区贡献者和其他开发者组成的团队共同开发，旨在继续推进v2ray的发展。与v2ray不同的是，v2fly更加注重用户体验，提供了更加友好的界面和更多的功能。
-xray是最近出现的一个项目，也是基于v2ray核心代码开发而来，但是它在性能方面进行了很大的优化，并增加了一些新的功能。与v2ray和v2fly不同的是，xray由一个商业公司进行开发和支持。
-这三个项目之间的关系反映了开源软件的分裂和发展的一般规律。在开源社区中，由于人员变动、技术分歧、商业利益等因素的影响，很容易出现项目分裂的情况，而且分裂后的项目往往会根据各自的方向和目标进行不同的发展。但是，这些项目之间也会有合作和交流，共同推进整个领域的发展。
-
-          
-        
-          
-            
-            对于一些新的操作系统挑战者，只能选择开源的方式才能和闭源的微软操作系统相对抗，对么？
-
-          
-        
-          
-            
-            可以这么说。操作系统是一个非常复杂的软件系统，需要大量的研发资源和技术积累才能打造出一款稳定、安全、易用的产品。相对于成熟的闭源操作系统，新的操作系统挑战者往往面临着技术和资源上的巨大压力。选择开源的方式，可以借鉴已有的开源技术和社区资源，降低开发成本和风险，提高开发效率。同时，开源的方式也可以吸引更多的开发者和用户参与到项目中来，形成一个更加广泛的社区和生态系统，增强产品的可持续发展能力。因此，对于一些新的操作系统挑战者来说，选择开源的方式确实是一个比较明智的选择。
-
-          
-        
-          
-            
-            开源就是免费，对么？
-
-          
-        
-          
-            
-            不完全正确。开源软件和免费软件是不同的概念。开源软件是指软件源代码开放给公众，并允许公众在遵循特定协议的情况下自由使用、修改、分发和分享的软件。而免费软件是指在价格上免费提供给用户使用的软件，这并不意味着软件的源代码一定是开放的。实际上，开源软件往往是免费的，因为任何人都可以自由获取和使用源代码来构建软件。但是，也有一些开源软件提供商会提供商业版的软件，这些商业版的软件可能是收费的。因此，开源软件不一定就是免费的，而且免费软件也不一定就是开源的。
-
-          
-        
-          
-            
-            开源有哪些协议，商用使用能用那些协议的软件？
-
-          
-        
-      
-        
-        开源软件有很多种协议，其中比较常见的包括：
-
-
-GNU通用公共许可证（GPL）：允许自由使用、修改、发布和再授权源代码，但只有在使用相同的许可证下发布其衍生作品。
-
-
-BSD许可证：允许自由使用、修改、发布和再授权源代码，但要求在衍生作品中包含原始版权声明和许可证。
-
-
-MIT许可证：允许自由使用、修改、发布和再授权源代码，但不需要在衍生作品中包含原始版权声明和许可证。
-
-
-Apache许可证：允许自由使用、修改、发布和再授权源代码，但要求在衍生作品中包含原始版权声明、许可证和贡献者声明。
-
-
-商用使用开源软件需要注意的是，不同的开源协议有不同的限制和要求。一些协议（如MIT许可证）对商业使用没有限制，而其他协议（如GPL许可证）可能会要求发布衍生作品的源代码，或者要求将使用的其他组件的源代码公开。因此，在商业使用开源软件之前，需要仔细阅读相关的许可证并遵守其规定。
-
-      
-    
-参考&amp;致谢
-
-chatGPT
-
-]]></content>
-      <categories>
-        <category>devops</category>
-      </categories>
-      <tags>
-        <tag>devops</tag>
-        <tag>chatgpt</tag>
-        <tag>开源</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>三大神书推荐：赤脚医生手册、民兵军事训练手册、军地两用人才之友</title>
     <url>/posts/c8ba1397/</url>
     <content><![CDATA[简介
@@ -54439,6 +54612,363 @@ chatGPT
       </tags>
   </entry>
   <entry>
+    <title>开源观察之到底是谁在主导开源软件生态的发展？</title>
+    <url>/posts/bd70a73c/</url>
+    <content><![CDATA[前言
+
+很多人对于开源生态误解很深，这里对开源软件生态的一些介绍和解释，使用ChatGPT辅助编写了一篇对于外行的介绍，使其可以快速了解开源生态
+
+
+
+对话开源
+
+使用了很多很久的开源软件，也参与了一些开源软件的发展，现在软件的选择首选的就是开源软件，对于开源软件生态算是有一个初步的了解和映像。很多外行对于开源有一些错误的认知，很早就有写一篇关于开源生态的文章了，最近使用ChatGPT辅助，很快就完成了一篇文章。
+在思考是否把对话过程整理成文之后，最终决定还是保留交流对话的过程！
+ChatGPT很强大，但你也得具备很多专业知识才能用好它
+
+
+          
+            
+            开源软件是什么
+
+          
+        
+          
+            
+            开源软件指的是源代码可以被公开查看、使用、修改和分发的软件。与之相对的是闭源软件，它的源代码是私有的，不公开供大众使用和修改。
+开源软件的特点是：
+
+
+可以被公开查看和修改：任何人都可以查看开源软件的源代码，并且可以根据自己的需要进行修改和定制。
+
+
+可以被免费使用：大部分开源软件都是免费提供给用户使用的，用户不需要支付版权费用。
+
+
+具有较高的安全性：由于源代码公开，开源软件的漏洞和安全问题可以被更多人发现和修复，从而提高了软件的安全性。
+
+
+具有良好的社区支持：开源软件通常有一个庞大的社区支持，用户可以通过社区获得帮助、交流和分享。
+
+
+可以被广泛应用和推广：由于开源软件具有免费和开放的特点，它可以被广泛应用和推广，从而提高了软件的影响力和普及率。
+
+
+常见的开源软件有Linux操作系统、Apache Web服务器、MySQL数据库、Firefox浏览器、WordPress网站建设平台等等。开源软件已经成为现代软件开发中的重要组成部分，为用户和开发者带来了诸多的好处。
+
+          
+        
+          
+            
+            开源软件的优点是什么
+
+          
+        
+          
+            
+            开源软件有以下优点：
+
+
+透明性：开源软件的源代码是公开的，用户可以查看代码并了解软件的实现原理，这种透明性使得用户可以更好地理解软件的功能和运行机制。
+
+
+自由度：开源软件的用户可以自由地复制、分发、修改和使用软件，而且不需要支付任何费用。这种自由度使得用户可以根据自己的需要来定制软件，从而更好地满足自己的需求。
+
+
+安全性：由于开源软件的源代码是公开的，任何人都可以查看代码并发现其中的漏洞和安全问题，这种开放的审查机制可以使得开源软件具有更高的安全性和稳定性。
+
+
+可定制性：开源软件通常具有很好的可定制性，用户可以根据自己的需求和特定的场景对软件进行修改和定制，从而更好地满足自己的需求。
+
+
+社区支持：由于开源软件的用户和开发者通常组成一个庞大的社区，这种社区可以为用户提供技术支持、问题解答、开发经验和资源共享等支持。
+
+
+兼容性：开源软件通常具有更好的兼容性，因为开源软件通常遵循开放标准，不受私有标准的限制，可以更好地与其他软件和系统进行协作。
+
+
+综上所述，开源软件的优点包括透明性、自由度、安全性、可定制性、社区支持和兼容性等。这些优点使得开源软件成为现代软件开发中不可或缺的一部分，为用户和开发者带来了巨大的价值和好处。
+
+          
+        
+          
+            
+            那么，开源软件有什么缺点了？
+
+          
+        
+          
+            
+            虽然开源软件具有很多优点，但也存在一些缺点，包括以下几个方面：
+
+
+缺乏专业支持：开源软件通常由社区维护和支持，缺乏专业支持，这可能导致用户在使用和维护软件时遇到困难。
+
+
+可能存在安全问题：虽然开源软件的源代码可以被公开审查，但这也可能导致黑客更容易找到软件中的漏洞和安全问题，因此开源软件也需要及时修复漏洞以保障安全。
+
+
+兼容性问题：虽然开源软件通常遵循开放标准，但在实际应用中，与其他软件或系统的兼容性可能存在问题，这可能会导致软件无法正常工作。
+
+
+学习成本较高：由于开源软件的源代码是公开的，用户可能需要具有一定的编程知识和技能才能进行定制和修改，因此需要付出一定的学习成本。
+
+
+可能存在版本更新不及时的问题：由于开源软件通常由社区维护，因此可能存在版本更新不及时的问题，用户需要自己去维护和更新软件，这可能会增加用户的工作量。
+
+
+综上所述，开源软件的缺点包括缺乏专业支持、安全问题、兼容性问题、学习成本较高和版本更新不及时等。对于这些缺点，用户可以通过选择专业的开源软件提供商、参与社区维护和支持、及时更新软件版本等方式来解决。
+
+          
+        
+          
+            
+            只要投入金钱，开源软件的这些问题可以解决么
+
+          
+        
+          
+            
+            投入金钱确实可以解决一些开源软件存在的问题，例如提供专业支持、加强软件安全等，但并不能完全解决所有问题。以下是一些例子：
+
+
+提供专业支持：企业可以选择购买专业的开源软件支持服务，获得专业的技术支持、问题解答和定制服务，从而解决由于缺乏专业支持而导致的困难。
+
+
+加强软件安全：企业可以选择购买安全软件，对开源软件进行加固和安全管理，从而提高软件的安全性。
+
+
+定制和维护：企业可以选择雇佣开源软件开发人员，进行定制和维护，从而解决开源软件的兼容性和版本更新等问题。
+
+
+增加社区投入：企业可以向开源社区投入资金，促进社区的发展和维护，从而帮助解决一些开源软件存在的问题。
+
+
+然而，开源软件的自由性和透明性也意味着，用户可以根据自己的需求和资源选择是否投入金钱。在一些情况下，投入金钱可能并不是必要的，用户可以通过自己的努力和学习来解决开源软件存在的问题。
+
+          
+        
+          
+            
+            redhat就是一家很成功的开源软件公司，并创造了巨大的利润，redhat的商业模式是否解决了开源软件的问题
+
+          
+        
+          
+            
+            Red Hat 确实是一家非常成功的开源软件公司，它的商业模式可以说是解决了开源软件的问题之一。Red Hat 的商业模式主要是基于以下两个方面：
+
+
+提供专业支持：Red Hat 提供针对企业级用户的 Linux 操作系统和其他开源软件的专业支持，包括技术支持、培训、咨询和服务等，这可以解决企业在使用和维护开源软件时遇到的困难。
+
+
+付费订阅服务：Red Hat 基于其开源软件产品提供付费订阅服务，订阅用户可以获得 Red Hat 官方提供的软件更新、安全修复、新功能和技术支持等服务，这可以解决开源软件版本更新和安全性问题。
+
+
+Red Hat 的商业模式的成功不仅在于它提供了专业的支持和服务，而且在于其能够让企业在同时获得开源软件的好处和商业化的优势。Red Hat 的开源软件产品在大多数情况下是免费的，但企业需要付费订阅服务才能获得更好的服务和支持，这既保证了开源软件的自由性和透明性，又能够为企业提供可靠的商业支持。
+总之，Red Hat 的商业模式是非常成功的，但并不能完全解决所有开源软件存在的问题。其他开源软件公司和社区也在不断探索和创新商业模式，以解决开源软件存在的问题。
+
+          
+        
+          
+            
+            在互联网领域，几乎都是使用的开源软件，未来，开源软件会统治所有的互联网标准么？
+
+          
+        
+          
+            
+            开源软件在互联网领域确实得到了广泛的应用，成为了很多公司和组织选择的首选。然而，要说开源软件会统治所有的互联网标准，还是有一定的困难。
+首先，虽然开源软件在很多领域已经达到了很高的水平，但在某些特定领域，闭源软件仍然具有更好的性能和效率。例如，在一些高性能计算领域，闭源软件仍然是不可替代的选择。
+其次，开源软件也存在一些问题和限制。例如，开源软件的发展和更新速度可能会比较慢，有时候可能存在安全和兼容性问题，需要用户花费时间和精力进行自我调试和维护。
+最后，由于开源软件的自由性和透明性，它们存在着无法控制的风险。如果在开源软件的代码中存在漏洞或安全问题，攻击者可以很容易地获取代码并利用其中的漏洞进行攻击。这可能会对企业和组织的安全带来潜在风险。
+综上所述，虽然开源软件在互联网领域中得到了广泛应用，但是它们并不一定会成为统治所有互联网标准的唯一选择。在未来，我们可能会看到开源软件和闭源软件之间的协同发展，以提供更好的解决方案。
+
+          
+        
+          
+            
+            但是，我看到，越来越多的闭源软件公司倒闭了，或者转为开源软件模式，例如firefox，谷歌的chrome，开源软件的占比越来越高，你有什么看法
+
+          
+        
+          
+            
+            是的，确实有越来越多的闭源软件公司倒闭或者转为开源软件模式，而开源软件在互联网领域中的占比也越来越高。这是因为开源软件具有很多优势，包括透明性、自由性、灵活性、可定制性等，而这些优势正好能够满足当前互联网应用的需求。
+另外，随着云计算和开放云平台的发展，开源软件也得到了更多的应用机会。云计算和开放云平台为开源软件提供了更好的部署和使用方式，同时也提高了开源软件在企业和组织中的接受度和应用价值。
+最后，开源软件社区的活跃度和贡献者数量也在不断增加，这进一步促进了开源软件的发展和普及。开源软件社区的活跃度和贡献者数量越多，开源软件的功能和性能就越强大，这也让更多的企业和组织愿意选择开源软件。
+综上所述，开源软件在互联网领域中的占比确实越来越高，这是因为开源软件具有很多优势，并且得到了更多的应用机会和社区支持。不过，仍然需要注意开源软件本身的一些问题和限制，并且需要根据实际情况选择最适合自己的软件解决方案。
+
+          
+        
+          
+            
+            开源软件是由谁主导的？
+
+          
+        
+          
+            
+            开源软件的开发和推广通常是由开源社区和贡献者主导的。这些社区由一群热爱技术和开源理念的人组成，他们相信共享和协作的力量，致力于开发和维护开源软件项目。
+开源社区是由志愿者、爱好者、开发者和公司等组成的多方参与的群体，其成员之间通过互相交流和合作来推动软件的开发和改进。开源社区通常拥有完善的组织结构和开发流程，例如开发者的代码提交、审查和合并流程、用户的反馈和贡献流程等，这些流程可以帮助开发者更好地协作、沟通和共同推进软件的发展。
+除了开源社区，一些公司也在开源软件的发展中扮演了重要的角色。这些公司可以是开源软件的赞助者、贡献者或用户，也可以是基于开源软件构建自己产品和服务的企业。一些知名的开源软件公司，例如Red Hat、Canonical、MongoDB等，不仅为开源社区提供了财务和技术上的支持，同时也为企业用户提供了开源软件的商业服务和支持，从而帮助开源软件在企业中得到更广泛的应用。
+总之，开源软件的开发和推广主要由开源社区和贡献者主导，同时得到了一些公司的支持和参与。这种多方参与的开发模式可以使得开源软件具有更广泛的用户和应用范围，也可以让软件得到更多人的参与和贡献，从而推动软件的不断发展和完善。
+
+          
+        
+          
+            
+            有人或者组织能够独裁控制开源软件走向么？例如只支持某个操作系统，或者不准某些企业或国家使用
+
+          
+        
+          
+            
+            在开源软件的开发和推广过程中，由于开放的自由性和民主性，很难有人或组织能够完全独裁控制开源软件的走向和应用范围。这是因为开源软件是基于开放源代码的共享和协作模式，其代码和文档等资源都是公开的，并且可以被其他人自由地使用、修改和再分发。
+开源软件通常采用自由软件许可证进行授权，这些许可证保障了用户的自由，例如选择软件的使用、复制、修改和再分发等。这些自由是在法律框架下保护的，因此，无论是个人、企业还是国家，都可以使用和参与开源软件的开发和推广。
+开源软件的发展和应用也是一个开放和民主的过程，任何人都可以参与到开源社区中，提交代码、提出建议和反馈、进行讨论等等，从而共同推动软件的发展和改进。在开源社区中，没有人或组织能够完全控制软件的走向和应用范围，而是基于开放和民主的原则，通过共同协作和讨论来制定和决定软件的发展方向和应用范围。
+因此，开源软件的开放性和民主性是其成功的关键之一，也是其能够避免独裁控制的重要保障。
+
+          
+        
+          
+            
+            你对谷歌禁止华为使用android，导致华为开发鸿蒙操作系统有什么看法
+
+          
+        
+          
+            
+            谷歌决定禁止向华为提供Android许可证，导致华为无法获得最新的Android更新和支持。这一决定是由于华为与美国政府的关系引起的，谷歌也只是在执行美国政府的规定。这对华为造成了一定的影响，需要花费更多的时间和资源开发自己的操作系统。
+从另一个角度来看，这也提醒了人们开源软件的优势，即开放的自由性和可控性。由于Android的源代码是公开的，华为可以根据自身需求自主开发和修改操作系统，降低了对其他公司的依赖和控制。这也促使华为加快了自主操作系统鸿蒙的研发和推广，增强了技术自主性和可控性。
+总的来说，谷歌禁止华为使用Android虽然给华为带来了一定的困扰，但也加快了自主操作系统的研发和推广，体现了开源软件的优势和技术自主性的重要性。
+
+          
+        
+          
+            
+            我看到现实生活中，谁掌握了金钱，谁有大量的工程师开发人员，谁就有能力创建分支，或者主导开源软件的走向，对么？
+
+          
+        
+          
+            
+            在某种程度上，金钱和人力资源的掌控确实可以对开源软件的走向产生一定的影响。但是，开源软件的社区是由广泛的利益相关方组成的，不仅包括了公司和组织，也包括了个人用户和开发者。在这个社区中，每个人都有权利和能力发表自己的意见和建议，参与到开源软件的开发和讨论中。
+因此，即使某些公司或组织拥有更多的资源和影响力，但是也需要考虑到广泛的利益相关方的需求和利益。如果一个公司或组织试图独断地掌控开源软件的走向，可能会面临社区成员的反对和抵制。此外，开源软件的代码是公开的，任何人都可以自由地复制、修改和分支，因此即使某个公司或组织试图掌控某个开源软件，也无法完全控制其走向。
+因此，开源软件的发展是由整个社区共同推动和影响的，任何单一的利益相关方都无法完全控制其走向。
+
+          
+        
+          
+            
+            你对oracle收购mysql后，mysql的创始人出走，创建mariadb，有什么看法
+
+          
+        
+          
+            
+            Oracle收购MySQL后，MySQL的创始人Michael Widenius确实离开了Oracle，随后创建了MariaDB这个分支，这也是开源软件的一种特点，任何人都可以基于原有代码分支出去创建一个新的项目，这样可以实现更加个性化的需求和自由度。
+从MariaDB的角度来看，他们希望继续发展MySQL所代表的关系数据库的优点，并且希望推出一些新的功能和特性，以此吸引更多的用户。同时，MariaDB也注重开源社区的参与和贡献，这一点和MySQL的开源文化类似。在开源软件的世界里，分支和创新是非常普遍的现象，而这些分支往往会针对特定的用户需求，从而推出更加优秀的解决方案。
+总的来说，Oracle收购MySQL后，MySQL的创始人离开创建MariaDB，也展现了开源软件的另外一种特点，即开源社区的自由度和创新性，任何人都可以基于原有代码进行修改和分支，从而创建出更适合自己需求的解决方案。
+
+          
+        
+          
+            
+            我看到，越来越多的大公司采用开源的模式开发软件，谁不做开源，谁就会被业界淘汰，这种说法对么
+
+          
+        
+          
+            
+            在当前的软件开发领域，开源软件确实已经变得越来越普遍，越来越多的大公司也开始采用开源的模式进行软件开发，这是因为开源软件具有很多优点，比如可以节约成本、提高软件质量、增加开发效率等等。因此，采用开源的模式来开发软件的公司和项目越来越多，这也是一种趋势。
+然而，不能简单地说谁不做开源就会被业界淘汰。闭源软件也有其存在的合理性，比如有些公司需要保护商业机密或是保持技术优势等等，因此不会选择开源软件。此外，对于某些领域或特定的应用场景，闭源软件可能会更为适合。
+总之，开源软件的普及是一个趋势，但是不能简单地说谁不做开源就会被业界淘汰，应该根据具体情况来选择采用开源还是闭源的方式。
+
+          
+        
+          
+            
+            你了解v2ray, v2fly, xray之间的关系么，这对于了解开源软件的分裂和发展是一个很好地观察对象
+
+          
+        
+          
+            
+            是的，我了解v2ray、v2fly和xray之间的关系。这三个项目都是开源的代理软件，都基于v2ray核心代码开发而来，但是它们之间又有一些不同之处。
+v2ray是最早的一个项目，由一个叫做"逆向太阳"的开发者发起，并得到了很多社区贡献者的支持。后来，由于一些开发方面的分歧，v2ray的主要开发者"逆向太阳"和其他核心开发者决裂，最终导致了v2ray项目的分裂。
+v2fly是在v2ray分裂后成立的一个新项目，由一些原来的v2ray社区贡献者和其他开发者组成的团队共同开发，旨在继续推进v2ray的发展。与v2ray不同的是，v2fly更加注重用户体验，提供了更加友好的界面和更多的功能。
+xray是最近出现的一个项目，也是基于v2ray核心代码开发而来，但是它在性能方面进行了很大的优化，并增加了一些新的功能。与v2ray和v2fly不同的是，xray由一个商业公司进行开发和支持。
+这三个项目之间的关系反映了开源软件的分裂和发展的一般规律。在开源社区中，由于人员变动、技术分歧、商业利益等因素的影响，很容易出现项目分裂的情况，而且分裂后的项目往往会根据各自的方向和目标进行不同的发展。但是，这些项目之间也会有合作和交流，共同推进整个领域的发展。
+
+          
+        
+          
+            
+            对于一些新的操作系统挑战者，只能选择开源的方式才能和闭源的微软操作系统相对抗，对么？
+
+          
+        
+          
+            
+            可以这么说。操作系统是一个非常复杂的软件系统，需要大量的研发资源和技术积累才能打造出一款稳定、安全、易用的产品。相对于成熟的闭源操作系统，新的操作系统挑战者往往面临着技术和资源上的巨大压力。选择开源的方式，可以借鉴已有的开源技术和社区资源，降低开发成本和风险，提高开发效率。同时，开源的方式也可以吸引更多的开发者和用户参与到项目中来，形成一个更加广泛的社区和生态系统，增强产品的可持续发展能力。因此，对于一些新的操作系统挑战者来说，选择开源的方式确实是一个比较明智的选择。
+
+          
+        
+          
+            
+            开源就是免费，对么？
+
+          
+        
+          
+            
+            不完全正确。开源软件和免费软件是不同的概念。开源软件是指软件源代码开放给公众，并允许公众在遵循特定协议的情况下自由使用、修改、分发和分享的软件。而免费软件是指在价格上免费提供给用户使用的软件，这并不意味着软件的源代码一定是开放的。实际上，开源软件往往是免费的，因为任何人都可以自由获取和使用源代码来构建软件。但是，也有一些开源软件提供商会提供商业版的软件，这些商业版的软件可能是收费的。因此，开源软件不一定就是免费的，而且免费软件也不一定就是开源的。
+
+          
+        
+          
+            
+            开源有哪些协议，商用使用能用那些协议的软件？
+
+          
+        
+      
+        
+        开源软件有很多种协议，其中比较常见的包括：
+
+
+GNU通用公共许可证（GPL）：允许自由使用、修改、发布和再授权源代码，但只有在使用相同的许可证下发布其衍生作品。
+
+
+BSD许可证：允许自由使用、修改、发布和再授权源代码，但要求在衍生作品中包含原始版权声明和许可证。
+
+
+MIT许可证：允许自由使用、修改、发布和再授权源代码，但不需要在衍生作品中包含原始版权声明和许可证。
+
+
+Apache许可证：允许自由使用、修改、发布和再授权源代码，但要求在衍生作品中包含原始版权声明、许可证和贡献者声明。
+
+
+商用使用开源软件需要注意的是，不同的开源协议有不同的限制和要求。一些协议（如MIT许可证）对商业使用没有限制，而其他协议（如GPL许可证）可能会要求发布衍生作品的源代码，或者要求将使用的其他组件的源代码公开。因此，在商业使用开源软件之前，需要仔细阅读相关的许可证并遵守其规定。
+
+      
+    
+参考&amp;致谢
+
+chatGPT
+
+]]></content>
+      <categories>
+        <category>devops</category>
+      </categories>
+      <tags>
+        <tag>devops</tag>
+        <tag>chatgpt</tag>
+        <tag>开源</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>千古奇书推荐《渔樵问对》讲述天地至理</title>
     <url>/posts/a67e8c54/</url>
     <content><![CDATA[简介
@@ -54446,9 +54976,9 @@ chatGPT
 
 视频讲解
 B站
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-NBFcNjZcJQyRTElj").style.height=document.getElementById("mmedia-NBFcNjZcJQyRTElj").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-eUhKUYzHzdmylftF").style.height=document.getElementById("mmedia-eUhKUYzHzdmylftF").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-NBFcNjZcJQyRTElj").style.height=document.getElementById("mmedia-NBFcNjZcJQyRTElj").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-eUhKUYzHzdmylftF").style.height=document.getElementById("mmedia-eUhKUYzHzdmylftF").scrollWidth*0.76+"px";
     }; 
 youtube
 
@@ -58978,6 +59508,185 @@ bash shell命令行选项与修传入参数处理_linux shell
       </tags>
   </entry>
   <entry>
+    <title>GithubProfile美化与自动获取RSS文章教程</title>
+    <url>/posts/a3c81cc3/</url>
+    <content><![CDATA[
+如何让你的 github profile 让人眼前一亮？默认的 github profile 页面是支持 Markdown 语法的，如是可以玩出很多花样来！给它添加各种特效和信息吧
+
+
+
+
+点击查看大体积动图
+Github Stats Card
+
+Github https://github.com/appotry/github-readme-stats 参考代码
+Docker Hub https://hub.docker.com/r/bloodstar/github-readme-stats
+更详细参数使用说明，请参考 Github 仓库 Readme 说明
+由于 github 对 api 调用次数有限制，最好自建服务器使用！
+
+自建 Docker 服务
+docker-compose.yml
+version: "3"
+services:
+  grs:
+    image: bloodstar/github-readme-stats:latest
+    container_name: grs
+    environment:
+      PAT_1: ghp_****
+      CACHE_SECONDS: 600
+    ports:
+      - 9000:9000
+docker run
+$ docker run \
+  --name grs \
+  --restart=unless-stopped \
+  -d \
+  -e PAT_1="ghp_****" \
+  bloodstar/github-readme-stats
+Vercel 和 docker 调用差异
+和Vercel 部署调用不同，不需要 /api
+
+这里vercel 和 docker 调用接口一致是比较容易实现的。为了方便和上游同步，这里就没有做修改。
+
+# Vercel 部署调用
+![](https://ghstats.17lai.site/api?username=appotry)
+
+# Docker 部署调用
+![](https://ghstats.17lai.site/?username=appotry)
+
+[![Appotry's GitHub stats](https://ghstats.17lai.site/?username=appotry)](https://github.com/appotry/github-readme-stats)
+GitHub Stats Card
+[![Appotry's GitHub stats](https://ghstats.17lai.site/?username=appotry)](https://github.com/appotry/github-readme-stats)
+
+&lt;picture&gt;
+  &lt;source
+    srcset="https://ghstats.17lai.site/?username=appotry&amp;show_icons=true&amp;theme=dark"
+    media="(prefers-color-scheme: dark)"
+  /&gt;
+  &lt;source
+    srcset="https://ghstats.17lai.site/?username=appotry&amp;show_icons=true"
+    media="(prefers-color-scheme: light), (prefers-color-scheme: no-preference)"
+  /&gt;
+  &lt;img src="https://ghstats.17lai.site/?username=appotry&amp;show_icons=true" /&gt;
+&lt;/picture&gt;
+
+  
+  
+  
+
+GitHub Repo Pins
+[![Readme Card](https://ghstats.17lai.site/pin/?username=anuraghazra&amp;repo=github-readme-stats)](https://github.com/anuraghazra/github-readme-stats)
+
+GitHub Gist Pins
+[![Gist Card](https:///ghstats.17lai.site/gist?id=bbfce31e0217a3689c8d961a356cb10d)](https://gist.github.com/Yizack/bbfce31e0217a3689c8d961a356cb10d/)
+
+Top Languages Card
+[![Top Langs](https://ghstats.17lai.site/top-langs/?username=anuraghazra)](https://github.com/anuraghazra/github-readme-stats)
+
+WakaTime Stats Card
+[![Harlok's WakaTime stats](https://ghstats.17lai.site/wakatime?username=ffflabs)](https://github.com/anuraghazra/github-readme-stats)
+
+自动获取最新 RSS 文章
+
+项目代码需要 rss2才能用。为了下面代码正常运行，需要安装支持 RSS2 的 hexo 插件 hexo-feed
+
+创建 Profile Repo
+创建一个和用户名一样的仓库，这个仓库就是你的 Github Profile 仓库。仓库的Readme.md 文件将会显示在 github/[name]
+代码仓库导入 https://github.com/appotry/appotry
+修改个人信息
+
+.template/README.md
+generator.py
+.github/workflows/get rss.yml
+
+.template/README.md
+把博主的信息，换为你自己的信息
+generator.py
+把常量定义修改为你自己的信息
+# 常量定义
+POSTS_RSS_URL = 'https://blog.17lai.site/rss.xml'
+BLOG_URL_PREFIX = 'https://blog.17lai.site'
+RECENT_POST_LIMIT = 12
+.github/workflows/get rss.yml
+修改文件仓库名称等相关内容
+创建 action CI_TOKEN
+- name: Generate README.md for github.com
+  env:
+   GH_REPO: github.com/appotry/appotry.git
+  run: |
+   mkdir -p /home/runner/work/artifacts/
+   cd /home/runner/work/artifacts/
+   git clone https://github.com/appotry/appotry.git 
+   cd /home/runner/work/artifacts/appotry
+   git config user.name "appotry"
+   git config user.email "andycrusoe@gmail.com"
+   rm -f README.md
+
+配置完成后，运行 github action
+
+最终效果
+
+当然，还有很多其它方法用来美化 Github Profile
+这里只是介绍了简单的几种，profile中使用的技术还没介绍完全
+
+
+参考&amp;致谢
+
+使用 Python 生成博客目录并自动更新 README
+
+
+最近发现一个 github action 实现了类似的功能 gautamkrishnar/blog-post-workflow
+
+系列教程
+全部文章RSS订阅
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+GithubProfile美化与自动获取RSS文章教程
+Vercel部署高级用法教程
+webhook部署Hexo静态博客指南
+在宝塔VPS上面采用docker部署waline全流程图解教程
+
+笔记系列
+Note分类RSS订阅
+
+完美笔记进化论
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Joplin入门指南&amp;实践方案
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+Joplin 插件以及其Markdown语法。All in One!
+Joplin 插件使用推荐
+为知笔记私有化Docker部署
+
+]]></content>
+      <categories>
+        <category>develop</category>
+      </categories>
+      <tags>
+        <tag>github</tag>
+        <tag>develop</tag>
+        <tag>profile</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>人格类型分类总结归纳</title>
     <url>/posts/ec34b111/</url>
     <content><![CDATA[
@@ -59482,185 +60191,6 @@ webhook部署Hexo静态博客指南
       </tags>
   </entry>
   <entry>
-    <title>GithubProfile美化与自动获取RSS文章教程</title>
-    <url>/posts/a3c81cc3/</url>
-    <content><![CDATA[
-如何让你的 github profile 让人眼前一亮？默认的 github profile 页面是支持 Markdown 语法的，如是可以玩出很多花样来！给它添加各种特效和信息吧
-
-
-
-
-点击查看大体积动图
-Github Stats Card
-
-Github https://github.com/appotry/github-readme-stats 参考代码
-Docker Hub https://hub.docker.com/r/bloodstar/github-readme-stats
-更详细参数使用说明，请参考 Github 仓库 Readme 说明
-由于 github 对 api 调用次数有限制，最好自建服务器使用！
-
-自建 Docker 服务
-docker-compose.yml
-version: "3"
-services:
-  grs:
-    image: bloodstar/github-readme-stats:latest
-    container_name: grs
-    environment:
-      PAT_1: ghp_****
-      CACHE_SECONDS: 600
-    ports:
-      - 9000:9000
-docker run
-$ docker run \
-  --name grs \
-  --restart=unless-stopped \
-  -d \
-  -e PAT_1="ghp_****" \
-  bloodstar/github-readme-stats
-Vercel 和 docker 调用差异
-和Vercel 部署调用不同，不需要 /api
-
-这里vercel 和 docker 调用接口一致是比较容易实现的。为了方便和上游同步，这里就没有做修改。
-
-# Vercel 部署调用
-![](https://ghstats.17lai.site/api?username=appotry)
-
-# Docker 部署调用
-![](https://ghstats.17lai.site/?username=appotry)
-
-[![Appotry's GitHub stats](https://ghstats.17lai.site/?username=appotry)](https://github.com/appotry/github-readme-stats)
-GitHub Stats Card
-[![Appotry's GitHub stats](https://ghstats.17lai.site/?username=appotry)](https://github.com/appotry/github-readme-stats)
-
-&lt;picture&gt;
-  &lt;source
-    srcset="https://ghstats.17lai.site/?username=appotry&amp;show_icons=true&amp;theme=dark"
-    media="(prefers-color-scheme: dark)"
-  /&gt;
-  &lt;source
-    srcset="https://ghstats.17lai.site/?username=appotry&amp;show_icons=true"
-    media="(prefers-color-scheme: light), (prefers-color-scheme: no-preference)"
-  /&gt;
-  &lt;img src="https://ghstats.17lai.site/?username=appotry&amp;show_icons=true" /&gt;
-&lt;/picture&gt;
-
-  
-  
-  
-
-GitHub Repo Pins
-[![Readme Card](https://ghstats.17lai.site/pin/?username=anuraghazra&amp;repo=github-readme-stats)](https://github.com/anuraghazra/github-readme-stats)
-
-GitHub Gist Pins
-[![Gist Card](https:///ghstats.17lai.site/gist?id=bbfce31e0217a3689c8d961a356cb10d)](https://gist.github.com/Yizack/bbfce31e0217a3689c8d961a356cb10d/)
-
-Top Languages Card
-[![Top Langs](https://ghstats.17lai.site/top-langs/?username=anuraghazra)](https://github.com/anuraghazra/github-readme-stats)
-
-WakaTime Stats Card
-[![Harlok's WakaTime stats](https://ghstats.17lai.site/wakatime?username=ffflabs)](https://github.com/anuraghazra/github-readme-stats)
-
-自动获取最新 RSS 文章
-
-项目代码需要 rss2才能用。为了下面代码正常运行，需要安装支持 RSS2 的 hexo 插件 hexo-feed
-
-创建 Profile Repo
-创建一个和用户名一样的仓库，这个仓库就是你的 Github Profile 仓库。仓库的Readme.md 文件将会显示在 github/[name]
-代码仓库导入 https://github.com/appotry/appotry
-修改个人信息
-
-.template/README.md
-generator.py
-.github/workflows/get rss.yml
-
-.template/README.md
-把博主的信息，换为你自己的信息
-generator.py
-把常量定义修改为你自己的信息
-# 常量定义
-POSTS_RSS_URL = 'https://blog.17lai.site/rss.xml'
-BLOG_URL_PREFIX = 'https://blog.17lai.site'
-RECENT_POST_LIMIT = 12
-.github/workflows/get rss.yml
-修改文件仓库名称等相关内容
-创建 action CI_TOKEN
-- name: Generate README.md for github.com
-  env:
-   GH_REPO: github.com/appotry/appotry.git
-  run: |
-   mkdir -p /home/runner/work/artifacts/
-   cd /home/runner/work/artifacts/
-   git clone https://github.com/appotry/appotry.git 
-   cd /home/runner/work/artifacts/appotry
-   git config user.name "appotry"
-   git config user.email "andycrusoe@gmail.com"
-   rm -f README.md
-
-配置完成后，运行 github action
-
-最终效果
-
-当然，还有很多其它方法用来美化 Github Profile
-这里只是介绍了简单的几种，profile中使用的技术还没介绍完全
-
-
-参考&amp;致谢
-
-使用 Python 生成博客目录并自动更新 README
-
-
-最近发现一个 github action 实现了类似的功能 gautamkrishnar/blog-post-workflow
-
-系列教程
-全部文章RSS订阅
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-GithubProfile美化与自动获取RSS文章教程
-Vercel部署高级用法教程
-webhook部署Hexo静态博客指南
-在宝塔VPS上面采用docker部署waline全流程图解教程
-
-笔记系列
-Note分类RSS订阅
-
-完美笔记进化论
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Joplin入门指南&amp;实践方案
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-Joplin 插件以及其Markdown语法。All in One!
-Joplin 插件使用推荐
-为知笔记私有化Docker部署
-
-]]></content>
-      <categories>
-        <category>develop</category>
-      </categories>
-      <tags>
-        <tag>github</tag>
-        <tag>develop</tag>
-        <tag>profile</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>写了些浏览器增强脚本</title>
     <url>/posts/8f873c0f/</url>
     <content><![CDATA[
@@ -60048,457 +60578,6 @@ CI/CD与Git Flow与GitLab
         <tag>hexo</tag>
         <tag>web</tag>
         <tag>webhook</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>emoji表情符号</title>
-    <url>/posts/80938cfe/</url>
-    <content><![CDATA[
-emoji表情符号是非常流行的表情符号，几乎没有地方都会支持。这里列举出常用的emoji表情不好，方便大家使用与查阅。
-
-
-常用符号
-❤❥웃유♋☮✌☏☢☠✔☑♚▲♪✈✞÷↑↓◆◇⊙■□△▽¿─│♥❣♂♀☿Ⓐ✍✉☣☤✘☒♛▼♫⌘☪≈←→◈◎☉★☆⊿※¡━┃♡ღ ツ
-
-☼☁❅♒✎©®™Σ✪✯☭➳ 卐 √↖↗●◐Θ◤◥︻〖〗┄┆℃℉°✿ϟ☃☂✄¢€£∞✫★½✡×↙↘○◑⊕◣◢︼【】┅┇☽☾✚〓
-
-▂▃▄▅▆▇█▉▊▋▌▍▎▏↔↕☽☾ の•▸◂▴▾┈┊①②③④⑤⑥⑦⑧⑨⑩ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ ㍿ ▓♨♛❖♓☪✙
-
-┉┋☹☺☻ت ヅツッシ Üϡﭢ™℠℗©®♥❤❥❣❦❧♡۵웃유ღ♋♂♀☿☼☀☁☂☄☾☽❄☃☈⊙☉℃℉❅✺ϟ☇♤♧♡♢♠♣
-
-♥♦☜☞☝✍☚☛☟✌✽✾✿❁❃❋❀⚘☑✓✔√☐☒✗✘ ㄨ ✕✖✖⋆✢✣✤✥❋✦✧✩✰✪✫✬✭✮✯❂✡★✱✲✳✴✵✶✷✸✹✺✻✼❄❅❆❇❈❉❊†☨✞✝☥☦☓☩☯☧☬
-
-☸✡♁✙♆。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴々﹟#
-
-﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼☩☨☦✞✛✜✝✙✠✚†‡◉○◌◍◎●◐◑◒◓◔◕◖◗❂☢⊗⊙◘◙◍⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌
-
-≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱㊣㊎㊍㊌㊋㊏㊐㊊㊚㊛㊤㊥
-
-㊦㊧㊨㊒㊞㊑㊒㊓㊔㊕㊖㊗㊘㊜㊝㊟㊠㊡㊢㊩㊪㊫㊬㊭㊮㊯㊰㊙ ㉿ 囍 ♔♕♖♗♘♙♚♛♜♝♞♟ℂℍℕℙℚℝℤℬℰℯℱℊℋℎℐℒℓℳℴ℘ℛℭ℮ℌℑℜℨ♪♫♩♬♭♮♯°øⒶ☮✌☪✡☭✯ 卐 ✐✎✏
-
-✑✒✍✉✁✂✃✄✆✉☎☏➟➡➢➣➤➥➦➧➨➚➘➙➛➜➝➞➸♐➲➳⏎➴➵➶➷➸➹➺➻➼➽←↑→↓↔↕↖↗↘↙↚↛↜↝
-
-↞↟↠↡↢↣↤↥↦↧↨➫➬➩➪➭➮➯➱↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹↺↻↼↽↾↿⇀⇁⇂⇃⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇕
-
-⇖⇗⇘⇙⇚⇛⇜⇝⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪➀➁➂➃➄➅➆➇➈➉➊➋➌➍➎➏➐➑➒➓㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡ
-
-ⓢⓣⓤⓥⓦⓧⓨⓩ⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵ⅠⅡⅢⅣⅤ
-
-ⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹⅺⅻⅼⅽⅾⅿ┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫
-┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽
-┾┿╀╁╂╃╄╅╆╇╈╉╊╋╌╍╎╏
-═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬◤◥◄►▶◀◣◢▲
-
-▼◥▸◂▴▾△▽▷◁⊿▻◅▵▿▹◃❏❐❑❒▀▁▂▃▄▅▆▇▉▊▋█▌▍▎▏▐░▒▓▔▕■□▢▣▤▥▦▧
-
-▨▩▪▫▬▭▮▯ ㋀㋁㋂㋃㋄㋅㋆㋇㋈㋉㋊㋋㏠㏡㏢㏣㏤㏥㏦㏧㏨㏩㏪㏫㏬㏭㏮㏯㏰㏱㏲
-
-㏳㏴㏵㏶㏷㏸㏹㏺㏻㏼㏽㏾㍙㍚㍛㍜㍝㍞㍟㍠㍡㍢㍣㍤㍥㍦㍧㍨㍩㍪㍫㍬㍭㍮㍯㍰㍘
-
-☰☲☱☴☵☶☳☷☯
-特殊符号
-♠♣♧♡♥❤❥❣♂♀✲☀☼☾☽◐◑☺☻☎☏✿❀№↑↓←→√×÷★℃℉°◆◇⊙■□△▽¿½☯✡ ㍿卍卐 ♂♀✚〓㎡♪♫♩♬
-
-㊚㊛囍㊒㊖ Φ♀♂‖KaTeX parse error: Expected ‘EOF’, got ‘&amp;’ at position 3: @*&amp;̲#※卍卐 Ψ♫♬♭♩♪♯♮⌒¶∮…
-编号序号
-①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳⓪
-
-❶❷❸❹❺❻❼❽❾❿⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴
-
-㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉㈠㈡㈢㈣㈤㈥㈦㈧㈨㈩⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇
-
-⒈⒉⒊⒋⒌⒍⒎⒏⒐⒑⒒⒓⒔⒕⒖⒗⒘⒙⒚⒛
-
-ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹ
-
-ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ
-
-⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵
-数学符号
-﹢﹣×÷±/=≌∽≦≧≒ ﹤﹥ ≈≡≠=≤≥&lt;&gt;≮≯∷∶∫∮∝∞∧∨∑∏∪∩∈∵∴⊥∥∠⌒⊙√∟⊿㏒㏑%
-
-‰⅟½⅓⅕⅙⅛⅔⅖⅚⅜¾⅗⅝⅞⅘≂≃≄≅≆≇≈≉≊≋≌≍≎≏≐≑≒≓≔≕≖≗≘≙≚≛≜≝≞≟
-
-≠≡≢≣≤≥≦≧≨≩⊰⊱⋛⋚∫∬∭∮∯∰∱∲∳%℅‰‱øØπ
-爱心符号
-♥❣ღ♠♡♤❤❥
-标点符号
-。，、＇：∶；?‘’“”〝〞ˆˇ﹕︰﹔﹖﹑•¨….¸;！´？！～—ˉ ｜‖＂〃｀@﹫¡¿﹏﹋﹌︴
-
-々﹟#﹩$﹠&amp;﹪%*﹡﹢﹦﹤‐￣ ¯―﹨ˆ˜﹍﹎+=&lt;＿*-\ˇ~﹉﹊
-
-（）〈〉‹›﹛﹜『』〖〗［］《》〔〕{}「」【】
-
-︵︷︿︹︽*﹁﹃︻︶︸﹀︺︾ˉ﹂﹄︼❝❞
-单位符号
-°′″＄￥〒￠￡％＠℃℉ ﹩﹪‰﹫㎡㏕㎜㎝㎞㏎m³㎎㎏㏄º○¤%$º¹²³
-货币符号
-€£Ұ₴$₰¢₤¥₳₲₪₵ 元 ₣₱฿¤₡₮₭₩ރ 円 ₢₥₫₦zł﷼₠₧₯₨Kčर₹ƒ₸ ￠
-箭头符号（含推导&amp;转换符号）
-↑↓←→↖↗↘↙↔↕➻➼➽➸➳➺➻➴➵➶➷➹▶►▷◁◀◄«
-
-»➩➪➫➬➭➮➯➱⏎➲➾➔➘➙➚➛➜➝➞➟➠➡➢➣➤➥➦➧➨
-
-↚↛↜↝↞↟↠↠↡↢↣↤↤↥↦↧↨⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇖⇗⇘⇙
-
-⇜↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹☇☈↼↽↾↿⇀⇁⇂⇃⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪↺↻⇚⇛♐
-符号图案
-✐✎✏✑✒✍✉✁✂✃✄✆✉☎☏☑✓✔√☐☒✗✘ ㄨ ✕✖✖☢☠☣✈★☆✡ 囍㍿ ☯☰☲☱☴☵☶☳☷
-
-☜☞☝✍☚☛☟✌♤♧♡♢♠♣♥♦☀☁☂❄☃♨웃유❖☽☾☪✿♂♀✪✯☭➳ 卍卐 √×■◆●○◐◑✙☺☻
-
-❀⚘♔♕♖♗♘♙♚♛♜♝♞♟♧♡♂♀♠♣♥❤☜☞☎☏⊙◎☺☻☼▧▨♨◐◑↔↕▪▒◊◦▣▤▥▦▩◘◈◇
-
-♬♪♩♭♪ の ★☆→ あぃ￡ Ю〓§♤♥▶¤✲❈✿✲❈➹☀☂☁【】┱┲❣✚✪✣✤✥✦❉❥❦❧❃❂❁❀✄☪☣☢☠☭ღ▶▷◀◁
-
-☀☁☂☃☄★☆☇☈⊙☊☋☌☍ⓛⓞⓥⓔ╬『』∴☀♫♬♩♭♪☆∷﹌の ★◎▶☺☻►◄▧▨♨◐◑↔↕↘▀▄█▌
-
-◦☼♪ の ☆→♧ ぃ￡ ❤▒▬♦◊◦♠♣▣۰•❤•۰►◄▧▨♨◐◑↔↕▪▫☼♦⊙●○①⊕◎Θ⊙¤ ㊣ ★☆♀◆◇◣◢◥▲▼△▽⊿◤◥
-
-✐✌✍✡✓✔✕✖♂♀♥♡☜☞☎☏⊙◎☺☻►◄▧▨♨◐◑↔↕♥♡▪▫☼♦▀▄█▌▐░▒▬♦◊◘◙◦☼♠♣▣▤▥▦▩◘◙◈
-
-♫♬♪♩♭♪✄☪☣☢☠♯♩♪♫♬♭♮☎☏☪♈ºº₪¤큐«»™♂✿♥ 　 ◕‿-｡　｡◕‿◕｡
-希腊字母
-ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ
-
-αβγδεζνξοπρσηθικλμτυφχψω
-俄语字母
-АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвг
-
-деёжзийклмнопрстуфхцчшщъыьэюя
-汉语拼音
-āáǎàōóǒòēéěèīíǐìūúǔùǖǘǚǜüêɑńňɡ ㄅㄆㄇㄈㄉ
-
-ㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄚㄛㄜㄝㄞ
-
-ㄟㄠㄡㄢㄣㄤㄥㄦㄧㄨㄩ
-中文字符
-零壹贰叁肆伍陆柒捌玖拾佰仟万亿吉太拍艾分厘毫微
-
-卍卐卄巜弍弎弐朤氺曱甴囍兀々〆のぁ〡〢〣〤〥〦〧〨〩
-
-㊎㊍㊌㊋㊏㊚㊛㊐㊊㊣㊤㊥㊦㊧㊨㊒㊫㊑㊓㊔㊕㊖㊗㊘㊜㊝㊞㊟㊠㊡㊢㊩㊪㊬㊭㊮㊯㊰
-
-㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉
-日文符号
-ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてで
-
-とどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎ
-
-わゐゑをんゔゕゖァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタ
-
-ダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユ
-
-ョヨラリルレロヮワヰヱヲンヴヵヶヷヸヹヺ・ーヽヾヿ゠ㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇺㇻㇼㇽㇾㇿ
-制表符号
-─ ━│┃╌╍╎╏┄ ┅┆┇┈ ┉┊┋┌┍┎┏┐┑┒┓└ ┕┖┗ ┘┙┚┛├┝┞┟┠┡┢┣ ┤┥┦┧┨┩┪┫┬ ┭ ┮ ┯ ┰ ┱ ┲ ┳
-
-┴ ┵ ┶ ┷ ┸ ┹ ┺ ┻┼ ┽ ┾ ┿ ╀ ╁ ╂ ╃ ╄ ╅ ╆ ╇ ╈ ╉ ╊ ╋ ╪ ╫ ╬═║╒╓╔ ╕╖╗╘╙╚ ╛╜╝╞╟╠ ╡╢╣
-
-╤ ╥ ╦ ╧ ╨ ╩ ╳╔ ╗╝╚ ╬ ═ ╓ ╩ ┠ ┨┯ ┷┏ ┓┗ ┛┳ ⊥ ﹃ ﹄┌ ╮ ╭ ╯╰
-皇冠符号
-♚ 　 ♛ 　 ♝ 　 ♞ 　 ♜ 　 ♟ 　 ♔ 　 ♕ 　 ♗ 　 ♘ 　 ♖ 　 ♟
-彩色表情符号
-🌹🍀🍎💰📱🌙🍁🍂🍃🌷💎🔪🔫🏀⚽⚡👄👍🔥
-常用 emoji 符号
-😀😁😂😃😄😅😆😉😊😋😎😍😘😗😙😚☺😇😐😑😶😏😣😥😮😯😪😫😴😌😛😜😝😒😓😔😕😲😷😖😞😟😤😢😭😦😧😨😬😰😱😳😵😡😠😈👿👹👺💀👻👽👦👧👨👩👴👵👶👱👮👲👳👷👸💂🎅👰👼💆💇🙍🙎🙅🙆💁🙋🙇🙌🙏👤👥🚶🏃👯💃👫👬👭💏💑👪💪👈👉☝👆👇✌✋👌👍👎✊👊👋👏👐✍👣👀👂👃👅👄💋👓👔👕👖👗👘👙👚👛👜👝🎒💼👞👟👠👡👢👑👒🎩🎓💄💅💍🌂🙈🙉🙊🐵🐒🐶🐕🐩🐺🐱😺😸😹😻😼😽🙀😿😾🐈🐯🐅🐆🐴🐎🐮🐂🐃🐄🐷🐖🐗🐽🐏🐑🐐🐪🐫🐘🐭🐁🐀🐹🐰🐇🐻🐨🐼🐾🐔🐓🐣🐤🐥🐦🐧🐸🐊🐢🐍🐲🐉🐳🐋🐬🐟🐠🐡🐙🐚🐌🐛🐜🐝🐞🦋💐🌸💮🌹🌺🌻🌼🌷🌱🌲🌳🌴🌵🌾🌿🍀🍁🍂🍃🌍🌎🌏🌐🌑🌒🌓🌔🌕🌖🌗🌘🌙🌚🌛🌜☀🌝🌞⭐🌟🌠☁⛅☔⚡❄🔥💧🌊💩🍇🍈🍉🍊🍋🍌🍍🍎🍏🍐🍑🍒🍓🍅🍆🌽🍄🌰🍞🍖🍗🍔🍟🍕🍳🍲🍱🍘🍙🍚🍛🍜🍝🍠🍢🍣🍤🍥🍡🍦🍧🍨🍩🍪🎂🍰🍫🍬🍭🍮🍯🍼☕🍵🍶🍷🍸🍹🍺🍻🍴🎪🎭🎨🎰🚣🛀🎫🏆⚽⚾🏀🏈🏉🎾🎱🎳⛳🎣🎽🎿🏂🏄🏇🏊🚴🚵🎯🎮🎲🎷🎸🎺🎻🎬👾🌋🗻🏠🏡🏢🏣🏤🏥🏦🏨🏩🏪🏫🏬🏭🏯🏰💒🗼🗽⛪⛲🌁🌃🌆🌇🌉🌌🎠🎡🎢🚂🚃🚄🚅🚆🚇🚈🚉🚊🚝🚞🚋🚌🚍🚎🚏🚐🚑🚒🚓🚔🚕🚖🚗🚘🚚🚛🚜🚲⛽🚨🚥🚦🚧⚓⛵🚤🚢✈💺🚁🚟🚠🚡🚀🎑🗿🛂🛃🛄🛅💌💎🔪💈🚪🚽🚿🛁⌛⏳⌚⏰🎈🎉🎊🎎🎏🎐🎀🎁📯📻📱📲☎📞📟📠🔋🔌💻💽💾💿📀🎥📺📷📹📼🔍🔎🔬🔭📡💡🔦🏮📔📕📖📗📘📙📚📓📃📜📄📰📑🔖💰💴💵💶💷💸💳✉📧📨📩📤📥📦📫📪📬📭📮✏✒📝📁📂📅📆📇📈📉📊📋📌📍📎📏📐✂🔒🔓🔏🔐🔑🔨🔫🔧🔩🔗💉💊🚬🔮🚩🎌💦💨💣☠♠♥♦♣🀄🎴🔇🔈🔉🔊📢📣💤💢💬💭♨🌀🔔🔕✡✝🔯📛🔰🔱⭕✅☑✔✖❌❎➕➖➗➰➿〽✳✴❇‼⁉❓❔❕❗©®™🎦🔅🔆💯🔠🔡🔢🔣🔤🅰🆎🅱🆑🆒🆓ℹ🆔Ⓜ🆕🆖🅾🆗🅿🆘🆙🆚🈁🈂🈷🈶🈯 🉐 🈹🈚🈲 🉑 🈸🈴🈳 ㊗㊙ 🈺🈵▪▫◻◼◽◾⬛⬜🔶🔷🔸🔹🔺🔻💠🔲🔳⚪⚫🔴🔵♈♉♊♋♌♍♎♏♐♑♒♓⛎💘❤💓💔💕💖💗💙💚💛💜💝💞💟❣🌿🚧💒☎📟💽⬆↗➡↘⬇↙⬅↖↕↔↩↪⤴⤵🔃🔄🔙🔚🔛🔜🔝🔀🔁🔂▶⏩◀⏪🔼⏫🔽⏬📱📶📳📴♻🏧🚮🚰♿🚹🚺🚻🚼🚾⚠🚸⛔🚫🚳🚭🚯🚱🚷🔞
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>emoji</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>在浏览器输入 URL 回车之后发生了什么</title>
-    <url>/posts/656a0abb/</url>
-    <content><![CDATA[前言
-
-这个问题已经是老生常谈了，更是经常被作为面试的压轴题出现，网上也有很多文章，但最近闲的无聊，然后就自己做了一篇笔记，感觉比之前理解更透彻了。
-这篇笔记是我这两天看了数十篇文章总结出来的，所以相对全面一点，但由于我是做前端的，所以会比较重点分析浏览器渲染页面那一部分，至于其他部分我会罗列出关键词，感兴趣的可以自行查阅，
-**注意：**本文的步骤是建立在，请求的是一个简单的 HTTP 请求，没有 HTTPS、HTTP2、最简单的 DNS、没有代理、并且服务器没有任何问题的基础上，尽管这是不切实际的。
-大致流程
-
-URL 解析
-DNS 查询
-TCP 连接
-处理请求
-接受响应
-渲染页面
-
-一、URL 解析
-地址解析：
-首先判断你输入的是一个合法的 URL 还是一个待搜索的关键词，并且根据你输入的内容进行自动完成、字符编码等操作。
-HSTS
-由于安全隐患，会使用 HSTS 强制客户端使用 HTTPS 访问页面。详见：你所不知道的 HSTS (opens new window)。
-其他操作
-浏览器还会进行一些额外的操作，比如安全检查、访问限制（之前国产浏览器限制 996.icu）。
-检查缓存
-
-二、DNS 查询
-基本步骤
-
-1. 浏览器缓存
-浏览器会先检查是否在缓存中，没有则调用系统库函数进行查询。
-2. 操作系统缓存
-操作系统也有自己的 DNS 缓存，但在这之前，会向检查域名是否存在本地的 Hosts 文件里，没有则向 DNS 服务器发送查询请求。
-3. 路由器缓存
-路由器也有自己的缓存。
-4. ISP DNS 缓存
-ISP DNS 就是在客户端电脑上设置的首选 DNS 服务器，它们在大多数情况下都会有缓存。
-根域名服务器查询
-在前面所有步骤没有缓存的情况下，本地 DNS 服务器会将请求转发到互联网上的根域，下面这个图很好的诠释了整个流程：
-
-
-根域名服务器：维基百科 (opens new window)
-
-需要注意的点
-
-递归方式：一路查下去中间不返回，得到最终结果才返回信息（浏览器到本地 DNS 服务器的过程）
-迭代方式，就是本地 DNS 服务器到根域名服务器查询的方式。
-什么是 DNS 劫持
-前端 dns-prefetch 优化
-
-三、TCP 连接
-TCP/IP 分为四层，在发送数据时，每层都要对数据进行封装：
-
-1. 应用层：发送 HTTP 请求
-在前面的步骤我们已经得到服务器的 IP 地址，浏览器会开始构造一个 HTTP 报文，其中包括：
-
-请求报头（Request Header）：请求方法、目标地址、遵循的协议等等
-请求主体（其他参数）
-
-其中需要注意的点：
-
-浏览器只能发送 GET、POST 方法，而打开网页使用的是 GET 方法
-
-2. 传输层：TCP 传输报文
-传输层会发起一条到达服务器的 TCP 连接，为了方便传输，会对数据进行分割（以报文段为单位），并标记编号，方便服务器接受时能够准确地还原报文信息。
-在建立连接前，会先进行 TCP 三次握手。
-
-关于 TCP/IP 三次握手，网上已经有很多段子和图片生动地描述了。
-相关知识点：
-
-SYN 泛洪攻击
-
-
-3. 网络层：IP 协议查询 Mac 地址
-将数据段打包，并加入源及目标的 IP 地址，并且负责寻找传输路线。
-判断目标地址是否与当前地址处于同一网络中，是的话直接根据 Mac 地址发送，否则使用路由表查找下一跳地址，以及使用 ARP 协议查询它的 Mac 地址。
-
-注意：在 OSI 参考模型中 ARP 协议位于链路层，但在 TCP/IP 中，它位于网络层。
-
-4. 链路层：以太网协议
-以太网协议
-根据以太网协议将数据分为以“帧”为单位的数据包，每一帧分为两个部分：
-
-标头：数据包的发送者、接受者、数据类型
-数据：数据包具体内容
-
-Mac 地址
-以太网规定了连入网络的所有设备都必须具备“网卡”接口，数据包都是从一块网卡传递到另一块网卡，网卡的地址就是 Mac 地址。每一个 Mac 地址都是独一无二的，具备了一对一的能力。
-广播
-发送数据的方法很原始，直接把数据通过 ARP 协议，向本网络的所有机器发送，接收方根据标头信息与自身 Mac 地址比较，一致就接受，否则丢弃。
-注意：接收方回应是单播。
-
-相关知识点：
-
-ARP 攻击
-
-
-服务器接受请求
-接受过程就是把以上步骤逆转过来，参见上图。
-四、服务器处理请求
-大致流程
-
-HTTPD
-最常见的 HTTPD 有 Linux 上常用的 Apache 和 Nginx，以及 Windows 上的 IIS。
-它会监听得到的请求，然后开启一个子进程去处理这个请求。
-处理请求
-接受 TCP 报文后，会对连接进行处理，对 HTTP 协议进行解析（请求方法、域名、路径等），并且进行一些验证：
-
-验证是否配置虚拟主机
-验证虚拟主机是否接受此方法
-验证该用户可以使用该方法（根据 IP 地址、身份信息等）
-
-重定向
-假如服务器配置了 HTTP 重定向，就会返回一个 301永久重定向响应，浏览器就会根据响应，重新发送 HTTP 请求（重新执行上面的过程）。
-
-关于更多：详见这篇文章 (opens new window)
-
-URL 重写
-然后会查看 URL 重写规则，如果请求的文件是真实存在的，比如图片、html、css、js 文件等，则会直接把这个文件返回。
-否则服务器会按照规则把请求重写到 一个 REST 风格的 URL 上。
-然后根据动态语言的脚本，来决定调用什么类型的动态文件解释器来处理这个请求。
-以 PHP 语言的 MVC 框架举例，它首先会初始化一些环境的参数，根据 URL 由上到下地去匹配路由，然后让路由所定义的方法去处理请求。
-五、浏览器接受响应
-浏览器接收到来自服务器的响应资源后，会对资源进行分析。
-首先查看 Response header，根据不同状态码做不同的事（比如上面提到的重定向）。
-如果响应资源进行了压缩（比如 gzip），还需要进行解压。
-然后，对响应资源做缓存。
-接下来，根据响应资源里的 MIME (opens new window) 类型去解析响应内容（比如 HTML、Image 各有不同的解析方式）。
-六、渲染页面
-浏览器内核
-
-不同的浏览器内核，渲染过程也不完全相同，但大致流程都差不多。
-基本流程
-
-1. HTML 解析
-首先要知道浏览器解析是从上往下一行一行地解析的。
-解析的过程可以分为四个步骤：
-1. 解码（encoding）
-传输回来的其实都是一些二进制字节数据，浏览器需要根据文件指定编码（例如 UTF-8）转换成字符串，也就是 HTML 代码。
-2. 预解析（pre-parsing）
-预解析做的事情是提前加载资源，减少处理时间，它会识别一些会请求资源的属性，比如img标签的src属性，并将这个请求加到请求队列中。
-3. 符号化（Tokenization）
-符号化是词法分析的过程，将输入解析成符号，HTML 符号包括，开始标签、结束标签、属性名和属性值。
-它通过一个状态机去识别符号的状态，比如遇到&lt;，&gt;状态都会产生变化。
-4. 构建树（tree construction）
-
-注意：符号化和构建树是并行操作的，也就是说只要解析到一个开始标签，就会创建一个 DOM 节点。
-
-在上一步符号化中，解析器获得这些标记，然后以合适的方法创建DOM对象并把这些符号插入到DOM对象中。
-
-浏览器容错进制
-你从来没有在浏览器看过类似"语法无效"的错误，这是因为浏览器去纠正错误的语法，然后继续工作。
-事件
-当整个解析的过程完成以后，浏览器会通过DOMContentLoaded事件来通知DOM解析完成。
-2. CSS 解析
-一旦浏览器下载了 CSS，CSS 解析器就会处理它遇到的任何 CSS，根据语法规范 (opens new window)解析出所有的 CSS 并进行标记化，然后我们得到一个规则表。
-CSS 匹配规则
-在匹配一个节点对应的 CSS 规则时，是按照从右到左的顺序的，例如：div p { font-size :14px }会先寻找所有的p标签然后判断它的父元素是否为div。
-所以我们写 CSS 时，尽量用 id 和 class，千万不要过度层叠。
-3. 渲染树
-其实这就是一个 DOM 树和 CSS 规则树合并的过程。
-
-注意：渲染树会忽略那些不需要渲染的节点，比如设置了display:none的节点。
-
-计算
-通过计算让任何尺寸值都减少到三个可能之一：auto、百分比、px，比如把rem转化为px。
-级联
-浏览器需要一种方法来确定哪些样式才真正需要应用到对应元素，所以它使用一个叫做specificity的公式，这个公式会通过：
-
-标签名、class、id
-是否内联样式
-!important
-
-然后得出一个权重值，取最高的那个。
-渲染阻塞
-当遇到一个script标签时，DOM 构建会被暂停，直至脚本完成执行，然后继续构建 DOM 树。
-但如果 JS 依赖 CSS 样式，而它还没有被下载和构建时，浏览器就会延迟脚本执行，直至 CSS Rules 被构建。
-所有我们知道：
-
-CSS 会阻塞 JS 执行
-JS 会阻塞后面的 DOM 解析
-
-为了避免这种情况，应该以下原则：
-
-CSS 资源排在 JavaScript 资源前面
-JS 放在 HTML 最底部，也就是 &lt;/body&gt;前
-
-另外，如果要改变阻塞模式，可以使用 defer 与 async，详见：这篇文章 (opens new window)
-
-布局与绘制
-
-确定渲染树种所有节点的几何属性，比如：位置、大小等等，最后输入一个盒子模型，它能精准地捕获到每个元素在屏幕内的准确位置与大小。
-然后遍历渲染树，调用渲染器的 paint() 方法在屏幕上显示其内容。
-5. 合并渲染层
-把以上绘制的所有图片合并，最终输出一张图片。
-6. 回流与重绘
-回流(reflow)
-当浏览器发现某个部分发现变化影响了布局时，需要倒回去重新渲染，会从html标签开始递归往下，重新计算位置和大小。
-reflow 基本是无法避免的，因为当你滑动一下鼠标、resize 窗口，页面就会产生变化。
-重绘(repaint)
-改变了某个元素的背景色、文字颜色等等不会影响周围元素的位置变化时，就会发生重绘。
-每次重绘后，浏览器还需要合并渲染层并输出到屏幕上。
-回流的成本要比重绘高很多，所以我们应该尽量避免产生回流。
-比如：
-
-display:none 会触发回流，而 visibility:hidden 只会触发重绘。
-
-
-JavaScript 编译执行
-
-大致流程
-
-可以分为三个阶段：
-1. 词法分析
-JS 脚本加载完毕后，会首先进入语法分析阶段，它首先会分析代码块的语法是否正确，不正确则抛出“语法错误”，停止执行。
-几个步骤：
-
-分词，例如将var a = 2，，分成var、a、=、2这样的词法单元。
-解析，将词法单元转换成抽象语法树（AST）。
-代码生成，将抽象语法树转换成机器指令。
-
-2. 预编译
-JS 有三种运行环境：
-
-全局环境
-函数环境
-eval
-
-每进入一个不同的运行环境都会创建一个对应的执行上下文，根据不同的上下文环境，形成一个函数调用栈，栈底永远是全局执行上下文，栈顶则永远是当前执行上下文。
-创建执行上下文
-创建执行上下文的过程中，主要做了以下三件事：
-
-创建变量对象
-
-参数、函数、变量
-
-
-建立作用域链
-
-确认当前执行环境是否能访问变量
-
-
-确定 This 指向
-
-3. 执行
-JS 线程
-
-虽然 JS 是单线程的，但实际上参与工作的线程一共有四个：
-
-其中三个只是协助，只有 JS 引擎线程是真正执行的
-
-
-JS 引擎线程：也叫 JS 内核，负责解析执行 JS 脚本程序的主线程，例如 V8 引擎
-事件触发线程：属于浏览器内核线程，主要用于控制事件，例如鼠标、键盘等，当事件被触发时，就会把事件的处理函数推进事件队列，等待 JS 引擎线程执行
-定时器触发线程：主要控制setInterval和setTimeout，用来计时，计时完毕后，则把定时器的处理函数推进事件队列中，等待 JS 引擎线程。
-HTTP 异步请求线程：通过 XMLHttpRequest 连接后，通过浏览器新开的一个线程，监控 readyState 状态变更时，如果设置了该状态的回调函数，则将该状态的处理函数推进事件队列中，等待 JS 引擎线程执行。
-
-注：浏览器对同一域名的并发连接数是有限的，通常为 6 个。
-宏任务
-分为：
-
-同步任务：按照顺序执行，只有前一个任务完成后，才能执行后一个任务
-异步任务：不直接执行，只有满足触发条件时，相关的线程将该异步任务推进任务队列中，等待 JS 引擎主线程上的任务执行完毕时才开始执行，例如异步 Ajax、DOM 事件，setTimeout 等。
-
-微任务
-微任务是 ES6 和 Node 环境下的，主要 API 有：Promise，process.nextTick。
-微任务的执行在宏任务的同步任务之后，在异步任务之前。
-
-代码例子
-以上代码输出顺序为：1,3,5,4,2
-参考文档
-
-what-happens-when-zh_CN (opens new window)
-Tags to DOM (opens new window)
-彻底理解浏览器的缓存机制 (opens new window)
-浏览器的工作原理：新式网络浏览器幕后揭秘 (opens new window)
-深入浅出浏览器渲染原理 (opens new window)
-js 引擎的执行过程（一） (opens new window)
-还有一些找不到了。。。。。
-
-From: 4ark.me
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
       </tags>
   </entry>
 </search>
