@@ -1535,6 +1535,187 @@ Gitlab的安装及使用
       </tags>
   </entry>
   <entry>
+    <title>PT 工具集，Linux硬链接助手</title>
+    <url>/posts/bb600b4b/</url>
+    <content><![CDATA[由于自我需求，写了两个脚本完成PT下载和保种两全其美的硬链接 Linux shell 脚本方案。
+PTtool
+
+Github: appotry/PTtool
+纯Bash Shell硬链接工具！支持所有Linux， BSD， Mac，群辉，威联通等支持标准Shell的操作系统！
+
+
+PT工具集合
+
+硬链接工具 自动硬链接工具
+flexget-nexusphp, 自动下载刷流工具。Flexget插件，增强对NexusPHP的过滤
+nas-tools 源码备份，已经停止开发！注意暂时功能不够完善，Bug较多，评价是试用，尝鲜，还不能胜任主力！后续Bug得不到修正，强烈建议切换到Sonarr，radarr，flexget。
+MoviePilot nas-tools 作者重构项目，提升了速度，在功能，bug稳定性方面还待提升。可以提前试用
+PTools 一个新的自动签到，种子推送工具，刚出来，可以关注
+IYUUAutoReseed 自动辅种助手。PT三剑客
+PTPP 浏览器辅种助手。PT三剑客
+pt_helper, 非开源软件 自动刷流与签到。PT三剑客 nas-tools可以替代刷流
+PT站生成海报墙
+一键转种脚本 PT一键转种脚本（树大版）
+PT_signin PT自动签到 Github Action 版
+flexget qbittorrent删种、辅种 自动签到 插件
+Auto_Upload 自动发种机 全自动将本地资源发布到 PT 站并自动辅种   使用教程
+Upload_Machine 自动将本地资源发布到PT站 看简介比 Auto_Upload 功能更强大
+qBittorrent rss订阅规则管理
+Mkv Auto Subset ASS字幕字体子集化 MKV批量提取/生成
+jproxy 优化 Sonarr 对资源的识别率，主要是针对动漫
+xarr-rss 剧情Rss订阅处理器 目前非开源？
+pter 猫站使用脚本集合
+auto-bangumi 基于Mikan Project的中文自动追番解决方案 解决中文自动追番痛点
+BangumiBot 类似auto-bangumi的中文自动追番工具，只是auto-bangumi支持Qbittorrent，BangumiBot支持Aria2/Tr
+embyExternalUrl Emby调用外部播放器播放视频，以使用本地解码能力
+subtitle-translator-electron Translate subtitle using ChatGPT，使用ChatGPT翻译字幕
+
+相关教程
+
+从零开始玩PT-入门到精通
+如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
+视频图书和音乐完全自动化管理框架图解
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
+qBittorrent 参数详细设置教程
+transmission 使用及其配置
+Potplayer终极优化教程实现PC视频播放最强画质
+
+框架自动化构架图解
+
+点击放大
+
+
+graph LR
+    1[Sonarr / Radarr] == 请求 Jackett / Prowlarr Torznab 接口 ==&gt; 2(JProxy) == 代理 Sonarr / Radarr 请求 ==&gt; 3(Jackett / Prowlarr) 
+
+    3(Jackett / Prowlarr) == 返回原始结果 ==&gt; 2(JProxy) == 返回格式化结果 ==&gt; 1(Sonarr / Radarr)
+    
+    2(JProxy) == 优化查询关键字 ==&gt; 2(JProxy)
+    2(JProxy) == 格式化查询结果 ==&gt; 2(JProxy)
+jproxy 使用图解
+硬链接工具
+
+设计目的
+方便PT用户硬链接文件，在最大可能情况下节约空间，并保持做种。
+小于1M的文件直接复制，方便emby，tmm等工具刮削修改nfo等小文件。
+大于1M的文件硬链接到目的目录，可以修改文件名，但是不能修改文件内容！
+例如：
+/share/Download/src #保存下载的PT文件
+/share/Download/dst #保存你自己处理过的视频文件，把emby，tmm的目录设置到dst下面
+下载脚本后chmod +x mklink.sh给与执行权限
+使用mklink脚本修改如下，然后直接运行mklink.sh。就可以把src下面的文件全部硬链接到dst目录。mklink适合一次性把源文件夹链接到目的文件夹
+SRC="/share/Download/src"
+DST="/share/Download/dst"
+注意：
+
+源目录，目的目录需要在一个硬盘分区里面。硬链接不能跨分区。
+硬链接过的文件可以使用mv来修改存储目录，不影响硬链接效果。但是cp会增加一份存储空间。所以对于已经硬链接过的文件，使用mv，不要使用cp。
+
+解决的问题
+tmm，emby刮削的时候，必定修改nfo文件，下载的封面等图片不同刮削站点都不同，所以小文件复制，不怕修改。大文件硬链接，占有一份空间
+被硬链接过的文件，同时存在多个地方，但是都指向一个存储空间，只有所有的硬链接都删除了，这个文件才会被系统删除。
+同时，所有的硬链接文件，修改其中一个，其它所有指向这个位置的硬链接文件都被修改了。
+使用说明
+下载资源目录/share/Download，qbittorrent资源分类下载到/share/Download/src/下面的各个子目录，例如tv, anime, tv, movie, 4k, soft等等
+创建一个资源整理使用目录/share/Download/dst/目录，然后就可以把/share/Download/src和/share/Download/dst目录作为下面2个脚本的输入目录，来使用了
+小文件直接复制，方便tmm刮削修改nfo文件，大文件硬链接，只占有一份空间，但有2分文件，可以改名，移动目录，方便tmm整理刮削。 做种，emby使用两不误！
+建议目录结构
+/share/Downlosd/src       # BT下载工具默认保存主目录
+/share/Download/dst       # 硬链接目的目录，Emby，tmm，使用的目录，保存各种刮削信息。以及个人文件名修改，目录结构修改。
+在src目录下面建立子目录movie,music,anime,tv,4k等等，在qbittorrent里面设置分类，
+指向这里的movie,music,anime，tv等子目录。下载完后使用下面的硬链接脚本，
+把文件硬链接到目的文件夹。tmm，emby使用目的文件夹刮削数据。
+qbittorrent使用设置
+
+移动种子保存位置
+在qt的web界面种子上面右键，选择菜单保存位置
+设置分类目录
+在qt的web界面种子上面右键，选择分类-&gt;新分类，先写分类名称和路径。对于多文件种子，种子添加时选择自动管理。对于单文件种子，请自行添加子文件夹，或强制创建子文件夹。
+
+mklink.sh
+修改脚本参数源目录，目的目录,替换为你自己的目录。
+脚本将把源目录所有文件硬链接到目的目录，小于1M的文件直接复制到目的目录。方便nfo等小文件刮削修改，大于1M的文件
+硬链接到目的目录，以节约空间，2份文件只占有一份空间。
+mklink 直接针对2个文件夹做硬链接，小于1m的复制，但是没有判断是否已经硬链接过。适合全新的没有硬链接过的目录。
+#mklink.sh sourcedir dstdir
+mklink.sh /share/Download/tmp/src /share/Download/tmp/dst
+dirlink.sh
+设计原理：针对输入原路径下一级子目录判断是否有文件islinked.lk，
+有这个文件就跳过，没有就硬链接这个子目录到目的目录生成对应的子目录。
+小于1M的文件复制，大于1M的文件硬链接。
+可以直接修改脚本源目录，目的目录参数，也可以从参数$!,$2输入源目录，目的目录。
+此脚本和mklink.sh区别在于，将检查每个目录是否已经被硬链接过，已经连接过的将跳过去不再硬链接。
+原理是在源文件夹目录下添加文件islinked.lk，通过检测这个文件来判断是否硬链接过
+SRC="/share/Download/tmp/src/movie"
+DST="/share/Download/tmp/dst/movie"
+注意：src目录下面的文件需要放到各个子目录下面去，例如src/anime/amine1,src/tv/tv2，这样才能保证islinked.lk工作正常
+目录设置可以直接修改脚本，也可以命令行参数输入
+#dirlink.sh sourcedir dstdir
+dirlink.sh /share/Download/tmp/src /share/Download/tmp/dst
+重新建立连接，一次性删除所有islinked.lk文件
+find /share/Download/tmp -name "islinked.lk" | xargs rm -f
+替换前面的路径/share/Download/tmp为你自己的路径，操作和rm相关的命令一定注意不要输入错误，删错文件代价极大！
+一次性硬链接多个目录
+如下所示脚本link.sh
+#!/bin/sh
+/share/Download/source/dirlink.sh /share/Download/source/anime /share/Download/dst/anime
+/share/Download/source/dirlink.sh /share/Download/source/movie /share/Download/dst/movie
+/share/Download/source/dirlink.sh /share/Download/source/tv /share/Download/dst/tv
+修改限制2M大小以下的复制
+修改脚本参数FILEGIG，原脚本是1M大小，修改为下面这样就是2M大小
+FILEGIG=2000000c
+1000000c 表示 1000000 字节，也就是 1MB。在 find 命令中，可以使用 c 表示字节，k 表示千字节，M 表示兆字节，G 表示吉字节等，这些后缀可以用来指定 -size 选项所匹配的文件大小。
+如果要计算具体的字节大小，可以使用以下转换关系：
+1 字节（Byte）= 8 比特（Bit）
+1 千字节（KB）= 1024 字节
+1 兆字节（MB）= 1024 KB
+1 吉字节（GB）= 1024 MB
+因此，如果要查找大于 10MB 的文件，可以使用 -size +10M，如果要查找大于 100MB 的文件，可以使用 -size +100M。
+在本脚本中，修改方式就是10M就改为FILEGIG=10M，限制100M，就改为FILEGIG=100M
+autolink.sh
+qBittorrent 下载完成时自动硬链接下载完的种子，适用于新下载完成的种子文件。以前下载完成的文件建议使用link.sh脚本的方法。
+注意：脚本会判断是否进行硬链接的分类，分类详情见脚本内容。
+
+修改脚本目标目录
+将你的目录填在your_path的等号后。
+设置下载完成后自动运行
+在qt的web界面g，点击工具-&gt;选项-&gt;下载，勾选“Torrent 完成时运行外部程序”，填入/path/to/autolink.sh "%N" "%D" "%L"
+注意：填入autolink.sh的绝对位置，同时autolink与dirlink须在同一目录
+
+这个脚本使用，需要手动修改脚本中的分类，下面这一行！
+if [[ "$torrent_category" == *"movies"* || "$torrent_category" == *"series"* || "$torrent_category" == *"documents"* || "$torrent_category" == *"operas"* ]]
+$torrent_category 是qBittorrent分类名称，也是目录名称！
+注意事项
+
+注意Linux权限，如果运行出错，请检查所使用的的用户和用户组权限。目的目录是否可写！
+
+使用声明
+数据无价，小心操作。
+本脚本（除autolink.sh外）没有rm删除，只有mkdir和cp， 最多搞乱文件系统。但要注意不要把目的地目录设置到系统目录去了。
+一切后果自负
+感觉对你有帮助，来个star吧
+Contributing
+
+Fork it ( https://github.com/appotry/PTtool/fork )
+Create your feature branch (git checkout -b my-new-feature)
+Commit your changes (git commit -am 'Add some feature')
+Push to the branch (git push origin my-new-feature)
+Create a new Pull Request
+
+]]></content>
+      <categories>
+        <category>linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>hardlink</tag>
+        <tag>bt</tag>
+        <tag>pt</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>破解Gitlab EE</title>
     <url>/posts/29a820b3/</url>
     <content><![CDATA[
@@ -4805,10 +4986,10 @@ Earthly 一个更加强大的镜像构建工具
         <category>nas</category>
       </categories>
       <tags>
+        <tag>bt</tag>
+        <tag>pt</tag>
         <tag>qnap</tag>
         <tag>nas</tag>
-        <tag>pt</tag>
-        <tag>bt</tag>
         <tag>qbittorrent</tag>
       </tags>
   </entry>
@@ -5169,10 +5350,10 @@ Earthly 一个更加强大的镜像构建工具
         <category>nas</category>
       </categories>
       <tags>
+        <tag>bt</tag>
+        <tag>pt</tag>
         <tag>qnap</tag>
         <tag>nas</tag>
-        <tag>pt</tag>
-        <tag>bt</tag>
         <tag>transmission</tag>
       </tags>
   </entry>
@@ -12898,9 +13079,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-zrRfhgEpyIdCmPDo").style.height=document.getElementById("mmedia-zrRfhgEpyIdCmPDo").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-vsGKFdXegaxDmcGS").style.height=document.getElementById("mmedia-vsGKFdXegaxDmcGS").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-zrRfhgEpyIdCmPDo").style.height=document.getElementById("mmedia-zrRfhgEpyIdCmPDo").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-vsGKFdXegaxDmcGS").style.height=document.getElementById("mmedia-vsGKFdXegaxDmcGS").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -13778,187 +13959,6 @@ ALL_BUILD
         <tag>linux</tag>
         <tag>cmake</tag>
         <tag>develop</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>PT 工具集，Linux硬链接助手</title>
-    <url>/posts/bb600b4b/</url>
-    <content><![CDATA[由于自我需求，写了两个脚本完成PT下载和保种两全其美的硬链接 Linux shell 脚本方案。
-PTtool
-
-Github: appotry/PTtool
-纯Bash Shell硬链接工具！支持所有Linux， BSD， Mac，群辉，威联通等支持标准Shell的操作系统！
-
-
-PT工具集合
-
-硬链接工具 自动硬链接工具
-flexget-nexusphp, 自动下载刷流工具。Flexget插件，增强对NexusPHP的过滤
-nas-tools 源码备份，已经停止开发！注意暂时功能不够完善，Bug较多，评价是试用，尝鲜，还不能胜任主力！后续Bug得不到修正，强烈建议切换到Sonarr，radarr，flexget。
-MoviePilot nas-tools 作者重构项目，提升了速度，在功能，bug稳定性方面还待提升。可以提前试用
-PTools 一个新的自动签到，种子推送工具，刚出来，可以关注
-IYUUAutoReseed 自动辅种助手。PT三剑客
-PTPP 浏览器辅种助手。PT三剑客
-pt_helper, 非开源软件 自动刷流与签到。PT三剑客 nas-tools可以替代刷流
-PT站生成海报墙
-一键转种脚本 PT一键转种脚本（树大版）
-PT_signin PT自动签到 Github Action 版
-flexget qbittorrent删种、辅种 自动签到 插件
-Auto_Upload 自动发种机 全自动将本地资源发布到 PT 站并自动辅种   使用教程
-Upload_Machine 自动将本地资源发布到PT站 看简介比 Auto_Upload 功能更强大
-qBittorrent rss订阅规则管理
-Mkv Auto Subset ASS字幕字体子集化 MKV批量提取/生成
-jproxy 优化 Sonarr 对资源的识别率，主要是针对动漫
-xarr-rss 剧情Rss订阅处理器 目前非开源？
-pter 猫站使用脚本集合
-auto-bangumi 基于Mikan Project的中文自动追番解决方案 解决中文自动追番痛点
-BangumiBot 类似auto-bangumi的中文自动追番工具，只是auto-bangumi支持Qbittorrent，BangumiBot支持Aria2/Tr
-embyExternalUrl Emby调用外部播放器播放视频，以使用本地解码能力
-subtitle-translator-electron Translate subtitle using ChatGPT，使用ChatGPT翻译字幕
-
-相关教程
-
-从零开始玩PT-入门到精通
-如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
-视频图书和音乐完全自动化管理框架图解
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
-qBittorrent 参数详细设置教程
-transmission 使用及其配置
-Potplayer终极优化教程实现PC视频播放最强画质
-
-框架自动化构架图解
-
-点击放大
-
-
-graph LR
-    1[Sonarr / Radarr] == 请求 Jackett / Prowlarr Torznab 接口 ==&gt; 2(JProxy) == 代理 Sonarr / Radarr 请求 ==&gt; 3(Jackett / Prowlarr) 
-
-    3(Jackett / Prowlarr) == 返回原始结果 ==&gt; 2(JProxy) == 返回格式化结果 ==&gt; 1(Sonarr / Radarr)
-    
-    2(JProxy) == 优化查询关键字 ==&gt; 2(JProxy)
-    2(JProxy) == 格式化查询结果 ==&gt; 2(JProxy)
-jproxy 使用图解
-硬链接工具
-
-设计目的
-方便PT用户硬链接文件，在最大可能情况下节约空间，并保持做种。
-小于1M的文件直接复制，方便emby，tmm等工具刮削修改nfo等小文件。
-大于1M的文件硬链接到目的目录，可以修改文件名，但是不能修改文件内容！
-例如：
-/share/Download/src #保存下载的PT文件
-/share/Download/dst #保存你自己处理过的视频文件，把emby，tmm的目录设置到dst下面
-下载脚本后chmod +x mklink.sh给与执行权限
-使用mklink脚本修改如下，然后直接运行mklink.sh。就可以把src下面的文件全部硬链接到dst目录。mklink适合一次性把源文件夹链接到目的文件夹
-SRC="/share/Download/src"
-DST="/share/Download/dst"
-注意：
-
-源目录，目的目录需要在一个硬盘分区里面。硬链接不能跨分区。
-硬链接过的文件可以使用mv来修改存储目录，不影响硬链接效果。但是cp会增加一份存储空间。所以对于已经硬链接过的文件，使用mv，不要使用cp。
-
-解决的问题
-tmm，emby刮削的时候，必定修改nfo文件，下载的封面等图片不同刮削站点都不同，所以小文件复制，不怕修改。大文件硬链接，占有一份空间
-被硬链接过的文件，同时存在多个地方，但是都指向一个存储空间，只有所有的硬链接都删除了，这个文件才会被系统删除。
-同时，所有的硬链接文件，修改其中一个，其它所有指向这个位置的硬链接文件都被修改了。
-使用说明
-下载资源目录/share/Download，qbittorrent资源分类下载到/share/Download/src/下面的各个子目录，例如tv, anime, tv, movie, 4k, soft等等
-创建一个资源整理使用目录/share/Download/dst/目录，然后就可以把/share/Download/src和/share/Download/dst目录作为下面2个脚本的输入目录，来使用了
-小文件直接复制，方便tmm刮削修改nfo文件，大文件硬链接，只占有一份空间，但有2分文件，可以改名，移动目录，方便tmm整理刮削。 做种，emby使用两不误！
-建议目录结构
-/share/Downlosd/src       # BT下载工具默认保存主目录
-/share/Download/dst       # 硬链接目的目录，Emby，tmm，使用的目录，保存各种刮削信息。以及个人文件名修改，目录结构修改。
-在src目录下面建立子目录movie,music,anime,tv,4k等等，在qbittorrent里面设置分类，
-指向这里的movie,music,anime，tv等子目录。下载完后使用下面的硬链接脚本，
-把文件硬链接到目的文件夹。tmm，emby使用目的文件夹刮削数据。
-qbittorrent使用设置
-
-移动种子保存位置
-在qt的web界面种子上面右键，选择菜单保存位置
-设置分类目录
-在qt的web界面种子上面右键，选择分类-&gt;新分类，先写分类名称和路径。对于多文件种子，种子添加时选择自动管理。对于单文件种子，请自行添加子文件夹，或强制创建子文件夹。
-
-mklink.sh
-修改脚本参数源目录，目的目录,替换为你自己的目录。
-脚本将把源目录所有文件硬链接到目的目录，小于1M的文件直接复制到目的目录。方便nfo等小文件刮削修改，大于1M的文件
-硬链接到目的目录，以节约空间，2份文件只占有一份空间。
-mklink 直接针对2个文件夹做硬链接，小于1m的复制，但是没有判断是否已经硬链接过。适合全新的没有硬链接过的目录。
-#mklink.sh sourcedir dstdir
-mklink.sh /share/Download/tmp/src /share/Download/tmp/dst
-dirlink.sh
-设计原理：针对输入原路径下一级子目录判断是否有文件islinked.lk，
-有这个文件就跳过，没有就硬链接这个子目录到目的目录生成对应的子目录。
-小于1M的文件复制，大于1M的文件硬链接。
-可以直接修改脚本源目录，目的目录参数，也可以从参数$!,$2输入源目录，目的目录。
-此脚本和mklink.sh区别在于，将检查每个目录是否已经被硬链接过，已经连接过的将跳过去不再硬链接。
-原理是在源文件夹目录下添加文件islinked.lk，通过检测这个文件来判断是否硬链接过
-SRC="/share/Download/tmp/src/movie"
-DST="/share/Download/tmp/dst/movie"
-注意：src目录下面的文件需要放到各个子目录下面去，例如src/anime/amine1,src/tv/tv2，这样才能保证islinked.lk工作正常
-目录设置可以直接修改脚本，也可以命令行参数输入
-#dirlink.sh sourcedir dstdir
-dirlink.sh /share/Download/tmp/src /share/Download/tmp/dst
-重新建立连接，一次性删除所有islinked.lk文件
-find /share/Download/tmp -name "islinked.lk" | xargs rm -f
-替换前面的路径/share/Download/tmp为你自己的路径，操作和rm相关的命令一定注意不要输入错误，删错文件代价极大！
-一次性硬链接多个目录
-如下所示脚本link.sh
-#!/bin/sh
-/share/Download/source/dirlink.sh /share/Download/source/anime /share/Download/dst/anime
-/share/Download/source/dirlink.sh /share/Download/source/movie /share/Download/dst/movie
-/share/Download/source/dirlink.sh /share/Download/source/tv /share/Download/dst/tv
-修改限制2M大小以下的复制
-修改脚本参数FILEGIG，原脚本是1M大小，修改为下面这样就是2M大小
-FILEGIG=2000000c
-1000000c 表示 1000000 字节，也就是 1MB。在 find 命令中，可以使用 c 表示字节，k 表示千字节，M 表示兆字节，G 表示吉字节等，这些后缀可以用来指定 -size 选项所匹配的文件大小。
-如果要计算具体的字节大小，可以使用以下转换关系：
-1 字节（Byte）= 8 比特（Bit）
-1 千字节（KB）= 1024 字节
-1 兆字节（MB）= 1024 KB
-1 吉字节（GB）= 1024 MB
-因此，如果要查找大于 10MB 的文件，可以使用 -size +10M，如果要查找大于 100MB 的文件，可以使用 -size +100M。
-在本脚本中，修改方式就是10M就改为FILEGIG=10M，限制100M，就改为FILEGIG=100M
-autolink.sh
-qBittorrent 下载完成时自动硬链接下载完的种子，适用于新下载完成的种子文件。以前下载完成的文件建议使用link.sh脚本的方法。
-注意：脚本会判断是否进行硬链接的分类，分类详情见脚本内容。
-
-修改脚本目标目录
-将你的目录填在your_path的等号后。
-设置下载完成后自动运行
-在qt的web界面g，点击工具-&gt;选项-&gt;下载，勾选“Torrent 完成时运行外部程序”，填入/path/to/autolink.sh "%N" "%D" "%L"
-注意：填入autolink.sh的绝对位置，同时autolink与dirlink须在同一目录
-
-这个脚本使用，需要手动修改脚本中的分类，下面这一行！
-if [[ "$torrent_category" == *"movies"* || "$torrent_category" == *"series"* || "$torrent_category" == *"documents"* || "$torrent_category" == *"operas"* ]]
-$torrent_category 是qBittorrent分类名称，也是目录名称！
-注意事项
-
-注意Linux权限，如果运行出错，请检查所使用的的用户和用户组权限。目的目录是否可写！
-
-使用声明
-数据无价，小心操作。
-本脚本（除autolink.sh外）没有rm删除，只有mkdir和cp， 最多搞乱文件系统。但要注意不要把目的地目录设置到系统目录去了。
-一切后果自负
-感觉对你有帮助，来个star吧
-Contributing
-
-Fork it ( https://github.com/appotry/PTtool/fork )
-Create your feature branch (git checkout -b my-new-feature)
-Commit your changes (git commit -am 'Add some feature')
-Push to the branch (git push origin my-new-feature)
-Create a new Pull Request
-
-]]></content>
-      <categories>
-        <category>linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>pt</tag>
-        <tag>bt</tag>
-        <tag>hardlink</tag>
       </tags>
   </entry>
   <entry>
@@ -19003,8 +19003,8 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 列表
 
- var TIGlwWeBZeloWZNK_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    TIGlwWeBZeloWZNK_options.container = document.getElementById("mmedia-TIGlwWeBZeloWZNK");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(TIGlwWeBZeloWZNK_options); 
+ var DjtLeaeIzbTTKpcH_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    DjtLeaeIzbTTKpcH_options.container = document.getElementById("mmedia-DjtLeaeIzbTTKpcH");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(DjtLeaeIzbTTKpcH_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -20423,13 +20423,13 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var uYhjqdIjuDkYHolU_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
-    uYhjqdIjuDkYHolU_options.container = document.getElementById("mmedia-uYhjqdIjuDkYHolU");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(uYhjqdIjuDkYHolU_options); 
+ var bUVHYjSVKvtPLMpE_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
+    bUVHYjSVKvtPLMpE_options.container = document.getElementById("mmedia-bUVHYjSVKvtPLMpE");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(bUVHYjSVKvtPLMpE_options); 
 
 
 
- var IUaivPCGkuYrOqdG_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    IUaivPCGkuYrOqdG_options.container = document.getElementById("mmedia-IUaivPCGkuYrOqdG");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(IUaivPCGkuYrOqdG_options); 
+ var BohxBkuRaEhoArly_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    BohxBkuRaEhoArly_options.container = document.getElementById("mmedia-BohxBkuRaEhoArly");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(BohxBkuRaEhoArly_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -20460,8 +20460,12 @@ home?id= 后面的数字就是你的UID。登录后，可以同步个人列表�
 
 另一个 Fork 版本
 
-注意！ 不要公开使用！
-最佳音乐下载和搜索工具！
+研究学习用途！ 不要公开访问链接！一切后果使用者自负！加上访问密码自用！
+
+支持音乐搜索，音乐下载，歌词下载，封面下载
+支持网易云歌单同步
+支持自定义播放列表
+
 
 version: '3'
 services:
@@ -20475,10 +20479,13 @@ services:
       - PGID=1000
       - TZ=Asia/Shanghai
     volumes:
-      - /www/cache/docker/music/cache/:/var/www/html/cache/
-      - /www/cache/docker/music/temp/:/var/www/html/temp/
+      - /docker/music/cache/:/var/www/html/cache/
+      - /docker/music/temp/:/var/www/html/temp/  # 音乐下载功能需要设置
     ports:
       - "264:264"
+
+博主私人定制版本，推荐使用
+
 私人音乐服务器
 入口
 
@@ -20681,9 +20688,9 @@ Earthly 一个更加强大的镜像构建工具
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-cXHbvCDDRiQYNJbG").style.height=document.getElementById("mmedia-cXHbvCDDRiQYNJbG").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-iobKGvwYhCzhswDC").style.height=document.getElementById("mmedia-iobKGvwYhCzhswDC").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-cXHbvCDDRiQYNJbG").style.height=document.getElementById("mmedia-cXHbvCDDRiQYNJbG").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-iobKGvwYhCzhswDC").style.height=document.getElementById("mmedia-iobKGvwYhCzhswDC").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -20692,8 +20699,8 @@ Earthly 一个更加强大的镜像构建工具
 
 ## 中文翻唱
 
- var PTUYSHycdUqYlloR_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
-    PTUYSHycdUqYlloR_options.container = document.getElementById("mmedia-PTUYSHycdUqYlloR");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(PTUYSHycdUqYlloR_options); 
+ var zKAiYUfghBhAacwr_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
+    zKAiYUfghBhAacwr_options.container = document.getElementById("mmedia-zKAiYUfghBhAacwr");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(zKAiYUfghBhAacwr_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -38922,9 +38929,9 @@ Earthly 一个更加强大的镜像构建工具
         <category>nas</category>
       </categories>
       <tags>
+        <tag>pt</tag>
         <tag>nas</tag>
         <tag>docker</tag>
-        <tag>pt</tag>
         <tag>emby</tag>
       </tags>
   </entry>
@@ -40819,6 +40826,235 @@ Useful Tutorials on Linux and UNIX for Beginners and Experts Alike
       <tags>
         <tag>linux</tag>
         <tag>bash</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>中西医的优缺点</title>
+    <url>/posts/a2a43504/</url>
+    <content><![CDATA[
+中医西医谁更科学，总是争论不休，这里说说个人的一些看法，中西医都是非科学，都只是经验科学，各有各自的优缺点
+
+
+
+中医治疗调理费用低，见效慢，但是把人体作为整体调理，治疗疾病的根本原因。西医通过药物提取，化学合成，见效快，但是有耐药性，常常头痛医头，脚痛医脚，哪里有问题，就切除哪里。
+中医西医都是非科学
+
+按照现代科学定义，中医西医都非1+1=2这样类似数学的严格意义上面的科学。都只是经验科学！
+
+西医和中医分歧某种程度上可以看成是还原论和整体论之争：
+
+西医把人体看做一个一个器官组成，什么地方出问题，就解决什么地方的问题，头疼医头，脚痛医脚。F{a+b} = f{a} +f{(b)
+中医把人体看做一个整体，讲究阴阳平衡，脉络的畅通，你头痛，不光是头的问题，，而是整体出现的失衡，中医调理平衡，头疼就医好了。
+
+人体是非科学的
+
+现代科学远远不能解释人体运行机制，在系统性人体解释方面西医还不如中医。
+张三心率60，身体健康。李四心率80，身体也是健康的。人体几乎所有的指标都是没法科学量化的，现代仪器检测的指标几乎都是盲人摸象，用现代的科学的手段去研究非科学的人体本身就是反科学的。
+
+
+中医治病于未然
+
+防患于未然，机体稍有功能上的变化，中医即认为是阴阳失衡，就要适当的调整。治病求本，发现问题就要找到发病的根本，从根本上去除疾病，从而使机体恢复正常状态。
+而西医，你的身体不出问题就认为没有问题。而不知道疾病隐患已经在身体慢慢积累，就等某一天爆发
+
+中药没有耐药性
+
+你找不到两株一模一样的药材，吃中医永远不会有抗药性问题。而西医通过提纯，化学合成看似疗效快，但会有抗药性问题，长期来看，几乎所有的西药都可能失去作用！而中药，几千年后，如果还有人类，还是会吃和今天一样的中药。
+
+中药虽然没有抗药性，但现代中药种植导致药效远不如以前，通过加大剂量可以解决。
+中医是生命学，西医是死物学
+
+中医整体观念，中医认为人与自然是统一的整体，自然界的变化对人体的影响是不容忽视的；人体本身是不可分割的统一整体，一个位置有病，其根本不一定在这里，多数是两三个脏器或经络功能失衡的结果。而西医几百年了，还是在研究分子化学，下药手术都只是作用与复杂人体的一部分区域。
+
+
+西医分析分子结构，但没搞明白同样是水，味道也是不同的。
+同样的纯净水，热水冷水混合的，开水，冰水，恒温静置一晚的水，经过祝福或者咒骂的水，味道都是不同的。对人的作用也是差异极大。
+有兴趣的可以去了解一下酸性食物，碱性食物；寒性食物，热性食物的差异与区分方法。
+同样是水，可以是寒性的，也可以是热性的。同样的茶叶，不同生长环境价值相差上万倍。同一种草药，必须是特定地域生长的才能治病！西医对这一块几乎没啥研究。
+
+双盲实验是非科学的
+
+人体本身是复杂的，多样的，没法量化的。用一批各种年龄，性别，身体条件的人去做双盲实验是初中生生物化学知识都可以判断是不科学的。除非用一堆基因一样，生活成长条件一样的克隆人做双盲实验。
+
+
+现代的双盲实验非常容易操控结果。
+通过选择特定年龄，性别，胖瘦等身体条件，可以很容易的控制实验结果！这也是西方制药公司经常干的事，历史上比比皆是！
+
+西医也有很多荒诞无知的历史
+
+早期西医是理发师兼任的，现在理发店外面红白相间旋转的是纪念以前理发师给病人放血治疗的染血绷带。老美创建者乔治.华盛顿就是放血过多死亡的！
+扁桃体，十二指肠西医以前都是建议切除。现在发现了其重要生理功能，建议保留了。
+镭元素发现后，被制作为各种保健品，饮料发售，很长时间都是"科学"背书。
+骇人听闻的脑前额切除术，得了诺贝尔奖，把无数正常人变成痴呆，都是以西医科学的名义造成的！
+等等。
+请不要对这些历史视而不见！
+现代医学过度治疗，很多反而不如带病生活的时间长。没见到很多医生自己得了癌症不治疗么？
+
+
+医生一罢工，全国死亡率下降50%！（援引）
+这听起来是个笑话，但确是真实的历史事实。各种解释很多，但这个现象足够引人深思！
+
+中医费用低导致被黑
+
+对于医药公司来说，中医费用低是缺点。它们恨不得你的疾病需要天天服药，一辈子服药。
+费用低，怎么拿回扣？
+费用低，怎么上市圈钱？
+费用低，怎么养写手去黑对手？
+国内各大交流平台，基本都被国外势力操控，连说一点中医中立的观点都会被删帖，封号。其中一部分人拿钱办事，是坏，还有一部分人是智商低，蠢，要注意分辨。
+请警醒，中医国宝一边在被国外势力有计划的抹黑，打压，一边又在偷窃中医的成果。
+
+
+鬼才倪海厦
+
+中医鬼才，是因其一人身兼医， 命，星，山，卜五术，是海外中医界的风云人物。
+最近发现的一个中医大师！有全套中医教程！是目前中医讲解的最好的中医教程！
+
+tree -F -L 2 ./自学倪海厦人纪
+./自学倪海厦人纪/
+├── 10自学第十课-文章与医案汇总/
+│&nbsp;&nbsp; ├── 【02】倪海厦专题/
+│&nbsp;&nbsp; ├── 【03】倪海厦事实评论/
+│&nbsp;&nbsp; ├── 1倪海厦汉唐中医经典文章医案集.pdf
+│&nbsp;&nbsp; ├── 2人纪班学生的诊疗案例.pdf
+│&nbsp;&nbsp; ├── 倪海厦人纪班学生医桉1.pdf
+│&nbsp;&nbsp; ├── 倪海厦传统中医跟诊过程.pdf
+│&nbsp;&nbsp; ├── 倪海厦内部案例100篇.pdf
+│&nbsp;&nbsp; ├── 倪海厦文集及医桉最新版.pdf
+│&nbsp;&nbsp; ├── 倪海廈汉唐中医文章全集1.pdf
+│&nbsp;&nbsp; ├── 医案/
+│&nbsp;&nbsp; ├── 学员医案.pdf
+│&nbsp;&nbsp; ├── 【文】倪海厦医案１（文集和日志）文集（2005年07月25日）.pdf
+│&nbsp;&nbsp; ├── 【文】倪海厦医案２（诊疗日志）日志（2006年09月01日）.pdf
+│&nbsp;&nbsp; ├── 【文】倪海厦文集(2006年06月06日).pdf
+│&nbsp;&nbsp; ├── 汉唐中医倪海厦医师对猪流感的分析及其处方[1].pdf
+│&nbsp;&nbsp; ├── 【汉唐中医内容】倪海厦传统中医跟诊过程.pdf
+│&nbsp;&nbsp; └── 汉唐方剂/
+├── 1自学第一课-梁冬对话倪海厦/
+│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》01（字幕版）_标清.flv
+│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》02（字幕版）_标清.flv
+│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》03（字幕版）_标清.flv
+│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》04（字幕版）_标清.flv
+│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》05（字幕版）_标清.flv
+│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》06（字幕版）_标清.flv
+│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》07（字幕版）_标清.flv
+│&nbsp;&nbsp; └── 梁冬对话倪海厦字幕稿.pdf
+├── 2自学第二课-倪海厦斯坦福演讲/
+│&nbsp;&nbsp; ├── 倪海厦斯坦福大学演讲：从感冒一路治到癌症.mp4
+│&nbsp;&nbsp; └── 倪海厦斯坦福大学演讲字幕稿.docx
+├── 3自学第三课-倪海厦原版《针灸教程》全集11DVD（含字幕版视频）/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​01/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​02/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​03/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​04/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​05/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​06/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​07/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​08/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​09/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​10/
+│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​11/
+│&nbsp;&nbsp; └── 倪海厦针灸大成字幕版视频/
+├── 4自学第四课-倪海厦：原版《黄帝内经》全集11DVD（新增字幕版视频）/
+│&nbsp;&nbsp; ├── 02.倪海厦《黄帝内经》（79集全）无风制作【公众号：汉唐倪师传承】/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​01​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​02​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​03​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​04​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​05​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​06​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​07​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​08​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​09​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​10​/
+│&nbsp;&nbsp; ├── ​​人纪内经DVD​11​/
+│&nbsp;&nbsp; ├── 倪海夏-人纪-黄帝内经讲义.pdf
+│&nbsp;&nbsp; ├── 【视频同步文稿】倪海厦人纪系列书籍之《黄帝内经上册》 .pdf
+│&nbsp;&nbsp; └── 【视频同步文稿】倪海厦人纪系列书籍之《黄帝内经下册》.pdf
+├── 5自学第五课-倪海厦：原版《神农本草经》全集8DVD（含字幕版视频）/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD01​/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD02​/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD03​/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD04​/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD05​/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD06​/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD07​/
+│&nbsp;&nbsp; ├── ​​​人纪本草DVD08​/
+│&nbsp;&nbsp; ├── 倪海厦神农本草字幕稿.pdf
+│&nbsp;&nbsp; ├── 倪海厦神农本草经视频字幕版/
+│&nbsp;&nbsp; └── 倪海厦神农本草经讲义.pdf
+├── 6自学第六课-倪海厦：原版《伤寒论》全集8DVD/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​01​/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​02​/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​03​/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​04​/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​05​/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​06​/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​07​/
+│&nbsp;&nbsp; ├── ​人纪伤寒DVD​08​/
+│&nbsp;&nbsp; ├── 倪海厦伤寒论视频字幕.pdf
+│&nbsp;&nbsp; └── 倪海厦伤寒论讲义.pdf
+├── 7自学第七课-倪海厦：原版《金匮要略》全集11DVD/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​01​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​02​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​03​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​04​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​05​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​06​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​07​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​08​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​09​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​10​/
+│&nbsp;&nbsp; ├── ​​人纪金匮DVD​11​/
+│&nbsp;&nbsp; ├── 倪海厦金匮要略视频字幕PDF.pdf
+│&nbsp;&nbsp; └── 倪海厦金匮要略讲义.pdf
+├── 8自学第八课-倪海厦扶阳论坛演讲/
+│&nbsp;&nbsp; ├── 倪海厦扶阳论坛演讲文字稿.doc
+│&nbsp;&nbsp; ├── 第三届扶阳论坛-倪海厦-上.mp4
+│&nbsp;&nbsp; └── 第三届扶阳论坛-倪海厦-下.mp4
+├── 9自学第九课-倪海厦仲景心法传讲/
+│&nbsp;&nbsp; ├── 仲景心法傳講01.mp4
+│&nbsp;&nbsp; ├── 仲景心法傳講02.mp4
+│&nbsp;&nbsp; ├── 仲景心法傳講03.mp4
+│&nbsp;&nbsp; ├── 仲景心法傳講04.mp4
+│&nbsp;&nbsp; ├── 仲景心法傳講05.mp4
+│&nbsp;&nbsp; └── 倪海厦仲景心法传讲 同步文稿85页_1.pdf
+├── 其他2-《天纪》《人纪》正版影印版文档/
+│&nbsp;&nbsp; ├── 倪海厦《天纪》.pdf
+│&nbsp;&nbsp; ├── 倪海夏伤寒论.pdf
+│&nbsp;&nbsp; ├── 倪海夏金匮.pdf
+│&nbsp;&nbsp; ├── 倪海夏针炙.pdf
+│&nbsp;&nbsp; ├── 天纪 人间道.pdf
+│&nbsp;&nbsp; ├── 天纪 地脉道.pdf
+│&nbsp;&nbsp; ├── 天纪 天机道（终稿）.pdf
+│&nbsp;&nbsp; ├── 神农本草经.PDF
+│&nbsp;&nbsp; └── 黄帝内经.pdf
+└── 捕获.PNG
+
+以上资源网络上有下载，版权原因，这里就不提供链接了！Bilibili 上面就有大部分相关资源了。
+供中医相关人士及爱好者学习！
+
+自学中医方法
+自学的话，从学校的教材入手比较好，先学《中基》，至少看三遍，然后学《中药》，《方剂学》，方剂学可以看邓中甲的视频，多看几遍，边看边记，并背一下《汤头歌诀》，这样打下中医基础。再学《中诊》，后面研究伤寒金贵，李东恒等等。基本就入门了。
+总结
+
+生老病死都是生命旅途中的一部分，我们要学会接受它。
+中医是几千年的经验总结，其中虽然有一些荒诞的部分，但也有非常多的宝藏等待我们去挖掘。
+西医几百年发展虽然有不少见效快的治疗手段，但是由于现代科学本身科学性就有局限性，所以现代西医的科学性也要批判的接受。
+
+个人见解，也请理性接收！
+
+名言赏析
+谁控制了石油，谁就控制了所有国家；谁控制了粮食，谁就控制了人类；谁掌握了货币发行权，谁就掌握了世界。
+​																																					——亨利·基辛格
+
+]]></content>
+      <categories>
+        <category>社会观察</category>
+      </categories>
+      <tags>
+        <tag>中医</tag>
+        <tag>西医</tag>
+        <tag>社会观察</tag>
       </tags>
   </entry>
   <entry>
@@ -45629,7 +45865,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts2399'));
+        var myChart = echarts.init(document.getElementById('echarts7038'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -45723,7 +45959,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts1973'));
+        var myChart = echarts.init(document.getElementById('echarts2241'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -45792,7 +46028,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts7856'));
+        var myChart = echarts.init(document.getElementById('echarts4439'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -48038,597 +48274,6 @@ CI/CD与Git Flow与GitLab
         <tag>blog</tag>
         <tag>hexo</tag>
         <tag>vercel</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Potplayer终极优化教程实现PC视频播放最强画质</title>
-    <url>/posts/2f8fb473/</url>
-    <content><![CDATA[
-视频播放器使用还是有不少细节需要注意的。本文介绍流行播放器Potplayer 配置方法，搭配 Emby 和 embyLaunchPotplayer 使用的效果更佳！
-推荐本文搭配使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程观看
-本文最近全新整理增强了一遍
-
-
-
-前言
-这年头一款趁手好用的播放器，功能强大的播放器是必需的，目前几乎所有视频播放器其实只有三种：MPC-HC、Mplayer、VLC player，其余可以理解为各种壳各种定制版各种修改版。（potplayer的前身km是基于MPC），其中MPC-HC已经内置了LAV Filters，不过Potplayer可定制项更多，更有可玩性，因此选用Potplayer进行搭建目前公认最完美的高清方案显然是Potplayer（主播放器）+LAV Filters（分离器）+madVR（渲染器）+xy-VSFilter（字幕滤镜），当然这个所谓的最完美方案是严重高能耗的一个方案，就我个人而言一直觉得性质比不佳，但这基本上是你已经是能找到的最完美的高清方案了。
-
-不想怎么折腾的朋友，直接使用播放器和默认设置就好了；要求再高一点的朋友，添加LAV Filters+madVR+xy-VSFilter进播放器，然后也不需要去配置参数，默认就好；发烧友们想自学高级播放器设置，网上教程总是不缺的，一搜一大堆，各大论坛什么的置顶帖，万年冷冻库，等等，写的比本文更新、更详细、更高端的比比皆是，也都可以作为很不错的教程。不过其中有些教程过于专业详尽，又或者只是授人以鲤，或者授人以鳊、鲢、鳙……，导致很多人直接傻眼了。现在网上林林总总的教程，不会跟你说的很多细节与知识。有的人madVR设置玩出了花，结果不知道检查pot内置的ffmpeg解码器，会把YUV420 10bit 降低精度+瞎转换 为YUV422 8bit丢给madVR，然后又说自己看不出区别……这折腾的意义何在呢。所以首先提出几点建议：
-1、实事求是。不要盲目的去折腾，也不要为了心理安慰去折腾。一套更好的方案，只有你确实感觉到了提升，并且这个提升在你心理满意度上，足够抵消麻烦，才值得你去升级。比较的过程中，相信自己的眼睛，而不是相信别人的说教。比如说我真不推荐笔记本用户折腾任何顶级缩放算法——那么小个屏幕你能看出点啥？教程里说出花的放大算法跟你有几毛钱关系？
-2、循序渐进。先把一套简单基础的方案弄好弄懂，再去学习和尝试更好的方法。对于新的插件，你要尝试测试它们在你机器上的表现；对于别人的设置，设法了解他这么推荐的原因，以及这个原因是否适用于你。最典型的，很多人用着madVR问我，你在新教程里教我们LAV只勾选RGB，我要改么？看了这篇教程你应该知道要不要改与背后的原因了吧。
-3、量力而行。播放器越高级，组件越多，往往性能消耗越大，出错概率也越高，同时收益越少。学会放弃与妥协，毕竟，你看的是片子，不是播放器组件和参数。
-工具篇
-
-下载地址
-
-Potplayer官网地址
-LAV发布地址
-madVR下载地址
-XySubFilter 3.1.0.752 Free Download - VideoHelp
-
-
-PotPlayer
-Potplayer 是影视常用的播放器，界面简洁，功能齐全，比 MPC-HC 和 MPC-BE 更人性化；但其默认方案十分糟糕，预设过多错误，无法正确播放 10-bit 视频，**一直饱受诟病。VCB-Stuido 以往发布的数篇高清教程大多偏重于 madVR，在 PotPlayer 的设置方面有些错漏。为了广大观众能正确、便捷地用 PotPlayer 享受高清影视，我们为大家带来一篇基于 PotPlayer 的高清影视全套 64-bit 工具链完整配置图文详解教程。
-工具安装篇
-1、为了避免版本混乱导致的bug，本教程提供所全套 64-bit 工具：
-**PotPlayer（播放器），LAV Filters（分离/解码器），madVR（视频渲染器），xy-vsFilter（通用字幕插件），xy-SubFilter（madVR专用字幕插件）。
-安装路径只允许纯英文，否则一些工具会无法使用，故建议单独建一个纯英文路径的文件夹 Tools，把这些以上提到的程序都放进去，方便更新与维护。
-2、安装 PotPlayer 和 LAV Filters。
-二者都是普通的 exe 安装包，双击启动即可，将安装路径设置到 Tools 文件夹，其他安装选项全默认。
-3、安装 madVR，xy-VSFilter 或 xy-SubFilter。
-二者都是插件，安装方法为：将压缩包解压至 Tools 文件夹中，右键点击各自的 install.bat，以管理员权限运行，若移动这些组件则需要重新安装。
-显卡设置
-显卡显示器看起来灰蒙蒙的，可能原因有
-
-
-显示器对比度低
-
-
-传输线规格低
-
-这里线材要求 HDMI 需要2.0， DP 1.4 规格以上
-
-
-
-默认参数设置没有跳转
-
-
-第三个原因解决方法如下
-N 卡用户
-打开 Nvidia 驱动面板，将红框中的动态范围参数调整至完全，蓝框的输出颜色深度调到10bpc或者8bpc（取决于显示器支持），如下图
-
-
-Intel 核显用户
-将量化范围设为全范围：
-
-AMD 显卡
-新版设置界面，选择 Full RGB：
-
-CCC 旧版界面，同样选择 Full RGB：
-
-为什么我们要对播放器进行折腾？
-我们先了解一般视频在DirectShow架构的播放器播放时的运作过程，首先是读取档案的File source(读取滤镜)，將其读取的內容传给Splitter(分离器)，前面两者又可合称Source filters(源滤镜)。然后Splitter会將其分离为视讯编码跟音讯编码，將视讯编码传给Video decoder(视讯解码器)做解码，將音讯编码传给Audio decoder(音讯解码器)做解码，然后解码完的视讯內容传给Video renderer(渲染器)渲染后交由显卡输出，解码完的音讯內容则交给音讯装置输出(预设是DirectSound Device)。若是播放DVD，则源滤镜会使用win內建的DVD Navigator，其他则大同小异。所以最简单的方案就是选用算法更好的分离器，解码器和渲染器。（补充：部分视频有字幕的话直接分给字幕渲染器）
-
-以Potplayer为例，确实很优秀，但是其内置的设定还是有些鸡肋，更何况现在高清视频正在普及，所以进行一番调教是应该的，直接给出一些对比效果：
-1.关于LAV Filters
-LAV Filters，是一个包含分离器/视频解码器/音讯解码器三者的外挂解码方案，內容有LAV Splitter、LAV video decoder、LAV audio decoder三者，由DOOM9论坛上的nevcairiel所开发，格式支持高，完整支持各种10bit编码，也支持DVD及BD的解码，BUG少，功能强大但又实用而不花俏。LAV Filters分离器被称为高速万能分离器，所谓高速是指lav分离器的跳转速度很快，普遍高于pot内置分离器，万能指的是lav的分离器和音视频滤镜很全，几乎可播放所有常见视频。而且，LAV还支持开启硬件加速（如果使用madVR的话建议不要开启），至于为啥看看下面的问题就知道了。
-
-2.关于madVR
-视频的播放，解码吃的是CPU效能(硬解例外，硬解是使用显卡上的解码模组，既不吃CPU也不吃GPU效能)，而渲染才是吃显卡GPU效能，额外的像去交错的部分也是吃显卡效能，整体而言还是CPU最重要，只有使用madVR时例外，GPU的部分也很重要。而madVR鼎鼎大名，地面最强的渲染器，又称显卡杀手，不惜一切效能代价以换取最大的画质表现，也因此这个渲染器对显卡的要求稍微吃重些，超越了我们一般对播放软件之硬件要求的常识(这个常识是指，只有玩游戏才需要用到较高阶的显卡，影像播放只需要低阶显卡甚至核显已可胜任)，但并不是说只有好的显卡才能用这个渲染器，事实上madVR內部的选项相当弹性，根据设置的不同它可以让低阶卡跟內显顺顺跑，也可以把目前最高端的显卡跑爆，一般来说，我建议在能力许可的范围內选择一张不算太差的独立显卡才能发挥它该有的战力。目前甚至可以在普通显示器上模拟HDR，看下效果
-
-左为MADVR渲染，右为播放器默认渲染，左边锯齿大大降低
-
-右为MADVR渲染，色彩、细节皆要强于普通渲染
-有HDR
-
-无HDR
-
-3.关于xysubfilter
-xy-vsfilter和xysubfilter都是第三方播放器滤镜，都支持mpc系列播放器也支持potplayer，xy-vsfilter是修改原本播放器的vsfilter而生成的，目的为了减轻显示多特效字幕的CPU负荷；xysubfilter则是重新编写的字幕渲染器，比xy-vsfilter新和更好的字幕渲染效果，也支援更多像素格式及对硬体加速的支援也提升。xysubfilter额外支持的部分：支持更多像素格式输入/输出、高解析度的字幕渲染、支持PGS/HDMV格式字幕。
-但使用xy-vsfilter/xysubfilter后便正常呈现出效果，上方日文字幕出现应有的字体消失后的字幕特效。
-4.关于Advanced codecs
-由 Shark007 出品的万能视频解码器分为 ADVANCED Codecs 和 STANDARD Codecs 两个版本，它们能让 Windows 系统自带的 WMP 影音播放器功能得到全方位的加强，而且完全免费！它的前身是 Win8 Codecs，现在已经改名并完美支持 Win10/8/7 系统了，当然它也被叫做 Win10 Codecs。
-之所以安装这款解码包是因为在使用Potplayer过程中播放部分mov文件遇到了只有图像没有声音的问题，安装之后完美解决，这款直接默认安装就好了。
-
-PotPlayer 设置
-
-注意常点击应用和确定按钮，不然就白忙活了。
-
-进度条设置
-按照个人爱好可以设置
-
-皮肤及设置
-把下载好的皮肤拖入skins文件夹，打开播放器，F5打开参数选项，点选新皮肤，根据自己的设备决定是否启用触控皮肤，建议勾选视频下自动隐藏。
-
-然后修改皮肤输出方式，现在整个界面已经十分清爽干净了。如果你决定使用madVR的话，这里皮肤输出方式应该选择使用图层式皮肤输出。
-
-然后我们再修改几个设置让播放器更好用，不是必须的，主要是我的使用习惯，除了我强调的，其他的都可以自行设置。
-
-注意：务必勾选保存设置到INI文件，否则每次重装系统或者到其他电脑就得重新配置。
-
-说明：播放窗口尺寸设置为自定义可以有效避免因为视频源分辨率导致画面忽大忽小的问题，避免手动拖拉调整的麻烦，由于我是高分屏，所以设置为1366768，普通用户推荐1024576，因为这是网上流行的1080P和720P视频的比例。
-
-说明：勾选以避免放大调整播放器时产生黑边。
-
-说明：个人并不喜欢ass字幕特效，不如简单朴素点好。
-
-这点开始就设置好，因为我们不会使用其内置滤镜，虽然到这里就Potplayer已经是一款很简洁美观的绿色播放器了。
-切换至 色彩空间/属性 选项卡，设置 YCbCr&lt;-&gt;RGB 规则，设为自动选择
-
-音频渲染器设置
-根据一些文档叙述，WSAPI渲染器比 Default Direct SoundDevice 效果好，具有程序独占，抗干扰，延迟低的优点；建议关闭规格化，避免 Pot 擅自改变音量。操作方式如下：
-
-
-或者设置 仅将规格化用于视频播放
-
-添加滤镜
-打开 滤镜 -&gt; 全局滤镜优先权，然后点击添加外部滤镜
-
-加载madVR
-添加madVR渲染器，这一点与添加LAV方式一致，添加外部滤镜，点选madVR.ax即可，需要注意的是，浏览器的皮肤在madVR下不可用。
-
-我们也可以在全局滤镜中勾选强制使用，这样我们马上可以看到效果。
-
-madVR的初始预设值是重视效能取向和稳定性的，也就是让大部分的显卡都可以正常运作为前提的设置，懒的研究设置的朋友用预设值也可以顺顺使用madVR，但如果想要进一步发挥madVR强大的功能，我们就再继续看四，如果你设置混乱了，可以恢复初始设置继续研究。
-
-Madvr滤镜选择madvr文件夹下的madVR64.ax
-
-加载LAV Filters
-Lav滤镜选择LAVAudio.Ax（音频滤镜），LAVVideo.ax（视频滤镜）和LAVSplitter.ax（音频视频分离器）
-
-LAV Splitter 除外的 LAV ，以及 madVR 都设置为强制使用
-
-加载xysubFilter
-操作依然一样，直接看图即可，我们我们可以先勾选强制使用看看效果，右下角会出现一个向右上方的箭头，右键这个箭头可以选择字幕，播放器里已经无法选择字幕了。
-
-
-设置滤镜
-禁用内置滤镜
-如果没有关闭 Potplayer 内置图像滤镜，数据在传递给 madVR 前已经从 10-bit 砍成 8-bit 损失精度，madVR 内部再怎么精度高也是白搭
-打开滤镜，将激活条件选为不使用，将使内置视频编码器取消勾选
-
-原滤镜/分离器 设置
-打开滤镜-》原滤镜/分离器，然后点击滤镜/解码器管理
-
-注意：所谓LAV Splitter Source的其实就是LAV Splitter + File Source。直接使用LAV Splitter可能会出现不协调的问题，而且MS的File Source是存在bug的，特别是xp系统。所以与其让potplayer调用MS的File Source，不如直接全部交给LAV来处理，所以个人推荐你直接选择LAV Splitter Source而不是LAV Splitter。
-然后在全局滤镜优先权新增lav video decoder，再设定优先顺序为强制使用。
-然后选择LAV video decoder，将视频解码器那一列全勾上，
-
-选择LAV Audio Deocder，将音频解码器那一列都勾上。
-
-选择LAV Splitter Source，源滤镜/分离器全勾上
-
-然后点击确定，回到源滤镜/分离器。
-然后将能设置成LAV Splitter Source的全部改成LAV Splitter Source。
-
-视频解码器设置
-打开视频解码器，将能宣传LAV Video Decoder的券选上
-
-音频解码器设置
-打开音频解码器，将能选成LAV Audio Decoder的全选上
-
-字幕插件设置
-xy-vsFilter，优先级设置上，xy-vsFilter 设为强制使用，负责外挂字幕；xy-vsFilter设为按优先级使用，负责内挂字幕。二者均可渲染文字字幕（ass 和 srt 等格式），但是不能渲染外挂图形字幕（SUP 和 PGS）。
-xy-vsFilter 不支持外挂图形字幕，但支持内挂图形字幕，外挂图形字幕请使用 Pot 内置字幕插件。
-
-视频渲染器设置
-然后打开视频，将视频渲染器改成 MADshi视频渲染（就是MadVR）
-
-madVR 的全称是 madshi Video Renderer，是 Windows 平台最强视频渲染器，调教得当的话效果媲美顶级蓝光机，当然消耗也不小。
-屏幕 1920×1080 分辨率，则 GTX 960 / 1050 Ti 级别显卡足够体验 madVR 的所有好处；屏幕 2560×1440 或者 3840×2160 分辨率，GTX 970 / 1060 3G 级别显卡勉强可以享受所有好处，GTX 1060 6G 足够，GTX 1070 则绰绰有余。
-LAV Video Decoder 设置
-随便用potplayer打开一个视频，然后在potplayer上右键，然后选择属性
-
-
-
-然后需要我们手动修改启用LAV，以上便是pot中调用lav filter的方法
-检查滤镜设置
-那么到此我们的滤镜就已经加载完毕了，那怎么看是否加载成功呢？这里有三种方法：
-我们可以打开一个视频，右键选择滤镜，看看是否都成功加载，如果没有问题说明已经成功了。
-
-我们还可以按下Tab键，查看相应的解码器渲染器信息是否正确，如图说明LAV解码器，madVR都加载成功，帧率稳定在60，可以畅享60fps的大片了。
-
-我们还可以按下Ctrl+J，这会显示madVR的实时渲染信息，可以借此修正madVR的设置，发挥显卡更大潜能，要掌握这个，这是我们以后进一步调教madVR的关键。
-
-提高音质
-首先查看自己电脑的音质输出
-
-然后在Potplayer中进行相关设置，选择内置WASAPI音频渲染器，高品质，关闭开启规格化（会调节音量，但会损失细节，更具自己需要看看吧）
-
-
-独显笔记本要为Potpayer选择独显，这里以N卡为例
-
-设置LAV
-1.分离器部分
-
-上方的Audio（音频）及Subtitles（字幕），可以设定优先的轨道，可以依自行需求设定，
-（不过这部分我比习惯使用MPC-BE內的切换）
-在Subtitle Selection Mode內以下几种选项可选：
-
-
-No Subtitles：不载入任何字幕
-
-
-Only Forced Subtitles：只选择有强制轨（forced track）的字幕
-
-
-Default：选择有强制轨（forced track）或预设轨（default track）的字幕
-
-
-Advanced：选择在Subtitles的栏位中填入选择逻辑
-
-
-在Demuxer Settings（分路器设定）內，
-Prefer Audio Stream with the Highest Quality （偏好最高音质音轨）
-此项可以视情况勾选，
-勾选后LAV会倾向选择最高音质的音轨，
-但少数影片最高音质的音轨不一定是对的/最好的。
-左下角的Enble System Tray Icon勾选后，
-在启用LAV分离器时，会在右下角工作列的通知区域內显示图示。（依需求选择是否勾选）
-2.音频解码器
-仅有一项必须调节，启用 Enable Mixing。
-因为绝大多数人都应用双声道机器设备，因此碰到 5.1 音道声轨时，仅有左 / 右一声道会被手机耳机 / 音箱接受，别的音道都立即丢掉了。因此，一般来说大家应让 LAV 把多声道混流式成双声道（Stereo）再輸出；玩多声道音箱的富豪请随便。
-
-右方的Output Formats（输出格式）中，可以自由选择输出格式，不过这边建议预设即可。
-左下角的Enble System Tray Icon勾选后，在启用LAV音讯解码器时，会在右下角工作列的通知区域內显示图示。（依需求选择勾选）
-
-Enable Mixing（开启混音）勾选后，便可以將 多声道音轨 混和成 较少声道数 输出，输出声道可以在Output Speaker Configuration（输出扬声器设置）中设置，依照声道数设定。
-
-
-Mono：单声道
-
-
-Stereo：立体声/双声道
-
-
-4.0：4.0声道
-
-
-5.1：5.1声道
-
-
-6.1：6.1声道
-
-
-7.1：7.1声道
-
-
-右方Setting（设定）选项中，Clipping Protection（音量保护），可以使扬声器在大动态音频输出时，降低破音机率。（如果对扬声器有信心，不建议勾选此项，因为可能会损失音质）
-3.视频解码器
-随便打开一个视频，在播放界面点击右键-属性，打开此界面。点击橙色框就能进入视频/音频解码器设置界面。!
-
-视频解码器 LAV Video Decoder 设置。LAV 的设置分为两套方案，A 方案应搭配 madVR 使用，B 方案搭配默认的 EVR(CP) 使用。
-如果使用 madVR，橙色框中的 Output Format 勾选除了 AYUV 以外的所有选项；RGB Output Level选 PC；Dither Mode 选 Random。LAV 默认设置就是如此，如图所示。
-
-如果使用 EVR（自动选择），橙色框中的 Output Format 只勾选 RGB24 选项；其他同上。（仅供需要省电或显卡性能不足者使用）!
-
-为什么 madVR 和 EVR 勾选方式不同？
-因为 madVR 能正确处理 LAV 解码出的所有数据，LAV 解码出的数据原封不动喂给 madVR 就是最好的，这是 madVR 被称作最强视频渲染器的主要原因之一。然而 EVR 只支持处理 8-bit 数据，LAV 解码出的 10-bit YUV 数据会被 EVR 直接砍成 8-bit YUV 进行处理，导致精度大幅降低，色带满天飞，这也是Pot 默认方案读作 a piece of shit 的主要原因之一；如果让 LAV 解码后将 10-bit YUV 转为 RGB24，也就是 8-bit RGB，再喂给 EVR 处理，可避免精度大幅损失。
-渲染器 madVR 和 EVR 可以在 pot 的播放界面快速切换，方法是：右键-视频-视频输出设备。切换渲染器的同时，记得要修改对应的 LAV Video Decoder 设置。 再次强调，A 方案配 madVR 使用，B 方案配 Potplayer 默认的 EVR 使用。
-硬解相关设置
-解码方案优先级推荐：CPU软解 &gt; D3D11 = DXVA2(copy-back) = Intel QuickSnyc &gt; DXVA2(native) &gt; NVIDIA CUVID 。建议没事别用硬解，因为偶尔会出现 bug，况且大多数人也不缺这点 CPU 性能。
-N 卡 GTX 950 / GTX 960 / GTX 1000 全系列、A 卡 4 系 5 系全系列以及 Intel 七代（Kaby Lake）处理器集成显卡可硬解 HEVC 10-bit YUV420 视频。
-常见显卡都能硬解 AVC 8-bit YUV420 视频，所有显卡都不能硬解 AVC 10-bit 视频。接下来以 HEVC 10-bit YUV420 的视频进行示范。
-**CPU 软解 + madVR 示范，**注意绿框中的 Active Decoder 和红框中的输出：
-蓝色和绿色框中是解码器选项，如果使用 CPU 软解，则选择 None；如果使用显卡 GPU 进行硬解，则选择 DXVA2 (copy-back) 或 D3d11 或 DXVA2 (native)，A/N 都可用，前者兼容性更好，后者更节省 CPU；如果使用英特尔核显，则选用 Intel QuickSync；NVIDIA CUVID 是 N 卡专用硬解方式，基本用不上。
-DVXA2 (native)硬解 + madVR 示范：
-
-红框中显示 dxva，实际上输出依然是 P010，橙框中的 Active Decoder 为 dxva2n，OK 表明显卡支持此硬解方式。DXVA2 (copy-back) 和其他硬解方式都类似。
-左上角Settings（设定）选项中，Threads for Multi-Threading（设定多执行续的执行数），基本上设定成Auto（自动）即可。
-Setting for Interlaced Video Streams（设定隔行扫描影片）：
-Field Order（场序规则），在处理格行扫描影片时需要先进行去交错，而反交错时分成 奇数场 优先或是 偶数场 优先，可依需求设定，或是设定成Auto让LAV自动判断。
-Deinterlacing Mode（去交错模式），有几种选项，
-
-
-Auto：自动。
-
-
-Agressive：当影片中发现有格行扫描的画面时，则全部进行去交错处理。
-
-
-Force：强制进行去交错处理。
-
-
-Disabled：关闭去交错处理。
-
-
-右上角的Hardware Acceleration（硬件加速／硬解），Hardware Device to use（使用硬件装置），简单来说就是选择要用何者来进行硬体解码，有以下几种选项，
-
-
-NVIDIA CUVID：Nvidia专用硬体解码介面，可以开启硬体去交错处理。
-
-
-Intel QuickSync：Intel內显专用硬体解码介面，CPU使用率比其余硬解模式稍高5~10%左右，可以开启硬体去交错处理。
-
-
-DXVA2 (copy-back)：为微软开发的硬体加速介面，ANI显示卡均可使用，会將解码完成的资讯回传给记忆体，由於多个回传动作，故效能会比native略差，不过优势为可以在解码器与渲染器中间添加滤镜。
-
-
-DXVA2 (native)：为微软开发的硬体加速介面，ANI显示卡均可使用，会將解码完成的资讯將不会传给记忆体，直接渲染，故效能比copy-back佳，缺点为限制较多。
-
-
-如果要开硬解，会建议 DXVA2 (native) &gt; DXVA2 (copy-back) &gt; NVIDIA CUVID 或 Intel QuickSync（原版则建议使用DXVA2 (copy-back)）
-右下方的Hardware/GPU Deinterlacing (CUVID/QS only)，
-即为硬体去交错处理设定，限定在NVIDIA CUVID或Intel QuickSync硬解模式下启用。
-Software Deinterlacing（软体去交错）
-若要启用软体去交错，可以选择YADIF，此处的去交错与madVR內的去交错，则一使用即可
-左下角的Output Formats（输出格式），可以设定不同色深下的影片输出那些格式，如果没有要使用madVR渲染器及后处理滤镜(post-processing filters)，建议让LAV的高精度抖动输出RGB模式（如下图）
-
-字幕与音轨
-大家早已在上面设定好啦 xy-vsfilter 外挂字幕软件，因此要关掉 Pot 内嵌渣滓外挂字幕软件，不然便会出現二行外挂字幕的奇景，鼠标右键 - 外挂字幕 - 撤销启用显示信息外挂字幕，如图所示。外挂字幕应当跟视頻放到同一文件目录下，且与视频文件格式同名的，会被全自动载入，外挂字幕由 DirectVobSub 操纵，并非 Potplayer。
-
-转换多外挂字幕轨 / 多视頻 / 多音轨，应用右下方的任务栏图标里 LAV 和外挂字幕软件 DirectVobSub 的标志。许多观众们都不清楚 VCB-Studio 及其别的抑制组制做的 BD 通常含好几条声轨，例如文件夹名称中含 2flac、flac_aac、FLACX2 等关键字的 mkv，及其外挂软件 mka。这代表着视頻含有多音轨，可能是 5.1，也可能是声优演员或者 staff 评价声轨，能够 转换着应用。
-
-转换声轨还可以立即点一下鼠标右键 - 响声 - 挑选响声来完成，开展转换；视頻轨同样，但是多音轨很普遍，而多视頻轨基本上见不上。
-](https://wbacg.oss-cn-hongkong.aliyuncs.com/2020/07/20200726091103403.jpg)
-设置madVR
-madVR 的核心优势有两个：
-1、高精度的数据处理，避免画面失真，产生色带、锯齿等瑕疵；
-2、高质量的缩放算法，在片源分辨率低于屏幕分辨率时，提供更清晰、更锐利的画面，算法甚至优于很多高级蓝光机。
-madVR 功能强大，其调教也大有学问，本篇教程不再赘述 madVR 调教具体步骤，详情请见我们之前做过的 madVR教程: [VCB-Studio 科普教程 2] madVR 渲染器配置教程
-如果教程也无法满足你的需求，欢迎有耐心、有基础者钻研：万年冷冻库 最强渲染器——madVR设置研究  
-以上，以 Potplayer 为基础的高质量播放器工具链设置完成，请尽情享受高清影视的乐趣吧！
-
-下面开始进入正式设置篇
-
-我们播放视频时，双击任务栏右下方的 MADVR 控制面板，进入设置菜单。（没有的话运行 MADVR 文件夹里的 madHcCtrl.exe），或是在外挂滤镜里加入madVR并点两下都可以打开设定页。
-
-
-1.device菜单
-
-无论我们使用的是显示器还是电视，一律选择“Digital Monitor/TV”。
-打开设备下的 “properties” 选项。
-如果使用显示器，第一项 RGB 范围选择 0-255。如果是连接电视机，则选择 16-255。（这个还是比较测试下，我接电视反而感觉选 0-255 效果更好）
-第二项是色深。一般选择 8bit。如果显示器或者电视能达到 10bit 或更高，则选择 10bit。
-
-第一个就是你的显示设备的名称，各人的显示设备不同，所以名称也会不一样。在这里可以选择你输出设备的制式，因为不同的设备，他的某些指标不一样，所以要认真对待。设置显示器的类型，一般选择“Digital Monitor”
-
-打开设备下的“properties”选项如果使用显示器，这里一定要认真对待。如果你用电脑显示器看影片，就要选择PC levels（0-255），如果你是接液晶电视，或者投影仪，可能需要选择TV levels（16-235）。因为一般电视显示的灰阶不是0-255，如果你用0-255去输出，那么16以下，235以上的灰阶都丢失了，暗部细节漆黑一片，影片整个发灰。
-针对电脑连接TV或投影，我详细说一下。这里有些复杂，首先，你用的是什么线进行连接。如果你的显卡有HDMI接口，那么HDMI直连显示设备，选择16-235。如果你的显卡没有HDMI接口，用DVI转接HDMI。这里还是选择16-235.
-如果你的显示设备有DVI接口。DVI直连，并且你的显示设备也支持的话，可以选择0-255.而位深则选择8 bit（or higher）.8 bit或者更高。8 bit对应256色阶。通用。当然你硬件设施够好，达到10bit ，这个选项也完美对应。
-
-信息标示页面。在这个页面里，会标出你的显示设备的型号啊，出厂日期什么的。
-
-这里一定要认真对待。如果你用电脑显示器看影片，就要选择PC levels（0-255）。如果你是接液晶电视，或者投影仪，可能需要选择TV levels（16-235）。因为一般电视显示的灰阶不是0-255，如果你用0-255去输出，那么16以下，235以上的灰阶都丢失了，暗部细节漆黑一片，影片整个发灰。针对电脑连接TV或投影，我详细说一下。这里有些复杂，首先，你用的是什么线进行连接。如果你的显卡有HDMI接口，那么HDMI直连显示设备，选择16-235。如果你的显卡没有HDMI接口，用DVI转接HDMI。这里还是选择16-235.如果你的显示设备有DVI接口。DVI直连，并且你的显示设备也支持的话，可以选择0-255.而位深则选择8 bit（or higher）.8 bit或者更高。8 bit对应256色阶。通用。当然你硬件设施够好，达到10bit ，这个选项也完美对应。
-
-
-这里的校准，指颜色校准。使用yCMS和3DLUT进行校准。这里我觉得没什么好讲的，因为显示器存在差异，因此你必须按照你自己的显示器来进行颜色校准设置。但是这需要校准设备。这个东西一般只有显示设备评测机构有，我们自己恐怕没办法去搞这种校准。所以这里就不要去开启它了。而下面的选项，我在图片里也有详细说明。在此不再复述。选择BT.709而伽马部分，如果你是N卡，就选择pure power curve。后面的2.20最好不要动。那个数值是标准。不过你也可以尝试改改看~
-这里的选项多半是为接其他显示设备用的，一般用不到。留空就可以了。
-
-启用伽马处理，一般选择启用。然后交由你选择的伽马处理标准去处理灰阶。N卡选择pure power curve后面的2.20不要动，这个是标准数值。
-
-在hdr项目中，选择convert HDR content to SDR by using pixel shader math，假如你有某些萤幕校色装置可以选择包括3DLUT的项目，不过我没有此类设备所以不知如何设定。设置好了之后可以去观看HDR影片，如果想肯定HDR功能是否正常运作，可以在播放时按下Ctrl+J开启OSD讯息表，观察红框內matrix的色域是否BT.2020，而且下方有无出现HDR项目。
-
-在正常运作下即使模拟HDR功能的效果亦相当出众，光暗和色彩效果都只能用惊艳形容，比较下会感觉非HDR版的色彩变得非常暗哑，但少年pi这套电影在当时画面呈现的效果已经算是相当出色，但在HDR的效果更上一层楼。参见开始展示的对比图。
-2.processing菜单
-deinterlacing 选项，对应的是图像交错处理。建议在最上面的选项打勾，让视频需要进行图像交错的时候交给 MADVR 自己去处理，并且在怀疑时不启动交错处理。如果常看动漫的，可以去掉“only look at pixels in the frame center”勾选。
-
-关于 “only look at pixels in the frame center”：
-“only look at pixels in the frame center” 这个选项只对 film 型式的交错式 (隔行扫描 interlaced) 影片有影响，也就是说这选项在启动 madVR 的 film mode 时才有作用(文后有解释)
-我 们知道对于这类影片必须对其作 IVTC 让它还原成 24p(60i→24p)，但实际上我们有时候会发现录了一部电视播放的电影或动画下来，电视台常常在四边打上跑马灯或台标之类的东西，而这个跑马灯或台标却是 video 型式的 interlaced 讯号 (真正的 60i 无法 IVTC)，因此我们要作 IVTC 时如果是对整个画面的像素作侦测，遇到这种情形时就很容易产生误判。因此勾选这个选项时就只会对画面中央部分的像素 作侦测，避开那些跑马灯或台标可能出现的位置以免作 IVTC 时产生误判，但缺点就是这样侦测的效率较低，遇到动画这类常常有静止画面的影片在侦测是哪一类 pulldown 时就会花比较久的时间。如果会看电视台播放的电影或动画的话，建议勾选此选项，如果是看 DVD 原盘的话，则建议取消勾选。
-这选项对 progressive 的影片完全没有影响，如果照字面理解为这选项不利于动画的话那是错误的理解，因为很多动画片源只要是蓝光或是录制下来压制时做过 IVTC 的，都会是 progressive 而非 interlaced。电视台录制下来的原始 TS 档或是 DVD 原盘才有可能是 interlaced。
-arifact removal 选项，对应的是图像去色阶功能。在普通的视频中，我们经常会看到人物的脸上，或者不同颜色的交界处有淡淡的光晕和条纹，这就是没有去掉色阶。而我们的目的就是让图像的颜色过渡更加自然，让条纹现象减少甚至消失。（这个选项会占用一些 GPU 资源，但尚可接受，开启无压力。）第一个选项是整体画面的去色阶效果。一般选择 low 就会有不错的效果。第二个选项是不同颜色交界处去色阶效果。可以选择 high。
-
-3.scaling algorithms菜单
-
-这个是最关键的图像缩放算法的设置，这部分是影响效能最大也是影响画质表现最明显的地方，也是 madVR 的最大特色。里面5个页面的内容基本类似。让用户选择的东西都是各种图像缩放模式，而不同的模式所消耗的性能也是不同的，基本上从上到下，性能消耗是越来越大，用户要根据自己的配置来考虑。每个页面的设置主要都是为了解决视频图像中的锯齿（aliasing）和振铃效应（ringing）。根据选择的不同，右上角会有效果介绍。绿条一般越长也越好。红条则是越低越好。
-说明在算法的最下面还有两个选项：active anti-ringing filter(简称ar)可以开启抗光环处理，也容易在downscale时候增加锯齿。scale in linear light可以增加image downscale转换之后，颜色对比度的精确性。建议在image downscale中开启。
-chroma upscaling：色度拉升
-即色度平面放大。不过色度拉伸的算法比较难感受到差别。
-
-如果配置好的话就设置是 NGU Anti-Alias,high quality（这里开到 very high qulity 以上几乎没什么意义，肉眼分辨不出）
-如果显卡中等的话，可以设置 Jinc + AR
-如果显卡不太好的话，则可设置 Cubic Bicubic75 + AR
-如果是 Intel 集显得话，则可设置 Cubic SoftCubic60 + AR
-
-
-image downscaling：影像缩放
-只要输出分辨率小于原始分辨率就会用到这部分的算法，比如 4K 分辨率的视频在 1080P 显示器上播放。
-
-如果电脑配置特别高的话，还可以考虑下使用 SSIM 1D 100%。SSIM 是目前表现最好的算法，在缩小画面的同时很好的保留了原解析度的细节跟锐利度，不过效能消耗也比较大。
-如果显卡跑不动 SSIM 的话，可以考虑 Cubic（Bicubic 150）+ AR + LL，即勾选 “activate anti-ringing filter”(简称 AR) 跟”scale in linear light”（简称 SC）。
-如果显卡还是不给力，那就使用下图的 Cubic（Catmull-Rom）+ AR + LL，这个也算是公认的最佳演算法组合 (resize 后最接近原本的画面）
-
-
-image upscaling：影像拉升
-也就是影像放大，只要输出目标分辨率大于原始分辨率就会用到这部分的算法，比如 1080P 分辨率的视频在 4K 显示器上播放。
-在这里我们可选择使用 doubling（影像翻倍）或 upscaling（影像拉升）。前者效果比后者好很多，所以说能开的话还是开一下吧。（当然如果显卡不是很好的话，就不要使用 doubling 了）
-
-对显卡很有自信的可以开 NGU Anti-Alias，同时下拉框设置为下图所示。
-这里注意第四个下拉框（activate doubling）的选项：
-我们这里选择的是 “… always -supersampling”，表示始终启用 NGU 进行翻倍。
-而原来默认的 “let madVR decide” 表示目标分辨率的宽或高大于或等于原始分辨率 1.2 倍时才启用 NGU，沒达到 1.2 倍启用条件的话则会使用 Jinc + AR 替代。
-
-
-
-如果上面的设置有些吃力的话，可以把第一个下拉框（luma doubling）的选项调成 medium。
-如果配置中等的话，还是建议设置为 upscaling 下的 Jinc + AR。
-显卡吃不消的可以考虑：Lanczos 4+AR（HD4600 等级集显）甚至是 Cubic Bicubic60+AR（HD4000 等级集显）。
-
-
-upscaling refinement：锐化算法，目的是在于改善放大运算后造成的模糊，只在视视频大后使用，如果是1:1无放大的影像，这部分勾选了也不会有作用。。
-4.rendering菜单
-
-说明madvr 默认就是用全屏独占模式（exclusive）。虽然这种模式有它的好处，但如果电脑配置不够就会出现上间歇性黑屏，去掉“enable automatic fullscreen exclusive mode”的勾选即可。
-[图片上传失败…(image-63c71e-1599900233537)]
-
-如何正确播放HDR视频
-为了实现完整的HDR工作链，我们需要从解码到最终输出的全套播放工具都支持HDR。可能有的人会说Windows 10自带的视频播放器就支持HDR视频的播放，为什么不直接用呢？说到底还是因为Microsoft Store难用，因为现在使用Windows 10自带的视频播放器对HEVC编码进行解码，就必须在商店中购买HEVC解码器扩展，虽然说它只有7块钱，但是考虑到很多人并没有使用Microsoft账户，仍然是以本地账户形式使用Windows 10的，所以购买非常不方便（因为HEVC不是免费格式）。因此，我们需要一些别的路子，一些免费并且没有版权问题的路子。
-首先我们需要一个支持HDR内容解码的视频解码器，这里推荐使用LAV Filter，这款解码器可以说是目前最强大的解码器之一，包含分离器+视频解码器+音频解码器，另外它还是开源免费的。按照播放视频的下一步，我们需要一个支持HDR内容的渲染器，这里我们使用目前地表最强的视频渲染器——madVR，它支持将HDR信息直接传输给显示器。最后我们需要一个播放器，作为外壳调用前面的这些东西，这里推荐使用MPC-BE，当然很多人用的PotPlayer也可以，不过要比MPC-BE稍微多做一点工作。
-准备好了软件之后还要对硬件支持进行检查，显卡必须要支持HDR内容输出，显示器必须要支持HDR内容输入，两者之间的传输通道也要支持HDR的内容。更为具体一点的细节是，HDMI 2.0a标准只支持HDR10标准的内容传输，而HDMI 2.0b中增加了对于HLG标准的支持。而在DP那边，1.4版本中增加了对于HDR10的支持，也就是说，我们至少需要支持DP 1.4和HDMI 2.0b接口的显卡来输出HDR内容，显示器也需要具备这两个接口。
-当然，最终也是最重要的，就是你需要一个支持HDR的显示器。
-
-按照上文中设置 LAV Filters + madVR + Potplayer + 10Bit 视频线 +HDR 显示器，就可以实现HDR观看了
-
-采用madVR的好处就是不用在Windows的显示设置中开启HDR，madVR在检测到显示器支持HDR、视频源中包含HDR内容时会自动让显示器切换到HDR模式下，不过如果没有自动切换，就需要你手动将开关打开了。另外，没有HDR显示器的用户也可以享受到HDR视频精准转换至SDR色彩带来的提升，这是madVR视频渲染器独一份的高精度转换，不过对于性能会有一些要求。
-
-可以看到非常明显的画面色彩对比，HDR内容在不正确播放的情况下显示出的是灰蒙蒙的画面，而正确输出之后，颜色非常亮丽。
-希望本次教程可以帮助到一些读者朋友，我以后可能还会写个VapourSynth啊x265啊什么的压制教程。
-另外，虽然现在新版的PotPlayer已经支持将HDR信息直接传输到显示器，但在这篇教程中我仍然提倡大家使用LAV Filters和madVR，因为这两个滤镜拥有更高的处理精度。PotPlayer经常被压制圈诟病的一点就是其内建的解码器和大部分情况下自动使用的EVRCP渲染器的内部处理精度不够，尤其是在HDR这种片源为原生10bit的情况下，更是不够用了。
-视频补帧
-**补帧，**即利用电脑上的补帧软件，将原视频从24FPS提升至60FPS或者更高。帧数越多，所显示的动作便会越流畅，视频的清晰度、饱和度也会更佳。
-所以，我们补帧的目的就是把把视频从24帧提升到60帧或者更高，能够很直观欣赏到流畅的画面。
-PotPlayer倍帧
-这个补帧是PotPlayer播放器自带的补帧方法，能直接让当前原视频的帧数翻倍，只需要简单的设置即可。
-
-dmitrirender 补帧
-
-dmitrirender 官网](http://www.dmitrirender.ru/)
-
-dmitrirender这一款这一款软件实际上并不是插帧领域中最为常见的软件，但其有着自身的优势: 首先采用GPU运算，无论是AMD、NVIDIA还是INTEL的核显通通都支持，对CPU的负担较低，对整体配置的需求也比较低
-SVP4 补帧
-
-SVP4 需要付费。SVP4是一款专业版视频补帧软件，提供GPU加速，并允许使用中档CPU和几乎任何GPU硬件为60Hz的FullHD 1080p视频重新计算，能将一些画面模糊和不流畅的的视频进行自动补帧，让你的视频流畅起来。
-SVP下载地址：https://www.svp-team.com/wiki/Download
-
-SVP还有一项优势就是它并不依赖特定的播放器，其本身可以看做是在视频解码过程中的一个滤镜，只要能调用相应解码器播放视频，便可以进行视频插帧
-SVP4 安装
-
-评估版本下载地址 https://alist.17lai.site/tools/video
-
-1.解压SVP.RAR到C:\SVP
-2.运行 svp4-cracked.exe
-3.运行后在弹出窗口内点击settings
-
-4.切换到 Repositories 标签
-5.点击 Temporary respoitories，再点击 Add，把下列内容添加进去（两条！）
-file:///C:/SVP/free
-file:///C:/SVP/common
-
-6.然后勾选 Use temporary repositories only，确认安装
-
-7.【重要】将SVPManager.exe复制到程序目录，替换原文件。
-SVP4 设置
-点击如图所示的部分可以进行一些简单设置
-
-
-视频帧处理选项按下图进行设置。（检测并切掉黑边这个不要勾选，因为有可能会切掉部分字幕）
-
-
-
-背景灯效果按下图设置（不禁用的话会出现动态模糊的边框）
-
-
-PotPlayer 设定
-1.右击potplayer的播放界面，进入选项页面****。****
-
-2.*先点击*滤镜，再点击全局滤镜优先权**，最后点击添加系统滤镜
-
-3.选择『ffdshow raw video filter』，然后点击确定
-
-
-选中 ffdshow raw video filter，点击強制使用(重要)，别忘了点击应用，然后再点击确定。此時已经完成基本设置。
-
-
-完成以上设置完基本参数后，就可以使用potplayer+svp4 pro组合来看视频了
-播放影片前几秒左下角会出現SVP启用的标志，这就说明配置成功了。
-AMD显卡专用补帧
-**必要条件：**确保你有GNC或者Vega 架构的AMD显卡，并下载最新的AMD驱动。
-
-AMD在2014年12月9号发布Omega驱动时也宣布了Fluid Motion技术，基于显卡的运算插帧，大大降低CPU负担，同时使视频播放更加流畅。相比传统的SVP插帧需下载安装多款外挂软件且需繁杂的手续设定，需要消耗CPU资源，耗电量比较大，SVP部份画面呈现会有抖动情况。
-Fluid Motion就是只需按一键就开启，CPU跟本没有在处理(使用率都在个位数) 全程就交给GPU去处理就好。Fluid Motion部份比SVP呈现出来的动作还要比较自然，可以说是看动画的神器，不过官方只支持在蓝光播放时开启插帧，不过网友基于AMD Fluid Motion以DirectShow开发出了Bluesky Frame Rate Converte，方便了我们在普通视频上也能实现补帧的效果。
-
-下载Bluesky Frame Rate Converte
-下载好以后直接默认安装即可！
-安装完成之后，还需要对FRC 设置， AMD 驱动设置，以及 Potplayer 滤镜设置
-
-Nvidia显卡专用补帧
-既然有AMD显卡专用补帧，肯定也有Nvidia显卡专用补帧了！它名字叫做：Dain-App
-需要说明的是：本软件是一款补帧****转换工具，而不是和以上介绍的可以实时渲染同步补帧！但是通过它补帧后的效果还是很明显的！
-
-Dain-App基于Nvidia CUDA开发，是上海交大开源的 DAIN（Depth-Aware Video Frame Interpolation）是一款可以AI深度学习，使用AI预测新帧并提高视频或gif帧率的插帧算法。可让您采用任何形式的媒体，例如电影，定格动画，动漫，卡通，精灵等，并插值新帧，从而从原始文件生成更大的帧率。
-
-需要注意的是：目前它需要CUDA，因此任何不支持CUDA的计算机都将无法运行此应用程序（AMD和较早的Nvidia卡）。它极度吃显卡及显存资源，依据视频长度/分辨率等决定计算时间，整体耗时较为漫长，低端Ｎ卡不建议使用。
-Dain-App介绍地址：https://github.com/baowenbo/DAIN
-下载地址：https://grisk.itch.io/dain-app
-下载完毕后直接解压缩，运行DAINAPP.exe即可。
-常见 Bug 解决篇
-1、为什么使用 madVR 全屏时候会黑屏？
-答：黑短短几秒是正常的，表明 madVR 正在切换至全屏独占模式（fullscreen exlucsive mode，简称 FSE 模式 ），这个模式有一些好处，比如防止画面撕裂。但实际上，我们推荐你关闭 FSE 模式，因为它带来的麻烦远多于好处。
-如果你不喜欢 FSE 模式，可以在 madVR 中关闭它，具体操作为：取消勾选 madVR 的控制面板里的 rendering -&gt; general settings -&gt; enable automatic fullscreen exlucsive mode 选项。
-2、为什么全屏 FSE 模式下点鼠标/切音轨/切换字幕/拉进度条画面会闪？
-答：因为全屏模式就是给你看视频用的，任何操作都应该在按 Enter 键 或 点击鼠标中键 退回到 窗口模式 后再进行。
-此外，全屏模式下完全可以用键盘轻松控制，比如 ←/→ 默认 后退/前进 5s；Ctrl + ←/Ctrl + → 默认后退/前进 30s；Ctrl + PageUp / Ctrl + PageDown 默认后退/前进 至上/下一章节，这些实用的快捷键都可以在 Potplayer 的设置里找到并定制。
-3、为什么 EVR 和 madVR 切换时会卡死？
-答：播放过程中， madVR 渲染器和 EVR 渲染器相互切换可能导致卡死，故建议尽量在暂停时切换。同理，任何切换字幕、音轨等操作，如果出现问题，应先暂停再操作；如果还不行，尝试关闭视频，重新打开。
-4、为什么我按照教程设置还有这样那样的 Bug ？
-答：最安全的方式是使用本教程文首提供的安装包，并按照教程从头重新设置 Potplayer。 Potplayer 本身就是个问题大户，版本号还那么多，导入 reg 文件导致的 Bug 也五花八门，无从下手。但按照本文的步骤从头设置，至少能将出问题的概率压到最低。我在许多台电脑上，按照本文的步骤设置过 LAV + Potplayer + madVR，从没出现过 Bug。
-5、如何配合此教程的方案使用插帧/倍速播放/截图/录制等功能？
-答：自己动手，丰衣足食，以上大多数功能可以由 Potplayer 本身实现，但不保证在使用 madVR 后还能用。本教程的目的是提供基本完美的视频播放功能，是为欣赏视频用的，不是拿来折腾的，不可能为各种细枝末节的需求做定制调整，我个人尤其反感插帧和倍速播放。更何况即使我们有心，播放器本身也未必能实现。
-6、为何我的画面是上下颠倒的？为何我的 madVR 老是崩溃？
-答：这两个问题大多是由 xy-vsFilter 造成的，因为 xy-vsFilter 存在不少 Bug，本教程以 xy-vsFilter 作为字幕插件纯粹是为了照顾无法使用 madVR 的用户。因此，只要你电脑能跑得动 madVR ，我都强烈建议改用 madVR + xy-SubFilter 的组合。各种字幕插件至今都是 beta 版，madVR 也是，如果出了问题，除了更新到最新的版本，也没什么更好的办法。实在不行那就用播放器自带吧，mpv、mpc-hc 和 mpc-be 自带的字幕插件尚且堪用；Potplayer 变黄前自带的字幕功能也勉强凑合，但变黄后就是一坨 shit。
-7、Potplayer 太容易崩溃了，有没有什么解决办法？
-答：将 Potplayer 换成 mpc-hc 或者 mpc-be 搭配 madVR 使用吧，他们本质上是一样的。本文最开始就强调，Potpalyer 的优势在于其友好的使用界面，对 Potpalyer 进行如此多的调教，仅仅是为了让它达到 mpc-hc 或者 mpc-be 默认设置的水平而已。但即使经过这么多调整，Potpalyer 的崩溃概率依然大于mpc-hc 或者 mpc-be。如果你能按照这篇教程成功设置 Potplayer ，那设置选项更简洁的 mpc-hc 或者 mpc-be 也不是问题。
-后记：效果展示
-鉴于madVR是压榨显卡性能，所以显卡占用如果没到80%以上说明还没有达到最佳设置，另一个标准就是你的风扇有没有哗哗响。
-
-全高清
-
-全高清下的大腿时代，播放4K视频没压力
-
-4K屏显卡已经吃不消了
-
-
-4K下的大腿时代，果然是显卡杀手，估计得得1070才能流畅流畅解析吧。
-其它平台
-推荐的播放器可以分成两大阵营：mpv 和 MPC。前者跨平台，后者仅限 Windows。
-mpv
-mpv 可以在 Windows、macOS 和桌面 Linux 上使用。
-mpv 本身没有图形界面，需要自己写配置文件，但并不复杂，习惯之后可以说比图形界面还要简单。
-如果你确实需要一个图形界面的 mpv 播放器前端，我们推荐：
-– Windows 用户使用 mpv.net
-– macOS 用户使用 IINA
-详情请查看我们的 mpv 配置教程。
-MPC
-MPC 系列都基于微软 DirectShow，只能在 Windows 上使用。
-MPC 目前有两个分支版本：MPC-HC 和 MPC-BE，都值得推荐。我们同时推荐配合 madVR 和 XySubFilter with libass 一起使用。
-目前的 K-Lite Codec Pack Full 直接包含了 MPC-HC、LAV 以及 madVR 这一套播放环境，安装和配置较为简单，是我们优先推荐的方案。
-详情请查看我们的 MPC-HC + madVR 配置教程。
-参考&amp;致谢
-
-实现PC视频播放最强画质教程( Potplayer播放器 MADVR插件)
-有问有答：如何正确播放HDR视频 
-potplayer + LAV + madVR 组PC高清播放器
-基于 PotPlayer 和 madVR 的播放器教程 | VCB-Studio
-https://github.com/hooke007/MPV_lazy/ 懒人专用，新手推荐
-
-系列教程
-全部文章RSS订阅
-Nas系列
-Nas 分类 RSS 订阅
-
-从零开始玩PT-入门到精通
-如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
-音视频图书和音乐自动化管理框架图解
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Potplayer终极优化教程实现PC视频播放最强画质
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-Docker系列
-Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>nas</category>
-      </categories>
-      <tags>
-        <tag>nas</tag>
-        <tag>emby</tag>
-        <tag>potplayer</tag>
       </tags>
   </entry>
   <entry>
@@ -51063,9 +50708,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-BvNzNuNSPvYLPrqF").style.height=document.getElementById("mmedia-BvNzNuNSPvYLPrqF").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-tSMnwMCsQTKshRAZ").style.height=document.getElementById("mmedia-tSMnwMCsQTKshRAZ").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-BvNzNuNSPvYLPrqF").style.height=document.getElementById("mmedia-BvNzNuNSPvYLPrqF").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-tSMnwMCsQTKshRAZ").style.height=document.getElementById("mmedia-tSMnwMCsQTKshRAZ").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 
@@ -54842,9 +54487,9 @@ chatGPT
 
 视频讲解
 B站
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-LBbtjzHfgGgfiPwX").style.height=document.getElementById("mmedia-LBbtjzHfgGgfiPwX").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-zEbuVnAtmQkldKxM").style.height=document.getElementById("mmedia-zEbuVnAtmQkldKxM").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-LBbtjzHfgGgfiPwX").style.height=document.getElementById("mmedia-LBbtjzHfgGgfiPwX").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-zEbuVnAtmQkldKxM").style.height=document.getElementById("mmedia-zEbuVnAtmQkldKxM").scrollWidth*0.76+"px";
     }; 
 youtube
 
@@ -56692,9 +56337,9 @@ Earthly 一个更加强大的镜像构建工具
         <category>nas</category>
       </categories>
       <tags>
-        <tag>nas</tag>
-        <tag>pt</tag>
         <tag>bt</tag>
+        <tag>pt</tag>
+        <tag>nas</tag>
       </tags>
   </entry>
   <entry>
@@ -60447,232 +60092,594 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
-    <title>中西医的优缺点</title>
-    <url>/posts/a2a43504/</url>
+    <title>Potplayer终极优化教程实现PC视频播放最强画质</title>
+    <url>/posts/2f8fb473/</url>
     <content><![CDATA[
-中医西医谁更科学，总是争论不休，这里说说个人的一些看法，中西医都是非科学，都只是经验科学，各有各自的优缺点
+视频播放器使用还是有不少细节需要注意的。本文介绍流行播放器Potplayer 配置方法，搭配 Emby 和 embyLaunchPotplayer 使用的效果更佳！
+推荐本文搭配使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程观看
+本文最近全新整理增强了一遍
 
 
 
-中医治疗调理费用低，见效慢，但是把人体作为整体调理，治疗疾病的根本原因。西医通过药物提取，化学合成，见效快，但是有耐药性，常常头痛医头，脚痛医脚，哪里有问题，就切除哪里。
-中医西医都是非科学
+前言
+这年头一款趁手好用的播放器，功能强大的播放器是必需的，目前几乎所有视频播放器其实只有三种：MPC-HC、Mplayer、VLC player，其余可以理解为各种壳各种定制版各种修改版。（potplayer的前身km是基于MPC），其中MPC-HC已经内置了LAV Filters，不过Potplayer可定制项更多，更有可玩性，因此选用Potplayer进行搭建目前公认最完美的高清方案显然是Potplayer（主播放器）+LAV Filters（分离器）+madVR（渲染器）+xy-VSFilter（字幕滤镜），当然这个所谓的最完美方案是严重高能耗的一个方案，就我个人而言一直觉得性质比不佳，但这基本上是你已经是能找到的最完美的高清方案了。
 
-按照现代科学定义，中医西医都非1+1=2这样类似数学的严格意义上面的科学。都只是经验科学！
+不想怎么折腾的朋友，直接使用播放器和默认设置就好了；要求再高一点的朋友，添加LAV Filters+madVR+xy-VSFilter进播放器，然后也不需要去配置参数，默认就好；发烧友们想自学高级播放器设置，网上教程总是不缺的，一搜一大堆，各大论坛什么的置顶帖，万年冷冻库，等等，写的比本文更新、更详细、更高端的比比皆是，也都可以作为很不错的教程。不过其中有些教程过于专业详尽，又或者只是授人以鲤，或者授人以鳊、鲢、鳙……，导致很多人直接傻眼了。现在网上林林总总的教程，不会跟你说的很多细节与知识。有的人madVR设置玩出了花，结果不知道检查pot内置的ffmpeg解码器，会把YUV420 10bit 降低精度+瞎转换 为YUV422 8bit丢给madVR，然后又说自己看不出区别……这折腾的意义何在呢。所以首先提出几点建议：
+1、实事求是。不要盲目的去折腾，也不要为了心理安慰去折腾。一套更好的方案，只有你确实感觉到了提升，并且这个提升在你心理满意度上，足够抵消麻烦，才值得你去升级。比较的过程中，相信自己的眼睛，而不是相信别人的说教。比如说我真不推荐笔记本用户折腾任何顶级缩放算法——那么小个屏幕你能看出点啥？教程里说出花的放大算法跟你有几毛钱关系？
+2、循序渐进。先把一套简单基础的方案弄好弄懂，再去学习和尝试更好的方法。对于新的插件，你要尝试测试它们在你机器上的表现；对于别人的设置，设法了解他这么推荐的原因，以及这个原因是否适用于你。最典型的，很多人用着madVR问我，你在新教程里教我们LAV只勾选RGB，我要改么？看了这篇教程你应该知道要不要改与背后的原因了吧。
+3、量力而行。播放器越高级，组件越多，往往性能消耗越大，出错概率也越高，同时收益越少。学会放弃与妥协，毕竟，你看的是片子，不是播放器组件和参数。
+工具篇
 
-西医和中医分歧某种程度上可以看成是还原论和整体论之争：
+下载地址
 
-西医把人体看做一个一个器官组成，什么地方出问题，就解决什么地方的问题，头疼医头，脚痛医脚。F{a+b} = f{a} +f{(b)
-中医把人体看做一个整体，讲究阴阳平衡，脉络的畅通，你头痛，不光是头的问题，，而是整体出现的失衡，中医调理平衡，头疼就医好了。
-
-人体是非科学的
-
-现代科学远远不能解释人体运行机制，在系统性人体解释方面西医还不如中医。
-张三心率60，身体健康。李四心率80，身体也是健康的。人体几乎所有的指标都是没法科学量化的，现代仪器检测的指标几乎都是盲人摸象，用现代的科学的手段去研究非科学的人体本身就是反科学的。
-
-
-中医治病于未然
-
-防患于未然，机体稍有功能上的变化，中医即认为是阴阳失衡，就要适当的调整。治病求本，发现问题就要找到发病的根本，从根本上去除疾病，从而使机体恢复正常状态。
-而西医，你的身体不出问题就认为没有问题。而不知道疾病隐患已经在身体慢慢积累，就等某一天爆发
-
-中药没有耐药性
-
-你找不到两株一模一样的药材，吃中医永远不会有抗药性问题。而西医通过提纯，化学合成看似疗效快，但会有抗药性问题，长期来看，几乎所有的西药都可能失去作用！而中药，几千年后，如果还有人类，还是会吃和今天一样的中药。
-
-中药虽然没有抗药性，但现代中药种植导致药效远不如以前，通过加大剂量可以解决。
-中医是生命学，西医是死物学
-
-中医整体观念，中医认为人与自然是统一的整体，自然界的变化对人体的影响是不容忽视的；人体本身是不可分割的统一整体，一个位置有病，其根本不一定在这里，多数是两三个脏器或经络功能失衡的结果。而西医几百年了，还是在研究分子化学，下药手术都只是作用与复杂人体的一部分区域。
+Potplayer官网地址
+LAV发布地址
+madVR下载地址
+XySubFilter 3.1.0.752 Free Download - VideoHelp
 
 
-西医分析分子结构，但没搞明白同样是水，味道也是不同的。
-同样的纯净水，热水冷水混合的，开水，冰水，恒温静置一晚的水，经过祝福或者咒骂的水，味道都是不同的。对人的作用也是差异极大。
-有兴趣的可以去了解一下酸性食物，碱性食物；寒性食物，热性食物的差异与区分方法。
-同样是水，可以是寒性的，也可以是热性的。同样的茶叶，不同生长环境价值相差上万倍。同一种草药，必须是特定地域生长的才能治病！西医对这一块几乎没啥研究。
-
-双盲实验是非科学的
-
-人体本身是复杂的，多样的，没法量化的。用一批各种年龄，性别，身体条件的人去做双盲实验是初中生生物化学知识都可以判断是不科学的。除非用一堆基因一样，生活成长条件一样的克隆人做双盲实验。
-
-
-现代的双盲实验非常容易操控结果。
-通过选择特定年龄，性别，胖瘦等身体条件，可以很容易的控制实验结果！这也是西方制药公司经常干的事，历史上比比皆是！
-
-西医也有很多荒诞无知的历史
-
-早期西医是理发师兼任的，现在理发店外面红白相间旋转的是纪念以前理发师给病人放血治疗的染血绷带。老美创建者乔治.华盛顿就是放血过多死亡的！
-扁桃体，十二指肠西医以前都是建议切除。现在发现了其重要生理功能，建议保留了。
-镭元素发现后，被制作为各种保健品，饮料发售，很长时间都是"科学"背书。
-骇人听闻的脑前额切除术，得了诺贝尔奖，把无数正常人变成痴呆，都是以西医科学的名义造成的！
-等等。
-请不要对这些历史视而不见！
-现代医学过度治疗，很多反而不如带病生活的时间长。没见到很多医生自己得了癌症不治疗么？
+PotPlayer
+Potplayer 是影视常用的播放器，界面简洁，功能齐全，比 MPC-HC 和 MPC-BE 更人性化；但其默认方案十分糟糕，预设过多错误，无法正确播放 10-bit 视频，**一直饱受诟病。VCB-Stuido 以往发布的数篇高清教程大多偏重于 madVR，在 PotPlayer 的设置方面有些错漏。为了广大观众能正确、便捷地用 PotPlayer 享受高清影视，我们为大家带来一篇基于 PotPlayer 的高清影视全套 64-bit 工具链完整配置图文详解教程。
+工具安装篇
+1、为了避免版本混乱导致的bug，本教程提供所全套 64-bit 工具：
+**PotPlayer（播放器），LAV Filters（分离/解码器），madVR（视频渲染器），xy-vsFilter（通用字幕插件），xy-SubFilter（madVR专用字幕插件）。
+安装路径只允许纯英文，否则一些工具会无法使用，故建议单独建一个纯英文路径的文件夹 Tools，把这些以上提到的程序都放进去，方便更新与维护。
+2、安装 PotPlayer 和 LAV Filters。
+二者都是普通的 exe 安装包，双击启动即可，将安装路径设置到 Tools 文件夹，其他安装选项全默认。
+3、安装 madVR，xy-VSFilter 或 xy-SubFilter。
+二者都是插件，安装方法为：将压缩包解压至 Tools 文件夹中，右键点击各自的 install.bat，以管理员权限运行，若移动这些组件则需要重新安装。
+显卡设置
+显卡显示器看起来灰蒙蒙的，可能原因有
 
 
-医生一罢工，全国死亡率下降50%！（援引）
-这听起来是个笑话，但确是真实的历史事实。各种解释很多，但这个现象足够引人深思！
-
-中医费用低导致被黑
-
-对于医药公司来说，中医费用低是缺点。它们恨不得你的疾病需要天天服药，一辈子服药。
-费用低，怎么拿回扣？
-费用低，怎么上市圈钱？
-费用低，怎么养写手去黑对手？
-国内各大交流平台，基本都被国外势力操控，连说一点中医中立的观点都会被删帖，封号。其中一部分人拿钱办事，是坏，还有一部分人是智商低，蠢，要注意分辨。
-请警醒，中医国宝一边在被国外势力有计划的抹黑，打压，一边又在偷窃中医的成果。
+显示器对比度低
 
 
-鬼才倪海厦
+传输线规格低
 
-中医鬼才，是因其一人身兼医， 命，星，山，卜五术，是海外中医界的风云人物。
-最近发现的一个中医大师！有全套中医教程！是目前中医讲解的最好的中医教程！
+这里线材要求 HDMI 需要2.0， DP 1.4 规格以上
 
-tree -F -L 2 ./自学倪海厦人纪
-./自学倪海厦人纪/
-├── 10自学第十课-文章与医案汇总/
-│&nbsp;&nbsp; ├── 【02】倪海厦专题/
-│&nbsp;&nbsp; ├── 【03】倪海厦事实评论/
-│&nbsp;&nbsp; ├── 1倪海厦汉唐中医经典文章医案集.pdf
-│&nbsp;&nbsp; ├── 2人纪班学生的诊疗案例.pdf
-│&nbsp;&nbsp; ├── 倪海厦人纪班学生医桉1.pdf
-│&nbsp;&nbsp; ├── 倪海厦传统中医跟诊过程.pdf
-│&nbsp;&nbsp; ├── 倪海厦内部案例100篇.pdf
-│&nbsp;&nbsp; ├── 倪海厦文集及医桉最新版.pdf
-│&nbsp;&nbsp; ├── 倪海廈汉唐中医文章全集1.pdf
-│&nbsp;&nbsp; ├── 医案/
-│&nbsp;&nbsp; ├── 学员医案.pdf
-│&nbsp;&nbsp; ├── 【文】倪海厦医案１（文集和日志）文集（2005年07月25日）.pdf
-│&nbsp;&nbsp; ├── 【文】倪海厦医案２（诊疗日志）日志（2006年09月01日）.pdf
-│&nbsp;&nbsp; ├── 【文】倪海厦文集(2006年06月06日).pdf
-│&nbsp;&nbsp; ├── 汉唐中医倪海厦医师对猪流感的分析及其处方[1].pdf
-│&nbsp;&nbsp; ├── 【汉唐中医内容】倪海厦传统中医跟诊过程.pdf
-│&nbsp;&nbsp; └── 汉唐方剂/
-├── 1自学第一课-梁冬对话倪海厦/
-│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》01（字幕版）_标清.flv
-│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》02（字幕版）_标清.flv
-│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》03（字幕版）_标清.flv
-│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》04（字幕版）_标清.flv
-│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》05（字幕版）_标清.flv
-│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》06（字幕版）_标清.flv
-│&nbsp;&nbsp; ├── 《梁冬对话倪海厦》07（字幕版）_标清.flv
-│&nbsp;&nbsp; └── 梁冬对话倪海厦字幕稿.pdf
-├── 2自学第二课-倪海厦斯坦福演讲/
-│&nbsp;&nbsp; ├── 倪海厦斯坦福大学演讲：从感冒一路治到癌症.mp4
-│&nbsp;&nbsp; └── 倪海厦斯坦福大学演讲字幕稿.docx
-├── 3自学第三课-倪海厦原版《针灸教程》全集11DVD（含字幕版视频）/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​01/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​02/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​03/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​04/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​05/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​06/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​07/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​08/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​09/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​10/
-│&nbsp;&nbsp; ├── ​​人纪针灸DVD​​11/
-│&nbsp;&nbsp; └── 倪海厦针灸大成字幕版视频/
-├── 4自学第四课-倪海厦：原版《黄帝内经》全集11DVD（新增字幕版视频）/
-│&nbsp;&nbsp; ├── 02.倪海厦《黄帝内经》（79集全）无风制作【公众号：汉唐倪师传承】/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​01​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​02​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​03​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​04​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​05​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​06​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​07​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​08​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​09​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​10​/
-│&nbsp;&nbsp; ├── ​​人纪内经DVD​11​/
-│&nbsp;&nbsp; ├── 倪海夏-人纪-黄帝内经讲义.pdf
-│&nbsp;&nbsp; ├── 【视频同步文稿】倪海厦人纪系列书籍之《黄帝内经上册》 .pdf
-│&nbsp;&nbsp; └── 【视频同步文稿】倪海厦人纪系列书籍之《黄帝内经下册》.pdf
-├── 5自学第五课-倪海厦：原版《神农本草经》全集8DVD（含字幕版视频）/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD01​/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD02​/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD03​/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD04​/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD05​/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD06​/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD07​/
-│&nbsp;&nbsp; ├── ​​​人纪本草DVD08​/
-│&nbsp;&nbsp; ├── 倪海厦神农本草字幕稿.pdf
-│&nbsp;&nbsp; ├── 倪海厦神农本草经视频字幕版/
-│&nbsp;&nbsp; └── 倪海厦神农本草经讲义.pdf
-├── 6自学第六课-倪海厦：原版《伤寒论》全集8DVD/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​01​/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​02​/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​03​/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​04​/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​05​/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​06​/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​07​/
-│&nbsp;&nbsp; ├── ​人纪伤寒DVD​08​/
-│&nbsp;&nbsp; ├── 倪海厦伤寒论视频字幕.pdf
-│&nbsp;&nbsp; └── 倪海厦伤寒论讲义.pdf
-├── 7自学第七课-倪海厦：原版《金匮要略》全集11DVD/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​01​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​02​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​03​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​04​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​05​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​06​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​07​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​08​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​09​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​10​/
-│&nbsp;&nbsp; ├── ​​人纪金匮DVD​11​/
-│&nbsp;&nbsp; ├── 倪海厦金匮要略视频字幕PDF.pdf
-│&nbsp;&nbsp; └── 倪海厦金匮要略讲义.pdf
-├── 8自学第八课-倪海厦扶阳论坛演讲/
-│&nbsp;&nbsp; ├── 倪海厦扶阳论坛演讲文字稿.doc
-│&nbsp;&nbsp; ├── 第三届扶阳论坛-倪海厦-上.mp4
-│&nbsp;&nbsp; └── 第三届扶阳论坛-倪海厦-下.mp4
-├── 9自学第九课-倪海厦仲景心法传讲/
-│&nbsp;&nbsp; ├── 仲景心法傳講01.mp4
-│&nbsp;&nbsp; ├── 仲景心法傳講02.mp4
-│&nbsp;&nbsp; ├── 仲景心法傳講03.mp4
-│&nbsp;&nbsp; ├── 仲景心法傳講04.mp4
-│&nbsp;&nbsp; ├── 仲景心法傳講05.mp4
-│&nbsp;&nbsp; └── 倪海厦仲景心法传讲 同步文稿85页_1.pdf
-├── 其他2-《天纪》《人纪》正版影印版文档/
-│&nbsp;&nbsp; ├── 倪海厦《天纪》.pdf
-│&nbsp;&nbsp; ├── 倪海夏伤寒论.pdf
-│&nbsp;&nbsp; ├── 倪海夏金匮.pdf
-│&nbsp;&nbsp; ├── 倪海夏针炙.pdf
-│&nbsp;&nbsp; ├── 天纪 人间道.pdf
-│&nbsp;&nbsp; ├── 天纪 地脉道.pdf
-│&nbsp;&nbsp; ├── 天纪 天机道（终稿）.pdf
-│&nbsp;&nbsp; ├── 神农本草经.PDF
-│&nbsp;&nbsp; └── 黄帝内经.pdf
-└── 捕获.PNG
 
-以上资源网络上有下载，版权原因，这里就不提供链接了！Bilibili 上面就有大部分相关资源了。
-供中医相关人士及爱好者学习！
 
-自学中医方法
-自学的话，从学校的教材入手比较好，先学《中基》，至少看三遍，然后学《中药》，《方剂学》，方剂学可以看邓中甲的视频，多看几遍，边看边记，并背一下《汤头歌诀》，这样打下中医基础。再学《中诊》，后面研究伤寒金贵，李东恒等等。基本就入门了。
-总结
+默认参数设置没有跳转
 
-生老病死都是生命旅途中的一部分，我们要学会接受它。
-中医是几千年的经验总结，其中虽然有一些荒诞的部分，但也有非常多的宝藏等待我们去挖掘。
-西医几百年发展虽然有不少见效快的治疗手段，但是由于现代科学本身科学性就有局限性，所以现代西医的科学性也要批判的接受。
 
-个人见解，也请理性接收！
+第三个原因解决方法如下
+N 卡用户
+打开 Nvidia 驱动面板，将红框中的动态范围参数调整至完全，蓝框的输出颜色深度调到10bpc或者8bpc（取决于显示器支持），如下图
 
-名言赏析
-谁控制了石油，谁就控制了所有国家；谁控制了粮食，谁就控制了人类；谁掌握了货币发行权，谁就掌握了世界。
-​																																					——亨利·基辛格
+
+Intel 核显用户
+将量化范围设为全范围：
+
+AMD 显卡
+新版设置界面，选择 Full RGB：
+
+CCC 旧版界面，同样选择 Full RGB：
+
+为什么我们要对播放器进行折腾？
+我们先了解一般视频在DirectShow架构的播放器播放时的运作过程，首先是读取档案的File source(读取滤镜)，將其读取的內容传给Splitter(分离器)，前面两者又可合称Source filters(源滤镜)。然后Splitter会將其分离为视讯编码跟音讯编码，將视讯编码传给Video decoder(视讯解码器)做解码，將音讯编码传给Audio decoder(音讯解码器)做解码，然后解码完的视讯內容传给Video renderer(渲染器)渲染后交由显卡输出，解码完的音讯內容则交给音讯装置输出(预设是DirectSound Device)。若是播放DVD，则源滤镜会使用win內建的DVD Navigator，其他则大同小异。所以最简单的方案就是选用算法更好的分离器，解码器和渲染器。（补充：部分视频有字幕的话直接分给字幕渲染器）
+
+以Potplayer为例，确实很优秀，但是其内置的设定还是有些鸡肋，更何况现在高清视频正在普及，所以进行一番调教是应该的，直接给出一些对比效果：
+1.关于LAV Filters
+LAV Filters，是一个包含分离器/视频解码器/音讯解码器三者的外挂解码方案，內容有LAV Splitter、LAV video decoder、LAV audio decoder三者，由DOOM9论坛上的nevcairiel所开发，格式支持高，完整支持各种10bit编码，也支持DVD及BD的解码，BUG少，功能强大但又实用而不花俏。LAV Filters分离器被称为高速万能分离器，所谓高速是指lav分离器的跳转速度很快，普遍高于pot内置分离器，万能指的是lav的分离器和音视频滤镜很全，几乎可播放所有常见视频。而且，LAV还支持开启硬件加速（如果使用madVR的话建议不要开启），至于为啥看看下面的问题就知道了。
+
+2.关于madVR
+视频的播放，解码吃的是CPU效能(硬解例外，硬解是使用显卡上的解码模组，既不吃CPU也不吃GPU效能)，而渲染才是吃显卡GPU效能，额外的像去交错的部分也是吃显卡效能，整体而言还是CPU最重要，只有使用madVR时例外，GPU的部分也很重要。而madVR鼎鼎大名，地面最强的渲染器，又称显卡杀手，不惜一切效能代价以换取最大的画质表现，也因此这个渲染器对显卡的要求稍微吃重些，超越了我们一般对播放软件之硬件要求的常识(这个常识是指，只有玩游戏才需要用到较高阶的显卡，影像播放只需要低阶显卡甚至核显已可胜任)，但并不是说只有好的显卡才能用这个渲染器，事实上madVR內部的选项相当弹性，根据设置的不同它可以让低阶卡跟內显顺顺跑，也可以把目前最高端的显卡跑爆，一般来说，我建议在能力许可的范围內选择一张不算太差的独立显卡才能发挥它该有的战力。目前甚至可以在普通显示器上模拟HDR，看下效果
+
+左为MADVR渲染，右为播放器默认渲染，左边锯齿大大降低
+
+右为MADVR渲染，色彩、细节皆要强于普通渲染
+有HDR
+
+无HDR
+
+3.关于xysubfilter
+xy-vsfilter和xysubfilter都是第三方播放器滤镜，都支持mpc系列播放器也支持potplayer，xy-vsfilter是修改原本播放器的vsfilter而生成的，目的为了减轻显示多特效字幕的CPU负荷；xysubfilter则是重新编写的字幕渲染器，比xy-vsfilter新和更好的字幕渲染效果，也支援更多像素格式及对硬体加速的支援也提升。xysubfilter额外支持的部分：支持更多像素格式输入/输出、高解析度的字幕渲染、支持PGS/HDMV格式字幕。
+但使用xy-vsfilter/xysubfilter后便正常呈现出效果，上方日文字幕出现应有的字体消失后的字幕特效。
+4.关于Advanced codecs
+由 Shark007 出品的万能视频解码器分为 ADVANCED Codecs 和 STANDARD Codecs 两个版本，它们能让 Windows 系统自带的 WMP 影音播放器功能得到全方位的加强，而且完全免费！它的前身是 Win8 Codecs，现在已经改名并完美支持 Win10/8/7 系统了，当然它也被叫做 Win10 Codecs。
+之所以安装这款解码包是因为在使用Potplayer过程中播放部分mov文件遇到了只有图像没有声音的问题，安装之后完美解决，这款直接默认安装就好了。
+
+PotPlayer 设置
+
+注意常点击应用和确定按钮，不然就白忙活了。
+
+进度条设置
+按照个人爱好可以设置
+
+皮肤及设置
+把下载好的皮肤拖入skins文件夹，打开播放器，F5打开参数选项，点选新皮肤，根据自己的设备决定是否启用触控皮肤，建议勾选视频下自动隐藏。
+
+然后修改皮肤输出方式，现在整个界面已经十分清爽干净了。如果你决定使用madVR的话，这里皮肤输出方式应该选择使用图层式皮肤输出。
+
+然后我们再修改几个设置让播放器更好用，不是必须的，主要是我的使用习惯，除了我强调的，其他的都可以自行设置。
+
+注意：务必勾选保存设置到INI文件，否则每次重装系统或者到其他电脑就得重新配置。
+
+说明：播放窗口尺寸设置为自定义可以有效避免因为视频源分辨率导致画面忽大忽小的问题，避免手动拖拉调整的麻烦，由于我是高分屏，所以设置为1366768，普通用户推荐1024576，因为这是网上流行的1080P和720P视频的比例。
+
+说明：勾选以避免放大调整播放器时产生黑边。
+
+说明：个人并不喜欢ass字幕特效，不如简单朴素点好。
+
+这点开始就设置好，因为我们不会使用其内置滤镜，虽然到这里就Potplayer已经是一款很简洁美观的绿色播放器了。
+切换至 色彩空间/属性 选项卡，设置 YCbCr&lt;-&gt;RGB 规则，设为自动选择
+
+音频渲染器设置
+根据一些文档叙述，WSAPI渲染器比 Default Direct SoundDevice 效果好，具有程序独占，抗干扰，延迟低的优点；建议关闭规格化，避免 Pot 擅自改变音量。操作方式如下：
+
+
+或者设置 仅将规格化用于视频播放
+
+添加滤镜
+打开 滤镜 -&gt; 全局滤镜优先权，然后点击添加外部滤镜
+
+加载madVR
+添加madVR渲染器，这一点与添加LAV方式一致，添加外部滤镜，点选madVR.ax即可，需要注意的是，浏览器的皮肤在madVR下不可用。
+
+我们也可以在全局滤镜中勾选强制使用，这样我们马上可以看到效果。
+
+madVR的初始预设值是重视效能取向和稳定性的，也就是让大部分的显卡都可以正常运作为前提的设置，懒的研究设置的朋友用预设值也可以顺顺使用madVR，但如果想要进一步发挥madVR强大的功能，我们就再继续看四，如果你设置混乱了，可以恢复初始设置继续研究。
+
+Madvr滤镜选择madvr文件夹下的madVR64.ax
+
+加载LAV Filters
+Lav滤镜选择LAVAudio.Ax（音频滤镜），LAVVideo.ax（视频滤镜）和LAVSplitter.ax（音频视频分离器）
+
+LAV Splitter 除外的 LAV ，以及 madVR 都设置为强制使用
+
+加载xysubFilter
+操作依然一样，直接看图即可，我们我们可以先勾选强制使用看看效果，右下角会出现一个向右上方的箭头，右键这个箭头可以选择字幕，播放器里已经无法选择字幕了。
+
+
+设置滤镜
+禁用内置滤镜
+如果没有关闭 Potplayer 内置图像滤镜，数据在传递给 madVR 前已经从 10-bit 砍成 8-bit 损失精度，madVR 内部再怎么精度高也是白搭
+打开滤镜，将激活条件选为不使用，将使内置视频编码器取消勾选
+
+原滤镜/分离器 设置
+打开滤镜-》原滤镜/分离器，然后点击滤镜/解码器管理
+
+注意：所谓LAV Splitter Source的其实就是LAV Splitter + File Source。直接使用LAV Splitter可能会出现不协调的问题，而且MS的File Source是存在bug的，特别是xp系统。所以与其让potplayer调用MS的File Source，不如直接全部交给LAV来处理，所以个人推荐你直接选择LAV Splitter Source而不是LAV Splitter。
+然后在全局滤镜优先权新增lav video decoder，再设定优先顺序为强制使用。
+然后选择LAV video decoder，将视频解码器那一列全勾上，
+
+选择LAV Audio Deocder，将音频解码器那一列都勾上。
+
+选择LAV Splitter Source，源滤镜/分离器全勾上
+
+然后点击确定，回到源滤镜/分离器。
+然后将能设置成LAV Splitter Source的全部改成LAV Splitter Source。
+
+视频解码器设置
+打开视频解码器，将能宣传LAV Video Decoder的券选上
+
+音频解码器设置
+打开音频解码器，将能选成LAV Audio Decoder的全选上
+
+字幕插件设置
+xy-vsFilter，优先级设置上，xy-vsFilter 设为强制使用，负责外挂字幕；xy-vsFilter设为按优先级使用，负责内挂字幕。二者均可渲染文字字幕（ass 和 srt 等格式），但是不能渲染外挂图形字幕（SUP 和 PGS）。
+xy-vsFilter 不支持外挂图形字幕，但支持内挂图形字幕，外挂图形字幕请使用 Pot 内置字幕插件。
+
+视频渲染器设置
+然后打开视频，将视频渲染器改成 MADshi视频渲染（就是MadVR）
+
+madVR 的全称是 madshi Video Renderer，是 Windows 平台最强视频渲染器，调教得当的话效果媲美顶级蓝光机，当然消耗也不小。
+屏幕 1920×1080 分辨率，则 GTX 960 / 1050 Ti 级别显卡足够体验 madVR 的所有好处；屏幕 2560×1440 或者 3840×2160 分辨率，GTX 970 / 1060 3G 级别显卡勉强可以享受所有好处，GTX 1060 6G 足够，GTX 1070 则绰绰有余。
+LAV Video Decoder 设置
+随便用potplayer打开一个视频，然后在potplayer上右键，然后选择属性
+
+
+
+然后需要我们手动修改启用LAV，以上便是pot中调用lav filter的方法
+检查滤镜设置
+那么到此我们的滤镜就已经加载完毕了，那怎么看是否加载成功呢？这里有三种方法：
+我们可以打开一个视频，右键选择滤镜，看看是否都成功加载，如果没有问题说明已经成功了。
+
+我们还可以按下Tab键，查看相应的解码器渲染器信息是否正确，如图说明LAV解码器，madVR都加载成功，帧率稳定在60，可以畅享60fps的大片了。
+
+我们还可以按下Ctrl+J，这会显示madVR的实时渲染信息，可以借此修正madVR的设置，发挥显卡更大潜能，要掌握这个，这是我们以后进一步调教madVR的关键。
+
+提高音质
+首先查看自己电脑的音质输出
+
+然后在Potplayer中进行相关设置，选择内置WASAPI音频渲染器，高品质，关闭开启规格化（会调节音量，但会损失细节，更具自己需要看看吧）
+
+
+独显笔记本要为Potpayer选择独显，这里以N卡为例
+
+设置LAV
+1.分离器部分
+
+上方的Audio（音频）及Subtitles（字幕），可以设定优先的轨道，可以依自行需求设定，
+（不过这部分我比习惯使用MPC-BE內的切换）
+在Subtitle Selection Mode內以下几种选项可选：
+
+
+No Subtitles：不载入任何字幕
+
+
+Only Forced Subtitles：只选择有强制轨（forced track）的字幕
+
+
+Default：选择有强制轨（forced track）或预设轨（default track）的字幕
+
+
+Advanced：选择在Subtitles的栏位中填入选择逻辑
+
+
+在Demuxer Settings（分路器设定）內，
+Prefer Audio Stream with the Highest Quality （偏好最高音质音轨）
+此项可以视情况勾选，
+勾选后LAV会倾向选择最高音质的音轨，
+但少数影片最高音质的音轨不一定是对的/最好的。
+左下角的Enble System Tray Icon勾选后，
+在启用LAV分离器时，会在右下角工作列的通知区域內显示图示。（依需求选择是否勾选）
+2.音频解码器
+仅有一项必须调节，启用 Enable Mixing。
+因为绝大多数人都应用双声道机器设备，因此碰到 5.1 音道声轨时，仅有左 / 右一声道会被手机耳机 / 音箱接受，别的音道都立即丢掉了。因此，一般来说大家应让 LAV 把多声道混流式成双声道（Stereo）再輸出；玩多声道音箱的富豪请随便。
+
+右方的Output Formats（输出格式）中，可以自由选择输出格式，不过这边建议预设即可。
+左下角的Enble System Tray Icon勾选后，在启用LAV音讯解码器时，会在右下角工作列的通知区域內显示图示。（依需求选择勾选）
+
+Enable Mixing（开启混音）勾选后，便可以將 多声道音轨 混和成 较少声道数 输出，输出声道可以在Output Speaker Configuration（输出扬声器设置）中设置，依照声道数设定。
+
+
+Mono：单声道
+
+
+Stereo：立体声/双声道
+
+
+4.0：4.0声道
+
+
+5.1：5.1声道
+
+
+6.1：6.1声道
+
+
+7.1：7.1声道
+
+
+右方Setting（设定）选项中，Clipping Protection（音量保护），可以使扬声器在大动态音频输出时，降低破音机率。（如果对扬声器有信心，不建议勾选此项，因为可能会损失音质）
+3.视频解码器
+随便打开一个视频，在播放界面点击右键-属性，打开此界面。点击橙色框就能进入视频/音频解码器设置界面。!
+
+视频解码器 LAV Video Decoder 设置。LAV 的设置分为两套方案，A 方案应搭配 madVR 使用，B 方案搭配默认的 EVR(CP) 使用。
+如果使用 madVR，橙色框中的 Output Format 勾选除了 AYUV 以外的所有选项；RGB Output Level选 PC；Dither Mode 选 Random。LAV 默认设置就是如此，如图所示。
+
+如果使用 EVR（自动选择），橙色框中的 Output Format 只勾选 RGB24 选项；其他同上。（仅供需要省电或显卡性能不足者使用）!
+
+为什么 madVR 和 EVR 勾选方式不同？
+因为 madVR 能正确处理 LAV 解码出的所有数据，LAV 解码出的数据原封不动喂给 madVR 就是最好的，这是 madVR 被称作最强视频渲染器的主要原因之一。然而 EVR 只支持处理 8-bit 数据，LAV 解码出的 10-bit YUV 数据会被 EVR 直接砍成 8-bit YUV 进行处理，导致精度大幅降低，色带满天飞，这也是Pot 默认方案读作 a piece of shit 的主要原因之一；如果让 LAV 解码后将 10-bit YUV 转为 RGB24，也就是 8-bit RGB，再喂给 EVR 处理，可避免精度大幅损失。
+渲染器 madVR 和 EVR 可以在 pot 的播放界面快速切换，方法是：右键-视频-视频输出设备。切换渲染器的同时，记得要修改对应的 LAV Video Decoder 设置。 再次强调，A 方案配 madVR 使用，B 方案配 Potplayer 默认的 EVR 使用。
+硬解相关设置
+解码方案优先级推荐：CPU软解 &gt; D3D11 = DXVA2(copy-back) = Intel QuickSnyc &gt; DXVA2(native) &gt; NVIDIA CUVID 。建议没事别用硬解，因为偶尔会出现 bug，况且大多数人也不缺这点 CPU 性能。
+N 卡 GTX 950 / GTX 960 / GTX 1000 全系列、A 卡 4 系 5 系全系列以及 Intel 七代（Kaby Lake）处理器集成显卡可硬解 HEVC 10-bit YUV420 视频。
+常见显卡都能硬解 AVC 8-bit YUV420 视频，所有显卡都不能硬解 AVC 10-bit 视频。接下来以 HEVC 10-bit YUV420 的视频进行示范。
+**CPU 软解 + madVR 示范，**注意绿框中的 Active Decoder 和红框中的输出：
+蓝色和绿色框中是解码器选项，如果使用 CPU 软解，则选择 None；如果使用显卡 GPU 进行硬解，则选择 DXVA2 (copy-back) 或 D3d11 或 DXVA2 (native)，A/N 都可用，前者兼容性更好，后者更节省 CPU；如果使用英特尔核显，则选用 Intel QuickSync；NVIDIA CUVID 是 N 卡专用硬解方式，基本用不上。
+DVXA2 (native)硬解 + madVR 示范：
+
+红框中显示 dxva，实际上输出依然是 P010，橙框中的 Active Decoder 为 dxva2n，OK 表明显卡支持此硬解方式。DXVA2 (copy-back) 和其他硬解方式都类似。
+左上角Settings（设定）选项中，Threads for Multi-Threading（设定多执行续的执行数），基本上设定成Auto（自动）即可。
+Setting for Interlaced Video Streams（设定隔行扫描影片）：
+Field Order（场序规则），在处理格行扫描影片时需要先进行去交错，而反交错时分成 奇数场 优先或是 偶数场 优先，可依需求设定，或是设定成Auto让LAV自动判断。
+Deinterlacing Mode（去交错模式），有几种选项，
+
+
+Auto：自动。
+
+
+Agressive：当影片中发现有格行扫描的画面时，则全部进行去交错处理。
+
+
+Force：强制进行去交错处理。
+
+
+Disabled：关闭去交错处理。
+
+
+右上角的Hardware Acceleration（硬件加速／硬解），Hardware Device to use（使用硬件装置），简单来说就是选择要用何者来进行硬体解码，有以下几种选项，
+
+
+NVIDIA CUVID：Nvidia专用硬体解码介面，可以开启硬体去交错处理。
+
+
+Intel QuickSync：Intel內显专用硬体解码介面，CPU使用率比其余硬解模式稍高5~10%左右，可以开启硬体去交错处理。
+
+
+DXVA2 (copy-back)：为微软开发的硬体加速介面，ANI显示卡均可使用，会將解码完成的资讯回传给记忆体，由於多个回传动作，故效能会比native略差，不过优势为可以在解码器与渲染器中间添加滤镜。
+
+
+DXVA2 (native)：为微软开发的硬体加速介面，ANI显示卡均可使用，会將解码完成的资讯將不会传给记忆体，直接渲染，故效能比copy-back佳，缺点为限制较多。
+
+
+如果要开硬解，会建议 DXVA2 (native) &gt; DXVA2 (copy-back) &gt; NVIDIA CUVID 或 Intel QuickSync（原版则建议使用DXVA2 (copy-back)）
+右下方的Hardware/GPU Deinterlacing (CUVID/QS only)，
+即为硬体去交错处理设定，限定在NVIDIA CUVID或Intel QuickSync硬解模式下启用。
+Software Deinterlacing（软体去交错）
+若要启用软体去交错，可以选择YADIF，此处的去交错与madVR內的去交错，则一使用即可
+左下角的Output Formats（输出格式），可以设定不同色深下的影片输出那些格式，如果没有要使用madVR渲染器及后处理滤镜(post-processing filters)，建议让LAV的高精度抖动输出RGB模式（如下图）
+
+字幕与音轨
+大家早已在上面设定好啦 xy-vsfilter 外挂字幕软件，因此要关掉 Pot 内嵌渣滓外挂字幕软件，不然便会出現二行外挂字幕的奇景，鼠标右键 - 外挂字幕 - 撤销启用显示信息外挂字幕，如图所示。外挂字幕应当跟视頻放到同一文件目录下，且与视频文件格式同名的，会被全自动载入，外挂字幕由 DirectVobSub 操纵，并非 Potplayer。
+
+转换多外挂字幕轨 / 多视頻 / 多音轨，应用右下方的任务栏图标里 LAV 和外挂字幕软件 DirectVobSub 的标志。许多观众们都不清楚 VCB-Studio 及其别的抑制组制做的 BD 通常含好几条声轨，例如文件夹名称中含 2flac、flac_aac、FLACX2 等关键字的 mkv，及其外挂软件 mka。这代表着视頻含有多音轨，可能是 5.1，也可能是声优演员或者 staff 评价声轨，能够 转换着应用。
+
+转换声轨还可以立即点一下鼠标右键 - 响声 - 挑选响声来完成，开展转换；视頻轨同样，但是多音轨很普遍，而多视頻轨基本上见不上。
+](https://wbacg.oss-cn-hongkong.aliyuncs.com/2020/07/20200726091103403.jpg)
+设置madVR
+madVR 的核心优势有两个：
+1、高精度的数据处理，避免画面失真，产生色带、锯齿等瑕疵；
+2、高质量的缩放算法，在片源分辨率低于屏幕分辨率时，提供更清晰、更锐利的画面，算法甚至优于很多高级蓝光机。
+madVR 功能强大，其调教也大有学问，本篇教程不再赘述 madVR 调教具体步骤，详情请见我们之前做过的 madVR教程: [VCB-Studio 科普教程 2] madVR 渲染器配置教程
+如果教程也无法满足你的需求，欢迎有耐心、有基础者钻研：万年冷冻库 最强渲染器——madVR设置研究  
+以上，以 Potplayer 为基础的高质量播放器工具链设置完成，请尽情享受高清影视的乐趣吧！
+
+下面开始进入正式设置篇
+
+我们播放视频时，双击任务栏右下方的 MADVR 控制面板，进入设置菜单。（没有的话运行 MADVR 文件夹里的 madHcCtrl.exe），或是在外挂滤镜里加入madVR并点两下都可以打开设定页。
+
+
+1.device菜单
+
+无论我们使用的是显示器还是电视，一律选择“Digital Monitor/TV”。
+打开设备下的 “properties” 选项。
+如果使用显示器，第一项 RGB 范围选择 0-255。如果是连接电视机，则选择 16-255。（这个还是比较测试下，我接电视反而感觉选 0-255 效果更好）
+第二项是色深。一般选择 8bit。如果显示器或者电视能达到 10bit 或更高，则选择 10bit。
+
+第一个就是你的显示设备的名称，各人的显示设备不同，所以名称也会不一样。在这里可以选择你输出设备的制式，因为不同的设备，他的某些指标不一样，所以要认真对待。设置显示器的类型，一般选择“Digital Monitor”
+
+打开设备下的“properties”选项如果使用显示器，这里一定要认真对待。如果你用电脑显示器看影片，就要选择PC levels（0-255），如果你是接液晶电视，或者投影仪，可能需要选择TV levels（16-235）。因为一般电视显示的灰阶不是0-255，如果你用0-255去输出，那么16以下，235以上的灰阶都丢失了，暗部细节漆黑一片，影片整个发灰。
+针对电脑连接TV或投影，我详细说一下。这里有些复杂，首先，你用的是什么线进行连接。如果你的显卡有HDMI接口，那么HDMI直连显示设备，选择16-235。如果你的显卡没有HDMI接口，用DVI转接HDMI。这里还是选择16-235.
+如果你的显示设备有DVI接口。DVI直连，并且你的显示设备也支持的话，可以选择0-255.而位深则选择8 bit（or higher）.8 bit或者更高。8 bit对应256色阶。通用。当然你硬件设施够好，达到10bit ，这个选项也完美对应。
+
+信息标示页面。在这个页面里，会标出你的显示设备的型号啊，出厂日期什么的。
+
+这里一定要认真对待。如果你用电脑显示器看影片，就要选择PC levels（0-255）。如果你是接液晶电视，或者投影仪，可能需要选择TV levels（16-235）。因为一般电视显示的灰阶不是0-255，如果你用0-255去输出，那么16以下，235以上的灰阶都丢失了，暗部细节漆黑一片，影片整个发灰。针对电脑连接TV或投影，我详细说一下。这里有些复杂，首先，你用的是什么线进行连接。如果你的显卡有HDMI接口，那么HDMI直连显示设备，选择16-235。如果你的显卡没有HDMI接口，用DVI转接HDMI。这里还是选择16-235.如果你的显示设备有DVI接口。DVI直连，并且你的显示设备也支持的话，可以选择0-255.而位深则选择8 bit（or higher）.8 bit或者更高。8 bit对应256色阶。通用。当然你硬件设施够好，达到10bit ，这个选项也完美对应。
+
+
+这里的校准，指颜色校准。使用yCMS和3DLUT进行校准。这里我觉得没什么好讲的，因为显示器存在差异，因此你必须按照你自己的显示器来进行颜色校准设置。但是这需要校准设备。这个东西一般只有显示设备评测机构有，我们自己恐怕没办法去搞这种校准。所以这里就不要去开启它了。而下面的选项，我在图片里也有详细说明。在此不再复述。选择BT.709而伽马部分，如果你是N卡，就选择pure power curve。后面的2.20最好不要动。那个数值是标准。不过你也可以尝试改改看~
+这里的选项多半是为接其他显示设备用的，一般用不到。留空就可以了。
+
+启用伽马处理，一般选择启用。然后交由你选择的伽马处理标准去处理灰阶。N卡选择pure power curve后面的2.20不要动，这个是标准数值。
+
+在hdr项目中，选择convert HDR content to SDR by using pixel shader math，假如你有某些萤幕校色装置可以选择包括3DLUT的项目，不过我没有此类设备所以不知如何设定。设置好了之后可以去观看HDR影片，如果想肯定HDR功能是否正常运作，可以在播放时按下Ctrl+J开启OSD讯息表，观察红框內matrix的色域是否BT.2020，而且下方有无出现HDR项目。
+
+在正常运作下即使模拟HDR功能的效果亦相当出众，光暗和色彩效果都只能用惊艳形容，比较下会感觉非HDR版的色彩变得非常暗哑，但少年pi这套电影在当时画面呈现的效果已经算是相当出色，但在HDR的效果更上一层楼。参见开始展示的对比图。
+2.processing菜单
+deinterlacing 选项，对应的是图像交错处理。建议在最上面的选项打勾，让视频需要进行图像交错的时候交给 MADVR 自己去处理，并且在怀疑时不启动交错处理。如果常看动漫的，可以去掉“only look at pixels in the frame center”勾选。
+
+关于 “only look at pixels in the frame center”：
+“only look at pixels in the frame center” 这个选项只对 film 型式的交错式 (隔行扫描 interlaced) 影片有影响，也就是说这选项在启动 madVR 的 film mode 时才有作用(文后有解释)
+我 们知道对于这类影片必须对其作 IVTC 让它还原成 24p(60i→24p)，但实际上我们有时候会发现录了一部电视播放的电影或动画下来，电视台常常在四边打上跑马灯或台标之类的东西，而这个跑马灯或台标却是 video 型式的 interlaced 讯号 (真正的 60i 无法 IVTC)，因此我们要作 IVTC 时如果是对整个画面的像素作侦测，遇到这种情形时就很容易产生误判。因此勾选这个选项时就只会对画面中央部分的像素 作侦测，避开那些跑马灯或台标可能出现的位置以免作 IVTC 时产生误判，但缺点就是这样侦测的效率较低，遇到动画这类常常有静止画面的影片在侦测是哪一类 pulldown 时就会花比较久的时间。如果会看电视台播放的电影或动画的话，建议勾选此选项，如果是看 DVD 原盘的话，则建议取消勾选。
+这选项对 progressive 的影片完全没有影响，如果照字面理解为这选项不利于动画的话那是错误的理解，因为很多动画片源只要是蓝光或是录制下来压制时做过 IVTC 的，都会是 progressive 而非 interlaced。电视台录制下来的原始 TS 档或是 DVD 原盘才有可能是 interlaced。
+arifact removal 选项，对应的是图像去色阶功能。在普通的视频中，我们经常会看到人物的脸上，或者不同颜色的交界处有淡淡的光晕和条纹，这就是没有去掉色阶。而我们的目的就是让图像的颜色过渡更加自然，让条纹现象减少甚至消失。（这个选项会占用一些 GPU 资源，但尚可接受，开启无压力。）第一个选项是整体画面的去色阶效果。一般选择 low 就会有不错的效果。第二个选项是不同颜色交界处去色阶效果。可以选择 high。
+
+3.scaling algorithms菜单
+
+这个是最关键的图像缩放算法的设置，这部分是影响效能最大也是影响画质表现最明显的地方，也是 madVR 的最大特色。里面5个页面的内容基本类似。让用户选择的东西都是各种图像缩放模式，而不同的模式所消耗的性能也是不同的，基本上从上到下，性能消耗是越来越大，用户要根据自己的配置来考虑。每个页面的设置主要都是为了解决视频图像中的锯齿（aliasing）和振铃效应（ringing）。根据选择的不同，右上角会有效果介绍。绿条一般越长也越好。红条则是越低越好。
+说明在算法的最下面还有两个选项：active anti-ringing filter(简称ar)可以开启抗光环处理，也容易在downscale时候增加锯齿。scale in linear light可以增加image downscale转换之后，颜色对比度的精确性。建议在image downscale中开启。
+chroma upscaling：色度拉升
+即色度平面放大。不过色度拉伸的算法比较难感受到差别。
+
+如果配置好的话就设置是 NGU Anti-Alias,high quality（这里开到 very high qulity 以上几乎没什么意义，肉眼分辨不出）
+如果显卡中等的话，可以设置 Jinc + AR
+如果显卡不太好的话，则可设置 Cubic Bicubic75 + AR
+如果是 Intel 集显得话，则可设置 Cubic SoftCubic60 + AR
+
+
+image downscaling：影像缩放
+只要输出分辨率小于原始分辨率就会用到这部分的算法，比如 4K 分辨率的视频在 1080P 显示器上播放。
+
+如果电脑配置特别高的话，还可以考虑下使用 SSIM 1D 100%。SSIM 是目前表现最好的算法，在缩小画面的同时很好的保留了原解析度的细节跟锐利度，不过效能消耗也比较大。
+如果显卡跑不动 SSIM 的话，可以考虑 Cubic（Bicubic 150）+ AR + LL，即勾选 “activate anti-ringing filter”(简称 AR) 跟”scale in linear light”（简称 SC）。
+如果显卡还是不给力，那就使用下图的 Cubic（Catmull-Rom）+ AR + LL，这个也算是公认的最佳演算法组合 (resize 后最接近原本的画面）
+
+
+image upscaling：影像拉升
+也就是影像放大，只要输出目标分辨率大于原始分辨率就会用到这部分的算法，比如 1080P 分辨率的视频在 4K 显示器上播放。
+在这里我们可选择使用 doubling（影像翻倍）或 upscaling（影像拉升）。前者效果比后者好很多，所以说能开的话还是开一下吧。（当然如果显卡不是很好的话，就不要使用 doubling 了）
+
+对显卡很有自信的可以开 NGU Anti-Alias，同时下拉框设置为下图所示。
+这里注意第四个下拉框（activate doubling）的选项：
+我们这里选择的是 “… always -supersampling”，表示始终启用 NGU 进行翻倍。
+而原来默认的 “let madVR decide” 表示目标分辨率的宽或高大于或等于原始分辨率 1.2 倍时才启用 NGU，沒达到 1.2 倍启用条件的话则会使用 Jinc + AR 替代。
+
+
+
+如果上面的设置有些吃力的话，可以把第一个下拉框（luma doubling）的选项调成 medium。
+如果配置中等的话，还是建议设置为 upscaling 下的 Jinc + AR。
+显卡吃不消的可以考虑：Lanczos 4+AR（HD4600 等级集显）甚至是 Cubic Bicubic60+AR（HD4000 等级集显）。
+
+
+upscaling refinement：锐化算法，目的是在于改善放大运算后造成的模糊，只在视视频大后使用，如果是1:1无放大的影像，这部分勾选了也不会有作用。。
+4.rendering菜单
+
+说明madvr 默认就是用全屏独占模式（exclusive）。虽然这种模式有它的好处，但如果电脑配置不够就会出现上间歇性黑屏，去掉“enable automatic fullscreen exclusive mode”的勾选即可。
+[图片上传失败…(image-63c71e-1599900233537)]
+
+如何正确播放HDR视频
+为了实现完整的HDR工作链，我们需要从解码到最终输出的全套播放工具都支持HDR。可能有的人会说Windows 10自带的视频播放器就支持HDR视频的播放，为什么不直接用呢？说到底还是因为Microsoft Store难用，因为现在使用Windows 10自带的视频播放器对HEVC编码进行解码，就必须在商店中购买HEVC解码器扩展，虽然说它只有7块钱，但是考虑到很多人并没有使用Microsoft账户，仍然是以本地账户形式使用Windows 10的，所以购买非常不方便（因为HEVC不是免费格式）。因此，我们需要一些别的路子，一些免费并且没有版权问题的路子。
+首先我们需要一个支持HDR内容解码的视频解码器，这里推荐使用LAV Filter，这款解码器可以说是目前最强大的解码器之一，包含分离器+视频解码器+音频解码器，另外它还是开源免费的。按照播放视频的下一步，我们需要一个支持HDR内容的渲染器，这里我们使用目前地表最强的视频渲染器——madVR，它支持将HDR信息直接传输给显示器。最后我们需要一个播放器，作为外壳调用前面的这些东西，这里推荐使用MPC-BE，当然很多人用的PotPlayer也可以，不过要比MPC-BE稍微多做一点工作。
+准备好了软件之后还要对硬件支持进行检查，显卡必须要支持HDR内容输出，显示器必须要支持HDR内容输入，两者之间的传输通道也要支持HDR的内容。更为具体一点的细节是，HDMI 2.0a标准只支持HDR10标准的内容传输，而HDMI 2.0b中增加了对于HLG标准的支持。而在DP那边，1.4版本中增加了对于HDR10的支持，也就是说，我们至少需要支持DP 1.4和HDMI 2.0b接口的显卡来输出HDR内容，显示器也需要具备这两个接口。
+当然，最终也是最重要的，就是你需要一个支持HDR的显示器。
+
+按照上文中设置 LAV Filters + madVR + Potplayer + 10Bit 视频线 +HDR 显示器，就可以实现HDR观看了
+
+采用madVR的好处就是不用在Windows的显示设置中开启HDR，madVR在检测到显示器支持HDR、视频源中包含HDR内容时会自动让显示器切换到HDR模式下，不过如果没有自动切换，就需要你手动将开关打开了。另外，没有HDR显示器的用户也可以享受到HDR视频精准转换至SDR色彩带来的提升，这是madVR视频渲染器独一份的高精度转换，不过对于性能会有一些要求。
+
+可以看到非常明显的画面色彩对比，HDR内容在不正确播放的情况下显示出的是灰蒙蒙的画面，而正确输出之后，颜色非常亮丽。
+希望本次教程可以帮助到一些读者朋友，我以后可能还会写个VapourSynth啊x265啊什么的压制教程。
+另外，虽然现在新版的PotPlayer已经支持将HDR信息直接传输到显示器，但在这篇教程中我仍然提倡大家使用LAV Filters和madVR，因为这两个滤镜拥有更高的处理精度。PotPlayer经常被压制圈诟病的一点就是其内建的解码器和大部分情况下自动使用的EVRCP渲染器的内部处理精度不够，尤其是在HDR这种片源为原生10bit的情况下，更是不够用了。
+视频补帧
+**补帧，**即利用电脑上的补帧软件，将原视频从24FPS提升至60FPS或者更高。帧数越多，所显示的动作便会越流畅，视频的清晰度、饱和度也会更佳。
+所以，我们补帧的目的就是把把视频从24帧提升到60帧或者更高，能够很直观欣赏到流畅的画面。
+PotPlayer倍帧
+这个补帧是PotPlayer播放器自带的补帧方法，能直接让当前原视频的帧数翻倍，只需要简单的设置即可。
+
+dmitrirender 补帧
+
+dmitrirender 官网](http://www.dmitrirender.ru/)
+
+dmitrirender这一款这一款软件实际上并不是插帧领域中最为常见的软件，但其有着自身的优势: 首先采用GPU运算，无论是AMD、NVIDIA还是INTEL的核显通通都支持，对CPU的负担较低，对整体配置的需求也比较低
+SVP4 补帧
+
+SVP4 需要付费。SVP4是一款专业版视频补帧软件，提供GPU加速，并允许使用中档CPU和几乎任何GPU硬件为60Hz的FullHD 1080p视频重新计算，能将一些画面模糊和不流畅的的视频进行自动补帧，让你的视频流畅起来。
+SVP下载地址：https://www.svp-team.com/wiki/Download
+
+SVP还有一项优势就是它并不依赖特定的播放器，其本身可以看做是在视频解码过程中的一个滤镜，只要能调用相应解码器播放视频，便可以进行视频插帧
+SVP4 安装
+
+评估版本下载地址 https://alist.17lai.site/tools/video
+
+1.解压SVP.RAR到C:\SVP
+2.运行 svp4-cracked.exe
+3.运行后在弹出窗口内点击settings
+
+4.切换到 Repositories 标签
+5.点击 Temporary respoitories，再点击 Add，把下列内容添加进去（两条！）
+file:///C:/SVP/free
+file:///C:/SVP/common
+
+6.然后勾选 Use temporary repositories only，确认安装
+
+7.【重要】将SVPManager.exe复制到程序目录，替换原文件。
+SVP4 设置
+点击如图所示的部分可以进行一些简单设置
+
+
+视频帧处理选项按下图进行设置。（检测并切掉黑边这个不要勾选，因为有可能会切掉部分字幕）
+
+
+
+背景灯效果按下图设置（不禁用的话会出现动态模糊的边框）
+
+
+PotPlayer 设定
+1.右击potplayer的播放界面，进入选项页面****。****
+
+2.*先点击*滤镜，再点击全局滤镜优先权**，最后点击添加系统滤镜
+
+3.选择『ffdshow raw video filter』，然后点击确定
+
+
+选中 ffdshow raw video filter，点击強制使用(重要)，别忘了点击应用，然后再点击确定。此時已经完成基本设置。
+
+
+完成以上设置完基本参数后，就可以使用potplayer+svp4 pro组合来看视频了
+播放影片前几秒左下角会出現SVP启用的标志，这就说明配置成功了。
+AMD显卡专用补帧
+**必要条件：**确保你有GNC或者Vega 架构的AMD显卡，并下载最新的AMD驱动。
+
+AMD在2014年12月9号发布Omega驱动时也宣布了Fluid Motion技术，基于显卡的运算插帧，大大降低CPU负担，同时使视频播放更加流畅。相比传统的SVP插帧需下载安装多款外挂软件且需繁杂的手续设定，需要消耗CPU资源，耗电量比较大，SVP部份画面呈现会有抖动情况。
+Fluid Motion就是只需按一键就开启，CPU跟本没有在处理(使用率都在个位数) 全程就交给GPU去处理就好。Fluid Motion部份比SVP呈现出来的动作还要比较自然，可以说是看动画的神器，不过官方只支持在蓝光播放时开启插帧，不过网友基于AMD Fluid Motion以DirectShow开发出了Bluesky Frame Rate Converte，方便了我们在普通视频上也能实现补帧的效果。
+
+下载Bluesky Frame Rate Converte
+下载好以后直接默认安装即可！
+安装完成之后，还需要对FRC 设置， AMD 驱动设置，以及 Potplayer 滤镜设置
+
+Nvidia显卡专用补帧
+既然有AMD显卡专用补帧，肯定也有Nvidia显卡专用补帧了！它名字叫做：Dain-App
+需要说明的是：本软件是一款补帧****转换工具，而不是和以上介绍的可以实时渲染同步补帧！但是通过它补帧后的效果还是很明显的！
+
+Dain-App基于Nvidia CUDA开发，是上海交大开源的 DAIN（Depth-Aware Video Frame Interpolation）是一款可以AI深度学习，使用AI预测新帧并提高视频或gif帧率的插帧算法。可让您采用任何形式的媒体，例如电影，定格动画，动漫，卡通，精灵等，并插值新帧，从而从原始文件生成更大的帧率。
+
+需要注意的是：目前它需要CUDA，因此任何不支持CUDA的计算机都将无法运行此应用程序（AMD和较早的Nvidia卡）。它极度吃显卡及显存资源，依据视频长度/分辨率等决定计算时间，整体耗时较为漫长，低端Ｎ卡不建议使用。
+Dain-App介绍地址：https://github.com/baowenbo/DAIN
+下载地址：https://grisk.itch.io/dain-app
+下载完毕后直接解压缩，运行DAINAPP.exe即可。
+常见 Bug 解决篇
+1、为什么使用 madVR 全屏时候会黑屏？
+答：黑短短几秒是正常的，表明 madVR 正在切换至全屏独占模式（fullscreen exlucsive mode，简称 FSE 模式 ），这个模式有一些好处，比如防止画面撕裂。但实际上，我们推荐你关闭 FSE 模式，因为它带来的麻烦远多于好处。
+如果你不喜欢 FSE 模式，可以在 madVR 中关闭它，具体操作为：取消勾选 madVR 的控制面板里的 rendering -&gt; general settings -&gt; enable automatic fullscreen exlucsive mode 选项。
+2、为什么全屏 FSE 模式下点鼠标/切音轨/切换字幕/拉进度条画面会闪？
+答：因为全屏模式就是给你看视频用的，任何操作都应该在按 Enter 键 或 点击鼠标中键 退回到 窗口模式 后再进行。
+此外，全屏模式下完全可以用键盘轻松控制，比如 ←/→ 默认 后退/前进 5s；Ctrl + ←/Ctrl + → 默认后退/前进 30s；Ctrl + PageUp / Ctrl + PageDown 默认后退/前进 至上/下一章节，这些实用的快捷键都可以在 Potplayer 的设置里找到并定制。
+3、为什么 EVR 和 madVR 切换时会卡死？
+答：播放过程中， madVR 渲染器和 EVR 渲染器相互切换可能导致卡死，故建议尽量在暂停时切换。同理，任何切换字幕、音轨等操作，如果出现问题，应先暂停再操作；如果还不行，尝试关闭视频，重新打开。
+4、为什么我按照教程设置还有这样那样的 Bug ？
+答：最安全的方式是使用本教程文首提供的安装包，并按照教程从头重新设置 Potplayer。 Potplayer 本身就是个问题大户，版本号还那么多，导入 reg 文件导致的 Bug 也五花八门，无从下手。但按照本文的步骤从头设置，至少能将出问题的概率压到最低。我在许多台电脑上，按照本文的步骤设置过 LAV + Potplayer + madVR，从没出现过 Bug。
+5、如何配合此教程的方案使用插帧/倍速播放/截图/录制等功能？
+答：自己动手，丰衣足食，以上大多数功能可以由 Potplayer 本身实现，但不保证在使用 madVR 后还能用。本教程的目的是提供基本完美的视频播放功能，是为欣赏视频用的，不是拿来折腾的，不可能为各种细枝末节的需求做定制调整，我个人尤其反感插帧和倍速播放。更何况即使我们有心，播放器本身也未必能实现。
+6、为何我的画面是上下颠倒的？为何我的 madVR 老是崩溃？
+答：这两个问题大多是由 xy-vsFilter 造成的，因为 xy-vsFilter 存在不少 Bug，本教程以 xy-vsFilter 作为字幕插件纯粹是为了照顾无法使用 madVR 的用户。因此，只要你电脑能跑得动 madVR ，我都强烈建议改用 madVR + xy-SubFilter 的组合。各种字幕插件至今都是 beta 版，madVR 也是，如果出了问题，除了更新到最新的版本，也没什么更好的办法。实在不行那就用播放器自带吧，mpv、mpc-hc 和 mpc-be 自带的字幕插件尚且堪用；Potplayer 变黄前自带的字幕功能也勉强凑合，但变黄后就是一坨 shit。
+7、Potplayer 太容易崩溃了，有没有什么解决办法？
+答：将 Potplayer 换成 mpc-hc 或者 mpc-be 搭配 madVR 使用吧，他们本质上是一样的。本文最开始就强调，Potpalyer 的优势在于其友好的使用界面，对 Potpalyer 进行如此多的调教，仅仅是为了让它达到 mpc-hc 或者 mpc-be 默认设置的水平而已。但即使经过这么多调整，Potpalyer 的崩溃概率依然大于mpc-hc 或者 mpc-be。如果你能按照这篇教程成功设置 Potplayer ，那设置选项更简洁的 mpc-hc 或者 mpc-be 也不是问题。
+后记：效果展示
+鉴于madVR是压榨显卡性能，所以显卡占用如果没到80%以上说明还没有达到最佳设置，另一个标准就是你的风扇有没有哗哗响。
+
+全高清
+
+全高清下的大腿时代，播放4K视频没压力
+
+4K屏显卡已经吃不消了
+
+
+4K下的大腿时代，果然是显卡杀手，估计得得1070才能流畅流畅解析吧。
+其它平台
+推荐的播放器可以分成两大阵营：mpv 和 MPC。前者跨平台，后者仅限 Windows。
+mpv
+mpv 可以在 Windows、macOS 和桌面 Linux 上使用。
+mpv 本身没有图形界面，需要自己写配置文件，但并不复杂，习惯之后可以说比图形界面还要简单。
+如果你确实需要一个图形界面的 mpv 播放器前端，我们推荐：
+– Windows 用户使用 mpv.net
+– macOS 用户使用 IINA
+详情请查看我们的 mpv 配置教程。
+MPC
+MPC 系列都基于微软 DirectShow，只能在 Windows 上使用。
+MPC 目前有两个分支版本：MPC-HC 和 MPC-BE，都值得推荐。我们同时推荐配合 madVR 和 XySubFilter with libass 一起使用。
+目前的 K-Lite Codec Pack Full 直接包含了 MPC-HC、LAV 以及 madVR 这一套播放环境，安装和配置较为简单，是我们优先推荐的方案。
+详情请查看我们的 MPC-HC + madVR 配置教程。
+参考&amp;致谢
+
+实现PC视频播放最强画质教程( Potplayer播放器 MADVR插件)
+有问有答：如何正确播放HDR视频 
+potplayer + LAV + madVR 组PC高清播放器
+基于 PotPlayer 和 madVR 的播放器教程 | VCB-Studio
+https://github.com/hooke007/MPV_lazy/ 懒人专用，新手推荐
+
+系列教程
+全部文章RSS订阅
+Nas系列
+Nas 分类 RSS 订阅
+
+从零开始玩PT-入门到精通
+如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
+音视频图书和音乐自动化管理框架图解
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Potplayer终极优化教程实现PC视频播放最强画质
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+Docker系列
+Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
 
 ]]></content>
       <categories>
-        <category>社会观察</category>
+        <category>nas</category>
       </categories>
       <tags>
-        <tag>社会观察</tag>
-        <tag>中医</tag>
-        <tag>西医</tag>
+        <tag>nas</tag>
+        <tag>emby</tag>
+        <tag>potplayer</tag>
       </tags>
   </entry>
 </search>
