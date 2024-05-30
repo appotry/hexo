@@ -1,3 +1,4 @@
+
 ## 夜法之书的 Hexo 博客
 
 
@@ -7,7 +8,7 @@
 <h2 align="center">Hi 👋, I'm appotry (夜法之书) </h2>
 
 
-<div align="center" >
+
 ## 站点简介：
 
 > ~软件驱动世界~个人独立技术博客，关于Linux,开源，Nas，Docker，嵌入式，理财，健身等主题！
