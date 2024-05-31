@@ -1,1 +1,14 @@
-(function(){if(typeof Prism==="undefined"){return}Prism.hooks.add("wrap",function(e){if(e.type!=="keyword"){return}e.classes.push("keyword-"+e.content)})})();
+(function () {
+
+	if (typeof Prism === 'undefined') {
+		return;
+	}
+
+	Prism.hooks.add('wrap', function (env) {
+		if (env.type !== 'keyword') {
+			return;
+		}
+		env.classes.push('keyword-' + env.content);
+	});
+
+}());

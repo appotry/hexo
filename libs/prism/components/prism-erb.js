@@ -1,1 +1,25 @@
-(function(a){a.languages.erb={delimiter:{pattern:/^(\s*)<%=?|%>(?=\s*$)/,lookbehind:true,alias:"punctuation"},ruby:{pattern:/\s*\S[\s\S]*/,alias:"language-ruby",inside:a.languages.ruby}};a.hooks.add("before-tokenize",function(e){var n=/<%=?(?:[^\r\n]|[\r\n](?!=begin)|[\r\n]=begin\s(?:[^\r\n]|[\r\n](?!=end))*[\r\n]=end)+?%>/g;a.languages["markup-templating"].buildPlaceholders(e,"erb",n)});a.hooks.add("after-tokenize",function(e){a.languages["markup-templating"].tokenizePlaceholders(e,"erb")})})(Prism);
+(function (Prism) {
+
+	Prism.languages.erb = {
+		'delimiter': {
+			pattern: /^(\s*)<%=?|%>(?=\s*$)/,
+			lookbehind: true,
+			alias: 'punctuation'
+		},
+		'ruby': {
+			pattern: /\s*\S[\s\S]*/,
+			alias: 'language-ruby',
+			inside: Prism.languages.ruby
+		}
+	};
+
+	Prism.hooks.add('before-tokenize', function (env) {
+		var erbPattern = /<%=?(?:[^\r\n]|[\r\n](?!=begin)|[\r\n]=begin\s(?:[^\r\n]|[\r\n](?!=end))*[\r\n]=end)+?%>/g;
+		Prism.languages['markup-templating'].buildPlaceholders(env, 'erb', erbPattern);
+	});
+
+	Prism.hooks.add('after-tokenize', function (env) {
+		Prism.languages['markup-templating'].tokenizePlaceholders(env, 'erb');
+	});
+
+}(Prism));

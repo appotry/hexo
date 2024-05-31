@@ -1,1 +1,36 @@
-(function(t,e){for(const o of e.querySelectorAll("[data-lazy-src]")){Matery.utils.waitElementVisible(o,function(){var t=o.dataset.lazySrc;o.removeAttribute("data-lazy-src");var e=new Image;e.onload=function(){o.classList.add("is-loaded");o.style.backgroundImage="url("+t+")"};e.src=t},CONFIG.lazyload.offset_factor)}for(const o of e.querySelectorAll("[bg-lazy]")){Matery.utils.waitElementVisible(o,function(){o.removeAttribute("bg-lazy")},CONFIG.lazyload.offset_factor)}for(const o of e.querySelectorAll("img[lazyload]:not([no-lazy])")){Matery.utils.waitElementVisible(o,function(){o.setAttribute("srcset",o.getAttribute("src"));o.removeAttribute("srcset");o.onload=function(){o.style.width=this.width+"px";o.style.height=this.height+"px";o.removeAttribute("lazyload")}},CONFIG.lazyload.offset_factor)}})(window,document);
+/* global Matery, CONFIG */
+(function(window, document) {
+  for (const each of document.querySelectorAll('[data-lazy-src]')) {
+    Matery.utils.waitElementVisible(each, function() {
+      var url = each.dataset.lazySrc;
+      each.removeAttribute('data-lazy-src');
+      var image = new Image();
+      image.onload = function () {
+        each.classList.add('is-loaded')
+        each.style.backgroundImage = 'url(' + url + ')'
+      }
+      image.src = url
+    }, CONFIG.lazyload.offset_factor);
+  }
+
+  for (const each of document.querySelectorAll('[bg-lazy]')) {
+    Matery.utils.waitElementVisible(each, function() {
+      each.removeAttribute('bg-lazy');
+    }, CONFIG.lazyload.offset_factor);
+  }
+
+  for (const each of document.querySelectorAll('img[lazyload]:not([no-lazy])')) {
+    Matery.utils.waitElementVisible(each, function() {
+      each.setAttribute("srcset", each.getAttribute("src"));
+      each.removeAttribute('srcset');
+      // each.removeAttribute('lazyload');
+      each.onload = function () {
+        //each.style.width="auto";
+        //each.style.height="auto";
+        each.style.width = this.width + 'px';
+        each.style.height = this.height + 'px';
+        each.removeAttribute('lazyload');
+      }
+    }, CONFIG.lazyload.offset_factor);
+  }
+})(window, document);

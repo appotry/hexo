@@ -1,1 +1,179 @@
-(function(){if(typeof Prism==="undefined"||typeof document==="undefined"){return}var o=[];var l={};var u=function(){};Prism.plugins.toolbar={};var e=Prism.plugins.toolbar.registerButton=function(e,n){var t;if(typeof n==="function"){t=n}else{t=function(e){var t;if(typeof n.onClick==="function"){t=document.createElement("button");t.type="button";t.addEventListener("click",function(){n.onClick.call(this,e)})}else if(typeof n.url==="string"){t=document.createElement("a");t.href=n.url}else{t=document.createElement("span")}if(n.className){t.classList.add(n.className)}t.textContent=n.text;return t}}if(e in l){console.warn('There is a button with the key "'+e+'" registered already.');return}o.push(l[e]=t)};function d(e){while(e){var t=e.getAttribute("data-toolbar-order");if(t!=null){t=t.trim();if(t.length){return t.split(/\s*,\s*/g)}else{return[]}}e=e.parentElement}}var t=Prism.plugins.toolbar.hook=function(r){var e=r.element.parentNode;if(!e||!/pre/i.test(e.nodeName)){return}if(e.parentNode.classList.contains("code-toolbar")){return}var t=document.createElement("div");t.classList.add("code-toolbar");e.parentNode.insertBefore(t,e);t.appendChild(e);var a=document.createElement("div");a.classList.add("toolbar");var n=o;var i=d(r.element);if(i){n=i.map(function(e){return l[e]||u})}n.forEach(function(e){var t=e(r);if(!t){return}var n=document.createElement("div");n.classList.add("toolbar-item");n.appendChild(t);a.appendChild(n)});t.appendChild(a)};e("label",function(e){var t=e.element.parentNode;if(!t||!/pre/i.test(t.nodeName)){return}if(!t.hasAttribute("data-label")){return}var n;var r;var a=t.getAttribute("data-label");try{r=document.querySelector("template#"+a)}catch(e){}if(r){n=r.content}else{if(t.hasAttribute("data-url")){n=document.createElement("a");n.href=t.getAttribute("data-url")}else{n=document.createElement("span")}n.textContent=a}return n});Prism.hooks.add("complete",t)})();
+(function () {
+
+	if (typeof Prism === 'undefined' || typeof document === 'undefined') {
+		return;
+	}
+
+	var callbacks = [];
+	var map = {};
+	var noop = function () {};
+
+	Prism.plugins.toolbar = {};
+
+	/**
+	 * @typedef ButtonOptions
+	 * @property {string} text The text displayed.
+	 * @property {string} [url] The URL of the link which will be created.
+	 * @property {Function} [onClick] The event listener for the `click` event of the created button.
+	 * @property {string} [className] The class attribute to include with element.
+	 */
+
+	/**
+	 * Register a button callback with the toolbar.
+	 *
+	 * @param {string} key
+	 * @param {ButtonOptions|Function} opts
+	 */
+	var registerButton = Prism.plugins.toolbar.registerButton = function (key, opts) {
+		var callback;
+
+		if (typeof opts === 'function') {
+			callback = opts;
+		} else {
+			callback = function (env) {
+				var element;
+
+				if (typeof opts.onClick === 'function') {
+					element = document.createElement('button');
+					element.type = 'button';
+					element.addEventListener('click', function () {
+						opts.onClick.call(this, env);
+					});
+				} else if (typeof opts.url === 'string') {
+					element = document.createElement('a');
+					element.href = opts.url;
+				} else {
+					element = document.createElement('span');
+				}
+
+				if (opts.className) {
+					element.classList.add(opts.className);
+				}
+
+				element.textContent = opts.text;
+
+				return element;
+			};
+		}
+
+		if (key in map) {
+			console.warn('There is a button with the key "' + key + '" registered already.');
+			return;
+		}
+
+		callbacks.push(map[key] = callback);
+	};
+
+	/**
+	 * Returns the callback order of the given element.
+	 *
+	 * @param {HTMLElement} element
+	 * @returns {string[] | undefined}
+	 */
+	function getOrder(element) {
+		while (element) {
+			var order = element.getAttribute('data-toolbar-order');
+			if (order != null) {
+				order = order.trim();
+				if (order.length) {
+					return order.split(/\s*,\s*/g);
+				} else {
+					return [];
+				}
+			}
+			element = element.parentElement;
+		}
+	}
+
+	/**
+	 * Post-highlight Prism hook callback.
+	 *
+	 * @param env
+	 */
+	var hook = Prism.plugins.toolbar.hook = function (env) {
+		// Check if inline or actual code block (credit to line-numbers plugin)
+		var pre = env.element.parentNode;
+		if (!pre || !/pre/i.test(pre.nodeName)) {
+			return;
+		}
+
+		// Autoloader rehighlights, so only do this once.
+		if (pre.parentNode.classList.contains('code-toolbar')) {
+			return;
+		}
+
+		// Create wrapper for <pre> to prevent scrolling toolbar with content
+		var wrapper = document.createElement('div');
+		wrapper.classList.add('code-toolbar');
+		pre.parentNode.insertBefore(wrapper, pre);
+		wrapper.appendChild(pre);
+
+		// Setup the toolbar
+		var toolbar = document.createElement('div');
+		toolbar.classList.add('toolbar');
+
+		// order callbacks
+		var elementCallbacks = callbacks;
+		var order = getOrder(env.element);
+		if (order) {
+			elementCallbacks = order.map(function (key) {
+				return map[key] || noop;
+			});
+		}
+
+		elementCallbacks.forEach(function (callback) {
+			var element = callback(env);
+
+			if (!element) {
+				return;
+			}
+
+			var item = document.createElement('div');
+			item.classList.add('toolbar-item');
+
+			item.appendChild(element);
+			toolbar.appendChild(item);
+		});
+
+		// Add our toolbar to the currently created wrapper of <pre> tag
+		wrapper.appendChild(toolbar);
+	};
+
+	registerButton('label', function (env) {
+		var pre = env.element.parentNode;
+		if (!pre || !/pre/i.test(pre.nodeName)) {
+			return;
+		}
+
+		if (!pre.hasAttribute('data-label')) {
+			return;
+		}
+
+		var element; var template;
+		var text = pre.getAttribute('data-label');
+		try {
+			// Any normal text will blow up this selector.
+			template = document.querySelector('template#' + text);
+		} catch (e) { /* noop */ }
+
+		if (template) {
+			element = template.content;
+		} else {
+			if (pre.hasAttribute('data-url')) {
+				element = document.createElement('a');
+				element.href = pre.getAttribute('data-url');
+			} else {
+				element = document.createElement('span');
+			}
+
+			element.textContent = text;
+		}
+
+		return element;
+	});
+
+	/**
+	 * Register the toolbar with Prism.
+	 */
+	Prism.hooks.add('complete', hook);
+}());

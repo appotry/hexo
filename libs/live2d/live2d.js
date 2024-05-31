@@ -1,1 +1,4231 @@
-!function(i){function r(t){if(o[t])return o[t].exports;var e=o[t]={i:t,l:!1,exports:{}};return i[t].call(e.exports,e,e.exports,r),e.l=!0,e.exports}var o={};r.m=i,r.c=o,r.d=function(t,e,i){r.o(t,e)||Object.defineProperty(t,e,{configurable:!1,enumerable:!0,get:i})},r.n=function(t){var e=t&&t.__esModule?function(){return t.default}:function(){return t};return r.d(e,"a",e),e},r.o=function(t,e){return Object.prototype.hasOwnProperty.call(t,e)},r.p="",r(r.s=4)}([function(t,e,i){"use strict";function r(){this.live2DModel=null,this.modelMatrix=null,this.eyeBlink=null,this.physics=null,this.pose=null,this.debugMode=!1,this.initialized=!1,this.updating=!1,this.alpha=1,this.accAlpha=0,this.lipSync=!1,this.lipSyncValue=0,this.accelX=0,this.accelY=0,this.accelZ=0,this.dragX=0,this.dragY=0,this.startTimeMSec=null,this.mainMotionManager=new n,this.expressionManager=new n,this.motions={},this.expressions={},this.isTexLoaded=!1}function f(){AMotion.prototype.constructor.call(this),this.paramList=new Array}function c(){this.id="",this.type=-1,this.value=null}function o(){this.nextBlinkTime=null,this.stateStartTime=null,this.blinkIntervalMsec=null,this.eyeState=l.STATE_FIRST,this.blinkIntervalMsec=4e3,this.closingMotionMsec=100,this.closedMotionMsec=50,this.openingMotionMsec=150,this.closeIfZero=!0,this.eyeID_L="PARAM_EYE_L_OPEN",this.eyeID_R="PARAM_EYE_R_OPEN"}function _(){this.tr=new Float32Array(16),this.identity()}function s(t,e){_.prototype.constructor.call(this),this.width=t,this.height=e}function n(){MotionQueueManager.prototype.constructor.call(this),this.currentPriority=null,this.reservePriority=null,this.super=MotionQueueManager.prototype}function M(){this.physicsList=new Array,this.startTimeMSec=UtSystem.getUserTimeMSec()}function y(){this.lastTime=0,this.lastModel=null,this.partsGroups=new Array}function m(t){this.paramIndex=-1,this.partsIndex=-1,this.link=null,this.id=t}function d(){this.EPSILON=.01,this.faceTargetX=0,this.faceTargetY=0,this.faceX=0,this.faceY=0,this.faceVX=0,this.faceVY=0,this.lastTimeSec=0}function a(){_.prototype.constructor.call(this),this.screenLeft=null,this.screenRight=null,this.screenTop=null,this.screenBottom=null,this.maxLeft=null,this.maxRight=null,this.maxTop=null,this.maxBottom=null,this.max=Number.MAX_VALUE,this.min=0}function E(){}var h=0;r.prototype.getModelMatrix=function(){return this.modelMatrix},r.prototype.setAlpha=function(t){t>.999&&(t=1),t<.001&&(t=0),this.alpha=t},r.prototype.getAlpha=function(){return this.alpha},r.prototype.isInitialized=function(){return this.initialized},r.prototype.setInitialized=function(t){this.initialized=t},r.prototype.isUpdating=function(){return this.updating},r.prototype.setUpdating=function(t){this.updating=t},r.prototype.getLive2DModel=function(){return this.live2DModel},r.prototype.setLipSync=function(t){this.lipSync=t},r.prototype.setLipSyncValue=function(t){this.lipSyncValue=t},r.prototype.setAccel=function(t,e,i){this.accelX=t,this.accelY=e,this.accelZ=i},r.prototype.setDrag=function(t,e){this.dragX=t,this.dragY=e},r.prototype.getMainMotionManager=function(){return this.mainMotionManager},r.prototype.getExpressionManager=function(){return this.expressionManager},r.prototype.loadModelData=function(t,e){var i=E.getPlatformManager();this.debugMode&&i.log("Load model : "+t);var r=this;i.loadLive2DModel(t,function(t){if(r.live2DModel=t,r.live2DModel.saveParam(),0!=Live2D.getError())return void console.error("Error : Failed to loadModelData().");r.modelMatrix=new s(r.live2DModel.getCanvasWidth(),r.live2DModel.getCanvasHeight()),r.modelMatrix.setWidth(2),r.modelMatrix.setCenterPosition(0,0),e(r.live2DModel)})},r.prototype.loadTexture=function(t,e,i){h++;var r=E.getPlatformManager();this.debugMode&&r.log("Load Texture : "+e);var o=this;r.loadTexture(this.live2DModel,t,e,function(){h--,0==h&&(o.isTexLoaded=!0),"function"==typeof i&&i()})},r.prototype.loadMotion=function(e,t,i){var r=E.getPlatformManager();this.debugMode&&r.log("Load Motion : "+t);var o=null,s=this;r.loadBytes(t,function(t){o=Live2DMotion.loadMotion(t),null!=e&&(s.motions[e]=o),i(o)})},r.prototype.loadExpression=function(e,t,i){var r=E.getPlatformManager();this.debugMode&&r.log("Load Expression : "+t);var o=this;r.loadBytes(t,function(t){null!=e&&(o.expressions[e]=f.loadJson(t)),"function"==typeof i&&i()})},r.prototype.loadPose=function(t,e){var i=E.getPlatformManager();this.debugMode&&i.log("Load Pose : "+t);var r=this;try{i.loadBytes(t,function(t){r.pose=y.load(t),"function"==typeof e&&e()})}catch(t){console.warn(t)}},r.prototype.loadPhysics=function(t){var e=E.getPlatformManager();this.debugMode&&e.log("Load Physics : "+t);var i=this;try{e.loadBytes(t,function(t){i.physics=M.load(t)})}catch(t){console.warn(t)}},r.prototype.hitTestSimple=function(t,e,i){if(null===this.live2DModel)return!1;var r=this.live2DModel.getDrawDataIndex(t);if(r<0)return!1;for(var o=this.live2DModel.getTransformedPoints(r),s=this.live2DModel.getCanvasWidth(),n=0,_=this.live2DModel.getCanvasHeight(),a=0,h=0;h<o.length;h+=2){var l=o[h],$=o[h+1];l<s&&(s=l),l>n&&(n=l),$<_&&(_=$),$>a&&(a=$)}var u=this.modelMatrix.invertTransformX(e),p=this.modelMatrix.invertTransformY(i);return s<=u&&u<=n&&_<=p&&p<=a},r.prototype.hitTestSimpleCustom=function(t,e,i,r){return null!==this.live2DModel&&(i>=t[0]&&i<=e[0]&&r<=t[1]&&r>=e[1])},f.prototype=new AMotion,f.EXPRESSION_DEFAULT="DEFAULT",f.TYPE_SET=0,f.TYPE_ADD=1,f.TYPE_MULT=2,f.loadJson=function(t){var e=new f,i=E.getPlatformManager(),r=i.jsonParseFromBytes(t);if(e.setFadeIn(parseInt(r.fade_in)>0?parseInt(r.fade_in):1e3),e.setFadeOut(parseInt(r.fade_out)>0?parseInt(r.fade_out):1e3),null==r.params)return e;var o=r.params,s=o.length;e.paramList=[];for(var n=0;n<s;n++){var _=o[n],a=_.id.toString(),h=parseFloat(_.val),l=f.TYPE_ADD,$=null!=_.calc?_.calc.toString():"add";if((l="add"===$?f.TYPE_ADD:"mult"===$?f.TYPE_MULT:"set"===$?f.TYPE_SET:f.TYPE_ADD)==f.TYPE_ADD){var u=null==_.def?0:parseFloat(_.def);h-=u}else if(l==f.TYPE_MULT){var u=null==_.def?1:parseFloat(_.def);0==u&&(u=1),h/=u}var p=new c;p.id=a,p.type=l,p.value=h,e.paramList.push(p)}return e},f.prototype.updateParamExe=function(t,e,i,r){for(var o=this.paramList.length-1;o>=0;--o){var s=this.paramList[o];s.type==f.TYPE_ADD?t.addToParamFloat(s.id,s.value,i):s.type==f.TYPE_MULT?t.multParamFloat(s.id,s.value,i):s.type==f.TYPE_SET&&t.setParamFloat(s.id,s.value,i)}},o.prototype.calcNextBlink=function(){return UtSystem.getUserTimeMSec()+Math.random()*(2*this.blinkIntervalMsec-1)},o.prototype.setInterval=function(t){this.blinkIntervalMsec=t},o.prototype.setEyeMotion=function(t,e,i){this.closingMotionMsec=t,this.closedMotionMsec=e,this.openingMotionMsec=i},o.prototype.updateParam=function(t){var e,i=UtSystem.getUserTimeMSec(),r=0;switch(this.eyeState){case l.STATE_CLOSING:r=(i-this.stateStartTime)/this.closingMotionMsec,r>=1&&(r=1,this.eyeState=l.STATE_CLOSED,this.stateStartTime=i),e=1-r;break;case l.STATE_CLOSED:r=(i-this.stateStartTime)/this.closedMotionMsec,r>=1&&(this.eyeState=l.STATE_OPENING,this.stateStartTime=i),e=0;break;case l.STATE_OPENING:r=(i-this.stateStartTime)/this.openingMotionMsec,r>=1&&(r=1,this.eyeState=l.STATE_INTERVAL,this.nextBlinkTime=this.calcNextBlink()),e=r;break;case l.STATE_INTERVAL:this.nextBlinkTime<i&&(this.eyeState=l.STATE_CLOSING,this.stateStartTime=i),e=1;break;case l.STATE_FIRST:default:this.eyeState=l.STATE_INTERVAL,this.nextBlinkTime=this.calcNextBlink(),e=1}this.closeIfZero||(e=-e),t.setParamFloat(this.eyeID_L,e),t.setParamFloat(this.eyeID_R,e)};var l=function(){};l.STATE_FIRST="STATE_FIRST",l.STATE_INTERVAL="STATE_INTERVAL",l.STATE_CLOSING="STATE_CLOSING",l.STATE_CLOSED="STATE_CLOSED",l.STATE_OPENING="STATE_OPENING",_.mul=function(t,e,i){var r,o,s,n=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];for(r=0;r<4;r++)for(o=0;o<4;o++)for(s=0;s<4;s++)n[r+4*o]+=t[r+4*s]*e[s+4*o];for(r=0;r<16;r++)i[r]=n[r]},_.prototype.identity=function(){for(var t=0;t<16;t++)this.tr[t]=t%5==0?1:0},_.prototype.getArray=function(){return this.tr},_.prototype.getCopyMatrix=function(){return new Float32Array(this.tr)},_.prototype.setMatrix=function(t){if(null!=this.tr&&this.tr.length==this.tr.length)for(var e=0;e<16;e++)this.tr[e]=t[e]},_.prototype.getScaleX=function(){return this.tr[0]},_.prototype.getScaleY=function(){return this.tr[5]},_.prototype.transformX=function(t){return this.tr[0]*t+this.tr[12]},_.prototype.transformY=function(t){return this.tr[5]*t+this.tr[13]},_.prototype.invertTransformX=function(t){return(t-this.tr[12])/this.tr[0]},_.prototype.invertTransformY=function(t){return(t-this.tr[13])/this.tr[5]},_.prototype.multTranslate=function(t,e){var i=[1,0,0,0,0,1,0,0,0,0,1,0,t,e,0,1];_.mul(i,this.tr,this.tr)},_.prototype.translate=function(t,e){this.tr[12]=t,this.tr[13]=e},_.prototype.translateX=function(t){this.tr[12]=t},_.prototype.translateY=function(t){this.tr[13]=t},_.prototype.multScale=function(t,e){var i=[t,0,0,0,0,e,0,0,0,0,1,0,0,0,0,1];_.mul(i,this.tr,this.tr)},_.prototype.scale=function(t,e){this.tr[0]=t,this.tr[5]=e},s.prototype=new _,s.prototype.setPosition=function(t,e){this.translate(t,e)},s.prototype.setCenterPosition=function(t,e){var i=this.width*this.getScaleX(),r=this.height*this.getScaleY();this.translate(t-i/2,e-r/2)},s.prototype.top=function(t){this.setY(t)},s.prototype.bottom=function(t){var e=this.height*this.getScaleY();this.translateY(t-e)},s.prototype.left=function(t){this.setX(t)},s.prototype.right=function(t){var e=this.width*this.getScaleX();this.translateX(t-e)},s.prototype.centerX=function(t){var e=this.width*this.getScaleX();this.translateX(t-e/2)},s.prototype.centerY=function(t){var e=this.height*this.getScaleY();this.translateY(t-e/2)},s.prototype.setX=function(t){this.translateX(t)},s.prototype.setY=function(t){this.translateY(t)},s.prototype.setHeight=function(t){var e=t/this.height,i=-e;this.scale(e,i)},s.prototype.setWidth=function(t){var e=t/this.width,i=-e;this.scale(e,i)},n.prototype=new MotionQueueManager,n.prototype.getCurrentPriority=function(){return this.currentPriority},n.prototype.getReservePriority=function(){return this.reservePriority},n.prototype.reserveMotion=function(t){return!(this.reservePriority>=t)&&(!(this.currentPriority>=t)&&(this.reservePriority=t,!0))},n.prototype.setReservePriority=function(t){this.reservePriority=t},n.prototype.updateParam=function(t){var e=MotionQueueManager.prototype.updateParam.call(this,t);return this.isFinished()&&(this.currentPriority=0),e},n.prototype.startMotionPrio=function(t,e){return e==this.reservePriority&&(this.reservePriority=0),this.currentPriority=e,this.startMotion(t,!1)},M.load=function(t){for(var e=new M,i=E.getPlatformManager(),r=i.jsonParseFromBytes(t),o=r.physics_hair,s=o.length,n=0;n<s;n++){var _=o[n],a=new PhysicsHair,h=_.setup,l=parseFloat(h.length),$=parseFloat(h.regist),u=parseFloat(h.mass);a.setup(l,$,u);for(var p=_.src,f=p.length,c=0;c<f;c++){var d=p[c],g=d.id,y=PhysicsHair.Src.SRC_TO_X,m=d.ptype;"x"===m?y=PhysicsHair.Src.SRC_TO_X:"y"===m?y=PhysicsHair.Src.SRC_TO_Y:"angle"===m?y=PhysicsHair.Src.SRC_TO_G_ANGLE:UtDebug.error("live2d","Invalid parameter:PhysicsHair.Src");var T=parseFloat(d.scale),P=parseFloat(d.weight);a.addSrcParam(y,g,T,P)}for(var v=_.targets,S=v.length,c=0;c<S;c++){var L=v[c],g=L.id,y=PhysicsHair.Target.TARGET_FROM_ANGLE,m=L.ptype;"angle"===m?y=PhysicsHair.Target.TARGET_FROM_ANGLE:"angle_v"===m?y=PhysicsHair.Target.TARGET_FROM_ANGLE_V:UtDebug.error("live2d","Invalid parameter:PhysicsHair.Target");var T=parseFloat(L.scale),P=parseFloat(L.weight);a.addTargetParam(y,g,T,P)}e.physicsList.push(a)}return e},M.prototype.updateParam=function(t){for(var e=UtSystem.getUserTimeMSec()-this.startTimeMSec,i=0;i<this.physicsList.length;i++)this.physicsList[i].update(t,e)},y.load=function(t){for(var e=new y,i=E.getPlatformManager(),r=i.jsonParseFromBytes(t),o=r.parts_visible,s=o.length,n=0;n<s;n++){for(var _=o[n],a=_.group,h=a.length,l=new Array,$=0;$<h;$++){var u=a[$],p=new m(u.id);if(l[$]=p,null!=u.link){var f=u.link,c=f.length;p.link=new Array;for(var d=0;d<c;d++){var g=new m(f[d]);p.link.push(g)}}}e.partsGroups.push(l)}return e},y.prototype.updateParam=function(t){if(null!=t){t!=this.lastModel&&this.initParam(t),this.lastModel=t;var e=UtSystem.getUserTimeMSec(),i=0==this.lastTime?0:(e-this.lastTime)/1e3;this.lastTime=e,i<0&&(i=0);for(var r=0;r<this.partsGroups.length;r++)this.normalizePartsOpacityGroup(t,this.partsGroups[r],i),this.copyOpacityOtherParts(t,this.partsGroups[r])}},y.prototype.initParam=function(t){if(null!=t)for(var e=0;e<this.partsGroups.length;e++)for(var i=this.partsGroups[e],r=0;r<i.length;r++){i[r].initIndex(t);var o=i[r].partsIndex,s=i[r].paramIndex;if(!(o<0)){var n=0!=t.getParamFloat(s);if(t.setPartsOpacity(o,n?1:0),t.setParamFloat(s,n?1:0),null!=i[r].link)for(var _=0;_<i[r].link.length;_++)i[r].link[_].initIndex(t)}}},y.prototype.normalizePartsOpacityGroup=function(t,e,i){for(var r=-1,o=1,s=0;s<e.length;s++){var n=e[s].partsIndex,_=e[s].paramIndex;if(!(n<0)&&0!=t.getParamFloat(_)){if(r>=0)break;r=s,o=t.getPartsOpacity(n),o+=i/.5,o>1&&(o=1)}}r<0&&(r=0,o=1);for(var s=0;s<e.length;s++){var n=e[s].partsIndex;if(!(n<0))if(r==s)t.setPartsOpacity(n,o);else{var a,h=t.getPartsOpacity(n);a=o<.5?-.5*o/.5+1:.5*(1-o)/.5;var l=(1-a)*(1-o);l>.15&&(a=1-.15/(1-o)),h>a&&(h=a),t.setPartsOpacity(n,h)}}},y.prototype.copyOpacityOtherParts=function(t,e){for(var i=0;i<e.length;i++){var r=e[i];if(null!=r.link&&!(r.partsIndex<0))for(var o=t.getPartsOpacity(r.partsIndex),s=0;s<r.link.length;s++){var n=r.link[s];n.partsIndex<0||t.setPartsOpacity(n.partsIndex,o)}}},m.prototype.initIndex=function(t){this.paramIndex=t.getParamIndex("VISIBLE:"+this.id),this.partsIndex=t.getPartsDataIndex(PartsDataID.getID(this.id)),t.setParamFloat(this.paramIndex,1)},d.FRAME_RATE=30,d.prototype.setPoint=function(t,e){this.faceTargetX=t,this.faceTargetY=e},d.prototype.getX=function(){return this.faceX},d.prototype.getY=function(){return this.faceY},d.prototype.update=function(){var t=40/7.5/d.FRAME_RATE;if(0==this.lastTimeSec)return void(this.lastTimeSec=UtSystem.getUserTimeMSec());var e=UtSystem.getUserTimeMSec(),i=(e-this.lastTimeSec)*d.FRAME_RATE/1e3;this.lastTimeSec=e;var r=.15*d.FRAME_RATE,o=i*t/r,s=this.faceTargetX-this.faceX,n=this.faceTargetY-this.faceY;if(!(Math.abs(s)<=this.EPSILON&&Math.abs(n)<=this.EPSILON)){var _=Math.sqrt(s*s+n*n),a=t*s/_,h=t*n/_,l=a-this.faceVX,$=h-this.faceVY,u=Math.sqrt(l*l+$*$);(u<-o||u>o)&&(l*=o/u,$*=o/u,u=o),this.faceVX+=l,this.faceVY+=$;var p=.5*(Math.sqrt(o*o+16*o*_-8*o*_)-o),f=Math.sqrt(this.faceVX*this.faceVX+this.faceVY*this.faceVY);f>p&&(this.faceVX*=p/f,this.faceVY*=p/f),this.faceX+=this.faceVX,this.faceY+=this.faceVY}},a.prototype=new _,a.prototype.getMaxScale=function(){return this.max},a.prototype.getMinScale=function(){return this.min},a.prototype.setMaxScale=function(t){this.max=t},a.prototype.setMinScale=function(t){this.min=t},a.prototype.isMaxScale=function(){return this.getScaleX()==this.max},a.prototype.isMinScale=function(){return this.getScaleX()==this.min},a.prototype.adjustTranslate=function(t,e){this.tr[0]*this.maxLeft+(this.tr[12]+t)>this.screenLeft&&(t=this.screenLeft-this.tr[0]*this.maxLeft-this.tr[12]),this.tr[0]*this.maxRight+(this.tr[12]+t)<this.screenRight&&(t=this.screenRight-this.tr[0]*this.maxRight-this.tr[12]),this.tr[5]*this.maxTop+(this.tr[13]+e)<this.screenTop&&(e=this.screenTop-this.tr[5]*this.maxTop-this.tr[13]),this.tr[5]*this.maxBottom+(this.tr[13]+e)>this.screenBottom&&(e=this.screenBottom-this.tr[5]*this.maxBottom-this.tr[13]);var i=[1,0,0,0,0,1,0,0,0,0,1,0,t,e,0,1];_.mul(i,this.tr,this.tr)},a.prototype.adjustScale=function(t,e,i){var r=i*this.tr[0];r<this.min?this.tr[0]>0&&(i=this.min/this.tr[0]):r>this.max&&this.tr[0]>0&&(i=this.max/this.tr[0]);var o=[1,0,0,0,0,1,0,0,0,0,1,0,t,e,0,1],s=[i,0,0,0,0,i,0,0,0,0,1,0,0,0,0,1],n=[1,0,0,0,0,1,0,0,0,0,1,0,-t,-e,0,1];_.mul(n,this.tr,this.tr),_.mul(s,this.tr,this.tr),_.mul(o,this.tr,this.tr)},a.prototype.setScreenRect=function(t,e,i,r){this.screenLeft=t,this.screenRight=e,this.screenTop=r,this.screenBottom=i},a.prototype.setMaxScreenRect=function(t,e,i,r){this.maxLeft=t,this.maxRight=e,this.maxTop=r,this.maxBottom=i},a.prototype.getScreenLeft=function(){return this.screenLeft},a.prototype.getScreenRight=function(){return this.screenRight},a.prototype.getScreenBottom=function(){return this.screenBottom},a.prototype.getScreenTop=function(){return this.screenTop},a.prototype.getMaxLeft=function(){return this.maxLeft},a.prototype.getMaxRight=function(){return this.maxRight},a.prototype.getMaxBottom=function(){return this.maxBottom},a.prototype.getMaxTop=function(){return this.maxTop},E.platformManager=null,E.getPlatformManager=function(){return E.platformManager},E.setPlatformManager=function(t){E.platformManager=t},t.exports={L2DTargetPoint:d,Live2DFramework:E,L2DViewMatrix:a,L2DPose:y,L2DPartsParam:m,L2DPhysics:M,L2DMotionManager:n,L2DModelMatrix:s,L2DMatrix44:_,EYE_STATE:l,L2DEyeBlink:o,L2DExpressionParam:c,L2DExpressionMotion:f,L2DBaseModel:r}},function(t,e,i){"use strict";var r={DEBUG_LOG:!1,DEBUG_MOUSE_LOG:!1,DEBUG_DRAW_HIT_AREA:!1,DEBUG_DRAW_ALPHA_MODEL:!1,VIEW_MAX_SCALE:2,VIEW_MIN_SCALE:.8,VIEW_LOGICAL_LEFT:-1,VIEW_LOGICAL_RIGHT:1,VIEW_LOGICAL_MAX_LEFT:-2,VIEW_LOGICAL_MAX_RIGHT:2,VIEW_LOGICAL_MAX_BOTTOM:-2,VIEW_LOGICAL_MAX_TOP:2,PRIORITY_NONE:0,PRIORITY_IDLE:1,PRIORITY_SLEEPY:2,PRIORITY_NORMAL:3,PRIORITY_FORCE:4,MOTION_GROUP_IDLE:"idle",MOTION_GROUP_SLEEPY:"sleepy",MOTION_GROUP_TAP_BODY:"tap_body",MOTION_GROUP_FLICK_HEAD:"flick_head",MOTION_GROUP_PINCH_IN:"pinch_in",MOTION_GROUP_PINCH_OUT:"pinch_out",MOTION_GROUP_SHAKE:"shake",HIT_AREA_HEAD:"head",HIT_AREA_BODY:"body"};t.exports=r},function(t,e,i){"use strict";function r(t){s=t}function o(){return s}Object.defineProperty(e,"__esModule",{value:!0}),e.setContext=r,e.getContext=o;var s=void 0},function(t,e,i){"use strict";function r(){}r.matrixStack=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],r.depth=0,r.currentMatrix=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],r.tmp=new Array(16),r.reset=function(){this.depth=0},r.loadIdentity=function(){for(var t=0;t<16;t++)this.currentMatrix[t]=t%5==0?1:0},r.push=function(){var t=(this.depth,16*(this.depth+1));this.matrixStack.length<t+16&&(this.matrixStack.length=t+16);for(var e=0;e<16;e++)this.matrixStack[t+e]=this.currentMatrix[e];this.depth++},r.pop=function(){--this.depth<0&&(myError("Invalid matrix stack."),this.depth=0);for(var t=16*this.depth,e=0;e<16;e++)this.currentMatrix[e]=this.matrixStack[t+e]},r.getMatrix=function(){return this.currentMatrix},r.multMatrix=function(t){var e,i,r;for(e=0;e<16;e++)this.tmp[e]=0;for(e=0;e<4;e++)for(i=0;i<4;i++)for(r=0;r<4;r++)this.tmp[e+4*i]+=this.currentMatrix[e+4*r]*t[r+4*i];for(e=0;e<16;e++)this.currentMatrix[e]=this.tmp[e]},t.exports=r},function(t,e,i){t.exports=i(5)},function(C,N,t){"use strict";function e(t){return t&&t.__esModule?t:{default:t}}function r(t){A=document.getElementById(t),A.addEventListener&&(window.addEventListener("click",p,supportsPassive?{passive:true}:false),window.addEventListener("mousedown",p,supportsPassive?{passive:true}:false),window.addEventListener("mousemove",p,supportsPassive?{passive:true}:false),window.addEventListener("mouseup",p,supportsPassive?{passive:true}:false),document.addEventListener("mouseout",p,supportsPassive?{passive:true}:false),window.addEventListener("touchstart",f,supportsPassive?{passive:true}:false),window.addEventListener("touchend",f,supportsPassive?{passive:true}:false),window.addEventListener("touchmove",f,supportsPassive?{passive:true}:false))}function o(t){var e=A.width,i=A.height;I=new m.L2DTargetPoint;var r=i/e,o=T.default.VIEW_LOGICAL_LEFT,s=T.default.VIEW_LOGICAL_RIGHT,n=-r,_=r;if(window.Live2D.captureFrame=!1,w=new m.L2DViewMatrix,w.setScreenRect(o,s,n,_),w.setMaxScreenRect(T.default.VIEW_LOGICAL_MAX_LEFT,T.default.VIEW_LOGICAL_MAX_RIGHT,T.default.VIEW_LOGICAL_MAX_BOTTOM,T.default.VIEW_LOGICAL_MAX_TOP),w.setMaxScale(T.default.VIEW_MAX_SCALE),w.setMinScale(T.default.VIEW_MIN_SCALE),x=new m.L2DMatrix44,x.multScale(1,e/i),O=new m.L2DMatrix44,O.multTranslate(-e/2,-i/2),O.multScale(2/e,-2/e),E=B(),(0,X.setContext)(E),!E)return console.error("Failed to create WebGL context."),void(window.WebGLRenderingContext&&console.error("Your browser don't support WebGL, check https://get.webgl.org/ for futher information."));window.Live2D.setGL(E),E.clearColor(0,0,0,0),h(t),a()}function a(){M||(M=!0,function t(){s();var e=window.requestAnimationFrame||window.mozRequestAnimationFrame||window.webkitRequestAnimationFrame||window.msRequestAnimationFrame;if(window.Live2D.captureFrame){window.Live2D.captureFrame=!1;var i=document.createElement("a");document.body.appendChild(i),i.setAttribute("type","hidden"),i.href=A.toDataURL(),i.download=window.Live2D.captureName||"live2d.png",i.click()}e(t,A)}())}function s(){P.default.reset(),P.default.loadIdentity(),I.update(),v.setDrag(I.getX(),I.getY()),E.clear(E.COLOR_BUFFER_BIT),P.default.multMatrix(x.getArray()),P.default.multMatrix(w.getArray()),P.default.push();for(var t=0;t<v.numModels();t++){var e=v.getModel(t);if(null==e)return;e.initialized&&!e.updating&&(e.update(),e.draw(E))}P.default.pop()}function h(t){v.reloadFlg=!0,v.count++,v.changeModel(E,t)}function S(t,e){return t.x*e.x+t.y*e.y}function L(t,e){var i=Math.sqrt(t*t+e*e);return{x:t/i,y:e/i}}function _(t,e,i){function r(t,e){return 180*Math.acos(S({x:0,y:1},L(t,e)))/Math.PI}if(e.x<i.left+i.width&&e.y<i.top+i.height&&e.x>i.left&&e.y>i.top)return e;var o=t.x-e.x,s=t.y-e.y,n=r(o,s);e.x<t.x&&(n=360-n);var _=360-r(i.left-t.x,-1*(i.top-t.y)),a=360-r(i.left-t.x,-1*(i.top+i.height-t.y)),h=r(i.left+i.width-t.x,-1*(i.top-t.y)),l=r(i.left+i.width-t.x,-1*(i.top+i.height-t.y)),$=s/o,u={};if(n<h){var p=i.top-t.y,f=p/$;u={y:t.y+p,x:t.x+f}}else if(n<l){var c=i.left+i.width-t.x,d=c*$;u={y:t.y+d,x:t.x+c}}else if(n<a){var g=i.top+i.height-t.y,y=g/$;u={y:t.y+g,x:t.x+y}}else if(n<_){var m=t.x-i.left,T=m*$;u={y:t.y-T,x:t.x-m}}else{var P=i.top-t.y,v=P/$;u={y:t.y+P,x:t.x+v}}return u}function n(t){D=!0;var e=A.getBoundingClientRect(),i=g(t.clientX-e.left),r=y(t.clientY-e.top),o=_({x:e.left+e.width/2,y:e.top+e.height*F},{x:t.clientX,y:t.clientY},e),s=c(o.x-e.left),n=d(o.y-e.top);T.default.DEBUG_MOUSE_LOG&&console.log("onMouseMove device( x:"+t.clientX+" y:"+t.clientY+" ) view( x:"+s+" y:"+n+")"),R=i,b=r,I.setPoint(s,n)}function l(t){D=!0;var e=A.getBoundingClientRect(),i=g(t.clientX-e.left),r=y(t.clientY-e.top),o=_({x:e.left+e.width/2,y:e.top+e.height*F},{x:t.clientX,y:t.clientY},e),s=c(o.x-e.left),n=d(o.y-e.top);T.default.DEBUG_MOUSE_LOG&&console.log("onMouseDown device( x:"+t.clientX+" y:"+t.clientY+" ) view( x:"+s+" y:"+n+")"),R=i,b=r,v.tapEvent(s,n)}function i(t){var e=A.getBoundingClientRect(),i=g(t.clientX-e.left),r=y(t.clientY-e.top),o=_({x:e.left+e.width/2,y:e.top+e.height*F},{x:t.clientX,y:t.clientY},e),s=c(o.x-e.left),n=d(o.y-e.top);T.default.DEBUG_MOUSE_LOG&&console.log("onMouseMove device( x:"+t.clientX+" y:"+t.clientY+" ) view( x:"+s+" y:"+n+")"),D&&(R=i,b=r,I.setPoint(s,n))}function $(){D&&(D=!1),I.setPoint(0,0)}function u(){T.default.DEBUG_LOG&&console.log("Set Session Storage."),sessionStorage.setItem("Sleepy","1")}function p(t){if("mousewheel"==t.type);else if("mousedown"==t.type)l(t);else if("mousemove"==t.type){var e=sessionStorage.getItem("Sleepy");"1"===e&&sessionStorage.setItem("Sleepy","0"),n(t)}else if("mouseup"==t.type){if("button"in t&&0!=t.button)return}else if("mouseout"==t.type){T.default.DEBUG_LOG&&console.log("Mouse out Window."),$();var i=sessionStorage.getItem("SleepyTimer");window.clearTimeout(i),i=window.setTimeout(u,5e4),sessionStorage.setItem("SleepyTimer",i)}}function f(t){var e=t.touches[0];"touchstart"==t.type?1==t.touches.length&&n(e):"touchmove"==t.type?i(e):"touchend"==t.type&&$()}function c(t){var e=O.transformX(t);return w.invertTransformX(e)}function d(t){var e=O.transformY(t);return w.invertTransformY(e)}function g(t){return O.transformX(t)}function y(t){return O.transformY(t)}function B(){for(var t=["webgl","experimental-webgl","webkit-3d","moz-webgl"],e=0;e<t.length;e++)try{var i=A.getContext(t[e],{premultipliedAlpha:!0});if(i)return i}catch(t){}return null}function U(t,e,i){F=void 0===i?.5:i,r(t),o(e)}t(6);var m=t(0),G=t(8),Y=e(G),k=t(1),T=e(k),V=t(3),P=e(V),X=t(2),v=(window.navigator.platform.toLowerCase(),new Y.default),M=!1,E=null,A=null,I=null,w=null,x=null,O=null,D=!1,R=0,b=0,F=.5;window.loadlive2d=U},function(t,e,i){"use strict";(function(wt){!function(){function $(){O||(this._$MT=null,this._$5S=null,this._$NP=0,$._$42++,this._$5S=new y(this))}function L(t){if(!O){this.clipContextList=new Array,this.glcontext=t.gl,this.dp_webgl=t,this.curFrameNo=0,this.firstError_clipInNotUpdate=!0,this.colorBuffer=0,this.isInitGLFBFunc=!1,this.tmpBoundsOnModel=new z,st.glContext.length>st.frameBuffers.length&&(this.curFrameNo=this.getMaskRenderTexture()),this.tmpModelToViewMatrix=new J,this.tmpMatrix2=new J,this.tmpMatrixForMask=new J,this.tmpMatrixForDraw=new J,this.CHANNEL_COLORS=new Array;var e=new j;e=new j,e.r=0,e.g=0,e.b=0,e.a=1,this.CHANNEL_COLORS.push(e),e=new j,e.r=1,e.g=0,e.b=0,e.a=0,this.CHANNEL_COLORS.push(e),e=new j,e.r=0,e.g=1,e.b=0,e.a=0,this.CHANNEL_COLORS.push(e),e=new j,e.r=0,e.g=0,e.b=1,e.a=0,this.CHANNEL_COLORS.push(e);for(var i=0;i<this.CHANNEL_COLORS.length;i++)this.dp_webgl.setChannelFlagAsColor(i,this.CHANNEL_COLORS[i])}}function D(t,e,i){this.clipIDList=new Array,this.clipIDList=i,this.clippingMaskDrawIndexList=new Array;for(var r=0;r<i.length;r++)this.clippingMaskDrawIndexList.push(e.getDrawDataIndex(i[r]));this.clippedDrawContextList=new Array,this.isUsing=!0,this.layoutChannelNo=0,this.layoutBounds=new z,this.allClippedDrawRect=new z,this.matrixForMask=new Float32Array(16),this.matrixForDraw=new Float32Array(16),this.owner=t}function R(t,e){this._$gP=t,this.drawDataIndex=e}function b(){O||(this.color=null)}function t(){O||(this._$dP=null,this._$eo=null,this._$V0=null,this._$dP=1e3,this._$eo=1e3,this._$V0=1,this._$a0())}function rt(){}function F(){this._$r=null,this._$0S=null}function C(){O||(this.x=null,this.y=null,this.width=null,this.height=null)}function n(t){O||$t.prototype.constructor.call(this,t)}function N(){}function _(t){O||$t.prototype.constructor.call(this,t)}function B(){O||(this._$vo=null,this._$F2=null,this._$ao=400,this._$1S=400,B._$42++)}function s(){O||(this.p1=new U,this.p2=new U,this._$Fo=0,this._$Db=0,this._$L2=0,this._$M2=0,this._$ks=0,this._$9b=0,this._$iP=0,this._$iT=0,this._$lL=new Array,this._$qP=new Array,this.setup(.3,.5,.1))}function U(){this._$p=1,this.x=0,this.y=0,this.vx=0,this.vy=0,this.ax=0,this.ay=0,this.fx=0,this.fy=0,this._$s0=0,this._$70=0,this._$7L=0,this._$HL=0}function G(t,e,i){this._$wL=null,this.scale=null,this._$V0=null,this._$wL=t,this.scale=e,this._$V0=i}function Y(t,e,i,r){G.prototype.constructor.call(this,e,i,r),this._$tL=null,this._$tL=t}function k(t,e,i){this._$wL=null,this.scale=null,this._$V0=null,this._$wL=t,this.scale=e,this._$V0=i}function V(t,e,i,r){k.prototype.constructor.call(this,e,i,r),this._$YP=null,this._$YP=t}function X(){O||(this._$fL=0,this._$gL=0,this._$B0=1,this._$z0=1,this._$qT=0,this.reflectX=!1,this.reflectY=!1)}function z(){O||(this.x=null,this.y=null,this.width=null,this.height=null)}function H(){}function W(){O||(this.x=null,this.y=null)}function r(){O||(this._$gP=null,this._$dr=null,this._$GS=null,this._$qb=null,this._$Lb=null,this._$mS=null,this.clipID=null,this.clipIDList=new Array)}function e(){O||(this._$Eb=e._$ps,this._$lT=1,this._$C0=1,this._$tT=1,this._$WL=1,this.culling=!1,this.matrix4x4=new Float32Array(16),this.premultipliedAlpha=!1,this.anisotropy=0,this.clippingProcess=e.CLIPPING_PROCESS_NONE,this.clipBufPre_clipContextMask=null,this.clipBufPre_clipContextDraw=null,this.CHANNEL_COLORS=new Array)}function j(){O||(this.a=1,this.r=1,this.g=1,this.b=1,this.scale=1,this._$ho=1,this.blendMode=st.L2D_COLOR_BLEND_MODE_MULT)}function u(){O||(this._$kP=null,this._$dr=null,this._$Ai=!0,this._$mS=null)}function Ct(){}function g(){O||(this._$VP=0,this._$wL=null,this._$GP=null,this._$8o=g._$ds,this._$2r=-1,this._$O2=0,this._$ri=0)}function c(){}function q(){O||(this._$Ob=null)}function J(){this.m=new Float32Array(16),this.identity()}function Q(t){O||$t.prototype.constructor.call(this,t)}function p(){O||(this._$7=1,this._$f=0,this._$H=0,this._$g=1,this._$k=0,this._$w=0,this._$hi=STATE_IDENTITY,this._$Z=_$pS)}function f(){O||(t.prototype.constructor.call(this),this.motions=new Array,this._$7r=null,this._$7r=f._$Co++,this._$D0=30,this._$yT=0,this._$E=!0,this.loopFadeIn=!0,this._$AS=-1,_$a0())}function Z(){this._$P=new Float32Array(100),this.size=0}function S(){this._$4P=null,this._$I0=null,this._$RP=null}function E(){}function d(){}function y(t){O||(this._$QT=!0,this._$co=-1,this._$qo=0,this._$pb=new Array(y._$is),this._$_2=new Float32Array(y._$is),this._$vr=new Float32Array(y._$is),this._$Rr=new Float32Array(y._$is),this._$Or=new Float32Array(y._$is),this._$fs=new Float32Array(y._$is),this._$Js=new Array(y._$is),this._$3S=new Array,this._$aS=new Array,this._$Bo=null,this._$F2=new Array,this._$db=new Array,this._$8b=new Array,this._$Hr=new Array,this._$Ws=null,this._$Vs=null,this._$Er=null,this._$Es=new Int16Array(E._$Qb),this._$ZP=new Float32Array(2*E._$1r),this._$Ri=t,this._$b0=y._$HP++,this.clipManager=null,this.dp_webgl=null)}function K(){}function tt(){O||(this._$12=null,this._$bb=null,this._$_L=null,this._$jo=null,this._$iL=null,this._$0L=null,this._$Br=null,this._$Dr=null,this._$Cb=null,this._$mr=null,this._$_L=At.STATE_FIRST,this._$Br=4e3,this._$Dr=100,this._$Cb=50,this._$mr=150,this._$jo=!0,this._$iL="PARAM_EYE_L_OPEN",this._$0L="PARAM_EYE_R_OPEN")}function i(){O||(e.prototype.constructor.call(this),this._$sb=new Int32Array(i._$As),this._$U2=new Array,this.transform=null,this.gl=null,null==i._$NT&&(i._$NT=i._$9r(256),i._$vS=i._$9r(256),i._$no=i._$vb(256)))}function nt(){O||(u.prototype.constructor.call(this),this._$GS=null,this._$Y0=null)}function et(t){h.prototype.constructor.call(this,t),this._$8r=u._$ur,this._$Yr=null,this._$Wr=null}function T(){O||(r.prototype.constructor.call(this),this._$gP=null,this._$dr=null,this._$GS=null,this._$qb=null,this._$Lb=null,this._$mS=null)}function it(){O||(this._$NL=null,this._$3S=null,this._$aS=null,it._$42++)}function a(){O||($.prototype.constructor.call(this),this._$zo=new i)}function P(){O||(t.prototype.constructor.call(this),this.motions=new Array,this._$o2=null,this._$7r=P._$Co++,this._$D0=30,this._$yT=0,this._$E=!1,this.loopFadeIn=!0,this._$rr=-1,this._$eP=0)}function _t(t,e){return String.fromCharCode(t.getUint8(e))}function Z(){this._$P=new Float32Array(100),this.size=0}function S(){this._$4P=null,this._$I0=null,this._$RP=null}function at(){O||(u.prototype.constructor.call(this),this._$o=0,this._$A=0,this._$GS=null,this._$Eo=null)}function ht(t){h.prototype.constructor.call(this,t),this._$8r=u._$ur,this._$Cr=null,this._$hr=null}function o(){O||(this.visible=!0,this._$g0=!1,this._$NL=null,this._$3S=null,this._$aS=null,o._$42++)}function lt(t){this._$VS=null,this._$e0=null,this._$e0=t}function $t(t){O||(this.id=t)}function ut(){}function pt(){O||(this._$4S=null)}function ot(t,e){this.canvas=t,this.context=e,this.viewport=new Array(0,0,t.width,t.height),this._$6r=1,this._$xP=0,this._$3r=1,this._$uP=0,this._$Qo=-1,this.cacheImages={}}function ft(){O||(this._$TT=null,this._$LT=null,this._$FS=null,this._$wL=null)}function h(t){O||(this._$e0=null,this._$IP=null,this._$JS=!1,this._$AT=!0,this._$e0=t,this.totalScale=1,this._$7s=1,this.totalOpacity=1)}function st(){}function ct(){}function dt(t){O||(this._$ib=t)}function v(){O||(T.prototype.constructor.call(this),this._$LP=-1,this._$d0=0,this._$Yo=0,this._$JP=null,this._$5P=null,this._$BP=null,this._$Eo=null,this._$Qi=null,this._$6s=v._$ms,this.culling=!0,this.gl_cacheImage=null,this.instanceNo=v._$42++)}function gt(t){Mt.prototype.constructor.call(this,t),this._$8r=T._$ur,this._$Cr=null,this._$hr=null}function yt(){O||(this.x=null,this.y=null)}function l(t){O||($.prototype.constructor.call(this),this.drawParamWebGL=new A(t),this.drawParamWebGL.setGL(st.getGL(t)))}function mt(){O||(this.motions=null,this._$eb=!1,this.motions=new Array)}function Tt(){this._$w0=null,this._$AT=!0,this._$9L=!1,this._$z2=-1,this._$bs=-1,this._$Do=-1,this._$sr=null,this._$sr=Tt._$Gs++}function Pt(){this.m=new Array(1,0,0,0,1,0,0,0,1)}function M(t){O||$t.prototype.constructor.call(this,t)}function A(t){O||(e.prototype.constructor.call(this),this.textures=new Array,this.transform=null,this.gl=null,this.glno=t,this.firstDraw=!0,this.anisotropyExt=null,this.maxAnisotropy=0,this._$As=32,this._$Gr=!1,this._$NT=null,this._$vS=null,this._$no=null,this.vertShader=null,this.fragShader=null,this.vertShaderOff=null,this.fragShaderOff=null)}function vt(t,e,i){return null==e&&(e=t.createBuffer()),t.bindBuffer(t.ARRAY_BUFFER,e),t.bufferData(t.ARRAY_BUFFER,i,t.DYNAMIC_DRAW),e}function St(t,e,i){return null==e&&(e=t.createBuffer()),t.bindBuffer(t.ELEMENT_ARRAY_BUFFER,e),t.bufferData(t.ELEMENT_ARRAY_BUFFER,i,t.DYNAMIC_DRAW),e}function I(t){O||(this._$P=new Int8Array(8),this._$R0=new DataView(this._$P.buffer),this._$3i=new Int8Array(1e3),this._$hL=0,this._$v0=0,this._$S2=0,this._$Ko=new Array,this._$T=t,this._$F=0)}function Lt(){}function w(){}function Mt(t){O||(this._$e0=null,this._$IP=null,this._$Us=null,this._$7s=null,this._$IS=[!1],this._$VS=null,this._$AT=!0,this.baseOpacity=1,this.clipBufPre_clipContext=null,this._$e0=t)}function x(){}var O=!0;$._$0s=1,$._$4s=2,$._$42=0,$._$62=function(t,e){try{if(e instanceof ArrayBuffer&&(e=new DataView(e)),!(e instanceof DataView))throw new dt("_$SS#loadModel(b) / b _$x be DataView or ArrayBuffer");var i,r=new I(e),o=r._$ST(),s=r._$ST(),n=r._$ST();if(109!=o||111!=s||99!=n)throw new dt("_$gi _$C _$li , _$Q0 _$P0.");if(i=r._$ST(),r._$gr(i),i>d._$T7){t._$NP|=$._$4s;throw new dt("_$gi _$C _$li , _$n0 _$_ version _$li ( SDK : "+d._$T7+" < _$f0 : "+i+" )@_$SS#loadModel()\n")}var _=r._$nP();if(i>=d._$s7){var a=r._$9T(),h=r._$9T();if(-30584!=a||-30584!=h)throw t._$NP|=$._$0s,new dt("_$gi _$C _$li , _$0 _$6 _$Ui.")}t._$KS(_);var l=t.getModelContext();l.setDrawParam(t.getDrawParam()),l.init()}catch(t){rt._$Rb(t)}},$.prototype._$KS=function(t){this._$MT=t},$.prototype.getModelImpl=function(){return null==this._$MT&&(this._$MT=new B,this._$MT._$zP()),this._$MT},$.prototype.getCanvasWidth=function(){return null==this._$MT?0:this._$MT.getCanvasWidth()},$.prototype.getCanvasHeight=function(){return null==this._$MT?0:this._$MT.getCanvasHeight()},$.prototype.getParamFloat=function(t){return"number"!=typeof t&&(t=this._$5S.getParamIndex(_.getID(t))),this._$5S.getParamFloat(t)},$.prototype.setParamFloat=function(t,e,i){"number"!=typeof t&&(t=this._$5S.getParamIndex(_.getID(t))),arguments.length<3&&(i=1),this._$5S.setParamFloat(t,this._$5S.getParamFloat(t)*(1-i)+e*i)},$.prototype.addToParamFloat=function(t,e,i){"number"!=typeof t&&(t=this._$5S.getParamIndex(_.getID(t))),arguments.length<3&&(i=1),this._$5S.setParamFloat(t,this._$5S.getParamFloat(t)+e*i)},$.prototype.multParamFloat=function(t,e,i){"number"!=typeof t&&(t=this._$5S.getParamIndex(_.getID(t))),arguments.length<3&&(i=1),this._$5S.setParamFloat(t,this._$5S.getParamFloat(t)*(1+(e-1)*i))},$.prototype.getParamIndex=function(t){return this._$5S.getParamIndex(_.getID(t))},$.prototype.loadParam=function(){this._$5S.loadParam()},$.prototype.saveParam=function(){this._$5S.saveParam()},$.prototype.init=function(){this._$5S.init()},$.prototype.update=function(){this._$5S.update()},$.prototype._$Rs=function(){return rt._$li("_$60 _$PT _$Rs()"),-1},$.prototype._$Ds=function(t){rt._$li("_$60 _$PT _$SS#_$Ds() \n")},$.prototype._$K2=function(){},$.prototype.draw=function(){},$.prototype.getModelContext=function(){return this._$5S},$.prototype._$s2=function(){return this._$NP},$.prototype._$P7=function(t,e,i,r){var o=-1,s=0,n=this;if(0!=i)if(1==t.length){var _=t[0],a=0!=n.getParamFloat(_),h=e[0],l=n.getPartsOpacity(h),$=i/r;a?(l+=$)>1&&(l=1):(l-=$)<0&&(l=0),n.setPartsOpacity(h,l)}else{for(var u=0;u<t.length;u++){var _=t[u],p=0!=n.getParamFloat(_);if(p){if(o>=0)break;o=u;var h=e[u];s=n.getPartsOpacity(h),s+=i/r,s>1&&(s=1)}}o<0&&(console.log("No _$wi _$q0/ _$U default[%s]",t[0]),o=0,s=1,n.loadParam(),n.setParamFloat(t[o],s),n.saveParam());for(var u=0;u<t.length;u++){var h=e[u];if(o==u)n.setPartsOpacity(h,s);else{var f,c=n.getPartsOpacity(h);f=s<.5?-.5*s/.5+1:.5*(1-s)/.5;var d=(1-f)*(1-s);d>.15&&(f=1-.15/(1-s)),c>f&&(c=f),n.setPartsOpacity(h,c)}}}else for(var u=0;u<t.length;u++){var _=t[u],h=e[u],p=0!=n.getParamFloat(_);n.setPartsOpacity(h,p?1:0)}},$.prototype.setPartsOpacity=function(t,e){"number"!=typeof t&&(t=this._$5S.getPartsDataIndex(n.getID(t))),this._$5S.setPartsOpacity(t,e)},$.prototype.getPartsDataIndex=function(t){return t instanceof n||(t=n.getID(t)),this._$5S.getPartsDataIndex(t)},$.prototype.getPartsOpacity=function(t){return"number"!=typeof t&&(t=this._$5S.getPartsDataIndex(n.getID(t))),t<0?0:this._$5S.getPartsOpacity(t)},$.prototype.getDrawParam=function(){},$.prototype.getDrawDataIndex=function(t){return this._$5S.getDrawDataIndex(Q.getID(t))},$.prototype.getDrawData=function(t){return this._$5S.getDrawData(t)},$.prototype.getTransformedPoints=function(t){var e=this._$5S._$C2(t);return e instanceof gt?e.getTransformedPoints():null},$.prototype.getIndexArray=function(t){if(t<0||t>=this._$5S._$aS.length)return null;var e=this._$5S._$aS[t];return null!=e&&e.getType()==T._$wb&&e instanceof v?e.getIndexArray():null},L.CHANNEL_COUNT=4,L.RENDER_TEXTURE_USE_MIPMAP=!1,L.NOT_USED_FRAME=-100,L.prototype._$L7=function(){if(this.tmpModelToViewMatrix&&(this.tmpModelToViewMatrix=null),this.tmpMatrix2&&(this.tmpMatrix2=null),this.tmpMatrixForMask&&(this.tmpMatrixForMask=null),this.tmpMatrixForDraw&&(this.tmpMatrixForDraw=null),this.tmpBoundsOnModel&&(this.tmpBoundsOnModel=null),this.CHANNEL_COLORS){for(var t=this.CHANNEL_COLORS.length-1;t>=0;--t)this.CHANNEL_COLORS.splice(t,1);this.CHANNEL_COLORS=[]}this.releaseShader()},L.prototype.releaseShader=function(){for(var t=st.frameBuffers.length,e=0;e<t;e++)this.gl.deleteFramebuffer(st.frameBuffers[e].framebuffer);st.frameBuffers=[],st.glContext=[]},L.prototype.init=function(t,e,i){for(var r=0;r<e.length;r++){var o=e[r].getClipIDList();if(null!=o){var s=this.findSameClip(o);null==s&&(s=new D(this,t,o),this.clipContextList.push(s));var n=e[r].getDrawDataID(),_=t.getDrawDataIndex(n);s.addClippedDrawData(n,_);i[r].clipBufPre_clipContext=s}}},L.prototype.getMaskRenderTexture=function(){var t=null;return t=this.dp_webgl.createFramebuffer(),st.frameBuffers[this.dp_webgl.glno]=t,this.dp_webgl.glno},L.prototype.setupClip=function(t,e){for(var i=0,r=0;r<this.clipContextList.length;r++){var o=this.clipContextList[r];this.calcClippedDrawTotalBounds(t,o),o.isUsing&&i++}if(i>0){var s=e.gl.getParameter(e.gl.FRAMEBUFFER_BINDING),n=new Array(4);n[0]=0,n[1]=0,n[2]=e.gl.canvas.width,n[3]=e.gl.canvas.height,e.gl.viewport(0,0,st.clippingMaskBufferSize,st.clippingMaskBufferSize),this.setupLayoutBounds(i),e.gl.bindFramebuffer(e.gl.FRAMEBUFFER,st.frameBuffers[this.curFrameNo].framebuffer),e.gl.clearColor(0,0,0,0),e.gl.clear(e.gl.COLOR_BUFFER_BIT);for(var r=0;r<this.clipContextList.length;r++){var o=this.clipContextList[r],_=o.allClippedDrawRect,a=(o.layoutChannelNo,o.layoutBounds);this.tmpBoundsOnModel._$jL(_),this.tmpBoundsOnModel.expand(.05*_.width,.05*_.height);var h=a.width/this.tmpBoundsOnModel.width,l=a.height/this.tmpBoundsOnModel.height;this.tmpMatrix2.identity(),this.tmpMatrix2.translate(-1,-1,0),this.tmpMatrix2.scale(2,2,1),this.tmpMatrix2.translate(a.x,a.y,0),this.tmpMatrix2.scale(h,l,1),this.tmpMatrix2.translate(-this.tmpBoundsOnModel.x,-this.tmpBoundsOnModel.y,0),this.tmpMatrixForMask.setMatrix(this.tmpMatrix2.m),this.tmpMatrix2.identity(),this.tmpMatrix2.translate(a.x,a.y,0),this.tmpMatrix2.scale(h,l,1),this.tmpMatrix2.translate(-this.tmpBoundsOnModel.x,-this.tmpBoundsOnModel.y,0),this.tmpMatrixForDraw.setMatrix(this.tmpMatrix2.m);for(var $=this.tmpMatrixForMask.getArray(),u=0;u<16;u++)o.matrixForMask[u]=$[u];for(var p=this.tmpMatrixForDraw.getArray(),u=0;u<16;u++)o.matrixForDraw[u]=p[u];for(var f=o.clippingMaskDrawIndexList.length,c=0;c<f;c++){var d=o.clippingMaskDrawIndexList[c],g=t.getDrawData(d),y=t._$C2(d);e.setClipBufPre_clipContextForMask(o),g.draw(e,t,y)}}e.gl.bindFramebuffer(e.gl.FRAMEBUFFER,s),e.setClipBufPre_clipContextForMask(null),e.gl.viewport(n[0],n[1],n[2],n[3])}},L.prototype.getColorBuffer=function(){return this.colorBuffer},L.prototype.findSameClip=function(t){for(var e=0;e<this.clipContextList.length;e++){var i=this.clipContextList[e],r=i.clipIDList.length;if(r==t.length){for(var o=0,s=0;s<r;s++)for(var n=i.clipIDList[s],_=0;_<r;_++)if(t[_]==n){o++;break}if(o==r)return i}}return null},L.prototype.calcClippedDrawTotalBounds=function(t,e){for(var i=t._$Ri.getModelImpl().getCanvasWidth(),r=t._$Ri.getModelImpl().getCanvasHeight(),o=i>r?i:r,s=o,n=o,_=0,a=0,h=e.clippedDrawContextList.length,l=0;l<h;l++){var $=e.clippedDrawContextList[l],u=$.drawDataIndex,p=t._$C2(u);if(p._$yo()){for(var f=p.getTransformedPoints(),c=f.length,d=[],g=[],y=0,m=E._$i2;m<c;m+=E._$No)d[y]=f[m],g[y]=f[m+1],y++;var T=Math.min.apply(null,d),P=Math.min.apply(null,g),v=Math.max.apply(null,d),S=Math.max.apply(null,g);T<s&&(s=T),P<n&&(n=P),v>_&&(_=v),S>a&&(a=S)}}if(s==o)e.allClippedDrawRect.x=0,e.allClippedDrawRect.y=0,e.allClippedDrawRect.width=0,e.allClippedDrawRect.height=0,e.isUsing=!1;else{var L=_-s,M=a-n;e.allClippedDrawRect.x=s,e.allClippedDrawRect.y=n,e.allClippedDrawRect.width=L,e.allClippedDrawRect.height=M,e.isUsing=!0}},L.prototype.setupLayoutBounds=function(t){var e=t/L.CHANNEL_COUNT,i=t%L.CHANNEL_COUNT;e=~~e,i=~~i;for(var r=0,o=0;o<L.CHANNEL_COUNT;o++){var s=e+(o<i?1:0);if(0==s);else if(1==s){var n=this.clipContextList[r++];n.layoutChannelNo=o,n.layoutBounds.x=0,n.layoutBounds.y=0,n.layoutBounds.width=1,n.layoutBounds.height=1}else if(2==s)for(var _=0;_<s;_++){var a=_%2,h=0;a=~~a;var n=this.clipContextList[r++];n.layoutChannelNo=o,n.layoutBounds.x=.5*a,n.layoutBounds.y=0,n.layoutBounds.width=.5,n.layoutBounds.height=1}else if(s<=4)for(var _=0;_<s;_++){var a=_%2,h=_/2;a=~~a,h=~~h;var n=this.clipContextList[r++];n.layoutChannelNo=o,n.layoutBounds.x=.5*a,n.layoutBounds.y=.5*h,n.layoutBounds.width=.5,n.layoutBounds.height=.5}else if(s<=9)for(var _=0;_<s;_++){var a=_%3,h=_/3;a=~~a,h=~~h;var n=this.clipContextList[r++];n.layoutChannelNo=o,n.layoutBounds.x=a/3,n.layoutBounds.y=h/3,n.layoutBounds.width=1/3,n.layoutBounds.height=1/3}else rt._$li("_$6 _$0P mask count : %d",s)}},D.prototype.addClippedDrawData=function(t,e){var i=new R(t,e);this.clippedDrawContextList.push(i)},t._$JT=function(t,e,i){var r=t/e,o=i/e,s=o,n=1-(1-o)*(1-o),_=1-(1-s)*(1-s),a=1/3*(1-o)*n+(s*(2/3)+1/3*(1-s))*(1-n),h=(s+2/3*(1-s))*_+(o*(1/3)+2/3*(1-o))*(1-_),l=1-3*h+3*a-0,$=3*h-6*a+0,u=3*a-0;if(r<=0)return 0;if(r>=1)return 1;var p=r,f=p*p;return l*(p*f)+$*f+u*p+0},t.prototype._$a0=function(){},t.prototype.setFadeIn=function(t){this._$dP=t},t.prototype.setFadeOut=function(t){this._$eo=t},t.prototype._$pT=function(t){this._$V0=t},t.prototype.getFadeOut=function(){return this._$eo},t.prototype._$4T=function(){return this._$eo},t.prototype._$mT=function(){return this._$V0},t.prototype.getDurationMSec=function(){return-1},t.prototype.getLoopDurationMSec=function(){return-1},t.prototype.updateParam=function(t,e){if(e._$AT&&!e._$9L){var i=Ct.getUserTimeMSec();if(e._$z2<0){e._$z2=i,e._$bs=i;var r=this.getDurationMSec();e._$Do<0&&(e._$Do=r<=0?-1:e._$z2+r)}var o=this._$V0;o=o*(0==this._$dP?1:ct._$r2((i-e._$bs)/this._$dP))*(0==this._$eo||e._$Do<0?1:ct._$r2((e._$Do-i)/this._$eo)),0<=o&&o<=1||console.log("### assert!! ### "),this.updateParamExe(t,i,o,e),e._$Do>0&&e._$Do<i&&(e._$9L=!0)}},t.prototype.updateParamExe=function(t,e,i,r){},rt._$8s=0,rt._$fT=new Object,rt.start=function(t){var e=rt._$fT[t];null==e&&(e=new F,e._$r=t,rt._$fT[t]=e),e._$0S=Ct.getSystemTimeMSec()},rt.dump=function(t){var e=rt._$fT[t];if(null!=e){var i=Ct.getSystemTimeMSec(),r=i-e._$0S;return console.log(t+" : "+r+"ms"),r}return-1},rt.end=function(t){var e=rt._$fT[t];if(null!=e){return Ct.getSystemTimeMSec()-e._$0S}return-1},rt._$li=function(t,e){console.log("_$li : "+t+"\n",e)},rt._$Ji=function(t,e){console.log(t,e)},rt._$dL=function(t,e){console.log(t,e),console.log("\n")},rt._$KL=function(t,e){for(var i=0;i<e;i++)i%16==0&&i>0?console.log("\n"):i%8==0&&i>0&&console.log("  "),console.log("%02X ",255&t[i]);console.log("\n")},rt._$nr=function(t,e,i){console.log("%s\n",t);for(var r=e.length,o=0;o<r;++o)console.log("%5d",e[o]),console.log("%s\n",i),console.log(",");console.log("\n")},rt._$Rb=function(t){console.log("dump exception : "+t),console.log("stack :: "+t.stack)},C.prototype._$8P=function(){return.5*(this.x+this.x+this.width)},C.prototype._$6P=function(){return.5*(this.y+this.y+this.height)},C.prototype._$EL=function(){return this.x+this.width},C.prototype._$5T=function(){return this.y+this.height},C.prototype._$jL=function(t,e,i,r){this.x=t,this.y=e,this.width=i,this.height=r},C.prototype._$jL=function(t){this.x=t.x,this.y=t.y,this.width=t.width,this.height=t.height},n.prototype=new $t,n._$tP=new Object,n._$27=function(){n._$tP.clear()},n.getID=function(t){var e=n._$tP[t];return null==e&&(e=new n(t),n._$tP[t]=e),e},n.prototype._$3s=function(){return new n},_.prototype=new $t,_._$tP=new Object,_._$27=function(){_._$tP.clear()},_.getID=function(t){var e=_._$tP[t];return null==e&&(e=new _(t),_._$tP[t]=e),e},_.prototype._$3s=function(){return new _},B._$42=0,B.prototype._$zP=function(){null==this._$vo&&(this._$vo=new pt),null==this._$F2&&(this._$F2=new Array)},B.prototype.getCanvasWidth=function(){return this._$ao},B.prototype.getCanvasHeight=function(){return this._$1S},B.prototype._$F0=function(t){this._$vo=t._$nP(),this._$F2=t._$nP(),this._$ao=t._$6L(),this._$1S=t._$6L()},B.prototype._$6S=function(t){this._$F2.push(t)},B.prototype._$Xr=function(){return this._$F2},B.prototype._$E2=function(){return this._$vo},s.prototype.setup=function(t,e,i){this._$ks=this._$Yb(),this.p2._$xT(),3==arguments.length&&(this._$Fo=t,this._$L2=e,this.p1._$p=i,this.p2._$p=i,this.p2.y=t,this.setup())},s.prototype.getPhysicsPoint1=function(){return this.p1},s.prototype.getPhysicsPoint2=function(){return this.p2},s.prototype._$qr=function(){return this._$Db},s.prototype._$pr=function(t){this._$Db=t},s.prototype._$5r=function(){return this._$M2},s.prototype._$Cs=function(){return this._$9b},s.prototype._$Yb=function(){return-180*Math.atan2(this.p1.x-this.p2.x,-(this.p1.y-this.p2.y))/Math.PI},s.prototype.addSrcParam=function(t,e,i,r){var o=new Y(t,e,i,r);this._$lL.push(o)},s.prototype.addTargetParam=function(t,e,i,r){var o=new V(t,e,i,r);this._$qP.push(o)},s.prototype.update=function(t,e){if(0==this._$iP)return this._$iP=this._$iT=e,void(this._$Fo=Math.sqrt((this.p1.x-this.p2.x)*(this.p1.x-this.p2.x)+(this.p1.y-this.p2.y)*(this.p1.y-this.p2.y)));var i=(e-this._$iT)/1e3;if(0!=i){for(var r=this._$lL.length-1;r>=0;--r){this._$lL[r]._$oP(t,this)}this._$oo(t,i),this._$M2=this._$Yb(),this._$9b=(this._$M2-this._$ks)/i,this._$ks=this._$M2}for(var r=this._$qP.length-1;r>=0;--r){this._$qP[r]._$YS(t,this)}this._$iT=e},s.prototype._$oo=function(t,e){e<.033&&(e=.033);var i=1/e;this.p1.vx=(this.p1.x-this.p1._$s0)*i,this.p1.vy=(this.p1.y-this.p1._$70)*i,this.p1.ax=(this.p1.vx-this.p1._$7L)*i,this.p1.ay=(this.p1.vy-this.p1._$HL)*i,this.p1.fx=this.p1.ax*this.p1._$p,this.p1.fy=this.p1.ay*this.p1._$p,this.p1._$xT();var r,o,s=-Math.atan2(this.p1.y-this.p2.y,this.p1.x-this.p2.x),n=Math.cos(s),_=Math.sin(s),a=9.8*this.p2._$p,h=this._$Db*w._$bS,l=a*Math.cos(s-h);r=l*_,o=l*n;var $=-this.p1.fx*_*_,u=-this.p1.fy*_*n,p=-this.p2.vx*this._$L2,f=-this.p2.vy*this._$L2;this.p2.fx=r+$+p,this.p2.fy=o+u+f,this.p2.ax=this.p2.fx/this.p2._$p,this.p2.ay=this.p2.fy/this.p2._$p,this.p2.vx+=this.p2.ax*e,this.p2.vy+=this.p2.ay*e,this.p2.x+=this.p2.vx*e,this.p2.y+=this.p2.vy*e;var c=Math.sqrt((this.p1.x-this.p2.x)*(this.p1.x-this.p2.x)+(this.p1.y-this.p2.y)*(this.p1.y-this.p2.y));this.p2.x=this.p1.x+this._$Fo*(this.p2.x-this.p1.x)/c,this.p2.y=this.p1.y+this._$Fo*(this.p2.y-this.p1.y)/c,this.p2.vx=(this.p2.x-this.p2._$s0)*i,this.p2.vy=(this.p2.y-this.p2._$70)*i,this.p2._$xT()},U.prototype._$xT=function(){this._$s0=this.x,this._$70=this.y,this._$7L=this.vx,this._$HL=this.vy},G.prototype._$oP=function(t,e){},Y.prototype=new G,Y.prototype._$oP=function(t,e){var i=this.scale*t.getParamFloat(this._$wL),r=e.getPhysicsPoint1();switch(this._$tL){default:case s.Src.SRC_TO_X:r.x=r.x+(i-r.x)*this._$V0;break;case s.Src.SRC_TO_Y:r.y=r.y+(i-r.y)*this._$V0;break;case s.Src.SRC_TO_G_ANGLE:var o=e._$qr();o+=(i-o)*this._$V0,e._$pr(o)}},k.prototype._$YS=function(t,e){},V.prototype=new k,V.prototype._$YS=function(t,e){switch(this._$YP){default:case s.Target.TARGET_FROM_ANGLE:t.setParamFloat(this._$wL,this.scale*e._$5r(),this._$V0);break;case s.Target.TARGET_FROM_ANGLE_V:t.setParamFloat(this._$wL,this.scale*e._$Cs(),this._$V0)}},s.Src=function(){},s.Src.SRC_TO_X="SRC_TO_X",s.Src.SRC_TO_Y="SRC_TO_Y",s.Src.SRC_TO_G_ANGLE="SRC_TO_G_ANGLE",s.Target=function(){},s.Target.TARGET_FROM_ANGLE="TARGET_FROM_ANGLE",s.Target.TARGET_FROM_ANGLE_V="TARGET_FROM_ANGLE_V",X.prototype.init=function(t){this._$fL=t._$fL,this._$gL=t._$gL,this._$B0=t._$B0,this._$z0=t._$z0,this._$qT=t._$qT,this.reflectX=t.reflectX,this.reflectY=t.reflectY},X.prototype._$F0=function(t){this._$fL=t._$_T(),this._$gL=t._$_T(),this._$B0=t._$_T(),this._$z0=t._$_T(),this._$qT=t._$_T(),t.getFormatVersion()>=d.LIVE2D_FORMAT_VERSION_V2_10_SDK2&&(this.reflectX=t._$po(),this.reflectY=t._$po())},X.prototype._$e=function(){};var Et=function(){};Et._$ni=function(t,e,i,r,o,s,n,_,a){var h=n*s-_*o;if(0==h)return null;var l,$=((t-i)*s-(e-r)*o)/h;return l=0!=o?(t-i-$*n)/o:(e-r-$*_)/s,isNaN(l)&&(l=(t-i-$*n)/o,isNaN(l)&&(l=(e-r-$*_)/s),isNaN(l)&&(console.log("a is NaN @UtVector#_$ni() "),console.log("v1x : "+o),console.log("v1x != 0 ? "+(0!=o)))),null==a?new Array(l,$):(a[0]=l,a[1]=$,a)},z.prototype._$8P=function(){return this.x+.5*this.width},z.prototype._$6P=function(){return this.y+.5*this.height},z.prototype._$EL=function(){return this.x+this.width},z.prototype._$5T=function(){return this.y+this.height},z.prototype._$jL=function(t,e,i,r){this.x=t,this.y=e,this.width=i,this.height=r},z.prototype._$jL=function(t){this.x=t.x,this.y=t.y,this.width=t.width,this.height=t.height},z.prototype.contains=function(t,e){return this.x<=this.x&&this.y<=this.y&&this.x<=this.x+this.width&&this.y<=this.y+this.height},z.prototype.expand=function(t,e){this.x-=t,this.y-=e,this.width+=2*t,this.height+=2*e},H._$Z2=function(t,e,C,i){var r=e._$Q2(t,C),o=t._$vs(),s=t._$Tr();if(e._$zr(o,s,r),r<=0)return i[o[0]];if(1==r){var n=i[o[0]],_=i[o[1]],a=s[0];return n+(_-n)*a|0}if(2==r){var n=i[o[0]],_=i[o[1]],h=i[o[2]],l=i[o[3]],a=s[0],$=s[1],u=n+(_-n)*a|0,p=h+(l-h)*a|0;return u+(p-u)*$|0}if(3==r){var f=i[o[0]],c=i[o[1]],d=i[o[2]],g=i[o[3]],y=i[o[4]],m=i[o[5]],T=i[o[6]],P=i[o[7]],a=s[0],$=s[1],v=s[2],n=f+(c-f)*a|0,_=d+(g-d)*a|0,h=y+(m-y)*a|0,l=T+(P-T)*a|0,u=n+(_-n)*$|0,p=h+(l-h)*$|0;return u+(p-u)*v|0}if(4==r){var S=i[o[0]],N=i[o[1]],L=i[o[2]],B=i[o[3]],M=i[o[4]],U=i[o[5]],E=i[o[6]],G=i[o[7]],A=i[o[8]],Y=i[o[9]],I=i[o[10]],k=i[o[11]],w=i[o[12]],V=i[o[13]],x=i[o[14]],X=i[o[15]],a=s[0],$=s[1],v=s[2],z=s[3],f=S+(N-S)*a|0,c=L+(B-L)*a|0,d=M+(U-M)*a|0,g=E+(G-E)*a|0,y=A+(Y-A)*a|0,m=I+(k-I)*a|0,T=w+(V-w)*a|0,P=x+(X-x)*a|0,n=f+(c-f)*$|0,_=d+(g-d)*$|0,h=y+(m-y)*$|0,l=T+(P-T)*$|0,u=n+(_-n)*v|0,p=h+(l-h)*v|0;return u+(p-u)*z|0}for(var O=1<<r,D=new Float32Array(O),R=0;R<O;R++){for(var H=R,W=1,b=0;b<r;b++)W*=H%2==0?1-s[b]:s[b],H/=2;D[R]=W}for(var j=new Float32Array(O),F=0;F<O;F++)j[F]=i[o[F]];for(var q=0,F=0;F<O;F++)q+=D[F]*j[F];return q+.5|0},H._$br=function(t,e,i,r){var o=e._$Q2(t,i),s=t._$vs(),n=t._$Tr();if(e._$zr(s,n,o),o<=0)return r[s[0]];if(1==o){var _=r[s[0]],a=r[s[1]],h=n[0];return _+(a-_)*h}if(2==o){var _=r[s[0]],a=r[s[1]],l=r[s[2]],$=r[s[3]],h=n[0],u=n[1];return(1-u)*(_+(a-_)*h)+u*(l+($-l)*h)}if(3==o){var p=r[s[0]],C=r[s[1]],f=r[s[2]],N=r[s[3]],c=r[s[4]],B=r[s[5]],d=r[s[6]],U=r[s[7]],h=n[0],u=n[1],g=n[2];return(1-g)*((1-u)*(p+(C-p)*h)+u*(f+(N-f)*h))+g*((1-u)*(c+(B-c)*h)+u*(d+(U-d)*h))}if(4==o){var y=r[s[0]],G=r[s[1]],m=r[s[2]],Y=r[s[3]],T=r[s[4]],k=r[s[5]],P=r[s[6]],V=r[s[7]],v=r[s[8]],X=r[s[9]],S=r[s[10]],z=r[s[11]],L=r[s[12]],H=r[s[13]],M=r[s[14]],W=r[s[15]],h=n[0],u=n[1],g=n[2],E=n[3];return(1-E)*((1-g)*((1-u)*(y+(G-y)*h)+u*(m+(Y-m)*h))+g*((1-u)*(T+(k-T)*h)+u*(P+(V-P)*h)))+E*((1-g)*((1-u)*(v+(X-v)*h)+u*(S+(z-S)*h))+g*((1-u)*(L+(H-L)*h)+u*(M+(W-M)*h)))}for(var A=1<<o,I=new Float32Array(A),w=0;w<A;w++){for(var x=w,O=1,D=0;D<o;D++)O*=x%2==0?1-n[D]:n[D],x/=2;I[w]=O}for(var R=new Float32Array(A),b=0;b<A;b++)R[b]=r[s[b]];for(var F=0,b=0;b<A;b++)F+=I[b]*R[b];return F},H._$Vr=function(t,e,C,N,i,r,o,s){var n=e._$Q2(t,C),_=t._$vs(),a=t._$Tr();e._$zr(_,a,n);var h=2*N,l=o;if(n<=0){var B=_[0],$=i[B];if(2==s&&0==o)Ct._$jT($,0,r,0,h);else for(var u=0;u<h;)r[l]=$[u++],r[l+1]=$[u++],l+=s}else if(1==n)for(var $=i[_[0]],p=i[_[1]],f=a[0],c=1-f,u=0;u<h;)r[l]=$[u]*c+p[u]*f,++u,r[l+1]=$[u]*c+p[u]*f,++u,l+=s;else if(2==n)for(var $=i[_[0]],p=i[_[1]],d=i[_[2]],g=i[_[3]],f=a[0],y=a[1],c=1-f,m=1-y,T=m*c,P=m*f,v=y*c,S=y*f,u=0;u<h;)r[l]=T*$[u]+P*p[u]+v*d[u]+S*g[u],++u,r[l+1]=T*$[u]+P*p[u]+v*d[u]+S*g[u],++u,l+=s;else if(3==n)for(var L=i[_[0]],M=i[_[1]],U=i[_[2]],G=i[_[3]],Y=i[_[4]],k=i[_[5]],V=i[_[6]],X=i[_[7]],f=a[0],y=a[1],E=a[2],c=1-f,m=1-y,A=1-E,z=A*m*c,H=A*m*f,W=A*y*c,j=A*y*f,q=E*m*c,J=E*m*f,Q=E*y*c,Z=E*y*f,u=0;u<h;)r[l]=z*L[u]+H*M[u]+W*U[u]+j*G[u]+q*Y[u]+J*k[u]+Q*V[u]+Z*X[u],++u,r[l+1]=z*L[u]+H*M[u]+W*U[u]+j*G[u]+q*Y[u]+J*k[u]+Q*V[u]+Z*X[u],++u,l+=s;else if(4==n)for(var K=i[_[0]],tt=i[_[1]],et=i[_[2]],it=i[_[3]],rt=i[_[4]],ot=i[_[5]],st=i[_[6]],nt=i[_[7]],_t=i[_[8]],at=i[_[9]],ht=i[_[10]],lt=i[_[11]],$t=i[_[12]],ut=i[_[13]],pt=i[_[14]],ft=i[_[15]],f=a[0],y=a[1],E=a[2],I=a[3],c=1-f,m=1-y,A=1-E,w=1-I,ct=w*A*m*c,dt=w*A*m*f,gt=w*A*y*c,yt=w*A*y*f,mt=w*E*m*c,Tt=w*E*m*f,Pt=w*E*y*c,vt=w*E*y*f,St=I*A*m*c,Lt=I*A*m*f,Mt=I*A*y*c,Et=I*A*y*f,At=I*E*m*c,It=I*E*m*f,wt=I*E*y*c,xt=I*E*y*f,u=0;u<h;)r[l]=ct*K[u]+dt*tt[u]+gt*et[u]+yt*it[u]+mt*rt[u]+Tt*ot[u]+Pt*st[u]+vt*nt[u]+St*_t[u]+Lt*at[u]+Mt*ht[u]+Et*lt[u]+At*$t[u]+It*ut[u]+wt*pt[u]+xt*ft[u],++u,r[l+1]=ct*K[u]+dt*tt[u]+gt*et[u]+yt*it[u]+mt*rt[u]+Tt*ot[u]+Pt*st[u]+vt*nt[u]+St*_t[u]+Lt*at[u]+Mt*ht[u]+Et*lt[u]+At*$t[u]+It*ut[u]+wt*pt[u]+xt*ft[u],++u,l+=s;else{for(var x=1<<n,O=new Float32Array(x),D=0;D<x;D++){for(var Ot=D,Dt=1,R=0;R<n;R++)Dt*=Ot%2==0?1-a[R]:a[R],Ot/=2;O[D]=Dt}for(var b=new Float32Array(x),F=0;F<x;F++)b[F]=i[_[F]];for(var u=0;u<h;){for(var Rt=0,bt=0,Ft=u+1,F=0;F<x;F++)Rt+=O[F]*b[F][u],bt+=O[F]*b[F][Ft];u+=2,r[l]=Rt,r[l+1]=bt,l+=s}}},W.prototype._$HT=function(t,e){this.x=t,this.y=e},W.prototype._$HT=function(t){this.x=t.x,this.y=t.y},r._$ur=-2,r._$ES=500,r._$wb=2,r._$8S=3,r._$52=r._$ES,r._$R2=r._$ES,r._$or=function(){return r._$52},r._$Pr=function(){return r._$R2},r.prototype.convertClipIDForV2_11=function(t){var e=[];return null==t?null:0==t.length?null:/,/.test(t)?e=t.id.split(","):(e.push(t.id),e)},r.prototype._$F0=function(t){this._$gP=t._$nP(),this._$dr=t._$nP(),this._$GS=t._$nP(),this._$qb=t._$6L(),this._$Lb=t._$cS(),this._$mS=t._$Tb(),t.getFormatVersion()>=d._$T7?(this.clipID=t._$nP(),this.clipIDList=this.convertClipIDForV2_11(this.clipID)):this.clipIDList=[],this._$MS(this._$Lb)},r.prototype.getClipIDList=function(){return this.clipIDList},r.prototype.init=function(t){},r.prototype._$Nr=function(t,e){if(e._$IS[0]=!1,e._$Us=H._$Z2(t,this._$GS,e._$IS,this._$Lb),st._$Zs);else if(e._$IS[0])return;e._$7s=H._$br(t,this._$GS,e._$IS,this._$mS)},r.prototype._$2b=function(t,e){},r.prototype.getDrawDataID=function(){return this._$gP},r.prototype._$j2=function(t){this._$gP=t},r.prototype.getOpacity=function(t,e){return e._$7s},r.prototype._$zS=function(t,e){return e._$Us},r.prototype._$MS=function(t){for(var e=t.length-1;e>=0;--e){var i=t[e];i<r._$52?r._$52=i:i>r._$R2&&(r._$R2=i)}},r.prototype.getTargetBaseDataID=function(){return this._$dr},r.prototype._$gs=function(t){this._$dr=t},r.prototype._$32=function(){return null!=this._$dr&&this._$dr!=M._$2o()},r.prototype.preDraw=function(t,e,i){},r.prototype.draw=function(t,e,i){},r.prototype.getType=function(){},r.prototype._$B2=function(t,e,i){},e._$ps=32,e.CLIPPING_PROCESS_NONE=0,e.CLIPPING_PROCESS_OVERWRITE_ALPHA=1,e.CLIPPING_PROCESS_MULTIPLY_ALPHA=2,e.CLIPPING_PROCESS_DRAW=3,e.CLIPPING_PROCESS_CLEAR_ALPHA=4,e.prototype.setChannelFlagAsColor=function(t,e){this.CHANNEL_COLORS[t]=e},e.prototype.getChannelFlagAsColor=function(t){return this.CHANNEL_COLORS[t]},e.prototype._$ZT=function(){},e.prototype._$Uo=function(t,e,i,r,o,s,n){},e.prototype._$Rs=function(){return-1},e.prototype._$Ds=function(t){},e.prototype.setBaseColor=function(t,e,i,r){t<0?t=0:t>1&&(t=1),e<0?e=0:e>1&&(e=1),i<0?i=0:i>1&&(i=1),r<0?r=0:r>1&&(r=1),this._$lT=t,this._$C0=e,this._$tT=i,this._$WL=r},e.prototype._$WP=function(t){this.culling=t},e.prototype.setMatrix=function(t){for(var e=0;e<16;e++)this.matrix4x4[e]=t[e]},e.prototype._$IT=function(){return this.matrix4x4},e.prototype.setPremultipliedAlpha=function(t){this.premultipliedAlpha=t},e.prototype.isPremultipliedAlpha=function(){return this.premultipliedAlpha},e.prototype.setAnisotropy=function(t){this.anisotropy=t},e.prototype.getAnisotropy=function(){return this.anisotropy},e.prototype.getClippingProcess=function(){return this.clippingProcess},e.prototype.setClippingProcess=function(t){this.clippingProcess=t},e.prototype.setClipBufPre_clipContextForMask=function(t){this.clipBufPre_clipContextMask=t},e.prototype.getClipBufPre_clipContextMask=function(){return this.clipBufPre_clipContextMask},e.prototype.setClipBufPre_clipContextForDraw=function(t){this.clipBufPre_clipContextDraw=t},e.prototype.getClipBufPre_clipContextDraw=function(){return this.clipBufPre_clipContextDraw},u._$ur=-2,u._$c2=1,u._$_b=2,u.prototype._$F0=function(t){this._$kP=t._$nP(),this._$dr=t._$nP()},u.prototype.readV2_opacity=function(t){t.getFormatVersion()>=d.LIVE2D_FORMAT_VERSION_V2_10_SDK2&&(this._$mS=t._$Tb())},u.prototype.init=function(t){},u.prototype._$Nr=function(t,e){},u.prototype.interpolateOpacity=function(t,e,i,r){null==this._$mS?i.setInterpolatedOpacity(1):i.setInterpolatedOpacity(H._$br(t,e,r,this._$mS))},u.prototype._$2b=function(t,e){},u.prototype._$nb=function(t,e,i,r,o,s,n){},u.prototype.getType=function(){},u.prototype._$gs=function(t){this._$dr=t},u.prototype._$a2=function(t){this._$kP=t},u.prototype.getTargetBaseDataID=function(){return this._$dr},u.prototype.getBaseDataID=function(){return this._$kP},u.prototype._$32=function(){return null!=this._$dr&&this._$dr!=M._$2o()},Ct._$W2=0,Ct._$CS=Ct._$W2,Ct._$Mo=function(){return!0},Ct._$XP=function(t){try{for(var e=getTimeMSec();getTimeMSec()-e<t;);}catch(t){t._$Rb()}},Ct.getUserTimeMSec=function(){return Ct._$CS==Ct._$W2?Ct.getSystemTimeMSec():Ct._$CS},Ct.setUserTimeMSec=function(t){Ct._$CS=t},Ct.updateUserTimeMSec=function(){return Ct._$CS=Ct.getSystemTimeMSec()},Ct.getTimeMSec=function(){return(new Date).getTime()},Ct.getSystemTimeMSec=function(){return(new Date).getTime()},Ct._$Q=function(t){},Ct._$jT=function(t,e,i,r,o){for(var s=0;s<o;s++)i[r+s]=t[e+s]},g._$ds=-2,g.prototype._$F0=function(t){this._$wL=t._$nP(),this._$VP=t._$6L(),this._$GP=t._$nP()},g.prototype.getParamIndex=function(t){return this._$2r!=t&&(this._$8o=g._$ds),this._$8o},g.prototype._$Pb=function(t,e){this._$8o=t,this._$2r=e},g.prototype.getParamID=function(){return this._$wL},g.prototype._$yP=function(t){this._$wL=t},g.prototype._$N2=function(){return this._$VP},g.prototype._$d2=function(){return this._$GP},g.prototype._$t2=function(t,e){this._$VP=t,this._$GP=e},g.prototype._$Lr=function(){return this._$O2},g.prototype._$wr=function(t){this._$O2=t},g.prototype._$SL=function(){return this._$ri},g.prototype._$AL=function(t){this._$ri=t},c.startsWith=function(t,e,i){var r=e+i.length;if(r>=t.length)return!1;for(var o=e;o<r;o++)if(c.getChar(t,o)!=i.charAt(o-e))return!1;return!0},c.getChar=function(t,e){return String.fromCharCode(t.getUint8(e))},c.createString=function(t,e,i){for(var r=new ArrayBuffer(2*i),o=new Uint16Array(r),s=0;s<i;s++)o[s]=t.getUint8(e+s);return String.fromCharCode.apply(null,o)},c._$LS=function(t,e,i,r){t instanceof ArrayBuffer&&(t=new DataView(t));var o=i,s=!1,n=!1,_=0,a=c.getChar(t,o);"-"==a&&(s=!0,o++);for(var h=!1;o<e;o++){switch(a=c.getChar(t,o)){case"0":_*=10;break;case"1":_=10*_+1;break;case"2":_=10*_+2;break;case"3":_=10*_+3;break;case"4":_=10*_+4;break;case"5":_=10*_+5;break;case"6":_=10*_+6;break;case"7":_=10*_+7;break;case"8":_=10*_+8;break;case"9":_=10*_+9;break;case".":n=!0,o++,h=!0;break;default:h=!0}if(h)break}if(n)for(var l=.1,$=!1;o<e;o++){switch(a=c.getChar(t,o)){case"0":break;case"1":_+=1*l;break;case"2":_+=2*l;break;case"3":_+=3*l;break;case"4":_+=4*l;break;case"5":_+=5*l;break;case"6":_+=6*l;break;case"7":_+=7*l;break;case"8":_+=8*l;break;case"9":_+=9*l;break;default:$=!0}if(l*=.1,$)break}return s&&(_=-_),r[0]=o,_},q.prototype._$zP=function(){this._$Ob=new Array},q.prototype._$F0=function(t){this._$Ob=t._$nP()},q.prototype._$Ur=function(t){if(t._$WS())return!0;for(var e=t._$v2(),i=this._$Ob.length-1;i>=0;--i){var r=this._$Ob[i].getParamIndex(e);if(r==g._$ds&&(r=t.getParamIndex(this._$Ob[i].getParamID())),t._$Xb(r))return!0}return!1},q.prototype._$Q2=function(t,e){for(var i,r,o=this._$Ob.length,s=t._$v2(),n=0,_=0;_<o;_++){var a=this._$Ob[_];if(i=a.getParamIndex(s),i==g._$ds&&(i=t.getParamIndex(a.getParamID()),a._$Pb(i,s)),i<0)throw new Exception("err 23242 : "+a.getParamID());var h=i<0?0:t.getParamFloat(i);r=a._$N2();var l,$,u=a._$d2(),p=-1,f=0;if(r<1);else if(1==r)l=u[0],l-E._$J<h&&h<l+E._$J?(p=0,f=0):(p=0,e[0]=!0);else if(l=u[0],h<l-E._$J)p=0,e[0]=!0;else if(h<l+E._$J)p=0;else{for(var c=!1,d=1;d<r;++d){if($=u[d],h<$+E._$J){$-E._$J<h?p=d:(p=d-1,f=(h-l)/($-l),n++),c=!0;break}l=$}c||(p=r-1,f=0,e[0]=!0)}a._$wr(p),a._$AL(f)}return n},q.prototype._$zr=function(t,e,i){var r=1<<i;r+1>E._$Qb&&console.log("err 23245\n");for(var o=this._$Ob.length,s=1,n=1,_=0,a=0;a<r;++a)t[a]=0;for(var h=0;h<o;++h){var l=this._$Ob[h];if(0==l._$SL()){var $=l._$Lr()*s;if($<0&&st._$3T)throw new Exception("err 23246");for(var a=0;a<r;++a)t[a]+=$}else{for(var $=s*l._$Lr(),u=s*(l._$Lr()+1),a=0;a<r;++a)t[a]+=(a/n|0)%2==0?$:u;e[_++]=l._$SL(),n*=2}s*=l._$N2()}t[r]=65535,e[_]=-1},q.prototype._$h2=function(t,e,i){for(var r=new Float32Array(e),o=0;o<e;++o)r[o]=i[o];var s=new g;s._$yP(t),s._$t2(e,r),this._$Ob.push(s)},q.prototype._$J2=function(t){for(var e=t,i=this._$Ob.length,r=0;r<i;++r){var o=this._$Ob[r],s=o._$N2(),n=e%o._$N2(),_=o._$d2()[n];console.log("%s[%d]=%7.2f / ",o.getParamID(),n,_),e/=s}console.log("\n")},q.prototype.getParamCount=function(){return this._$Ob.length},q.prototype._$zs=function(){return this._$Ob},J.prototype.identity=function(){for(var t=0;t<16;t++)this.m[t]=t%5==0?1:0},J.prototype.getArray=function(){return this.m},J.prototype.getCopyMatrix=function(){return new Float32Array(this.m)},J.prototype.setMatrix=function(t){if(null!=t&&16==t.length)for(var e=0;e<16;e++)this.m[e]=t[e]},J.prototype.mult=function(t,e,i){return null==e?null:(this==e?this.mult_safe(this.m,t.m,e.m,i):this.mult_fast(this.m,t.m,e.m,i),e)},J.prototype.mult_safe=function(t,e,i,r){if(t==i){var o=new Array(16);this.mult_fast(t,e,o,r);for(var s=15;s>=0;--s)i[s]=o[s]}else this.mult_fast(t,e,i,r)},J.prototype.mult_fast=function(t,e,i,r){r?(i[0]=t[0]*e[0]+t[4]*e[1]+t[8]*e[2],i[4]=t[0]*e[4]+t[4]*e[5]+t[8]*e[6],i[8]=t[0]*e[8]+t[4]*e[9]+t[8]*e[10],i[12]=t[0]*e[12]+t[4]*e[13]+t[8]*e[14]+t[12],i[1]=t[1]*e[0]+t[5]*e[1]+t[9]*e[2],i[5]=t[1]*e[4]+t[5]*e[5]+t[9]*e[6],i[9]=t[1]*e[8]+t[5]*e[9]+t[9]*e[10],i[13]=t[1]*e[12]+t[5]*e[13]+t[9]*e[14]+t[13],i[2]=t[2]*e[0]+t[6]*e[1]+t[10]*e[2],i[6]=t[2]*e[4]+t[6]*e[5]+t[10]*e[6],i[10]=t[2]*e[8]+t[6]*e[9]+t[10]*e[10],i[14]=t[2]*e[12]+t[6]*e[13]+t[10]*e[14]+t[14],i[3]=i[7]=i[11]=0,i[15]=1):(i[0]=t[0]*e[0]+t[4]*e[1]+t[8]*e[2]+t[12]*e[3],i[4]=t[0]*e[4]+t[4]*e[5]+t[8]*e[6]+t[12]*e[7],i[8]=t[0]*e[8]+t[4]*e[9]+t[8]*e[10]+t[12]*e[11],i[12]=t[0]*e[12]+t[4]*e[13]+t[8]*e[14]+t[12]*e[15],i[1]=t[1]*e[0]+t[5]*e[1]+t[9]*e[2]+t[13]*e[3],i[5]=t[1]*e[4]+t[5]*e[5]+t[9]*e[6]+t[13]*e[7],i[9]=t[1]*e[8]+t[5]*e[9]+t[9]*e[10]+t[13]*e[11],i[13]=t[1]*e[12]+t[5]*e[13]+t[9]*e[14]+t[13]*e[15],i[2]=t[2]*e[0]+t[6]*e[1]+t[10]*e[2]+t[14]*e[3],i[6]=t[2]*e[4]+t[6]*e[5]+t[10]*e[6]+t[14]*e[7],i[10]=t[2]*e[8]+t[6]*e[9]+t[10]*e[10]+t[14]*e[11],i[14]=t[2]*e[12]+t[6]*e[13]+t[10]*e[14]+t[14]*e[15],i[3]=t[3]*e[0]+t[7]*e[1]+t[11]*e[2]+t[15]*e[3],i[7]=t[3]*e[4]+t[7]*e[5]+t[11]*e[6]+t[15]*e[7],i[11]=t[3]*e[8]+t[7]*e[9]+t[11]*e[10]+t[15]*e[11],i[15]=t[3]*e[12]+t[7]*e[13]+t[11]*e[14]+t[15]*e[15])},J.prototype.translate=function(t,e,i){this.m[12]=this.m[0]*t+this.m[4]*e+this.m[8]*i+this.m[12],this.m[13]=this.m[1]*t+this.m[5]*e+this.m[9]*i+this.m[13],this.m[14]=this.m[2]*t+this.m[6]*e+this.m[10]*i+this.m[14],this.m[15]=this.m[3]*t+this.m[7]*e+this.m[11]*i+this.m[15]},J.prototype.scale=function(t,e,i){this.m[0]*=t,this.m[4]*=e,this.m[8]*=i,this.m[1]*=t,this.m[5]*=e,this.m[9]*=i,this.m[2]*=t,this.m[6]*=e,this.m[10]*=i,this.m[3]*=t,this.m[7]*=e,this.m[11]*=i},J.prototype.rotateX=function(t){var e=w.fcos(t),i=w._$9(t),r=this.m[4];this.m[4]=r*e+this.m[8]*i,this.m[8]=r*-i+this.m[8]*e,r=this.m[5],this.m[5]=r*e+this.m[9]*i,this.m[9]=r*-i+this.m[9]*e,r=this.m[6],this.m[6]=r*e+this.m[10]*i,this.m[10]=r*-i+this.m[10]*e,r=this.m[7],this.m[7]=r*e+this.m[11]*i,this.m[11]=r*-i+this.m[11]*e},J.prototype.rotateY=function(t){var e=w.fcos(t),i=w._$9(t),r=this.m[0];this.m[0]=r*e+this.m[8]*-i,this.m[8]=r*i+this.m[8]*e,r=this.m[1],this.m[1]=r*e+this.m[9]*-i,this.m[9]=r*i+this.m[9]*e,r=m[2],this.m[2]=r*e+this.m[10]*-i,this.m[10]=r*i+this.m[10]*e,r=m[3],this.m[3]=r*e+this.m[11]*-i,this.m[11]=r*i+this.m[11]*e},J.prototype.rotateZ=function(t){var e=w.fcos(t),i=w._$9(t),r=this.m[0];this.m[0]=r*e+this.m[4]*i,this.m[4]=r*-i+this.m[4]*e,r=this.m[1],this.m[1]=r*e+this.m[5]*i,this.m[5]=r*-i+this.m[5]*e,r=this.m[2],this.m[2]=r*e+this.m[6]*i,this.m[6]=r*-i+this.m[6]*e,r=this.m[3],this.m[3]=r*e+this.m[7]*i,this.m[7]=r*-i+this.m[7]*e},Q.prototype=new $t,Q._$tP=new Object,Q._$27=function(){Q._$tP.clear()},Q.getID=function(t){var e=Q._$tP[t];return null==e&&(e=new Q(t),Q._$tP[t]=e),e},Q.prototype._$3s=function(){return new Q},p._$kS=-1,p._$pS=0,p._$hb=1,p.STATE_IDENTITY=0,p._$gb=1,p._$fo=2,p._$go=4,p.prototype.transform=function(t,e,i){var r,o,s,n,_,a,h=0,l=0;switch(this._$hi){default:return;case p._$go|p._$fo|p._$gb:for(r=this._$7,o=this._$H,s=this._$k,n=this._$f,_=this._$g,a=this._$w;--i>=0;){var $=t[h++],u=t[h++];e[l++]=r*$+o*u+s,e[l++]=n*$+_*u+a}return;case p._$go|p._$fo:for(r=this._$7,o=this._$H,n=this._$f,_=this._$g;--i>=0;){var $=t[h++],u=t[h++];e[l++]=r*$+o*u,e[l++]=n*$+_*u}return;case p._$go|p._$gb:for(o=this._$H,s=this._$k,n=this._$f,a=this._$w;--i>=0;){var $=t[h++];e[l++]=o*t[h++]+s,e[l++]=n*$+a}return;case p._$go:for(o=this._$H,n=this._$f;--i>=0;){var $=t[h++];e[l++]=o*t[h++],e[l++]=n*$}return;case p._$fo|p._$gb:for(r=this._$7,s=this._$k,_=this._$g,a=this._$w;--i>=0;)e[l++]=r*t[h++]+s,e[l++]=_*t[h++]+a;return;case p._$fo:for(r=this._$7,_=this._$g;--i>=0;)e[l++]=r*t[h++],e[l++]=_*t[h++];return;case p._$gb:for(s=this._$k,a=this._$w;--i>=0;)e[l++]=t[h++]+s,e[l++]=t[h++]+a;return;case p.STATE_IDENTITY:return void(t==e&&h==l||Ct._$jT(t,h,e,l,2*i))}},p.prototype.update=function(){0==this._$H&&0==this._$f?1==this._$7&&1==this._$g?0==this._$k&&0==this._$w?(this._$hi=p.STATE_IDENTITY,this._$Z=p._$pS):(this._$hi=p._$gb,this._$Z=p._$hb):0==this._$k&&0==this._$w?(this._$hi=p._$fo,this._$Z=p._$kS):(this._$hi=p._$fo|p._$gb,this._$Z=p._$kS):0==this._$7&&0==this._$g?0==this._$k&&0==this._$w?(this._$hi=p._$go,this._$Z=p._$kS):(this._$hi=p._$go|p._$gb,this._$Z=p._$kS):0==this._$k&&0==this._$w?(this._$hi=p._$go|p._$fo,this._$Z=p._$kS):(this._$hi=p._$go|p._$fo|p._$gb,this._$Z=p._$kS)},p.prototype._$RT=function(t){this._$IT(t);var e=t[0],i=t[2],r=t[1],o=t[3],s=Math.sqrt(e*e+r*r),n=e*o-i*r;0==s?st._$so&&console.log("affine._$RT() / rt==0"):(t[0]=s,t[1]=n/s,t[2]=(r*o+e*i)/n,t[3]=Math.atan2(r,e))},p.prototype._$ho=function(t,e,i,r){var o=new Float32Array(6),s=new Float32Array(6);t._$RT(o),e._$RT(s);var n=new Float32Array(6);n[0]=o[0]+(s[0]-o[0])*i,n[1]=o[1]+(s[1]-o[1])*i,n[2]=o[2]+(s[2]-o[2])*i,n[3]=o[3]+(s[3]-o[3])*i,n[4]=o[4]+(s[4]-o[4])*i,n[5]=o[5]+(s[5]-o[5])*i,r._$CT(n)},p.prototype._$CT=function(t){var e=Math.cos(t[3]),i=Math.sin(t[3]);this._$7=t[0]*e,this._$f=t[0]*i,this._$H=t[1]*(t[2]*e-i),this._$g=t[1]*(t[2]*i+e),this._$k=t[4],this._$w=t[5],this.update()},p.prototype._$IT=function(t){t[0]=this._$7,t[1]=this._$f,t[2]=this._$H,t[3]=this._$g,t[4]=this._$k,t[5]=this._$w},f.prototype=new t,f._$cs="VISIBLE:",f._$ar="LAYOUT:",f._$Co=0,f._$D2=[],f._$1T=1,f.loadMotion=function(t){var e=new f,i=[0],r=t.length;e._$yT=0;for(var o=0;o<r;++o){var s=255&t[o];if("\n"!=s&&"\r"!=s)if("#"!=s)if("$"!=s){if("a"<=s&&s<="z"||"A"<=s&&s<="Z"||"_"==s){for(var n=o,_=-1;o<r&&("\r"!=(s=255&t[o])&&"\n"!=s);++o)if("="==s){_=o;break}if(_>=0){var a=new S;c.startsWith(t,n,f._$cs)?(a._$RP=S._$hs,a._$4P=new String(t,n,_-n)):c.startsWith(t,n,f._$ar)?(a._$4P=new String(t,n+7,_-n-7),c.startsWith(t,n+7,"ANCHOR_X")?a._$RP=S._$xs:c.startsWith(t,n+7,"ANCHOR_Y")?a._$RP=S._$us:c.startsWith(t,n+7,"SCALE_X")?a._$RP=S._$qs:c.startsWith(t,n+7,"SCALE_Y")?a._$RP=S._$Ys:c.startsWith(t,n+7,"X")?a._$RP=S._$ws:c.startsWith(t,n+7,"Y")&&(a._$RP=S._$Ns)):(a._$RP=S._$Fr,a._$4P=new String(t,n,_-n)),e.motions.push(a);var h=0;for(f._$D2.clear(),o=_+1;o<r&&("\r"!=(s=255&t[o])&&"\n"!=s);++o)if(","!=s&&" "!=s&&"\t"!=s){var l=c._$LS(t,r,o,i);if(i[0]>0){f._$D2.push(l),h++;var $=i[0];if($<o){console.log("_$n0 _$hi . @Live2DMotion loadMotion()\n");break}o=$}}a._$I0=f._$D2._$BL(),h>e._$yT&&(e._$yT=h)}}}else{for(var n=o,_=-1;o<r&&("\r"!=(s=255&t[o])&&"\n"!=s);++o)if("="==s){_=o;break}var u=!1;if(_>=0)for(_==n+4&&"f"==t[n+1]&&"p"==t[n+2]&&"s"==t[n+3]&&(u=!0),o=_+1;o<r&&("\r"!=(s=255&t[o])&&"\n"!=s);++o)if(","!=s&&" "!=s&&"\t"!=s){var l=c._$LS(t,r,o,i);i[0]>0&&u&&5<l&&l<121&&(e._$D0=l),o=i[0]}for(;o<r&&("\n"!=t[o]&&"\r"!=t[o]);++o);}else for(;o<r&&("\n"!=t[o]&&"\r"!=t[o]);++o);}return e._$AS=1e3*e._$yT/e._$D0|0,e},f.prototype.getDurationMSec=function(){return this._$AS},f.prototype.dump=function(){for(var t=0;t<this.motions.length;t++){var e=this.motions[t];console.log("_$wL[%s] [%d]. ",e._$4P,e._$I0.length);for(var i=0;i<e._$I0.length&&i<10;i++)console.log("%5.2f ,",e._$I0[i]);console.log("\n")}},f.prototype.updateParamExe=function(t,e,i,r){for(var o=e-r._$z2,s=o*this._$D0/1e3,n=0|s,_=s-n,a=0;a<this.motions.length;a++){var h=this.motions[a],l=h._$I0.length,$=h._$4P;if(h._$RP==S._$hs){var u=h._$I0[n>=l?l-1:n];t.setParamFloat($,u)}else if(S._$ws<=h._$RP&&h._$RP<=S._$Ys);else{var p=t.getParamFloat($),f=h._$I0[n>=l?l-1:n],c=h._$I0[n+1>=l?l-1:n+1],d=f+(c-f)*_,g=p+(d-p)*i;t.setParamFloat($,g)}}n>=this._$yT&&(this._$E?(r._$z2=e,this.loopFadeIn&&(r._$bs=e)):r._$9L=!0)},f.prototype._$r0=function(){return this._$E},f.prototype._$aL=function(t){this._$E=t},f.prototype.isLoopFadeIn=function(){return this.loopFadeIn},f.prototype.setLoopFadeIn=function(t){this.loopFadeIn=t},Z.prototype.clear=function(){this.size=0},Z.prototype.add=function(t){if(this._$P.length<=this.size){var e=new Float32Array(2*this.size);Ct._$jT(this._$P,0,e,0,this.size),this._$P=e}this._$P[this.size++]=t},Z.prototype._$BL=function(){var t=new Float32Array(this.size);return Ct._$jT(this._$P,0,t,0,this.size),t},S._$Fr=0,S._$hs=1,S._$ws=100,S._$Ns=101,S._$xs=102,S._$us=103,S._$qs=104,S._$Ys=105,E._$Ms=1,E._$Qs=2,E._$i2=0,E._$No=2,E._$do=E._$Ms,E._$Ls=!0,E._$1r=5,E._$Qb=65,E._$J=1e-4,E._$FT=.001,E._$Ss=3,d._$o7=6,d._$S7=7,d._$s7=8,d._$77=9,d.LIVE2D_FORMAT_VERSION_V2_10_SDK2=10,d.LIVE2D_FORMAT_VERSION_V2_11_SDK2_1=11,d._$T7=d.LIVE2D_FORMAT_VERSION_V2_11_SDK2_1,d._$Is=-2004318072,d._$h0=0,d._$4L=23,d._$7P=33,d._$uT=function(t){console.log("_$bo :: _$6 _$mo _$E0 : %d\n",t)},d._$9o=function(t){if(t<40)return d._$uT(t),null;if(t<50)return d._$uT(t),null;if(t<60)return d._$uT(t),null;if(t<100)switch(t){case 65:return new at;case 66:return new q;case 67:return new g;case 68:return new nt;case 69:return new X;case 70:return new v;default:return d._$uT(t),null}else if(t<150)switch(t){case 131:return new ft;case 133:return new o;case 136:return new B;case 137:return new pt;case 142:return new it}return d._$uT(t),null},y._$HP=0,y._$_0=!0;y._$V2=-1,y._$W0=-1,y._$jr=!1,y._$ZS=!0,y._$tr=-1e6,y._$lr=1e6,y._$is=32,y._$e=!1,y.prototype.getDrawDataIndex=function(t){for(var e=this._$aS.length-1;e>=0;--e)if(null!=this._$aS[e]&&this._$aS[e].getDrawDataID()==t)return e;return-1},y.prototype.getDrawData=function(t){if(t instanceof Q){if(null==this._$Bo){this._$Bo=new Object;for(var e=this._$aS.length,i=0;i<e;i++){var r=this._$aS[i],o=r.getDrawDataID();null!=o&&(this._$Bo[o]=r)}}return this._$Bo[id]}return t<this._$aS.length?this._$aS[t]:null},y.prototype.release=function(){this._$3S.clear(),this._$aS.clear(),this._$F2.clear(),null!=this._$Bo&&this._$Bo.clear(),this._$db.clear(),this._$8b.clear(),this._$Hr.clear()},y.prototype.init=function(){this._$co++,this._$F2.length>0&&this.release();for(var t=this._$Ri.getModelImpl(),e=t._$Xr(),i=e.length,r=new Array,o=new Array,s=0;s<i;++s){var n=e[s];this._$F2.push(n),this._$Hr.push(n.init(this));for(var _=n.getBaseData(),a=_.length,h=0;h<a;++h)r.push(_[h]);for(var h=0;h<a;++h){var l=_[h].init(this);l._$l2(s),o.push(l)}for(var $=n.getDrawData(),u=$.length,h=0;h<u;++h){var p=$[h],f=p.init(this);f._$IP=s,this._$aS.push(p),this._$8b.push(f)}}for(var c=r.length,d=M._$2o();;){for(var g=!1,s=0;s<c;++s){var y=r[s];if(null!=y){var m=y.getTargetBaseDataID();(null==m||m==d||this.getBaseDataIndex(m)>=0)&&(this._$3S.push(y),this._$db.push(o[s]),r[s]=null,g=!0)}}if(!g)break}var T=t._$E2();if(null!=T){var P=T._$1s();if(null!=P)for(var v=P.length,s=0;s<v;++s){var S=P[s];null!=S&&this._$02(S.getParamID(),S.getDefaultValue(),S.getMinValue(),S.getMaxValue())}}this.clipManager=new L(this.dp_webgl),this.clipManager.init(this,this._$aS,this._$8b),this._$QT=!0},y.prototype.update=function(){y._$e&&rt.start("_$zL");for(var t=this._$_2.length,e=0;e<t;e++)this._$_2[e]!=this._$vr[e]&&(this._$Js[e]=y._$ZS,this._$vr[e]=this._$_2[e]);var i=this._$3S.length,r=this._$aS.length,o=T._$or(),s=T._$Pr(),n=s-o+1;(null==this._$Ws||this._$Ws.length<n)&&(this._$Ws=new Int16Array(n),this._$Vs=new Int16Array(n));for(var e=0;e<n;e++)this._$Ws[e]=y._$V2,this._$Vs[e]=y._$V2;(null==this._$Er||this._$Er.length<r)&&(this._$Er=new Int16Array(r));for(var e=0;e<r;e++)this._$Er[e]=y._$W0;y._$e&&rt.dump("_$zL"),y._$e&&rt.start("_$UL");for(var _=null,a=0;a<i;++a){var h=this._$3S[a],l=this._$db[a];try{h._$Nr(this,l),h._$2b(this,l)}catch(t){null==_&&(_=t)}}null!=_&&y._$_0&&rt._$Rb(_),y._$e&&rt.dump("_$UL"),y._$e&&rt.start("_$DL");for(var $=null,u=0;u<r;++u){var p=this._$aS[u],f=this._$8b[u];try{if(p._$Nr(this,f),f._$u2())continue;p._$2b(this,f);var c,d=Math.floor(p._$zS(this,f)-o);try{c=this._$Vs[d]}catch(t){console.log("_$li :: %s / %s \t\t\t\t@@_$fS\n",t.toString(),p.getDrawDataID().toString()),d=Math.floor(p._$zS(this,f)-o);continue}c==y._$V2?this._$Ws[d]=u:this._$Er[c]=u,this._$Vs[d]=u}catch(t){null==$&&($=t,st._$sT(st._$H7))}}null!=$&&y._$_0&&rt._$Rb($),y._$e&&rt.dump("_$DL"),y._$e&&rt.start("_$eL");for(var e=this._$Js.length-1;e>=0;e--)this._$Js[e]=y._$jr;return this._$QT=!1,y._$e&&rt.dump("_$eL"),!1},y.prototype.preDraw=function(t){null!=this.clipManager&&(t._$ZT(),this.clipManager.setupClip(this,t))},y.prototype.draw=function(t){if(null==this._$Ws)return void rt._$li("call _$Ri.update() before _$Ri.draw() ");var e=this._$Ws.length;t._$ZT();for(var i=0;i<e;++i){var r=this._$Ws[i];if(r!=y._$V2)for(;;){var o=this._$aS[r],s=this._$8b[r];if(s._$yo()){var n=s._$IP,_=this._$Hr[n];s._$VS=_.getPartsOpacity(),o.draw(t,this,s)}var a=this._$Er[r];if(a<=r||a==y._$W0)break;r=a}}},y.prototype.getParamIndex=function(t){for(var e=this._$pb.length-1;e>=0;--e)if(this._$pb[e]==t)return e;return this._$02(t,0,y._$tr,y._$lr)},y.prototype._$BS=function(t){return this.getBaseDataIndex(t)},y.prototype.getBaseDataIndex=function(t){for(var e=this._$3S.length-1;e>=0;--e)if(null!=this._$3S[e]&&this._$3S[e].getBaseDataID()==t)return e;return-1},y.prototype._$UT=function(t,e){var i=new Float32Array(e);return Ct._$jT(t,0,i,0,t.length),i},y.prototype._$02=function(t,e,i,r){if(this._$qo>=this._$pb.length){var o=this._$pb.length,s=new Array(2*o);Ct._$jT(this._$pb,0,s,0,o),this._$pb=s,this._$_2=this._$UT(this._$_2,2*o),this._$vr=this._$UT(this._$vr,2*o),this._$Rr=this._$UT(this._$Rr,2*o),this._$Or=this._$UT(this._$Or,2*o);var n=new Array;Ct._$jT(this._$Js,0,n,0,o),this._$Js=n}return this._$pb[this._$qo]=t,this._$_2[this._$qo]=e,this._$vr[this._$qo]=e,this._$Rr[this._$qo]=i,this._$Or[this._$qo]=r,this._$Js[this._$qo]=y._$ZS,this._$qo++},y.prototype._$Zo=function(t,e){this._$3S[t]=e},y.prototype.setParamFloat=function(t,e){e<this._$Rr[t]&&(e=this._$Rr[t]),e>this._$Or[t]&&(e=this._$Or[t]),this._$_2[t]=e},y.prototype.loadParam=function(){var t=this._$_2.length;t>this._$fs.length&&(t=this._$fs.length),Ct._$jT(this._$fs,0,this._$_2,0,t)},y.prototype.saveParam=function(){var t=this._$_2.length;t>this._$fs.length&&(this._$fs=new Float32Array(t)),Ct._$jT(this._$_2,0,this._$fs,0,t)},y.prototype._$v2=function(){return this._$co},y.prototype._$WS=function(){return this._$QT},y.prototype._$Xb=function(t){return this._$Js[t]==y._$ZS},y.prototype._$vs=function(){return this._$Es},y.prototype._$Tr=function(){return this._$ZP},y.prototype.getBaseData=function(t){return this._$3S[t]},y.prototype.getParamFloat=function(t){return this._$_2[t]},y.prototype.getParamMax=function(t){return this._$Or[t]},y.prototype.getParamMin=function(t){return this._$Rr[t]},y.prototype.setPartsOpacity=function(t,e){this._$Hr[t].setPartsOpacity(e)},y.prototype.getPartsOpacity=function(t){return this._$Hr[t].getPartsOpacity()},y.prototype.getPartsDataIndex=function(t){for(var e=this._$F2.length-1;e>=0;--e)if(null!=this._$F2[e]&&this._$F2[e]._$p2()==t)return e;return-1},y.prototype._$q2=function(t){return this._$db[t]},y.prototype._$C2=function(t){return this._$8b[t]},y.prototype._$Bb=function(t){return this._$Hr[t]},y.prototype._$5s=function(t,e){for(var i=this._$Ws.length,r=t,o=0;o<i;++o){var s=this._$Ws[o];if(s!=y._$V2)for(;;){var n=this._$8b[s];n._$yo()&&(n._$GT()._$B2(this,n,r),r+=e);var _=this._$Er[s];if(_<=s||_==y._$W0)break;s=_}}},y.prototype.setDrawParam=function(t){this.dp_webgl=t},y.prototype.getDrawParam=function(){return this.dp_webgl},K._$0T=function(t){return K._$0T(new _$5(t))},K._$0T=function(t){if(!t.exists())throw new _$ls(t._$3b());for(var e,i=t.length(),r=new Int8Array(i),o=new _$Xs(new _$kb(t),8192),s=0;(e=o.read(r,s,i-s))>0;)s+=e;return r},K._$C=function(t){var e=null,i=null;try{e=t instanceof Array?t:new _$Xs(t,8192),i=new _$js;for(var r,o=new Int8Array(1e3);(r=e.read(o))>0;)i.write(o,0,r);return i._$TS()}finally{null!=t&&t.close(),null!=i&&(i.flush(),i.close())}},tt.prototype._$T2=function(){return Ct.getUserTimeMSec()+Math._$10()*(2*this._$Br-1)},tt.prototype._$uo=function(t){this._$Br=t},tt.prototype._$QS=function(t,e,i){this._$Dr=t,this._$Cb=e,this._$mr=i},tt.prototype._$7T=function(t){var e,i=Ct.getUserTimeMSec(),r=0;switch(this._$_L){case STATE_CLOSING:r=(i-this._$bb)/this._$Dr,r>=1&&(r=1,this._$_L=At.STATE_CLOSED,this._$bb=i),e=1-r;break;case STATE_CLOSED:r=(i-this._$bb)/this._$Cb,r>=1&&(this._$_L=At.STATE_OPENING,this._$bb=i),e=0;break;case STATE_OPENING:r=(i-this._$bb)/this._$mr,r>=1&&(r=1,this._$_L=At.STATE_INTERVAL,this._$12=this._$T2()),e=r;break;case STATE_INTERVAL:this._$12<i&&(this._$_L=At.STATE_CLOSING,this._$bb=i),e=1;break;case STATE_FIRST:default:this._$_L=At.STATE_INTERVAL,this._$12=this._$T2(),e=1}this._$jo||(e=-e),t.setParamFloat(this._$iL,e),t.setParamFloat(this._$0L,e)};var At=function(){};At.STATE_FIRST="STATE_FIRST",At.STATE_INTERVAL="STATE_INTERVAL",At.STATE_CLOSING="STATE_CLOSING",At.STATE_CLOSED="STATE_CLOSED",At.STATE_OPENING="STATE_OPENING",i.prototype=new e,i._$As=32,i._$Gr=!1,i._$NT=null,i._$vS=null,i._$no=null,i._$9r=function(t){return new Float32Array(t)},i._$vb=function(t){return new Int16Array(t)},i._$cr=function(t,e){return null==t||t._$yL()<e.length?(t=i._$9r(2*e.length),t.put(e),t._$oT(0)):(t.clear(),t.put(e),t._$oT(0)),t},i._$mb=function(t,e){return null==t||t._$yL()<e.length?(t=i._$vb(2*e.length),t.put(e),t._$oT(0)):(t.clear(),t.put(e),t._$oT(0)),t},i._$Hs=function(){return i._$Gr},i._$as=function(t){i._$Gr=t},i.prototype.setGL=function(t){this.gl=t},i.prototype.setTransform=function(t){this.transform=t},i.prototype._$ZT=function(){},i.prototype._$Uo=function(t,e,i,r,o,s,n,_){if(!(s<.01)){var a=this._$U2[t],h=s>.9?st.EXPAND_W:0;this.gl.drawElements(a,i,r,o,s,h,this.transform,_)}},i.prototype._$Rs=function(){throw new Error("_$Rs")},i.prototype._$Ds=function(t){throw new Error("_$Ds")},i.prototype._$K2=function(){for(var t=0;t<this._$sb.length;t++){0!=this._$sb[t]&&(this.gl._$Sr(1,this._$sb,t),this._$sb[t]=0)}},i.prototype.setTexture=function(t,e){this._$sb.length<t+1&&this._$nS(t),this._$sb[t]=e},i.prototype.setTexture=function(t,e){this._$sb.length<t+1&&this._$nS(t),this._$U2[t]=e},i.prototype._$nS=function(t){var e=Math.max(2*this._$sb.length,t+1+10),i=new Int32Array(e);Ct._$jT(this._$sb,0,i,0,this._$sb.length),this._$sb=i;var r=new Array;Ct._$jT(this._$U2,0,r,0,this._$U2.length),this._$U2=r},nt.prototype=new u,nt._$Xo=new Float32Array(2),nt._$io=new Float32Array(2),nt._$0o=new Float32Array(2),nt._$Lo=new Float32Array(2),nt._$To=new Float32Array(2),nt._$Po=new Float32Array(2),nt._$gT=new Array,nt.prototype._$zP=function(){this._$GS=new q,this._$GS._$zP(),this._$Y0=new Array},nt.prototype.getType=function(){return u._$c2},nt.prototype._$F0=function(t){u.prototype._$F0.call(this,t),this._$GS=t._$nP(),this._$Y0=t._$nP(),u.prototype.readV2_opacity.call(this,t)},nt.prototype.init=function(t){var e=new et(this);return e._$Yr=new X,this._$32()&&(e._$Wr=new X),e},nt.prototype._$Nr=function(t,C){this!=C._$GT()&&console.log("### assert!! ### ");var e=C;if(this._$GS._$Ur(t)){var N=nt._$gT;N[0]=!1;var i=this._$GS._$Q2(t,N);C._$Ib(N[0]),this.interpolateOpacity(t,this._$GS,C,N);var r=t._$vs(),o=t._$Tr();if(this._$GS._$zr(r,o,i),i<=0){var s=this._$Y0[r[0]];e._$Yr.init(s)}else if(1==i){var s=this._$Y0[r[0]],n=this._$Y0[r[1]],_=o[0];e._$Yr._$fL=s._$fL+(n._$fL-s._$fL)*_,e._$Yr._$gL=s._$gL+(n._$gL-s._$gL)*_,e._$Yr._$B0=s._$B0+(n._$B0-s._$B0)*_,e._$Yr._$z0=s._$z0+(n._$z0-s._$z0)*_,e._$Yr._$qT=s._$qT+(n._$qT-s._$qT)*_}else if(2==i){var s=this._$Y0[r[0]],n=this._$Y0[r[1]],a=this._$Y0[r[2]],h=this._$Y0[r[3]],_=o[0],l=o[1],$=s._$fL+(n._$fL-s._$fL)*_,u=a._$fL+(h._$fL-a._$fL)*_;e._$Yr._$fL=$+(u-$)*l,$=s._$gL+(n._$gL-s._$gL)*_,u=a._$gL+(h._$gL-a._$gL)*_,e._$Yr._$gL=$+(u-$)*l,$=s._$B0+(n._$B0-s._$B0)*_,u=a._$B0+(h._$B0-a._$B0)*_,e._$Yr._$B0=$+(u-$)*l,$=s._$z0+(n._$z0-s._$z0)*_,u=a._$z0+(h._$z0-a._$z0)*_,e._$Yr._$z0=$+(u-$)*l,$=s._$qT+(n._$qT-s._$qT)*_,u=a._$qT+(h._$qT-a._$qT)*_,e._$Yr._$qT=$+(u-$)*l}else if(3==i){var p=this._$Y0[r[0]],B=this._$Y0[r[1]],f=this._$Y0[r[2]],U=this._$Y0[r[3]],c=this._$Y0[r[4]],G=this._$Y0[r[5]],d=this._$Y0[r[6]],Y=this._$Y0[r[7]],_=o[0],l=o[1],g=o[2],$=p._$fL+(B._$fL-p._$fL)*_,u=f._$fL+(U._$fL-f._$fL)*_,y=c._$fL+(G._$fL-c._$fL)*_,m=d._$fL+(Y._$fL-d._$fL)*_;e._$Yr._$fL=(1-g)*($+(u-$)*l)+g*(y+(m-y)*l),$=p._$gL+(B._$gL-p._$gL)*_,u=f._$gL+(U._$gL-f._$gL)*_,y=c._$gL+(G._$gL-c._$gL)*_,m=d._$gL+(Y._$gL-d._$gL)*_,e._$Yr._$gL=(1-g)*($+(u-$)*l)+g*(y+(m-y)*l),$=p._$B0+(B._$B0-p._$B0)*_,u=f._$B0+(U._$B0-f._$B0)*_,y=c._$B0+(G._$B0-c._$B0)*_,m=d._$B0+(Y._$B0-d._$B0)*_,e._$Yr._$B0=(1-g)*($+(u-$)*l)+g*(y+(m-y)*l),$=p._$z0+(B._$z0-p._$z0)*_,u=f._$z0+(U._$z0-f._$z0)*_,y=c._$z0+(G._$z0-c._$z0)*_,m=d._$z0+(Y._$z0-d._$z0)*_,e._$Yr._$z0=(1-g)*($+(u-$)*l)+g*(y+(m-y)*l),$=p._$qT+(B._$qT-p._$qT)*_,u=f._$qT+(U._$qT-f._$qT)*_,y=c._$qT+(G._$qT-c._$qT)*_,m=d._$qT+(Y._$qT-d._$qT)*_,e._$Yr._$qT=(1-g)*($+(u-$)*l)+g*(y+(m-y)*l)}else if(4==i){var T=this._$Y0[r[0]],k=this._$Y0[r[1]],P=this._$Y0[r[2]],V=this._$Y0[r[3]],v=this._$Y0[r[4]],X=this._$Y0[r[5]],S=this._$Y0[r[6]],z=this._$Y0[r[7]],L=this._$Y0[r[8]],H=this._$Y0[r[9]],M=this._$Y0[r[10]],W=this._$Y0[r[11]],E=this._$Y0[r[12]],j=this._$Y0[r[13]],A=this._$Y0[r[14]],q=this._$Y0[r[15]],_=o[0],l=o[1],g=o[2],I=o[3],$=T._$fL+(k._$fL-T._$fL)*_,u=P._$fL+(V._$fL-P._$fL)*_,y=v._$fL+(X._$fL-v._$fL)*_,m=S._$fL+(z._$fL-S._$fL)*_,w=L._$fL+(H._$fL-L._$fL)*_,x=M._$fL+(W._$fL-M._$fL)*_,O=E._$fL+(j._$fL-E._$fL)*_,D=A._$fL+(q._$fL-A._$fL)*_;e._$Yr._$fL=(1-I)*((1-g)*($+(u-$)*l)+g*(y+(m-y)*l))+I*((1-g)*(w+(x-w)*l)+g*(O+(D-O)*l)),$=T._$gL+(k._$gL-T._$gL)*_,u=P._$gL+(V._$gL-P._$gL)*_,y=v._$gL+(X._$gL-v._$gL)*_,m=S._$gL+(z._$gL-S._$gL)*_,w=L._$gL+(H._$gL-L._$gL)*_,x=M._$gL+(W._$gL-M._$gL)*_,O=E._$gL+(j._$gL-E._$gL)*_,D=A._$gL+(q._$gL-A._$gL)*_,e._$Yr._$gL=(1-I)*((1-g)*($+(u-$)*l)+g*(y+(m-y)*l))+I*((1-g)*(w+(x-w)*l)+g*(O+(D-O)*l)),$=T._$B0+(k._$B0-T._$B0)*_,u=P._$B0+(V._$B0-P._$B0)*_,y=v._$B0+(X._$B0-v._$B0)*_,m=S._$B0+(z._$B0-S._$B0)*_,w=L._$B0+(H._$B0-L._$B0)*_,x=M._$B0+(W._$B0-M._$B0)*_,O=E._$B0+(j._$B0-E._$B0)*_,D=A._$B0+(q._$B0-A._$B0)*_,e._$Yr._$B0=(1-I)*((1-g)*($+(u-$)*l)+g*(y+(m-y)*l))+I*((1-g)*(w+(x-w)*l)+g*(O+(D-O)*l)),$=T._$z0+(k._$z0-T._$z0)*_,u=P._$z0+(V._$z0-P._$z0)*_,y=v._$z0+(X._$z0-v._$z0)*_,m=S._$z0+(z._$z0-S._$z0)*_,w=L._$z0+(H._$z0-L._$z0)*_,x=M._$z0+(W._$z0-M._$z0)*_,O=E._$z0+(j._$z0-E._$z0)*_,D=A._$z0+(q._$z0-A._$z0)*_,e._$Yr._$z0=(1-I)*((1-g)*($+(u-$)*l)+g*(y+(m-y)*l))+I*((1-g)*(w+(x-w)*l)+g*(O+(D-O)*l)),$=T._$qT+(k._$qT-T._$qT)*_,u=P._$qT+(V._$qT-P._$qT)*_,y=v._$qT+(X._$qT-v._$qT)*_,m=S._$qT+(z._$qT-S._$qT)*_,w=L._$qT+(H._$qT-L._$qT)*_,x=M._$qT+(W._$qT-M._$qT)*_,O=E._$qT+(j._$qT-E._$qT)*_,D=A._$qT+(q._$qT-A._$qT)*_,e._$Yr._$qT=(1-I)*((1-g)*($+(u-$)*l)+g*(y+(m-y)*l))+I*((1-g)*(w+(x-w)*l)+g*(O+(D-O)*l))}else{for(var J=0|Math.pow(2,i),R=new Float32Array(J),Q=0;Q<J;Q++){for(var Z=Q,K=1,tt=0;tt<i;tt++)K*=Z%2==0?1-o[tt]:o[tt],Z/=2;R[Q]=K}for(var b=new Array,F=0;F<J;F++)b[F]=this._$Y0[r[F]];for(var et=0,it=0,rt=0,ot=0,st=0,F=0;F<J;F++)et+=R[F]*b[F]._$fL,it+=R[F]*b[F]._$gL,rt+=R[F]*b[F]._$B0,ot+=R[F]*b[F]._$z0,st+=R[F]*b[F]._$qT;e._$Yr._$fL=et,e._$Yr._$gL=it,e._$Yr._$B0=rt,e._$Yr._$z0=ot,e._$Yr._$qT=st}var s=this._$Y0[r[0]];e._$Yr.reflectX=s.reflectX,e._$Yr.reflectY=s.reflectY}},nt.prototype._$2b=function(t,e){this!=e._$GT()&&console.log("### assert!! ### ");var i=e;if(i._$hS(!0),this._$32()){var r=this.getTargetBaseDataID();if(i._$8r==u._$ur&&(i._$8r=t.getBaseDataIndex(r)),i._$8r<0)st._$so&&rt._$li("_$L _$0P _$G :: %s",r),i._$hS(!1);else{var o=t.getBaseData(i._$8r);if(null!=o){var s=t._$q2(i._$8r),n=nt._$Xo;n[0]=i._$Yr._$fL,n[1]=i._$Yr._$gL;var _=nt._$io;_[0]=0,_[1]=-.1;s._$GT().getType()==u._$c2?_[1]=-10:_[1]=-.1;var a=nt._$0o;this._$Jr(t,o,s,n,_,a);var h=w._$92(_,a);o._$nb(t,s,n,n,1,0,2),i._$Wr._$fL=n[0],i._$Wr._$gL=n[1],i._$Wr._$B0=i._$Yr._$B0,i._$Wr._$z0=i._$Yr._$z0,i._$Wr._$qT=i._$Yr._$qT-h*w._$NS;var l=s.getTotalScale();i.setTotalScale_notForClient(l*i._$Wr._$B0);var $=s.getTotalOpacity();i.setTotalOpacity($*i.getInterpolatedOpacity()),i._$Wr.reflectX=i._$Yr.reflectX,i._$Wr.reflectY=i._$Yr.reflectY,i._$hS(s._$yo())}else i._$hS(!1)}}else i.setTotalScale_notForClient(i._$Yr._$B0),i.setTotalOpacity(i.getInterpolatedOpacity())},nt.prototype._$nb=function(t,e,i,r,o,s,n){this!=e._$GT()&&console.log("### assert!! ### ");for(var _,a,h=e,l=null!=h._$Wr?h._$Wr:h._$Yr,$=Math.sin(w._$bS*l._$qT),u=Math.cos(w._$bS*l._$qT),p=h.getTotalScale(),f=l.reflectX?-1:1,c=l.reflectY?-1:1,d=u*p*f,g=-$*p*c,y=$*p*f,m=u*p*c,T=l._$fL,P=l._$gL,v=o*n,S=s;S<v;S+=n)_=i[S],a=i[S+1],r[S]=d*_+g*a+T,r[S+1]=y*_+m*a+P},nt.prototype._$Jr=function(t,e,i,r,o,s){e!=i._$GT()&&console.log("### assert!! ### ");var n=nt._$Lo;nt._$Lo[0]=r[0],nt._$Lo[1]=r[1],e._$nb(t,i,n,n,1,0,2);for(var _=nt._$To,a=nt._$Po,h=1,l=0;l<10;l++){if(a[0]=r[0]+h*o[0],a[1]=r[1]+h*o[1],e._$nb(t,i,a,_,1,0,2),_[0]-=n[0],_[1]-=n[1],0!=_[0]||0!=_[1])return s[0]=_[0],void(s[1]=_[1]);if(a[0]=r[0]-h*o[0],a[1]=r[1]-h*o[1],e._$nb(t,i,a,_,1,0,2),_[0]-=n[0],_[1]-=n[1],0!=_[0]||0!=_[1])return _[0]=-_[0],_[0]=-_[0],s[0]=_[0],void(s[1]=_[1]);h*=.1}st._$so&&console.log("_$L0 to transform _$SP\n")},et.prototype=new h,T.prototype=new r,T._$ur=-2,T._$ES=500,T._$wb=2,T._$8S=3,T._$os=4,T._$52=T._$ES,T._$R2=T._$ES,T._$Sb=function(t){for(var e=t.length-1;e>=0;--e){var i=t[e];i<T._$52?T._$52=i:i>T._$R2&&(T._$R2=i)}},T._$or=function(){return T._$52},T._$Pr=function(){return T._$R2},T.prototype._$F0=function(t){this._$gP=t._$nP(),this._$dr=t._$nP(),this._$GS=t._$nP(),this._$qb=t._$6L(),this._$Lb=t._$cS(),this._$mS=t._$Tb(),t.getFormatVersion()>=d._$T7?(this.clipID=t._$nP(),this.clipIDList=this.convertClipIDForV2_11(this.clipID)):this.clipIDList=null,T._$Sb(this._$Lb)},T.prototype.getClipIDList=function(){return this.clipIDList},T.prototype._$Nr=function(t,e){if(e._$IS[0]=!1,e._$Us=H._$Z2(t,this._$GS,e._$IS,this._$Lb),st._$Zs);else if(e._$IS[0])return;e._$7s=H._$br(t,this._$GS,e._$IS,this._$mS)},T.prototype._$2b=function(t){},T.prototype.getDrawDataID=function(){return this._$gP},T.prototype._$j2=function(t){this._$gP=t},T.prototype.getOpacity=function(t,e){return e._$7s},T.prototype._$zS=function(t,e){return e._$Us},T.prototype.getTargetBaseDataID=function(){return this._$dr},T.prototype._$gs=function(t){this._$dr=t},T.prototype._$32=function(){return null!=this._$dr&&this._$dr!=M._$2o()},T.prototype.getType=function(){},it._$42=0,it.prototype._$1b=function(){return this._$3S},it.prototype.getDrawDataList=function(){return this._$aS},it.prototype._$F0=function(t){this._$NL=t._$nP(),this._$aS=t._$nP(),this._$3S=t._$nP()},it.prototype._$kr=function(t){t._$Zo(this._$3S),t._$xo(this._$aS),this._$3S=null,this._$aS=null},a.prototype=new $,a.loadModel=function(t){var e=new a;return $._$62(e,t),e},a.loadModel=function(t){var e=new a;return $._$62(e,t),e},a._$to=function(){return new a},a._$er=function(t){var e=new _$5("../_$_r/_$t0/_$Ri/_$_P._$d");if(0==e.exists())throw new _$ls("_$t0 _$_ _$6 _$Ui :: "+e._$PL());for(var i=["../_$_r/_$t0/_$Ri/_$_P.512/_$CP._$1","../_$_r/_$t0/_$Ri/_$_P.512/_$vP._$1","../_$_r/_$t0/_$Ri/_$_P.512/_$EP._$1","../_$_r/_$t0/_$Ri/_$_P.512/_$pP._$1"],r=a.loadModel(e._$3b()),o=0;o<i.length;o++){var s=new _$5(i[o]);if(0==s.exists())throw new _$ls("_$t0 _$_ _$6 _$Ui :: "+s._$PL());r.setTexture(o,_$nL._$_o(t,s._$3b()))}return r},a.prototype.setGL=function(t){this._$zo.setGL(t)},a.prototype.setTransform=function(t){this._$zo.setTransform(t)},a.prototype.draw=function(){this._$5S.draw(this._$zo)},a.prototype._$K2=function(){this._$zo._$K2()},a.prototype.setTexture=function(t,e){null==this._$zo&&rt._$li("_$Yi for QT _$ki / _$XS() is _$6 _$ui!!"),this._$zo.setTexture(t,e)},a.prototype.setTexture=function(t,e){null==this._$zo&&rt._$li("_$Yi for QT _$ki / _$XS() is _$6 _$ui!!"),this._$zo.setTexture(t,e)},a.prototype._$Rs=function(){return this._$zo._$Rs()},a.prototype._$Ds=function(t){this._$zo._$Ds(t)},a.prototype.getDrawParam=function(){return this._$zo},P.prototype=new t,P._$cs="VISIBLE:",P._$ar="LAYOUT:",P.MTN_PREFIX_FADEIN="FADEIN:",P.MTN_PREFIX_FADEOUT="FADEOUT:",P._$Co=0,P._$1T=1,P.loadMotion=function(t){var e=K._$C(t);return P.loadMotion(e)},P.loadMotion=function(t){t instanceof ArrayBuffer&&(t=new DataView(t));var e=new P,i=[0],r=t.byteLength;e._$yT=0;for(var o=0;o<r;++o){var s=_t(t,o),n=s.charCodeAt(0);if("\n"!=s&&"\r"!=s)if("#"!=s)if("$"!=s){if(97<=n&&n<=122||65<=n&&n<=90||"_"==s){for(var _=o,a=-1;o<r&&("\r"!=(s=_t(t,o))&&"\n"!=s);++o)if("="==s){a=o;break}if(a>=0){var h=new S;c.startsWith(t,_,P._$cs)?(h._$RP=S._$hs,h._$4P=c.createString(t,_,a-_)):c.startsWith(t,_,P._$ar)?(h._$4P=c.createString(t,_+7,a-_-7),c.startsWith(t,_+7,"ANCHOR_X")?h._$RP=S._$xs:c.startsWith(t,_+7,"ANCHOR_Y")?h._$RP=S._$us:c.startsWith(t,_+7,"SCALE_X")?h._$RP=S._$qs:c.startsWith(t,_+7,"SCALE_Y")?h._$RP=S._$Ys:c.startsWith(t,_+7,"X")?h._$RP=S._$ws:c.startsWith(t,_+7,"Y")&&(h._$RP=S._$Ns)):(h._$RP=S._$Fr,h._$4P=c.createString(t,_,a-_)),e.motions.push(h);var l=0,$=[];for(o=a+1;o<r&&("\r"!=(s=_t(t,o))&&"\n"!=s);++o)if(","!=s&&" "!=s&&"\t"!=s){var u=c._$LS(t,r,o,i);if(i[0]>0){$.push(u),l++;var p=i[0];if(p<o){console.log("_$n0 _$hi . @Live2DMotion loadMotion()\n");break}o=p-1}}h._$I0=new Float32Array($),l>e._$yT&&(e._$yT=l)}}}else{for(var _=o,a=-1;o<r&&("\r"!=(s=_t(t,o))&&"\n"!=s);++o)if("="==s){a=o;break}var f=!1;if(a>=0)for(a==_+4&&"f"==_t(t,_+1)&&"p"==_t(t,_+2)&&"s"==_t(t,_+3)&&(f=!0),o=a+1;o<r&&("\r"!=(s=_t(t,o))&&"\n"!=s);++o)if(","!=s&&" "!=s&&"\t"!=s){var u=c._$LS(t,r,o,i);i[0]>0&&f&&5<u&&u<121&&(e._$D0=u),o=i[0]}for(;o<r&&("\n"!=_t(t,o)&&"\r"!=_t(t,o));++o);}else for(;o<r&&("\n"!=_t(t,o)&&"\r"!=_t(t,o));++o);}return e._$rr=1e3*e._$yT/e._$D0|0,e},P.prototype.getDurationMSec=function(){return this._$E?-1:this._$rr},P.prototype.getLoopDurationMSec=function(){return this._$rr},P.prototype.dump=function(){for(var t=0;t<this.motions.length;t++){var e=this.motions[t];console.log("_$wL[%s] [%d]. ",e._$4P,e._$I0.length);for(var i=0;i<e._$I0.length&&i<10;i++)console.log("%5.2f ,",e._$I0[i]);console.log("\n")}},P.prototype.updateParamExe=function(t,e,i,r){for(var o=e-r._$z2,s=o*this._$D0/1e3,n=0|s,_=s-n,a=0;a<this.motions.length;a++){var h=this.motions[a],l=h._$I0.length,$=h._$4P;if(h._$RP==S._$hs){var u=h._$I0[n>=l?l-1:n];t.setParamFloat($,u)}else if(S._$ws<=h._$RP&&h._$RP<=S._$Ys);else{var p,f=t.getParamIndex($),c=t.getModelContext(),d=c.getParamMax(f),g=c.getParamMin(f),y=.4*(d-g),m=c.getParamFloat(f),T=h._$I0[n>=l?l-1:n],P=h._$I0[n+1>=l?l-1:n+1];p=T<P&&P-T>y||T>P&&T-P>y?T:T+(P-T)*_;var v=m+(p-m)*i;t.setParamFloat($,v)}}n>=this._$yT&&(this._$E?(r._$z2=e,this.loopFadeIn&&(r._$bs=e)):r._$9L=!0),this._$eP=i},P.prototype._$r0=function(){return this._$E},P.prototype._$aL=function(t){this._$E=t},P.prototype._$S0=function(){return this._$D0},P.prototype._$U0=function(t){this._$D0=t},P.prototype.isLoopFadeIn=function(){return this.loopFadeIn},P.prototype.setLoopFadeIn=function(t){this.loopFadeIn=t},Z.prototype.clear=function(){this.size=0},Z.prototype.add=function(t){if(this._$P.length<=this.size){var e=new Float32Array(2*this.size);Ct._$jT(this._$P,0,e,0,this.size),this._$P=e}this._$P[this.size++]=t},Z.prototype._$BL=function(){var t=new Float32Array(this.size);return Ct._$jT(this._$P,0,t,0,this.size),t},S._$Fr=0,S._$hs=1,S._$ws=100,S._$Ns=101,S._$xs=102,S._$us=103,S._$qs=104,S._$Ys=105,at.prototype=new u,at._$gT=new Array,at.prototype._$zP=function(){this._$GS=new q,this._$GS._$zP()},at.prototype._$F0=function(t){u.prototype._$F0.call(this,t),this._$A=t._$6L(),this._$o=t._$6L(),this._$GS=t._$nP(),this._$Eo=t._$nP(),u.prototype.readV2_opacity.call(this,t)},at.prototype.init=function(t){var e=new ht(this),i=(this._$o+1)*(this._$A+1);return null!=e._$Cr&&(e._$Cr=null),e._$Cr=new Float32Array(2*i),null!=e._$hr&&(e._$hr=null),this._$32()?e._$hr=new Float32Array(2*i):e._$hr=null,e},at.prototype._$Nr=function(t,e){var i=e;if(this._$GS._$Ur(t)){var r=this._$VT(),o=at._$gT;o[0]=!1,H._$Vr(t,this._$GS,o,r,this._$Eo,i._$Cr,0,2),e._$Ib(o[0]),this.interpolateOpacity(t,this._$GS,e,o)}},at.prototype._$2b=function(t,e){var i=e;if(i._$hS(!0),this._$32()){var r=this.getTargetBaseDataID();if(i._$8r==u._$ur&&(i._$8r=t.getBaseDataIndex(r)),i._$8r<0)st._$so&&rt._$li("_$L _$0P _$G :: %s",r),i._$hS(!1);else{var o=t.getBaseData(i._$8r),s=t._$q2(i._$8r);if(null!=o&&s._$yo()){var n=s.getTotalScale();i.setTotalScale_notForClient(n);var _=s.getTotalOpacity();i.setTotalOpacity(_*i.getInterpolatedOpacity()),o._$nb(t,s,i._$Cr,i._$hr,this._$VT(),0,2),i._$hS(!0)}else i._$hS(!1)}}else i.setTotalOpacity(i.getInterpolatedOpacity())},at.prototype._$nb=function(t,e,i,r,o,s,n){var _=e,a=null!=_._$hr?_._$hr:_._$Cr;at.transformPoints_sdk2(i,r,o,s,n,a,this._$o,this._$A)},at.transformPoints_sdk2=function(t,e,C,N,B,i,r,o){for(var s,n,_,U=C*B,a=0,h=0,l=0,$=0,u=0,p=0,G=!1,f=N;f<U;f+=B){var c,d,g,y;if(g=t[f],y=t[f+1],c=g*r,d=y*o,c<0||d<0||r<=c||o<=d){var m=r+1;if(!G){G=!0,a=.25*(i[2*(0+0*m)]+i[2*(r+0*m)]+i[2*(0+o*m)]+i[2*(r+o*m)]),h=.25*(i[2*(0+0*m)+1]+i[2*(r+0*m)+1]+i[2*(0+o*m)+1]+i[2*(r+o*m)+1]);var Y=i[2*(r+o*m)]-i[2*(0+0*m)],k=i[2*(r+o*m)+1]-i[2*(0+0*m)+1],V=i[2*(r+0*m)]-i[2*(0+o*m)],X=i[2*(r+0*m)+1]-i[2*(0+o*m)+1];l=.5*(Y+V),$=.5*(k+X),u=.5*(Y-V),p=.5*(k-X),a-=.5*(l+u),h-=.5*($+p)}if(-2<g&&g<3&&-2<y&&y<3)if(g<=0)if(y<=0){var T=i[2*(0+0*m)],P=i[2*(0+0*m)+1],v=a-2*l,S=h-2*$,L=a-2*u,M=h-2*p,E=a-2*l-2*u,A=h-2*$-2*p,I=.5*(g- -2),w=.5*(y- -2);I+w<=1?(e[f]=E+(L-E)*I+(v-E)*w,e[f+1]=A+(M-A)*I+(S-A)*w):(e[f]=T+(v-T)*(1-I)+(L-T)*(1-w),e[f+1]=P+(S-P)*(1-I)+(M-P)*(1-w))}else if(y>=1){var L=i[2*(0+o*m)],M=i[2*(0+o*m)+1],E=a-2*l+1*u,A=h-2*$+1*p,T=a+3*u,P=h+3*p,v=a-2*l+3*u,S=h-2*$+3*p,I=.5*(g- -2),w=.5*(y-1);I+w<=1?(e[f]=E+(L-E)*I+(v-E)*w,e[f+1]=A+(M-A)*I+(S-A)*w):(e[f]=T+(v-T)*(1-I)+(L-T)*(1-w),e[f+1]=P+(S-P)*(1-I)+(M-P)*(1-w))}else{var x=0|d;x==o&&(x=o-1);var I=.5*(g- -2),w=d-x,O=x/o,D=(x+1)/o,L=i[2*(0+x*m)],M=i[2*(0+x*m)+1],T=i[2*(0+(x+1)*m)],P=i[2*(0+(x+1)*m)+1],E=a-2*l+O*u,A=h-2*$+O*p,v=a-2*l+D*u,S=h-2*$+D*p;I+w<=1?(e[f]=E+(L-E)*I+(v-E)*w,e[f+1]=A+(M-A)*I+(S-A)*w):(e[f]=T+(v-T)*(1-I)+(L-T)*(1-w),e[f+1]=P+(S-P)*(1-I)+(M-P)*(1-w))}else if(1<=g)if(y<=0){var v=i[2*(r+0*m)],S=i[2*(r+0*m)+1],T=a+3*l,P=h+3*$,E=a+1*l-2*u,A=h+1*$-2*p,L=a+3*l-2*u,M=h+3*$-2*p,I=.5*(g-1),w=.5*(y- -2);I+w<=1?(e[f]=E+(L-E)*I+(v-E)*w,e[f+1]=A+(M-A)*I+(S-A)*w):(e[f]=T+(v-T)*(1-I)+(L-T)*(1-w),e[f+1]=P+(S-P)*(1-I)+(M-P)*(1-w))}else if(y>=1){var E=i[2*(r+o*m)],A=i[2*(r+o*m)+1],L=a+3*l+1*u,M=h+3*$+1*p,v=a+1*l+3*u,S=h+1*$+3*p,T=a+3*l+3*u,P=h+3*$+3*p,I=.5*(g-1),w=.5*(y-1);I+w<=1?(e[f]=E+(L-E)*I+(v-E)*w,e[f+1]=A+(M-A)*I+(S-A)*w):(e[f]=T+(v-T)*(1-I)+(L-T)*(1-w),e[f+1]=P+(S-P)*(1-I)+(M-P)*(1-w))}else{var x=0|d;x==o&&(x=o-1);var I=.5*(g-1),w=d-x,O=x/o,D=(x+1)/o,E=i[2*(r+x*m)],A=i[2*(r+x*m)+1],v=i[2*(r+(x+1)*m)],S=i[2*(r+(x+1)*m)+1],L=a+3*l+O*u,M=h+3*$+O*p,T=a+3*l+D*u,P=h+3*$+D*p;I+w<=1?(e[f]=E+(L-E)*I+(v-E)*w,e[f+1]=A+(M-A)*I+(S-A)*w):(e[f]=T+(v-T)*(1-I)+(L-T)*(1-w),e[f+1]=P+(S-P)*(1-I)+(M-P)*(1-w))}else if(y<=0){var R=0|c;R==r&&(R=r-1);var I=c-R,w=.5*(y- -2),b=R/r,F=(R+1)/r,v=i[2*(R+0*m)],S=i[2*(R+0*m)+1],T=i[2*(R+1+0*m)],P=i[2*(R+1+0*m)+1],E=a+b*l-2*u,A=h+b*$-2*p,L=a+F*l-2*u,M=h+F*$-2*p;I+w<=1?(e[f]=E+(L-E)*I+(v-E)*w,e[f+1]=A+(M-A)*I+(S-A)*w):(e[f]=T+(v-T)*(1-I)+(L-T)*(1-w),e[f+1]=P+(S-P)*(1-I)+(M-P)*(1-w))}else if(y>=1){var R=0|c;R==r&&(R=r-1);var I=c-R,w=.5*(y-1),b=R/r,F=(R+1)/r,E=i[2*(R+o*m)],A=i[2*(R+o*m)+1],L=i[2*(R+1+o*m)],M=i[2*(R+1+o*m)+1],v=a+b*l+3*u,S=h+b*$+3*p,T=a+F*l+3*u,P=h+F*$+3*p;I+w<=1?(e[f]=E+(L-E)*I+(v-E)*w,e[f+1]=A+(M-A)*I+(S-A)*w):(e[f]=T+(v-T)*(1-I)+(L-T)*(1-w),e[f+1]=P+(S-P)*(1-I)+(M-P)*(1-w))}else wt.err.printf("_$li calc : %.4f , %.4f\t\t\t\t\t@@BDBoxGrid\n",g,y);else e[f]=a+g*l+y*u,e[f+1]=h+g*$+y*p}else n=c-(0|c),_=d-(0|d),s=2*((0|c)+(0|d)*(r+1)),n+_<1?(e[f]=i[s]*(1-n-_)+i[s+2]*n+i[s+2*(r+1)]*_,e[f+1]=i[s+1]*(1-n-_)+i[s+3]*n+i[s+2*(r+1)+1]*_):(e[f]=i[s+2*(r+1)+2]*(n-1+_)+i[s+2*(r+1)]*(1-n)+i[s+2]*(1-_),e[f+1]=i[s+2*(r+1)+3]*(n-1+_)+i[s+2*(r+1)+1]*(1-n)+i[s+3]*(1-_))}},at.prototype.transformPoints_sdk1=function(t,e,i,r,o,s,n){for(var _,a,h,l,$,u,p,f=e,c=this._$o,d=this._$A,g=o*n,y=null!=f._$hr?f._$hr:f._$Cr,m=s;m<g;m+=n)st._$ts?(_=i[m],a=i[m+1],_<0?_=0:_>1&&(_=1),a<0?a=0:a>1&&(a=1),_*=c,a*=d,h=0|_,l=0|a,h>c-1&&(h=c-1),l>d-1&&(l=d-1),u=_-h,p=a-l,$=2*(h+l*(c+1))):(_=i[m]*c,a=i[m+1]*d,u=_-(0|_),p=a-(0|a),$=2*((0|_)+(0|a)*(c+1))),u+p<1?(r[m]=y[$]*(1-u-p)+y[$+2]*u+y[$+2*(c+1)]*p,r[m+1]=y[$+1]*(1-u-p)+y[$+3]*u+y[$+2*(c+1)+1]*p):(r[m]=y[$+2*(c+1)+2]*(u-1+p)+y[$+2*(c+1)]*(1-u)+y[$+2]*(1-p),r[m+1]=y[$+2*(c+1)+3]*(u-1+p)+y[$+2*(c+1)+1]*(1-u)+y[$+3]*(1-p))},at.prototype._$VT=function(){return(this._$o+1)*(this._$A+1)},at.prototype.getType=function(){return u._$_b},ht.prototype=new h,o._$42=0,o.prototype._$zP=function(){this._$3S=new Array,this._$aS=new Array},o.prototype._$F0=function(t){this._$g0=t._$8L(),this.visible=t._$8L(),this._$NL=t._$nP(),this._$3S=t._$nP(),this._$aS=t._$nP()},o.prototype.init=function(t){var e=new lt(this);return e.setPartsOpacity(this.isVisible()?1:0),e},o.prototype._$6o=function(t){if(null==this._$3S)throw new Error("_$3S _$6 _$Wo@_$6o");this._$3S.push(t)},o.prototype._$3o=function(t){if(null==this._$aS)throw new Error("_$aS _$6 _$Wo@_$3o");this._$aS.push(t)},o.prototype._$Zo=function(t){this._$3S=t},o.prototype._$xo=function(t){this._$aS=t},o.prototype.isVisible=function(){return this.visible},o.prototype._$uL=function(){return this._$g0},o.prototype._$KP=function(t){this.visible=t},o.prototype._$ET=function(t){this._$g0=t},o.prototype.getBaseData=function(){return this._$3S},o.prototype.getDrawData=function(){return this._$aS},o.prototype._$p2=function(){return this._$NL},o.prototype._$ob=function(t){this._$NL=t},o.prototype.getPartsID=function(){return this._$NL},o.prototype._$MP=function(t){this._$NL=t},lt.prototype=new N,lt.prototype.getPartsOpacity=function(){return this._$VS},lt.prototype.setPartsOpacity=function(t){this._$VS=t},$t._$L7=function(){_._$27(),M._$27(),Q._$27(),n._$27()},$t.prototype.toString=function(){return this.id},ut.prototype._$F0=function(t){},pt.prototype._$1s=function(){return this._$4S},pt.prototype._$zP=function(){this._$4S=new Array},pt.prototype._$F0=function(t){this._$4S=t._$nP()},pt.prototype._$Ks=function(t){this._$4S.push(t)},ot.tr=new Pt,ot._$50=new Pt,ot._$Ti=new Array(0,0),ot._$Pi=new Array(0,0),ot._$B=new Array(0,0),ot.prototype._$lP=function(t,e,i,r){this.viewport=new Array(t,e,i,r)},ot.prototype._$bL=function(){this.context.save();var t=this.viewport;null!=t&&(this.context.beginPath(),this.context._$Li(t[0],t[1],t[2],t[3]),this.context.clip())},ot.prototype._$ei=function(){this.context.restore()},ot.prototype.drawElements=function(t,e,i,r,C,o,s,N){try{C!=this._$Qo&&(this._$Qo=C,this.context.globalAlpha=C);for(var B=e.length,n=t.width,_=t.height,a=this.context,U=this._$xP,G=this._$uP,Y=this._$6r,k=this._$3r,h=ot.tr,l=ot._$Ti,V=ot._$Pi,$=ot._$B,u=0;u<B;u+=3){a.save();var p=e[u],f=e[u+1],c=e[u+2],d=U+Y*i[2*p],g=G+k*i[2*p+1],y=U+Y*i[2*f],m=G+k*i[2*f+1],T=U+Y*i[2*c],P=G+k*i[2*c+1];s&&(s._$PS(d,g,$),d=$[0],g=$[1],s._$PS(y,m,$),y=$[0],m=$[1],s._$PS(T,P,$),T=$[0],P=$[1]);var v=n*r[2*p],S=_-_*r[2*p+1],L=n*r[2*f],M=_-_*r[2*f+1],E=n*r[2*c],A=_-_*r[2*c+1],X=Math.atan2(M-S,L-v),z=Math.atan2(m-g,y-d),H=y-d,W=m-g,j=Math.sqrt(H*H+W*W),q=L-v,J=M-S,Q=Math.sqrt(q*q+J*J),Z=j/Q;Et._$ni(E,A,v,S,L-v,M-S,-(M-S),L-v,l),Et._$ni(T,P,d,g,y-d,m-g,-(m-g),y-d,V);var K=(V[0]-l[0])/l[1],I=Math.min(v,L,E),w=Math.max(v,L,E),x=Math.min(S,M,A),O=Math.max(S,M,A),D=Math.floor(I),R=Math.floor(x),tt=Math.ceil(w),et=Math.ceil(O);h.identity(),h.translate(d,g),h.rotate(z),h.scale(1,V[1]/l[1]),h.shear(K,0),h.scale(Z,Z),h.rotate(-X),h.translate(-v,-S),h.setContext(a);if(o||(o=1.2),st.IGNORE_EXPAND&&(o=0),st.USE_CACHED_POLYGON_IMAGE){var b=N._$e0;if(b.gl_cacheImage=b.gl_cacheImage||{},!b.gl_cacheImage[u]){var it=ot.createCanvas(tt-D,et-R);st.DEBUG_DATA.LDGL_CANVAS_MB=st.DEBUG_DATA.LDGL_CANVAS_MB||0,st.DEBUG_DATA.LDGL_CANVAS_MB+=(tt-D)*(et-R)*4;var F=it.getContext("2d");F.translate(-D,-R),ot.clip(F,h,o,j,v,S,L,M,E,A,d,g,y,m,T,P),F.drawImage(t,0,0),b.gl_cacheImage[u]={cacheCanvas:it,cacheContext:F}}a.drawImage(b.gl_cacheImage[u].cacheCanvas,D,R)}else st.IGNORE_CLIP||ot.clip(a,h,o,j,v,S,L,M,E,A,d,g,y,m,T,P),st.USE_ADJUST_TRANSLATION&&(I=0,w=n,x=0,O=_),a.drawImage(t,I,x,w-I,O-x,I,x,w-I,O-x);a.restore()}}catch(t){rt._$Rb(t)}},ot.clip=function(t,e,i,r,o,s,n,_,a,h,l,$,u,p,f,c){i>.02?ot.expandClip(t,e,i,r,l,$,u,p,f,c):ot.clipWithTransform(t,null,o,s,n,_,a,h)},ot.expandClip=function(t,e,i,r,o,s,n,_,a,h){var l=n-o,$=_-s,u=a-o,p=h-s,f=l*p-$*u>0?i:-i,c=-$,d=l,g=a-n,y=h-_,m=-y,T=g,P=Math.sqrt(g*g+y*y),v=-p,S=u,L=Math.sqrt(u*u+p*p),M=o-f*c/r,E=s-f*d/r,A=n-f*c/r,I=_-f*d/r,w=n-f*m/P,x=_-f*T/P,O=a-f*m/P,D=h-f*T/P,R=o+f*v/L,b=s+f*S/L,C=a+f*v/L,N=h+f*S/L,F=ot._$50;return null!=e._$P2(F)&&(ot.clipWithTransform(t,F,M,E,A,I,w,x,O,D,C,N,R,b),!0)},ot.clipWithTransform=function(t,e,i,r,o,s,n,_){if(arguments.length<7)return void rt._$li("err : @LDGL.clip()");if(!(arguments[1]instanceof Pt))return void rt._$li("err : a[0] is _$6 LDTransform @LDGL.clip()");var a=ot._$B,h=e,l=arguments;if(t.beginPath(),h){h._$PS(l[2],l[3],a),t.moveTo(a[0],a[1]);for(var $=4;$<l.length;$+=2)h._$PS(l[$],l[$+1],a),t.lineTo(a[0],a[1])}else{t.moveTo(l[2],l[3]);for(var $=4;$<l.length;$+=2)t.lineTo(l[$],l[$+1])}t.clip()},ot.createCanvas=function(t,e){var i=document.createElement("canvas");return i.setAttribute("width",t),i.setAttribute("height",e),i||rt._$li("err : "+i),i},ot.dumpValues=function(){for(var t="",e=0;e<arguments.length;e++)t+="["+e+"]= "+arguments[e].toFixed(3)+" , ";console.log(t)},ft.prototype._$F0=function(t){this._$TT=t._$_T(),this._$LT=t._$_T(),this._$FS=t._$_T(),this._$wL=t._$nP()},ft.prototype.getMinValue=function(){return this._$TT},ft.prototype.getMaxValue=function(){return this._$LT},ft.prototype.getDefaultValue=function(){return this._$FS},ft.prototype.getParamID=function(){return this._$wL},h.prototype._$yo=function(){return this._$AT&&!this._$JS},h.prototype._$hS=function(t){this._$AT=t},h.prototype._$GT=function(){return this._$e0},h.prototype._$l2=function(t){this._$IP=t},h.prototype.getPartsIndex=function(){return this._$IP},h.prototype._$x2=function(){return this._$JS},h.prototype._$Ib=function(t){this._$JS=t},h.prototype.getTotalScale=function(){return this.totalScale},h.prototype.setTotalScale_notForClient=function(t){this.totalScale=t},h.prototype.getInterpolatedOpacity=function(){return this._$7s},h.prototype.setInterpolatedOpacity=function(t){this._$7s=t},h.prototype.getTotalOpacity=function(t){return this.totalOpacity},h.prototype.setTotalOpacity=function(t){this.totalOpacity=t},st._$2s="2.1.00_1",st._$Kr=201001e3,st._$sP=!0,st._$so=!0,st._$cb=!1,st._$3T=!0,st._$Ts=!0,st._$fb=!0,st._$ts=!0,st.L2D_DEFORMER_EXTEND=!0,st._$Wb=!1;st._$yr=!1,st._$Zs=!1,st.L2D_NO_ERROR=0,st._$i7=1e3,st._$9s=1001,st._$es=1100,st._$r7=2e3,st._$07=2001,st._$b7=2002,st._$H7=4e3,st.L2D_COLOR_BLEND_MODE_MULT=0,st.L2D_COLOR_BLEND_MODE_ADD=1,st.L2D_COLOR_BLEND_MODE_INTERPOLATE=2,st._$6b=!0,st._$cT=0,st.clippingMaskBufferSize=256,st.glContext=new Array,st.frameBuffers=new Array,st.fTexture=new Array,st.IGNORE_CLIP=!1,st.IGNORE_EXPAND=!1,st.EXPAND_W=2,st.USE_ADJUST_TRANSLATION=!0,st.USE_CANVAS_TRANSFORM=!0,st.USE_CACHED_POLYGON_IMAGE=!1,st.DEBUG_DATA={},st.PROFILE_IOS_SPEED={PROFILE_NAME:"iOS Speed",USE_ADJUST_TRANSLATION:!0,USE_CACHED_POLYGON_IMAGE:!0,EXPAND_W:4},st.PROFILE_IOS_QUALITY={PROFILE_NAME:"iOS HiQ",USE_ADJUST_TRANSLATION:!0,USE_CACHED_POLYGON_IMAGE:!1,EXPAND_W:2},st.PROFILE_IOS_DEFAULT=st.PROFILE_IOS_QUALITY,st.PROFILE_ANDROID={PROFILE_NAME:"Android",USE_ADJUST_TRANSLATION:!1,USE_CACHED_POLYGON_IMAGE:!1,EXPAND_W:2},st.PROFILE_DESKTOP={PROFILE_NAME:"Desktop",USE_ADJUST_TRANSLATION:!1,USE_CACHED_POLYGON_IMAGE:!1,EXPAND_W:2},st.initProfile=function(){x.isIOS()?st.setupProfile(st.PROFILE_IOS_DEFAULT):x.isAndroid()?st.setupProfile(st.PROFILE_ANDROID):st.setupProfile(st.PROFILE_DESKTOP)},st.setupProfile=function(t,e){if("number"==typeof t)switch(t){case 9901:t=st.PROFILE_IOS_SPEED;break;case 9902:t=st.PROFILE_IOS_QUALITY;break;case 9903:t=st.PROFILE_IOS_DEFAULT;break;case 9904:t=st.PROFILE_ANDROID;break;case 9905:t=st.PROFILE_DESKTOP;break;default:alert("profile _$6 _$Ui : "+t)}arguments.length<2&&(e=!0),e&&console.log("profile : "+t.PROFILE_NAME);for(var i in t)st[i]=t[i],e&&console.log("  ["+i+"] = "+t[i])},st.init=function(){if(st._$6b){console.log("Live2D %s",st._$2s),st._$6b=!1;!0,st.initProfile()}},st.getVersionStr=function(){return st._$2s},st.getVersionNo=function(){return st._$Kr},st._$sT=function(t){st._$cT=t},st.getError=function(){var t=st._$cT;return st._$cT=0,t},st.dispose=function(){st.glContext=[],st.frameBuffers=[],st.fTexture=[]},st.setGL=function(t,e){var i=e||0;st.glContext[i]=t},st.getGL=function(t){return st.glContext[t]},st.setClippingMaskBufferSize=function(t){st.clippingMaskBufferSize=t},st.getClippingMaskBufferSize=function(){return st.clippingMaskBufferSize},st.deleteBuffer=function(t){st.getGL(t).deleteFramebuffer(st.frameBuffers[t].framebuffer),delete st.frameBuffers[t],delete st.glContext[t]},ct._$r2=function(t){return t<0?0:t>1?1:.5-.5*Math.cos(t*w.PI_F)},dt._$fr=-1,dt.prototype.toString=function(){return this._$ib},v.prototype=new T,v._$42=0,v._$Os=30,v._$ms=0,v._$ns=1,v._$_s=2,v._$gT=new Array,v.prototype._$_S=function(t){this._$LP=t},v.prototype.getTextureNo=function(){return this._$LP},v.prototype._$ZL=function(){return this._$Qi},v.prototype._$H2=function(){return this._$JP},v.prototype.getNumPoints=function(){return this._$d0},v.prototype.getType=function(){return T._$wb},v.prototype._$B2=function(t,e,i){var r=e,o=null!=r._$hr?r._$hr:r._$Cr;switch(E._$do){default:case E._$Ms:throw new Error("_$L _$ro ");case E._$Qs:for(var s=this._$d0-1;s>=0;--s)o[s*E._$No+4]=i}},v.prototype._$zP=function(){this._$GS=new q,this._$GS._$zP()},v.prototype._$F0=function(t){T.prototype._$F0.call(this,t),this._$LP=t._$6L(),this._$d0=t._$6L(),this._$Yo=t._$6L();var e=t._$nP();this._$BP=new Int16Array(3*this._$Yo);for(var i=3*this._$Yo-1;i>=0;--i)this._$BP[i]=e[i];if(this._$Eo=t._$nP(),this._$Qi=t._$nP(),t.getFormatVersion()>=d._$s7){if(this._$JP=t._$6L(),0!=this._$JP){if(0!=(1&this._$JP)){var r=t._$6L();null==this._$5P&&(this._$5P=new Object),this._$5P._$Hb=parseInt(r)}0!=(this._$JP&v._$Os)?this._$6s=(this._$JP&v._$Os)>>1:this._$6s=v._$ms,0!=(32&this._$JP)&&(this.culling=!1)}}else this._$JP=0},v.prototype.init=function(t){var e=new gt(this),i=this._$d0*E._$No,r=this._$32();switch(null!=e._$Cr&&(e._$Cr=null),e._$Cr=new Float32Array(i),null!=e._$hr&&(e._$hr=null),e._$hr=r?new Float32Array(i):null,E._$do){default:case E._$Ms:if(E._$Ls)for(var o=this._$d0-1;o>=0;--o){var s=o<<1;this._$Qi[s+1]=1-this._$Qi[s+1]}break;case E._$Qs:for(var o=this._$d0-1;o>=0;--o){var s=o<<1,n=o*E._$No,_=this._$Qi[s],a=this._$Qi[s+1];e._$Cr[n]=_,e._$Cr[n+1]=a,e._$Cr[n+4]=0,r&&(e._$hr[n]=_,e._$hr[n+1]=a,e._$hr[n+4]=0)}}return e},v.prototype._$Nr=function(t,e){var i=e;if(this!=i._$GT()&&console.log("### assert!! ### "),this._$GS._$Ur(t)&&(T.prototype._$Nr.call(this,t,i),!i._$IS[0])){var r=v._$gT;r[0]=!1,H._$Vr(t,this._$GS,r,this._$d0,this._$Eo,i._$Cr,E._$i2,E._$No)}},v.prototype._$2b=function(t,e){try{this!=e._$GT()&&console.log("### assert!! ### ");var i=!1;e._$IS[0]&&(i=!0);var r=e;if(!i&&(T.prototype._$2b.call(this,t),this._$32())){var o=this.getTargetBaseDataID();if(r._$8r==T._$ur&&(r._$8r=t.getBaseDataIndex(o)),r._$8r<0)st._$so&&rt._$li("_$L _$0P _$G :: %s",o);else{var s=t.getBaseData(r._$8r),n=t._$q2(r._$8r);null==s||n._$x2()?r._$AT=!1:(s._$nb(t,n,r._$Cr,r._$hr,this._$d0,E._$i2,E._$No),r._$AT=!0),r.baseOpacity=n.getTotalOpacity()}}}catch(t){throw t}},v.prototype.draw=function(t,e,i){if(this!=i._$GT()&&console.log("### assert!! ### "),!i._$IS[0]){var r=i,o=this._$LP;o<0&&(o=1);var s=this.getOpacity(e,r)*i._$VS*i.baseOpacity,n=null!=r._$hr?r._$hr:r._$Cr;t.setClipBufPre_clipContextForDraw(i.clipBufPre_clipContext),t._$WP(this.culling),t._$Uo(o,3*this._$Yo,this._$BP,n,this._$Qi,s,this._$6s,r)}},v.prototype.dump=function(){console.log("  _$yi( %d ) , _$d0( %d ) , _$Yo( %d ) \n",this._$LP,this._$d0,this._$Yo),console.log("  _$Oi _$di = { ");for(var t=0;t<this._$BP.length;t++)console.log("%5d ,",this._$BP[t]);console.log("\n  _$5i _$30");for(var t=0;t<this._$Eo.length;t++){console.log("\n    _$30[%d] = ",t);for(var e=this._$Eo[t],i=0;i<e.length;i++)console.log("%6.2f, ",e[i])}console.log("\n")},v.prototype._$72=function(t){return null==this._$5P?null:this._$5P[t]},v.prototype.getIndexArray=function(){return this._$BP},gt.prototype=new Mt,gt.prototype.getTransformedPoints=function(){return null!=this._$hr?this._$hr:this._$Cr},yt.prototype._$HT=function(t){this.x=t.x,this.y=t.y},yt.prototype._$HT=function(t,e){this.x=t,this.y=e},l.prototype=new $,l.loadModel=function(t){var e=new l;return $._$62(e,t),e},l.loadModel=function(t,e){var i=e||0,r=new l(i);return $._$62(r,t),r},l._$to=function(){return new l},l._$er=function(t){var e=new _$5("../_$_r/_$t0/_$Ri/_$_P._$d");if(0==e.exists())throw new _$ls("_$t0 _$_ _$6 _$Ui :: "+e._$PL());for(var i=["../_$_r/_$t0/_$Ri/_$_P.512/_$CP._$1","../_$_r/_$t0/_$Ri/_$_P.512/_$vP._$1","../_$_r/_$t0/_$Ri/_$_P.512/_$EP._$1","../_$_r/_$t0/_$Ri/_$_P.512/_$pP._$1"],r=l.loadModel(e._$3b()),o=0;o<i.length;o++){var s=new _$5(i[o]);if(0==s.exists())throw new _$ls("_$t0 _$_ _$6 _$Ui :: "+s._$PL());r.setTexture(o,_$nL._$_o(t,s._$3b()))}return r},l.prototype.setGL=function(t){st.setGL(t)},l.prototype.setTransform=function(t){this.drawParamWebGL.setTransform(t)},l.prototype.update=function(){this._$5S.update(),this._$5S.preDraw(this.drawParamWebGL)},l.prototype.draw=function(){this._$5S.draw(this.drawParamWebGL)},l.prototype._$K2=function(){this.drawParamWebGL._$K2()},l.prototype.setTexture=function(t,e){null==this.drawParamWebGL&&rt._$li("_$Yi for QT _$ki / _$XS() is _$6 _$ui!!"),this.drawParamWebGL.setTexture(t,e)},l.prototype.setTexture=function(t,e){null==this.drawParamWebGL&&rt._$li("_$Yi for QT _$ki / _$XS() is _$6 _$ui!!"),this.drawParamWebGL.setTexture(t,e)},l.prototype._$Rs=function(){return this.drawParamWebGL._$Rs()},l.prototype._$Ds=function(t){this.drawParamWebGL._$Ds(t)},l.prototype.getDrawParam=function(){return this.drawParamWebGL},l.prototype.setMatrix=function(t){this.drawParamWebGL.setMatrix(t)},l.prototype.setPremultipliedAlpha=function(t){this.drawParamWebGL.setPremultipliedAlpha(t)},l.prototype.isPremultipliedAlpha=function(){return this.drawParamWebGL.isPremultipliedAlpha()},l.prototype.setAnisotropy=function(t){this.drawParamWebGL.setAnisotropy(t)},l.prototype.getAnisotropy=function(){return this.drawParamWebGL.getAnisotropy()},mt.prototype._$tb=function(){return this.motions},mt.prototype.startMotion=function(t,e){for(var i=null,r=this.motions.length,o=0;o<r;++o)null!=(i=this.motions[o])&&(i._$qS(i._$w0.getFadeOut()),this._$eb&&rt._$Ji("MotionQueueManager[size:%2d]->startMotion() / start _$K _$3 (m%d)\n",r,i._$sr));if(null==t)return-1;i=new Tt,i._$w0=t,this.motions.push(i);var s=i._$sr;return this._$eb&&rt._$Ji("MotionQueueManager[size:%2d]->startMotion() / new _$w0 (m%d)\n",r,s),s},mt.prototype.updateParam=function(t){try{for(var e=!1,i=0;i<this.motions.length;i++){var r=this.motions[i];if(null!=r){var o=r._$w0;null!=o?(o.updateParam(t,r),e=!0,r.isFinished()&&(this._$eb&&rt._$Ji("MotionQueueManager[size:%2d]->updateParam() / _$T0 _$w0 (m%d)\n",this.motions.length-1,r._$sr),this.motions.splice(i,1),i--)):(this.motions=this.motions.splice(i,1),i--)}else this.motions.splice(i,1),i--}return e}catch(t){return rt._$li(t),!0}},mt.prototype.isFinished=function(t){if(arguments.length>=1){for(var e=0;e<this.motions.length;e++){var i=this.motions[e];if(null!=i&&(i._$sr==t&&!i.isFinished()))return!1}return!0}for(var e=0;e<this.motions.length;e++){var i=this.motions[e];if(null!=i){if(null!=i._$w0){if(!i.isFinished())return!1}else this.motions.splice(e,1),e--}else this.motions.splice(e,1),e--}return!0},mt.prototype.stopAllMotions=function(){for(var t=0;t<this.motions.length;t++){var e=this.motions[t];if(null!=e){e._$w0;this.motions.splice(t,1),t--}else this.motions.splice(t,1),t--}},mt.prototype._$Zr=function(t){this._$eb=t},mt.prototype._$e=function(){console.log("-- _$R --\n");for(var t=0;t<this.motions.length;t++){var e=this.motions[t],i=e._$w0;console.log("MotionQueueEnt[%d] :: %s\n",this.motions.length,i.toString())}},Tt._$Gs=0,Tt.prototype.isFinished=function(){return this._$9L},Tt.prototype._$qS=function(t){var e=Ct.getUserTimeMSec(),i=e+t;(this._$Do<0||i<this._$Do)&&(this._$Do=i)},Tt.prototype._$Bs=function(){return this._$sr},Pt.prototype.setContext=function(t){var e=this.m;t.transform(e[0],e[1],e[3],e[4],e[6],e[7])},Pt.prototype.toString=function(){for(var t="LDTransform { ",e=0;e<9;e++)t+=this.m[e].toFixed(2)+" ,";return t+=" }"},Pt.prototype.identity=function(){var t=this.m;t[0]=t[4]=t[8]=1,t[1]=t[2]=t[3]=t[5]=t[6]=t[7]=0},Pt.prototype._$PS=function(t,e,i){null==i&&(i=new Array(0,0));var r=this.m;return i[0]=r[0]*t+r[3]*e+r[6],i[1]=r[1]*t+r[4]*e+r[7],i},Pt.prototype._$P2=function(t){t||(t=new Pt);var e=this.m,i=e[0],r=e[1],o=e[2],s=e[3],n=e[4],_=e[5],a=e[6],h=e[7],l=e[8],$=i*n*l+r*_*a+o*s*h-i*_*h-o*n*a-r*s*l;if(0==$)return null;var u=1/$;return t.m[0]=u*(n*l-h*_),t.m[1]=u*(h*o-r*l),t.m[2]=u*(r*_-n*o),t.m[3]=u*(a*_-s*l),t.m[4]=u*(i*l-a*o),t.m[5]=u*(s*o-i*_),t.m[6]=u*(s*h-a*n),t.m[7]=u*(a*r-i*h),t.m[8]=u*(i*n-s*r),t},Pt.prototype.transform=function(t,e,i){null==i&&(i=new Array(0,0));var r=this.m;return i[0]=r[0]*t+r[3]*e+r[6],i[1]=r[1]*t+r[4]*e+r[7],i},Pt.prototype.translate=function(t,e){var i=this.m;i[6]=i[0]*t+i[3]*e+i[6],i[7]=i[1]*t+i[4]*e+i[7],i[8]=i[2]*t+i[5]*e+i[8]},Pt.prototype.scale=function(t,e){var i=this.m;i[0]*=t,i[1]*=t,i[2]*=t,i[3]*=e,i[4]*=e,i[5]*=e},Pt.prototype.shear=function(t,e){var i=this.m,r=i[0]+i[3]*e,o=i[1]+i[4]*e,s=i[2]+i[5]*e;i[3]=i[0]*t+i[3],i[4]=i[1]*t+i[4],i[5]=i[2]*t+i[5],i[0]=r,i[1]=o,i[2]=s},Pt.prototype.rotate=function(t){var e=this.m,i=Math.cos(t),r=Math.sin(t),o=e[0]*i+e[3]*r,s=e[1]*i+e[4]*r,n=e[2]*i+e[5]*r;e[3]=-e[0]*r+e[3]*i,e[4]=-e[1]*r+e[4]*i,e[5]=-e[2]*r+e[5]*i,e[0]=o,e[1]=s,e[2]=n},Pt.prototype.concatenate=function(t){var e=this.m,i=t.m,r=e[0]*i[0]+e[3]*i[1]+e[6]*i[2],o=e[1]*i[0]+e[4]*i[1]+e[7]*i[2],s=e[2]*i[0]+e[5]*i[1]+e[8]*i[2],n=e[0]*i[3]+e[3]*i[4]+e[6]*i[5],_=e[1]*i[3]+e[4]*i[4]+e[7]*i[5],a=e[2]*i[3]+e[5]*i[4]+e[8]*i[5],h=e[0]*i[6]+e[3]*i[7]+e[6]*i[8],l=e[1]*i[6]+e[4]*i[7]+e[7]*i[8],$=e[2]*i[6]+e[5]*i[7]+e[8]*i[8];m[0]=r,m[1]=o,m[2]=s,m[3]=n,m[4]=_,m[5]=a,m[6]=h,m[7]=l,m[8]=$},M.prototype=new $t,M._$eT=null,M._$tP=new Object,M._$2o=function(){return null==M._$eT&&(M._$eT=M.getID("DST_BASE")),M._$eT},M._$27=function(){M._$tP.clear(),M._$eT=null},M.getID=function(t){var e=M._$tP[t];return null==e&&(e=new M(t),M._$tP[t]=e),e},M.prototype._$3s=function(){return new M},A.prototype=new e,A._$9r=function(t){return new Float32Array(t)},A._$vb=function(t){return new Int16Array(t)},A._$cr=function(t,e){return null==t||t._$yL()<e.length?(t=A._$9r(2*e.length),t.put(e),t._$oT(0)):(t.clear(),t.put(e),t._$oT(0)),t},A._$mb=function(t,e){return null==t||t._$yL()<e.length?(t=A._$vb(2*e.length),t.put(e),t._$oT(0)):(t.clear(),t.put(e),t._$oT(0)),t},A._$Hs=function(){return this._$Gr},A._$as=function(t){this._$Gr=t},A.prototype.getGL=function(){return this.gl},A.prototype.setGL=function(t){this.gl=t},A.prototype.setTransform=function(t){this.transform=t},A.prototype._$ZT=function(){var t=this.gl;this.firstDraw&&(this.initShader(),this.firstDraw=!1,this.anisotropyExt=t.getExtension("EXT_texture_filter_anisotropic")||t.getExtension("WEBKIT_EXT_texture_filter_anisotropic")||t.getExtension("MOZ_EXT_texture_filter_anisotropic"),this.anisotropyExt&&(this.maxAnisotropy=t.getParameter(this.anisotropyExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT))),t.disable(t.SCISSOR_TEST),t.disable(t.STENCIL_TEST),t.disable(t.DEPTH_TEST),t.frontFace(t.CW),t.enable(t.BLEND),t.colorMask(1,1,1,1),t.bindBuffer(t.ARRAY_BUFFER,null),t.bindBuffer(t.ELEMENT_ARRAY_BUFFER,null)},A.prototype._$Uo=function(t,e,i,r,o,s,n,_){if(!(s<.01&&null==this.clipBufPre_clipContextMask)){var a=(s>.9&&st.EXPAND_W,this.gl);if(null==this.gl)throw new Error("gl is null");var h=1*this._$C0*s,l=1*this._$tT*s,$=1*this._$WL*s,u=this._$lT*s;if(null!=this.clipBufPre_clipContextMask){a.frontFace(a.CCW),a.useProgram(this.shaderProgram),this._$vS=vt(a,this._$vS,r),this._$no=St(a,this._$no,i),a.enableVertexAttribArray(this.a_position_Loc),a.vertexAttribPointer(this.a_position_Loc,2,a.FLOAT,!1,0,0),this._$NT=vt(a,this._$NT,o),a.activeTexture(a.TEXTURE1),a.bindTexture(a.TEXTURE_2D,this.textures[t]),a.uniform1i(this.s_texture0_Loc,1),a.enableVertexAttribArray(this.a_texCoord_Loc),a.vertexAttribPointer(this.a_texCoord_Loc,2,a.FLOAT,!1,0,0),a.uniformMatrix4fv(this.u_matrix_Loc,!1,this.getClipBufPre_clipContextMask().matrixForMask);var p=this.getClipBufPre_clipContextMask().layoutChannelNo,f=this.getChannelFlagAsColor(p);a.uniform4f(this.u_channelFlag,f.r,f.g,f.b,f.a);var c=this.getClipBufPre_clipContextMask().layoutBounds;a.uniform4f(this.u_baseColor_Loc,2*c.x-1,2*c.y-1,2*c._$EL()-1,2*c._$5T()-1),a.uniform1i(this.u_maskFlag_Loc,!0)}else if(null!=this.getClipBufPre_clipContextDraw()){a.useProgram(this.shaderProgramOff),this._$vS=vt(a,this._$vS,r),this._$no=St(a,this._$no,i),a.enableVertexAttribArray(this.a_position_Loc_Off),a.vertexAttribPointer(this.a_position_Loc_Off,2,a.FLOAT,!1,0,0),this._$NT=vt(a,this._$NT,o),a.activeTexture(a.TEXTURE1),a.bindTexture(a.TEXTURE_2D,this.textures[t]),a.uniform1i(this.s_texture0_Loc_Off,1),a.enableVertexAttribArray(this.a_texCoord_Loc_Off),a.vertexAttribPointer(this.a_texCoord_Loc_Off,2,a.FLOAT,!1,0,0),a.uniformMatrix4fv(this.u_clipMatrix_Loc_Off,!1,this.getClipBufPre_clipContextDraw().matrixForDraw),a.uniformMatrix4fv(this.u_matrix_Loc_Off,!1,this.matrix4x4),a.activeTexture(a.TEXTURE2),a.bindTexture(a.TEXTURE_2D,st.fTexture[this.glno]),a.uniform1i(this.s_texture1_Loc_Off,2);var p=this.getClipBufPre_clipContextDraw().layoutChannelNo,f=this.getChannelFlagAsColor(p);a.uniform4f(this.u_channelFlag_Loc_Off,f.r,f.g,f.b,f.a),a.uniform4f(this.u_baseColor_Loc_Off,h,l,$,u)}else a.useProgram(this.shaderProgram),this._$vS=vt(a,this._$vS,r),this._$no=St(a,this._$no,i),a.enableVertexAttribArray(this.a_position_Loc),a.vertexAttribPointer(this.a_position_Loc,2,a.FLOAT,!1,0,0),this._$NT=vt(a,this._$NT,o),a.activeTexture(a.TEXTURE1),a.bindTexture(a.TEXTURE_2D,this.textures[t]),a.uniform1i(this.s_texture0_Loc,1),a.enableVertexAttribArray(this.a_texCoord_Loc),a.vertexAttribPointer(this.a_texCoord_Loc,2,a.FLOAT,!1,0,0),a.uniformMatrix4fv(this.u_matrix_Loc,!1,this.matrix4x4),a.uniform4f(this.u_baseColor_Loc,h,l,$,u),a.uniform1i(this.u_maskFlag_Loc,!1);this.culling?this.gl.enable(a.CULL_FACE):this.gl.disable(a.CULL_FACE),this.gl.enable(a.BLEND);var d,g,y,m;if(null!=this.clipBufPre_clipContextMask)d=a.ONE,g=a.ONE_MINUS_SRC_ALPHA,y=a.ONE,m=a.ONE_MINUS_SRC_ALPHA;else switch(n){case v._$ms:d=a.ONE,g=a.ONE_MINUS_SRC_ALPHA,y=a.ONE,m=a.ONE_MINUS_SRC_ALPHA;break;case v._$ns:d=a.ONE,g=a.ONE,y=a.ZERO,m=a.ONE;break;case v._$_s:d=a.DST_COLOR,g=a.ONE_MINUS_SRC_ALPHA,y=a.ZERO,m=a.ONE}a.blendEquationSeparate(a.FUNC_ADD,a.FUNC_ADD),a.blendFuncSeparate(d,g,y,m),this.anisotropyExt&&a.texParameteri(a.TEXTURE_2D,this.anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT,this.maxAnisotropy);var T=i.length;a.drawElements(a.TRIANGLES,T,a.UNSIGNED_SHORT,0),a.bindTexture(a.TEXTURE_2D,null)}},A.prototype._$Rs=function(){throw new Error("_$Rs")},A.prototype._$Ds=function(t){throw new Error("_$Ds")},A.prototype._$K2=function(){for(var t=0;t<this.textures.length;t++){0!=this.textures[t]&&(this.gl._$K2(1,this.textures,t),this.textures[t]=null)}},A.prototype.setTexture=function(t,e){this.textures[t]=e},A.prototype.initShader=function(){var t=this.gl;this.loadShaders2(),this.a_position_Loc=t.getAttribLocation(this.shaderProgram,"a_position"),this.a_texCoord_Loc=t.getAttribLocation(this.shaderProgram,"a_texCoord"),this.u_matrix_Loc=t.getUniformLocation(this.shaderProgram,"u_mvpMatrix"),this.s_texture0_Loc=t.getUniformLocation(this.shaderProgram,"s_texture0"),this.u_channelFlag=t.getUniformLocation(this.shaderProgram,"u_channelFlag"),this.u_baseColor_Loc=t.getUniformLocation(this.shaderProgram,"u_baseColor"),this.u_maskFlag_Loc=t.getUniformLocation(this.shaderProgram,"u_maskFlag"),this.a_position_Loc_Off=t.getAttribLocation(this.shaderProgramOff,"a_position"),this.a_texCoord_Loc_Off=t.getAttribLocation(this.shaderProgramOff,"a_texCoord"),this.u_matrix_Loc_Off=t.getUniformLocation(this.shaderProgramOff,"u_mvpMatrix"),this.u_clipMatrix_Loc_Off=t.getUniformLocation(this.shaderProgramOff,"u_ClipMatrix"),this.s_texture0_Loc_Off=t.getUniformLocation(this.shaderProgramOff,"s_texture0"),this.s_texture1_Loc_Off=t.getUniformLocation(this.shaderProgramOff,"s_texture1"),this.u_channelFlag_Loc_Off=t.getUniformLocation(this.shaderProgramOff,"u_channelFlag"),this.u_baseColor_Loc_Off=t.getUniformLocation(this.shaderProgramOff,"u_baseColor")},A.prototype.disposeShader=function(){var t=this.gl;this.shaderProgram&&(t.deleteProgram(this.shaderProgram),this.shaderProgram=null),this.shaderProgramOff&&(t.deleteProgram(this.shaderProgramOff),this.shaderProgramOff=null)},A.prototype.compileShader=function(t,e){var i=this.gl,r=e,o=i.createShader(t);if(null==o)return rt._$Ji("_$L0 to create shader"),null;if(i.shaderSource(o,r),i.compileShader(o),!i.getShaderParameter(o,i.COMPILE_STATUS)){var s=i.getShaderInfoLog(o);return rt._$Ji("_$L0 to compile shader : "+s),i.deleteShader(o),null}return o},A.prototype.loadShaders2=function(){var t=this.gl;if(this.shaderProgram=t.createProgram(),!this.shaderProgram)return!1;if(this.shaderProgramOff=t.createProgram(),!this.shaderProgramOff)return!1;if(this.vertShader=this.compileShader(t.VERTEX_SHADER,"attribute vec4     a_position;attribute vec2     a_texCoord;varying vec2       v_texCoord;varying vec4       v_ClipPos;uniform mat4       u_mvpMatrix;void main(){    gl_Position = u_mvpMatrix * a_position;    v_ClipPos = u_mvpMatrix * a_position;    v_texCoord = a_texCoord;}"),!this.vertShader)return rt._$Ji("Vertex shader compile _$li!"),!1;if(this.vertShaderOff=this.compileShader(t.VERTEX_SHADER,"attribute vec4     a_position;attribute vec2     a_texCoord;varying vec2       v_texCoord;varying vec4       v_ClipPos;uniform mat4       u_mvpMatrix;uniform mat4       u_ClipMatrix;void main(){    gl_Position = u_mvpMatrix * a_position;    v_ClipPos = u_ClipMatrix * a_position;    v_texCoord = a_texCoord ;}"),!this.vertShaderOff)return rt._$Ji("OffVertex shader compile _$li!"),!1;if(this.fragShader=this.compileShader(t.FRAGMENT_SHADER,"precision mediump float;varying vec2       v_texCoord;varying vec4       v_ClipPos;uniform sampler2D  s_texture0;uniform vec4       u_channelFlag;uniform vec4       u_baseColor;uniform bool       u_maskFlag;void main(){    vec4 smpColor;     if(u_maskFlag){        float isInside =             step(u_baseColor.x, v_ClipPos.x/v_ClipPos.w)          * step(u_baseColor.y, v_ClipPos.y/v_ClipPos.w)          * step(v_ClipPos.x/v_ClipPos.w, u_baseColor.z)          * step(v_ClipPos.y/v_ClipPos.w, u_baseColor.w);        smpColor = u_channelFlag * texture2D(s_texture0 , v_texCoord).a * isInside;    }else{        smpColor = texture2D(s_texture0 , v_texCoord) * u_baseColor;    }    gl_FragColor = smpColor;}"),!this.fragShader)return rt._$Ji("Fragment shader compile _$li!"),!1;if(this.fragShaderOff=this.compileShader(t.FRAGMENT_SHADER,"precision mediump float ;varying vec2       v_texCoord;varying vec4       v_ClipPos;uniform sampler2D  s_texture0;uniform sampler2D  s_texture1;uniform vec4       u_channelFlag;uniform vec4       u_baseColor ;void main(){    vec4 col_formask = texture2D(s_texture0, v_texCoord) * u_baseColor;    vec4 clipMask = texture2D(s_texture1, v_ClipPos.xy / v_ClipPos.w) * u_channelFlag;    float maskVal = clipMask.r + clipMask.g + clipMask.b + clipMask.a;    col_formask = col_formask * maskVal;    gl_FragColor = col_formask;}"),!this.fragShaderOff)return rt._$Ji("OffFragment shader compile _$li!"),!1;if(t.attachShader(this.shaderProgram,this.vertShader),t.attachShader(this.shaderProgram,this.fragShader),t.attachShader(this.shaderProgramOff,this.vertShaderOff),t.attachShader(this.shaderProgramOff,this.fragShaderOff),t.linkProgram(this.shaderProgram),t.linkProgram(this.shaderProgramOff),!t.getProgramParameter(this.shaderProgram,t.LINK_STATUS)){var e=t.getProgramInfoLog(this.shaderProgram);return rt._$Ji("_$L0 to link program: "+e),this.vertShader&&(t.deleteShader(this.vertShader),this.vertShader=0),this.fragShader&&(t.deleteShader(this.fragShader),this.fragShader=0),this.shaderProgram&&(t.deleteProgram(this.shaderProgram),this.shaderProgram=0),this.vertShaderOff&&(t.deleteShader(this.vertShaderOff),this.vertShaderOff=0),this.fragShaderOff&&(t.deleteShader(this.fragShaderOff),this.fragShaderOff=0),this.shaderProgramOff&&(t.deleteProgram(this.shaderProgramOff),this.shaderProgramOff=0),!1}return!0},A.prototype.createFramebuffer=function(){var t=this.gl,e=st.clippingMaskBufferSize,i=t.createFramebuffer();t.bindFramebuffer(t.FRAMEBUFFER,i);var r=t.createRenderbuffer();t.bindRenderbuffer(t.RENDERBUFFER,r),t.renderbufferStorage(t.RENDERBUFFER,t.RGBA4,e,e),t.framebufferRenderbuffer(t.FRAMEBUFFER,t.COLOR_ATTACHMENT0,t.RENDERBUFFER,r);var o=t.createTexture();return t.bindTexture(t.TEXTURE_2D,o),t.texImage2D(t.TEXTURE_2D,0,t.RGBA,e,e,0,t.RGBA,t.UNSIGNED_BYTE,null),t.texParameteri(t.TEXTURE_2D,t.TEXTURE_MIN_FILTER,t.LINEAR),t.texParameteri(t.TEXTURE_2D,t.TEXTURE_MAG_FILTER,t.LINEAR),t.texParameteri(t.TEXTURE_2D,t.TEXTURE_WRAP_S,t.CLAMP_TO_EDGE),t.texParameteri(t.TEXTURE_2D,t.TEXTURE_WRAP_T,t.CLAMP_TO_EDGE),t.framebufferTexture2D(t.FRAMEBUFFER,t.COLOR_ATTACHMENT0,t.TEXTURE_2D,o,0),t.bindTexture(t.TEXTURE_2D,null),t.bindRenderbuffer(t.RENDERBUFFER,null),t.bindFramebuffer(t.FRAMEBUFFER,null),st.fTexture[this.glno]=o,{framebuffer:i,renderbuffer:r,texture:st.fTexture[this.glno]}},I.prototype._$fP=function(){var t,e,i,r=this._$ST();if(0==(128&r))return 255&r;if(0==(128&(t=this._$ST())))return(127&r)<<7|127&t;if(0==(128&(e=this._$ST())))return(127&r)<<14|(127&t)<<7|255&e;if(0==(128&(i=this._$ST())))return(127&r)<<21|(127&t)<<14|(127&e)<<7|255&i;throw new dt("_$L _$0P  _")},I.prototype.getFormatVersion=function(){return this._$S2},I.prototype._$gr=function(t){this._$S2=t},I.prototype._$3L=function(){return this._$fP()},I.prototype._$mP=function(){return this._$zT(),this._$F+=8,this._$T.getFloat64(this._$F-8)},I.prototype._$_T=function(){return this._$zT(),this._$F+=4,this._$T.getFloat32(this._$F-4)},I.prototype._$6L=function(){return this._$zT(),this._$F+=4,this._$T.getInt32(this._$F-4)},I.prototype._$ST=function(){return this._$zT(),this._$T.getInt8(this._$F++)},I.prototype._$9T=function(){return this._$zT(),this._$F+=2,this._$T.getInt16(this._$F-2)},I.prototype._$2T=function(){throw this._$zT(),this._$F+=8,new dt("_$L _$q read long")},I.prototype._$po=function(){return this._$zT(),0!=this._$T.getInt8(this._$F++)};var It=!0;I.prototype._$bT=function(){this._$zT();var t=this._$3L(),e=null;if(It)try{var i=new ArrayBuffer(2*t);e=new Uint16Array(i);for(var r=0;r<t;++r)e[r]=this._$T.getUint8(this._$F++);return String.fromCharCode.apply(null,e)}catch(t){It=!1}try{var o=new Array;if(null==e)for(var r=0;r<t;++r)o[r]=this._$T.getUint8(this._$F++);else for(var r=0;r<t;++r)o[r]=e[r];return String.fromCharCode.apply(null,o)}catch(t){console.log("read utf8 / _$rT _$L0 !! : "+t)}},I.prototype._$cS=function(){this._$zT();for(var t=this._$3L(),e=new Int32Array(t),i=0;i<t;i++)e[i]=this._$T.getInt32(this._$F),this._$F+=4;return e},I.prototype._$Tb=function(){this._$zT();for(var t=this._$3L(),e=new Float32Array(t),i=0;i<t;i++)e[i]=this._$T.getFloat32(this._$F),this._$F+=4;return e},I.prototype._$5b=function(){this._$zT();for(var t=this._$3L(),e=new Float64Array(t),i=0;i<t;i++)e[i]=this._$T.getFloat64(this._$F),this._$F+=8;return e},I.prototype._$nP=function(){return this._$Jb(-1)},I.prototype._$Jb=function(t){if(this._$zT(),t<0&&(t=this._$3L()),t==d._$7P){var e=this._$6L();if(0<=e&&e<this._$Ko.length)return this._$Ko[e];throw new dt("_$sL _$4i @_$m0")}var i=this._$4b(t);return this._$Ko.push(i),i},I.prototype._$4b=function(t){if(0==t)return null;if(50==t){var e=this._$bT(),i=Q.getID(e);return i}if(51==t){var e=this._$bT(),i=M.getID(e);return i}if(134==t){var e=this._$bT(),i=n.getID(e);return i}if(60==t){var e=this._$bT(),i=_.getID(e);return i}if(t>=48){var r=d._$9o(t);return null!=r?(r._$F0(this),r):null}switch(t){case 1:return this._$bT();case 10:return new b(this._$6L(),!0);case 11:return new z(this._$mP(),this._$mP(),this._$mP(),this._$mP());case 12:return new z(this._$_T(),this._$_T(),this._$_T(),this._$_T());case 13:return new W(this._$mP(),this._$mP());case 14:return new W(this._$_T(),this._$_T());case 15:for(var o=this._$3L(),i=new Array(o),s=0;s<o;s++)i[s]=this._$nP();return i;case 17:var i=new p(this._$mP(),this._$mP(),this._$mP(),this._$mP(),this._$mP(),this._$mP());return i;case 21:return new C(this._$6L(),this._$6L(),this._$6L(),this._$6L());case 22:return new yt(this._$6L(),this._$6L());case 23:throw new Error("_$L _$ro ");case 16:case 25:return this._$cS();case 26:return this._$5b();case 27:return this._$Tb();case 2:case 3:case 4:case 5:case 6:case 7:case 8:case 9:case 18:case 19:case 20:case 24:case 28:throw new dt("_$6 _$q : _$nP() of 2-9 ,18,19,20,24,28 : "+t);default:throw new dt("_$6 _$q : _$nP() NO _$i : "+t)}},I.prototype._$8L=function(){return 0==this._$hL?this._$v0=this._$ST():8==this._$hL&&(this._$v0=this._$ST(),this._$hL=0),1==(this._$v0>>7-this._$hL++&1)},I.prototype._$zT=function(){0!=this._$hL&&(this._$hL=0)},Lt.prototype._$wP=function(t,e,i){for(var r=0;r<i;r++){for(var o=0;o<e;o++){var s=2*(o+r*e);console.log("(% 7.3f , % 7.3f) , ",t[s],t[s+1])}console.log("\n")}console.log("\n")},w._$2S=Math.PI/180,w._$bS=Math.PI/180,w._$wS=180/Math.PI,w._$NS=180/Math.PI,w.PI_F=Math.PI,w._$kT=[0,.012368,.024734,.037097,.049454,.061803,.074143,.086471,.098786,.111087,.12337,.135634,.147877,.160098,.172295,.184465,.196606,.208718,.220798,.232844,.244854,.256827,.268761,.280654,.292503,.304308,.316066,.327776,.339436,.351044,.362598,.374097,.385538,.396921,.408243,.419502,.430697,.441826,.452888,.463881,.474802,.485651,.496425,.507124,.517745,.528287,.538748,.549126,.559421,.56963,.579752,.589785,.599728,.609579,.619337,.629,.638567,.648036,.657406,.666676,.675843,.684908,.693867,.70272,.711466,.720103,.72863,.737045,.745348,.753536,.76161,.769566,.777405,.785125,.792725,.800204,.807561,.814793,.821901,.828884,.835739,.842467,.849066,.855535,.861873,.868079,.874153,.880093,.885898,.891567,.897101,.902497,.907754,.912873,.917853,.922692,.92739,.931946,.936359,.940629,.944755,.948737,.952574,.956265,.959809,.963207,.966457,.96956,.972514,.97532,.977976,.980482,.982839,.985045,.987101,.989006,.990759,.992361,.993811,.995109,.996254,.997248,.998088,.998776,.999312,.999694,.999924,1],w._$92=function(t,e){var i=Math.atan2(t[1],t[0]),r=Math.atan2(e[1],e[0]);return w._$tS(i,r)},w._$tS=function(t,e){for(var i=t-e;i<-Math.PI;)i+=2*Math.PI;for(;i>Math.PI;)i-=2*Math.PI;return i},w._$9=function(t){return Math.sin(t)},w.fcos=function(t){return Math.cos(t)},Mt.prototype._$u2=function(){return this._$IS[0]},Mt.prototype._$yo=function(){return this._$AT&&!this._$IS[0]},Mt.prototype._$GT=function(){return this._$e0},x._$W2=0,x.SYSTEM_INFO=null,x.USER_AGENT=navigator.userAgent,x.isIPhone=function(){return x.SYSTEM_INFO||x.setup(),x.SYSTEM_INFO._isIPhone},x.isIOS=function(){return x.SYSTEM_INFO||x.setup(),x.SYSTEM_INFO._isIPhone||x.SYSTEM_INFO._isIPad},x.isAndroid=function(){return x.SYSTEM_INFO||x.setup(),x.SYSTEM_INFO._isAndroid},x.getOSVersion=function(){return x.SYSTEM_INFO||x.setup(),x.SYSTEM_INFO.version},x.getOS=function(){return x.SYSTEM_INFO||x.setup(),x.SYSTEM_INFO._isIPhone||x.SYSTEM_INFO._isIPad?"iOS":x.SYSTEM_INFO._isAndroid?"Android":"_$Q0 OS"},x.setup=function(){function t(t,e){for(var i=t.substring(e).split(/[ _,;\.]/),r=0,o=0;o<=2&&!isNaN(i[o]);o++){var s=parseInt(i[o]);if(s<0||s>999){rt._$li("err : "+s+" @UtHtml5.setup()"),r=0;break}r+=s*Math.pow(1e3,2-o)}return r}var e,i=x.USER_AGENT,r=x.SYSTEM_INFO={userAgent:i};if((e=i.indexOf("iPhone OS "))>=0)r.os="iPhone",r._isIPhone=!0,r.version=t(i,e+"iPhone OS ".length);else if((e=i.indexOf("iPad"))>=0){if((e=i.indexOf("CPU OS"))<0)return void rt._$li(" err : "+i+" @UtHtml5.setup()");r.os="iPad",r._isIPad=!0,r.version=t(i,e+"CPU OS ".length)}else(e=i.indexOf("Android"))>=0?(r.os="Android",r._isAndroid=!0,r.version=t(i,e+"Android ".length)):(r.os="-",r.version=-1)},window.UtSystem=Ct,window.UtDebug=rt,window.LDTransform=Pt,window.LDGL=ot,window.Live2D=st,window.Live2DModelWebGL=l,window.Live2DModelJS=a,window.Live2DMotion=P,window.MotionQueueManager=mt,window.PhysicsHair=s,window.AMotion=t,window.PartsDataID=n,window.DrawDataID=Q,window.BaseDataID=M,window.ParamID=_,st.init();var O=!1}()}).call(e,i(7))},function(t,e){t.exports={import:function(){throw new Error("System.import cannot be used indirectly")}}},function(t,e,i){"use strict";function r(t){return t&&t.__esModule?t:{default:t}}function o(){this.models=[],this.count=-1,this.reloadFlg=!1,Live2D.init(),s.Live2DFramework.setPlatformManager(new _.default)}Object.defineProperty(e,"__esModule",{value:!0}),e.default=o;var s=i(0),n=i(9),_=r(n),a=i(10),h=r(a),l=i(1),$=r(l);o.prototype.createModel=function(){var t=new h.default;return this.models.push(t),t},o.prototype.changeModel=function(t,e){if(this.reloadFlg){this.reloadFlg=!1;this.releaseModel(0,t),this.createModel(),this.models[0].load(t,e)}},o.prototype.getModel=function(t){return t>=this.models.length?null:this.models[t]},o.prototype.releaseModel=function(t,e){this.models.length<=t||(this.models[t].release(e),delete this.models[t],this.models.splice(t,1))},o.prototype.numModels=function(){return this.models.length},o.prototype.setDrag=function(t,e){for(var i=0;i<this.models.length;i++)this.models[i].setDrag(t,e)},o.prototype.maxScaleEvent=function(){$.default.DEBUG_LOG&&console.log("Max scale event.");for(var t=0;t<this.models.length;t++)this.models[t].startRandomMotion($.default.MOTION_GROUP_PINCH_IN,$.default.PRIORITY_NORMAL)},o.prototype.minScaleEvent=function(){$.default.DEBUG_LOG&&console.log("Min scale event.");for(var t=0;t<this.models.length;t++)this.models[t].startRandomMotion($.default.MOTION_GROUP_PINCH_OUT,$.default.PRIORITY_NORMAL)},o.prototype.tapEvent=function(t,e){$.default.DEBUG_LOG&&console.log("tapEvent view x:"+t+" y:"+e);for(var i=0;i<this.models.length;i++)this.models[i].hitTest($.default.HIT_AREA_HEAD,t,e)?($.default.DEBUG_LOG&&console.log("Tap face."),this.models[i].setRandomExpression()):this.models[i].hitTest($.default.HIT_AREA_BODY,t,e)?($.default.DEBUG_LOG&&console.log("Tap body. models["+i+"]"),this.models[i].startRandomMotion($.default.MOTION_GROUP_TAP_BODY,$.default.PRIORITY_NORMAL)):this.models[i].hitTestCustom("head",t,e)?($.default.DEBUG_LOG&&console.log("Tap face."),this.models[i].startRandomMotion($.default.MOTION_GROUP_FLICK_HEAD,$.default.PRIORITY_NORMAL)):this.models[i].hitTestCustom("body",t,e)&&($.default.DEBUG_LOG&&console.log("Tap body. models["+i+"]"),this.models[i].startRandomMotion($.default.MOTION_GROUP_TAP_BODY,$.default.PRIORITY_NORMAL));return!0}},function(t,e,i){"use strict";function r(){}Object.defineProperty(e,"__esModule",{value:!0}),e.default=r;var n=i(2);r.prototype.loadBytes=function(t,e){var i=new XMLHttpRequest;i.open("GET",t,!0),i.responseType="arraybuffer",i.onload=function(){switch(i.status){case 200:e(i.response);break;default:console.error("Failed to load ("+i.status+") : "+t)}},i.send(null)},r.prototype.loadString=function(t){this.loadBytes(t,function(t){return t})},r.prototype.loadLive2DModel=function(t,e){var i=null;this.loadBytes(t,function(t){i=Live2DModelWebGL.loadModel(t),e(i)})},r.prototype.loadTexture=function(i,r,t,o){var s=new Image;s.crossOrigin="Anonymous",s.src=t;s.onload=function(){var t=(0,n.getContext)(),e=t.createTexture();if(!e)return console.error("Failed to generate gl texture name."),-1;0==i.isPremultipliedAlpha()&&t.pixelStorei(t.UNPACK_PREMULTIPLY_ALPHA_WEBGL,1),t.pixelStorei(t.UNPACK_FLIP_Y_WEBGL,1),t.activeTexture(t.TEXTURE0),t.bindTexture(t.TEXTURE_2D,e),t.texImage2D(t.TEXTURE_2D,0,t.RGBA,t.RGBA,t.UNSIGNED_BYTE,s),t.texParameteri(t.TEXTURE_2D,t.TEXTURE_MAG_FILTER,t.LINEAR),t.texParameteri(t.TEXTURE_2D,t.TEXTURE_MIN_FILTER,t.LINEAR_MIPMAP_NEAREST),t.generateMipmap(t.TEXTURE_2D),i.setTexture(r,e),e=null,"function"==typeof o&&o()},s.onerror=function(){console.error("Failed to load image : "+t)}},r.prototype.jsonParseFromBytes=function(t){var e,i=new Uint8Array(t,0,3);return e=239==i[0]&&187==i[1]&&191==i[2]?String.fromCharCode.apply(null,new Uint8Array(t,3)):String.fromCharCode.apply(null,new Uint8Array(t)),JSON.parse(e)},r.prototype.log=function(t){}},function(t,e,i){"use strict";function r(t){return t&&t.__esModule?t:{default:t}}function o(){s.L2DBaseModel.prototype.constructor.call(this),this.modelHomeDir="",this.modelSetting=null,this.tmpMatrix=[]}Object.defineProperty(e,"__esModule",{value:!0}),e.default=o;var s=i(0),n=i(11),_=r(n),a=i(1),h=r(a),l=i(3),$=r(l);o.prototype=new s.L2DBaseModel,o.prototype.load=function(t,e,s){this.setUpdating(!0),this.setInitialized(!1),this.modelHomeDir=e.substring(0,e.lastIndexOf("/")+1),this.modelSetting=new _.default;var n=this;this.modelSetting.loadModelSetting(e,function(){var t=n.modelHomeDir+n.modelSetting.getModelFile();n.loadModelData(t,function(t){for(var e=0;e<n.modelSetting.getTextureNum();e++){if(/^https?:\/\/|^\/\//i.test(n.modelSetting.getTextureFile(e)))var i=n.modelSetting.getTextureFile(e);else var i=n.modelHomeDir+n.modelSetting.getTextureFile(e);n.loadTexture(e,i,function(){if(n.isTexLoaded){if(n.modelSetting.getExpressionNum()>0){n.expressions={};for(var t=0;t<n.modelSetting.getExpressionNum();t++){var e=n.modelSetting.getExpressionName(t),i=n.modelHomeDir+n.modelSetting.getExpressionFile(t);n.loadExpression(e,i)}}else n.expressionManager=null,n.expressions={};if(n.eyeBlink,null!=n.modelSetting.getPhysicsFile()?n.loadPhysics(n.modelHomeDir+n.modelSetting.getPhysicsFile()):n.physics=null,null!=n.modelSetting.getPoseFile()?n.loadPose(n.modelHomeDir+n.modelSetting.getPoseFile(),function(){n.pose.updateParam(n.live2DModel)}):n.pose=null,null!=n.modelSetting.getLayout()){var r=n.modelSetting.getLayout();null!=r.width&&n.modelMatrix.setWidth(r.width),null!=r.height&&n.modelMatrix.setHeight(r.height),null!=r.x&&n.modelMatrix.setX(r.x),null!=r.y&&n.modelMatrix.setY(r.y),null!=r.center_x&&n.modelMatrix.centerX(r.center_x),null!=r.center_y&&n.modelMatrix.centerY(r.center_y),null!=r.top&&n.modelMatrix.top(r.top),null!=r.bottom&&n.modelMatrix.bottom(r.bottom),null!=r.left&&n.modelMatrix.left(r.left),null!=r.right&&n.modelMatrix.right(r.right)}if(null!=n.modelSetting.getHitAreasCustom()){var o=n.modelSetting.getHitAreasCustom();null!=o.head_x&&(h.default.hit_areas_custom_head_x=o.head_x),null!=o.head_y&&(h.default.hit_areas_custom_head_y=o.head_y),null!=o.body_x&&(h.default.hit_areas_custom_body_x=o.body_x),null!=o.body_y&&(h.default.hit_areas_custom_body_y=o.body_y)}for(var t=0;t<n.modelSetting.getInitParamNum();t++)n.live2DModel.setParamFloat(n.modelSetting.getInitParamID(t),n.modelSetting.getInitParamValue(t));for(var t=0;t<n.modelSetting.getInitPartsVisibleNum();t++)n.live2DModel.setPartsOpacity(n.modelSetting.getInitPartsVisibleID(t),n.modelSetting.getInitPartsVisibleValue(t));n.live2DModel.saveParam(),n.preloadMotionGroup(h.default.MOTION_GROUP_IDLE),n.preloadMotionGroup(h.default.MOTION_GROUP_SLEEPY),n.mainMotionManager.stopAllMotions(),n.setUpdating(!1),n.setInitialized(!0),"function"==typeof s&&s()}})}})})},o.prototype.release=function(t){var e=s.Live2DFramework.getPlatformManager();t.deleteTexture(e.texture)},o.prototype.preloadMotionGroup=function(e){for(var i=this,r=0;r<this.modelSetting.getMotionNum(e);r++){var t=this.modelSetting.getMotionFile(e,r);this.loadMotion(t,this.modelHomeDir+t,function(t){t.setFadeIn(i.modelSetting.getMotionFadeIn(e,r)),t.setFadeOut(i.modelSetting.getMotionFadeOut(e,r))})}},o.prototype.update=function(){if(null==this.live2DModel)return void(h.default.DEBUG_LOG&&console.error("Failed to update."));var t=UtSystem.getUserTimeMSec()-this.startTimeMSec,e=t/1e3,i=2*e*Math.PI;if(this.mainMotionManager.isFinished()){"1"===sessionStorage.getItem("Sleepy")?this.startRandomMotion(h.default.MOTION_GROUP_SLEEPY,h.default.PRIORITY_SLEEPY):this.startRandomMotion(h.default.MOTION_GROUP_IDLE,h.default.PRIORITY_IDLE)}this.live2DModel.loadParam(),this.mainMotionManager.updateParam(this.live2DModel)||null!=this.eyeBlink&&this.eyeBlink.updateParam(this.live2DModel),this.live2DModel.saveParam(),null==this.expressionManager||null==this.expressions||this.expressionManager.isFinished()||this.expressionManager.updateParam(this.live2DModel),this.live2DModel.addToParamFloat("PARAM_ANGLE_X",30*this.dragX,1),this.live2DModel.addToParamFloat("PARAM_ANGLE_Y",30*this.dragY,1),this.live2DModel.addToParamFloat("PARAM_ANGLE_Z",this.dragX*this.dragY*-30,1),this.live2DModel.addToParamFloat("PARAM_BODY_ANGLE_X",10*this.dragX,1),this.live2DModel.addToParamFloat("PARAM_EYE_BALL_X",this.dragX,1),this.live2DModel.addToParamFloat("PARAM_EYE_BALL_Y",this.dragY,1),this.live2DModel.addToParamFloat("PARAM_ANGLE_X",Number(15*Math.sin(i/6.5345)),.5),this.live2DModel.addToParamFloat("PARAM_ANGLE_Y",Number(8*Math.sin(i/3.5345)),.5),this.live2DModel.addToParamFloat("PARAM_ANGLE_Z",Number(10*Math.sin(i/5.5345)),.5),this.live2DModel.addToParamFloat("PARAM_BODY_ANGLE_X",Number(4*Math.sin(i/15.5345)),.5),this.live2DModel.setParamFloat("PARAM_BREATH",Number(.5+.5*Math.sin(i/3.2345)),1),null!=this.physics&&this.physics.updateParam(this.live2DModel),null==this.lipSync&&this.live2DModel.setParamFloat("PARAM_MOUTH_OPEN_Y",this.lipSyncValue),null!=this.pose&&this.pose.updateParam(this.live2DModel),this.live2DModel.update()},o.prototype.setRandomExpression=function(){var t=[];for(var e in this.expressions)t.push(e);var i=parseInt(Math.random()*t.length);this.setExpression(t[i])},o.prototype.startRandomMotion=function(t,e){var i=this.modelSetting.getMotionNum(t),r=parseInt(Math.random()*i);this.startMotion(t,r,e)},o.prototype.startMotion=function(e,i,r){var t=this.modelSetting.getMotionFile(e,i);if(null==t||""==t)return void(h.default.DEBUG_LOG&&console.error("Failed to motion."));if(r==h.default.PRIORITY_FORCE)this.mainMotionManager.setReservePriority(r);else if(!this.mainMotionManager.reserveMotion(r))return void(h.default.DEBUG_LOG&&console.log("Motion is running."));var o,s=this;null==this.motions[e]?this.loadMotion(null,this.modelHomeDir+t,function(t){o=t,s.setFadeInFadeOut(e,i,r,o)}):(o=this.motions[e],s.setFadeInFadeOut(e,i,r,o))},o.prototype.setFadeInFadeOut=function(t,e,i,r){var o=this.modelSetting.getMotionFile(t,e);if(r.setFadeIn(this.modelSetting.getMotionFadeIn(t,e)),r.setFadeOut(this.modelSetting.getMotionFadeOut(t,e)),h.default.DEBUG_LOG&&console.log("Start motion : "+o),null==this.modelSetting.getMotionSound(t,e))this.mainMotionManager.startMotionPrio(r,i);else{var s=this.modelSetting.getMotionSound(t,e),n=document.createElement("audio");n.src=this.modelHomeDir+s,h.default.DEBUG_LOG&&console.log("Start sound : "+s),n.play(),this.mainMotionManager.startMotionPrio(r,i)}},o.prototype.setExpression=function(t){var e=this.expressions[t];h.default.DEBUG_LOG&&console.log("Expression : "+t),this.expressionManager.startMotion(e,!1)},o.prototype.draw=function(t){$.default.push(),$.default.multMatrix(this.modelMatrix.getArray()),this.tmpMatrix=$.default.getMatrix(),this.live2DModel.setMatrix(this.tmpMatrix),this.live2DModel.draw(),$.default.pop()},o.prototype.hitTest=function(t,e,i){for(var r=this.modelSetting.getHitAreaNum(),o=0;o<r;o++)if(t==this.modelSetting.getHitAreaName(o)){var s=this.modelSetting.getHitAreaID(o);return this.hitTestSimple(s,e,i)}return!1},o.prototype.hitTestCustom=function(t,e,i){return"head"==t?this.hitTestSimpleCustom(h.default.hit_areas_custom_head_x,h.default.hit_areas_custom_head_y,e,i):"body"==t&&this.hitTestSimpleCustom(h.default.hit_areas_custom_body_x,h.default.hit_areas_custom_body_y,e,i)}},function(t,e,i){"use strict";function r(){this.NAME="name",this.ID="id",this.MODEL="model",this.TEXTURES="textures",this.HIT_AREAS="hit_areas",this.PHYSICS="physics",this.POSE="pose",this.EXPRESSIONS="expressions",this.MOTION_GROUPS="motions",this.SOUND="sound",this.FADE_IN="fade_in",this.FADE_OUT="fade_out",this.LAYOUT="layout",this.HIT_AREAS_CUSTOM="hit_areas_custom",this.INIT_PARAM="init_param",this.INIT_PARTS_VISIBLE="init_parts_visible",this.VALUE="val",this.FILE="file",this.json={}}Object.defineProperty(e,"__esModule",{value:!0}),e.default=r;var o=i(0);r.prototype.loadModelSetting=function(t,i){var r=this;o.Live2DFramework.getPlatformManager().loadBytes(t,function(t){var e=String.fromCharCode.apply(null,new Uint8Array(t));r.json=JSON.parse(e),i()})},r.prototype.getTextureFile=function(t){return null==this.json[this.TEXTURES]||null==this.json[this.TEXTURES][t]?null:this.json[this.TEXTURES][t]},r.prototype.getModelFile=function(){return this.json[this.MODEL]},r.prototype.getTextureNum=function(){return null==this.json[this.TEXTURES]?0:this.json[this.TEXTURES].length},r.prototype.getHitAreaNum=function(){return null==this.json[this.HIT_AREAS]?0:this.json[this.HIT_AREAS].length},r.prototype.getHitAreaID=function(t){return null==this.json[this.HIT_AREAS]||null==this.json[this.HIT_AREAS][t]?null:this.json[this.HIT_AREAS][t][this.ID]},r.prototype.getHitAreaName=function(t){return null==this.json[this.HIT_AREAS]||null==this.json[this.HIT_AREAS][t]?null:this.json[this.HIT_AREAS][t][this.NAME]},r.prototype.getPhysicsFile=function(){return this.json[this.PHYSICS]},r.prototype.getPoseFile=function(){return this.json[this.POSE]},r.prototype.getExpressionNum=function(){return null==this.json[this.EXPRESSIONS]?0:this.json[this.EXPRESSIONS].length},r.prototype.getExpressionFile=function(t){return null==this.json[this.EXPRESSIONS]?null:this.json[this.EXPRESSIONS][t][this.FILE]},r.prototype.getExpressionName=function(t){return null==this.json[this.EXPRESSIONS]?null:this.json[this.EXPRESSIONS][t][this.NAME]},r.prototype.getLayout=function(){return this.json[this.LAYOUT]},r.prototype.getHitAreasCustom=function(){return this.json[this.HIT_AREAS_CUSTOM]},r.prototype.getInitParamNum=function(){return null==this.json[this.INIT_PARAM]?0:this.json[this.INIT_PARAM].length},r.prototype.getMotionNum=function(t){return null==this.json[this.MOTION_GROUPS]||null==this.json[this.MOTION_GROUPS][t]?0:this.json[this.MOTION_GROUPS][t].length},r.prototype.getMotionFile=function(t,e){return null==this.json[this.MOTION_GROUPS]||null==this.json[this.MOTION_GROUPS][t]||null==this.json[this.MOTION_GROUPS][t][e]?null:this.json[this.MOTION_GROUPS][t][e][this.FILE]},r.prototype.getMotionSound=function(t,e){return null==this.json[this.MOTION_GROUPS]||null==this.json[this.MOTION_GROUPS][t]||null==this.json[this.MOTION_GROUPS][t][e]||null==this.json[this.MOTION_GROUPS][t][e][this.SOUND]?null:this.json[this.MOTION_GROUPS][t][e][this.SOUND]},r.prototype.getMotionFadeIn=function(t,e){return null==this.json[this.MOTION_GROUPS]||null==this.json[this.MOTION_GROUPS][t]||null==this.json[this.MOTION_GROUPS][t][e]||null==this.json[this.MOTION_GROUPS][t][e][this.FADE_IN]?1e3:this.json[this.MOTION_GROUPS][t][e][this.FADE_IN]},r.prototype.getMotionFadeOut=function(t,e){return null==this.json[this.MOTION_GROUPS]||null==this.json[this.MOTION_GROUPS][t]||null==this.json[this.MOTION_GROUPS][t][e]||null==this.json[this.MOTION_GROUPS][t][e][this.FADE_OUT]?1e3:this.json[this.MOTION_GROUPS][t][e][this.FADE_OUT]},r.prototype.getInitParamID=function(t){return null==this.json[this.INIT_PARAM]||null==this.json[this.INIT_PARAM][t]?null:this.json[this.INIT_PARAM][t][this.ID]},r.prototype.getInitParamValue=function(t){return null==this.json[this.INIT_PARAM]||null==this.json[this.INIT_PARAM][t]?NaN:this.json[this.INIT_PARAM][t][this.VALUE]},r.prototype.getInitPartsVisibleNum=function(){return null==this.json[this.INIT_PARTS_VISIBLE]?0:this.json[this.INIT_PARTS_VISIBLE].length},r.prototype.getInitPartsVisibleID=function(t){return null==this.json[this.INIT_PARTS_VISIBLE]||null==this.json[this.INIT_PARTS_VISIBLE][t]?null:this.json[this.INIT_PARTS_VISIBLE][t][this.ID]},r.prototype.getInitPartsVisibleValue=function(t){return null==this.json[this.INIT_PARTS_VISIBLE]||null==this.json[this.INIT_PARTS_VISIBLE][t]?NaN:this.json[this.INIT_PARTS_VISIBLE][t][this.VALUE]}}]);
+!
+function(t) {
+	function i(r) {
+		if (e[r]) return e[r].exports;
+		var o = e[r] = {
+			i: r,
+			l: !1,
+			exports: {}
+		};
+		return t[r].call(o.exports, o, o.exports, i), o.l = !0, o.exports
+	}
+	var e = {};
+	i.m = t, i.c = e, i.d = function(t, e, r) {
+		i.o(t, e) || Object.defineProperty(t, e, {
+			configurable: !1,
+			enumerable: !0,
+			get: r
+		})
+	}, i.n = function(t) {
+		var e = t && t.__esModule ?
+		function() {
+			return t.
+		default
+		} : function() {
+			return t
+		};
+		return i.d(e, "a", e), e
+	}, i.o = function(t, i) {
+		return Object.prototype.hasOwnProperty.call(t, i)
+	}, i.p = "", i(i.s = 4)
+}([function(t, i, e) {
+	"use strict";
+
+	function r() {
+		this.live2DModel = null, this.modelMatrix = null, this.eyeBlink = null, this.physics = null, this.pose = null, this.debugMode = !1, this.initialized = !1, this.updating = !1, this.alpha = 1, this.accAlpha = 0, this.lipSync = !1, this.lipSyncValue = 0, this.accelX = 0, this.accelY = 0, this.accelZ = 0, this.dragX = 0, this.dragY = 0, this.startTimeMSec = null, this.mainMotionManager = new h, this.expressionManager = new h, this.motions = {}, this.expressions = {}, this.isTexLoaded = !1
+	}
+	function o() {
+		AMotion.prototype.constructor.call(this), this.paramList = new Array
+	}
+	function n() {
+		this.id = "", this.type = -1, this.value = null
+	}
+	function s() {
+		this.nextBlinkTime = null, this.stateStartTime = null, this.blinkIntervalMsec = null, this.eyeState = g.STATE_FIRST, this.blinkIntervalMsec = 4e3, this.closingMotionMsec = 100, this.closedMotionMsec = 50, this.openingMotionMsec = 150, this.closeIfZero = !0, this.eyeID_L = "PARAM_EYE_L_OPEN", this.eyeID_R = "PARAM_EYE_R_OPEN"
+	}
+	function _() {
+		this.tr = new Float32Array(16), this.identity()
+	}
+	function a(t, i) {
+		_.prototype.constructor.call(this), this.width = t, this.height = i
+	}
+	function h() {
+		MotionQueueManager.prototype.constructor.call(this), this.currentPriority = null, this.reservePriority = null, this.super = MotionQueueManager.prototype
+	}
+	function l() {
+		this.physicsList = new Array, this.startTimeMSec = UtSystem.getUserTimeMSec()
+	}
+	function $() {
+		this.lastTime = 0, this.lastModel = null, this.partsGroups = new Array
+	}
+	function u(t) {
+		this.paramIndex = -1, this.partsIndex = -1, this.link = null, this.id = t
+	}
+	function p() {
+		this.EPSILON = .01, this.faceTargetX = 0, this.faceTargetY = 0, this.faceX = 0, this.faceY = 0, this.faceVX = 0, this.faceVY = 0, this.lastTimeSec = 0
+	}
+	function f() {
+		_.prototype.constructor.call(this), this.screenLeft = null, this.screenRight = null, this.screenTop = null, this.screenBottom = null, this.maxLeft = null, this.maxRight = null, this.maxTop = null, this.maxBottom = null, this.max = Number.MAX_VALUE, this.min = 0
+	}
+	function c() {}
+	var d = 0;
+	r.prototype.getModelMatrix = function() {
+		return this.modelMatrix
+	}, r.prototype.setAlpha = function(t) {
+		t > .999 && (t = 1), t < .001 && (t = 0), this.alpha = t
+	}, r.prototype.getAlpha = function() {
+		return this.alpha
+	}, r.prototype.isInitialized = function() {
+		return this.initialized
+	}, r.prototype.setInitialized = function(t) {
+		this.initialized = t
+	}, r.prototype.isUpdating = function() {
+		return this.updating
+	}, r.prototype.setUpdating = function(t) {
+		this.updating = t
+	}, r.prototype.getLive2DModel = function() {
+		return this.live2DModel
+	}, r.prototype.setLipSync = function(t) {
+		this.lipSync = t
+	}, r.prototype.setLipSyncValue = function(t) {
+		this.lipSyncValue = t
+	}, r.prototype.setAccel = function(t, i, e) {
+		this.accelX = t, this.accelY = i, this.accelZ = e
+	}, r.prototype.setDrag = function(t, i) {
+		this.dragX = t, this.dragY = i
+	}, r.prototype.getMainMotionManager = function() {
+		return this.mainMotionManager
+	}, r.prototype.getExpressionManager = function() {
+		return this.expressionManager
+	}, r.prototype.loadModelData = function(t, i) {
+		var e = c.getPlatformManager();
+		this.debugMode && e.log("Load model : " + t);
+		var r = this;
+		e.loadLive2DModel(t, function(t) {
+			if (r.live2DModel = t, r.live2DModel.saveParam(), 0 != Live2D.getError()) return void console.error("Error : Failed to loadModelData().");
+			r.modelMatrix = new a(r.live2DModel.getCanvasWidth(), r.live2DModel.getCanvasHeight()), r.modelMatrix.setWidth(2), r.modelMatrix.setCenterPosition(0, 0), i(r.live2DModel)
+		})
+	}, r.prototype.loadTexture = function(t, i, e) {
+		d++;
+		var r = c.getPlatformManager();
+		this.debugMode && r.log("Load Texture : " + i);
+		var o = this;
+		r.loadTexture(this.live2DModel, t, i, function() {
+			d--, 0 == d && (o.isTexLoaded = !0), "function" == typeof e && e()
+		})
+	}, r.prototype.loadMotion = function(t, i, e) {
+		var r = c.getPlatformManager();
+		this.debugMode && r.log("Load Motion : " + i);
+		var o = null,
+			n = this;
+		r.loadBytes(i, function(i) {
+			o = Live2DMotion.loadMotion(i), null != t && (n.motions[t] = o), e(o)
+		})
+	}, r.prototype.loadExpression = function(t, i, e) {
+		var r = c.getPlatformManager();
+		this.debugMode && r.log("Load Expression : " + i);
+		var n = this;
+		r.loadBytes(i, function(i) {
+			null != t && (n.expressions[t] = o.loadJson(i)), "function" == typeof e && e()
+		})
+	}, r.prototype.loadPose = function(t, i) {
+		var e = c.getPlatformManager();
+		this.debugMode && e.log("Load Pose : " + t);
+		var r = this;
+		try {
+			e.loadBytes(t, function(t) {
+				r.pose = $.load(t), "function" == typeof i && i()
+			})
+		} catch (t) {
+			console.warn(t)
+		}
+	}, r.prototype.loadPhysics = function(t) {
+		var i = c.getPlatformManager();
+		this.debugMode && i.log("Load Physics : " + t);
+		var e = this;
+		try {
+			i.loadBytes(t, function(t) {
+				e.physics = l.load(t)
+			})
+		} catch (t) {
+			console.warn(t)
+		}
+	}, r.prototype.hitTestSimple = function(t, i, e) {
+		if (null === this.live2DModel) return !1;
+		var r = this.live2DModel.getDrawDataIndex(t);
+		if (r < 0) return !1;
+		for (var o = this.live2DModel.getTransformedPoints(r), n = this.live2DModel.getCanvasWidth(), s = 0, _ = this.live2DModel.getCanvasHeight(), a = 0, h = 0; h < o.length; h += 2) {
+			var l = o[h],
+				$ = o[h + 1];
+			l < n && (n = l), l > s && (s = l), $ < _ && (_ = $), $ > a && (a = $)
+		}
+		var u = this.modelMatrix.invertTransformX(i),
+			p = this.modelMatrix.invertTransformY(e);
+		return n <= u && u <= s && _ <= p && p <= a
+	}, r.prototype.hitTestSimpleCustom = function(t, i, e, r) {
+		return null !== this.live2DModel && (e >= t[0] && e <= i[0] && r <= t[1] && r >= i[1])
+	}, o.prototype = new AMotion, o.EXPRESSION_DEFAULT = "DEFAULT", o.TYPE_SET = 0, o.TYPE_ADD = 1, o.TYPE_MULT = 2, o.loadJson = function(t) {
+		var i = new o,
+			e = c.getPlatformManager(),
+			r = e.jsonParseFromBytes(t);
+		if (i.setFadeIn(parseInt(r.fade_in) > 0 ? parseInt(r.fade_in) : 1e3), i.setFadeOut(parseInt(r.fade_out) > 0 ? parseInt(r.fade_out) : 1e3), null == r.params) return i;
+		var s = r.params,
+			_ = s.length;
+		i.paramList = [];
+		for (var a = 0; a < _; a++) {
+			var h = s[a],
+				l = h.id.toString(),
+				$ = parseFloat(h.val),
+				u = o.TYPE_ADD,
+				p = null != h.calc ? h.calc.toString() : "add";
+			if ((u = "add" === p ? o.TYPE_ADD : "mult" === p ? o.TYPE_MULT : "set" === p ? o.TYPE_SET : o.TYPE_ADD) == o.TYPE_ADD) {
+				var f = null == h.def ? 0 : parseFloat(h.def);
+				$ -= f
+			} else if (u == o.TYPE_MULT) {
+				var f = null == h.def ? 1 : parseFloat(h.def);
+				0 == f && (f = 1), $ /= f
+			}
+			var d = new n;
+			d.id = l, d.type = u, d.value = $, i.paramList.push(d)
+		}
+		return i
+	}, o.prototype.updateParamExe = function(t, i, e, r) {
+		for (var n = this.paramList.length - 1; n >= 0; --n) {
+			var s = this.paramList[n];
+			s.type == o.TYPE_ADD ? t.addToParamFloat(s.id, s.value, e) : s.type == o.TYPE_MULT ? t.multParamFloat(s.id, s.value, e) : s.type == o.TYPE_SET && t.setParamFloat(s.id, s.value, e)
+		}
+	}, s.prototype.calcNextBlink = function() {
+		return UtSystem.getUserTimeMSec() + Math.random() * (2 * this.blinkIntervalMsec - 1)
+	}, s.prototype.setInterval = function(t) {
+		this.blinkIntervalMsec = t
+	}, s.prototype.setEyeMotion = function(t, i, e) {
+		this.closingMotionMsec = t, this.closedMotionMsec = i, this.openingMotionMsec = e
+	}, s.prototype.updateParam = function(t) {
+		var i, e = UtSystem.getUserTimeMSec(),
+			r = 0;
+		switch (this.eyeState) {
+		case g.STATE_CLOSING:
+			r = (e - this.stateStartTime) / this.closingMotionMsec, r >= 1 && (r = 1, this.eyeState = g.STATE_CLOSED, this.stateStartTime = e), i = 1 - r;
+			break;
+		case g.STATE_CLOSED:
+			r = (e - this.stateStartTime) / this.closedMotionMsec, r >= 1 && (this.eyeState = g.STATE_OPENING, this.stateStartTime = e), i = 0;
+			break;
+		case g.STATE_OPENING:
+			r = (e - this.stateStartTime) / this.openingMotionMsec, r >= 1 && (r = 1, this.eyeState = g.STATE_INTERVAL, this.nextBlinkTime = this.calcNextBlink()), i = r;
+			break;
+		case g.STATE_INTERVAL:
+			this.nextBlinkTime < e && (this.eyeState = g.STATE_CLOSING, this.stateStartTime = e), i = 1;
+			break;
+		case g.STATE_FIRST:
+		default:
+			this.eyeState = g.STATE_INTERVAL, this.nextBlinkTime = this.calcNextBlink(), i = 1
+		}
+		this.closeIfZero || (i = -i), t.setParamFloat(this.eyeID_L, i), t.setParamFloat(this.eyeID_R, i)
+	};
+	var g = function() {};
+	g.STATE_FIRST = "STATE_FIRST", g.STATE_INTERVAL = "STATE_INTERVAL", g.STATE_CLOSING = "STATE_CLOSING", g.STATE_CLOSED = "STATE_CLOSED", g.STATE_OPENING = "STATE_OPENING", _.mul = function(t, i, e) {
+		var r, o, n, s = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+		for (r = 0; r < 4; r++) for (o = 0; o < 4; o++) for (n = 0; n < 4; n++) s[r + 4 * o] += t[r + 4 * n] * i[n + 4 * o];
+		for (r = 0; r < 16; r++) e[r] = s[r]
+	}, _.prototype.identity = function() {
+		for (var t = 0; t < 16; t++) this.tr[t] = t % 5 == 0 ? 1 : 0
+	}, _.prototype.getArray = function() {
+		return this.tr
+	}, _.prototype.getCopyMatrix = function() {
+		return new Float32Array(this.tr)
+	}, _.prototype.setMatrix = function(t) {
+		if (null != this.tr && this.tr.length == this.tr.length) for (var i = 0; i < 16; i++) this.tr[i] = t[i]
+	}, _.prototype.getScaleX = function() {
+		return this.tr[0]
+	}, _.prototype.getScaleY = function() {
+		return this.tr[5]
+	}, _.prototype.transformX = function(t) {
+		return this.tr[0] * t + this.tr[12]
+	}, _.prototype.transformY = function(t) {
+		return this.tr[5] * t + this.tr[13]
+	}, _.prototype.invertTransformX = function(t) {
+		return (t - this.tr[12]) / this.tr[0]
+	}, _.prototype.invertTransformY = function(t) {
+		return (t - this.tr[13]) / this.tr[5]
+	}, _.prototype.multTranslate = function(t, i) {
+		var e = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, t, i, 0, 1];
+		_.mul(e, this.tr, this.tr)
+	}, _.prototype.translate = function(t, i) {
+		this.tr[12] = t, this.tr[13] = i
+	}, _.prototype.translateX = function(t) {
+		this.tr[12] = t
+	}, _.prototype.translateY = function(t) {
+		this.tr[13] = t
+	}, _.prototype.multScale = function(t, i) {
+		var e = [t, 0, 0, 0, 0, i, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+		_.mul(e, this.tr, this.tr)
+	}, _.prototype.scale = function(t, i) {
+		this.tr[0] = t, this.tr[5] = i
+	}, a.prototype = new _, a.prototype.setPosition = function(t, i) {
+		this.translate(t, i)
+	}, a.prototype.setCenterPosition = function(t, i) {
+		var e = this.width * this.getScaleX(),
+			r = this.height * this.getScaleY();
+		this.translate(t - e / 2, i - r / 2)
+	}, a.prototype.top = function(t) {
+		this.setY(t)
+	}, a.prototype.bottom = function(t) {
+		var i = this.height * this.getScaleY();
+		this.translateY(t - i)
+	}, a.prototype.left = function(t) {
+		this.setX(t)
+	}, a.prototype.right = function(t) {
+		var i = this.width * this.getScaleX();
+		this.translateX(t - i)
+	}, a.prototype.centerX = function(t) {
+		var i = this.width * this.getScaleX();
+		this.translateX(t - i / 2)
+	}, a.prototype.centerY = function(t) {
+		var i = this.height * this.getScaleY();
+		this.translateY(t - i / 2)
+	}, a.prototype.setX = function(t) {
+		this.translateX(t)
+	}, a.prototype.setY = function(t) {
+		this.translateY(t)
+	}, a.prototype.setHeight = function(t) {
+		var i = t / this.height,
+			e = -i;
+		this.scale(i, e)
+	}, a.prototype.setWidth = function(t) {
+		var i = t / this.width,
+			e = -i;
+		this.scale(i, e)
+	}, h.prototype = new MotionQueueManager, h.prototype.getCurrentPriority = function() {
+		return this.currentPriority
+	}, h.prototype.getReservePriority = function() {
+		return this.reservePriority
+	}, h.prototype.reserveMotion = function(t) {
+		return !(this.reservePriority >= t) && (!(this.currentPriority >= t) && (this.reservePriority = t, !0))
+	}, h.prototype.setReservePriority = function(t) {
+		this.reservePriority = t
+	}, h.prototype.updateParam = function(t) {
+		var i = MotionQueueManager.prototype.updateParam.call(this, t);
+		return this.isFinished() && (this.currentPriority = 0), i
+	}, h.prototype.startMotionPrio = function(t, i) {
+		return i == this.reservePriority && (this.reservePriority = 0), this.currentPriority = i, this.startMotion(t, !1)
+	}, l.load = function(t) {
+		for (var i = new l, e = c.getPlatformManager(), r = e.jsonParseFromBytes(t), o = r.physics_hair, n = o.length, s = 0; s < n; s++) {
+			var _ = o[s],
+				a = new PhysicsHair,
+				h = _.setup,
+				$ = parseFloat(h.length),
+				u = parseFloat(h.regist),
+				p = parseFloat(h.mass);
+			a.setup($, u, p);
+			for (var f = _.src, d = f.length, g = 0; g < d; g++) {
+				var y = f[g],
+					m = y.id,
+					T = PhysicsHair.Src.SRC_TO_X,
+					P = y.ptype;
+				"x" === P ? T = PhysicsHair.Src.SRC_TO_X : "y" === P ? T = PhysicsHair.Src.SRC_TO_Y : "angle" === P ? T = PhysicsHair.Src.SRC_TO_G_ANGLE : UtDebug.error("live2d", "Invalid parameter:PhysicsHair.Src");
+				var S = parseFloat(y.scale),
+					v = parseFloat(y.weight);
+				a.addSrcParam(T, m, S, v)
+			}
+			for (var L = _.targets, M = L.length, g = 0; g < M; g++) {
+				var E = L[g],
+					m = E.id,
+					T = PhysicsHair.Target.TARGET_FROM_ANGLE,
+					P = E.ptype;
+				"angle" === P ? T = PhysicsHair.Target.TARGET_FROM_ANGLE : "angle_v" === P ? T = PhysicsHair.Target.TARGET_FROM_ANGLE_V : UtDebug.error("live2d", "Invalid parameter:PhysicsHair.Target");
+				var S = parseFloat(E.scale),
+					v = parseFloat(E.weight);
+				a.addTargetParam(T, m, S, v)
+			}
+			i.physicsList.push(a)
+		}
+		return i
+	}, l.prototype.updateParam = function(t) {
+		for (var i = UtSystem.getUserTimeMSec() - this.startTimeMSec, e = 0; e < this.physicsList.length; e++) this.physicsList[e].update(t, i)
+	}, $.load = function(t) {
+		for (var i = new $, e = c.getPlatformManager(), r = e.jsonParseFromBytes(t), o = r.parts_visible, n = o.length, s = 0; s < n; s++) {
+			for (var _ = o[s], a = _.group, h = a.length, l = new Array, p = 0; p < h; p++) {
+				var f = a[p],
+					d = new u(f.id);
+				if (l[p] = d, null != f.link) {
+					var g = f.link,
+						y = g.length;
+					d.link = new Array;
+					for (var m = 0; m < y; m++) {
+						var T = new u(g[m]);
+						d.link.push(T)
+					}
+				}
+			}
+			i.partsGroups.push(l)
+		}
+		return i
+	}, $.prototype.updateParam = function(t) {
+		if (null != t) {
+			t != this.lastModel && this.initParam(t), this.lastModel = t;
+			var i = UtSystem.getUserTimeMSec(),
+				e = 0 == this.lastTime ? 0 : (i - this.lastTime) / 1e3;
+			this.lastTime = i, e < 0 && (e = 0);
+			for (var r = 0; r < this.partsGroups.length; r++) this.normalizePartsOpacityGroup(t, this.partsGroups[r], e), this.copyOpacityOtherParts(t, this.partsGroups[r])
+		}
+	}, $.prototype.initParam = function(t) {
+		if (null != t) for (var i = 0; i < this.partsGroups.length; i++) for (var e = this.partsGroups[i], r = 0; r < e.length; r++) {
+			e[r].initIndex(t);
+			var o = e[r].partsIndex,
+				n = e[r].paramIndex;
+			if (!(o < 0)) {
+				var s = 0 != t.getParamFloat(n);
+				if (t.setPartsOpacity(o, s ? 1 : 0), t.setParamFloat(n, s ? 1 : 0), null != e[r].link) for (var _ = 0; _ < e[r].link.length; _++) e[r].link[_].initIndex(t)
+			}
+		}
+	}, $.prototype.normalizePartsOpacityGroup = function(t, i, e) {
+		for (var r = -1, o = 1, n = 0; n < i.length; n++) {
+			var s = i[n].partsIndex,
+				_ = i[n].paramIndex;
+			if (!(s < 0) && 0 != t.getParamFloat(_)) {
+				if (r >= 0) break;
+				r = n, o = t.getPartsOpacity(s), o += e / .5, o > 1 && (o = 1)
+			}
+		}
+		r < 0 && (r = 0, o = 1);
+		for (var n = 0; n < i.length; n++) {
+			var s = i[n].partsIndex;
+			if (!(s < 0)) if (r == n) t.setPartsOpacity(s, o);
+			else {
+				var a, h = t.getPartsOpacity(s);
+				a = o < .5 ? -.5 * o / .5 + 1 : .5 * (1 - o) / .5;
+				var l = (1 - a) * (1 - o);
+				l > .15 && (a = 1 - .15 / (1 - o)), h > a && (h = a), t.setPartsOpacity(s, h)
+			}
+		}
+	}, $.prototype.copyOpacityOtherParts = function(t, i) {
+		for (var e = 0; e < i.length; e++) {
+			var r = i[e];
+			if (null != r.link && !(r.partsIndex < 0)) for (var o = t.getPartsOpacity(r.partsIndex), n = 0; n < r.link.length; n++) {
+				var s = r.link[n];
+				s.partsIndex < 0 || t.setPartsOpacity(s.partsIndex, o)
+			}
+		}
+	}, u.prototype.initIndex = function(t) {
+		this.paramIndex = t.getParamIndex("VISIBLE:" + this.id), this.partsIndex = t.getPartsDataIndex(PartsDataID.getID(this.id)), t.setParamFloat(this.paramIndex, 1)
+	}, p.FRAME_RATE = 30, p.prototype.setPoint = function(t, i) {
+		this.faceTargetX = t, this.faceTargetY = i
+	}, p.prototype.getX = function() {
+		return this.faceX
+	}, p.prototype.getY = function() {
+		return this.faceY
+	}, p.prototype.update = function() {
+		var t = 40 / 7.5 / p.FRAME_RATE;
+		if (0 == this.lastTimeSec) return void(this.lastTimeSec = UtSystem.getUserTimeMSec());
+		var i = UtSystem.getUserTimeMSec(),
+			e = (i - this.lastTimeSec) * p.FRAME_RATE / 1e3;
+		this.lastTimeSec = i;
+		var r = .15 * p.FRAME_RATE,
+			o = e * t / r,
+			n = this.faceTargetX - this.faceX,
+			s = this.faceTargetY - this.faceY;
+		if (!(Math.abs(n) <= this.EPSILON && Math.abs(s) <= this.EPSILON)) {
+			var _ = Math.sqrt(n * n + s * s),
+				a = t * n / _,
+				h = t * s / _,
+				l = a - this.faceVX,
+				$ = h - this.faceVY,
+				u = Math.sqrt(l * l + $ * $);
+			(u < -o || u > o) && (l *= o / u, $ *= o / u, u = o), this.faceVX += l, this.faceVY += $;
+			var f = .5 * (Math.sqrt(o * o + 16 * o * _ - 8 * o * _) - o),
+				c = Math.sqrt(this.faceVX * this.faceVX + this.faceVY * this.faceVY);
+			c > f && (this.faceVX *= f / c, this.faceVY *= f / c), this.faceX += this.faceVX, this.faceY += this.faceVY
+		}
+	}, f.prototype = new _, f.prototype.getMaxScale = function() {
+		return this.max
+	}, f.prototype.getMinScale = function() {
+		return this.min
+	}, f.prototype.setMaxScale = function(t) {
+		this.max = t
+	}, f.prototype.setMinScale = function(t) {
+		this.min = t
+	}, f.prototype.isMaxScale = function() {
+		return this.getScaleX() == this.max
+	}, f.prototype.isMinScale = function() {
+		return this.getScaleX() == this.min
+	}, f.prototype.adjustTranslate = function(t, i) {
+		this.tr[0] * this.maxLeft + (this.tr[12] + t) > this.screenLeft && (t = this.screenLeft - this.tr[0] * this.maxLeft - this.tr[12]), this.tr[0] * this.maxRight + (this.tr[12] + t) < this.screenRight && (t = this.screenRight - this.tr[0] * this.maxRight - this.tr[12]), this.tr[5] * this.maxTop + (this.tr[13] + i) < this.screenTop && (i = this.screenTop - this.tr[5] * this.maxTop - this.tr[13]), this.tr[5] * this.maxBottom + (this.tr[13] + i) > this.screenBottom && (i = this.screenBottom - this.tr[5] * this.maxBottom - this.tr[13]);
+		var e = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, t, i, 0, 1];
+		_.mul(e, this.tr, this.tr)
+	}, f.prototype.adjustScale = function(t, i, e) {
+		var r = e * this.tr[0];
+		r < this.min ? this.tr[0] > 0 && (e = this.min / this.tr[0]) : r > this.max && this.tr[0] > 0 && (e = this.max / this.tr[0]);
+		var o = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, t, i, 0, 1],
+			n = [e, 0, 0, 0, 0, e, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+			s = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -t, -i, 0, 1];
+		_.mul(s, this.tr, this.tr), _.mul(n, this.tr, this.tr), _.mul(o, this.tr, this.tr)
+	}, f.prototype.setScreenRect = function(t, i, e, r) {
+		this.screenLeft = t, this.screenRight = i, this.screenTop = r, this.screenBottom = e
+	}, f.prototype.setMaxScreenRect = function(t, i, e, r) {
+		this.maxLeft = t, this.maxRight = i, this.maxTop = r, this.maxBottom = e
+	}, f.prototype.getScreenLeft = function() {
+		return this.screenLeft
+	}, f.prototype.getScreenRight = function() {
+		return this.screenRight
+	}, f.prototype.getScreenBottom = function() {
+		return this.screenBottom
+	}, f.prototype.getScreenTop = function() {
+		return this.screenTop
+	}, f.prototype.getMaxLeft = function() {
+		return this.maxLeft
+	}, f.prototype.getMaxRight = function() {
+		return this.maxRight
+	}, f.prototype.getMaxBottom = function() {
+		return this.maxBottom
+	}, f.prototype.getMaxTop = function() {
+		return this.maxTop
+	}, c.platformManager = null, c.getPlatformManager = function() {
+		return c.platformManager
+	}, c.setPlatformManager = function(t) {
+		c.platformManager = t
+	}, t.exports = {
+		L2DTargetPoint: p,
+		Live2DFramework: c,
+		L2DViewMatrix: f,
+		L2DPose: $,
+		L2DPartsParam: u,
+		L2DPhysics: l,
+		L2DMotionManager: h,
+		L2DModelMatrix: a,
+		L2DMatrix44: _,
+		EYE_STATE: g,
+		L2DEyeBlink: s,
+		L2DExpressionParam: n,
+		L2DExpressionMotion: o,
+		L2DBaseModel: r
+	}
+}, function(t, i, e) {
+	"use strict";
+	var r = {
+		DEBUG_LOG: !1,
+		DEBUG_MOUSE_LOG: !1,
+		DEBUG_DRAW_HIT_AREA: !1,
+		DEBUG_DRAW_ALPHA_MODEL: !1,
+		VIEW_MAX_SCALE: 2,
+		VIEW_MIN_SCALE: .8,
+		VIEW_LOGICAL_LEFT: -1,
+		VIEW_LOGICAL_RIGHT: 1,
+		VIEW_LOGICAL_MAX_LEFT: -2,
+		VIEW_LOGICAL_MAX_RIGHT: 2,
+		VIEW_LOGICAL_MAX_BOTTOM: -2,
+		VIEW_LOGICAL_MAX_TOP: 2,
+		PRIORITY_NONE: 0,
+		PRIORITY_IDLE: 1,
+		PRIORITY_SLEEPY: 2,
+		PRIORITY_NORMAL: 3,
+		PRIORITY_FORCE: 4,
+		MOTION_GROUP_IDLE: "idle",
+		MOTION_GROUP_SLEEPY: "sleepy",
+		MOTION_GROUP_TAP_BODY: "tap_body",
+		MOTION_GROUP_FLICK_HEAD: "flick_head",
+		MOTION_GROUP_PINCH_IN: "pinch_in",
+		MOTION_GROUP_PINCH_OUT: "pinch_out",
+		MOTION_GROUP_SHAKE: "shake",
+		HIT_AREA_HEAD: "head",
+		HIT_AREA_BODY: "body"
+	};
+	t.exports = r
+}, function(t, i, e) {
+	"use strict";
+
+	function r(t) {
+		n = t
+	}
+	function o() {
+		return n
+	}
+	Object.defineProperty(i, "__esModule", {
+		value: !0
+	}), i.setContext = r, i.getContext = o;
+	var n = void 0
+}, function(t, i, e) {
+	"use strict";
+
+	function r() {}
+	r.matrixStack = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], r.depth = 0, r.currentMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], r.tmp = new Array(16), r.reset = function() {
+		this.depth = 0
+	}, r.loadIdentity = function() {
+		for (var t = 0; t < 16; t++) this.currentMatrix[t] = t % 5 == 0 ? 1 : 0
+	}, r.push = function() {
+		var t = (this.depth, 16 * (this.depth + 1));
+		this.matrixStack.length < t + 16 && (this.matrixStack.length = t + 16);
+		for (var i = 0; i < 16; i++) this.matrixStack[t + i] = this.currentMatrix[i];
+		this.depth++
+	}, r.pop = function() {
+		--this.depth < 0 && (myError("Invalid matrix stack."), this.depth = 0);
+		for (var t = 16 * this.depth, i = 0; i < 16; i++) this.currentMatrix[i] = this.matrixStack[t + i]
+	}, r.getMatrix = function() {
+		return this.currentMatrix
+	}, r.multMatrix = function(t) {
+		var i, e, r;
+		for (i = 0; i < 16; i++) this.tmp[i] = 0;
+		for (i = 0; i < 4; i++) for (e = 0; e < 4; e++) for (r = 0; r < 4; r++) this.tmp[i + 4 * e] += this.currentMatrix[i + 4 * r] * t[r + 4 * e];
+		for (i = 0; i < 16; i++) this.currentMatrix[i] = this.tmp[i]
+	}, t.exports = r
+}, function(t, i, e) {
+	t.exports = e(5)
+}, function(t, i, e) {
+	"use strict";
+
+	function r(t) {
+		return t && t.__esModule ? t : {
+		default:
+			t
+		}
+	}
+	function o(t) {
+		C = document.getElementById(t), C.addEventListener && (window.addEventListener("click", g, supportsPassive ? { passive: true } : false), window.addEventListener("mousedown", g, supportsPassive ? { passive: true } : false), window.addEventListener("mousemove", g, supportsPassive ? { passive: true } : false), window.addEventListener("mouseup", g, supportsPassive ? { passive: true } : false), document.addEventListener("mouseout", g, supportsPassive ? { passive: true } : false), window.addEventListener("touchstart", y, supportsPassive ? { passive: true } : false), window.addEventListener("touchend", y, supportsPassive ? { passive: true } : false), window.addEventListener("touchmove", y, supportsPassive ? { passive: true } : false))
+	}
+	function n(t) {
+		var i = C.width,
+			e = C.height;
+		N = new M.L2DTargetPoint;
+		var r = e / i,
+			o = w.
+		default.VIEW_LOGICAL_LEFT,
+			n = w.
+		default.VIEW_LOGICAL_RIGHT,
+			_ = -r,
+			h = r;
+		if (window.Live2D.captureFrame = !1, B = new M.L2DViewMatrix, B.setScreenRect(o, n, _, h), B.setMaxScreenRect(w.
+	default.VIEW_LOGICAL_MAX_LEFT, w.
+	default.VIEW_LOGICAL_MAX_RIGHT, w.
+	default.VIEW_LOGICAL_MAX_BOTTOM, w.
+	default.VIEW_LOGICAL_MAX_TOP), B.setMaxScale(w.
+	default.VIEW_MAX_SCALE), B.setMinScale(w.
+	default.VIEW_MIN_SCALE), U = new M.L2DMatrix44, U.multScale(1, i / e), G = new M.L2DMatrix44, G.multTranslate(-i / 2, -e / 2), G.multScale(2 / i, -2 / i), F = v(), (0, D.setContext)(F), !F) return console.error("Failed to create WebGL context."), void(window.WebGLRenderingContext && console.error("Your browser don't support WebGL, check https://get.webgl.org/ for futher information."));
+		window.Live2D.setGL(F), F.clearColor(0, 0, 0, 0), a(t), s()
+	}
+	function s() {
+		b || (b = !0, function t() {
+			_();
+			var i = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+			if (window.Live2D.captureFrame) {
+				window.Live2D.captureFrame = !1;
+				var e = document.createElement("a");
+				document.body.appendChild(e), e.setAttribute("type", "hidden"), e.href = C.toDataURL(), e.download = window.Live2D.captureName || "live2d.png", e.click()
+			}
+			i(t, C)
+		}())
+	}
+	function _() {
+		O.
+	default.reset(), O.
+	default.loadIdentity(), N.update(), R.setDrag(N.getX(), N.getY()), F.clear(F.COLOR_BUFFER_BIT), O.
+	default.multMatrix(U.getArray()), O.
+	default.multMatrix(B.getArray()), O.
+	default.push();
+		for (var t = 0; t < R.numModels(); t++) {
+			var i = R.getModel(t);
+			if (null == i) return;
+			i.initialized && !i.updating && (i.update(), i.draw(F))
+		}
+		O.
+	default.pop()
+	}
+	function a(t) {
+		R.reloadFlg = !0, R.count++, R.changeModel(F, t)
+	}
+	function h(t, i) {
+		return t.x * i.x + t.y * i.y
+	}
+	function l(t, i) {
+		var e = Math.sqrt(t * t + i * i);
+		return {
+			x: t / e,
+			y: i / e
+		}
+	}
+	function $(t, i, e) {
+		function r(t, i) {
+			return 180 * Math.acos(h({
+				x: 0,
+				y: 1
+			}, l(t, i))) / Math.PI
+		}
+		if (i.x < e.left + e.width && i.y < e.top + e.height && i.x > e.left && i.y > e.top) return i;
+		var o = t.x - i.x,
+			n = t.y - i.y,
+			s = r(o, n);
+		i.x < t.x && (s = 360 - s);
+		var _ = 360 - r(e.left - t.x, -1 * (e.top - t.y)),
+			a = 360 - r(e.left - t.x, -1 * (e.top + e.height - t.y)),
+			$ = r(e.left + e.width - t.x, -1 * (e.top - t.y)),
+			u = r(e.left + e.width - t.x, -1 * (e.top + e.height - t.y)),
+			p = n / o,
+			f = {};
+		if (s < $) {
+			var c = e.top - t.y,
+				d = c / p;
+			f = {
+				y: t.y + c,
+				x: t.x + d
+			}
+		} else if (s < u) {
+			var g = e.left + e.width - t.x,
+				y = g * p;
+			f = {
+				y: t.y + y,
+				x: t.x + g
+			}
+		} else if (s < a) {
+			var m = e.top + e.height - t.y,
+				T = m / p;
+			f = {
+				y: t.y + m,
+				x: t.x + T
+			}
+		} else if (s < _) {
+			var P = t.x - e.left,
+				S = P * p;
+			f = {
+				y: t.y - S,
+				x: t.x - P
+			}
+		} else {
+			var v = e.top - t.y,
+				L = v / p;
+			f = {
+				y: t.y + v,
+				x: t.x + L
+			}
+		}
+		return f
+	}
+	function u(t) {
+		Y = !0;
+		var i = C.getBoundingClientRect(),
+			e = P(t.clientX - i.left),
+			r = S(t.clientY - i.top),
+			o = $({
+				x: i.left + i.width / 2,
+				y: i.top + i.height * X
+			}, {
+				x: t.clientX,
+				y: t.clientY
+			}, i),
+			n = m(o.x - i.left),
+			s = T(o.y - i.top);
+		w.
+	default.DEBUG_MOUSE_LOG && console.log("onMouseMove device( x:" + t.clientX + " y:" + t.clientY + " ) view( x:" + n + " y:" + s + ")"), k = e, V = r, N.setPoint(n, s)
+	}
+	function p(t) {
+		Y = !0;
+		var i = C.getBoundingClientRect(),
+			e = P(t.clientX - i.left),
+			r = S(t.clientY - i.top),
+			o = $({
+				x: i.left + i.width / 2,
+				y: i.top + i.height * X
+			}, {
+				x: t.clientX,
+				y: t.clientY
+			}, i),
+			n = m(o.x - i.left),
+			s = T(o.y - i.top);
+		w.
+	default.DEBUG_MOUSE_LOG && console.log("onMouseDown device( x:" + t.clientX + " y:" + t.clientY + " ) view( x:" + n + " y:" + s + ")"), k = e, V = r, R.tapEvent(n, s)
+	}
+	function f(t) {
+		var i = C.getBoundingClientRect(),
+			e = P(t.clientX - i.left),
+			r = S(t.clientY - i.top),
+			o = $({
+				x: i.left + i.width / 2,
+				y: i.top + i.height * X
+			}, {
+				x: t.clientX,
+				y: t.clientY
+			}, i),
+			n = m(o.x - i.left),
+			s = T(o.y - i.top);
+		w.
+	default.DEBUG_MOUSE_LOG && console.log("onMouseMove device( x:" + t.clientX + " y:" + t.clientY + " ) view( x:" + n + " y:" + s + ")"), Y && (k = e, V = r, N.setPoint(n, s))
+	}
+	function c() {
+		Y && (Y = !1), N.setPoint(0, 0)
+	}
+	function d() {
+		w.
+	default.DEBUG_LOG && console.log("Set Session Storage."), sessionStorage.setItem("Sleepy", "1")
+	}
+	function g(t) {
+		if ("mousewheel" == t.type);
+		else if ("mousedown" == t.type) p(t);
+		else if ("mousemove" == t.type) {
+			var i = sessionStorage.getItem("Sleepy");
+			"1" === i && sessionStorage.setItem("Sleepy", "0"), u(t)
+		} else if ("mouseup" == t.type) {
+			if ("button" in t && 0 != t.button) return
+		} else if ("mouseout" == t.type) {
+			w.
+		default.DEBUG_LOG && console.log("Mouse out Window."), c();
+			var e = sessionStorage.getItem("SleepyTimer");
+			window.clearTimeout(e), e = window.setTimeout(d, 5e4), sessionStorage.setItem("SleepyTimer", e)
+		}
+	}
+	function y(t) {
+		var i = t.touches[0];
+		"touchstart" == t.type ? 1 == t.touches.length && u(i) : "touchmove" == t.type ? f(i) : "touchend" == t.type && c()
+	}
+	function m(t) {
+		var i = G.transformX(t);
+		return B.invertTransformX(i)
+	}
+	function T(t) {
+		var i = G.transformY(t);
+		return B.invertTransformY(i)
+	}
+	function P(t) {
+		return G.transformX(t)
+	}
+	function S(t) {
+		return G.transformY(t)
+	}
+	function v() {
+		for (var t = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"], i = 0; i < t.length; i++) try {
+			var e = C.getContext(t[i], {
+				premultipliedAlpha: !0
+			});
+			if (e) return e
+		} catch (t) {}
+		return null
+	}
+	function L(t, i, e) {
+		X = void 0 === e ? .5 : e, o(t), n(i)
+	}
+	e(6);
+	var M = e(0),
+		E = e(8),
+		A = r(E),
+		I = e(1),
+		w = r(I),
+		x = e(3),
+		O = r(x),
+		D = e(2),
+		R = (window.navigator.platform.toLowerCase(), new A.
+	default),
+		b = !1,
+		F = null,
+		C = null,
+		N = null,
+		B = null,
+		U = null,
+		G = null,
+		Y = !1,
+		k = 0,
+		V = 0,
+		X = .5;
+	window.loadlive2d = L
+}, function(t, i, e) {
+	"use strict";
+	(function(t) {
+		!
+		function() {
+			function i() {
+				At || (this._$MT = null, this._$5S = null, this._$NP = 0, i._$42++, this._$5S = new Y(this))
+			}
+			function e(t) {
+				if (!At) {
+					this.clipContextList = new Array, this.glcontext = t.gl, this.dp_webgl = t, this.curFrameNo = 0, this.firstError_clipInNotUpdate = !0, this.colorBuffer = 0, this.isInitGLFBFunc = !1, this.tmpBoundsOnModel = new S, at.glContext.length > at.frameBuffers.length && (this.curFrameNo = this.getMaskRenderTexture()), this.tmpModelToViewMatrix = new R, this.tmpMatrix2 = new R, this.tmpMatrixForMask = new R, this.tmpMatrixForDraw = new R, this.CHANNEL_COLORS = new Array;
+					var i = new A;
+					i = new A, i.r = 0, i.g = 0, i.b = 0, i.a = 1, this.CHANNEL_COLORS.push(i), i = new A, i.r = 1, i.g = 0, i.b = 0, i.a = 0, this.CHANNEL_COLORS.push(i), i = new A, i.r = 0, i.g = 1, i.b = 0, i.a = 0, this.CHANNEL_COLORS.push(i), i = new A, i.r = 0, i.g = 0, i.b = 1, i.a = 0, this.CHANNEL_COLORS.push(i);
+					for (var e = 0; e < this.CHANNEL_COLORS.length; e++) this.dp_webgl.setChannelFlagAsColor(e, this.CHANNEL_COLORS[e])
+				}
+			}
+			function r(t, i, e) {
+				this.clipIDList = new Array, this.clipIDList = e, this.clippingMaskDrawIndexList = new Array;
+				for (var r = 0; r < e.length; r++) this.clippingMaskDrawIndexList.push(i.getDrawDataIndex(e[r]));
+				this.clippedDrawContextList = new Array, this.isUsing = !0, this.layoutChannelNo = 0, this.layoutBounds = new S, this.allClippedDrawRect = new S, this.matrixForMask = new Float32Array(16), this.matrixForDraw = new Float32Array(16), this.owner = t
+			}
+			function o(t, i) {
+				this._$gP = t, this.drawDataIndex = i
+			}
+			function n() {
+				At || (this.color = null)
+			}
+			function s() {
+				At || (this._$dP = null, this._$eo = null, this._$V0 = null, this._$dP = 1e3, this._$eo = 1e3, this._$V0 = 1, this._$a0())
+			}
+			function _() {}
+			function a() {
+				this._$r = null, this._$0S = null
+			}
+			function h() {
+				At || (this.x = null, this.y = null, this.width = null, this.height = null)
+			}
+			function l(t) {
+				At || et.prototype.constructor.call(this, t)
+			}
+			function $() {}
+			function u(t) {
+				At || et.prototype.constructor.call(this, t)
+			}
+			function p() {
+				At || (this._$vo = null, this._$F2 = null, this._$ao = 400, this._$1S = 400, p._$42++)
+			}
+			function f() {
+				At || (this.p1 = new c, this.p2 = new c, this._$Fo = 0, this._$Db = 0, this._$L2 = 0, this._$M2 = 0, this._$ks = 0, this._$9b = 0, this._$iP = 0, this._$iT = 0, this._$lL = new Array, this._$qP = new Array, this.setup(.3, .5, .1))
+			}
+			function c() {
+				this._$p = 1, this.x = 0, this.y = 0, this.vx = 0, this.vy = 0, this.ax = 0, this.ay = 0, this.fx = 0, this.fy = 0, this._$s0 = 0, this._$70 = 0, this._$7L = 0, this._$HL = 0
+			}
+			function d(t, i, e) {
+				this._$wL = null, this.scale = null, this._$V0 = null, this._$wL = t, this.scale = i, this._$V0 = e
+			}
+			function g(t, i, e, r) {
+				d.prototype.constructor.call(this, i, e, r), this._$tL = null, this._$tL = t
+			}
+			function y(t, i, e) {
+				this._$wL = null, this.scale = null, this._$V0 = null, this._$wL = t, this.scale = i, this._$V0 = e
+			}
+			function T(t, i, e, r) {
+				y.prototype.constructor.call(this, i, e, r), this._$YP = null, this._$YP = t
+			}
+			function P() {
+				At || (this._$fL = 0, this._$gL = 0, this._$B0 = 1, this._$z0 = 1, this._$qT = 0, this.reflectX = !1, this.reflectY = !1)
+			}
+			function S() {
+				At || (this.x = null, this.y = null, this.width = null, this.height = null)
+			}
+			function v() {}
+			function L() {
+				At || (this.x = null, this.y = null)
+			}
+			function M() {
+				At || (this._$gP = null, this._$dr = null, this._$GS = null, this._$qb = null, this._$Lb = null, this._$mS = null, this.clipID = null, this.clipIDList = new Array)
+			}
+			function E() {
+				At || (this._$Eb = E._$ps, this._$lT = 1, this._$C0 = 1, this._$tT = 1, this._$WL = 1, this.culling = !1, this.matrix4x4 = new Float32Array(16), this.premultipliedAlpha = !1, this.anisotropy = 0, this.clippingProcess = E.CLIPPING_PROCESS_NONE, this.clipBufPre_clipContextMask = null, this.clipBufPre_clipContextDraw = null, this.CHANNEL_COLORS = new Array)
+			}
+			function A() {
+				At || (this.a = 1, this.r = 1, this.g = 1, this.b = 1, this.scale = 1, this._$ho = 1, this.blendMode = at.L2D_COLOR_BLEND_MODE_MULT)
+			}
+			function I() {
+				At || (this._$kP = null, this._$dr = null, this._$Ai = !0, this._$mS = null)
+			}
+			function w() {}
+			function x() {
+				At || (this._$VP = 0, this._$wL = null, this._$GP = null, this._$8o = x._$ds, this._$2r = -1, this._$O2 = 0, this._$ri = 0)
+			}
+			function O() {}
+			function D() {
+				At || (this._$Ob = null)
+			}
+			function R() {
+				this.m = new Float32Array(16), this.identity()
+			}
+			function b(t) {
+				At || et.prototype.constructor.call(this, t)
+			}
+			function F() {
+				At || (this._$7 = 1, this._$f = 0, this._$H = 0, this._$g = 1, this._$k = 0, this._$w = 0, this._$hi = STATE_IDENTITY, this._$Z = _$pS)
+			}
+			function C() {
+				At || (s.prototype.constructor.call(this), this.motions = new Array, this._$7r = null, this._$7r = C._$Co++, this._$D0 = 30, this._$yT = 0, this._$E = !0, this.loopFadeIn = !0, this._$AS = -1, _$a0())
+			}
+			function N() {
+				this._$P = new Float32Array(100), this.size = 0
+			}
+			function B() {
+				this._$4P = null, this._$I0 = null, this._$RP = null
+			}
+			function U() {}
+			function G() {}
+			function Y(t) {
+				At || (this._$QT = !0, this._$co = -1, this._$qo = 0, this._$pb = new Array(Y._$is), this._$_2 = new Float32Array(Y._$is), this._$vr = new Float32Array(Y._$is), this._$Rr = new Float32Array(Y._$is), this._$Or = new Float32Array(Y._$is), this._$fs = new Float32Array(Y._$is), this._$Js = new Array(Y._$is), this._$3S = new Array, this._$aS = new Array, this._$Bo = null, this._$F2 = new Array, this._$db = new Array, this._$8b = new Array, this._$Hr = new Array, this._$Ws = null, this._$Vs = null, this._$Er = null, this._$Es = new Int16Array(U._$Qb), this._$ZP = new Float32Array(2 * U._$1r), this._$Ri = t, this._$b0 = Y._$HP++, this.clipManager = null, this.dp_webgl = null)
+			}
+			function k() {}
+			function V() {
+				At || (this._$12 = null, this._$bb = null, this._$_L = null, this._$jo = null, this._$iL = null, this._$0L = null, this._$Br = null, this._$Dr = null, this._$Cb = null, this._$mr = null, this._$_L = wt.STATE_FIRST, this._$Br = 4e3, this._$Dr = 100, this._$Cb = 50, this._$mr = 150, this._$jo = !0, this._$iL = "PARAM_EYE_L_OPEN", this._$0L = "PARAM_EYE_R_OPEN")
+			}
+			function X() {
+				At || (E.prototype.constructor.call(this), this._$sb = new Int32Array(X._$As), this._$U2 = new Array, this.transform = null, this.gl = null, null == X._$NT && (X._$NT = X._$9r(256), X._$vS = X._$9r(256), X._$no = X._$vb(256)))
+			}
+			function z() {
+				At || (I.prototype.constructor.call(this), this._$GS = null, this._$Y0 = null)
+			}
+			function H(t) {
+				_t.prototype.constructor.call(this, t), this._$8r = I._$ur, this._$Yr = null, this._$Wr = null
+			}
+			function W() {
+				At || (M.prototype.constructor.call(this), this._$gP = null, this._$dr = null, this._$GS = null, this._$qb = null, this._$Lb = null, this._$mS = null)
+			}
+			function j() {
+				At || (this._$NL = null, this._$3S = null, this._$aS = null, j._$42++)
+			}
+			function q() {
+				At || (i.prototype.constructor.call(this), this._$zo = new X)
+			}
+			function J() {
+				At || (s.prototype.constructor.call(this), this.motions = new Array, this._$o2 = null, this._$7r = J._$Co++, this._$D0 = 30, this._$yT = 0, this._$E = !1, this.loopFadeIn = !0, this._$rr = -1, this._$eP = 0)
+			}
+			function Q(t, i) {
+				return String.fromCharCode(t.getUint8(i))
+			}
+			function N() {
+				this._$P = new Float32Array(100), this.size = 0
+			}
+			function B() {
+				this._$4P = null, this._$I0 = null, this._$RP = null
+			}
+			function Z() {
+				At || (I.prototype.constructor.call(this), this._$o = 0, this._$A = 0, this._$GS = null, this._$Eo = null)
+			}
+			function K(t) {
+				_t.prototype.constructor.call(this, t), this._$8r = I._$ur, this._$Cr = null, this._$hr = null
+			}
+			function tt() {
+				At || (this.visible = !0, this._$g0 = !1, this._$NL = null, this._$3S = null, this._$aS = null, tt._$42++)
+			}
+			function it(t) {
+				this._$VS = null, this._$e0 = null, this._$e0 = t
+			}
+			function et(t) {
+				At || (this.id = t)
+			}
+			function rt() {}
+			function ot() {
+				At || (this._$4S = null)
+			}
+			function nt(t, i) {
+				this.canvas = t, this.context = i, this.viewport = new Array(0, 0, t.width, t.height), this._$6r = 1, this._$xP = 0, this._$3r = 1, this._$uP = 0, this._$Qo = -1, this.cacheImages = {}
+			}
+			function st() {
+				At || (this._$TT = null, this._$LT = null, this._$FS = null, this._$wL = null)
+			}
+			function _t(t) {
+				At || (this._$e0 = null, this._$IP = null, this._$JS = !1, this._$AT = !0, this._$e0 = t, this.totalScale = 1, this._$7s = 1, this.totalOpacity = 1)
+			}
+			function at() {}
+			function ht() {}
+			function lt(t) {
+				At || (this._$ib = t)
+			}
+			function $t() {
+				At || (W.prototype.constructor.call(this), this._$LP = -1, this._$d0 = 0, this._$Yo = 0, this._$JP = null, this._$5P = null, this._$BP = null, this._$Eo = null, this._$Qi = null, this._$6s = $t._$ms, this.culling = !0, this.gl_cacheImage = null, this.instanceNo = $t._$42++)
+			}
+			function ut(t) {
+				Mt.prototype.constructor.call(this, t), this._$8r = W._$ur, this._$Cr = null, this._$hr = null
+			}
+			function pt() {
+				At || (this.x = null, this.y = null)
+			}
+			function ft(t) {
+				At || (i.prototype.constructor.call(this), this.drawParamWebGL = new mt(t), this.drawParamWebGL.setGL(at.getGL(t)))
+			}
+			function ct() {
+				At || (this.motions = null, this._$eb = !1, this.motions = new Array)
+			}
+			function dt() {
+				this._$w0 = null, this._$AT = !0, this._$9L = !1, this._$z2 = -1, this._$bs = -1, this._$Do = -1, this._$sr = null, this._$sr = dt._$Gs++
+			}
+			function gt() {
+				this.m = new Array(1, 0, 0, 0, 1, 0, 0, 0, 1)
+			}
+			function yt(t) {
+				At || et.prototype.constructor.call(this, t)
+			}
+			function mt(t) {
+				At || (E.prototype.constructor.call(this), this.textures = new Array, this.transform = null, this.gl = null, this.glno = t, this.firstDraw = !0, this.anisotropyExt = null, this.maxAnisotropy = 0, this._$As = 32, this._$Gr = !1, this._$NT = null, this._$vS = null, this._$no = null, this.vertShader = null, this.fragShader = null, this.vertShaderOff = null, this.fragShaderOff = null)
+			}
+			function Tt(t, i, e) {
+				return null == i && (i = t.createBuffer()), t.bindBuffer(t.ARRAY_BUFFER, i), t.bufferData(t.ARRAY_BUFFER, e, t.DYNAMIC_DRAW), i
+			}
+			function Pt(t, i, e) {
+				return null == i && (i = t.createBuffer()), t.bindBuffer(t.ELEMENT_ARRAY_BUFFER, i), t.bufferData(t.ELEMENT_ARRAY_BUFFER, e, t.DYNAMIC_DRAW), i
+			}
+			function St(t) {
+				At || (this._$P = new Int8Array(8), this._$R0 = new DataView(this._$P.buffer), this._$3i = new Int8Array(1e3), this._$hL = 0, this._$v0 = 0, this._$S2 = 0, this._$Ko = new Array, this._$T = t, this._$F = 0)
+			}
+			function vt() {}
+			function Lt() {}
+			function Mt(t) {
+				At || (this._$e0 = null, this._$IP = null, this._$Us = null, this._$7s = null, this._$IS = [!1], this._$VS = null, this._$AT = !0, this.baseOpacity = 1, this.clipBufPre_clipContext = null, this._$e0 = t)
+			}
+			function Et() {}
+			var At = !0;
+			i._$0s = 1, i._$4s = 2, i._$42 = 0, i._$62 = function(t, e) {
+				try {
+					if (e instanceof ArrayBuffer && (e = new DataView(e)), !(e instanceof DataView)) throw new lt("_$SS#loadModel(b) / b _$x be DataView or ArrayBuffer");
+					var r, o = new St(e),
+						n = o._$ST(),
+						s = o._$ST(),
+						a = o._$ST();
+					if (109 != n || 111 != s || 99 != a) throw new lt("_$gi _$C _$li , _$Q0 _$P0.");
+					if (r = o._$ST(), o._$gr(r), r > G._$T7) {
+						t._$NP |= i._$4s;
+						throw new lt("_$gi _$C _$li , _$n0 _$_ version _$li ( SDK : " + G._$T7 + " < _$f0 : " + r + " )@_$SS#loadModel()\n")
+					}
+					var h = o._$nP();
+					if (r >= G._$s7) {
+						var l = o._$9T(),
+							$ = o._$9T();
+						if (-30584 != l || -30584 != $) throw t._$NP |= i._$0s, new lt("_$gi _$C _$li , _$0 _$6 _$Ui.")
+					}
+					t._$KS(h);
+					var u = t.getModelContext();
+					u.setDrawParam(t.getDrawParam()), u.init()
+				} catch (t) {
+					_._$Rb(t)
+				}
+			}, i.prototype._$KS = function(t) {
+				this._$MT = t
+			}, i.prototype.getModelImpl = function() {
+				return null == this._$MT && (this._$MT = new p, this._$MT._$zP()), this._$MT
+			}, i.prototype.getCanvasWidth = function() {
+				return null == this._$MT ? 0 : this._$MT.getCanvasWidth()
+			}, i.prototype.getCanvasHeight = function() {
+				return null == this._$MT ? 0 : this._$MT.getCanvasHeight()
+			}, i.prototype.getParamFloat = function(t) {
+				return "number" != typeof t && (t = this._$5S.getParamIndex(u.getID(t))), this._$5S.getParamFloat(t)
+			}, i.prototype.setParamFloat = function(t, i, e) {
+				"number" != typeof t && (t = this._$5S.getParamIndex(u.getID(t))), arguments.length < 3 && (e = 1), this._$5S.setParamFloat(t, this._$5S.getParamFloat(t) * (1 - e) + i * e)
+			}, i.prototype.addToParamFloat = function(t, i, e) {
+				"number" != typeof t && (t = this._$5S.getParamIndex(u.getID(t))), arguments.length < 3 && (e = 1), this._$5S.setParamFloat(t, this._$5S.getParamFloat(t) + i * e)
+			}, i.prototype.multParamFloat = function(t, i, e) {
+				"number" != typeof t && (t = this._$5S.getParamIndex(u.getID(t))), arguments.length < 3 && (e = 1), this._$5S.setParamFloat(t, this._$5S.getParamFloat(t) * (1 + (i - 1) * e))
+			}, i.prototype.getParamIndex = function(t) {
+				return this._$5S.getParamIndex(u.getID(t))
+			}, i.prototype.loadParam = function() {
+				this._$5S.loadParam()
+			}, i.prototype.saveParam = function() {
+				this._$5S.saveParam()
+			}, i.prototype.init = function() {
+				this._$5S.init()
+			}, i.prototype.update = function() {
+				this._$5S.update()
+			}, i.prototype._$Rs = function() {
+				return _._$li("_$60 _$PT _$Rs()"), -1
+			}, i.prototype._$Ds = function(t) {
+				_._$li("_$60 _$PT _$SS#_$Ds() \n")
+			}, i.prototype._$K2 = function() {}, i.prototype.draw = function() {}, i.prototype.getModelContext = function() {
+				return this._$5S
+			}, i.prototype._$s2 = function() {
+				return this._$NP
+			}, i.prototype._$P7 = function(t, i, e, r) {
+				var o = -1,
+					n = 0,
+					s = this;
+				if (0 != e) if (1 == t.length) {
+					var _ = t[0],
+						a = 0 != s.getParamFloat(_),
+						h = i[0],
+						l = s.getPartsOpacity(h),
+						$ = e / r;
+					a ? (l += $) > 1 && (l = 1) : (l -= $) < 0 && (l = 0), s.setPartsOpacity(h, l)
+				} else {
+					for (var u = 0; u < t.length; u++) {
+						var _ = t[u],
+							p = 0 != s.getParamFloat(_);
+						if (p) {
+							if (o >= 0) break;
+							o = u;
+							var h = i[u];
+							n = s.getPartsOpacity(h), n += e / r, n > 1 && (n = 1)
+						}
+					}
+					o < 0 && (console.log("No _$wi _$q0/ _$U default[%s]", t[0]), o = 0, n = 1, s.loadParam(), s.setParamFloat(t[o], n), s.saveParam());
+					for (var u = 0; u < t.length; u++) {
+						var h = i[u];
+						if (o == u) s.setPartsOpacity(h, n);
+						else {
+							var f, c = s.getPartsOpacity(h);
+							f = n < .5 ? -.5 * n / .5 + 1 : .5 * (1 - n) / .5;
+							var d = (1 - f) * (1 - n);
+							d > .15 && (f = 1 - .15 / (1 - n)), c > f && (c = f), s.setPartsOpacity(h, c)
+						}
+					}
+				} else for (var u = 0; u < t.length; u++) {
+					var _ = t[u],
+						h = i[u],
+						p = 0 != s.getParamFloat(_);
+					s.setPartsOpacity(h, p ? 1 : 0)
+				}
+			}, i.prototype.setPartsOpacity = function(t, i) {
+				"number" != typeof t && (t = this._$5S.getPartsDataIndex(l.getID(t))), this._$5S.setPartsOpacity(t, i)
+			}, i.prototype.getPartsDataIndex = function(t) {
+				return t instanceof l || (t = l.getID(t)), this._$5S.getPartsDataIndex(t)
+			}, i.prototype.getPartsOpacity = function(t) {
+				return "number" != typeof t && (t = this._$5S.getPartsDataIndex(l.getID(t))), t < 0 ? 0 : this._$5S.getPartsOpacity(t)
+			}, i.prototype.getDrawParam = function() {}, i.prototype.getDrawDataIndex = function(t) {
+				return this._$5S.getDrawDataIndex(b.getID(t))
+			}, i.prototype.getDrawData = function(t) {
+				return this._$5S.getDrawData(t)
+			}, i.prototype.getTransformedPoints = function(t) {
+				var i = this._$5S._$C2(t);
+				return i instanceof ut ? i.getTransformedPoints() : null
+			}, i.prototype.getIndexArray = function(t) {
+				if (t < 0 || t >= this._$5S._$aS.length) return null;
+				var i = this._$5S._$aS[t];
+				return null != i && i.getType() == W._$wb && i instanceof $t ? i.getIndexArray() : null
+			}, e.CHANNEL_COUNT = 4, e.RENDER_TEXTURE_USE_MIPMAP = !1, e.NOT_USED_FRAME = -100, e.prototype._$L7 = function() {
+				if (this.tmpModelToViewMatrix && (this.tmpModelToViewMatrix = null), this.tmpMatrix2 && (this.tmpMatrix2 = null), this.tmpMatrixForMask && (this.tmpMatrixForMask = null), this.tmpMatrixForDraw && (this.tmpMatrixForDraw = null), this.tmpBoundsOnModel && (this.tmpBoundsOnModel = null), this.CHANNEL_COLORS) {
+					for (var t = this.CHANNEL_COLORS.length - 1; t >= 0; --t) this.CHANNEL_COLORS.splice(t, 1);
+					this.CHANNEL_COLORS = []
+				}
+				this.releaseShader()
+			}, e.prototype.releaseShader = function() {
+				for (var t = at.frameBuffers.length, i = 0; i < t; i++) this.gl.deleteFramebuffer(at.frameBuffers[i].framebuffer);
+				at.frameBuffers = [], at.glContext = []
+			}, e.prototype.init = function(t, i, e) {
+				for (var o = 0; o < i.length; o++) {
+					var n = i[o].getClipIDList();
+					if (null != n) {
+						var s = this.findSameClip(n);
+						null == s && (s = new r(this, t, n), this.clipContextList.push(s));
+						var _ = i[o].getDrawDataID(),
+							a = t.getDrawDataIndex(_);
+						s.addClippedDrawData(_, a);
+						e[o].clipBufPre_clipContext = s
+					}
+				}
+			}, e.prototype.getMaskRenderTexture = function() {
+				var t = null;
+				return t = this.dp_webgl.createFramebuffer(), at.frameBuffers[this.dp_webgl.glno] = t, this.dp_webgl.glno
+			}, e.prototype.setupClip = function(t, i) {
+				for (var e = 0, r = 0; r < this.clipContextList.length; r++) {
+					var o = this.clipContextList[r];
+					this.calcClippedDrawTotalBounds(t, o), o.isUsing && e++
+				}
+				if (e > 0) {
+					var n = i.gl.getParameter(i.gl.FRAMEBUFFER_BINDING),
+						s = new Array(4);
+					s[0] = 0, s[1] = 0, s[2] = i.gl.canvas.width, s[3] = i.gl.canvas.height, i.gl.viewport(0, 0, at.clippingMaskBufferSize, at.clippingMaskBufferSize), this.setupLayoutBounds(e), i.gl.bindFramebuffer(i.gl.FRAMEBUFFER, at.frameBuffers[this.curFrameNo].framebuffer), i.gl.clearColor(0, 0, 0, 0), i.gl.clear(i.gl.COLOR_BUFFER_BIT);
+					for (var r = 0; r < this.clipContextList.length; r++) {
+						var o = this.clipContextList[r],
+							_ = o.allClippedDrawRect,
+							a = (o.layoutChannelNo, o.layoutBounds);
+						this.tmpBoundsOnModel._$jL(_), this.tmpBoundsOnModel.expand(.05 * _.width, .05 * _.height);
+						var h = a.width / this.tmpBoundsOnModel.width,
+							l = a.height / this.tmpBoundsOnModel.height;
+						this.tmpMatrix2.identity(), this.tmpMatrix2.translate(-1, -1, 0), this.tmpMatrix2.scale(2, 2, 1), this.tmpMatrix2.translate(a.x, a.y, 0), this.tmpMatrix2.scale(h, l, 1), this.tmpMatrix2.translate(-this.tmpBoundsOnModel.x, -this.tmpBoundsOnModel.y, 0), this.tmpMatrixForMask.setMatrix(this.tmpMatrix2.m), this.tmpMatrix2.identity(), this.tmpMatrix2.translate(a.x, a.y, 0), this.tmpMatrix2.scale(h, l, 1), this.tmpMatrix2.translate(-this.tmpBoundsOnModel.x, -this.tmpBoundsOnModel.y, 0), this.tmpMatrixForDraw.setMatrix(this.tmpMatrix2.m);
+						for (var $ = this.tmpMatrixForMask.getArray(), u = 0; u < 16; u++) o.matrixForMask[u] = $[u];
+						for (var p = this.tmpMatrixForDraw.getArray(), u = 0; u < 16; u++) o.matrixForDraw[u] = p[u];
+						for (var f = o.clippingMaskDrawIndexList.length, c = 0; c < f; c++) {
+							var d = o.clippingMaskDrawIndexList[c],
+								g = t.getDrawData(d),
+								y = t._$C2(d);
+							i.setClipBufPre_clipContextForMask(o), g.draw(i, t, y)
+						}
+					}
+					i.gl.bindFramebuffer(i.gl.FRAMEBUFFER, n), i.setClipBufPre_clipContextForMask(null), i.gl.viewport(s[0], s[1], s[2], s[3])
+				}
+			}, e.prototype.getColorBuffer = function() {
+				return this.colorBuffer
+			}, e.prototype.findSameClip = function(t) {
+				for (var i = 0; i < this.clipContextList.length; i++) {
+					var e = this.clipContextList[i],
+						r = e.clipIDList.length;
+					if (r == t.length) {
+						for (var o = 0, n = 0; n < r; n++) for (var s = e.clipIDList[n], _ = 0; _ < r; _++) if (t[_] == s) {
+							o++;
+							break
+						}
+						if (o == r) return e
+					}
+				}
+				return null
+			}, e.prototype.calcClippedDrawTotalBounds = function(t, i) {
+				for (var e = t._$Ri.getModelImpl().getCanvasWidth(), r = t._$Ri.getModelImpl().getCanvasHeight(), o = e > r ? e : r, n = o, s = o, _ = 0, a = 0, h = i.clippedDrawContextList.length, l = 0; l < h; l++) {
+					var $ = i.clippedDrawContextList[l],
+						u = $.drawDataIndex,
+						p = t._$C2(u);
+					if (p._$yo()) {
+						for (var f = p.getTransformedPoints(), c = f.length, d = [], g = [], y = 0, m = U._$i2; m < c; m += U._$No) d[y] = f[m], g[y] = f[m + 1], y++;
+						var T = Math.min.apply(null, d),
+							P = Math.min.apply(null, g),
+							S = Math.max.apply(null, d),
+							v = Math.max.apply(null, g);
+						T < n && (n = T), P < s && (s = P), S > _ && (_ = S), v > a && (a = v)
+					}
+				}
+				if (n == o) i.allClippedDrawRect.x = 0, i.allClippedDrawRect.y = 0, i.allClippedDrawRect.width = 0, i.allClippedDrawRect.height = 0, i.isUsing = !1;
+				else {
+					var L = _ - n,
+						M = a - s;
+					i.allClippedDrawRect.x = n, i.allClippedDrawRect.y = s, i.allClippedDrawRect.width = L, i.allClippedDrawRect.height = M, i.isUsing = !0
+				}
+			}, e.prototype.setupLayoutBounds = function(t) {
+				var i = t / e.CHANNEL_COUNT,
+					r = t % e.CHANNEL_COUNT;
+				i = ~~i, r = ~~r;
+				for (var o = 0, n = 0; n < e.CHANNEL_COUNT; n++) {
+					var s = i + (n < r ? 1 : 0);
+					if (0 == s);
+					else if (1 == s) {
+						var a = this.clipContextList[o++];
+						a.layoutChannelNo = n, a.layoutBounds.x = 0, a.layoutBounds.y = 0, a.layoutBounds.width = 1, a.layoutBounds.height = 1
+					} else if (2 == s) for (var h = 0; h < s; h++) {
+						var l = h % 2,
+							$ = 0;
+						l = ~~l;
+						var a = this.clipContextList[o++];
+						a.layoutChannelNo = n, a.layoutBounds.x = .5 * l, a.layoutBounds.y = 0, a.layoutBounds.width = .5, a.layoutBounds.height = 1
+					} else if (s <= 4) for (var h = 0; h < s; h++) {
+						var l = h % 2,
+							$ = h / 2;
+						l = ~~l, $ = ~~$;
+						var a = this.clipContextList[o++];
+						a.layoutChannelNo = n, a.layoutBounds.x = .5 * l, a.layoutBounds.y = .5 * $, a.layoutBounds.width = .5, a.layoutBounds.height = .5
+					} else if (s <= 9) for (var h = 0; h < s; h++) {
+						var l = h % 3,
+							$ = h / 3;
+						l = ~~l, $ = ~~$;
+						var a = this.clipContextList[o++];
+						a.layoutChannelNo = n, a.layoutBounds.x = l / 3, a.layoutBounds.y = $ / 3, a.layoutBounds.width = 1 / 3, a.layoutBounds.height = 1 / 3
+					} else _._$li("_$6 _$0P mask count : %d", s)
+				}
+			}, r.prototype.addClippedDrawData = function(t, i) {
+				var e = new o(t, i);
+				this.clippedDrawContextList.push(e)
+			}, s._$JT = function(t, i, e) {
+				var r = t / i,
+					o = e / i,
+					n = o,
+					s = 1 - (1 - o) * (1 - o),
+					_ = 1 - (1 - n) * (1 - n),
+					a = 1 / 3 * (1 - o) * s + (n * (2 / 3) + 1 / 3 * (1 - n)) * (1 - s),
+					h = (n + 2 / 3 * (1 - n)) * _ + (o * (1 / 3) + 2 / 3 * (1 - o)) * (1 - _),
+					l = 1 - 3 * h + 3 * a - 0,
+					$ = 3 * h - 6 * a + 0,
+					u = 3 * a - 0;
+				if (r <= 0) return 0;
+				if (r >= 1) return 1;
+				var p = r,
+					f = p * p;
+				return l * (p * f) + $ * f + u * p + 0
+			}, s.prototype._$a0 = function() {}, s.prototype.setFadeIn = function(t) {
+				this._$dP = t
+			}, s.prototype.setFadeOut = function(t) {
+				this._$eo = t
+			}, s.prototype._$pT = function(t) {
+				this._$V0 = t
+			}, s.prototype.getFadeOut = function() {
+				return this._$eo
+			}, s.prototype._$4T = function() {
+				return this._$eo
+			}, s.prototype._$mT = function() {
+				return this._$V0
+			}, s.prototype.getDurationMSec = function() {
+				return -1
+			}, s.prototype.getLoopDurationMSec = function() {
+				return -1
+			}, s.prototype.updateParam = function(t, i) {
+				if (i._$AT && !i._$9L) {
+					var e = w.getUserTimeMSec();
+					if (i._$z2 < 0) {
+						i._$z2 = e, i._$bs = e;
+						var r = this.getDurationMSec();
+						i._$Do < 0 && (i._$Do = r <= 0 ? -1 : i._$z2 + r)
+					}
+					var o = this._$V0;
+					o = o * (0 == this._$dP ? 1 : ht._$r2((e - i._$bs) / this._$dP)) * (0 == this._$eo || i._$Do < 0 ? 1 : ht._$r2((i._$Do - e) / this._$eo)), 0 <= o && o <= 1 || console.log("### assert!! ### "), this.updateParamExe(t, e, o, i), i._$Do > 0 && i._$Do < e && (i._$9L = !0)
+				}
+			}, s.prototype.updateParamExe = function(t, i, e, r) {}, _._$8s = 0, _._$fT = new Object, _.start = function(t) {
+				var i = _._$fT[t];
+				null == i && (i = new a, i._$r = t, _._$fT[t] = i), i._$0S = w.getSystemTimeMSec()
+			}, _.dump = function(t) {
+				var i = _._$fT[t];
+				if (null != i) {
+					var e = w.getSystemTimeMSec(),
+						r = e - i._$0S;
+					return console.log(t + " : " + r + "ms"), r
+				}
+				return -1
+			}, _.end = function(t) {
+				var i = _._$fT[t];
+				if (null != i) {
+					return w.getSystemTimeMSec() - i._$0S
+				}
+				return -1
+			}, _._$li = function(t, i) {
+				console.log("_$li : " + t + "\n", i)
+			}, _._$Ji = function(t, i) {
+				console.log(t, i)
+			}, _._$dL = function(t, i) {
+				console.log(t, i), console.log("\n")
+			}, _._$KL = function(t, i) {
+				for (var e = 0; e < i; e++) e % 16 == 0 && e > 0 ? console.log("\n") : e % 8 == 0 && e > 0 && console.log("  "), console.log("%02X ", 255 & t[e]);
+				console.log("\n")
+			}, _._$nr = function(t, i, e) {
+				console.log("%s\n", t);
+				for (var r = i.length, o = 0; o < r; ++o) console.log("%5d", i[o]), console.log("%s\n", e), console.log(",");
+				console.log("\n")
+			}, _._$Rb = function(t) {
+				console.log("dump exception : " + t), console.log("stack :: " + t.stack)
+			}, h.prototype._$8P = function() {
+				return .5 * (this.x + this.x + this.width)
+			}, h.prototype._$6P = function() {
+				return .5 * (this.y + this.y + this.height)
+			}, h.prototype._$EL = function() {
+				return this.x + this.width
+			}, h.prototype._$5T = function() {
+				return this.y + this.height
+			}, h.prototype._$jL = function(t, i, e, r) {
+				this.x = t, this.y = i, this.width = e, this.height = r
+			}, h.prototype._$jL = function(t) {
+				this.x = t.x, this.y = t.y, this.width = t.width, this.height = t.height
+			}, l.prototype = new et, l._$tP = new Object, l._$27 = function() {
+				l._$tP.clear()
+			}, l.getID = function(t) {
+				var i = l._$tP[t];
+				return null == i && (i = new l(t), l._$tP[t] = i), i
+			}, l.prototype._$3s = function() {
+				return new l
+			}, u.prototype = new et, u._$tP = new Object, u._$27 = function() {
+				u._$tP.clear()
+			}, u.getID = function(t) {
+				var i = u._$tP[t];
+				return null == i && (i = new u(t), u._$tP[t] = i), i
+			}, u.prototype._$3s = function() {
+				return new u
+			}, p._$42 = 0, p.prototype._$zP = function() {
+				null == this._$vo && (this._$vo = new ot), null == this._$F2 && (this._$F2 = new Array)
+			}, p.prototype.getCanvasWidth = function() {
+				return this._$ao
+			}, p.prototype.getCanvasHeight = function() {
+				return this._$1S
+			}, p.prototype._$F0 = function(t) {
+				this._$vo = t._$nP(), this._$F2 = t._$nP(), this._$ao = t._$6L(), this._$1S = t._$6L()
+			}, p.prototype._$6S = function(t) {
+				this._$F2.push(t)
+			}, p.prototype._$Xr = function() {
+				return this._$F2
+			}, p.prototype._$E2 = function() {
+				return this._$vo
+			}, f.prototype.setup = function(t, i, e) {
+				this._$ks = this._$Yb(), this.p2._$xT(), 3 == arguments.length && (this._$Fo = t, this._$L2 = i, this.p1._$p = e, this.p2._$p = e, this.p2.y = t, this.setup())
+			}, f.prototype.getPhysicsPoint1 = function() {
+				return this.p1
+			}, f.prototype.getPhysicsPoint2 = function() {
+				return this.p2
+			}, f.prototype._$qr = function() {
+				return this._$Db
+			}, f.prototype._$pr = function(t) {
+				this._$Db = t
+			}, f.prototype._$5r = function() {
+				return this._$M2
+			}, f.prototype._$Cs = function() {
+				return this._$9b
+			}, f.prototype._$Yb = function() {
+				return -180 * Math.atan2(this.p1.x - this.p2.x, -(this.p1.y - this.p2.y)) / Math.PI
+			}, f.prototype.addSrcParam = function(t, i, e, r) {
+				var o = new g(t, i, e, r);
+				this._$lL.push(o)
+			}, f.prototype.addTargetParam = function(t, i, e, r) {
+				var o = new T(t, i, e, r);
+				this._$qP.push(o)
+			}, f.prototype.update = function(t, i) {
+				if (0 == this._$iP) return this._$iP = this._$iT = i, void(this._$Fo = Math.sqrt((this.p1.x - this.p2.x) * (this.p1.x - this.p2.x) + (this.p1.y - this.p2.y) * (this.p1.y - this.p2.y)));
+				var e = (i - this._$iT) / 1e3;
+				if (0 != e) {
+					for (var r = this._$lL.length - 1; r >= 0; --r) {
+						this._$lL[r]._$oP(t, this)
+					}
+					this._$oo(t, e), this._$M2 = this._$Yb(), this._$9b = (this._$M2 - this._$ks) / e, this._$ks = this._$M2
+				}
+				for (var r = this._$qP.length - 1; r >= 0; --r) {
+					this._$qP[r]._$YS(t, this)
+				}
+				this._$iT = i
+			}, f.prototype._$oo = function(t, i) {
+				i < .033 && (i = .033);
+				var e = 1 / i;
+				this.p1.vx = (this.p1.x - this.p1._$s0) * e, this.p1.vy = (this.p1.y - this.p1._$70) * e, this.p1.ax = (this.p1.vx - this.p1._$7L) * e, this.p1.ay = (this.p1.vy - this.p1._$HL) * e, this.p1.fx = this.p1.ax * this.p1._$p, this.p1.fy = this.p1.ay * this.p1._$p, this.p1._$xT();
+				var r, o, n = -Math.atan2(this.p1.y - this.p2.y, this.p1.x - this.p2.x),
+					s = Math.cos(n),
+					_ = Math.sin(n),
+					a = 9.8 * this.p2._$p,
+					h = this._$Db * Lt._$bS,
+					l = a * Math.cos(n - h);
+				r = l * _, o = l * s;
+				var $ = -this.p1.fx * _ * _,
+					u = -this.p1.fy * _ * s,
+					p = -this.p2.vx * this._$L2,
+					f = -this.p2.vy * this._$L2;
+				this.p2.fx = r + $ + p, this.p2.fy = o + u + f, this.p2.ax = this.p2.fx / this.p2._$p, this.p2.ay = this.p2.fy / this.p2._$p, this.p2.vx += this.p2.ax * i, this.p2.vy += this.p2.ay * i, this.p2.x += this.p2.vx * i, this.p2.y += this.p2.vy * i;
+				var c = Math.sqrt((this.p1.x - this.p2.x) * (this.p1.x - this.p2.x) + (this.p1.y - this.p2.y) * (this.p1.y - this.p2.y));
+				this.p2.x = this.p1.x + this._$Fo * (this.p2.x - this.p1.x) / c, this.p2.y = this.p1.y + this._$Fo * (this.p2.y - this.p1.y) / c, this.p2.vx = (this.p2.x - this.p2._$s0) * e, this.p2.vy = (this.p2.y - this.p2._$70) * e, this.p2._$xT()
+			}, c.prototype._$xT = function() {
+				this._$s0 = this.x, this._$70 = this.y, this._$7L = this.vx, this._$HL = this.vy
+			}, d.prototype._$oP = function(t, i) {}, g.prototype = new d, g.prototype._$oP = function(t, i) {
+				var e = this.scale * t.getParamFloat(this._$wL),
+					r = i.getPhysicsPoint1();
+				switch (this._$tL) {
+				default:
+				case f.Src.SRC_TO_X:
+					r.x = r.x + (e - r.x) * this._$V0;
+					break;
+				case f.Src.SRC_TO_Y:
+					r.y = r.y + (e - r.y) * this._$V0;
+					break;
+				case f.Src.SRC_TO_G_ANGLE:
+					var o = i._$qr();
+					o += (e - o) * this._$V0, i._$pr(o)
+				}
+			}, y.prototype._$YS = function(t, i) {}, T.prototype = new y, T.prototype._$YS = function(t, i) {
+				switch (this._$YP) {
+				default:
+				case f.Target.TARGET_FROM_ANGLE:
+					t.setParamFloat(this._$wL, this.scale * i._$5r(), this._$V0);
+					break;
+				case f.Target.TARGET_FROM_ANGLE_V:
+					t.setParamFloat(this._$wL, this.scale * i._$Cs(), this._$V0)
+				}
+			}, f.Src = function() {}, f.Src.SRC_TO_X = "SRC_TO_X", f.Src.SRC_TO_Y = "SRC_TO_Y", f.Src.SRC_TO_G_ANGLE = "SRC_TO_G_ANGLE", f.Target = function() {}, f.Target.TARGET_FROM_ANGLE = "TARGET_FROM_ANGLE", f.Target.TARGET_FROM_ANGLE_V = "TARGET_FROM_ANGLE_V", P.prototype.init = function(t) {
+				this._$fL = t._$fL, this._$gL = t._$gL, this._$B0 = t._$B0, this._$z0 = t._$z0, this._$qT = t._$qT, this.reflectX = t.reflectX, this.reflectY = t.reflectY
+			}, P.prototype._$F0 = function(t) {
+				this._$fL = t._$_T(), this._$gL = t._$_T(), this._$B0 = t._$_T(), this._$z0 = t._$_T(), this._$qT = t._$_T(), t.getFormatVersion() >= G.LIVE2D_FORMAT_VERSION_V2_10_SDK2 && (this.reflectX = t._$po(), this.reflectY = t._$po())
+			}, P.prototype._$e = function() {};
+			var It = function() {};
+			It._$ni = function(t, i, e, r, o, n, s, _, a) {
+				var h = s * n - _ * o;
+				if (0 == h) return null;
+				var l, $ = ((t - e) * n - (i - r) * o) / h;
+				return l = 0 != o ? (t - e - $ * s) / o : (i - r - $ * _) / n, isNaN(l) && (l = (t - e - $ * s) / o, isNaN(l) && (l = (i - r - $ * _) / n), isNaN(l) && (console.log("a is NaN @UtVector#_$ni() "), console.log("v1x : " + o), console.log("v1x != 0 ? " + (0 != o)))), null == a ? new Array(l, $) : (a[0] = l, a[1] = $, a)
+			}, S.prototype._$8P = function() {
+				return this.x + .5 * this.width
+			}, S.prototype._$6P = function() {
+				return this.y + .5 * this.height
+			}, S.prototype._$EL = function() {
+				return this.x + this.width
+			}, S.prototype._$5T = function() {
+				return this.y + this.height
+			}, S.prototype._$jL = function(t, i, e, r) {
+				this.x = t, this.y = i, this.width = e, this.height = r
+			}, S.prototype._$jL = function(t) {
+				this.x = t.x, this.y = t.y, this.width = t.width, this.height = t.height
+			}, S.prototype.contains = function(t, i) {
+				return this.x <= this.x && this.y <= this.y && this.x <= this.x + this.width && this.y <= this.y + this.height
+			}, S.prototype.expand = function(t, i) {
+				this.x -= t, this.y -= i, this.width += 2 * t, this.height += 2 * i
+			}, v._$Z2 = function(t, i, e, r) {
+				var o = i._$Q2(t, e),
+					n = t._$vs(),
+					s = t._$Tr();
+				if (i._$zr(n, s, o), o <= 0) return r[n[0]];
+				if (1 == o) {
+					var _ = r[n[0]],
+						a = r[n[1]],
+						h = s[0];
+					return _ + (a - _) * h | 0
+				}
+				if (2 == o) {
+					var _ = r[n[0]],
+						a = r[n[1]],
+						l = r[n[2]],
+						$ = r[n[3]],
+						h = s[0],
+						u = s[1],
+						p = _ + (a - _) * h | 0,
+						f = l + ($ - l) * h | 0;
+					return p + (f - p) * u | 0
+				}
+				if (3 == o) {
+					var c = r[n[0]],
+						d = r[n[1]],
+						g = r[n[2]],
+						y = r[n[3]],
+						m = r[n[4]],
+						T = r[n[5]],
+						P = r[n[6]],
+						S = r[n[7]],
+						h = s[0],
+						u = s[1],
+						v = s[2],
+						_ = c + (d - c) * h | 0,
+						a = g + (y - g) * h | 0,
+						l = m + (T - m) * h | 0,
+						$ = P + (S - P) * h | 0,
+						p = _ + (a - _) * u | 0,
+						f = l + ($ - l) * u | 0;
+					return p + (f - p) * v | 0
+				}
+				if (4 == o) {
+					var L = r[n[0]],
+						M = r[n[1]],
+						E = r[n[2]],
+						A = r[n[3]],
+						I = r[n[4]],
+						w = r[n[5]],
+						x = r[n[6]],
+						O = r[n[7]],
+						D = r[n[8]],
+						R = r[n[9]],
+						b = r[n[10]],
+						F = r[n[11]],
+						C = r[n[12]],
+						N = r[n[13]],
+						B = r[n[14]],
+						U = r[n[15]],
+						h = s[0],
+						u = s[1],
+						v = s[2],
+						G = s[3],
+						c = L + (M - L) * h | 0,
+						d = E + (A - E) * h | 0,
+						g = I + (w - I) * h | 0,
+						y = x + (O - x) * h | 0,
+						m = D + (R - D) * h | 0,
+						T = b + (F - b) * h | 0,
+						P = C + (N - C) * h | 0,
+						S = B + (U - B) * h | 0,
+						_ = c + (d - c) * u | 0,
+						a = g + (y - g) * u | 0,
+						l = m + (T - m) * u | 0,
+						$ = P + (S - P) * u | 0,
+						p = _ + (a - _) * v | 0,
+						f = l + ($ - l) * v | 0;
+					return p + (f - p) * G | 0
+				}
+				for (var Y = 1 << o, k = new Float32Array(Y), V = 0; V < Y; V++) {
+					for (var X = V, z = 1, H = 0; H < o; H++) z *= X % 2 == 0 ? 1 - s[H] : s[H], X /= 2;
+					k[V] = z
+				}
+				for (var W = new Float32Array(Y), j = 0; j < Y; j++) W[j] = r[n[j]];
+				for (var q = 0, j = 0; j < Y; j++) q += k[j] * W[j];
+				return q + .5 | 0
+			}, v._$br = function(t, i, e, r) {
+				var o = i._$Q2(t, e),
+					n = t._$vs(),
+					s = t._$Tr();
+				if (i._$zr(n, s, o), o <= 0) return r[n[0]];
+				if (1 == o) {
+					var _ = r[n[0]],
+						a = r[n[1]],
+						h = s[0];
+					return _ + (a - _) * h
+				}
+				if (2 == o) {
+					var _ = r[n[0]],
+						a = r[n[1]],
+						l = r[n[2]],
+						$ = r[n[3]],
+						h = s[0],
+						u = s[1];
+					return (1 - u) * (_ + (a - _) * h) + u * (l + ($ - l) * h)
+				}
+				if (3 == o) {
+					var p = r[n[0]],
+						f = r[n[1]],
+						c = r[n[2]],
+						d = r[n[3]],
+						g = r[n[4]],
+						y = r[n[5]],
+						m = r[n[6]],
+						T = r[n[7]],
+						h = s[0],
+						u = s[1],
+						P = s[2];
+					return (1 - P) * ((1 - u) * (p + (f - p) * h) + u * (c + (d - c) * h)) + P * ((1 - u) * (g + (y - g) * h) + u * (m + (T - m) * h))
+				}
+				if (4 == o) {
+					var S = r[n[0]],
+						v = r[n[1]],
+						L = r[n[2]],
+						M = r[n[3]],
+						E = r[n[4]],
+						A = r[n[5]],
+						I = r[n[6]],
+						w = r[n[7]],
+						x = r[n[8]],
+						O = r[n[9]],
+						D = r[n[10]],
+						R = r[n[11]],
+						b = r[n[12]],
+						F = r[n[13]],
+						C = r[n[14]],
+						N = r[n[15]],
+						h = s[0],
+						u = s[1],
+						P = s[2],
+						B = s[3];
+					return (1 - B) * ((1 - P) * ((1 - u) * (S + (v - S) * h) + u * (L + (M - L) * h)) + P * ((1 - u) * (E + (A - E) * h) + u * (I + (w - I) * h))) + B * ((1 - P) * ((1 - u) * (x + (O - x) * h) + u * (D + (R - D) * h)) + P * ((1 - u) * (b + (F - b) * h) + u * (C + (N - C) * h)))
+				}
+				for (var U = 1 << o, G = new Float32Array(U), Y = 0; Y < U; Y++) {
+					for (var k = Y, V = 1, X = 0; X < o; X++) V *= k % 2 == 0 ? 1 - s[X] : s[X], k /= 2;
+					G[Y] = V
+				}
+				for (var z = new Float32Array(U), H = 0; H < U; H++) z[H] = r[n[H]];
+				for (var W = 0, H = 0; H < U; H++) W += G[H] * z[H];
+				return W
+			}, v._$Vr = function(t, i, e, r, o, n, s, _) {
+				var a = i._$Q2(t, e),
+					h = t._$vs(),
+					l = t._$Tr();
+				i._$zr(h, l, a);
+				var $ = 2 * r,
+					u = s;
+				if (a <= 0) {
+					var p = h[0],
+						f = o[p];
+					if (2 == _ && 0 == s) w._$jT(f, 0, n, 0, $);
+					else for (var c = 0; c < $;) n[u] = f[c++], n[u + 1] = f[c++], u += _
+				} else if (1 == a) for (var f = o[h[0]], d = o[h[1]], g = l[0], y = 1 - g, c = 0; c < $;) n[u] = f[c] * y + d[c] * g, ++c, n[u + 1] = f[c] * y + d[c] * g, ++c, u += _;
+				else if (2 == a) for (var f = o[h[0]], d = o[h[1]], m = o[h[2]], T = o[h[3]], g = l[0], P = l[1], y = 1 - g, S = 1 - P, v = S * y, L = S * g, M = P * y, E = P * g, c = 0; c < $;) n[u] = v * f[c] + L * d[c] + M * m[c] + E * T[c], ++c, n[u + 1] = v * f[c] + L * d[c] + M * m[c] + E * T[c], ++c, u += _;
+				else if (3 == a) for (var A = o[h[0]], I = o[h[1]], x = o[h[2]], O = o[h[3]], D = o[h[4]], R = o[h[5]], b = o[h[6]], F = o[h[7]], g = l[0], P = l[1], C = l[2], y = 1 - g, S = 1 - P, N = 1 - C, B = N * S * y, U = N * S * g, G = N * P * y, Y = N * P * g, k = C * S * y, V = C * S * g, X = C * P * y, z = C * P * g, c = 0; c < $;) n[u] = B * A[c] + U * I[c] + G * x[c] + Y * O[c] + k * D[c] + V * R[c] + X * b[c] + z * F[c], ++c, n[u + 1] = B * A[c] + U * I[c] + G * x[c] + Y * O[c] + k * D[c] + V * R[c] + X * b[c] + z * F[c], ++c, u += _;
+				else if (4 == a) for (var H = o[h[0]], W = o[h[1]], j = o[h[2]], q = o[h[3]], J = o[h[4]], Q = o[h[5]], Z = o[h[6]], K = o[h[7]], tt = o[h[8]], it = o[h[9]], et = o[h[10]], rt = o[h[11]], ot = o[h[12]], nt = o[h[13]], st = o[h[14]], _t = o[h[15]], g = l[0], P = l[1], C = l[2], at = l[3], y = 1 - g, S = 1 - P, N = 1 - C, ht = 1 - at, lt = ht * N * S * y, $t = ht * N * S * g, ut = ht * N * P * y, pt = ht * N * P * g, ft = ht * C * S * y, ct = ht * C * S * g, dt = ht * C * P * y, gt = ht * C * P * g, yt = at * N * S * y, mt = at * N * S * g, Tt = at * N * P * y, Pt = at * N * P * g, St = at * C * S * y, vt = at * C * S * g, Lt = at * C * P * y, Mt = at * C * P * g, c = 0; c < $;) n[u] = lt * H[c] + $t * W[c] + ut * j[c] + pt * q[c] + ft * J[c] + ct * Q[c] + dt * Z[c] + gt * K[c] + yt * tt[c] + mt * it[c] + Tt * et[c] + Pt * rt[c] + St * ot[c] + vt * nt[c] + Lt * st[c] + Mt * _t[c], ++c, n[u + 1] = lt * H[c] + $t * W[c] + ut * j[c] + pt * q[c] + ft * J[c] + ct * Q[c] + dt * Z[c] + gt * K[c] + yt * tt[c] + mt * it[c] + Tt * et[c] + Pt * rt[c] + St * ot[c] + vt * nt[c] + Lt * st[c] + Mt * _t[c], ++c, u += _;
+				else {
+					for (var Et = 1 << a, At = new Float32Array(Et), It = 0; It < Et; It++) {
+						for (var wt = It, xt = 1, Ot = 0; Ot < a; Ot++) xt *= wt % 2 == 0 ? 1 - l[Ot] : l[Ot], wt /= 2;
+						At[It] = xt
+					}
+					for (var Dt = new Float32Array(Et), Rt = 0; Rt < Et; Rt++) Dt[Rt] = o[h[Rt]];
+					for (var c = 0; c < $;) {
+						for (var bt = 0, Ft = 0, Ct = c + 1, Rt = 0; Rt < Et; Rt++) bt += At[Rt] * Dt[Rt][c], Ft += At[Rt] * Dt[Rt][Ct];
+						c += 2, n[u] = bt, n[u + 1] = Ft, u += _
+					}
+				}
+			}, L.prototype._$HT = function(t, i) {
+				this.x = t, this.y = i
+			}, L.prototype._$HT = function(t) {
+				this.x = t.x, this.y = t.y
+			}, M._$ur = -2, M._$ES = 500, M._$wb = 2, M._$8S = 3, M._$52 = M._$ES, M._$R2 = M._$ES, M._$or = function() {
+				return M._$52
+			}, M._$Pr = function() {
+				return M._$R2
+			}, M.prototype.convertClipIDForV2_11 = function(t) {
+				var i = [];
+				return null == t ? null : 0 == t.length ? null : /,/.test(t) ? i = t.id.split(",") : (i.push(t.id), i)
+			}, M.prototype._$F0 = function(t) {
+				this._$gP = t._$nP(), this._$dr = t._$nP(), this._$GS = t._$nP(), this._$qb = t._$6L(), this._$Lb = t._$cS(), this._$mS = t._$Tb(), t.getFormatVersion() >= G._$T7 ? (this.clipID = t._$nP(), this.clipIDList = this.convertClipIDForV2_11(this.clipID)) : this.clipIDList = [], this._$MS(this._$Lb)
+			}, M.prototype.getClipIDList = function() {
+				return this.clipIDList
+			}, M.prototype.init = function(t) {}, M.prototype._$Nr = function(t, i) {
+				if (i._$IS[0] = !1, i._$Us = v._$Z2(t, this._$GS, i._$IS, this._$Lb), at._$Zs);
+				else if (i._$IS[0]) return;
+				i._$7s = v._$br(t, this._$GS, i._$IS, this._$mS)
+			}, M.prototype._$2b = function(t, i) {}, M.prototype.getDrawDataID = function() {
+				return this._$gP
+			}, M.prototype._$j2 = function(t) {
+				this._$gP = t
+			}, M.prototype.getOpacity = function(t, i) {
+				return i._$7s
+			}, M.prototype._$zS = function(t, i) {
+				return i._$Us
+			}, M.prototype._$MS = function(t) {
+				for (var i = t.length - 1; i >= 0; --i) {
+					var e = t[i];
+					e < M._$52 ? M._$52 = e : e > M._$R2 && (M._$R2 = e)
+				}
+			}, M.prototype.getTargetBaseDataID = function() {
+				return this._$dr
+			}, M.prototype._$gs = function(t) {
+				this._$dr = t
+			}, M.prototype._$32 = function() {
+				return null != this._$dr && this._$dr != yt._$2o()
+			}, M.prototype.preDraw = function(t, i, e) {}, M.prototype.draw = function(t, i, e) {}, M.prototype.getType = function() {}, M.prototype._$B2 = function(t, i, e) {}, E._$ps = 32, E.CLIPPING_PROCESS_NONE = 0, E.CLIPPING_PROCESS_OVERWRITE_ALPHA = 1, E.CLIPPING_PROCESS_MULTIPLY_ALPHA = 2, E.CLIPPING_PROCESS_DRAW = 3, E.CLIPPING_PROCESS_CLEAR_ALPHA = 4, E.prototype.setChannelFlagAsColor = function(t, i) {
+				this.CHANNEL_COLORS[t] = i
+			}, E.prototype.getChannelFlagAsColor = function(t) {
+				return this.CHANNEL_COLORS[t]
+			}, E.prototype._$ZT = function() {}, E.prototype._$Uo = function(t, i, e, r, o, n, s) {}, E.prototype._$Rs = function() {
+				return -1
+			}, E.prototype._$Ds = function(t) {}, E.prototype.setBaseColor = function(t, i, e, r) {
+				t < 0 ? t = 0 : t > 1 && (t = 1), i < 0 ? i = 0 : i > 1 && (i = 1), e < 0 ? e = 0 : e > 1 && (e = 1), r < 0 ? r = 0 : r > 1 && (r = 1), this._$lT = t, this._$C0 = i, this._$tT = e, this._$WL = r
+			}, E.prototype._$WP = function(t) {
+				this.culling = t
+			}, E.prototype.setMatrix = function(t) {
+				for (var i = 0; i < 16; i++) this.matrix4x4[i] = t[i]
+			}, E.prototype._$IT = function() {
+				return this.matrix4x4
+			}, E.prototype.setPremultipliedAlpha = function(t) {
+				this.premultipliedAlpha = t
+			}, E.prototype.isPremultipliedAlpha = function() {
+				return this.premultipliedAlpha
+			}, E.prototype.setAnisotropy = function(t) {
+				this.anisotropy = t
+			}, E.prototype.getAnisotropy = function() {
+				return this.anisotropy
+			}, E.prototype.getClippingProcess = function() {
+				return this.clippingProcess
+			}, E.prototype.setClippingProcess = function(t) {
+				this.clippingProcess = t
+			}, E.prototype.setClipBufPre_clipContextForMask = function(t) {
+				this.clipBufPre_clipContextMask = t
+			}, E.prototype.getClipBufPre_clipContextMask = function() {
+				return this.clipBufPre_clipContextMask
+			}, E.prototype.setClipBufPre_clipContextForDraw = function(t) {
+				this.clipBufPre_clipContextDraw = t
+			}, E.prototype.getClipBufPre_clipContextDraw = function() {
+				return this.clipBufPre_clipContextDraw
+			}, I._$ur = -2, I._$c2 = 1, I._$_b = 2, I.prototype._$F0 = function(t) {
+				this._$kP = t._$nP(), this._$dr = t._$nP()
+			}, I.prototype.readV2_opacity = function(t) {
+				t.getFormatVersion() >= G.LIVE2D_FORMAT_VERSION_V2_10_SDK2 && (this._$mS = t._$Tb())
+			}, I.prototype.init = function(t) {}, I.prototype._$Nr = function(t, i) {}, I.prototype.interpolateOpacity = function(t, i, e, r) {
+				null == this._$mS ? e.setInterpolatedOpacity(1) : e.setInterpolatedOpacity(v._$br(t, i, r, this._$mS))
+			}, I.prototype._$2b = function(t, i) {}, I.prototype._$nb = function(t, i, e, r, o, n, s) {}, I.prototype.getType = function() {}, I.prototype._$gs = function(t) {
+				this._$dr = t
+			}, I.prototype._$a2 = function(t) {
+				this._$kP = t
+			}, I.prototype.getTargetBaseDataID = function() {
+				return this._$dr
+			}, I.prototype.getBaseDataID = function() {
+				return this._$kP
+			}, I.prototype._$32 = function() {
+				return null != this._$dr && this._$dr != yt._$2o()
+			}, w._$W2 = 0, w._$CS = w._$W2, w._$Mo = function() {
+				return !0
+			}, w._$XP = function(t) {
+				try {
+					for (var i = getTimeMSec(); getTimeMSec() - i < t;);
+				} catch (t) {
+					t._$Rb()
+				}
+			}, w.getUserTimeMSec = function() {
+				return w._$CS == w._$W2 ? w.getSystemTimeMSec() : w._$CS
+			}, w.setUserTimeMSec = function(t) {
+				w._$CS = t
+			}, w.updateUserTimeMSec = function() {
+				return w._$CS = w.getSystemTimeMSec()
+			}, w.getTimeMSec = function() {
+				return (new Date).getTime()
+			}, w.getSystemTimeMSec = function() {
+				return (new Date).getTime()
+			}, w._$Q = function(t) {}, w._$jT = function(t, i, e, r, o) {
+				for (var n = 0; n < o; n++) e[r + n] = t[i + n]
+			}, x._$ds = -2, x.prototype._$F0 = function(t) {
+				this._$wL = t._$nP(), this._$VP = t._$6L(), this._$GP = t._$nP()
+			}, x.prototype.getParamIndex = function(t) {
+				return this._$2r != t && (this._$8o = x._$ds), this._$8o
+			}, x.prototype._$Pb = function(t, i) {
+				this._$8o = t, this._$2r = i
+			}, x.prototype.getParamID = function() {
+				return this._$wL
+			}, x.prototype._$yP = function(t) {
+				this._$wL = t
+			}, x.prototype._$N2 = function() {
+				return this._$VP
+			}, x.prototype._$d2 = function() {
+				return this._$GP
+			}, x.prototype._$t2 = function(t, i) {
+				this._$VP = t, this._$GP = i
+			}, x.prototype._$Lr = function() {
+				return this._$O2
+			}, x.prototype._$wr = function(t) {
+				this._$O2 = t
+			}, x.prototype._$SL = function() {
+				return this._$ri
+			}, x.prototype._$AL = function(t) {
+				this._$ri = t
+			}, O.startsWith = function(t, i, e) {
+				var r = i + e.length;
+				if (r >= t.length) return !1;
+				for (var o = i; o < r; o++) if (O.getChar(t, o) != e.charAt(o - i)) return !1;
+				return !0
+			}, O.getChar = function(t, i) {
+				return String.fromCharCode(t.getUint8(i))
+			}, O.createString = function(t, i, e) {
+				for (var r = new ArrayBuffer(2 * e), o = new Uint16Array(r), n = 0; n < e; n++) o[n] = t.getUint8(i + n);
+				return String.fromCharCode.apply(null, o)
+			}, O._$LS = function(t, i, e, r) {
+				t instanceof ArrayBuffer && (t = new DataView(t));
+				var o = e,
+					n = !1,
+					s = !1,
+					_ = 0,
+					a = O.getChar(t, o);
+				"-" == a && (n = !0, o++);
+				for (var h = !1; o < i; o++) {
+					switch (a = O.getChar(t, o)) {
+					case "0":
+						_ *= 10;
+						break;
+					case "1":
+						_ = 10 * _ + 1;
+						break;
+					case "2":
+						_ = 10 * _ + 2;
+						break;
+					case "3":
+						_ = 10 * _ + 3;
+						break;
+					case "4":
+						_ = 10 * _ + 4;
+						break;
+					case "5":
+						_ = 10 * _ + 5;
+						break;
+					case "6":
+						_ = 10 * _ + 6;
+						break;
+					case "7":
+						_ = 10 * _ + 7;
+						break;
+					case "8":
+						_ = 10 * _ + 8;
+						break;
+					case "9":
+						_ = 10 * _ + 9;
+						break;
+					case ".":
+						s = !0, o++, h = !0;
+						break;
+					default:
+						h = !0
+					}
+					if (h) break
+				}
+				if (s) for (var l = .1, $ = !1; o < i; o++) {
+					switch (a = O.getChar(t, o)) {
+					case "0":
+						break;
+					case "1":
+						_ += 1 * l;
+						break;
+					case "2":
+						_ += 2 * l;
+						break;
+					case "3":
+						_ += 3 * l;
+						break;
+					case "4":
+						_ += 4 * l;
+						break;
+					case "5":
+						_ += 5 * l;
+						break;
+					case "6":
+						_ += 6 * l;
+						break;
+					case "7":
+						_ += 7 * l;
+						break;
+					case "8":
+						_ += 8 * l;
+						break;
+					case "9":
+						_ += 9 * l;
+						break;
+					default:
+						$ = !0
+					}
+					if (l *= .1, $) break
+				}
+				return n && (_ = -_), r[0] = o, _
+			}, D.prototype._$zP = function() {
+				this._$Ob = new Array
+			}, D.prototype._$F0 = function(t) {
+				this._$Ob = t._$nP()
+			}, D.prototype._$Ur = function(t) {
+				if (t._$WS()) return !0;
+				for (var i = t._$v2(), e = this._$Ob.length - 1; e >= 0; --e) {
+					var r = this._$Ob[e].getParamIndex(i);
+					if (r == x._$ds && (r = t.getParamIndex(this._$Ob[e].getParamID())), t._$Xb(r)) return !0
+				}
+				return !1
+			}, D.prototype._$Q2 = function(t, i) {
+				for (var e, r, o = this._$Ob.length, n = t._$v2(), s = 0, _ = 0; _ < o; _++) {
+					var a = this._$Ob[_];
+					if (e = a.getParamIndex(n), e == x._$ds && (e = t.getParamIndex(a.getParamID()), a._$Pb(e, n)), e < 0) throw new Exception("err 23242 : " + a.getParamID());
+					var h = e < 0 ? 0 : t.getParamFloat(e);
+					r = a._$N2();
+					var l, $, u = a._$d2(),
+						p = -1,
+						f = 0;
+					if (r < 1);
+					else if (1 == r) l = u[0], l - U._$J < h && h < l + U._$J ? (p = 0, f = 0) : (p = 0, i[0] = !0);
+					else if (l = u[0], h < l - U._$J) p = 0, i[0] = !0;
+					else if (h < l + U._$J) p = 0;
+					else {
+						for (var c = !1, d = 1; d < r; ++d) {
+							if ($ = u[d], h < $ + U._$J) {
+								$ - U._$J < h ? p = d : (p = d - 1, f = (h - l) / ($ - l), s++), c = !0;
+								break
+							}
+							l = $
+						}
+						c || (p = r - 1, f = 0, i[0] = !0)
+					}
+					a._$wr(p), a._$AL(f)
+				}
+				return s
+			}, D.prototype._$zr = function(t, i, e) {
+				var r = 1 << e;
+				r + 1 > U._$Qb && console.log("err 23245\n");
+				for (var o = this._$Ob.length, n = 1, s = 1, _ = 0, a = 0; a < r; ++a) t[a] = 0;
+				for (var h = 0; h < o; ++h) {
+					var l = this._$Ob[h];
+					if (0 == l._$SL()) {
+						var $ = l._$Lr() * n;
+						if ($ < 0 && at._$3T) throw new Exception("err 23246");
+						for (var a = 0; a < r; ++a) t[a] += $
+					} else {
+						for (var $ = n * l._$Lr(), u = n * (l._$Lr() + 1), a = 0; a < r; ++a) t[a] += (a / s | 0) % 2 == 0 ? $ : u;
+						i[_++] = l._$SL(), s *= 2
+					}
+					n *= l._$N2()
+				}
+				t[r] = 65535, i[_] = -1
+			}, D.prototype._$h2 = function(t, i, e) {
+				for (var r = new Float32Array(i), o = 0; o < i; ++o) r[o] = e[o];
+				var n = new x;
+				n._$yP(t), n._$t2(i, r), this._$Ob.push(n)
+			}, D.prototype._$J2 = function(t) {
+				for (var i = t, e = this._$Ob.length, r = 0; r < e; ++r) {
+					var o = this._$Ob[r],
+						n = o._$N2(),
+						s = i % o._$N2(),
+						_ = o._$d2()[s];
+					console.log("%s[%d]=%7.2f / ", o.getParamID(), s, _), i /= n
+				}
+				console.log("\n")
+			}, D.prototype.getParamCount = function() {
+				return this._$Ob.length
+			}, D.prototype._$zs = function() {
+				return this._$Ob
+			}, R.prototype.identity = function() {
+				for (var t = 0; t < 16; t++) this.m[t] = t % 5 == 0 ? 1 : 0
+			}, R.prototype.getArray = function() {
+				return this.m
+			}, R.prototype.getCopyMatrix = function() {
+				return new Float32Array(this.m)
+			}, R.prototype.setMatrix = function(t) {
+				if (null != t && 16 == t.length) for (var i = 0; i < 16; i++) this.m[i] = t[i]
+			}, R.prototype.mult = function(t, i, e) {
+				return null == i ? null : (this == i ? this.mult_safe(this.m, t.m, i.m, e) : this.mult_fast(this.m, t.m, i.m, e), i)
+			}, R.prototype.mult_safe = function(t, i, e, r) {
+				if (t == e) {
+					var o = new Array(16);
+					this.mult_fast(t, i, o, r);
+					for (var n = 15; n >= 0; --n) e[n] = o[n]
+				} else this.mult_fast(t, i, e, r)
+			}, R.prototype.mult_fast = function(t, i, e, r) {
+				r ? (e[0] = t[0] * i[0] + t[4] * i[1] + t[8] * i[2], e[4] = t[0] * i[4] + t[4] * i[5] + t[8] * i[6], e[8] = t[0] * i[8] + t[4] * i[9] + t[8] * i[10], e[12] = t[0] * i[12] + t[4] * i[13] + t[8] * i[14] + t[12], e[1] = t[1] * i[0] + t[5] * i[1] + t[9] * i[2], e[5] = t[1] * i[4] + t[5] * i[5] + t[9] * i[6], e[9] = t[1] * i[8] + t[5] * i[9] + t[9] * i[10], e[13] = t[1] * i[12] + t[5] * i[13] + t[9] * i[14] + t[13], e[2] = t[2] * i[0] + t[6] * i[1] + t[10] * i[2], e[6] = t[2] * i[4] + t[6] * i[5] + t[10] * i[6], e[10] = t[2] * i[8] + t[6] * i[9] + t[10] * i[10], e[14] = t[2] * i[12] + t[6] * i[13] + t[10] * i[14] + t[14], e[3] = e[7] = e[11] = 0, e[15] = 1) : (e[0] = t[0] * i[0] + t[4] * i[1] + t[8] * i[2] + t[12] * i[3], e[4] = t[0] * i[4] + t[4] * i[5] + t[8] * i[6] + t[12] * i[7], e[8] = t[0] * i[8] + t[4] * i[9] + t[8] * i[10] + t[12] * i[11], e[12] = t[0] * i[12] + t[4] * i[13] + t[8] * i[14] + t[12] * i[15], e[1] = t[1] * i[0] + t[5] * i[1] + t[9] * i[2] + t[13] * i[3], e[5] = t[1] * i[4] + t[5] * i[5] + t[9] * i[6] + t[13] * i[7], e[9] = t[1] * i[8] + t[5] * i[9] + t[9] * i[10] + t[13] * i[11], e[13] = t[1] * i[12] + t[5] * i[13] + t[9] * i[14] + t[13] * i[15], e[2] = t[2] * i[0] + t[6] * i[1] + t[10] * i[2] + t[14] * i[3], e[6] = t[2] * i[4] + t[6] * i[5] + t[10] * i[6] + t[14] * i[7], e[10] = t[2] * i[8] + t[6] * i[9] + t[10] * i[10] + t[14] * i[11], e[14] = t[2] * i[12] + t[6] * i[13] + t[10] * i[14] + t[14] * i[15], e[3] = t[3] * i[0] + t[7] * i[1] + t[11] * i[2] + t[15] * i[3], e[7] = t[3] * i[4] + t[7] * i[5] + t[11] * i[6] + t[15] * i[7], e[11] = t[3] * i[8] + t[7] * i[9] + t[11] * i[10] + t[15] * i[11], e[15] = t[3] * i[12] + t[7] * i[13] + t[11] * i[14] + t[15] * i[15])
+			}, R.prototype.translate = function(t, i, e) {
+				this.m[12] = this.m[0] * t + this.m[4] * i + this.m[8] * e + this.m[12], this.m[13] = this.m[1] * t + this.m[5] * i + this.m[9] * e + this.m[13], this.m[14] = this.m[2] * t + this.m[6] * i + this.m[10] * e + this.m[14], this.m[15] = this.m[3] * t + this.m[7] * i + this.m[11] * e + this.m[15]
+			}, R.prototype.scale = function(t, i, e) {
+				this.m[0] *= t, this.m[4] *= i, this.m[8] *= e, this.m[1] *= t, this.m[5] *= i, this.m[9] *= e, this.m[2] *= t, this.m[6] *= i, this.m[10] *= e, this.m[3] *= t, this.m[7] *= i, this.m[11] *= e
+			}, R.prototype.rotateX = function(t) {
+				var i = Lt.fcos(t),
+					e = Lt._$9(t),
+					r = this.m[4];
+				this.m[4] = r * i + this.m[8] * e, this.m[8] = r * -e + this.m[8] * i, r = this.m[5], this.m[5] = r * i + this.m[9] * e, this.m[9] = r * -e + this.m[9] * i, r = this.m[6], this.m[6] = r * i + this.m[10] * e, this.m[10] = r * -e + this.m[10] * i, r = this.m[7], this.m[7] = r * i + this.m[11] * e, this.m[11] = r * -e + this.m[11] * i
+			}, R.prototype.rotateY = function(t) {
+				var i = Lt.fcos(t),
+					e = Lt._$9(t),
+					r = this.m[0];
+				this.m[0] = r * i + this.m[8] * -e, this.m[8] = r * e + this.m[8] * i, r = this.m[1], this.m[1] = r * i + this.m[9] * -e, this.m[9] = r * e + this.m[9] * i, r = m[2], this.m[2] = r * i + this.m[10] * -e, this.m[10] = r * e + this.m[10] * i, r = m[3], this.m[3] = r * i + this.m[11] * -e, this.m[11] = r * e + this.m[11] * i
+			}, R.prototype.rotateZ = function(t) {
+				var i = Lt.fcos(t),
+					e = Lt._$9(t),
+					r = this.m[0];
+				this.m[0] = r * i + this.m[4] * e, this.m[4] = r * -e + this.m[4] * i, r = this.m[1], this.m[1] = r * i + this.m[5] * e, this.m[5] = r * -e + this.m[5] * i, r = this.m[2], this.m[2] = r * i + this.m[6] * e, this.m[6] = r * -e + this.m[6] * i, r = this.m[3], this.m[3] = r * i + this.m[7] * e, this.m[7] = r * -e + this.m[7] * i
+			}, b.prototype = new et, b._$tP = new Object, b._$27 = function() {
+				b._$tP.clear()
+			}, b.getID = function(t) {
+				var i = b._$tP[t];
+				return null == i && (i = new b(t), b._$tP[t] = i), i
+			}, b.prototype._$3s = function() {
+				return new b
+			}, F._$kS = -1, F._$pS = 0, F._$hb = 1, F.STATE_IDENTITY = 0, F._$gb = 1, F._$fo = 2, F._$go = 4, F.prototype.transform = function(t, i, e) {
+				var r, o, n, s, _, a, h = 0,
+					l = 0;
+				switch (this._$hi) {
+				default:
+					return;
+				case F._$go | F._$fo | F._$gb:
+					for (r = this._$7, o = this._$H, n = this._$k, s = this._$f, _ = this._$g, a = this._$w; --e >= 0;) {
+						var $ = t[h++],
+							u = t[h++];
+						i[l++] = r * $ + o * u + n, i[l++] = s * $ + _ * u + a
+					}
+					return;
+				case F._$go | F._$fo:
+					for (r = this._$7, o = this._$H, s = this._$f, _ = this._$g; --e >= 0;) {
+						var $ = t[h++],
+							u = t[h++];
+						i[l++] = r * $ + o * u, i[l++] = s * $ + _ * u
+					}
+					return;
+				case F._$go | F._$gb:
+					for (o = this._$H, n = this._$k, s = this._$f, a = this._$w; --e >= 0;) {
+						var $ = t[h++];
+						i[l++] = o * t[h++] + n, i[l++] = s * $ + a
+					}
+					return;
+				case F._$go:
+					for (o = this._$H, s = this._$f; --e >= 0;) {
+						var $ = t[h++];
+						i[l++] = o * t[h++], i[l++] = s * $
+					}
+					return;
+				case F._$fo | F._$gb:
+					for (r = this._$7, n = this._$k, _ = this._$g, a = this._$w; --e >= 0;) i[l++] = r * t[h++] + n, i[l++] = _ * t[h++] + a;
+					return;
+				case F._$fo:
+					for (r = this._$7, _ = this._$g; --e >= 0;) i[l++] = r * t[h++], i[l++] = _ * t[h++];
+					return;
+				case F._$gb:
+					for (n = this._$k, a = this._$w; --e >= 0;) i[l++] = t[h++] + n, i[l++] = t[h++] + a;
+					return;
+				case F.STATE_IDENTITY:
+					return void(t == i && h == l || w._$jT(t, h, i, l, 2 * e))
+				}
+			}, F.prototype.update = function() {
+				0 == this._$H && 0 == this._$f ? 1 == this._$7 && 1 == this._$g ? 0 == this._$k && 0 == this._$w ? (this._$hi = F.STATE_IDENTITY, this._$Z = F._$pS) : (this._$hi = F._$gb, this._$Z = F._$hb) : 0 == this._$k && 0 == this._$w ? (this._$hi = F._$fo, this._$Z = F._$kS) : (this._$hi = F._$fo | F._$gb, this._$Z = F._$kS) : 0 == this._$7 && 0 == this._$g ? 0 == this._$k && 0 == this._$w ? (this._$hi = F._$go, this._$Z = F._$kS) : (this._$hi = F._$go | F._$gb, this._$Z = F._$kS) : 0 == this._$k && 0 == this._$w ? (this._$hi = F._$go | F._$fo, this._$Z = F._$kS) : (this._$hi = F._$go | F._$fo | F._$gb, this._$Z = F._$kS)
+			}, F.prototype._$RT = function(t) {
+				this._$IT(t);
+				var i = t[0],
+					e = t[2],
+					r = t[1],
+					o = t[3],
+					n = Math.sqrt(i * i + r * r),
+					s = i * o - e * r;
+				0 == n ? at._$so && console.log("affine._$RT() / rt==0") : (t[0] = n, t[1] = s / n, t[2] = (r * o + i * e) / s, t[3] = Math.atan2(r, i))
+			}, F.prototype._$ho = function(t, i, e, r) {
+				var o = new Float32Array(6),
+					n = new Float32Array(6);
+				t._$RT(o), i._$RT(n);
+				var s = new Float32Array(6);
+				s[0] = o[0] + (n[0] - o[0]) * e, s[1] = o[1] + (n[1] - o[1]) * e, s[2] = o[2] + (n[2] - o[2]) * e, s[3] = o[3] + (n[3] - o[3]) * e, s[4] = o[4] + (n[4] - o[4]) * e, s[5] = o[5] + (n[5] - o[5]) * e, r._$CT(s)
+			}, F.prototype._$CT = function(t) {
+				var i = Math.cos(t[3]),
+					e = Math.sin(t[3]);
+				this._$7 = t[0] * i, this._$f = t[0] * e, this._$H = t[1] * (t[2] * i - e), this._$g = t[1] * (t[2] * e + i), this._$k = t[4], this._$w = t[5], this.update()
+			}, F.prototype._$IT = function(t) {
+				t[0] = this._$7, t[1] = this._$f, t[2] = this._$H, t[3] = this._$g, t[4] = this._$k, t[5] = this._$w
+			}, C.prototype = new s, C._$cs = "VISIBLE:", C._$ar = "LAYOUT:", C._$Co = 0, C._$D2 = [], C._$1T = 1, C.loadMotion = function(t) {
+				var i = new C,
+					e = [0],
+					r = t.length;
+				i._$yT = 0;
+				for (var o = 0; o < r; ++o) {
+					var n = 255 & t[o];
+					if ("\n" != n && "\r" != n) if ("#" != n) if ("$" != n) {
+						if ("a" <= n && n <= "z" || "A" <= n && n <= "Z" || "_" == n) {
+							for (var s = o, _ = -1; o < r && ("\r" != (n = 255 & t[o]) && "\n" != n); ++o) if ("=" == n) {
+								_ = o;
+								break
+							}
+							if (_ >= 0) {
+								var a = new B;
+								O.startsWith(t, s, C._$cs) ? (a._$RP = B._$hs, a._$4P = new String(t, s, _ - s)) : O.startsWith(t, s, C._$ar) ? (a._$4P = new String(t, s + 7, _ - s - 7), O.startsWith(t, s + 7, "ANCHOR_X") ? a._$RP = B._$xs : O.startsWith(t, s + 7, "ANCHOR_Y") ? a._$RP = B._$us : O.startsWith(t, s + 7, "SCALE_X") ? a._$RP = B._$qs : O.startsWith(t, s + 7, "SCALE_Y") ? a._$RP = B._$Ys : O.startsWith(t, s + 7, "X") ? a._$RP = B._$ws : O.startsWith(t, s + 7, "Y") && (a._$RP = B._$Ns)) : (a._$RP = B._$Fr, a._$4P = new String(t, s, _ - s)), i.motions.push(a);
+								var h = 0;
+								for (C._$D2.clear(), o = _ + 1; o < r && ("\r" != (n = 255 & t[o]) && "\n" != n); ++o) if ("," != n && " " != n && "\t" != n) {
+									var l = O._$LS(t, r, o, e);
+									if (e[0] > 0) {
+										C._$D2.push(l), h++;
+										var $ = e[0];
+										if ($ < o) {
+											console.log("_$n0 _$hi . @Live2DMotion loadMotion()\n");
+											break
+										}
+										o = $
+									}
+								}
+								a._$I0 = C._$D2._$BL(), h > i._$yT && (i._$yT = h)
+							}
+						}
+					} else {
+						for (var s = o, _ = -1; o < r && ("\r" != (n = 255 & t[o]) && "\n" != n); ++o) if ("=" == n) {
+							_ = o;
+							break
+						}
+						var u = !1;
+						if (_ >= 0) for (_ == s + 4 && "f" == t[s + 1] && "p" == t[s + 2] && "s" == t[s + 3] && (u = !0), o = _ + 1; o < r && ("\r" != (n = 255 & t[o]) && "\n" != n); ++o) if ("," != n && " " != n && "\t" != n) {
+							var l = O._$LS(t, r, o, e);
+							e[0] > 0 && u && 5 < l && l < 121 && (i._$D0 = l), o = e[0]
+						}
+						for (; o < r && ("\n" != t[o] && "\r" != t[o]); ++o);
+					} else for (; o < r && ("\n" != t[o] && "\r" != t[o]); ++o);
+				}
+				return i._$AS = 1e3 * i._$yT / i._$D0 | 0, i
+			}, C.prototype.getDurationMSec = function() {
+				return this._$AS
+			}, C.prototype.dump = function() {
+				for (var t = 0; t < this.motions.length; t++) {
+					var i = this.motions[t];
+					console.log("_$wL[%s] [%d]. ", i._$4P, i._$I0.length);
+					for (var e = 0; e < i._$I0.length && e < 10; e++) console.log("%5.2f ,", i._$I0[e]);
+					console.log("\n")
+				}
+			}, C.prototype.updateParamExe = function(t, i, e, r) {
+				for (var o = i - r._$z2, n = o * this._$D0 / 1e3, s = 0 | n, _ = n - s, a = 0; a < this.motions.length; a++) {
+					var h = this.motions[a],
+						l = h._$I0.length,
+						$ = h._$4P;
+					if (h._$RP == B._$hs) {
+						var u = h._$I0[s >= l ? l - 1 : s];
+						t.setParamFloat($, u)
+					} else if (B._$ws <= h._$RP && h._$RP <= B._$Ys);
+					else {
+						var p = t.getParamFloat($),
+							f = h._$I0[s >= l ? l - 1 : s],
+							c = h._$I0[s + 1 >= l ? l - 1 : s + 1],
+							d = f + (c - f) * _,
+							g = p + (d - p) * e;
+						t.setParamFloat($, g)
+					}
+				}
+				s >= this._$yT && (this._$E ? (r._$z2 = i, this.loopFadeIn && (r._$bs = i)) : r._$9L = !0)
+			}, C.prototype._$r0 = function() {
+				return this._$E
+			}, C.prototype._$aL = function(t) {
+				this._$E = t
+			}, C.prototype.isLoopFadeIn = function() {
+				return this.loopFadeIn
+			}, C.prototype.setLoopFadeIn = function(t) {
+				this.loopFadeIn = t
+			}, N.prototype.clear = function() {
+				this.size = 0
+			}, N.prototype.add = function(t) {
+				if (this._$P.length <= this.size) {
+					var i = new Float32Array(2 * this.size);
+					w._$jT(this._$P, 0, i, 0, this.size), this._$P = i
+				}
+				this._$P[this.size++] = t
+			}, N.prototype._$BL = function() {
+				var t = new Float32Array(this.size);
+				return w._$jT(this._$P, 0, t, 0, this.size), t
+			}, B._$Fr = 0, B._$hs = 1, B._$ws = 100, B._$Ns = 101, B._$xs = 102, B._$us = 103, B._$qs = 104, B._$Ys = 105, U._$Ms = 1, U._$Qs = 2, U._$i2 = 0, U._$No = 2, U._$do = U._$Ms, U._$Ls = !0, U._$1r = 5, U._$Qb = 65, U._$J = 1e-4, U._$FT = .001, U._$Ss = 3, G._$o7 = 6, G._$S7 = 7, G._$s7 = 8, G._$77 = 9, G.LIVE2D_FORMAT_VERSION_V2_10_SDK2 = 10, G.LIVE2D_FORMAT_VERSION_V2_11_SDK2_1 = 11, G._$T7 = G.LIVE2D_FORMAT_VERSION_V2_11_SDK2_1, G._$Is = -2004318072, G._$h0 = 0, G._$4L = 23, G._$7P = 33, G._$uT = function(t) {
+				console.log("_$bo :: _$6 _$mo _$E0 : %d\n", t)
+			}, G._$9o = function(t) {
+				if (t < 40) return G._$uT(t), null;
+				if (t < 50) return G._$uT(t), null;
+				if (t < 60) return G._$uT(t), null;
+				if (t < 100) switch (t) {
+				case 65:
+					return new Z;
+				case 66:
+					return new D;
+				case 67:
+					return new x;
+				case 68:
+					return new z;
+				case 69:
+					return new P;
+				case 70:
+					return new $t;
+				default:
+					return G._$uT(t), null
+				} else if (t < 150) switch (t) {
+				case 131:
+					return new st;
+				case 133:
+					return new tt;
+				case 136:
+					return new p;
+				case 137:
+					return new ot;
+				case 142:
+					return new j
+				}
+				return G._$uT(t), null
+			}, Y._$HP = 0, Y._$_0 = !0;
+			Y._$V2 = -1, Y._$W0 = -1, Y._$jr = !1, Y._$ZS = !0, Y._$tr = -1e6, Y._$lr = 1e6, Y._$is = 32, Y._$e = !1, Y.prototype.getDrawDataIndex = function(t) {
+				for (var i = this._$aS.length - 1; i >= 0; --i) if (null != this._$aS[i] && this._$aS[i].getDrawDataID() == t) return i;
+				return -1
+			}, Y.prototype.getDrawData = function(t) {
+				if (t instanceof b) {
+					if (null == this._$Bo) {
+						this._$Bo = new Object;
+						for (var i = this._$aS.length, e = 0; e < i; e++) {
+							var r = this._$aS[e],
+								o = r.getDrawDataID();
+							null != o && (this._$Bo[o] = r)
+						}
+					}
+					return this._$Bo[id]
+				}
+				return t < this._$aS.length ? this._$aS[t] : null
+			}, Y.prototype.release = function() {
+				this._$3S.clear(), this._$aS.clear(), this._$F2.clear(), null != this._$Bo && this._$Bo.clear(), this._$db.clear(), this._$8b.clear(), this._$Hr.clear()
+			}, Y.prototype.init = function() {
+				this._$co++, this._$F2.length > 0 && this.release();
+				for (var t = this._$Ri.getModelImpl(), i = t._$Xr(), r = i.length, o = new Array, n = new Array, s = 0; s < r; ++s) {
+					var _ = i[s];
+					this._$F2.push(_), this._$Hr.push(_.init(this));
+					for (var a = _.getBaseData(), h = a.length, l = 0; l < h; ++l) o.push(a[l]);
+					for (var l = 0; l < h; ++l) {
+						var $ = a[l].init(this);
+						$._$l2(s), n.push($)
+					}
+					for (var u = _.getDrawData(), p = u.length, l = 0; l < p; ++l) {
+						var f = u[l],
+							c = f.init(this);
+						c._$IP = s, this._$aS.push(f), this._$8b.push(c)
+					}
+				}
+				for (var d = o.length, g = yt._$2o();;) {
+					for (var y = !1, s = 0; s < d; ++s) {
+						var m = o[s];
+						if (null != m) {
+							var T = m.getTargetBaseDataID();
+							(null == T || T == g || this.getBaseDataIndex(T) >= 0) && (this._$3S.push(m), this._$db.push(n[s]), o[s] = null, y = !0)
+						}
+					}
+					if (!y) break
+				}
+				var P = t._$E2();
+				if (null != P) {
+					var S = P._$1s();
+					if (null != S) for (var v = S.length, s = 0; s < v; ++s) {
+						var L = S[s];
+						null != L && this._$02(L.getParamID(), L.getDefaultValue(), L.getMinValue(), L.getMaxValue())
+					}
+				}
+				this.clipManager = new e(this.dp_webgl), this.clipManager.init(this, this._$aS, this._$8b), this._$QT = !0
+			}, Y.prototype.update = function() {
+				Y._$e && _.start("_$zL");
+				for (var t = this._$_2.length, i = 0; i < t; i++) this._$_2[i] != this._$vr[i] && (this._$Js[i] = Y._$ZS, this._$vr[i] = this._$_2[i]);
+				var e = this._$3S.length,
+					r = this._$aS.length,
+					o = W._$or(),
+					n = W._$Pr(),
+					s = n - o + 1;
+				(null == this._$Ws || this._$Ws.length < s) && (this._$Ws = new Int16Array(s), this._$Vs = new Int16Array(s));
+				for (var i = 0; i < s; i++) this._$Ws[i] = Y._$V2, this._$Vs[i] = Y._$V2;
+				(null == this._$Er || this._$Er.length < r) && (this._$Er = new Int16Array(r));
+				for (var i = 0; i < r; i++) this._$Er[i] = Y._$W0;
+				Y._$e && _.dump("_$zL"), Y._$e && _.start("_$UL");
+				for (var a = null, h = 0; h < e; ++h) {
+					var l = this._$3S[h],
+						$ = this._$db[h];
+					try {
+						l._$Nr(this, $), l._$2b(this, $)
+					} catch (t) {
+						null == a && (a = t)
+					}
+				}
+				null != a && Y._$_0 && _._$Rb(a), Y._$e && _.dump("_$UL"), Y._$e && _.start("_$DL");
+				for (var u = null, p = 0; p < r; ++p) {
+					var f = this._$aS[p],
+						c = this._$8b[p];
+					try {
+						if (f._$Nr(this, c), c._$u2()) continue;
+						f._$2b(this, c);
+						var d, g = Math.floor(f._$zS(this, c) - o);
+						try {
+							d = this._$Vs[g]
+						} catch (t) {
+							console.log("_$li :: %s / %s \t\t\t\t@@_$fS\n", t.toString(), f.getDrawDataID().toString()), g = Math.floor(f._$zS(this, c) - o);
+							continue
+						}
+						d == Y._$V2 ? this._$Ws[g] = p : this._$Er[d] = p, this._$Vs[g] = p
+					} catch (t) {
+						null == u && (u = t, at._$sT(at._$H7))
+					}
+				}
+				null != u && Y._$_0 && _._$Rb(u), Y._$e && _.dump("_$DL"), Y._$e && _.start("_$eL");
+				for (var i = this._$Js.length - 1; i >= 0; i--) this._$Js[i] = Y._$jr;
+				return this._$QT = !1, Y._$e && _.dump("_$eL"), !1
+			}, Y.prototype.preDraw = function(t) {
+				null != this.clipManager && (t._$ZT(), this.clipManager.setupClip(this, t))
+			}, Y.prototype.draw = function(t) {
+				if (null == this._$Ws) return void _._$li("call _$Ri.update() before _$Ri.draw() ");
+				var i = this._$Ws.length;
+				t._$ZT();
+				for (var e = 0; e < i; ++e) {
+					var r = this._$Ws[e];
+					if (r != Y._$V2) for (;;) {
+						var o = this._$aS[r],
+							n = this._$8b[r];
+						if (n._$yo()) {
+							var s = n._$IP,
+								a = this._$Hr[s];
+							n._$VS = a.getPartsOpacity(), o.draw(t, this, n)
+						}
+						var h = this._$Er[r];
+						if (h <= r || h == Y._$W0) break;
+						r = h
+					}
+				}
+			}, Y.prototype.getParamIndex = function(t) {
+				for (var i = this._$pb.length - 1; i >= 0; --i) if (this._$pb[i] == t) return i;
+				return this._$02(t, 0, Y._$tr, Y._$lr)
+			}, Y.prototype._$BS = function(t) {
+				return this.getBaseDataIndex(t)
+			}, Y.prototype.getBaseDataIndex = function(t) {
+				for (var i = this._$3S.length - 1; i >= 0; --i) if (null != this._$3S[i] && this._$3S[i].getBaseDataID() == t) return i;
+				return -1
+			}, Y.prototype._$UT = function(t, i) {
+				var e = new Float32Array(i);
+				return w._$jT(t, 0, e, 0, t.length), e
+			}, Y.prototype._$02 = function(t, i, e, r) {
+				if (this._$qo >= this._$pb.length) {
+					var o = this._$pb.length,
+						n = new Array(2 * o);
+					w._$jT(this._$pb, 0, n, 0, o), this._$pb = n, this._$_2 = this._$UT(this._$_2, 2 * o), this._$vr = this._$UT(this._$vr, 2 * o), this._$Rr = this._$UT(this._$Rr, 2 * o), this._$Or = this._$UT(this._$Or, 2 * o);
+					var s = new Array;
+					w._$jT(this._$Js, 0, s, 0, o), this._$Js = s
+				}
+				return this._$pb[this._$qo] = t, this._$_2[this._$qo] = i, this._$vr[this._$qo] = i, this._$Rr[this._$qo] = e, this._$Or[this._$qo] = r, this._$Js[this._$qo] = Y._$ZS, this._$qo++
+			}, Y.prototype._$Zo = function(t, i) {
+				this._$3S[t] = i
+			}, Y.prototype.setParamFloat = function(t, i) {
+				i < this._$Rr[t] && (i = this._$Rr[t]), i > this._$Or[t] && (i = this._$Or[t]), this._$_2[t] = i
+			}, Y.prototype.loadParam = function() {
+				var t = this._$_2.length;
+				t > this._$fs.length && (t = this._$fs.length), w._$jT(this._$fs, 0, this._$_2, 0, t)
+			}, Y.prototype.saveParam = function() {
+				var t = this._$_2.length;
+				t > this._$fs.length && (this._$fs = new Float32Array(t)), w._$jT(this._$_2, 0, this._$fs, 0, t)
+			}, Y.prototype._$v2 = function() {
+				return this._$co
+			}, Y.prototype._$WS = function() {
+				return this._$QT
+			}, Y.prototype._$Xb = function(t) {
+				return this._$Js[t] == Y._$ZS
+			}, Y.prototype._$vs = function() {
+				return this._$Es
+			}, Y.prototype._$Tr = function() {
+				return this._$ZP
+			}, Y.prototype.getBaseData = function(t) {
+				return this._$3S[t]
+			}, Y.prototype.getParamFloat = function(t) {
+				return this._$_2[t]
+			}, Y.prototype.getParamMax = function(t) {
+				return this._$Or[t]
+			}, Y.prototype.getParamMin = function(t) {
+				return this._$Rr[t]
+			}, Y.prototype.setPartsOpacity = function(t, i) {
+				this._$Hr[t].setPartsOpacity(i)
+			}, Y.prototype.getPartsOpacity = function(t) {
+				return this._$Hr[t].getPartsOpacity()
+			}, Y.prototype.getPartsDataIndex = function(t) {
+				for (var i = this._$F2.length - 1; i >= 0; --i) if (null != this._$F2[i] && this._$F2[i]._$p2() == t) return i;
+				return -1
+			}, Y.prototype._$q2 = function(t) {
+				return this._$db[t]
+			}, Y.prototype._$C2 = function(t) {
+				return this._$8b[t]
+			}, Y.prototype._$Bb = function(t) {
+				return this._$Hr[t]
+			}, Y.prototype._$5s = function(t, i) {
+				for (var e = this._$Ws.length, r = t, o = 0; o < e; ++o) {
+					var n = this._$Ws[o];
+					if (n != Y._$V2) for (;;) {
+						var s = this._$8b[n];
+						s._$yo() && (s._$GT()._$B2(this, s, r), r += i);
+						var _ = this._$Er[n];
+						if (_ <= n || _ == Y._$W0) break;
+						n = _
+					}
+				}
+			}, Y.prototype.setDrawParam = function(t) {
+				this.dp_webgl = t
+			}, Y.prototype.getDrawParam = function() {
+				return this.dp_webgl
+			}, k._$0T = function(t) {
+				return k._$0T(new _$5(t))
+			}, k._$0T = function(t) {
+				if (!t.exists()) throw new _$ls(t._$3b());
+				for (var i, e = t.length(), r = new Int8Array(e), o = new _$Xs(new _$kb(t), 8192), n = 0;
+				(i = o.read(r, n, e - n)) > 0;) n += i;
+				return r
+			}, k._$C = function(t) {
+				var i = null,
+					e = null;
+				try {
+					i = t instanceof Array ? t : new _$Xs(t, 8192), e = new _$js;
+					for (var r, o = new Int8Array(1e3);
+					(r = i.read(o)) > 0;) e.write(o, 0, r);
+					return e._$TS()
+				} finally {
+					null != t && t.close(), null != e && (e.flush(), e.close())
+				}
+			}, V.prototype._$T2 = function() {
+				return w.getUserTimeMSec() + Math._$10() * (2 * this._$Br - 1)
+			}, V.prototype._$uo = function(t) {
+				this._$Br = t
+			}, V.prototype._$QS = function(t, i, e) {
+				this._$Dr = t, this._$Cb = i, this._$mr = e
+			}, V.prototype._$7T = function(t) {
+				var i, e = w.getUserTimeMSec(),
+					r = 0;
+				switch (this._$_L) {
+				case STATE_CLOSING:
+					r = (e - this._$bb) / this._$Dr, r >= 1 && (r = 1, this._$_L = wt.STATE_CLOSED, this._$bb = e), i = 1 - r;
+					break;
+				case STATE_CLOSED:
+					r = (e - this._$bb) / this._$Cb, r >= 1 && (this._$_L = wt.STATE_OPENING, this._$bb = e), i = 0;
+					break;
+				case STATE_OPENING:
+					r = (e - this._$bb) / this._$mr, r >= 1 && (r = 1, this._$_L = wt.STATE_INTERVAL, this._$12 = this._$T2()), i = r;
+					break;
+				case STATE_INTERVAL:
+					this._$12 < e && (this._$_L = wt.STATE_CLOSING, this._$bb = e), i = 1;
+					break;
+				case STATE_FIRST:
+				default:
+					this._$_L = wt.STATE_INTERVAL, this._$12 = this._$T2(), i = 1
+				}
+				this._$jo || (i = -i), t.setParamFloat(this._$iL, i), t.setParamFloat(this._$0L, i)
+			};
+			var wt = function() {};
+			wt.STATE_FIRST = "STATE_FIRST", wt.STATE_INTERVAL = "STATE_INTERVAL", wt.STATE_CLOSING = "STATE_CLOSING", wt.STATE_CLOSED = "STATE_CLOSED", wt.STATE_OPENING = "STATE_OPENING", X.prototype = new E, X._$As = 32, X._$Gr = !1, X._$NT = null, X._$vS = null, X._$no = null, X._$9r = function(t) {
+				return new Float32Array(t)
+			}, X._$vb = function(t) {
+				return new Int16Array(t)
+			}, X._$cr = function(t, i) {
+				return null == t || t._$yL() < i.length ? (t = X._$9r(2 * i.length), t.put(i), t._$oT(0)) : (t.clear(), t.put(i), t._$oT(0)), t
+			}, X._$mb = function(t, i) {
+				return null == t || t._$yL() < i.length ? (t = X._$vb(2 * i.length), t.put(i), t._$oT(0)) : (t.clear(), t.put(i), t._$oT(0)), t
+			}, X._$Hs = function() {
+				return X._$Gr
+			}, X._$as = function(t) {
+				X._$Gr = t
+			}, X.prototype.setGL = function(t) {
+				this.gl = t
+			}, X.prototype.setTransform = function(t) {
+				this.transform = t
+			}, X.prototype._$ZT = function() {}, X.prototype._$Uo = function(t, i, e, r, o, n, s, _) {
+				if (!(n < .01)) {
+					var a = this._$U2[t],
+						h = n > .9 ? at.EXPAND_W : 0;
+					this.gl.drawElements(a, e, r, o, n, h, this.transform, _)
+				}
+			}, X.prototype._$Rs = function() {
+				throw new Error("_$Rs")
+			}, X.prototype._$Ds = function(t) {
+				throw new Error("_$Ds")
+			}, X.prototype._$K2 = function() {
+				for (var t = 0; t < this._$sb.length; t++) {
+					0 != this._$sb[t] && (this.gl._$Sr(1, this._$sb, t), this._$sb[t] = 0)
+				}
+			}, X.prototype.setTexture = function(t, i) {
+				this._$sb.length < t + 1 && this._$nS(t), this._$sb[t] = i
+			}, X.prototype.setTexture = function(t, i) {
+				this._$sb.length < t + 1 && this._$nS(t), this._$U2[t] = i
+			}, X.prototype._$nS = function(t) {
+				var i = Math.max(2 * this._$sb.length, t + 1 + 10),
+					e = new Int32Array(i);
+				w._$jT(this._$sb, 0, e, 0, this._$sb.length), this._$sb = e;
+				var r = new Array;
+				w._$jT(this._$U2, 0, r, 0, this._$U2.length), this._$U2 = r
+			}, z.prototype = new I, z._$Xo = new Float32Array(2), z._$io = new Float32Array(2), z._$0o = new Float32Array(2), z._$Lo = new Float32Array(2), z._$To = new Float32Array(2), z._$Po = new Float32Array(2), z._$gT = new Array, z.prototype._$zP = function() {
+				this._$GS = new D, this._$GS._$zP(), this._$Y0 = new Array
+			}, z.prototype.getType = function() {
+				return I._$c2
+			}, z.prototype._$F0 = function(t) {
+				I.prototype._$F0.call(this, t), this._$GS = t._$nP(), this._$Y0 = t._$nP(), I.prototype.readV2_opacity.call(this, t)
+			}, z.prototype.init = function(t) {
+				var i = new H(this);
+				return i._$Yr = new P, this._$32() && (i._$Wr = new P), i
+			}, z.prototype._$Nr = function(t, i) {
+				this != i._$GT() && console.log("### assert!! ### ");
+				var e = i;
+				if (this._$GS._$Ur(t)) {
+					var r = z._$gT;
+					r[0] = !1;
+					var o = this._$GS._$Q2(t, r);
+					i._$Ib(r[0]), this.interpolateOpacity(t, this._$GS, i, r);
+					var n = t._$vs(),
+						s = t._$Tr();
+					if (this._$GS._$zr(n, s, o), o <= 0) {
+						var _ = this._$Y0[n[0]];
+						e._$Yr.init(_)
+					} else if (1 == o) {
+						var _ = this._$Y0[n[0]],
+							a = this._$Y0[n[1]],
+							h = s[0];
+						e._$Yr._$fL = _._$fL + (a._$fL - _._$fL) * h, e._$Yr._$gL = _._$gL + (a._$gL - _._$gL) * h, e._$Yr._$B0 = _._$B0 + (a._$B0 - _._$B0) * h, e._$Yr._$z0 = _._$z0 + (a._$z0 - _._$z0) * h, e._$Yr._$qT = _._$qT + (a._$qT - _._$qT) * h
+					} else if (2 == o) {
+						var _ = this._$Y0[n[0]],
+							a = this._$Y0[n[1]],
+							l = this._$Y0[n[2]],
+							$ = this._$Y0[n[3]],
+							h = s[0],
+							u = s[1],
+							p = _._$fL + (a._$fL - _._$fL) * h,
+							f = l._$fL + ($._$fL - l._$fL) * h;
+						e._$Yr._$fL = p + (f - p) * u, p = _._$gL + (a._$gL - _._$gL) * h, f = l._$gL + ($._$gL - l._$gL) * h, e._$Yr._$gL = p + (f - p) * u, p = _._$B0 + (a._$B0 - _._$B0) * h, f = l._$B0 + ($._$B0 - l._$B0) * h, e._$Yr._$B0 = p + (f - p) * u, p = _._$z0 + (a._$z0 - _._$z0) * h, f = l._$z0 + ($._$z0 - l._$z0) * h, e._$Yr._$z0 = p + (f - p) * u, p = _._$qT + (a._$qT - _._$qT) * h, f = l._$qT + ($._$qT - l._$qT) * h, e._$Yr._$qT = p + (f - p) * u
+					} else if (3 == o) {
+						var c = this._$Y0[n[0]],
+							d = this._$Y0[n[1]],
+							g = this._$Y0[n[2]],
+							y = this._$Y0[n[3]],
+							m = this._$Y0[n[4]],
+							T = this._$Y0[n[5]],
+							P = this._$Y0[n[6]],
+							S = this._$Y0[n[7]],
+							h = s[0],
+							u = s[1],
+							v = s[2],
+							p = c._$fL + (d._$fL - c._$fL) * h,
+							f = g._$fL + (y._$fL - g._$fL) * h,
+							L = m._$fL + (T._$fL - m._$fL) * h,
+							M = P._$fL + (S._$fL - P._$fL) * h;
+						e._$Yr._$fL = (1 - v) * (p + (f - p) * u) + v * (L + (M - L) * u), p = c._$gL + (d._$gL - c._$gL) * h, f = g._$gL + (y._$gL - g._$gL) * h, L = m._$gL + (T._$gL - m._$gL) * h, M = P._$gL + (S._$gL - P._$gL) * h, e._$Yr._$gL = (1 - v) * (p + (f - p) * u) + v * (L + (M - L) * u), p = c._$B0 + (d._$B0 - c._$B0) * h, f = g._$B0 + (y._$B0 - g._$B0) * h, L = m._$B0 + (T._$B0 - m._$B0) * h, M = P._$B0 + (S._$B0 - P._$B0) * h, e._$Yr._$B0 = (1 - v) * (p + (f - p) * u) + v * (L + (M - L) * u), p = c._$z0 + (d._$z0 - c._$z0) * h, f = g._$z0 + (y._$z0 - g._$z0) * h, L = m._$z0 + (T._$z0 - m._$z0) * h, M = P._$z0 + (S._$z0 - P._$z0) * h, e._$Yr._$z0 = (1 - v) * (p + (f - p) * u) + v * (L + (M - L) * u), p = c._$qT + (d._$qT - c._$qT) * h, f = g._$qT + (y._$qT - g._$qT) * h, L = m._$qT + (T._$qT - m._$qT) * h, M = P._$qT + (S._$qT - P._$qT) * h, e._$Yr._$qT = (1 - v) * (p + (f - p) * u) + v * (L + (M - L) * u)
+					} else if (4 == o) {
+						var E = this._$Y0[n[0]],
+							A = this._$Y0[n[1]],
+							I = this._$Y0[n[2]],
+							w = this._$Y0[n[3]],
+							x = this._$Y0[n[4]],
+							O = this._$Y0[n[5]],
+							D = this._$Y0[n[6]],
+							R = this._$Y0[n[7]],
+							b = this._$Y0[n[8]],
+							F = this._$Y0[n[9]],
+							C = this._$Y0[n[10]],
+							N = this._$Y0[n[11]],
+							B = this._$Y0[n[12]],
+							U = this._$Y0[n[13]],
+							G = this._$Y0[n[14]],
+							Y = this._$Y0[n[15]],
+							h = s[0],
+							u = s[1],
+							v = s[2],
+							k = s[3],
+							p = E._$fL + (A._$fL - E._$fL) * h,
+							f = I._$fL + (w._$fL - I._$fL) * h,
+							L = x._$fL + (O._$fL - x._$fL) * h,
+							M = D._$fL + (R._$fL - D._$fL) * h,
+							V = b._$fL + (F._$fL - b._$fL) * h,
+							X = C._$fL + (N._$fL - C._$fL) * h,
+							H = B._$fL + (U._$fL - B._$fL) * h,
+							W = G._$fL + (Y._$fL - G._$fL) * h;
+						e._$Yr._$fL = (1 - k) * ((1 - v) * (p + (f - p) * u) + v * (L + (M - L) * u)) + k * ((1 - v) * (V + (X - V) * u) + v * (H + (W - H) * u)), p = E._$gL + (A._$gL - E._$gL) * h, f = I._$gL + (w._$gL - I._$gL) * h, L = x._$gL + (O._$gL - x._$gL) * h, M = D._$gL + (R._$gL - D._$gL) * h, V = b._$gL + (F._$gL - b._$gL) * h, X = C._$gL + (N._$gL - C._$gL) * h, H = B._$gL + (U._$gL - B._$gL) * h, W = G._$gL + (Y._$gL - G._$gL) * h, e._$Yr._$gL = (1 - k) * ((1 - v) * (p + (f - p) * u) + v * (L + (M - L) * u)) + k * ((1 - v) * (V + (X - V) * u) + v * (H + (W - H) * u)), p = E._$B0 + (A._$B0 - E._$B0) * h, f = I._$B0 + (w._$B0 - I._$B0) * h, L = x._$B0 + (O._$B0 - x._$B0) * h, M = D._$B0 + (R._$B0 - D._$B0) * h, V = b._$B0 + (F._$B0 - b._$B0) * h, X = C._$B0 + (N._$B0 - C._$B0) * h, H = B._$B0 + (U._$B0 - B._$B0) * h, W = G._$B0 + (Y._$B0 - G._$B0) * h, e._$Yr._$B0 = (1 - k) * ((1 - v) * (p + (f - p) * u) + v * (L + (M - L) * u)) + k * ((1 - v) * (V + (X - V) * u) + v * (H + (W - H) * u)), p = E._$z0 + (A._$z0 - E._$z0) * h, f = I._$z0 + (w._$z0 - I._$z0) * h, L = x._$z0 + (O._$z0 - x._$z0) * h, M = D._$z0 + (R._$z0 - D._$z0) * h, V = b._$z0 + (F._$z0 - b._$z0) * h, X = C._$z0 + (N._$z0 - C._$z0) * h, H = B._$z0 + (U._$z0 - B._$z0) * h, W = G._$z0 + (Y._$z0 - G._$z0) * h, e._$Yr._$z0 = (1 - k) * ((1 - v) * (p + (f - p) * u) + v * (L + (M - L) * u)) + k * ((1 - v) * (V + (X - V) * u) + v * (H + (W - H) * u)), p = E._$qT + (A._$qT - E._$qT) * h, f = I._$qT + (w._$qT - I._$qT) * h, L = x._$qT + (O._$qT - x._$qT) * h, M = D._$qT + (R._$qT - D._$qT) * h, V = b._$qT + (F._$qT - b._$qT) * h, X = C._$qT + (N._$qT - C._$qT) * h, H = B._$qT + (U._$qT - B._$qT) * h, W = G._$qT + (Y._$qT - G._$qT) * h, e._$Yr._$qT = (1 - k) * ((1 - v) * (p + (f - p) * u) + v * (L + (M - L) * u)) + k * ((1 - v) * (V + (X - V) * u) + v * (H + (W - H) * u))
+					} else {
+						for (var j = 0 | Math.pow(2, o), q = new Float32Array(j), J = 0; J < j; J++) {
+							for (var Q = J, Z = 1, K = 0; K < o; K++) Z *= Q % 2 == 0 ? 1 - s[K] : s[K], Q /= 2;
+							q[J] = Z
+						}
+						for (var tt = new Array, it = 0; it < j; it++) tt[it] = this._$Y0[n[it]];
+						for (var et = 0, rt = 0, ot = 0, nt = 0, st = 0, it = 0; it < j; it++) et += q[it] * tt[it]._$fL, rt += q[it] * tt[it]._$gL, ot += q[it] * tt[it]._$B0, nt += q[it] * tt[it]._$z0, st += q[it] * tt[it]._$qT;
+						e._$Yr._$fL = et, e._$Yr._$gL = rt, e._$Yr._$B0 = ot, e._$Yr._$z0 = nt, e._$Yr._$qT = st
+					}
+					var _ = this._$Y0[n[0]];
+					e._$Yr.reflectX = _.reflectX, e._$Yr.reflectY = _.reflectY
+				}
+			}, z.prototype._$2b = function(t, i) {
+				this != i._$GT() && console.log("### assert!! ### ");
+				var e = i;
+				if (e._$hS(!0), this._$32()) {
+					var r = this.getTargetBaseDataID();
+					if (e._$8r == I._$ur && (e._$8r = t.getBaseDataIndex(r)), e._$8r < 0) at._$so && _._$li("_$L _$0P _$G :: %s", r), e._$hS(!1);
+					else {
+						var o = t.getBaseData(e._$8r);
+						if (null != o) {
+							var n = t._$q2(e._$8r),
+								s = z._$Xo;
+							s[0] = e._$Yr._$fL, s[1] = e._$Yr._$gL;
+							var a = z._$io;
+							a[0] = 0, a[1] = -.1;
+							n._$GT().getType() == I._$c2 ? a[1] = -10 : a[1] = -.1;
+							var h = z._$0o;
+							this._$Jr(t, o, n, s, a, h);
+							var l = Lt._$92(a, h);
+							o._$nb(t, n, s, s, 1, 0, 2), e._$Wr._$fL = s[0], e._$Wr._$gL = s[1], e._$Wr._$B0 = e._$Yr._$B0, e._$Wr._$z0 = e._$Yr._$z0, e._$Wr._$qT = e._$Yr._$qT - l * Lt._$NS;
+							var $ = n.getTotalScale();
+							e.setTotalScale_notForClient($ * e._$Wr._$B0);
+							var u = n.getTotalOpacity();
+							e.setTotalOpacity(u * e.getInterpolatedOpacity()), e._$Wr.reflectX = e._$Yr.reflectX, e._$Wr.reflectY = e._$Yr.reflectY, e._$hS(n._$yo())
+						} else e._$hS(!1)
+					}
+				} else e.setTotalScale_notForClient(e._$Yr._$B0), e.setTotalOpacity(e.getInterpolatedOpacity())
+			}, z.prototype._$nb = function(t, i, e, r, o, n, s) {
+				this != i._$GT() && console.log("### assert!! ### ");
+				for (var _, a, h = i, l = null != h._$Wr ? h._$Wr : h._$Yr, $ = Math.sin(Lt._$bS * l._$qT), u = Math.cos(Lt._$bS * l._$qT), p = h.getTotalScale(), f = l.reflectX ? -1 : 1, c = l.reflectY ? -1 : 1, d = u * p * f, g = -$ * p * c, y = $ * p * f, m = u * p * c, T = l._$fL, P = l._$gL, S = o * s, v = n; v < S; v += s) _ = e[v], a = e[v + 1], r[v] = d * _ + g * a + T, r[v + 1] = y * _ + m * a + P
+			}, z.prototype._$Jr = function(t, i, e, r, o, n) {
+				i != e._$GT() && console.log("### assert!! ### ");
+				var s = z._$Lo;
+				z._$Lo[0] = r[0], z._$Lo[1] = r[1], i._$nb(t, e, s, s, 1, 0, 2);
+				for (var _ = z._$To, a = z._$Po, h = 1, l = 0; l < 10; l++) {
+					if (a[0] = r[0] + h * o[0], a[1] = r[1] + h * o[1], i._$nb(t, e, a, _, 1, 0, 2), _[0] -= s[0], _[1] -= s[1], 0 != _[0] || 0 != _[1]) return n[0] = _[0], void(n[1] = _[1]);
+					if (a[0] = r[0] - h * o[0], a[1] = r[1] - h * o[1], i._$nb(t, e, a, _, 1, 0, 2), _[0] -= s[0], _[1] -= s[1], 0 != _[0] || 0 != _[1]) return _[0] = -_[0], _[0] = -_[0], n[0] = _[0], void(n[1] = _[1]);
+					h *= .1
+				}
+				at._$so && console.log("_$L0 to transform _$SP\n")
+			}, H.prototype = new _t, W.prototype = new M, W._$ur = -2, W._$ES = 500, W._$wb = 2, W._$8S = 3, W._$os = 4, W._$52 = W._$ES, W._$R2 = W._$ES, W._$Sb = function(t) {
+				for (var i = t.length - 1; i >= 0; --i) {
+					var e = t[i];
+					e < W._$52 ? W._$52 = e : e > W._$R2 && (W._$R2 = e)
+				}
+			}, W._$or = function() {
+				return W._$52
+			}, W._$Pr = function() {
+				return W._$R2
+			}, W.prototype._$F0 = function(t) {
+				this._$gP = t._$nP(), this._$dr = t._$nP(), this._$GS = t._$nP(), this._$qb = t._$6L(), this._$Lb = t._$cS(), this._$mS = t._$Tb(), t.getFormatVersion() >= G._$T7 ? (this.clipID = t._$nP(), this.clipIDList = this.convertClipIDForV2_11(this.clipID)) : this.clipIDList = null, W._$Sb(this._$Lb)
+			}, W.prototype.getClipIDList = function() {
+				return this.clipIDList
+			}, W.prototype._$Nr = function(t, i) {
+				if (i._$IS[0] = !1, i._$Us = v._$Z2(t, this._$GS, i._$IS, this._$Lb), at._$Zs);
+				else if (i._$IS[0]) return;
+				i._$7s = v._$br(t, this._$GS, i._$IS, this._$mS)
+			}, W.prototype._$2b = function(t) {}, W.prototype.getDrawDataID = function() {
+				return this._$gP
+			}, W.prototype._$j2 = function(t) {
+				this._$gP = t
+			}, W.prototype.getOpacity = function(t, i) {
+				return i._$7s
+			}, W.prototype._$zS = function(t, i) {
+				return i._$Us
+			}, W.prototype.getTargetBaseDataID = function() {
+				return this._$dr
+			}, W.prototype._$gs = function(t) {
+				this._$dr = t
+			}, W.prototype._$32 = function() {
+				return null != this._$dr && this._$dr != yt._$2o()
+			}, W.prototype.getType = function() {}, j._$42 = 0, j.prototype._$1b = function() {
+				return this._$3S
+			}, j.prototype.getDrawDataList = function() {
+				return this._$aS
+			}, j.prototype._$F0 = function(t) {
+				this._$NL = t._$nP(), this._$aS = t._$nP(), this._$3S = t._$nP()
+			}, j.prototype._$kr = function(t) {
+				t._$Zo(this._$3S), t._$xo(this._$aS), this._$3S = null, this._$aS = null
+			}, q.prototype = new i, q.loadModel = function(t) {
+				var e = new q;
+				return i._$62(e, t), e
+			}, q.loadModel = function(t) {
+				var e = new q;
+				return i._$62(e, t), e
+			}, q._$to = function() {
+				return new q
+			}, q._$er = function(t) {
+				var i = new _$5("../_$_r/_$t0/_$Ri/_$_P._$d");
+				if (0 == i.exists()) throw new _$ls("_$t0 _$_ _$6 _$Ui :: " + i._$PL());
+				for (var e = ["../_$_r/_$t0/_$Ri/_$_P.512/_$CP._$1", "../_$_r/_$t0/_$Ri/_$_P.512/_$vP._$1", "../_$_r/_$t0/_$Ri/_$_P.512/_$EP._$1", "../_$_r/_$t0/_$Ri/_$_P.512/_$pP._$1"], r = q.loadModel(i._$3b()), o = 0; o < e.length; o++) {
+					var n = new _$5(e[o]);
+					if (0 == n.exists()) throw new _$ls("_$t0 _$_ _$6 _$Ui :: " + n._$PL());
+					r.setTexture(o, _$nL._$_o(t, n._$3b()))
+				}
+				return r
+			}, q.prototype.setGL = function(t) {
+				this._$zo.setGL(t)
+			}, q.prototype.setTransform = function(t) {
+				this._$zo.setTransform(t)
+			}, q.prototype.draw = function() {
+				this._$5S.draw(this._$zo)
+			}, q.prototype._$K2 = function() {
+				this._$zo._$K2()
+			}, q.prototype.setTexture = function(t, i) {
+				null == this._$zo && _._$li("_$Yi for QT _$ki / _$XS() is _$6 _$ui!!"), this._$zo.setTexture(t, i)
+			}, q.prototype.setTexture = function(t, i) {
+				null == this._$zo && _._$li("_$Yi for QT _$ki / _$XS() is _$6 _$ui!!"), this._$zo.setTexture(t, i)
+			}, q.prototype._$Rs = function() {
+				return this._$zo._$Rs()
+			}, q.prototype._$Ds = function(t) {
+				this._$zo._$Ds(t)
+			}, q.prototype.getDrawParam = function() {
+				return this._$zo
+			}, J.prototype = new s, J._$cs = "VISIBLE:", J._$ar = "LAYOUT:", J.MTN_PREFIX_FADEIN = "FADEIN:", J.MTN_PREFIX_FADEOUT = "FADEOUT:", J._$Co = 0, J._$1T = 1, J.loadMotion = function(t) {
+				var i = k._$C(t);
+				return J.loadMotion(i)
+			}, J.loadMotion = function(t) {
+				t instanceof ArrayBuffer && (t = new DataView(t));
+				var i = new J,
+					e = [0],
+					r = t.byteLength;
+				i._$yT = 0;
+				for (var o = 0; o < r; ++o) {
+					var n = Q(t, o),
+						s = n.charCodeAt(0);
+					if ("\n" != n && "\r" != n) if ("#" != n) if ("$" != n) {
+						if (97 <= s && s <= 122 || 65 <= s && s <= 90 || "_" == n) {
+							for (var _ = o, a = -1; o < r && ("\r" != (n = Q(t, o)) && "\n" != n); ++o) if ("=" == n) {
+								a = o;
+								break
+							}
+							if (a >= 0) {
+								var h = new B;
+								O.startsWith(t, _, J._$cs) ? (h._$RP = B._$hs, h._$4P = O.createString(t, _, a - _)) : O.startsWith(t, _, J._$ar) ? (h._$4P = O.createString(t, _ + 7, a - _ - 7), O.startsWith(t, _ + 7, "ANCHOR_X") ? h._$RP = B._$xs : O.startsWith(t, _ + 7, "ANCHOR_Y") ? h._$RP = B._$us : O.startsWith(t, _ + 7, "SCALE_X") ? h._$RP = B._$qs : O.startsWith(t, _ + 7, "SCALE_Y") ? h._$RP = B._$Ys : O.startsWith(t, _ + 7, "X") ? h._$RP = B._$ws : O.startsWith(t, _ + 7, "Y") && (h._$RP = B._$Ns)) : (h._$RP = B._$Fr, h._$4P = O.createString(t, _, a - _)), i.motions.push(h);
+								var l = 0,
+									$ = [];
+								for (o = a + 1; o < r && ("\r" != (n = Q(t, o)) && "\n" != n); ++o) if ("," != n && " " != n && "\t" != n) {
+									var u = O._$LS(t, r, o, e);
+									if (e[0] > 0) {
+										$.push(u), l++;
+										var p = e[0];
+										if (p < o) {
+											console.log("_$n0 _$hi . @Live2DMotion loadMotion()\n");
+											break
+										}
+										o = p - 1
+									}
+								}
+								h._$I0 = new Float32Array($), l > i._$yT && (i._$yT = l)
+							}
+						}
+					} else {
+						for (var _ = o, a = -1; o < r && ("\r" != (n = Q(t, o)) && "\n" != n); ++o) if ("=" == n) {
+							a = o;
+							break
+						}
+						var f = !1;
+						if (a >= 0) for (a == _ + 4 && "f" == Q(t, _ + 1) && "p" == Q(t, _ + 2) && "s" == Q(t, _ + 3) && (f = !0), o = a + 1; o < r && ("\r" != (n = Q(t, o)) && "\n" != n); ++o) if ("," != n && " " != n && "\t" != n) {
+							var u = O._$LS(t, r, o, e);
+							e[0] > 0 && f && 5 < u && u < 121 && (i._$D0 = u), o = e[0]
+						}
+						for (; o < r && ("\n" != Q(t, o) && "\r" != Q(t, o)); ++o);
+					} else for (; o < r && ("\n" != Q(t, o) && "\r" != Q(t, o)); ++o);
+				}
+				return i._$rr = 1e3 * i._$yT / i._$D0 | 0, i
+			}, J.prototype.getDurationMSec = function() {
+				return this._$E ? -1 : this._$rr
+			}, J.prototype.getLoopDurationMSec = function() {
+				return this._$rr
+			}, J.prototype.dump = function() {
+				for (var t = 0; t < this.motions.length; t++) {
+					var i = this.motions[t];
+					console.log("_$wL[%s] [%d]. ", i._$4P, i._$I0.length);
+					for (var e = 0; e < i._$I0.length && e < 10; e++) console.log("%5.2f ,", i._$I0[e]);
+					console.log("\n")
+				}
+			}, J.prototype.updateParamExe = function(t, i, e, r) {
+				for (var o = i - r._$z2, n = o * this._$D0 / 1e3, s = 0 | n, _ = n - s, a = 0; a < this.motions.length; a++) {
+					var h = this.motions[a],
+						l = h._$I0.length,
+						$ = h._$4P;
+					if (h._$RP == B._$hs) {
+						var u = h._$I0[s >= l ? l - 1 : s];
+						t.setParamFloat($, u)
+					} else if (B._$ws <= h._$RP && h._$RP <= B._$Ys);
+					else {
+						var p, f = t.getParamIndex($),
+							c = t.getModelContext(),
+							d = c.getParamMax(f),
+							g = c.getParamMin(f),
+							y = .4 * (d - g),
+							m = c.getParamFloat(f),
+							T = h._$I0[s >= l ? l - 1 : s],
+							P = h._$I0[s + 1 >= l ? l - 1 : s + 1];
+						p = T < P && P - T > y || T > P && T - P > y ? T : T + (P - T) * _;
+						var S = m + (p - m) * e;
+						t.setParamFloat($, S)
+					}
+				}
+				s >= this._$yT && (this._$E ? (r._$z2 = i, this.loopFadeIn && (r._$bs = i)) : r._$9L = !0), this._$eP = e
+			}, J.prototype._$r0 = function() {
+				return this._$E
+			}, J.prototype._$aL = function(t) {
+				this._$E = t
+			}, J.prototype._$S0 = function() {
+				return this._$D0
+			}, J.prototype._$U0 = function(t) {
+				this._$D0 = t
+			}, J.prototype.isLoopFadeIn = function() {
+				return this.loopFadeIn
+			}, J.prototype.setLoopFadeIn = function(t) {
+				this.loopFadeIn = t
+			}, N.prototype.clear = function() {
+				this.size = 0
+			}, N.prototype.add = function(t) {
+				if (this._$P.length <= this.size) {
+					var i = new Float32Array(2 * this.size);
+					w._$jT(this._$P, 0, i, 0, this.size), this._$P = i
+				}
+				this._$P[this.size++] = t
+			}, N.prototype._$BL = function() {
+				var t = new Float32Array(this.size);
+				return w._$jT(this._$P, 0, t, 0, this.size), t
+			}, B._$Fr = 0, B._$hs = 1, B._$ws = 100, B._$Ns = 101, B._$xs = 102, B._$us = 103, B._$qs = 104, B._$Ys = 105, Z.prototype = new I, Z._$gT = new Array, Z.prototype._$zP = function() {
+				this._$GS = new D, this._$GS._$zP()
+			}, Z.prototype._$F0 = function(t) {
+				I.prototype._$F0.call(this, t), this._$A = t._$6L(), this._$o = t._$6L(), this._$GS = t._$nP(), this._$Eo = t._$nP(), I.prototype.readV2_opacity.call(this, t)
+			}, Z.prototype.init = function(t) {
+				var i = new K(this),
+					e = (this._$o + 1) * (this._$A + 1);
+				return null != i._$Cr && (i._$Cr = null), i._$Cr = new Float32Array(2 * e), null != i._$hr && (i._$hr = null), this._$32() ? i._$hr = new Float32Array(2 * e) : i._$hr = null, i
+			}, Z.prototype._$Nr = function(t, i) {
+				var e = i;
+				if (this._$GS._$Ur(t)) {
+					var r = this._$VT(),
+						o = Z._$gT;
+					o[0] = !1, v._$Vr(t, this._$GS, o, r, this._$Eo, e._$Cr, 0, 2), i._$Ib(o[0]), this.interpolateOpacity(t, this._$GS, i, o)
+				}
+			}, Z.prototype._$2b = function(t, i) {
+				var e = i;
+				if (e._$hS(!0), this._$32()) {
+					var r = this.getTargetBaseDataID();
+					if (e._$8r == I._$ur && (e._$8r = t.getBaseDataIndex(r)), e._$8r < 0) at._$so && _._$li("_$L _$0P _$G :: %s", r), e._$hS(!1);
+					else {
+						var o = t.getBaseData(e._$8r),
+							n = t._$q2(e._$8r);
+						if (null != o && n._$yo()) {
+							var s = n.getTotalScale();
+							e.setTotalScale_notForClient(s);
+							var a = n.getTotalOpacity();
+							e.setTotalOpacity(a * e.getInterpolatedOpacity()), o._$nb(t, n, e._$Cr, e._$hr, this._$VT(), 0, 2), e._$hS(!0)
+						} else e._$hS(!1)
+					}
+				} else e.setTotalOpacity(e.getInterpolatedOpacity())
+			}, Z.prototype._$nb = function(t, i, e, r, o, n, s) {
+				var _ = i,
+					a = null != _._$hr ? _._$hr : _._$Cr;
+				Z.transformPoints_sdk2(e, r, o, n, s, a, this._$o, this._$A)
+			}, Z.transformPoints_sdk2 = function(i, e, r, o, n, s, _, a) {
+				for (var h, l, $, u = r * n, p = 0, f = 0, c = 0, d = 0, g = 0, y = 0, m = !1, T = o; T < u; T += n) {
+					var P, S, v, L;
+					if (v = i[T], L = i[T + 1], P = v * _, S = L * a, P < 0 || S < 0 || _ <= P || a <= S) {
+						var M = _ + 1;
+						if (!m) {
+							m = !0, p = .25 * (s[2 * (0 + 0 * M)] + s[2 * (_ + 0 * M)] + s[2 * (0 + a * M)] + s[2 * (_ + a * M)]), f = .25 * (s[2 * (0 + 0 * M) + 1] + s[2 * (_ + 0 * M) + 1] + s[2 * (0 + a * M) + 1] + s[2 * (_ + a * M) + 1]);
+							var E = s[2 * (_ + a * M)] - s[2 * (0 + 0 * M)],
+								A = s[2 * (_ + a * M) + 1] - s[2 * (0 + 0 * M) + 1],
+								I = s[2 * (_ + 0 * M)] - s[2 * (0 + a * M)],
+								w = s[2 * (_ + 0 * M) + 1] - s[2 * (0 + a * M) + 1];
+							c = .5 * (E + I), d = .5 * (A + w), g = .5 * (E - I), y = .5 * (A - w), p -= .5 * (c + g), f -= .5 * (d + y)
+						}
+						if (-2 < v && v < 3 && -2 < L && L < 3) if (v <= 0) if (L <= 0) {
+							var x = s[2 * (0 + 0 * M)],
+								O = s[2 * (0 + 0 * M) + 1],
+								D = p - 2 * c,
+								R = f - 2 * d,
+								b = p - 2 * g,
+								F = f - 2 * y,
+								C = p - 2 * c - 2 * g,
+								N = f - 2 * d - 2 * y,
+								B = .5 * (v - -2),
+								U = .5 * (L - -2);
+							B + U <= 1 ? (e[T] = C + (b - C) * B + (D - C) * U, e[T + 1] = N + (F - N) * B + (R - N) * U) : (e[T] = x + (D - x) * (1 - B) + (b - x) * (1 - U), e[T + 1] = O + (R - O) * (1 - B) + (F - O) * (1 - U))
+						} else if (L >= 1) {
+							var b = s[2 * (0 + a * M)],
+								F = s[2 * (0 + a * M) + 1],
+								C = p - 2 * c + 1 * g,
+								N = f - 2 * d + 1 * y,
+								x = p + 3 * g,
+								O = f + 3 * y,
+								D = p - 2 * c + 3 * g,
+								R = f - 2 * d + 3 * y,
+								B = .5 * (v - -2),
+								U = .5 * (L - 1);
+							B + U <= 1 ? (e[T] = C + (b - C) * B + (D - C) * U, e[T + 1] = N + (F - N) * B + (R - N) * U) : (e[T] = x + (D - x) * (1 - B) + (b - x) * (1 - U), e[T + 1] = O + (R - O) * (1 - B) + (F - O) * (1 - U))
+						} else {
+							var G = 0 | S;
+							G == a && (G = a - 1);
+							var B = .5 * (v - -2),
+								U = S - G,
+								Y = G / a,
+								k = (G + 1) / a,
+								b = s[2 * (0 + G * M)],
+								F = s[2 * (0 + G * M) + 1],
+								x = s[2 * (0 + (G + 1) * M)],
+								O = s[2 * (0 + (G + 1) * M) + 1],
+								C = p - 2 * c + Y * g,
+								N = f - 2 * d + Y * y,
+								D = p - 2 * c + k * g,
+								R = f - 2 * d + k * y;
+							B + U <= 1 ? (e[T] = C + (b - C) * B + (D - C) * U, e[T + 1] = N + (F - N) * B + (R - N) * U) : (e[T] = x + (D - x) * (1 - B) + (b - x) * (1 - U), e[T + 1] = O + (R - O) * (1 - B) + (F - O) * (1 - U))
+						} else if (1 <= v) if (L <= 0) {
+							var D = s[2 * (_ + 0 * M)],
+								R = s[2 * (_ + 0 * M) + 1],
+								x = p + 3 * c,
+								O = f + 3 * d,
+								C = p + 1 * c - 2 * g,
+								N = f + 1 * d - 2 * y,
+								b = p + 3 * c - 2 * g,
+								F = f + 3 * d - 2 * y,
+								B = .5 * (v - 1),
+								U = .5 * (L - -2);
+							B + U <= 1 ? (e[T] = C + (b - C) * B + (D - C) * U, e[T + 1] = N + (F - N) * B + (R - N) * U) : (e[T] = x + (D - x) * (1 - B) + (b - x) * (1 - U), e[T + 1] = O + (R - O) * (1 - B) + (F - O) * (1 - U))
+						} else if (L >= 1) {
+							var C = s[2 * (_ + a * M)],
+								N = s[2 * (_ + a * M) + 1],
+								b = p + 3 * c + 1 * g,
+								F = f + 3 * d + 1 * y,
+								D = p + 1 * c + 3 * g,
+								R = f + 1 * d + 3 * y,
+								x = p + 3 * c + 3 * g,
+								O = f + 3 * d + 3 * y,
+								B = .5 * (v - 1),
+								U = .5 * (L - 1);
+							B + U <= 1 ? (e[T] = C + (b - C) * B + (D - C) * U, e[T + 1] = N + (F - N) * B + (R - N) * U) : (e[T] = x + (D - x) * (1 - B) + (b - x) * (1 - U), e[T + 1] = O + (R - O) * (1 - B) + (F - O) * (1 - U))
+						} else {
+							var G = 0 | S;
+							G == a && (G = a - 1);
+							var B = .5 * (v - 1),
+								U = S - G,
+								Y = G / a,
+								k = (G + 1) / a,
+								C = s[2 * (_ + G * M)],
+								N = s[2 * (_ + G * M) + 1],
+								D = s[2 * (_ + (G + 1) * M)],
+								R = s[2 * (_ + (G + 1) * M) + 1],
+								b = p + 3 * c + Y * g,
+								F = f + 3 * d + Y * y,
+								x = p + 3 * c + k * g,
+								O = f + 3 * d + k * y;
+							B + U <= 1 ? (e[T] = C + (b - C) * B + (D - C) * U, e[T + 1] = N + (F - N) * B + (R - N) * U) : (e[T] = x + (D - x) * (1 - B) + (b - x) * (1 - U), e[T + 1] = O + (R - O) * (1 - B) + (F - O) * (1 - U))
+						} else if (L <= 0) {
+							var V = 0 | P;
+							V == _ && (V = _ - 1);
+							var B = P - V,
+								U = .5 * (L - -2),
+								X = V / _,
+								z = (V + 1) / _,
+								D = s[2 * (V + 0 * M)],
+								R = s[2 * (V + 0 * M) + 1],
+								x = s[2 * (V + 1 + 0 * M)],
+								O = s[2 * (V + 1 + 0 * M) + 1],
+								C = p + X * c - 2 * g,
+								N = f + X * d - 2 * y,
+								b = p + z * c - 2 * g,
+								F = f + z * d - 2 * y;
+							B + U <= 1 ? (e[T] = C + (b - C) * B + (D - C) * U, e[T + 1] = N + (F - N) * B + (R - N) * U) : (e[T] = x + (D - x) * (1 - B) + (b - x) * (1 - U), e[T + 1] = O + (R - O) * (1 - B) + (F - O) * (1 - U))
+						} else if (L >= 1) {
+							var V = 0 | P;
+							V == _ && (V = _ - 1);
+							var B = P - V,
+								U = .5 * (L - 1),
+								X = V / _,
+								z = (V + 1) / _,
+								C = s[2 * (V + a * M)],
+								N = s[2 * (V + a * M) + 1],
+								b = s[2 * (V + 1 + a * M)],
+								F = s[2 * (V + 1 + a * M) + 1],
+								D = p + X * c + 3 * g,
+								R = f + X * d + 3 * y,
+								x = p + z * c + 3 * g,
+								O = f + z * d + 3 * y;
+							B + U <= 1 ? (e[T] = C + (b - C) * B + (D - C) * U, e[T + 1] = N + (F - N) * B + (R - N) * U) : (e[T] = x + (D - x) * (1 - B) + (b - x) * (1 - U), e[T + 1] = O + (R - O) * (1 - B) + (F - O) * (1 - U))
+						} else t.err.printf("_$li calc : %.4f , %.4f\t\t\t\t\t@@BDBoxGrid\n", v, L);
+						else e[T] = p + v * c + L * g, e[T + 1] = f + v * d + L * y
+					} else l = P - (0 | P), $ = S - (0 | S), h = 2 * ((0 | P) + (0 | S) * (_ + 1)), l + $ < 1 ? (e[T] = s[h] * (1 - l - $) + s[h + 2] * l + s[h + 2 * (_ + 1)] * $, e[T + 1] = s[h + 1] * (1 - l - $) + s[h + 3] * l + s[h + 2 * (_ + 1) + 1] * $) : (e[T] = s[h + 2 * (_ + 1) + 2] * (l - 1 + $) + s[h + 2 * (_ + 1)] * (1 - l) + s[h + 2] * (1 - $), e[T + 1] = s[h + 2 * (_ + 1) + 3] * (l - 1 + $) + s[h + 2 * (_ + 1) + 1] * (1 - l) + s[h + 3] * (1 - $))
+				}
+			}, Z.prototype.transformPoints_sdk1 = function(t, i, e, r, o, n, s) {
+				for (var _, a, h, l, $, u, p, f = i, c = this._$o, d = this._$A, g = o * s, y = null != f._$hr ? f._$hr : f._$Cr, m = n; m < g; m += s) at._$ts ? (_ = e[m], a = e[m + 1], _ < 0 ? _ = 0 : _ > 1 && (_ = 1), a < 0 ? a = 0 : a > 1 && (a = 1), _ *= c, a *= d, h = 0 | _, l = 0 | a, h > c - 1 && (h = c - 1), l > d - 1 && (l = d - 1), u = _ - h, p = a - l, $ = 2 * (h + l * (c + 1))) : (_ = e[m] * c, a = e[m + 1] * d, u = _ - (0 | _), p = a - (0 | a), $ = 2 * ((0 | _) + (0 | a) * (c + 1))), u + p < 1 ? (r[m] = y[$] * (1 - u - p) + y[$ + 2] * u + y[$ + 2 * (c + 1)] * p, r[m + 1] = y[$ + 1] * (1 - u - p) + y[$ + 3] * u + y[$ + 2 * (c + 1) + 1] * p) : (r[m] = y[$ + 2 * (c + 1) + 2] * (u - 1 + p) + y[$ + 2 * (c + 1)] * (1 - u) + y[$ + 2] * (1 - p), r[m + 1] = y[$ + 2 * (c + 1) + 3] * (u - 1 + p) + y[$ + 2 * (c + 1) + 1] * (1 - u) + y[$ + 3] * (1 - p))
+			}, Z.prototype._$VT = function() {
+				return (this._$o + 1) * (this._$A + 1)
+			}, Z.prototype.getType = function() {
+				return I._$_b
+			}, K.prototype = new _t, tt._$42 = 0, tt.prototype._$zP = function() {
+				this._$3S = new Array, this._$aS = new Array
+			}, tt.prototype._$F0 = function(t) {
+				this._$g0 = t._$8L(), this.visible = t._$8L(), this._$NL = t._$nP(), this._$3S = t._$nP(), this._$aS = t._$nP()
+			}, tt.prototype.init = function(t) {
+				var i = new it(this);
+				return i.setPartsOpacity(this.isVisible() ? 1 : 0), i
+			}, tt.prototype._$6o = function(t) {
+				if (null == this._$3S) throw new Error("_$3S _$6 _$Wo@_$6o");
+				this._$3S.push(t)
+			}, tt.prototype._$3o = function(t) {
+				if (null == this._$aS) throw new Error("_$aS _$6 _$Wo@_$3o");
+				this._$aS.push(t)
+			}, tt.prototype._$Zo = function(t) {
+				this._$3S = t
+			}, tt.prototype._$xo = function(t) {
+				this._$aS = t
+			}, tt.prototype.isVisible = function() {
+				return this.visible
+			}, tt.prototype._$uL = function() {
+				return this._$g0
+			}, tt.prototype._$KP = function(t) {
+				this.visible = t
+			}, tt.prototype._$ET = function(t) {
+				this._$g0 = t
+			}, tt.prototype.getBaseData = function() {
+				return this._$3S
+			}, tt.prototype.getDrawData = function() {
+				return this._$aS
+			}, tt.prototype._$p2 = function() {
+				return this._$NL
+			}, tt.prototype._$ob = function(t) {
+				this._$NL = t
+			}, tt.prototype.getPartsID = function() {
+				return this._$NL
+			}, tt.prototype._$MP = function(t) {
+				this._$NL = t
+			}, it.prototype = new $, it.prototype.getPartsOpacity = function() {
+				return this._$VS
+			}, it.prototype.setPartsOpacity = function(t) {
+				this._$VS = t
+			}, et._$L7 = function() {
+				u._$27(), yt._$27(), b._$27(), l._$27()
+			}, et.prototype.toString = function() {
+				return this.id
+			}, rt.prototype._$F0 = function(t) {}, ot.prototype._$1s = function() {
+				return this._$4S
+			}, ot.prototype._$zP = function() {
+				this._$4S = new Array
+			}, ot.prototype._$F0 = function(t) {
+				this._$4S = t._$nP()
+			}, ot.prototype._$Ks = function(t) {
+				this._$4S.push(t)
+			}, nt.tr = new gt, nt._$50 = new gt, nt._$Ti = new Array(0, 0), nt._$Pi = new Array(0, 0), nt._$B = new Array(0, 0), nt.prototype._$lP = function(t, i, e, r) {
+				this.viewport = new Array(t, i, e, r)
+			}, nt.prototype._$bL = function() {
+				this.context.save();
+				var t = this.viewport;
+				null != t && (this.context.beginPath(), this.context._$Li(t[0], t[1], t[2], t[3]), this.context.clip())
+			}, nt.prototype._$ei = function() {
+				this.context.restore()
+			}, nt.prototype.drawElements = function(t, i, e, r, o, n, s, a) {
+				try {
+					o != this._$Qo && (this._$Qo = o, this.context.globalAlpha = o);
+					for (var h = i.length, l = t.width, $ = t.height, u = this.context, p = this._$xP, f = this._$uP, c = this._$6r, d = this._$3r, g = nt.tr, y = nt._$Ti, m = nt._$Pi, T = nt._$B, P = 0; P < h; P += 3) {
+						u.save();
+						var S = i[P],
+							v = i[P + 1],
+							L = i[P + 2],
+							M = p + c * e[2 * S],
+							E = f + d * e[2 * S + 1],
+							A = p + c * e[2 * v],
+							I = f + d * e[2 * v + 1],
+							w = p + c * e[2 * L],
+							x = f + d * e[2 * L + 1];
+						s && (s._$PS(M, E, T), M = T[0], E = T[1], s._$PS(A, I, T), A = T[0], I = T[1], s._$PS(w, x, T), w = T[0], x = T[1]);
+						var O = l * r[2 * S],
+							D = $ - $ * r[2 * S + 1],
+							R = l * r[2 * v],
+							b = $ - $ * r[2 * v + 1],
+							F = l * r[2 * L],
+							C = $ - $ * r[2 * L + 1],
+							N = Math.atan2(b - D, R - O),
+							B = Math.atan2(I - E, A - M),
+							U = A - M,
+							G = I - E,
+							Y = Math.sqrt(U * U + G * G),
+							k = R - O,
+							V = b - D,
+							X = Math.sqrt(k * k + V * V),
+							z = Y / X;
+						It._$ni(F, C, O, D, R - O, b - D, -(b - D), R - O, y), It._$ni(w, x, M, E, A - M, I - E, -(I - E), A - M, m);
+						var H = (m[0] - y[0]) / y[1],
+							W = Math.min(O, R, F),
+							j = Math.max(O, R, F),
+							q = Math.min(D, b, C),
+							J = Math.max(D, b, C),
+							Q = Math.floor(W),
+							Z = Math.floor(q),
+							K = Math.ceil(j),
+							tt = Math.ceil(J);
+						g.identity(), g.translate(M, E), g.rotate(B), g.scale(1, m[1] / y[1]), g.shear(H, 0), g.scale(z, z), g.rotate(-N), g.translate(-O, -D), g.setContext(u);
+						if (n || (n = 1.2), at.IGNORE_EXPAND && (n = 0), at.USE_CACHED_POLYGON_IMAGE) {
+							var it = a._$e0;
+							if (it.gl_cacheImage = it.gl_cacheImage || {}, !it.gl_cacheImage[P]) {
+								var et = nt.createCanvas(K - Q, tt - Z);
+								at.DEBUG_DATA.LDGL_CANVAS_MB = at.DEBUG_DATA.LDGL_CANVAS_MB || 0, at.DEBUG_DATA.LDGL_CANVAS_MB += (K - Q) * (tt - Z) * 4;
+								var rt = et.getContext("2d");
+								rt.translate(-Q, -Z), nt.clip(rt, g, n, Y, O, D, R, b, F, C, M, E, A, I, w, x), rt.drawImage(t, 0, 0), it.gl_cacheImage[P] = {
+									cacheCanvas: et,
+									cacheContext: rt
+								}
+							}
+							u.drawImage(it.gl_cacheImage[P].cacheCanvas, Q, Z)
+						} else at.IGNORE_CLIP || nt.clip(u, g, n, Y, O, D, R, b, F, C, M, E, A, I, w, x), at.USE_ADJUST_TRANSLATION && (W = 0, j = l, q = 0, J = $), u.drawImage(t, W, q, j - W, J - q, W, q, j - W, J - q);
+						u.restore()
+					}
+				} catch (t) {
+					_._$Rb(t)
+				}
+			}, nt.clip = function(t, i, e, r, o, n, s, _, a, h, l, $, u, p, f, c) {
+				e > .02 ? nt.expandClip(t, i, e, r, l, $, u, p, f, c) : nt.clipWithTransform(t, null, o, n, s, _, a, h)
+			}, nt.expandClip = function(t, i, e, r, o, n, s, _, a, h) {
+				var l = s - o,
+					$ = _ - n,
+					u = a - o,
+					p = h - n,
+					f = l * p - $ * u > 0 ? e : -e,
+					c = -$,
+					d = l,
+					g = a - s,
+					y = h - _,
+					m = -y,
+					T = g,
+					P = Math.sqrt(g * g + y * y),
+					S = -p,
+					v = u,
+					L = Math.sqrt(u * u + p * p),
+					M = o - f * c / r,
+					E = n - f * d / r,
+					A = s - f * c / r,
+					I = _ - f * d / r,
+					w = s - f * m / P,
+					x = _ - f * T / P,
+					O = a - f * m / P,
+					D = h - f * T / P,
+					R = o + f * S / L,
+					b = n + f * v / L,
+					F = a + f * S / L,
+					C = h + f * v / L,
+					N = nt._$50;
+				return null != i._$P2(N) && (nt.clipWithTransform(t, N, M, E, A, I, w, x, O, D, F, C, R, b), !0)
+			}, nt.clipWithTransform = function(t, i, e, r, o, n, s, a) {
+				if (arguments.length < 7) return void _._$li("err : @LDGL.clip()");
+				if (!(arguments[1] instanceof gt)) return void _._$li("err : a[0] is _$6 LDTransform @LDGL.clip()");
+				var h = nt._$B,
+					l = i,
+					$ = arguments;
+				if (t.beginPath(), l) {
+					l._$PS($[2], $[3], h), t.moveTo(h[0], h[1]);
+					for (var u = 4; u < $.length; u += 2) l._$PS($[u], $[u + 1], h), t.lineTo(h[0], h[1])
+				} else {
+					t.moveTo($[2], $[3]);
+					for (var u = 4; u < $.length; u += 2) t.lineTo($[u], $[u + 1])
+				}
+				t.clip()
+			}, nt.createCanvas = function(t, i) {
+				var e = document.createElement("canvas");
+				return e.setAttribute("width", t), e.setAttribute("height", i), e || _._$li("err : " + e), e
+			}, nt.dumpValues = function() {
+				for (var t = "", i = 0; i < arguments.length; i++) t += "[" + i + "]= " + arguments[i].toFixed(3) + " , ";
+				console.log(t)
+			}, st.prototype._$F0 = function(t) {
+				this._$TT = t._$_T(), this._$LT = t._$_T(), this._$FS = t._$_T(), this._$wL = t._$nP()
+			}, st.prototype.getMinValue = function() {
+				return this._$TT
+			}, st.prototype.getMaxValue = function() {
+				return this._$LT
+			}, st.prototype.getDefaultValue = function() {
+				return this._$FS
+			}, st.prototype.getParamID = function() {
+				return this._$wL
+			}, _t.prototype._$yo = function() {
+				return this._$AT && !this._$JS
+			}, _t.prototype._$hS = function(t) {
+				this._$AT = t
+			}, _t.prototype._$GT = function() {
+				return this._$e0
+			}, _t.prototype._$l2 = function(t) {
+				this._$IP = t
+			}, _t.prototype.getPartsIndex = function() {
+				return this._$IP
+			}, _t.prototype._$x2 = function() {
+				return this._$JS
+			}, _t.prototype._$Ib = function(t) {
+				this._$JS = t
+			}, _t.prototype.getTotalScale = function() {
+				return this.totalScale
+			}, _t.prototype.setTotalScale_notForClient = function(t) {
+				this.totalScale = t
+			}, _t.prototype.getInterpolatedOpacity = function() {
+				return this._$7s
+			}, _t.prototype.setInterpolatedOpacity = function(t) {
+				this._$7s = t
+			}, _t.prototype.getTotalOpacity = function(t) {
+				return this.totalOpacity
+			}, _t.prototype.setTotalOpacity = function(t) {
+				this.totalOpacity = t
+			}, at._$2s = "2.1.00_1", at._$Kr = 201001e3, at._$sP = !0, at._$so = !0, at._$cb = !1, at._$3T = !0, at._$Ts = !0, at._$fb = !0, at._$ts = !0, at.L2D_DEFORMER_EXTEND = !0, at._$Wb = !1;
+			at._$yr = !1, at._$Zs = !1, at.L2D_NO_ERROR = 0, at._$i7 = 1e3, at._$9s = 1001, at._$es = 1100, at._$r7 = 2e3, at._$07 = 2001, at._$b7 = 2002, at._$H7 = 4e3, at.L2D_COLOR_BLEND_MODE_MULT = 0, at.L2D_COLOR_BLEND_MODE_ADD = 1, at.L2D_COLOR_BLEND_MODE_INTERPOLATE = 2, at._$6b = !0, at._$cT = 0, at.clippingMaskBufferSize = 256, at.glContext = new Array, at.frameBuffers = new Array, at.fTexture = new Array, at.IGNORE_CLIP = !1, at.IGNORE_EXPAND = !1, at.EXPAND_W = 2, at.USE_ADJUST_TRANSLATION = !0, at.USE_CANVAS_TRANSFORM = !0, at.USE_CACHED_POLYGON_IMAGE = !1, at.DEBUG_DATA = {}, at.PROFILE_IOS_SPEED = {
+				PROFILE_NAME: "iOS Speed",
+				USE_ADJUST_TRANSLATION: !0,
+				USE_CACHED_POLYGON_IMAGE: !0,
+				EXPAND_W: 4
+			}, at.PROFILE_IOS_QUALITY = {
+				PROFILE_NAME: "iOS HiQ",
+				USE_ADJUST_TRANSLATION: !0,
+				USE_CACHED_POLYGON_IMAGE: !1,
+				EXPAND_W: 2
+			}, at.PROFILE_IOS_DEFAULT = at.PROFILE_IOS_QUALITY, at.PROFILE_ANDROID = {
+				PROFILE_NAME: "Android",
+				USE_ADJUST_TRANSLATION: !1,
+				USE_CACHED_POLYGON_IMAGE: !1,
+				EXPAND_W: 2
+			}, at.PROFILE_DESKTOP = {
+				PROFILE_NAME: "Desktop",
+				USE_ADJUST_TRANSLATION: !1,
+				USE_CACHED_POLYGON_IMAGE: !1,
+				EXPAND_W: 2
+			}, at.initProfile = function() {
+				Et.isIOS() ? at.setupProfile(at.PROFILE_IOS_DEFAULT) : Et.isAndroid() ? at.setupProfile(at.PROFILE_ANDROID) : at.setupProfile(at.PROFILE_DESKTOP)
+			}, at.setupProfile = function(t, i) {
+				if ("number" == typeof t) switch (t) {
+				case 9901:
+					t = at.PROFILE_IOS_SPEED;
+					break;
+				case 9902:
+					t = at.PROFILE_IOS_QUALITY;
+					break;
+				case 9903:
+					t = at.PROFILE_IOS_DEFAULT;
+					break;
+				case 9904:
+					t = at.PROFILE_ANDROID;
+					break;
+				case 9905:
+					t = at.PROFILE_DESKTOP;
+					break;
+				default:
+					alert("profile _$6 _$Ui : " + t)
+				}
+				arguments.length < 2 && (i = !0), i && console.log("profile : " + t.PROFILE_NAME);
+				for (var e in t) at[e] = t[e], i && console.log("  [" + e + "] = " + t[e])
+			}, at.init = function() {
+				if (at._$6b) {
+					console.log("Live2D %s", at._$2s), at._$6b = !1;
+					!0, at.initProfile()
+				}
+			}, at.getVersionStr = function() {
+				return at._$2s
+			}, at.getVersionNo = function() {
+				return at._$Kr
+			}, at._$sT = function(t) {
+				at._$cT = t
+			}, at.getError = function() {
+				var t = at._$cT;
+				return at._$cT = 0, t
+			}, at.dispose = function() {
+				at.glContext = [], at.frameBuffers = [], at.fTexture = []
+			}, at.setGL = function(t, i) {
+				var e = i || 0;
+				at.glContext[e] = t
+			}, at.getGL = function(t) {
+				return at.glContext[t]
+			}, at.setClippingMaskBufferSize = function(t) {
+				at.clippingMaskBufferSize = t
+			}, at.getClippingMaskBufferSize = function() {
+				return at.clippingMaskBufferSize
+			}, at.deleteBuffer = function(t) {
+				at.getGL(t).deleteFramebuffer(at.frameBuffers[t].framebuffer), delete at.frameBuffers[t], delete at.glContext[t]
+			}, ht._$r2 = function(t) {
+				return t < 0 ? 0 : t > 1 ? 1 : .5 - .5 * Math.cos(t * Lt.PI_F)
+			}, lt._$fr = -1, lt.prototype.toString = function() {
+				return this._$ib
+			}, $t.prototype = new W, $t._$42 = 0, $t._$Os = 30, $t._$ms = 0, $t._$ns = 1, $t._$_s = 2, $t._$gT = new Array, $t.prototype._$_S = function(t) {
+				this._$LP = t
+			}, $t.prototype.getTextureNo = function() {
+				return this._$LP
+			}, $t.prototype._$ZL = function() {
+				return this._$Qi
+			}, $t.prototype._$H2 = function() {
+				return this._$JP
+			}, $t.prototype.getNumPoints = function() {
+				return this._$d0
+			}, $t.prototype.getType = function() {
+				return W._$wb
+			}, $t.prototype._$B2 = function(t, i, e) {
+				var r = i,
+					o = null != r._$hr ? r._$hr : r._$Cr;
+				switch (U._$do) {
+				default:
+				case U._$Ms:
+					throw new Error("_$L _$ro ");
+				case U._$Qs:
+					for (var n = this._$d0 - 1; n >= 0; --n) o[n * U._$No + 4] = e
+				}
+			}, $t.prototype._$zP = function() {
+				this._$GS = new D, this._$GS._$zP()
+			}, $t.prototype._$F0 = function(t) {
+				W.prototype._$F0.call(this, t), this._$LP = t._$6L(), this._$d0 = t._$6L(), this._$Yo = t._$6L();
+				var i = t._$nP();
+				this._$BP = new Int16Array(3 * this._$Yo);
+				for (var e = 3 * this._$Yo - 1; e >= 0; --e) this._$BP[e] = i[e];
+				if (this._$Eo = t._$nP(), this._$Qi = t._$nP(), t.getFormatVersion() >= G._$s7) {
+					if (this._$JP = t._$6L(), 0 != this._$JP) {
+						if (0 != (1 & this._$JP)) {
+							var r = t._$6L();
+							null == this._$5P && (this._$5P = new Object), this._$5P._$Hb = parseInt(r)
+						}
+						0 != (this._$JP & $t._$Os) ? this._$6s = (this._$JP & $t._$Os) >> 1 : this._$6s = $t._$ms, 0 != (32 & this._$JP) && (this.culling = !1)
+					}
+				} else this._$JP = 0
+			}, $t.prototype.init = function(t) {
+				var i = new ut(this),
+					e = this._$d0 * U._$No,
+					r = this._$32();
+				switch (null != i._$Cr && (i._$Cr = null), i._$Cr = new Float32Array(e), null != i._$hr && (i._$hr = null), i._$hr = r ? new Float32Array(e) : null, U._$do) {
+				default:
+				case U._$Ms:
+					if (U._$Ls) for (var o = this._$d0 - 1; o >= 0; --o) {
+						var n = o << 1;
+						this._$Qi[n + 1] = 1 - this._$Qi[n + 1]
+					}
+					break;
+				case U._$Qs:
+					for (var o = this._$d0 - 1; o >= 0; --o) {
+						var n = o << 1,
+							s = o * U._$No,
+							_ = this._$Qi[n],
+							a = this._$Qi[n + 1];
+						i._$Cr[s] = _, i._$Cr[s + 1] = a, i._$Cr[s + 4] = 0, r && (i._$hr[s] = _, i._$hr[s + 1] = a, i._$hr[s + 4] = 0)
+					}
+				}
+				return i
+			}, $t.prototype._$Nr = function(t, i) {
+				var e = i;
+				if (this != e._$GT() && console.log("### assert!! ### "), this._$GS._$Ur(t) && (W.prototype._$Nr.call(this, t, e), !e._$IS[0])) {
+					var r = $t._$gT;
+					r[0] = !1, v._$Vr(t, this._$GS, r, this._$d0, this._$Eo, e._$Cr, U._$i2, U._$No)
+				}
+			}, $t.prototype._$2b = function(t, i) {
+				try {
+					this != i._$GT() && console.log("### assert!! ### ");
+					var e = !1;
+					i._$IS[0] && (e = !0);
+					var r = i;
+					if (!e && (W.prototype._$2b.call(this, t), this._$32())) {
+						var o = this.getTargetBaseDataID();
+						if (r._$8r == W._$ur && (r._$8r = t.getBaseDataIndex(o)), r._$8r < 0) at._$so && _._$li("_$L _$0P _$G :: %s", o);
+						else {
+							var n = t.getBaseData(r._$8r),
+								s = t._$q2(r._$8r);
+							null == n || s._$x2() ? r._$AT = !1 : (n._$nb(t, s, r._$Cr, r._$hr, this._$d0, U._$i2, U._$No), r._$AT = !0), r.baseOpacity = s.getTotalOpacity()
+						}
+					}
+				} catch (t) {
+					throw t
+				}
+			}, $t.prototype.draw = function(t, i, e) {
+				if (this != e._$GT() && console.log("### assert!! ### "), !e._$IS[0]) {
+					var r = e,
+						o = this._$LP;
+					o < 0 && (o = 1);
+					var n = this.getOpacity(i, r) * e._$VS * e.baseOpacity,
+						s = null != r._$hr ? r._$hr : r._$Cr;
+					t.setClipBufPre_clipContextForDraw(e.clipBufPre_clipContext), t._$WP(this.culling), t._$Uo(o, 3 * this._$Yo, this._$BP, s, this._$Qi, n, this._$6s, r)
+				}
+			}, $t.prototype.dump = function() {
+				console.log("  _$yi( %d ) , _$d0( %d ) , _$Yo( %d ) \n", this._$LP, this._$d0, this._$Yo), console.log("  _$Oi _$di = { ");
+				for (var t = 0; t < this._$BP.length; t++) console.log("%5d ,", this._$BP[t]);
+				console.log("\n  _$5i _$30");
+				for (var t = 0; t < this._$Eo.length; t++) {
+					console.log("\n    _$30[%d] = ", t);
+					for (var i = this._$Eo[t], e = 0; e < i.length; e++) console.log("%6.2f, ", i[e])
+				}
+				console.log("\n")
+			}, $t.prototype._$72 = function(t) {
+				return null == this._$5P ? null : this._$5P[t]
+			}, $t.prototype.getIndexArray = function() {
+				return this._$BP
+			}, ut.prototype = new Mt, ut.prototype.getTransformedPoints = function() {
+				return null != this._$hr ? this._$hr : this._$Cr
+			}, pt.prototype._$HT = function(t) {
+				this.x = t.x, this.y = t.y
+			}, pt.prototype._$HT = function(t, i) {
+				this.x = t, this.y = i
+			}, ft.prototype = new i, ft.loadModel = function(t) {
+				var e = new ft;
+				return i._$62(e, t), e
+			}, ft.loadModel = function(t, e) {
+				var r = e || 0,
+					o = new ft(r);
+				return i._$62(o, t), o
+			}, ft._$to = function() {
+				return new ft
+			}, ft._$er = function(t) {
+				var i = new _$5("../_$_r/_$t0/_$Ri/_$_P._$d");
+				if (0 == i.exists()) throw new _$ls("_$t0 _$_ _$6 _$Ui :: " + i._$PL());
+				for (var e = ["../_$_r/_$t0/_$Ri/_$_P.512/_$CP._$1", "../_$_r/_$t0/_$Ri/_$_P.512/_$vP._$1", "../_$_r/_$t0/_$Ri/_$_P.512/_$EP._$1", "../_$_r/_$t0/_$Ri/_$_P.512/_$pP._$1"], r = ft.loadModel(i._$3b()), o = 0; o < e.length; o++) {
+					var n = new _$5(e[o]);
+					if (0 == n.exists()) throw new _$ls("_$t0 _$_ _$6 _$Ui :: " + n._$PL());
+					r.setTexture(o, _$nL._$_o(t, n._$3b()))
+				}
+				return r
+			}, ft.prototype.setGL = function(t) {
+				at.setGL(t)
+			}, ft.prototype.setTransform = function(t) {
+				this.drawParamWebGL.setTransform(t)
+			}, ft.prototype.update = function() {
+				this._$5S.update(), this._$5S.preDraw(this.drawParamWebGL)
+			}, ft.prototype.draw = function() {
+				this._$5S.draw(this.drawParamWebGL)
+			}, ft.prototype._$K2 = function() {
+				this.drawParamWebGL._$K2()
+			}, ft.prototype.setTexture = function(t, i) {
+				null == this.drawParamWebGL && _._$li("_$Yi for QT _$ki / _$XS() is _$6 _$ui!!"), this.drawParamWebGL.setTexture(t, i)
+			}, ft.prototype.setTexture = function(t, i) {
+				null == this.drawParamWebGL && _._$li("_$Yi for QT _$ki / _$XS() is _$6 _$ui!!"), this.drawParamWebGL.setTexture(t, i)
+			}, ft.prototype._$Rs = function() {
+				return this.drawParamWebGL._$Rs()
+			}, ft.prototype._$Ds = function(t) {
+				this.drawParamWebGL._$Ds(t)
+			}, ft.prototype.getDrawParam = function() {
+				return this.drawParamWebGL
+			}, ft.prototype.setMatrix = function(t) {
+				this.drawParamWebGL.setMatrix(t)
+			}, ft.prototype.setPremultipliedAlpha = function(t) {
+				this.drawParamWebGL.setPremultipliedAlpha(t)
+			}, ft.prototype.isPremultipliedAlpha = function() {
+				return this.drawParamWebGL.isPremultipliedAlpha()
+			}, ft.prototype.setAnisotropy = function(t) {
+				this.drawParamWebGL.setAnisotropy(t)
+			}, ft.prototype.getAnisotropy = function() {
+				return this.drawParamWebGL.getAnisotropy()
+			}, ct.prototype._$tb = function() {
+				return this.motions
+			}, ct.prototype.startMotion = function(t, i) {
+				for (var e = null, r = this.motions.length, o = 0; o < r; ++o) null != (e = this.motions[o]) && (e._$qS(e._$w0.getFadeOut()), this._$eb && _._$Ji("MotionQueueManager[size:%2d]->startMotion() / start _$K _$3 (m%d)\n", r, e._$sr));
+				if (null == t) return -1;
+				e = new dt, e._$w0 = t, this.motions.push(e);
+				var n = e._$sr;
+				return this._$eb && _._$Ji("MotionQueueManager[size:%2d]->startMotion() / new _$w0 (m%d)\n", r, n), n
+			}, ct.prototype.updateParam = function(t) {
+				try {
+					for (var i = !1, e = 0; e < this.motions.length; e++) {
+						var r = this.motions[e];
+						if (null != r) {
+							var o = r._$w0;
+							null != o ? (o.updateParam(t, r), i = !0, r.isFinished() && (this._$eb && _._$Ji("MotionQueueManager[size:%2d]->updateParam() / _$T0 _$w0 (m%d)\n", this.motions.length - 1, r._$sr), this.motions.splice(e, 1), e--)) : (this.motions = this.motions.splice(e, 1), e--)
+						} else this.motions.splice(e, 1), e--
+					}
+					return i
+				} catch (t) {
+					return _._$li(t), !0
+				}
+			}, ct.prototype.isFinished = function(t) {
+				if (arguments.length >= 1) {
+					for (var i = 0; i < this.motions.length; i++) {
+						var e = this.motions[i];
+						if (null != e && (e._$sr == t && !e.isFinished())) return !1
+					}
+					return !0
+				}
+				for (var i = 0; i < this.motions.length; i++) {
+					var e = this.motions[i];
+					if (null != e) {
+						if (null != e._$w0) {
+							if (!e.isFinished()) return !1
+						} else this.motions.splice(i, 1), i--
+					} else this.motions.splice(i, 1), i--
+				}
+				return !0
+			}, ct.prototype.stopAllMotions = function() {
+				for (var t = 0; t < this.motions.length; t++) {
+					var i = this.motions[t];
+					if (null != i) {
+						i._$w0;
+						this.motions.splice(t, 1), t--
+					} else this.motions.splice(t, 1), t--
+				}
+			}, ct.prototype._$Zr = function(t) {
+				this._$eb = t
+			}, ct.prototype._$e = function() {
+				console.log("-- _$R --\n");
+				for (var t = 0; t < this.motions.length; t++) {
+					var i = this.motions[t],
+						e = i._$w0;
+					console.log("MotionQueueEnt[%d] :: %s\n", this.motions.length, e.toString())
+				}
+			}, dt._$Gs = 0, dt.prototype.isFinished = function() {
+				return this._$9L
+			}, dt.prototype._$qS = function(t) {
+				var i = w.getUserTimeMSec(),
+					e = i + t;
+				(this._$Do < 0 || e < this._$Do) && (this._$Do = e)
+			}, dt.prototype._$Bs = function() {
+				return this._$sr
+			}, gt.prototype.setContext = function(t) {
+				var i = this.m;
+				t.transform(i[0], i[1], i[3], i[4], i[6], i[7])
+			}, gt.prototype.toString = function() {
+				for (var t = "LDTransform { ", i = 0; i < 9; i++) t += this.m[i].toFixed(2) + " ,";
+				return t += " }"
+			}, gt.prototype.identity = function() {
+				var t = this.m;
+				t[0] = t[4] = t[8] = 1, t[1] = t[2] = t[3] = t[5] = t[6] = t[7] = 0
+			}, gt.prototype._$PS = function(t, i, e) {
+				null == e && (e = new Array(0, 0));
+				var r = this.m;
+				return e[0] = r[0] * t + r[3] * i + r[6], e[1] = r[1] * t + r[4] * i + r[7], e
+			}, gt.prototype._$P2 = function(t) {
+				t || (t = new gt);
+				var i = this.m,
+					e = i[0],
+					r = i[1],
+					o = i[2],
+					n = i[3],
+					s = i[4],
+					_ = i[5],
+					a = i[6],
+					h = i[7],
+					l = i[8],
+					$ = e * s * l + r * _ * a + o * n * h - e * _ * h - o * s * a - r * n * l;
+				if (0 == $) return null;
+				var u = 1 / $;
+				return t.m[0] = u * (s * l - h * _), t.m[1] = u * (h * o - r * l), t.m[2] = u * (r * _ - s * o), t.m[3] = u * (a * _ - n * l), t.m[4] = u * (e * l - a * o), t.m[5] = u * (n * o - e * _), t.m[6] = u * (n * h - a * s), t.m[7] = u * (a * r - e * h), t.m[8] = u * (e * s - n * r), t
+			}, gt.prototype.transform = function(t, i, e) {
+				null == e && (e = new Array(0, 0));
+				var r = this.m;
+				return e[0] = r[0] * t + r[3] * i + r[6], e[1] = r[1] * t + r[4] * i + r[7], e
+			}, gt.prototype.translate = function(t, i) {
+				var e = this.m;
+				e[6] = e[0] * t + e[3] * i + e[6], e[7] = e[1] * t + e[4] * i + e[7], e[8] = e[2] * t + e[5] * i + e[8]
+			}, gt.prototype.scale = function(t, i) {
+				var e = this.m;
+				e[0] *= t, e[1] *= t, e[2] *= t, e[3] *= i, e[4] *= i, e[5] *= i
+			}, gt.prototype.shear = function(t, i) {
+				var e = this.m,
+					r = e[0] + e[3] * i,
+					o = e[1] + e[4] * i,
+					n = e[2] + e[5] * i;
+				e[3] = e[0] * t + e[3], e[4] = e[1] * t + e[4], e[5] = e[2] * t + e[5], e[0] = r, e[1] = o, e[2] = n
+			}, gt.prototype.rotate = function(t) {
+				var i = this.m,
+					e = Math.cos(t),
+					r = Math.sin(t),
+					o = i[0] * e + i[3] * r,
+					n = i[1] * e + i[4] * r,
+					s = i[2] * e + i[5] * r;
+				i[3] = -i[0] * r + i[3] * e, i[4] = -i[1] * r + i[4] * e, i[5] = -i[2] * r + i[5] * e, i[0] = o, i[1] = n, i[2] = s
+			}, gt.prototype.concatenate = function(t) {
+				var i = this.m,
+					e = t.m,
+					r = i[0] * e[0] + i[3] * e[1] + i[6] * e[2],
+					o = i[1] * e[0] + i[4] * e[1] + i[7] * e[2],
+					n = i[2] * e[0] + i[5] * e[1] + i[8] * e[2],
+					s = i[0] * e[3] + i[3] * e[4] + i[6] * e[5],
+					_ = i[1] * e[3] + i[4] * e[4] + i[7] * e[5],
+					a = i[2] * e[3] + i[5] * e[4] + i[8] * e[5],
+					h = i[0] * e[6] + i[3] * e[7] + i[6] * e[8],
+					l = i[1] * e[6] + i[4] * e[7] + i[7] * e[8],
+					$ = i[2] * e[6] + i[5] * e[7] + i[8] * e[8];
+				m[0] = r, m[1] = o, m[2] = n, m[3] = s, m[4] = _, m[5] = a, m[6] = h, m[7] = l, m[8] = $
+			}, yt.prototype = new et, yt._$eT = null, yt._$tP = new Object, yt._$2o = function() {
+				return null == yt._$eT && (yt._$eT = yt.getID("DST_BASE")), yt._$eT
+			}, yt._$27 = function() {
+				yt._$tP.clear(), yt._$eT = null
+			}, yt.getID = function(t) {
+				var i = yt._$tP[t];
+				return null == i && (i = new yt(t), yt._$tP[t] = i), i
+			}, yt.prototype._$3s = function() {
+				return new yt
+			}, mt.prototype = new E, mt._$9r = function(t) {
+				return new Float32Array(t)
+			}, mt._$vb = function(t) {
+				return new Int16Array(t)
+			}, mt._$cr = function(t, i) {
+				return null == t || t._$yL() < i.length ? (t = mt._$9r(2 * i.length), t.put(i), t._$oT(0)) : (t.clear(), t.put(i), t._$oT(0)), t
+			}, mt._$mb = function(t, i) {
+				return null == t || t._$yL() < i.length ? (t = mt._$vb(2 * i.length), t.put(i), t._$oT(0)) : (t.clear(), t.put(i), t._$oT(0)), t
+			}, mt._$Hs = function() {
+				return this._$Gr
+			}, mt._$as = function(t) {
+				this._$Gr = t
+			}, mt.prototype.getGL = function() {
+				return this.gl
+			}, mt.prototype.setGL = function(t) {
+				this.gl = t
+			}, mt.prototype.setTransform = function(t) {
+				this.transform = t
+			}, mt.prototype._$ZT = function() {
+				var t = this.gl;
+				this.firstDraw && (this.initShader(), this.firstDraw = !1, this.anisotropyExt = t.getExtension("EXT_texture_filter_anisotropic") || t.getExtension("WEBKIT_EXT_texture_filter_anisotropic") || t.getExtension("MOZ_EXT_texture_filter_anisotropic"), this.anisotropyExt && (this.maxAnisotropy = t.getParameter(this.anisotropyExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT))), t.disable(t.SCISSOR_TEST), t.disable(t.STENCIL_TEST), t.disable(t.DEPTH_TEST), t.frontFace(t.CW), t.enable(t.BLEND), t.colorMask(1, 1, 1, 1), t.bindBuffer(t.ARRAY_BUFFER, null), t.bindBuffer(t.ELEMENT_ARRAY_BUFFER, null)
+			}, mt.prototype._$Uo = function(t, i, e, r, o, n, s, _) {
+				if (!(n < .01 && null == this.clipBufPre_clipContextMask)) {
+					var a = (n > .9 && at.EXPAND_W, this.gl);
+					if (null == this.gl) throw new Error("gl is null");
+					var h = 1 * this._$C0 * n,
+						l = 1 * this._$tT * n,
+						$ = 1 * this._$WL * n,
+						u = this._$lT * n;
+					if (null != this.clipBufPre_clipContextMask) {
+						a.frontFace(a.CCW), a.useProgram(this.shaderProgram), this._$vS = Tt(a, this._$vS, r), this._$no = Pt(a, this._$no, e), a.enableVertexAttribArray(this.a_position_Loc), a.vertexAttribPointer(this.a_position_Loc, 2, a.FLOAT, !1, 0, 0), this._$NT = Tt(a, this._$NT, o), a.activeTexture(a.TEXTURE1), a.bindTexture(a.TEXTURE_2D, this.textures[t]), a.uniform1i(this.s_texture0_Loc, 1), a.enableVertexAttribArray(this.a_texCoord_Loc), a.vertexAttribPointer(this.a_texCoord_Loc, 2, a.FLOAT, !1, 0, 0), a.uniformMatrix4fv(this.u_matrix_Loc, !1, this.getClipBufPre_clipContextMask().matrixForMask);
+						var p = this.getClipBufPre_clipContextMask().layoutChannelNo,
+							f = this.getChannelFlagAsColor(p);
+						a.uniform4f(this.u_channelFlag, f.r, f.g, f.b, f.a);
+						var c = this.getClipBufPre_clipContextMask().layoutBounds;
+						a.uniform4f(this.u_baseColor_Loc, 2 * c.x - 1, 2 * c.y - 1, 2 * c._$EL() - 1, 2 * c._$5T() - 1), a.uniform1i(this.u_maskFlag_Loc, !0)
+					} else if (null != this.getClipBufPre_clipContextDraw()) {
+						a.useProgram(this.shaderProgramOff), this._$vS = Tt(a, this._$vS, r), this._$no = Pt(a, this._$no, e), a.enableVertexAttribArray(this.a_position_Loc_Off), a.vertexAttribPointer(this.a_position_Loc_Off, 2, a.FLOAT, !1, 0, 0), this._$NT = Tt(a, this._$NT, o), a.activeTexture(a.TEXTURE1), a.bindTexture(a.TEXTURE_2D, this.textures[t]), a.uniform1i(this.s_texture0_Loc_Off, 1), a.enableVertexAttribArray(this.a_texCoord_Loc_Off), a.vertexAttribPointer(this.a_texCoord_Loc_Off, 2, a.FLOAT, !1, 0, 0), a.uniformMatrix4fv(this.u_clipMatrix_Loc_Off, !1, this.getClipBufPre_clipContextDraw().matrixForDraw), a.uniformMatrix4fv(this.u_matrix_Loc_Off, !1, this.matrix4x4), a.activeTexture(a.TEXTURE2), a.bindTexture(a.TEXTURE_2D, at.fTexture[this.glno]), a.uniform1i(this.s_texture1_Loc_Off, 2);
+						var p = this.getClipBufPre_clipContextDraw().layoutChannelNo,
+							f = this.getChannelFlagAsColor(p);
+						a.uniform4f(this.u_channelFlag_Loc_Off, f.r, f.g, f.b, f.a), a.uniform4f(this.u_baseColor_Loc_Off, h, l, $, u)
+					} else a.useProgram(this.shaderProgram), this._$vS = Tt(a, this._$vS, r), this._$no = Pt(a, this._$no, e), a.enableVertexAttribArray(this.a_position_Loc), a.vertexAttribPointer(this.a_position_Loc, 2, a.FLOAT, !1, 0, 0), this._$NT = Tt(a, this._$NT, o), a.activeTexture(a.TEXTURE1), a.bindTexture(a.TEXTURE_2D, this.textures[t]), a.uniform1i(this.s_texture0_Loc, 1), a.enableVertexAttribArray(this.a_texCoord_Loc), a.vertexAttribPointer(this.a_texCoord_Loc, 2, a.FLOAT, !1, 0, 0), a.uniformMatrix4fv(this.u_matrix_Loc, !1, this.matrix4x4), a.uniform4f(this.u_baseColor_Loc, h, l, $, u), a.uniform1i(this.u_maskFlag_Loc, !1);
+					this.culling ? this.gl.enable(a.CULL_FACE) : this.gl.disable(a.CULL_FACE), this.gl.enable(a.BLEND);
+					var d, g, y, m;
+					if (null != this.clipBufPre_clipContextMask) d = a.ONE, g = a.ONE_MINUS_SRC_ALPHA, y = a.ONE, m = a.ONE_MINUS_SRC_ALPHA;
+					else switch (s) {
+					case $t._$ms:
+						d = a.ONE, g = a.ONE_MINUS_SRC_ALPHA, y = a.ONE, m = a.ONE_MINUS_SRC_ALPHA;
+						break;
+					case $t._$ns:
+						d = a.ONE, g = a.ONE, y = a.ZERO, m = a.ONE;
+						break;
+					case $t._$_s:
+						d = a.DST_COLOR, g = a.ONE_MINUS_SRC_ALPHA, y = a.ZERO, m = a.ONE
+					}
+					a.blendEquationSeparate(a.FUNC_ADD, a.FUNC_ADD), a.blendFuncSeparate(d, g, y, m), this.anisotropyExt && a.texParameteri(a.TEXTURE_2D, this.anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, this.maxAnisotropy);
+					var T = e.length;
+					a.drawElements(a.TRIANGLES, T, a.UNSIGNED_SHORT, 0), a.bindTexture(a.TEXTURE_2D, null)
+				}
+			}, mt.prototype._$Rs = function() {
+				throw new Error("_$Rs")
+			}, mt.prototype._$Ds = function(t) {
+				throw new Error("_$Ds")
+			}, mt.prototype._$K2 = function() {
+				for (var t = 0; t < this.textures.length; t++) {
+					0 != this.textures[t] && (this.gl._$K2(1, this.textures, t), this.textures[t] = null)
+				}
+			}, mt.prototype.setTexture = function(t, i) {
+				this.textures[t] = i
+			}, mt.prototype.initShader = function() {
+				var t = this.gl;
+				this.loadShaders2(), this.a_position_Loc = t.getAttribLocation(this.shaderProgram, "a_position"), this.a_texCoord_Loc = t.getAttribLocation(this.shaderProgram, "a_texCoord"), this.u_matrix_Loc = t.getUniformLocation(this.shaderProgram, "u_mvpMatrix"), this.s_texture0_Loc = t.getUniformLocation(this.shaderProgram, "s_texture0"), this.u_channelFlag = t.getUniformLocation(this.shaderProgram, "u_channelFlag"), this.u_baseColor_Loc = t.getUniformLocation(this.shaderProgram, "u_baseColor"), this.u_maskFlag_Loc = t.getUniformLocation(this.shaderProgram, "u_maskFlag"), this.a_position_Loc_Off = t.getAttribLocation(this.shaderProgramOff, "a_position"), this.a_texCoord_Loc_Off = t.getAttribLocation(this.shaderProgramOff, "a_texCoord"), this.u_matrix_Loc_Off = t.getUniformLocation(this.shaderProgramOff, "u_mvpMatrix"), this.u_clipMatrix_Loc_Off = t.getUniformLocation(this.shaderProgramOff, "u_ClipMatrix"), this.s_texture0_Loc_Off = t.getUniformLocation(this.shaderProgramOff, "s_texture0"), this.s_texture1_Loc_Off = t.getUniformLocation(this.shaderProgramOff, "s_texture1"), this.u_channelFlag_Loc_Off = t.getUniformLocation(this.shaderProgramOff, "u_channelFlag"), this.u_baseColor_Loc_Off = t.getUniformLocation(this.shaderProgramOff, "u_baseColor")
+			}, mt.prototype.disposeShader = function() {
+				var t = this.gl;
+				this.shaderProgram && (t.deleteProgram(this.shaderProgram), this.shaderProgram = null), this.shaderProgramOff && (t.deleteProgram(this.shaderProgramOff), this.shaderProgramOff = null)
+			}, mt.prototype.compileShader = function(t, i) {
+				var e = this.gl,
+					r = i,
+					o = e.createShader(t);
+				if (null == o) return _._$Ji("_$L0 to create shader"), null;
+				if (e.shaderSource(o, r), e.compileShader(o), !e.getShaderParameter(o, e.COMPILE_STATUS)) {
+					var n = e.getShaderInfoLog(o);
+					return _._$Ji("_$L0 to compile shader : " + n), e.deleteShader(o), null
+				}
+				return o
+			}, mt.prototype.loadShaders2 = function() {
+				var t = this.gl;
+				if (this.shaderProgram = t.createProgram(), !this.shaderProgram) return !1;
+				if (this.shaderProgramOff = t.createProgram(), !this.shaderProgramOff) return !1;
+				if (this.vertShader = this.compileShader(t.VERTEX_SHADER, "attribute vec4     a_position;attribute vec2     a_texCoord;varying vec2       v_texCoord;varying vec4       v_ClipPos;uniform mat4       u_mvpMatrix;void main(){    gl_Position = u_mvpMatrix * a_position;    v_ClipPos = u_mvpMatrix * a_position;    v_texCoord = a_texCoord;}"), !this.vertShader) return _._$Ji("Vertex shader compile _$li!"), !1;
+				if (this.vertShaderOff = this.compileShader(t.VERTEX_SHADER, "attribute vec4     a_position;attribute vec2     a_texCoord;varying vec2       v_texCoord;varying vec4       v_ClipPos;uniform mat4       u_mvpMatrix;uniform mat4       u_ClipMatrix;void main(){    gl_Position = u_mvpMatrix * a_position;    v_ClipPos = u_ClipMatrix * a_position;    v_texCoord = a_texCoord ;}"), !this.vertShaderOff) return _._$Ji("OffVertex shader compile _$li!"), !1;
+				if (this.fragShader = this.compileShader(t.FRAGMENT_SHADER, "precision mediump float;varying vec2       v_texCoord;varying vec4       v_ClipPos;uniform sampler2D  s_texture0;uniform vec4       u_channelFlag;uniform vec4       u_baseColor;uniform bool       u_maskFlag;void main(){    vec4 smpColor;     if(u_maskFlag){        float isInside =             step(u_baseColor.x, v_ClipPos.x/v_ClipPos.w)          * step(u_baseColor.y, v_ClipPos.y/v_ClipPos.w)          * step(v_ClipPos.x/v_ClipPos.w, u_baseColor.z)          * step(v_ClipPos.y/v_ClipPos.w, u_baseColor.w);        smpColor = u_channelFlag * texture2D(s_texture0 , v_texCoord).a * isInside;    }else{        smpColor = texture2D(s_texture0 , v_texCoord) * u_baseColor;    }    gl_FragColor = smpColor;}"), !this.fragShader) return _._$Ji("Fragment shader compile _$li!"), !1;
+				if (this.fragShaderOff = this.compileShader(t.FRAGMENT_SHADER, "precision mediump float ;varying vec2       v_texCoord;varying vec4       v_ClipPos;uniform sampler2D  s_texture0;uniform sampler2D  s_texture1;uniform vec4       u_channelFlag;uniform vec4       u_baseColor ;void main(){    vec4 col_formask = texture2D(s_texture0, v_texCoord) * u_baseColor;    vec4 clipMask = texture2D(s_texture1, v_ClipPos.xy / v_ClipPos.w) * u_channelFlag;    float maskVal = clipMask.r + clipMask.g + clipMask.b + clipMask.a;    col_formask = col_formask * maskVal;    gl_FragColor = col_formask;}"), !this.fragShaderOff) return _._$Ji("OffFragment shader compile _$li!"), !1;
+				if (t.attachShader(this.shaderProgram, this.vertShader), t.attachShader(this.shaderProgram, this.fragShader), t.attachShader(this.shaderProgramOff, this.vertShaderOff), t.attachShader(this.shaderProgramOff, this.fragShaderOff), t.linkProgram(this.shaderProgram), t.linkProgram(this.shaderProgramOff), !t.getProgramParameter(this.shaderProgram, t.LINK_STATUS)) {
+					var i = t.getProgramInfoLog(this.shaderProgram);
+					return _._$Ji("_$L0 to link program: " + i), this.vertShader && (t.deleteShader(this.vertShader), this.vertShader = 0), this.fragShader && (t.deleteShader(this.fragShader), this.fragShader = 0), this.shaderProgram && (t.deleteProgram(this.shaderProgram), this.shaderProgram = 0), this.vertShaderOff && (t.deleteShader(this.vertShaderOff), this.vertShaderOff = 0), this.fragShaderOff && (t.deleteShader(this.fragShaderOff), this.fragShaderOff = 0), this.shaderProgramOff && (t.deleteProgram(this.shaderProgramOff), this.shaderProgramOff = 0), !1
+				}
+				return !0
+			}, mt.prototype.createFramebuffer = function() {
+				var t = this.gl,
+					i = at.clippingMaskBufferSize,
+					e = t.createFramebuffer();
+				t.bindFramebuffer(t.FRAMEBUFFER, e);
+				var r = t.createRenderbuffer();
+				t.bindRenderbuffer(t.RENDERBUFFER, r), t.renderbufferStorage(t.RENDERBUFFER, t.RGBA4, i, i), t.framebufferRenderbuffer(t.FRAMEBUFFER, t.COLOR_ATTACHMENT0, t.RENDERBUFFER, r);
+				var o = t.createTexture();
+				return t.bindTexture(t.TEXTURE_2D, o), t.texImage2D(t.TEXTURE_2D, 0, t.RGBA, i, i, 0, t.RGBA, t.UNSIGNED_BYTE, null), t.texParameteri(t.TEXTURE_2D, t.TEXTURE_MIN_FILTER, t.LINEAR), t.texParameteri(t.TEXTURE_2D, t.TEXTURE_MAG_FILTER, t.LINEAR), t.texParameteri(t.TEXTURE_2D, t.TEXTURE_WRAP_S, t.CLAMP_TO_EDGE), t.texParameteri(t.TEXTURE_2D, t.TEXTURE_WRAP_T, t.CLAMP_TO_EDGE), t.framebufferTexture2D(t.FRAMEBUFFER, t.COLOR_ATTACHMENT0, t.TEXTURE_2D, o, 0), t.bindTexture(t.TEXTURE_2D, null), t.bindRenderbuffer(t.RENDERBUFFER, null), t.bindFramebuffer(t.FRAMEBUFFER, null), at.fTexture[this.glno] = o, {
+					framebuffer: e,
+					renderbuffer: r,
+					texture: at.fTexture[this.glno]
+				}
+			}, St.prototype._$fP = function() {
+				var t, i, e, r = this._$ST();
+				if (0 == (128 & r)) return 255 & r;
+				if (0 == (128 & (t = this._$ST()))) return (127 & r) << 7 | 127 & t;
+				if (0 == (128 & (i = this._$ST()))) return (127 & r) << 14 | (127 & t) << 7 | 255 & i;
+				if (0 == (128 & (e = this._$ST()))) return (127 & r) << 21 | (127 & t) << 14 | (127 & i) << 7 | 255 & e;
+				throw new lt("_$L _$0P  _")
+			}, St.prototype.getFormatVersion = function() {
+				return this._$S2
+			}, St.prototype._$gr = function(t) {
+				this._$S2 = t
+			}, St.prototype._$3L = function() {
+				return this._$fP()
+			}, St.prototype._$mP = function() {
+				return this._$zT(), this._$F += 8, this._$T.getFloat64(this._$F - 8)
+			}, St.prototype._$_T = function() {
+				return this._$zT(), this._$F += 4, this._$T.getFloat32(this._$F - 4)
+			}, St.prototype._$6L = function() {
+				return this._$zT(), this._$F += 4, this._$T.getInt32(this._$F - 4)
+			}, St.prototype._$ST = function() {
+				return this._$zT(), this._$T.getInt8(this._$F++)
+			}, St.prototype._$9T = function() {
+				return this._$zT(), this._$F += 2, this._$T.getInt16(this._$F - 2)
+			}, St.prototype._$2T = function() {
+				throw this._$zT(), this._$F += 8, new lt("_$L _$q read long")
+			}, St.prototype._$po = function() {
+				return this._$zT(), 0 != this._$T.getInt8(this._$F++)
+			};
+			var xt = !0;
+			St.prototype._$bT = function() {
+				this._$zT();
+				var t = this._$3L(),
+					i = null;
+				if (xt) try {
+					var e = new ArrayBuffer(2 * t);
+					i = new Uint16Array(e);
+					for (var r = 0; r < t; ++r) i[r] = this._$T.getUint8(this._$F++);
+					return String.fromCharCode.apply(null, i)
+				} catch (t) {
+					xt = !1
+				}
+				try {
+					var o = new Array;
+					if (null == i) for (var r = 0; r < t; ++r) o[r] = this._$T.getUint8(this._$F++);
+					else for (var r = 0; r < t; ++r) o[r] = i[r];
+					return String.fromCharCode.apply(null, o)
+				} catch (t) {
+					console.log("read utf8 / _$rT _$L0 !! : " + t)
+				}
+			}, St.prototype._$cS = function() {
+				this._$zT();
+				for (var t = this._$3L(), i = new Int32Array(t), e = 0; e < t; e++) i[e] = this._$T.getInt32(this._$F), this._$F += 4;
+				return i
+			}, St.prototype._$Tb = function() {
+				this._$zT();
+				for (var t = this._$3L(), i = new Float32Array(t), e = 0; e < t; e++) i[e] = this._$T.getFloat32(this._$F), this._$F += 4;
+				return i
+			}, St.prototype._$5b = function() {
+				this._$zT();
+				for (var t = this._$3L(), i = new Float64Array(t), e = 0; e < t; e++) i[e] = this._$T.getFloat64(this._$F), this._$F += 8;
+				return i
+			}, St.prototype._$nP = function() {
+				return this._$Jb(-1)
+			}, St.prototype._$Jb = function(t) {
+				if (this._$zT(), t < 0 && (t = this._$3L()), t == G._$7P) {
+					var i = this._$6L();
+					if (0 <= i && i < this._$Ko.length) return this._$Ko[i];
+					throw new lt("_$sL _$4i @_$m0")
+				}
+				var e = this._$4b(t);
+				return this._$Ko.push(e), e
+			}, St.prototype._$4b = function(t) {
+				if (0 == t) return null;
+				if (50 == t) {
+					var i = this._$bT(),
+						e = b.getID(i);
+					return e
+				}
+				if (51 == t) {
+					var i = this._$bT(),
+						e = yt.getID(i);
+					return e
+				}
+				if (134 == t) {
+					var i = this._$bT(),
+						e = l.getID(i);
+					return e
+				}
+				if (60 == t) {
+					var i = this._$bT(),
+						e = u.getID(i);
+					return e
+				}
+				if (t >= 48) {
+					var r = G._$9o(t);
+					return null != r ? (r._$F0(this), r) : null
+				}
+				switch (t) {
+				case 1:
+					return this._$bT();
+				case 10:
+					return new n(this._$6L(), !0);
+				case 11:
+					return new S(this._$mP(), this._$mP(), this._$mP(), this._$mP());
+				case 12:
+					return new S(this._$_T(), this._$_T(), this._$_T(), this._$_T());
+				case 13:
+					return new L(this._$mP(), this._$mP());
+				case 14:
+					return new L(this._$_T(), this._$_T());
+				case 15:
+					for (var o = this._$3L(), e = new Array(o), s = 0; s < o; s++) e[s] = this._$nP();
+					return e;
+				case 17:
+					var e = new F(this._$mP(), this._$mP(), this._$mP(), this._$mP(), this._$mP(), this._$mP());
+					return e;
+				case 21:
+					return new h(this._$6L(), this._$6L(), this._$6L(), this._$6L());
+				case 22:
+					return new pt(this._$6L(), this._$6L());
+				case 23:
+					throw new Error("_$L _$ro ");
+				case 16:
+				case 25:
+					return this._$cS();
+				case 26:
+					return this._$5b();
+				case 27:
+					return this._$Tb();
+				case 2:
+				case 3:
+				case 4:
+				case 5:
+				case 6:
+				case 7:
+				case 8:
+				case 9:
+				case 18:
+				case 19:
+				case 20:
+				case 24:
+				case 28:
+					throw new lt("_$6 _$q : _$nP() of 2-9 ,18,19,20,24,28 : " + t);
+				default:
+					throw new lt("_$6 _$q : _$nP() NO _$i : " + t)
+				}
+			}, St.prototype._$8L = function() {
+				return 0 == this._$hL ? this._$v0 = this._$ST() : 8 == this._$hL && (this._$v0 = this._$ST(), this._$hL = 0), 1 == (this._$v0 >> 7 - this._$hL++ & 1)
+			}, St.prototype._$zT = function() {
+				0 != this._$hL && (this._$hL = 0)
+			}, vt.prototype._$wP = function(t, i, e) {
+				for (var r = 0; r < e; r++) {
+					for (var o = 0; o < i; o++) {
+						var n = 2 * (o + r * i);
+						console.log("(% 7.3f , % 7.3f) , ", t[n], t[n + 1])
+					}
+					console.log("\n")
+				}
+				console.log("\n")
+			}, Lt._$2S = Math.PI / 180, Lt._$bS = Math.PI / 180, Lt._$wS = 180 / Math.PI, Lt._$NS = 180 / Math.PI, Lt.PI_F = Math.PI, Lt._$kT = [0, .012368, .024734, .037097, .049454, .061803, .074143, .086471, .098786, .111087, .12337, .135634, .147877, .160098, .172295, .184465, .196606, .208718, .220798, .232844, .244854, .256827, .268761, .280654, .292503, .304308, .316066, .327776, .339436, .351044, .362598, .374097, .385538, .396921, .408243, .419502, .430697, .441826, .452888, .463881, .474802, .485651, .496425, .507124, .517745, .528287, .538748, .549126, .559421, .56963, .579752, .589785, .599728, .609579, .619337, .629, .638567, .648036, .657406, .666676, .675843, .684908, .693867, .70272, .711466, .720103, .72863, .737045, .745348, .753536, .76161, .769566, .777405, .785125, .792725, .800204, .807561, .814793, .821901, .828884, .835739, .842467, .849066, .855535, .861873, .868079, .874153, .880093, .885898, .891567, .897101, .902497, .907754, .912873, .917853, .922692, .92739, .931946, .936359, .940629, .944755, .948737, .952574, .956265, .959809, .963207, .966457, .96956, .972514, .97532, .977976, .980482, .982839, .985045, .987101, .989006, .990759, .992361, .993811, .995109, .996254, .997248, .998088, .998776, .999312, .999694, .999924, 1], Lt._$92 = function(t, i) {
+				var e = Math.atan2(t[1], t[0]),
+					r = Math.atan2(i[1], i[0]);
+				return Lt._$tS(e, r)
+			}, Lt._$tS = function(t, i) {
+				for (var e = t - i; e < -Math.PI;) e += 2 * Math.PI;
+				for (; e > Math.PI;) e -= 2 * Math.PI;
+				return e
+			}, Lt._$9 = function(t) {
+				return Math.sin(t)
+			}, Lt.fcos = function(t) {
+				return Math.cos(t)
+			}, Mt.prototype._$u2 = function() {
+				return this._$IS[0]
+			}, Mt.prototype._$yo = function() {
+				return this._$AT && !this._$IS[0]
+			}, Mt.prototype._$GT = function() {
+				return this._$e0
+			}, Et._$W2 = 0, Et.SYSTEM_INFO = null, Et.USER_AGENT = navigator.userAgent, Et.isIPhone = function() {
+				return Et.SYSTEM_INFO || Et.setup(), Et.SYSTEM_INFO._isIPhone
+			}, Et.isIOS = function() {
+				return Et.SYSTEM_INFO || Et.setup(), Et.SYSTEM_INFO._isIPhone || Et.SYSTEM_INFO._isIPad
+			}, Et.isAndroid = function() {
+				return Et.SYSTEM_INFO || Et.setup(), Et.SYSTEM_INFO._isAndroid
+			}, Et.getOSVersion = function() {
+				return Et.SYSTEM_INFO || Et.setup(), Et.SYSTEM_INFO.version
+			}, Et.getOS = function() {
+				return Et.SYSTEM_INFO || Et.setup(), Et.SYSTEM_INFO._isIPhone || Et.SYSTEM_INFO._isIPad ? "iOS" : Et.SYSTEM_INFO._isAndroid ? "Android" : "_$Q0 OS"
+			}, Et.setup = function() {
+				function t(t, i) {
+					for (var e = t.substring(i).split(/[ _,;\.]/), r = 0, o = 0; o <= 2 && !isNaN(e[o]); o++) {
+						var n = parseInt(e[o]);
+						if (n < 0 || n > 999) {
+							_._$li("err : " + n + " @UtHtml5.setup()"), r = 0;
+							break
+						}
+						r += n * Math.pow(1e3, 2 - o)
+					}
+					return r
+				}
+				var i, e = Et.USER_AGENT,
+					r = Et.SYSTEM_INFO = {
+						userAgent: e
+					};
+				if ((i = e.indexOf("iPhone OS ")) >= 0) r.os = "iPhone", r._isIPhone = !0, r.version = t(e, i + "iPhone OS ".length);
+				else if ((i = e.indexOf("iPad")) >= 0) {
+					if ((i = e.indexOf("CPU OS")) < 0) return void _._$li(" err : " + e + " @UtHtml5.setup()");
+					r.os = "iPad", r._isIPad = !0, r.version = t(e, i + "CPU OS ".length)
+				} else(i = e.indexOf("Android")) >= 0 ? (r.os = "Android", r._isAndroid = !0, r.version = t(e, i + "Android ".length)) : (r.os = "-", r.version = -1)
+			}, window.UtSystem = w, window.UtDebug = _, window.LDTransform = gt, window.LDGL = nt, window.Live2D = at, window.Live2DModelWebGL = ft, window.Live2DModelJS = q, window.Live2DMotion = J, window.MotionQueueManager = ct, window.PhysicsHair = f, window.AMotion = s, window.PartsDataID = l, window.DrawDataID = b, window.BaseDataID = yt, window.ParamID = u, at.init();
+			var At = !1
+		}()
+	}).call(i, e(7))
+}, function(t, i) {
+	t.exports = {
+		import: function() {
+			throw new Error("System.import cannot be used indirectly")
+		}
+	}
+}, function(t, i, e) {
+	"use strict";
+
+	function r(t) {
+		return t && t.__esModule ? t : {
+		default:
+			t
+		}
+	}
+	function o() {
+		this.models = [], this.count = -1, this.reloadFlg = !1, Live2D.init(), n.Live2DFramework.setPlatformManager(new _.
+	default)
+	}
+	Object.defineProperty(i, "__esModule", {
+		value: !0
+	}), i.
+default = o;
+	var n = e(0),
+		s = e(9),
+		_ = r(s),
+		a = e(10),
+		h = r(a),
+		l = e(1),
+		$ = r(l);
+	o.prototype.createModel = function() {
+		var t = new h.
+	default;
+		return this.models.push(t), t
+	}, o.prototype.changeModel = function(t, i) {
+		if (this.reloadFlg) {
+			this.reloadFlg = !1;
+			this.releaseModel(0, t), this.createModel(), this.models[0].load(t, i)
+		}
+	}, o.prototype.getModel = function(t) {
+		return t >= this.models.length ? null : this.models[t]
+	}, o.prototype.releaseModel = function(t, i) {
+		this.models.length <= t || (this.models[t].release(i), delete this.models[t], this.models.splice(t, 1))
+	}, o.prototype.numModels = function() {
+		return this.models.length
+	}, o.prototype.setDrag = function(t, i) {
+		for (var e = 0; e < this.models.length; e++) this.models[e].setDrag(t, i)
+	}, o.prototype.maxScaleEvent = function() {
+		$.
+	default.DEBUG_LOG && console.log("Max scale event.");
+		for (var t = 0; t < this.models.length; t++) this.models[t].startRandomMotion($.
+	default.MOTION_GROUP_PINCH_IN, $.
+	default.PRIORITY_NORMAL)
+	}, o.prototype.minScaleEvent = function() {
+		$.
+	default.DEBUG_LOG && console.log("Min scale event.");
+		for (var t = 0; t < this.models.length; t++) this.models[t].startRandomMotion($.
+	default.MOTION_GROUP_PINCH_OUT, $.
+	default.PRIORITY_NORMAL)
+	}, o.prototype.tapEvent = function(t, i) {
+		$.
+	default.DEBUG_LOG && console.log("tapEvent view x:" + t + " y:" + i);
+		for (var e = 0; e < this.models.length; e++) this.models[e].hitTest($.
+	default.HIT_AREA_HEAD, t, i) ? ($.
+	default.DEBUG_LOG && console.log("Tap face."), this.models[e].setRandomExpression()):
+		this.models[e].hitTest($.
+	default.HIT_AREA_BODY, t, i) ? ($.
+	default.DEBUG_LOG && console.log("Tap body. models[" + e + "]"), this.models[e].startRandomMotion($.
+	default.MOTION_GROUP_TAP_BODY, $.
+	default.PRIORITY_NORMAL)) : this.models[e].hitTestCustom("head", t, i) ? ($.
+	default.DEBUG_LOG && console.log("Tap face."), this.models[e].startRandomMotion($.
+	default.MOTION_GROUP_FLICK_HEAD, $.
+	default.PRIORITY_NORMAL)) : this.models[e].hitTestCustom("body", t, i) && ($.
+	default.DEBUG_LOG && console.log("Tap body. models[" + e + "]"), this.models[e].startRandomMotion($.
+	default.MOTION_GROUP_TAP_BODY, $.
+	default.PRIORITY_NORMAL));
+		return !0
+	}
+}, function(t, i, e) {
+	"use strict";
+
+	function r() {}
+	Object.defineProperty(i, "__esModule", {
+		value: !0
+	}), i.
+default = r;
+	var o = e(2);
+	r.prototype.loadBytes = function(t, i) {
+		var e = new XMLHttpRequest;
+		e.open("GET", t, !0), e.responseType = "arraybuffer", e.onload = function() {
+			switch (e.status) {
+			case 200:
+				i(e.response);
+				break;
+			default:
+				console.error("Failed to load (" + e.status + ") : " + t)
+			}
+		}, e.send(null)
+	}, r.prototype.loadString = function(t) {
+		this.loadBytes(t, function(t) {
+			return t
+		})
+	}, r.prototype.loadLive2DModel = function(t, i) {
+		var e = null;
+		this.loadBytes(t, function(t) {
+			e = Live2DModelWebGL.loadModel(t), i(e)
+		})
+	}, r.prototype.loadTexture = function(t, i, e, r) {
+		var n = new Image;
+		n.crossOrigin = "Anonymous", n.src = e;
+		n.onload = function() {
+			var e = (0, o.getContext)(),
+				s = e.createTexture();
+			if (!s) return console.error("Failed to generate gl texture name."), -1;
+			0 == t.isPremultipliedAlpha() && e.pixelStorei(e.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1), e.pixelStorei(e.UNPACK_FLIP_Y_WEBGL, 1), e.activeTexture(e.TEXTURE0), e.bindTexture(e.TEXTURE_2D, s), e.texImage2D(e.TEXTURE_2D, 0, e.RGBA, e.RGBA, e.UNSIGNED_BYTE, n), e.texParameteri(e.TEXTURE_2D, e.TEXTURE_MAG_FILTER, e.LINEAR), e.texParameteri(e.TEXTURE_2D, e.TEXTURE_MIN_FILTER, e.LINEAR_MIPMAP_NEAREST), e.generateMipmap(e.TEXTURE_2D), t.setTexture(i, s), s = null, "function" == typeof r && r()
+		}, n.onerror = function() {
+			console.error("Failed to load image : " + e)
+		}
+	}, r.prototype.jsonParseFromBytes = function(t) {
+		var i, e = new Uint8Array(t, 0, 3);
+		return i = 239 == e[0] && 187 == e[1] && 191 == e[2] ? String.fromCharCode.apply(null, new Uint8Array(t, 3)) : String.fromCharCode.apply(null, new Uint8Array(t)), JSON.parse(i)
+	}, r.prototype.log = function(t) {}
+}, function(t, i, e) {
+	"use strict";
+
+	function r(t) {
+		return t && t.__esModule ? t : {
+		default:
+			t
+		}
+	}
+	function o() {
+		n.L2DBaseModel.prototype.constructor.call(this), this.modelHomeDir = "", this.modelSetting = null, this.tmpMatrix = []
+	}
+	Object.defineProperty(i, "__esModule", {
+		value: !0
+	}), i.
+default = o;
+	var n = e(0),
+		s = e(11),
+		_ = r(s),
+		a = e(1),
+		h = r(a),
+		l = e(3),
+		$ = r(l);
+	o.prototype = new n.L2DBaseModel, o.prototype.load = function(t, i, e) {
+		this.setUpdating(!0), this.setInitialized(!1), this.modelHomeDir = i.substring(0, i.lastIndexOf("/") + 1), this.modelSetting = new _.
+	default;
+		var r = this;
+		this.modelSetting.loadModelSetting(i, function() {
+			var t = r.modelHomeDir + r.modelSetting.getModelFile();
+			r.loadModelData(t, function(t) {
+				for (var i = 0; i < r.modelSetting.getTextureNum(); i++) {
+					if (/^https?:\/\/|^\/\//i.test(r.modelSetting.getTextureFile(i))) var o = r.modelSetting.getTextureFile(i);
+					else var o = r.modelHomeDir + r.modelSetting.getTextureFile(i);
+					r.loadTexture(i, o, function() {
+						if (r.isTexLoaded) {
+							if (r.modelSetting.getExpressionNum() > 0) {
+								r.expressions = {};
+								for (var t = 0; t < r.modelSetting.getExpressionNum(); t++) {
+									var i = r.modelSetting.getExpressionName(t),
+										o = r.modelHomeDir + r.modelSetting.getExpressionFile(t);
+									r.loadExpression(i, o)
+								}
+							} else r.expressionManager = null, r.expressions = {};
+							if (r.eyeBlink, null != r.modelSetting.getPhysicsFile() ? r.loadPhysics(r.modelHomeDir + r.modelSetting.getPhysicsFile()) : r.physics = null, null != r.modelSetting.getPoseFile() ? r.loadPose(r.modelHomeDir + r.modelSetting.getPoseFile(), function() {
+								r.pose.updateParam(r.live2DModel)
+							}) : r.pose = null, null != r.modelSetting.getLayout()) {
+								var n = r.modelSetting.getLayout();
+								null != n.width && r.modelMatrix.setWidth(n.width), null != n.height && r.modelMatrix.setHeight(n.height), null != n.x && r.modelMatrix.setX(n.x), null != n.y && r.modelMatrix.setY(n.y), null != n.center_x && r.modelMatrix.centerX(n.center_x), null != n.center_y && r.modelMatrix.centerY(n.center_y), null != n.top && r.modelMatrix.top(n.top), null != n.bottom && r.modelMatrix.bottom(n.bottom), null != n.left && r.modelMatrix.left(n.left), null != n.right && r.modelMatrix.right(n.right)
+							}
+							if (null != r.modelSetting.getHitAreasCustom()) {
+								var s = r.modelSetting.getHitAreasCustom();
+								null != s.head_x && (h.
+							default.hit_areas_custom_head_x = s.head_x), null != s.head_y && (h.
+							default.hit_areas_custom_head_y = s.head_y), null != s.body_x && (h.
+							default.hit_areas_custom_body_x = s.body_x), null != s.body_y && (h.
+							default.hit_areas_custom_body_y = s.body_y)
+							}
+							for (var t = 0; t < r.modelSetting.getInitParamNum(); t++) r.live2DModel.setParamFloat(r.modelSetting.getInitParamID(t), r.modelSetting.getInitParamValue(t));
+							for (var t = 0; t < r.modelSetting.getInitPartsVisibleNum(); t++) r.live2DModel.setPartsOpacity(r.modelSetting.getInitPartsVisibleID(t), r.modelSetting.getInitPartsVisibleValue(t));
+							r.live2DModel.saveParam(), r.preloadMotionGroup(h.
+						default.MOTION_GROUP_IDLE), r.preloadMotionGroup(h.
+						default.MOTION_GROUP_SLEEPY), r.mainMotionManager.stopAllMotions(), r.setUpdating(!1), r.setInitialized(!0), "function" == typeof e && e()
+						}
+					})
+				}
+			})
+		})
+	}, o.prototype.release = function(t) {
+		var i = n.Live2DFramework.getPlatformManager();
+		t.deleteTexture(i.texture)
+	}, o.prototype.preloadMotionGroup = function(t) {
+		for (var i = this, e = 0; e < this.modelSetting.getMotionNum(t); e++) {
+			var r = this.modelSetting.getMotionFile(t, e);
+			this.loadMotion(r, this.modelHomeDir + r, function(r) {
+				r.setFadeIn(i.modelSetting.getMotionFadeIn(t, e)), r.setFadeOut(i.modelSetting.getMotionFadeOut(t, e))
+			})
+		}
+	}, o.prototype.update = function() {
+		if (null == this.live2DModel) return void(h.
+	default.DEBUG_LOG && console.error("Failed to update."));
+		var t = UtSystem.getUserTimeMSec() - this.startTimeMSec,
+			i = t / 1e3,
+			e = 2 * i * Math.PI;
+		if (this.mainMotionManager.isFinished()) {
+			"1" === sessionStorage.getItem("Sleepy") ? this.startRandomMotion(h.
+		default.MOTION_GROUP_SLEEPY, h.
+		default.PRIORITY_SLEEPY) : this.startRandomMotion(h.
+		default.MOTION_GROUP_IDLE, h.
+		default.PRIORITY_IDLE)
+		}
+		this.live2DModel.loadParam(), this.mainMotionManager.updateParam(this.live2DModel) || null != this.eyeBlink && this.eyeBlink.updateParam(this.live2DModel), this.live2DModel.saveParam(), null == this.expressionManager || null == this.expressions || this.expressionManager.isFinished() || this.expressionManager.updateParam(this.live2DModel), this.live2DModel.addToParamFloat("PARAM_ANGLE_X", 30 * this.dragX, 1), this.live2DModel.addToParamFloat("PARAM_ANGLE_Y", 30 * this.dragY, 1), this.live2DModel.addToParamFloat("PARAM_ANGLE_Z", this.dragX * this.dragY * -30, 1), this.live2DModel.addToParamFloat("PARAM_BODY_ANGLE_X", 10 * this.dragX, 1), this.live2DModel.addToParamFloat("PARAM_EYE_BALL_X", this.dragX, 1), this.live2DModel.addToParamFloat("PARAM_EYE_BALL_Y", this.dragY, 1), this.live2DModel.addToParamFloat("PARAM_ANGLE_X", Number(15 * Math.sin(e / 6.5345)), .5), this.live2DModel.addToParamFloat("PARAM_ANGLE_Y", Number(8 * Math.sin(e / 3.5345)), .5), this.live2DModel.addToParamFloat("PARAM_ANGLE_Z", Number(10 * Math.sin(e / 5.5345)), .5), this.live2DModel.addToParamFloat("PARAM_BODY_ANGLE_X", Number(4 * Math.sin(e / 15.5345)), .5), this.live2DModel.setParamFloat("PARAM_BREATH", Number(.5 + .5 * Math.sin(e / 3.2345)), 1), null != this.physics && this.physics.updateParam(this.live2DModel), null == this.lipSync && this.live2DModel.setParamFloat("PARAM_MOUTH_OPEN_Y", this.lipSyncValue), null != this.pose && this.pose.updateParam(this.live2DModel), this.live2DModel.update()
+	}, o.prototype.setRandomExpression = function() {
+		var t = [];
+		for (var i in this.expressions) t.push(i);
+		var e = parseInt(Math.random() * t.length);
+		this.setExpression(t[e])
+	}, o.prototype.startRandomMotion = function(t, i) {
+		var e = this.modelSetting.getMotionNum(t),
+			r = parseInt(Math.random() * e);
+		this.startMotion(t, r, i)
+	}, o.prototype.startMotion = function(t, i, e) {
+		var r = this.modelSetting.getMotionFile(t, i);
+		if (null == r || "" == r) return void(h.
+	default.DEBUG_LOG && console.error("Failed to motion."));
+		if (e == h.
+	default.PRIORITY_FORCE) this.mainMotionManager.setReservePriority(e);
+		else if (!this.mainMotionManager.reserveMotion(e)) return void(h.
+	default.DEBUG_LOG && console.log("Motion is running."));
+		var o, n = this;
+		null == this.motions[t] ? this.loadMotion(null, this.modelHomeDir + r, function(r) {
+			o = r, n.setFadeInFadeOut(t, i, e, o)
+		}) : (o = this.motions[t], n.setFadeInFadeOut(t, i, e, o))
+	}, o.prototype.setFadeInFadeOut = function(t, i, e, r) {
+		var o = this.modelSetting.getMotionFile(t, i);
+		if (r.setFadeIn(this.modelSetting.getMotionFadeIn(t, i)), r.setFadeOut(this.modelSetting.getMotionFadeOut(t, i)), h.
+	default.DEBUG_LOG && console.log("Start motion : " + o), null == this.modelSetting.getMotionSound(t, i)) this.mainMotionManager.startMotionPrio(r, e);
+		else {
+			var n = this.modelSetting.getMotionSound(t, i),
+				s = document.createElement("audio");
+			s.src = this.modelHomeDir + n, h.
+		default.DEBUG_LOG && console.log("Start sound : " + n), s.play(), this.mainMotionManager.startMotionPrio(r, e)
+		}
+	}, o.prototype.setExpression = function(t) {
+		var i = this.expressions[t];
+		h.
+	default.DEBUG_LOG && console.log("Expression : " + t), this.expressionManager.startMotion(i, !1)
+	}, o.prototype.draw = function(t) {
+		$.
+	default.push(), $.
+	default.multMatrix(this.modelMatrix.getArray()), this.tmpMatrix = $.
+	default.getMatrix(), this.live2DModel.setMatrix(this.tmpMatrix), this.live2DModel.draw(), $.
+	default.pop()
+	}, o.prototype.hitTest = function(t, i, e) {
+		for (var r = this.modelSetting.getHitAreaNum(), o = 0; o < r; o++) if (t == this.modelSetting.getHitAreaName(o)) {
+			var n = this.modelSetting.getHitAreaID(o);
+			return this.hitTestSimple(n, i, e)
+		}
+		return !1
+	}, o.prototype.hitTestCustom = function(t, i, e) {
+		return "head" == t ? this.hitTestSimpleCustom(h.
+	default.hit_areas_custom_head_x, h.
+	default.hit_areas_custom_head_y, i, e) : "body" == t && this.hitTestSimpleCustom(h.
+	default.hit_areas_custom_body_x, h.
+	default.hit_areas_custom_body_y, i, e)
+	}
+}, function(t, i, e) {
+	"use strict";
+
+	function r() {
+		this.NAME = "name", this.ID = "id", this.MODEL = "model", this.TEXTURES = "textures", this.HIT_AREAS = "hit_areas", this.PHYSICS = "physics", this.POSE = "pose", this.EXPRESSIONS = "expressions", this.MOTION_GROUPS = "motions", this.SOUND = "sound", this.FADE_IN = "fade_in", this.FADE_OUT = "fade_out", this.LAYOUT = "layout", this.HIT_AREAS_CUSTOM = "hit_areas_custom", this.INIT_PARAM = "init_param", this.INIT_PARTS_VISIBLE = "init_parts_visible", this.VALUE = "val", this.FILE = "file", this.json = {}
+	}
+	Object.defineProperty(i, "__esModule", {
+		value: !0
+	}), i.
+default = r;
+	var o = e(0);
+	r.prototype.loadModelSetting = function(t, i) {
+		var e = this;
+		o.Live2DFramework.getPlatformManager().loadBytes(t, function(t) {
+			var r = String.fromCharCode.apply(null, new Uint8Array(t));
+			e.json = JSON.parse(r), i()
+		})
+	}, r.prototype.getTextureFile = function(t) {
+		return null == this.json[this.TEXTURES] || null == this.json[this.TEXTURES][t] ? null : this.json[this.TEXTURES][t]
+	}, r.prototype.getModelFile = function() {
+		return this.json[this.MODEL]
+	}, r.prototype.getTextureNum = function() {
+		return null == this.json[this.TEXTURES] ? 0 : this.json[this.TEXTURES].length
+	}, r.prototype.getHitAreaNum = function() {
+		return null == this.json[this.HIT_AREAS] ? 0 : this.json[this.HIT_AREAS].length
+	}, r.prototype.getHitAreaID = function(t) {
+		return null == this.json[this.HIT_AREAS] || null == this.json[this.HIT_AREAS][t] ? null : this.json[this.HIT_AREAS][t][this.ID]
+	}, r.prototype.getHitAreaName = function(t) {
+		return null == this.json[this.HIT_AREAS] || null == this.json[this.HIT_AREAS][t] ? null : this.json[this.HIT_AREAS][t][this.NAME]
+	}, r.prototype.getPhysicsFile = function() {
+		return this.json[this.PHYSICS]
+	}, r.prototype.getPoseFile = function() {
+		return this.json[this.POSE]
+	}, r.prototype.getExpressionNum = function() {
+		return null == this.json[this.EXPRESSIONS] ? 0 : this.json[this.EXPRESSIONS].length
+	}, r.prototype.getExpressionFile = function(t) {
+		return null == this.json[this.EXPRESSIONS] ? null : this.json[this.EXPRESSIONS][t][this.FILE]
+	}, r.prototype.getExpressionName = function(t) {
+		return null == this.json[this.EXPRESSIONS] ? null : this.json[this.EXPRESSIONS][t][this.NAME]
+	}, r.prototype.getLayout = function() {
+		return this.json[this.LAYOUT]
+	}, r.prototype.getHitAreasCustom = function() {
+		return this.json[this.HIT_AREAS_CUSTOM]
+	}, r.prototype.getInitParamNum = function() {
+		return null == this.json[this.INIT_PARAM] ? 0 : this.json[this.INIT_PARAM].length
+	}, r.prototype.getMotionNum = function(t) {
+		return null == this.json[this.MOTION_GROUPS] || null == this.json[this.MOTION_GROUPS][t] ? 0 : this.json[this.MOTION_GROUPS][t].length
+	}, r.prototype.getMotionFile = function(t, i) {
+		return null == this.json[this.MOTION_GROUPS] || null == this.json[this.MOTION_GROUPS][t] || null == this.json[this.MOTION_GROUPS][t][i] ? null : this.json[this.MOTION_GROUPS][t][i][this.FILE]
+	}, r.prototype.getMotionSound = function(t, i) {
+		return null == this.json[this.MOTION_GROUPS] || null == this.json[this.MOTION_GROUPS][t] || null == this.json[this.MOTION_GROUPS][t][i] || null == this.json[this.MOTION_GROUPS][t][i][this.SOUND] ? null : this.json[this.MOTION_GROUPS][t][i][this.SOUND]
+	}, r.prototype.getMotionFadeIn = function(t, i) {
+		return null == this.json[this.MOTION_GROUPS] || null == this.json[this.MOTION_GROUPS][t] || null == this.json[this.MOTION_GROUPS][t][i] || null == this.json[this.MOTION_GROUPS][t][i][this.FADE_IN] ? 1e3 : this.json[this.MOTION_GROUPS][t][i][this.FADE_IN]
+	}, r.prototype.getMotionFadeOut = function(t, i) {
+		return null == this.json[this.MOTION_GROUPS] || null == this.json[this.MOTION_GROUPS][t] || null == this.json[this.MOTION_GROUPS][t][i] || null == this.json[this.MOTION_GROUPS][t][i][this.FADE_OUT] ? 1e3 : this.json[this.MOTION_GROUPS][t][i][this.FADE_OUT]
+	}, r.prototype.getInitParamID = function(t) {
+		return null == this.json[this.INIT_PARAM] || null == this.json[this.INIT_PARAM][t] ? null : this.json[this.INIT_PARAM][t][this.ID]
+	}, r.prototype.getInitParamValue = function(t) {
+		return null == this.json[this.INIT_PARAM] || null == this.json[this.INIT_PARAM][t] ? NaN : this.json[this.INIT_PARAM][t][this.VALUE]
+	}, r.prototype.getInitPartsVisibleNum = function() {
+		return null == this.json[this.INIT_PARTS_VISIBLE] ? 0 : this.json[this.INIT_PARTS_VISIBLE].length
+	}, r.prototype.getInitPartsVisibleID = function(t) {
+		return null == this.json[this.INIT_PARTS_VISIBLE] || null == this.json[this.INIT_PARTS_VISIBLE][t] ? null : this.json[this.INIT_PARTS_VISIBLE][t][this.ID]
+	}, r.prototype.getInitPartsVisibleValue = function(t) {
+		return null == this.json[this.INIT_PARTS_VISIBLE] || null == this.json[this.INIT_PARTS_VISIBLE][t] ? NaN : this.json[this.INIT_PARTS_VISIBLE][t][this.VALUE]
+	}
+}]);
+//# sourceMappingURL=live2d.js.map
