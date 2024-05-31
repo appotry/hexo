@@ -8856,6 +8856,795 @@ webhook部署Hexo静态博客指南
       </tags>
   </entry>
   <entry>
+    <title>在浏览器输入 URL 回车之后发生了什么</title>
+    <url>/posts/656a0abb/</url>
+    <content><![CDATA[前言
+
+这个问题已经是老生常谈了，更是经常被作为面试的压轴题出现，网上也有很多文章，但最近闲的无聊，然后就自己做了一篇笔记，感觉比之前理解更透彻了。
+这篇笔记是我这两天看了数十篇文章总结出来的，所以相对全面一点，但由于我是做前端的，所以会比较重点分析浏览器渲染页面那一部分，至于其他部分我会罗列出关键词，感兴趣的可以自行查阅，
+**注意：**本文的步骤是建立在，请求的是一个简单的 HTTP 请求，没有 HTTPS、HTTP2、最简单的 DNS、没有代理、并且服务器没有任何问题的基础上，尽管这是不切实际的。
+大致流程
+
+URL 解析
+DNS 查询
+TCP 连接
+处理请求
+接受响应
+渲染页面
+
+一、URL 解析
+地址解析：
+首先判断你输入的是一个合法的 URL 还是一个待搜索的关键词，并且根据你输入的内容进行自动完成、字符编码等操作。
+HSTS
+由于安全隐患，会使用 HSTS 强制客户端使用 HTTPS 访问页面。详见：你所不知道的 HSTS (opens new window)。
+其他操作
+浏览器还会进行一些额外的操作，比如安全检查、访问限制（之前国产浏览器限制 996.icu）。
+检查缓存
+
+二、DNS 查询
+基本步骤
+
+1. 浏览器缓存
+浏览器会先检查是否在缓存中，没有则调用系统库函数进行查询。
+2. 操作系统缓存
+操作系统也有自己的 DNS 缓存，但在这之前，会向检查域名是否存在本地的 Hosts 文件里，没有则向 DNS 服务器发送查询请求。
+3. 路由器缓存
+路由器也有自己的缓存。
+4. ISP DNS 缓存
+ISP DNS 就是在客户端电脑上设置的首选 DNS 服务器，它们在大多数情况下都会有缓存。
+根域名服务器查询
+在前面所有步骤没有缓存的情况下，本地 DNS 服务器会将请求转发到互联网上的根域，下面这个图很好的诠释了整个流程：
+
+
+根域名服务器：维基百科 (opens new window)
+
+需要注意的点
+
+递归方式：一路查下去中间不返回，得到最终结果才返回信息（浏览器到本地 DNS 服务器的过程）
+迭代方式，就是本地 DNS 服务器到根域名服务器查询的方式。
+什么是 DNS 劫持
+前端 dns-prefetch 优化
+
+三、TCP 连接
+TCP/IP 分为四层，在发送数据时，每层都要对数据进行封装：
+
+1. 应用层：发送 HTTP 请求
+在前面的步骤我们已经得到服务器的 IP 地址，浏览器会开始构造一个 HTTP 报文，其中包括：
+
+请求报头（Request Header）：请求方法、目标地址、遵循的协议等等
+请求主体（其他参数）
+
+其中需要注意的点：
+
+浏览器只能发送 GET、POST 方法，而打开网页使用的是 GET 方法
+
+2. 传输层：TCP 传输报文
+传输层会发起一条到达服务器的 TCP 连接，为了方便传输，会对数据进行分割（以报文段为单位），并标记编号，方便服务器接受时能够准确地还原报文信息。
+在建立连接前，会先进行 TCP 三次握手。
+
+关于 TCP/IP 三次握手，网上已经有很多段子和图片生动地描述了。
+相关知识点：
+
+SYN 泛洪攻击
+
+
+3. 网络层：IP 协议查询 Mac 地址
+将数据段打包，并加入源及目标的 IP 地址，并且负责寻找传输路线。
+判断目标地址是否与当前地址处于同一网络中，是的话直接根据 Mac 地址发送，否则使用路由表查找下一跳地址，以及使用 ARP 协议查询它的 Mac 地址。
+
+注意：在 OSI 参考模型中 ARP 协议位于链路层，但在 TCP/IP 中，它位于网络层。
+
+4. 链路层：以太网协议
+以太网协议
+根据以太网协议将数据分为以“帧”为单位的数据包，每一帧分为两个部分：
+
+标头：数据包的发送者、接受者、数据类型
+数据：数据包具体内容
+
+Mac 地址
+以太网规定了连入网络的所有设备都必须具备“网卡”接口，数据包都是从一块网卡传递到另一块网卡，网卡的地址就是 Mac 地址。每一个 Mac 地址都是独一无二的，具备了一对一的能力。
+广播
+发送数据的方法很原始，直接把数据通过 ARP 协议，向本网络的所有机器发送，接收方根据标头信息与自身 Mac 地址比较，一致就接受，否则丢弃。
+注意：接收方回应是单播。
+
+相关知识点：
+
+ARP 攻击
+
+
+服务器接受请求
+接受过程就是把以上步骤逆转过来，参见上图。
+四、服务器处理请求
+大致流程
+
+HTTPD
+最常见的 HTTPD 有 Linux 上常用的 Apache 和 Nginx，以及 Windows 上的 IIS。
+它会监听得到的请求，然后开启一个子进程去处理这个请求。
+处理请求
+接受 TCP 报文后，会对连接进行处理，对 HTTP 协议进行解析（请求方法、域名、路径等），并且进行一些验证：
+
+验证是否配置虚拟主机
+验证虚拟主机是否接受此方法
+验证该用户可以使用该方法（根据 IP 地址、身份信息等）
+
+重定向
+假如服务器配置了 HTTP 重定向，就会返回一个 301永久重定向响应，浏览器就会根据响应，重新发送 HTTP 请求（重新执行上面的过程）。
+
+关于更多：详见这篇文章 (opens new window)
+
+URL 重写
+然后会查看 URL 重写规则，如果请求的文件是真实存在的，比如图片、html、css、js 文件等，则会直接把这个文件返回。
+否则服务器会按照规则把请求重写到 一个 REST 风格的 URL 上。
+然后根据动态语言的脚本，来决定调用什么类型的动态文件解释器来处理这个请求。
+以 PHP 语言的 MVC 框架举例，它首先会初始化一些环境的参数，根据 URL 由上到下地去匹配路由，然后让路由所定义的方法去处理请求。
+五、浏览器接受响应
+浏览器接收到来自服务器的响应资源后，会对资源进行分析。
+首先查看 Response header，根据不同状态码做不同的事（比如上面提到的重定向）。
+如果响应资源进行了压缩（比如 gzip），还需要进行解压。
+然后，对响应资源做缓存。
+接下来，根据响应资源里的 MIME (opens new window) 类型去解析响应内容（比如 HTML、Image 各有不同的解析方式）。
+六、渲染页面
+浏览器内核
+
+不同的浏览器内核，渲染过程也不完全相同，但大致流程都差不多。
+基本流程
+
+1. HTML 解析
+首先要知道浏览器解析是从上往下一行一行地解析的。
+解析的过程可以分为四个步骤：
+1. 解码（encoding）
+传输回来的其实都是一些二进制字节数据，浏览器需要根据文件指定编码（例如 UTF-8）转换成字符串，也就是 HTML 代码。
+2. 预解析（pre-parsing）
+预解析做的事情是提前加载资源，减少处理时间，它会识别一些会请求资源的属性，比如img标签的src属性，并将这个请求加到请求队列中。
+3. 符号化（Tokenization）
+符号化是词法分析的过程，将输入解析成符号，HTML 符号包括，开始标签、结束标签、属性名和属性值。
+它通过一个状态机去识别符号的状态，比如遇到&lt;，&gt;状态都会产生变化。
+4. 构建树（tree construction）
+
+注意：符号化和构建树是并行操作的，也就是说只要解析到一个开始标签，就会创建一个 DOM 节点。
+
+在上一步符号化中，解析器获得这些标记，然后以合适的方法创建DOM对象并把这些符号插入到DOM对象中。
+
+浏览器容错进制
+你从来没有在浏览器看过类似"语法无效"的错误，这是因为浏览器去纠正错误的语法，然后继续工作。
+事件
+当整个解析的过程完成以后，浏览器会通过DOMContentLoaded事件来通知DOM解析完成。
+2. CSS 解析
+一旦浏览器下载了 CSS，CSS 解析器就会处理它遇到的任何 CSS，根据语法规范 (opens new window)解析出所有的 CSS 并进行标记化，然后我们得到一个规则表。
+CSS 匹配规则
+在匹配一个节点对应的 CSS 规则时，是按照从右到左的顺序的，例如：div p { font-size :14px }会先寻找所有的p标签然后判断它的父元素是否为div。
+所以我们写 CSS 时，尽量用 id 和 class，千万不要过度层叠。
+3. 渲染树
+其实这就是一个 DOM 树和 CSS 规则树合并的过程。
+
+注意：渲染树会忽略那些不需要渲染的节点，比如设置了display:none的节点。
+
+计算
+通过计算让任何尺寸值都减少到三个可能之一：auto、百分比、px，比如把rem转化为px。
+级联
+浏览器需要一种方法来确定哪些样式才真正需要应用到对应元素，所以它使用一个叫做specificity的公式，这个公式会通过：
+
+标签名、class、id
+是否内联样式
+!important
+
+然后得出一个权重值，取最高的那个。
+渲染阻塞
+当遇到一个script标签时，DOM 构建会被暂停，直至脚本完成执行，然后继续构建 DOM 树。
+但如果 JS 依赖 CSS 样式，而它还没有被下载和构建时，浏览器就会延迟脚本执行，直至 CSS Rules 被构建。
+所有我们知道：
+
+CSS 会阻塞 JS 执行
+JS 会阻塞后面的 DOM 解析
+
+为了避免这种情况，应该以下原则：
+
+CSS 资源排在 JavaScript 资源前面
+JS 放在 HTML 最底部，也就是 &lt;/body&gt;前
+
+另外，如果要改变阻塞模式，可以使用 defer 与 async，详见：这篇文章 (opens new window)
+
+布局与绘制
+
+确定渲染树种所有节点的几何属性，比如：位置、大小等等，最后输入一个盒子模型，它能精准地捕获到每个元素在屏幕内的准确位置与大小。
+然后遍历渲染树，调用渲染器的 paint() 方法在屏幕上显示其内容。
+5. 合并渲染层
+把以上绘制的所有图片合并，最终输出一张图片。
+6. 回流与重绘
+回流(reflow)
+当浏览器发现某个部分发现变化影响了布局时，需要倒回去重新渲染，会从html标签开始递归往下，重新计算位置和大小。
+reflow 基本是无法避免的，因为当你滑动一下鼠标、resize 窗口，页面就会产生变化。
+重绘(repaint)
+改变了某个元素的背景色、文字颜色等等不会影响周围元素的位置变化时，就会发生重绘。
+每次重绘后，浏览器还需要合并渲染层并输出到屏幕上。
+回流的成本要比重绘高很多，所以我们应该尽量避免产生回流。
+比如：
+
+display:none 会触发回流，而 visibility:hidden 只会触发重绘。
+
+
+JavaScript 编译执行
+
+大致流程
+
+可以分为三个阶段：
+1. 词法分析
+JS 脚本加载完毕后，会首先进入语法分析阶段，它首先会分析代码块的语法是否正确，不正确则抛出“语法错误”，停止执行。
+几个步骤：
+
+分词，例如将var a = 2，，分成var、a、=、2这样的词法单元。
+解析，将词法单元转换成抽象语法树（AST）。
+代码生成，将抽象语法树转换成机器指令。
+
+2. 预编译
+JS 有三种运行环境：
+
+全局环境
+函数环境
+eval
+
+每进入一个不同的运行环境都会创建一个对应的执行上下文，根据不同的上下文环境，形成一个函数调用栈，栈底永远是全局执行上下文，栈顶则永远是当前执行上下文。
+创建执行上下文
+创建执行上下文的过程中，主要做了以下三件事：
+
+创建变量对象
+
+参数、函数、变量
+
+
+建立作用域链
+
+确认当前执行环境是否能访问变量
+
+
+确定 This 指向
+
+3. 执行
+JS 线程
+
+虽然 JS 是单线程的，但实际上参与工作的线程一共有四个：
+
+其中三个只是协助，只有 JS 引擎线程是真正执行的
+
+
+JS 引擎线程：也叫 JS 内核，负责解析执行 JS 脚本程序的主线程，例如 V8 引擎
+事件触发线程：属于浏览器内核线程，主要用于控制事件，例如鼠标、键盘等，当事件被触发时，就会把事件的处理函数推进事件队列，等待 JS 引擎线程执行
+定时器触发线程：主要控制setInterval和setTimeout，用来计时，计时完毕后，则把定时器的处理函数推进事件队列中，等待 JS 引擎线程。
+HTTP 异步请求线程：通过 XMLHttpRequest 连接后，通过浏览器新开的一个线程，监控 readyState 状态变更时，如果设置了该状态的回调函数，则将该状态的处理函数推进事件队列中，等待 JS 引擎线程执行。
+
+注：浏览器对同一域名的并发连接数是有限的，通常为 6 个。
+宏任务
+分为：
+
+同步任务：按照顺序执行，只有前一个任务完成后，才能执行后一个任务
+异步任务：不直接执行，只有满足触发条件时，相关的线程将该异步任务推进任务队列中，等待 JS 引擎主线程上的任务执行完毕时才开始执行，例如异步 Ajax、DOM 事件，setTimeout 等。
+
+微任务
+微任务是 ES6 和 Node 环境下的，主要 API 有：Promise，process.nextTick。
+微任务的执行在宏任务的同步任务之后，在异步任务之前。
+
+代码例子
+以上代码输出顺序为：1,3,5,4,2
+参考文档
+
+what-happens-when-zh_CN (opens new window)
+Tags to DOM (opens new window)
+彻底理解浏览器的缓存机制 (opens new window)
+浏览器的工作原理：新式网络浏览器幕后揭秘 (opens new window)
+深入浅出浏览器渲染原理 (opens new window)
+js 引擎的执行过程（一） (opens new window)
+还有一些找不到了。。。。。
+
+From: 4ark.me
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>浏览器的渲染过程</title>
+    <url>/posts/69a052c9/</url>
+    <content><![CDATA[
+通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？
+
+首先，请先看一张大图
+浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：
+
+构建对象模型（DOM，CSSOM）
+构建渲染树（RenderTree）
+布局
+渲染
+
+在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：
+
+1.DOMTree的构建
+浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：
+
+
+第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符
+
+
+
+第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是开始标签，还是结束标签，或者文本标签等。
+
+
+
+第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的开始标签，结束标签，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。
+Node包含了这个节点的所有属性。例如&lt;img src="xxx.png" &gt;标签最终生成出的节点对象中会保存图片地址等信息。
+事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取深度遍历算法消耗Token来生成Node，如下图所示：
+图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出html Token,并消耗Token创建出html 节点对象，接着生成head Token并消耗Token创建出head节点对象…，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。
+
+
+这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？
+因为在上述的解析的过程中，如果碰到了script或者link标签，就会根据src对应的地址去加载资源，在script标签没有设置async/defer属性时，这个加载过程是下载并执行完全部的代码，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出找不到该DOM元素的错误。
+值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。
+2.CSSOMTree的构建
+DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：
+假设浏览器收到了下面这样一段css:
+body {font-size: 16px;}
+p {font-weight: bold;}
+p span {display:none;}
+span {color: red;}
+img {float: right;}
+最终会生成如下的CSSOMTree:
+
+从图中可以看出，最开始body有一个样式规则是font-size:16px，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如span又添加了一个样式规则color:red。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置。比如在上面的css代码基础上再添加一行代码p {font-size:12px}，那么之前设置的16px将会被覆盖成12px。
+下面是官方给的一种解释：
+
+未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。
+所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。
+
+那么回到上面生成DOM时提到的JS问题：在标签没有设置async/defer属性时，js会阻塞DOM的生成。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。
+同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在浏览器还未完成CSSOMTree的下载和构建时去操作CSS样式，浏览器会暂停脚本的运行和DOM的构建，直至浏览器完成了CSSOM的下载和构建。也就是说，JS脚本的出现会让CSSOM的构建阻塞DOM的构建。
+
+平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？
+
+举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个link标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：
+
+而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个script标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：
+
+那如果我们把css放到前面，js放到最后引入时，构建时间会变成：
+
+由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。
+简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：
+
+当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕
+JavaScript可以查询和修改DOMTree与CSSOMTree
+直至CSSOM构建完毕，JavaScript才会执行
+脚本在文档中的位置很重要
+
+3.渲染树的构建
+现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树
+
+接下来我们来谈几条概念
+
+
+Render 树上的每一个节点被称为：RenderObject。
+
+
+RenderObject跟 DOM 节点几乎是一一对应的，当一个可见的 DOM 节点被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。
+
+
+其中，可见的DOM节点不包括：
+
+
+一些不会体现在渲染输出中的节点（&lt;html&gt;&lt;script&gt;&lt;link&gt;….），会直接被忽略掉。
+
+
+通过CSS隐藏的节点。例如上图中的span节点，因为有一个CSS显式规则在该节点上设置了display:none属性，那么它在生成RenderObject时会被直接忽略掉。
+
+
+Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。
+
+
+此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？
+RenderObject and RenderLayer
+
+浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing等属性，浏览器需要生成另外一棵树：Layer树
+
+
+浏览器会为一些特定的RenderObject生成对应的RenderLayer，其中的规则是：
+
+是否是页面的根节点 It’s the root object for the page
+是否有css的一些布局属性（relative absolute or a transform) It has explicit CSS position properties (relative, absolute or a transform)
+是否透明 It is transparent
+是否有溢出 Has overflow, an alpha mask or reflection
+是否有css滤镜 Has a CSS filter
+是否包含一个canvas元素使得节点拥有视图上下文 Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context
+是否包含一个video元素 Corresponds to a video element
+
+当满足上面其中一个条件时，这个RrenderObject就会被浏览器选中生成对应的RenderLayer。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。
+浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个RenderLayer，再遍历从属于这个RenderLayer的 RrenderObject，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 RenderLayer 和 RrenderObject 一起就决定了网页在屏幕上最终呈现出来的内容。
+4.布局
+到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。
+布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。
+
+5.渲染
+最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。
+
+至此，我们就能够在浏览器上看到漂亮的网页了
+
+谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？
+
+我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~
+总结：
+
+经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。
+CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。
+同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用async/defer属性异步加载JavaScript。
+重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数
+
+参考文献：
+https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn
+https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn
+https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn
+https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>web</tag>
+        <tag>http</tag>
+        <tag>css</tag>
+        <tag>js</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>深度学习之视频人脸识别系列</title>
+    <url>/posts/a0f3c838/</url>
+    <content><![CDATA[系列1 简介
+出品 | 磐创AI技术团队
+【磐创AI导读】本文是深度学习之视频人脸识别系列的第一篇文章，介绍了人脸识别领域的一些基本概念，分析了深度学习在人脸识别的基本流程，并总结了近年来科研领域的研究进展，最后分析了静态数据与视频动态数据在人脸识别技术上的差异。欢迎大家点击上方篮子关注我们的公众号：磐创AI。
+一、基本概念
+1. 人脸识别（face identification）
+人脸识别是1对n的比对，给定一张人脸图片，如何在n张人脸图片中找到同一张人脸图片，相对于一个分类问题，将一张人脸划分到n张人脸中的一张。类似于管理人员进行的人脸识别门禁系统。
+2.人脸验证（face verification）
+人脸验证的1对1的比对，给定两张人脸图片，判断这两张人脸是否为同一人，类似于手机的人脸解锁系统，事先在手机在录入自己的脸部信息，然后在开锁时比对摄像头捕捉到的人脸是否与手机上录入的人脸为同一个人。
+3.人脸检测（face detection）
+人脸检测是在一张图片中把人脸检测出来，即在图片上把人脸用矩形框出来，并得到矩形的坐标，如下图所示。
+
+4. 人脸关键点检测
+根据输入的人脸图像，识别出面部关键特征点，如眼睛、鼻尖、嘴角点、眉毛以及人脸各部件轮廓点的坐标，如下图所示。
+
+5. 人脸矫正（人脸对齐）
+通过人脸关键点检测得到人脸的关键点坐标，然后根据人脸的关键点坐标调整人脸的角度，使人脸对齐，由于输入图像的尺寸是大小不一的，人脸区域大小也不相同，角度不一样，所以要通过坐标变换，对人脸图像进行归一化操作，如下图所示。
+
+二、基于深度学习的人脸识别算法基本流程
+随着神经网络的迅速发展和其对图像数据的强大的特征提取，深度学习运用于人脸识别也成为热点研究方向；2014年的开山之作DeepFace，第一个真正将大数据和深度学习结合应用于人脸识别与验证，确立人脸识别的常规流程：图片-&gt;人脸与关键点检测-&gt;人脸对齐-&gt;人脸表征（representation）-&gt;分类。首先将图片中的人脸检测处理并通过关键点进行对齐，如何输入到神经网络，得到特征向量，通过分类训练过程，该向量即为人脸的特征向量。要求出两张人脸的相似度即计算两个特征的向量度量之差，方法包括：SVM、SiameseNetwork、JointBayesian、L1距离、L2距离、cos距离等。
+三、科研领域近期进展
+科研领域近期进展主要集中于loss函数的研究，包括DeepId2（Contrastive Loss）、FaceNet（Triplet loss）、L-Softmax、SphereFace（A-Softmax）、Center Loss、L2-Softmax、NormFace、CosFace（AM-Softmax）、ArcFace（AA-Softmax）等。
+四、基于视频人脸识别和图片人脸识别的区别
+（_该小结部分参考于博客园 - 米罗西http://www.cnblogs.com/zhehan54/p/6727631.html_）
+相对于图片数据，目前视频人脸识别有很多挑战，包括：（1）视频数据一般为户外，视频图像质量比较差；（2）人脸图像比较小且模糊；（3）视频人脸识别对实时性要求更高。
+但是视频数据也有一些优越性，视频数据同时具有空间信息和时间信息，在时间和空间的联合空间中描述人脸和识别人脸会具有一定提升空间。在视频数据中人脸跟踪是一个提高识别的方法，首先检测出人脸，然后跟踪人脸特征随时间的变化。当捕捉到一帧比较好的图像时，再使用图片人脸识别算法进行识别。这类方法中跟踪和识别是单独进行的，时间信息只在跟踪阶段用到。
+【总结】：本期文章主要介绍了基于深度学习的人脸识别算法的一些基本入门知识，下一期我给大家介绍人脸识别中获取神经网络输入的算法，即关于人脸检测、人脸关键点检测与人脸对齐的一些重要算法和相关论文解析。
+系列2 人脸检测与对齐
+一、人脸检测与关键点检测
+1. 问题描述：
+人脸检测解决的问题为给定一张图片，输出图片中人脸的位置，即使用方框框住人脸，输出方框的左上角坐标和右下角坐标或者左上角坐标和长宽。算法难点包括：人脸大小差异、人脸遮挡、图片模糊、角度与姿态差异、表情差异等。而关键检测则是输出人脸关键点的坐标，如左眼（x1，y1）、右眼（x2，y2）、鼻子（x3，y3）、嘴巴左上角（x4，y4）、嘴巴右上角（x5，y5）等。
+2. 深度学习相关算法：
+（1）Cascade CNN
+Cascade CNN源于发表于2015年CVPR上的一篇论文A Convolutional Neural Network Cascade for Face Detection【2】，作者提出了一种级连的CNN网络结构用于人脸检测。算法主体框架是基于V-J的瀑布流思想【1】，是传统技术和深度网络相结合的一个代表，Cascade CNN包含了多个分类器，这些分类器使用级联结构进行组织，与V-J不同的地方在于Cascade CNN采用卷积网络作为每一级的分类器。整个网络的处理流程如下图所示：
+
+整个处理流程里包含了六个网络：12-net、12-calibration-net、24-net、24-calibration-net、48-net、48-calibration-net，其中三个二分类网络用于分类其是否为人脸，另外三个calibration网络用于矫正人脸框边界。其中第二个网络之后、第四个网络之后、第五个网络之后使用NMS算法过滤掉冗余的框。
+12-net，24-net和48-net的网络结构如下图所示：
+
+13-12-calibration-net，24-calibration-net，48-calibration-net的结构如下图所示：
+
+该算法结合了V-J框架构造了级连的CNN网络结构并设计边界矫正网络用来专门矫正人脸框边界，在AFW数据集上准确率达到97.97%。
+
+（2）Faceness-Net
+Faceness-Net源于论文A convolutional neural network cascade for face detection【3】，该算法基于DCNN网络【5】的人脸局部特征分类器，算法首先进行人脸局部特征的检测，使用多个基于DCNN网络的facial parts分类器对人脸进行评估，然后根据每个部件的得分进行规则分析得到Proposal的人脸区域，然后从局部到整体得到人脸候选区域，再对人脸候选区域进行人脸识别和矩形框坐标回归，该过程分为两个步骤。
+第一个步骤：每个人脸局部特征使用attribute-aware网络检测并生成人脸局部图，其中一共五个特征属性： 头发、眼睛、鼻子、嘴巴、胡子。然后通过人脸局部图根据评分构建人脸候选区域，具体如下图所示：
+
+第二个步骤：训练一个多任务的卷积网络来完成人脸二分类和矩形框坐标回归，进一步提升其效果，具体如下图所示：
+
+Faceness从脸部特征的角度来解决人脸检测中的遮挡和姿态角度问题，其整体性能在当时是非常好的，在AFW数据集上准确率可以达到98.05%。
+
+（3）MTCNN
+MTCNN源于论文Joint Face Detection and Alignment using Multi-task Cascaded Convolutional Networks【6】，是基于多任务级联卷积神经网络来解决人脸检测和对齐问题，同时输出图片的人脸矩阵框和关键点坐标（左眼、右眼、鼻子、嘴巴左上角、嘴巴右上角）。MTCNN为三阶的级联卷积神经网络，整体框架如下图所示：
+
+输入阶段：为应对目标多尺度问题，将原始图像resize到不同尺寸，构建图像金字塔，作为三阶级联架构的输入，这样处理可以更好地检测大小不一的人脸。
+第一阶段：通过一个全部由卷积层组成的CNN，取名P-Net，获取候选人脸框、关键点坐标和人脸分类（是人脸或不是），之后采用NMS过滤掉高重叠率的候选窗口。如下图所示：
+
+第二阶段：第一阶段输出的候选人脸框作为更为复杂的R-Net网络的输入，R-Net进一步筛除大量错误的候选人脸框，同样也通过NMS过滤掉高重叠率的候选窗口。如下图所示：
+
+第三阶段：与第二阶段类似，最终网络输出人脸框坐标、关键点坐标和人脸分类（是人脸或不是）。如下图所示：
+
+MTCNN通过三级的级联卷积神经网络对任务进行从粗到细的处理，还提出在线困难样本生成策略（online hard sample mining ）可以进一步提升性能。兼并了速度与准确率，速度在GPU上可以达到99FPS，在 FDDB数据集上可以达到95.04准确率，具体如下图所示：
+
+二、人脸对齐（部分参考于GraceDD的博客文章）
+人脸对齐通过人脸关键点检测得到人脸的关键点坐标，然后根据人脸的关键点坐标调整人脸的角度，使人脸对齐，由于输入图像的尺寸是大小不一的，人脸区域大小也不相同，角度不一样，所以要通过坐标变换，对人脸图像进行归一化操作。人脸关键点检测有很多算法可以使用包括：ASM、AAM、DCNN 、TCDCN 、MTCNN 、TCNN、TCNN等，这里就不详细介绍，主要说一下得到人脸关键点之后如何进行人脸对齐，是所有人脸达到归一化效果，该过程如下图所示：
+
+该过程涉及到图像的仿射变换，简单来说，“仿射变换”就是：“线性变换”+“平移”，即坐标的变换。假如我们希望人脸图片归一化为尺寸大小600600，左眼位置在（180，200），右眼位置在（420，200）。 这样人脸中心在图像高度的1/3位置，并且两个眼睛保持水平，所以我们选择左眼角位置为( 0.3width, height / 3 )，右眼角位置为（0.7*width , height / 3） 。
+利用这两个点计算图像的变换矩阵（similarity transform），该矩阵是一个2*3的矩阵，如下：
+
+如果我们想对一个矩形进行变换，其中x、y方向的缩放因为分别为sx，sy，同时旋转一个角度 ，然后再在x方向平移tx, 在y方向平移ty
+利用opencv的estimateRigidTransform方法，可以获得这样的变换矩阵，但遗憾的是，estimateRigidTransform至少需要三个点，所以我们需要构选第三个点，构造方法是用第三个点与已有的两个点构成等边三角形，这样第三个点的坐标为：
+
+代码如下：
+
+经过上一步的处理之后，所有的图像都变成一样大小，并且又三个关键点的位置是保持一致的，但因为除了三个点对齐了之外，其他点并没有对齐。所以根据得到的变换矩阵对剩下所有的点进行仿射变换，opencv代码如下所示：
+
+img为输入图像;
+warped为变换后图像，类型与src一致;
+M为变换矩阵，需要通过其它函数获得，当然也可以手动输入;
+Image_size为输出图像的大小;
+三、 总结
+本期文章主要介绍了人脸检测与对齐的相关算法，下一期我给大家介绍一下人脸表征的相关算法，即通过深度学习提取人脸特征，通过比较人脸特征进行人脸识别与验证。
+参考文献：
+
+【1】 S.Z.Li, L.Zhu, Z.Q.Zhang, A.Blake, H.J.Zhang, H.Y.Shum. Statistical learning of multi-view face detection. In: Proceedings of the 7-th European Conference on Computer Vision. Copenhagen, Denmark: Springer, 2002.67-81.
+【2】Li H, Lin Z, Shen X, et al. A convolutional neural network cascade for face detection[C]//Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition. 2015: 5325-5334.
+【3】Yang S, Luo P, Loy C C, et al. Faceness-Net: Face detection through deep facial part responses[J]. IEEE transactions on pattern analysis and machine intelligence, 2017.
+【4】Yang S, Luo P, Loy C C, et al. From facial parts responses to face detection: A deep learning approach[C]//Proceedings of the IEEE International Conference on Computer Vision. 2015: 3676-3684.
+【5】Sun Y, Wang X, Tang X. Deep convolutional network cascade for facial point detection[C]//Proceedings of the IEEE conference on computer vision and pattern recognition. 2013: 3476-3483.
+【6】Zhang K, Zhang Z, Li Z, et al. Joint face detection and alignment using multitask cascaded convolutional networks[J]. IEEE Signal Processing Letters, 2016, 23(10): 1499-1503.
+
+系列3：人脸表征
+一、人脸表征
+把人脸图像通过神经网络，得到一个特定维数的特征向量，该向量可以很好地表征人脸数据，使得不同人脸的两个特征向量距离尽可能大，同一张人脸的两个特征向量尽可能小，这样就可以通过特征向量来进行人脸识别。
+
+二、论文综述
+1. DeepFace：
+2014年论文DeepFace: Closing the Gap toHuman-Level Performance in Face Verification提出了DeepFace算法，第一个真正将大数据和深度学习神经网络结合应用于人脸识别与验证。在该人脸识别模型中分为四个阶段：人脸检测 =&gt; 人脸对齐 =&gt; 人脸表征 =&gt; 人脸分类，在LFW数据集中可以达到97.00%的准确率。
+（1）人脸检测与对齐：该模型使用3D模型来将人脸对齐，该方法过于繁琐，在实际应用中很少使用，经过3D对齐以后，形成的图像都是152×152的图像，具体步骤如下图。
+
+分为如下几步：
+a. 人脸检测，使用6个基点  b. 二维剪切，将人脸部分裁剪出来  c. 67个基点，然后Delaunay三角化，在轮廓处添加三角形来避免不连续  d. 将三角化后的人脸转换成3D形状  e. 三角化后的人脸变为有深度的3D三角网  f. 将三角网做偏转，使人脸的正面朝前。  g. 最后放正的人脸  h. 一个新角度的人脸（在论文中没有用到）
+（2）人脸表征：人脸表征使用了5个卷积层和1个最大池化层、1个全连接层，如下图所示。前三层的目的在于提取低层次的特征,为了网络保留更多图像信息只使用了一层池化层；后面三层都是使用参数不共享的卷积核，因为主要是因为人脸不同的区域的特征是不一样的，具有很大的区分性，比如鼻子和眼睛所表示的特征是不一样的，但是使用参数不共享的卷积核也增加了模型计算量以及需要更多的训练数据。最后输出的4096维向量进行L2归一化。
+
+a. Conv：32个11×11×3的卷积核
+b. max-pooling: 3×3， stride=2
+c. Conv: 16个9×9的卷积核
+d. Local-Conv: 16个9×9的卷积核，Local的意思是卷积核的参数不共享
+e. Local-Conv: 16个7×7的卷积核，参数不共享
+f. Local-Conv: 16个5×5的卷积核，参数不共享
+g. Fully-connected: 4096维
+h. Softmax: 4030维
+（3）分类：论文介绍了两种方法进行分类，加权的卡方距离和使用Siamese网络结构，设f1和f2为特征向量，上一个步骤的输出，则有：
+①加权卡方距离：计算公式如下，加权参数由线性SVM计算得到：
+
+②Siamese网络：网络结构是成对进行训练，得到的特征表示再使用如下公式进行计算距离：
+
+2. DeepID1：
+DeepID1 是2014年Deep LearningFace Representation from Predicting 10,000 Classes一文提出的，是DeepID三部曲的第一篇。DeepID1 使用softmax多分类训练，主要思想第一个是数据集的增大，包括训练集使用celebface，包含87628张图片，5436个人脸，增大了训练集；使用多尺寸输入，通过5个landmarks将每张人脸划分成10regions，每张图片提取60patches=10regions3scales2(RGB orgray)，第二个是网络结构，DeepID提取的人脸特征就是一个由连接第三层与第四层组成的全连接层特征，如下图所示，每个patches经过这个cnn网络，第四层的特征更加全局化（global），第三层的特征更加细节，因此DeepID连接了两者，以求同时包含全局，细节信息。
+
+60个patches使用60个CNN,每个CNN提取2*160=320维特征（与水平翻转一起输入），总网络模型如下图所示，最后分别使用联合贝叶斯算法与神经网络进行分类，并比较结果。
+
+模型最终以CelebFaces+中202,599图像作为训练集， patch数提升为100（10r10s2） ，特征数提升为1001602=32000 然后使用PCA降为150维 ，使用联合贝叶斯算法进行验证， 最终在LFW上达到97.20%的验证准确率。
+3. DeepID2：
+DeepID2是Deep Learning Face Representationby Joint Identification-Verification一文提出的，对DeepID1进行了进一步的改进，提出了contrastive loss，在分类任务，我们需要的是减少类内差距（同一人脸），增加类间差距（不同人脸），softmax loss分类的监督信号可以增大类间差距，但是却对类内差距影响不大，所以DeepID2加入了另一个loss，contrastive loss，从而增加验证的监督信号，就可以减少类内差距。
+网络结构类似DeepID1,不同之处在于使用了两种不同的损失函数，网络结构如下图所示。
+
+损失函数：
+①分类信号，Softmax loss。
+
+②验证信号，contrastiveloss，使用l2范数距离表示，m为阈值不参与训练，括号内的θve={m}，该损失函数可以让类间的距离给定一个限制margin，即m大小的距离。
+
+
+两loss的组合方式： 首先使用2个输入，计算Softmax loss和contrastive loss,总损失为二者通过λ加权求和，通过总损失来执行梯度下降更新卷积参数，通过Softmax loss来更新softmax层的参数。
+整个模型使用celebrate+数据集训练，每张图片使用了21 facial landmarks，分成200patches（20regions5scales2RGB&amp;Gray)，水平翻转后变为400patches，使用了200个卷积神经网络，提取400（2002）个Deepid2特征，使用贪婪算法降为25个Deepid2特征，使用PCA将25160Deepid2特征降为180维，最后使用联合贝叶斯算法进行验证，最终在LFW上得到的最终准确率是98.97%，使用7组25个Deepid2特征，SVM融合可得到准确率为99.15% 。DeepID2在2014 年是人脸领域非常有影响力的工作，也掀起了在人脸领域引进 MetricLearning 的浪潮。
+4. DeepID2+：
+DeepID2+源于论文Deeply learned facerepresentations are sparse, selective, and robust，DeepID2+是对DeepID2的改进。①卷积层在原来基础上再增加128维，第四层全连接层从160增加到512，训练数据增加了CelebFaces+ dataset，WDRef等，有12000个人脸的大约290,000张图片； ②每个卷积层的后面都加了一个512为的全连接层，并添加contrastive loss监督信号，而不仅在第四层全连接层上有 。网络结构如下图所示。
+
+最终在LFW数据集上准确率为99.47%。
+5. DeepID3：
+DeepID3源于2015年的Deepid3:Face recognition with very deep neural networks论文，该论文探究了复杂神经网络对人脸识别的作用。论文研究VGG与GoogleNet用于人脸识别的效果，论文在VGG和GooLeNet的基础上进行构建合适的结构，使得方便人脸识别。结果发现DeepID3的结果和DeepID2+相当，可能是由于数据集的瓶颈，需要更大的数据才能有更好的提升，两个网络结构如下图所示。
+
+网络输出使用PCA降维到300维的向量，使用联合贝叶斯算法进行验证，最终在LFW上得到的最终准确率是99.53%。
+6. FaceNet：
+FaceNet由论文Facenet: A unified embedding forface recognition and clustering提出，这篇 2015 年来自 Google 的 论文同样具有非常大的影响力，不仅仅成功应用了 TripletLoss 在 benchmark 上取得state-of-art 的结果，更因为他们提出了一个绝大部分人脸问题的统一解决框架，即：识别、验证、搜索等问题都可以放到特征空间里做，需要专注解决的仅仅是如何将人脸更好的映射到特征空间。FaceNet在DeepID的基础上，将 ContrastiveLoss 改进为 Triplet Loss，去掉softmaxloss。FaceNet实验了ZFNet类型网络和Inception类型网络，最终Inception类型网络效果更好，网络结构如下图所示。
+
+FaceNet没有使用PCA降维，而是在网络中直接训练输出128维的向量，用全连接层来完成降维，最后的128维的向量经过Triplet Loss。
+Triplet Loss输入不再是 Image Pair，而是三张图片（Triplet），分别为 Anchor Face（xa），Negative Face（xn）和 Positive Face（xp）。Anchor 与 Positive Face 为同一人，与 Negative Face 为不同人，在特征空间里 Anchor 与 Positive 的距离要小于 Anchor 与 Negative 的距离，且相差超过一个 Margin Alpha。
+loss的目标为：
+
+总loss公式为：
+
+Contrastive Loss与Triplet Loss的比较， Contrastive Loss目标是减少类内差距（两个蓝点），增加类间差距（蓝点与红点）；Triplet Loss则是输入三张图片，Anchor 与 Positive 的距离要小于 Anchor 与 Negative 的距离，且相差超过一个 Margin Alpha，即Triplet Loss同时约束了两个距离。
+
+最后FaceNet在LFW数据集上达到了99.63%的准确率。
+基于 ContrastiveLoss 和 Triplet Loss 的 MetricLearning 符合人的认知规律，在实际应用中也取得了不错的效果，但同时也有很多问题，由于ContrastiveLoss 和 Triplet Loss 的训练样本都基于pair 或者 triplet 的，可能的样本数是 O(N2) 或者 O (N3) 的，所以模型需要很久的计算才能拟合并且训练集需要足够大。
+三、总结
+本期文章主要介绍人脸表征相关算法和论文综述，主要是2014年到2016年的研究成果， ContrastiveLoss 和 Triplet Loss在实际应用中也取得了很好的效果，但是也有很多问题，由于Contrastive Loss 和 Triplet Loss 的训练样本都基于 pair 或者 triplet 的，可能的样本数是 O (N2) 或者 O (N3) 的，所以模型需要很久的计算才能拟合并且训练集要足够大，所以在之后的人脸识别研究中，大部分在于loss函数的研究，这部分将会在下一期给大家介绍。
+参考文献：
+
+【1】 Taigman Y, Yang M, Ranzato M A, et al.Deepface: Closing the gap to human-level performance in faceverification[C]//Proceedings of the IEEE conference on computer vision andpattern recognition. 2014: 1701-1708.
+【2】Sun Y, Wang X, Tang X. Deep learning facerepresentation from predicting 10,000 classes[C]//Proceedings of the IEEEconference on computer vision and pattern recognition. 2014: 1891-1898.
+【3】Sun Y, Chen Y, Wang X, et al. Deeplearning face representation by joint identification-verification[C]//Advancesin neural information processing systems. 2014: 1988-1996.
+【4】Sun Y, Liang D, Wang X, et al. Deepid3:Face recognition with very deep neural networks[J]. arXiv preprintarXiv:1502.00873, 2015.
+【5】Simonyan K, Zisserman A. Very deepconvolutional networks for large-scale image recognition[J]. arXiv preprintarXiv:1409.1556, 2014.
+【6】Szegedy C, Liu W, Jia Y, et al. Goingdeeper with convolutions[C]//Proceedings of the IEEE conference on computervision and pattern recognition. 2015: 1-9.
+【7】Sun Y, Wang X, Tang X. Deeply learned facerepresentations are sparse, selective, and robust[C]//Proceedings of the IEEEconference on computer vision and pattern recognition. 2015: 2892-2900.
+【8】Schroff F, Kalenichenko D, Philbin J.Facenet: A unified embedding for face recognition andclustering[C]//Proceedings of the IEEE conference on computer vision andpattern recognition. 2015: 815-823.
+
+系列4：人脸表征-续
+一、人脸表征
+把人脸图像通过神经网络，得到一个特定维数的特征向量，该向量可以很好地表征人脸数据，使得不同人脸的两个特征向量距离尽可能大，同一张人脸的两个特征向量尽可能小，这样就可以通过特征向量来进行人脸识别。
+
+二、论文综述
+1. L-Softmax：
+Softmax Loss函数被广泛应用于深度学习，较为简单实用，但是它并不能够明确引导神经网络学习区分性较高的特征。L-Softmax能够有效地引导网络学习使得样本类内距离较小、类间距离较大的特征，L-Softmax不但能够调节类间距离的间隔（margin）大小，而且能够防止过拟合。
+L-Softmax是对softmax loss的改进，softmax loss公式如下所示：
+
+其中 fj 表示最终全连接层的类别输出向量 f的第 j个元素, N为训练样本的个数，则 fyi可以表示为 fyi=WTyi xi，其中 0≤θj≤π，最终的损失函数可得：
+
+softmax的目的是使得WT1x&gt;WT2x，即 ∥W1∥∥x∥cos(θ1)&gt;∥W2∥∥x∥cos(θ2)，从而得到输入x（来自类别1）输出正确的分类结果。L-Softmax通过增加一个正整数变量m，从而产生一个决策余量，能够更加严格地约束上述不等式，即：
+
+其中0≤θ1&lt;π/m。如果W1和W2能够满足∥W1∥∥x∥cos(mθ1)&gt;∥W2∥∥x∥cos(θ2)，那么就必然满足∥W1∥∥x∥cos(θ1)&gt;∥W2∥∥x∥cos(θ2)，这样的约束对学习W1和W2的过程提出了更高的要求，在训练学习过程中，类间要比之前多了一个m的间隔，从而使得1类和2类有了更宽的分类决策边界。这种Margin Based Classification使得学习更加的困难，从而使类间距离增加了一个margin距离，L-Softmax loss的总公式如下：
+
+当m越大时，分类的边界越大，学习难度当然就越高。
+论文仅使用了WebFace数据集作为训练集和一个简单的卷积网络，就在LFW上达到了98.71%的正确率，证明了L-Softmax loss取得了比softmax loss更好的结果。
+2. SphereFace :
+SphereFace在MegaFace数据集上识别率在2017年排名第一，提出A-Softmax Loss使人脸识别达到不错的效果。A-Softmax Loss基于softmax loss和L-Softmax loss，在二分类模型中，softmax loss为：
+
+如果x为类别一，则希望p1&gt;p2,则二分类的划分函数为：
+
+权重归一化||w||为1，b为0，此时特征上的点映射到单位超球面上，则二分类的划分函数为：
+
+然后使用与L-Softmax loss相同的原理，使
+
+则A-Softmax Loss最终为：
+
+因此A-Softmax Loss是样本类别之间产生了角度距离，让决策函数更加严格并且更加具有可区分性。当m增大，角度距离也会增加。
+A-Softmax与L-Softmax的最大区别在于A-Softmax的权重归一化了，而L-Softmax则没有。A-Softmax权重的归一化导致特征上的点映射到单位超球面上，A-Softmax仅仅能从角度上划分类别，而L-Softmax是在角度与长度方向进行考量，两个方向如果划分不一就会收到干扰，导致精度下降。
+SphereFace使用的模型如下图所示：
+
+训练与测试过程如下图所示，在测试过程中使用余弦计算相似度：
+
+最终SphereFace在训练集较小的情况下，LFW数据集上准确率为99.42%。Sphereface效果很好，但是它不优美。在测试阶段，Sphereface通过特征间的余弦值来衡量相似性，即以角度为相似性的度量，在训练阶段，其实Sphereface的损失函数并不是在直接优化特征与类中心的角度，而是优化特征与类中心的角度在乘上一个特征的长度，这就造成了训练跟测试之间目标不一致。
+3. Normface :
+在优化人脸识别任务时，softmax本身优化的是没有归一化的内积结果，但是最后在预测的时候使用的一般是cosine距离或者欧式距离，这会导致优化目标和最终的距离度量其实并不一致。 Normface的核心思想是既然最后在特征对比的时候使用归一化的cosine距离，那么在训练的过程中把特征也做归一化处理，做了归一化之后，softmax的优化就变成了直接优化cosine距离了，归一化过程如下，其中e是为了防止除0的较小正数：
+
+相应的损失函数如下：
+
+其中 W 是归一化的权重，f_i 是归一化的特征，参数 s 的引入是因为保证梯度大小的合理性，去掉bias是因为softmax之前的fc有bias的情况下会使得有些类别在角度上没有区分性但是通过bias可以区分，在这种情况下如果对feature做normalize，会使得中间的那个小类别的feature变成一个单位球形并与其他的feature重叠在一起，所以在feature normalize的时候是不能加bias的。
+Normface使用了较小的模型使用多种loss训练，然后在LFW数据集上测试，证明了feature normalize的效果，结果如下：
+
+4. CosFace :
+Normface用特征归一化解决了Sphereface训练和测试不一致的问题。但是却没有了margin的惩罚，腾讯AI Lab的CosFace或者AM-softmax是在Normface的基础上引入了margin，损失函数为：
+
+其中特征与权值都做了归一化：
+
+分类决策为：
+
+，比之前增加了m的margin，m 是一个超参数，控制惩罚的力度，m 越大，惩罚越强。
+CosFace使用mtcnn进行人脸检测与对齐，人脸表征训练模型使用基于residual units 64层卷积网络的Sphere Face，在5M的训练集上训练，在LFW数据集上测试，精度达到99.73%。
+5. ArcFace :
+ArcFace源于论文Additive angular margin lossfor deep face recognition，也叫做InsightFace，论文基本介绍了近期较为流行的人脸识别模型，loss变化从softmax到AM-softmax，然后提出ArcFace，可以说起到了很好的综述作用，论文从三个方面探讨影响人脸识别模型精度的主要因素。
+（1）数据：数据方面，论文探讨了各个数据集的数据质量和优缺点，并对MS-Celeb-1M，MegaFace FaceScrub做了清洗，清洗后的数据公开。
+（2）网络：详细对比了不同的主流网络结构的性能，包括输入层尺寸大小、最后输出几层的不同结构、基本网络单元残差网络的不同结构、主干网络的不同模型。经过实验的证明，最后的网络结构：输入图片大小112x112；第一层convLayer 卷积核为33 stride 1时，网络输出77；主干网络使用ResNet100，并使用改进后的改进的残差网络结构，如下图；最后的几层输出层为最后一个卷积层后+BN-Dropout-FC-BN的结构。
+
+（3）损失函数：与 AM-softmax相比，区别在于Arcface引入margin的方式不同，损失函数为：
+
+Arcface的m是在余弦里面，AM-softmax的在外面，ArcFace更为直观并且在超球面维度上有更清晰的解释。Arcface在VGG2和MS-Celeb-1M数据集上训练，在LFW数据集上精度达到99.83%。
+三、总结
+本期文章主要介绍人脸表征相关算法和论文综述，人脸检测、对齐、特征提取等这些操作都可以在静态数据中完成，下一期将给大家介绍在视频数据中进行人脸识别的另一个重要的算法，视频人脸跟踪的概念与方法。
+参考文献：
+
+【1】 Liu W, Wen Y, Yu Z, et al. Large-MarginSoftmax Loss for Convolutional Neural Networks[C]//ICML. 2016: 507-516.1708.
+【2】Liu W, Wen Y, Yu Z, et al. Sphereface:Deep hypersphere embedding for face recognition[C]//The IEEE Conference onComputer Vision and Pattern Recognition (CVPR). 2017, 1: 1.
+【3】Wang F, Xiang X, Cheng J, et al. Normface:l 2 hypersphere embedding for face verification[C]//Proceedings of the 2017 ACMon Multimedia Conference. ACM, 2017: 1041-1049.
+【4】Wang F, Cheng J, Liu W, et al. Additivemargin softmax for face verification[J]. IEEE Signal Processing Letters, 2018,25(7): 926-930.
+【5】Wang H, Wang Y, Zhou Z, et al. CosFace:Large margin cosine loss for deep face recognition[J]. arXiv preprintarXiv:1801.09414, 2018.
+【6】Deng J, Guo J, Zafeiriou S. Arcface:Additive angular margin loss for deep face recognition[J]. arXiv preprintarXiv:1801.07698, 2018.
+
+编辑整理 磐创AI技术团队
+系列教程
+全部文章RSS订阅
+AI系列
+AI 分类 RSS 订阅
+
+深度学习之视频人脸识别系列
+中国区注册ChatGPT并使用全流程图解教程
+关于普朗克概率的的讨论
+信用卡对个人、社会以及国家的影响——ChatGPT辅助编写
+
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+GithubProfile美化与自动获取RSS文章教程
+Vercel部署高级用法教程
+webhook部署Hexo静态博客指南
+在宝塔VPS上面采用docker部署waline全流程图解教程
+
+Docker系列
+Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>ai</category>
+      </categories>
+      <tags>
+        <tag>ai</tag>
+        <tag>face</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>自动曝光原理</title>
+    <url>/posts/509c7bd3/</url>
+    <content><![CDATA[自动曝光的原理
+曝光是摄影中十分重要的一个环节，它决定了一张图片的明暗，如下图所示，第一张图片太暗，而第三种图片太亮。
+
+曝光由什么来决定
+使用过数码相机的人都知道曝光由光圈、曝光时间、ISO三者共同决定，详细的关系就不赘述。
+光圈：控制进光量；
+曝光时间：光到达的时间长度；
+ISO：增益；
+但是对于手机以及其他电子产品使用的微型摄像头，光圈大小是固定的，所以手机拍照的曝光由曝光时间和**增益(ISO)**来控制。
+什么是自动曝光
+数码相机中有一种手动模式，可手动设置光圈、曝光时间、ISO来控制曝光，该模式的使用对摄影师的要求会比较高。另外 数码相机的全自动模式、光圈优先模式、快门优先模式以及手机等电子产品的曝光都属于自动曝光。
+自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。
+自动曝光的标准
+在此之前需要了解物体的亮度与色彩是由物体对光线的反射率来决定的。例如纯黑色的放射率是0，纯白色的反射率是100%，处于中间的灰度的反射率是18%，这就是18%中间灰度。
+
+具有一定反射率的物体在最终的图像中被还原到了其相应的灰度级，这就意味着达到了正确的曝光。例如摄影师们通常在拍摄之前使用中性灰卡测试曝光是否正常。
+但是相机在各种场景下无法识别物体的反射率，因此采用了一个简单粗暴而又行之有效的方法，统一将图像整体平均亮度设置为中性灰的亮度。该方法基于**科学家认为自然界的平均反射率是18%**这一理论。当然，这个方法也不是走遍天下都不怕，比如拍摄雪景时需要增加曝光补偿，不然会偏暗，因为雪景的亮度远远大于中性灰度。这也就是摄影中的一句口诀的由来“白增黑减”。
+自动曝光算法
+上面已经讲了自动曝光的标准，也就确立了曝光目标，要达到这一目标还要自动曝光算法来实现。
+目前比较常见的算法有平均亮度法、权重均值法、亮度直方图等。其中最普遍的就是平均亮度法。平均亮度法就是对图像所以像素亮度求平均值，通过不断调整曝光参数最终达到目标亮度。而权重均值法是对图像不同区域设置不同权重来计算图像亮度，例如相机中的各种测光模式的选择就是改变不同区域的权重。亮度直方图法是通过为直方图中峰值分配不同权重来计算图像亮度。
+自动曝光实现的过程：
+第一步：对当前图像进行亮度统计；
+第二步：根据当前图像亮度确定曝光值；
+第三步：计算新的曝光参数，曝光时间、光圈、增益；
+第四步：将新的曝光参数应用到相机；
+第五步：重复步骤一到四，直到亮度满足要求。
+曝光参数调整_曝光表
+前面留下两个问题：“第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。” 第一个问题在前面有过解释，第二个问题也就是自动曝光实现步骤的第三步，曝光值由光圈、曝光时间、增益沟通决定，当计算出一个曝光量，曝光三要素有很多种组合方式。一般情况下有曝光曲线，每个曝光量对应一组参数。手机中曝光曲线可以通过Tuning调整。
+From: 积极的悲观主义者
+系列教程
+全部文章RSS订阅
+Embeded系列
+Embeded 分类 RSS 订阅
+
+海思MPP&amp;UNF构架源代码级分析
+3G,4G,Wifi选型需求分析及技术简介
+自动曝光原理
+ISP 数字图像处理 算法概述、工作原理、架构、处理流程
+
+]]></content>
+      <categories>
+        <category>embeded</category>
+      </categories>
+      <tags>
+        <tag>3a</tag>
+        <tag>ae</tag>
+        <tag>image</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>[三万字教程]基于Hexo的matery主题搭建博客并深度优化一站式完全教程</title>
     <url>/posts/40300608/</url>
     <content><![CDATA[
@@ -10364,795 +11153,6 @@ CI/CD与Git Flow与GitLab
         <tag>hexo</tag>
         <tag>matery</tag>
         <tag>npm</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>在浏览器输入 URL 回车之后发生了什么</title>
-    <url>/posts/656a0abb/</url>
-    <content><![CDATA[前言
-
-这个问题已经是老生常谈了，更是经常被作为面试的压轴题出现，网上也有很多文章，但最近闲的无聊，然后就自己做了一篇笔记，感觉比之前理解更透彻了。
-这篇笔记是我这两天看了数十篇文章总结出来的，所以相对全面一点，但由于我是做前端的，所以会比较重点分析浏览器渲染页面那一部分，至于其他部分我会罗列出关键词，感兴趣的可以自行查阅，
-**注意：**本文的步骤是建立在，请求的是一个简单的 HTTP 请求，没有 HTTPS、HTTP2、最简单的 DNS、没有代理、并且服务器没有任何问题的基础上，尽管这是不切实际的。
-大致流程
-
-URL 解析
-DNS 查询
-TCP 连接
-处理请求
-接受响应
-渲染页面
-
-一、URL 解析
-地址解析：
-首先判断你输入的是一个合法的 URL 还是一个待搜索的关键词，并且根据你输入的内容进行自动完成、字符编码等操作。
-HSTS
-由于安全隐患，会使用 HSTS 强制客户端使用 HTTPS 访问页面。详见：你所不知道的 HSTS (opens new window)。
-其他操作
-浏览器还会进行一些额外的操作，比如安全检查、访问限制（之前国产浏览器限制 996.icu）。
-检查缓存
-
-二、DNS 查询
-基本步骤
-
-1. 浏览器缓存
-浏览器会先检查是否在缓存中，没有则调用系统库函数进行查询。
-2. 操作系统缓存
-操作系统也有自己的 DNS 缓存，但在这之前，会向检查域名是否存在本地的 Hosts 文件里，没有则向 DNS 服务器发送查询请求。
-3. 路由器缓存
-路由器也有自己的缓存。
-4. ISP DNS 缓存
-ISP DNS 就是在客户端电脑上设置的首选 DNS 服务器，它们在大多数情况下都会有缓存。
-根域名服务器查询
-在前面所有步骤没有缓存的情况下，本地 DNS 服务器会将请求转发到互联网上的根域，下面这个图很好的诠释了整个流程：
-
-
-根域名服务器：维基百科 (opens new window)
-
-需要注意的点
-
-递归方式：一路查下去中间不返回，得到最终结果才返回信息（浏览器到本地 DNS 服务器的过程）
-迭代方式，就是本地 DNS 服务器到根域名服务器查询的方式。
-什么是 DNS 劫持
-前端 dns-prefetch 优化
-
-三、TCP 连接
-TCP/IP 分为四层，在发送数据时，每层都要对数据进行封装：
-
-1. 应用层：发送 HTTP 请求
-在前面的步骤我们已经得到服务器的 IP 地址，浏览器会开始构造一个 HTTP 报文，其中包括：
-
-请求报头（Request Header）：请求方法、目标地址、遵循的协议等等
-请求主体（其他参数）
-
-其中需要注意的点：
-
-浏览器只能发送 GET、POST 方法，而打开网页使用的是 GET 方法
-
-2. 传输层：TCP 传输报文
-传输层会发起一条到达服务器的 TCP 连接，为了方便传输，会对数据进行分割（以报文段为单位），并标记编号，方便服务器接受时能够准确地还原报文信息。
-在建立连接前，会先进行 TCP 三次握手。
-
-关于 TCP/IP 三次握手，网上已经有很多段子和图片生动地描述了。
-相关知识点：
-
-SYN 泛洪攻击
-
-
-3. 网络层：IP 协议查询 Mac 地址
-将数据段打包，并加入源及目标的 IP 地址，并且负责寻找传输路线。
-判断目标地址是否与当前地址处于同一网络中，是的话直接根据 Mac 地址发送，否则使用路由表查找下一跳地址，以及使用 ARP 协议查询它的 Mac 地址。
-
-注意：在 OSI 参考模型中 ARP 协议位于链路层，但在 TCP/IP 中，它位于网络层。
-
-4. 链路层：以太网协议
-以太网协议
-根据以太网协议将数据分为以“帧”为单位的数据包，每一帧分为两个部分：
-
-标头：数据包的发送者、接受者、数据类型
-数据：数据包具体内容
-
-Mac 地址
-以太网规定了连入网络的所有设备都必须具备“网卡”接口，数据包都是从一块网卡传递到另一块网卡，网卡的地址就是 Mac 地址。每一个 Mac 地址都是独一无二的，具备了一对一的能力。
-广播
-发送数据的方法很原始，直接把数据通过 ARP 协议，向本网络的所有机器发送，接收方根据标头信息与自身 Mac 地址比较，一致就接受，否则丢弃。
-注意：接收方回应是单播。
-
-相关知识点：
-
-ARP 攻击
-
-
-服务器接受请求
-接受过程就是把以上步骤逆转过来，参见上图。
-四、服务器处理请求
-大致流程
-
-HTTPD
-最常见的 HTTPD 有 Linux 上常用的 Apache 和 Nginx，以及 Windows 上的 IIS。
-它会监听得到的请求，然后开启一个子进程去处理这个请求。
-处理请求
-接受 TCP 报文后，会对连接进行处理，对 HTTP 协议进行解析（请求方法、域名、路径等），并且进行一些验证：
-
-验证是否配置虚拟主机
-验证虚拟主机是否接受此方法
-验证该用户可以使用该方法（根据 IP 地址、身份信息等）
-
-重定向
-假如服务器配置了 HTTP 重定向，就会返回一个 301永久重定向响应，浏览器就会根据响应，重新发送 HTTP 请求（重新执行上面的过程）。
-
-关于更多：详见这篇文章 (opens new window)
-
-URL 重写
-然后会查看 URL 重写规则，如果请求的文件是真实存在的，比如图片、html、css、js 文件等，则会直接把这个文件返回。
-否则服务器会按照规则把请求重写到 一个 REST 风格的 URL 上。
-然后根据动态语言的脚本，来决定调用什么类型的动态文件解释器来处理这个请求。
-以 PHP 语言的 MVC 框架举例，它首先会初始化一些环境的参数，根据 URL 由上到下地去匹配路由，然后让路由所定义的方法去处理请求。
-五、浏览器接受响应
-浏览器接收到来自服务器的响应资源后，会对资源进行分析。
-首先查看 Response header，根据不同状态码做不同的事（比如上面提到的重定向）。
-如果响应资源进行了压缩（比如 gzip），还需要进行解压。
-然后，对响应资源做缓存。
-接下来，根据响应资源里的 MIME (opens new window) 类型去解析响应内容（比如 HTML、Image 各有不同的解析方式）。
-六、渲染页面
-浏览器内核
-
-不同的浏览器内核，渲染过程也不完全相同，但大致流程都差不多。
-基本流程
-
-1. HTML 解析
-首先要知道浏览器解析是从上往下一行一行地解析的。
-解析的过程可以分为四个步骤：
-1. 解码（encoding）
-传输回来的其实都是一些二进制字节数据，浏览器需要根据文件指定编码（例如 UTF-8）转换成字符串，也就是 HTML 代码。
-2. 预解析（pre-parsing）
-预解析做的事情是提前加载资源，减少处理时间，它会识别一些会请求资源的属性，比如img标签的src属性，并将这个请求加到请求队列中。
-3. 符号化（Tokenization）
-符号化是词法分析的过程，将输入解析成符号，HTML 符号包括，开始标签、结束标签、属性名和属性值。
-它通过一个状态机去识别符号的状态，比如遇到&lt;，&gt;状态都会产生变化。
-4. 构建树（tree construction）
-
-注意：符号化和构建树是并行操作的，也就是说只要解析到一个开始标签，就会创建一个 DOM 节点。
-
-在上一步符号化中，解析器获得这些标记，然后以合适的方法创建DOM对象并把这些符号插入到DOM对象中。
-
-浏览器容错进制
-你从来没有在浏览器看过类似"语法无效"的错误，这是因为浏览器去纠正错误的语法，然后继续工作。
-事件
-当整个解析的过程完成以后，浏览器会通过DOMContentLoaded事件来通知DOM解析完成。
-2. CSS 解析
-一旦浏览器下载了 CSS，CSS 解析器就会处理它遇到的任何 CSS，根据语法规范 (opens new window)解析出所有的 CSS 并进行标记化，然后我们得到一个规则表。
-CSS 匹配规则
-在匹配一个节点对应的 CSS 规则时，是按照从右到左的顺序的，例如：div p { font-size :14px }会先寻找所有的p标签然后判断它的父元素是否为div。
-所以我们写 CSS 时，尽量用 id 和 class，千万不要过度层叠。
-3. 渲染树
-其实这就是一个 DOM 树和 CSS 规则树合并的过程。
-
-注意：渲染树会忽略那些不需要渲染的节点，比如设置了display:none的节点。
-
-计算
-通过计算让任何尺寸值都减少到三个可能之一：auto、百分比、px，比如把rem转化为px。
-级联
-浏览器需要一种方法来确定哪些样式才真正需要应用到对应元素，所以它使用一个叫做specificity的公式，这个公式会通过：
-
-标签名、class、id
-是否内联样式
-!important
-
-然后得出一个权重值，取最高的那个。
-渲染阻塞
-当遇到一个script标签时，DOM 构建会被暂停，直至脚本完成执行，然后继续构建 DOM 树。
-但如果 JS 依赖 CSS 样式，而它还没有被下载和构建时，浏览器就会延迟脚本执行，直至 CSS Rules 被构建。
-所有我们知道：
-
-CSS 会阻塞 JS 执行
-JS 会阻塞后面的 DOM 解析
-
-为了避免这种情况，应该以下原则：
-
-CSS 资源排在 JavaScript 资源前面
-JS 放在 HTML 最底部，也就是 &lt;/body&gt;前
-
-另外，如果要改变阻塞模式，可以使用 defer 与 async，详见：这篇文章 (opens new window)
-
-布局与绘制
-
-确定渲染树种所有节点的几何属性，比如：位置、大小等等，最后输入一个盒子模型，它能精准地捕获到每个元素在屏幕内的准确位置与大小。
-然后遍历渲染树，调用渲染器的 paint() 方法在屏幕上显示其内容。
-5. 合并渲染层
-把以上绘制的所有图片合并，最终输出一张图片。
-6. 回流与重绘
-回流(reflow)
-当浏览器发现某个部分发现变化影响了布局时，需要倒回去重新渲染，会从html标签开始递归往下，重新计算位置和大小。
-reflow 基本是无法避免的，因为当你滑动一下鼠标、resize 窗口，页面就会产生变化。
-重绘(repaint)
-改变了某个元素的背景色、文字颜色等等不会影响周围元素的位置变化时，就会发生重绘。
-每次重绘后，浏览器还需要合并渲染层并输出到屏幕上。
-回流的成本要比重绘高很多，所以我们应该尽量避免产生回流。
-比如：
-
-display:none 会触发回流，而 visibility:hidden 只会触发重绘。
-
-
-JavaScript 编译执行
-
-大致流程
-
-可以分为三个阶段：
-1. 词法分析
-JS 脚本加载完毕后，会首先进入语法分析阶段，它首先会分析代码块的语法是否正确，不正确则抛出“语法错误”，停止执行。
-几个步骤：
-
-分词，例如将var a = 2，，分成var、a、=、2这样的词法单元。
-解析，将词法单元转换成抽象语法树（AST）。
-代码生成，将抽象语法树转换成机器指令。
-
-2. 预编译
-JS 有三种运行环境：
-
-全局环境
-函数环境
-eval
-
-每进入一个不同的运行环境都会创建一个对应的执行上下文，根据不同的上下文环境，形成一个函数调用栈，栈底永远是全局执行上下文，栈顶则永远是当前执行上下文。
-创建执行上下文
-创建执行上下文的过程中，主要做了以下三件事：
-
-创建变量对象
-
-参数、函数、变量
-
-
-建立作用域链
-
-确认当前执行环境是否能访问变量
-
-
-确定 This 指向
-
-3. 执行
-JS 线程
-
-虽然 JS 是单线程的，但实际上参与工作的线程一共有四个：
-
-其中三个只是协助，只有 JS 引擎线程是真正执行的
-
-
-JS 引擎线程：也叫 JS 内核，负责解析执行 JS 脚本程序的主线程，例如 V8 引擎
-事件触发线程：属于浏览器内核线程，主要用于控制事件，例如鼠标、键盘等，当事件被触发时，就会把事件的处理函数推进事件队列，等待 JS 引擎线程执行
-定时器触发线程：主要控制setInterval和setTimeout，用来计时，计时完毕后，则把定时器的处理函数推进事件队列中，等待 JS 引擎线程。
-HTTP 异步请求线程：通过 XMLHttpRequest 连接后，通过浏览器新开的一个线程，监控 readyState 状态变更时，如果设置了该状态的回调函数，则将该状态的处理函数推进事件队列中，等待 JS 引擎线程执行。
-
-注：浏览器对同一域名的并发连接数是有限的，通常为 6 个。
-宏任务
-分为：
-
-同步任务：按照顺序执行，只有前一个任务完成后，才能执行后一个任务
-异步任务：不直接执行，只有满足触发条件时，相关的线程将该异步任务推进任务队列中，等待 JS 引擎主线程上的任务执行完毕时才开始执行，例如异步 Ajax、DOM 事件，setTimeout 等。
-
-微任务
-微任务是 ES6 和 Node 环境下的，主要 API 有：Promise，process.nextTick。
-微任务的执行在宏任务的同步任务之后，在异步任务之前。
-
-代码例子
-以上代码输出顺序为：1,3,5,4,2
-参考文档
-
-what-happens-when-zh_CN (opens new window)
-Tags to DOM (opens new window)
-彻底理解浏览器的缓存机制 (opens new window)
-浏览器的工作原理：新式网络浏览器幕后揭秘 (opens new window)
-深入浅出浏览器渲染原理 (opens new window)
-js 引擎的执行过程（一） (opens new window)
-还有一些找不到了。。。。。
-
-From: 4ark.me
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>浏览器的渲染过程</title>
-    <url>/posts/69a052c9/</url>
-    <content><![CDATA[
-通常，我们只需要编写HTML，CSS，JavaScript，浏览器上就能呈现出漂亮的网页了，但是浏览器是如何使用我们的代码在屏幕上渲染像素的呢？
-
-首先，请先看一张大图
-浏览器将HTML，CSS，JavaScript代码转换成屏幕上所能呈现的实际像素，这期间所经历的一系列步骤，叫做关键渲染路径（Critical Rendering Path）。其中包含：
-
-构建对象模型（DOM，CSSOM）
-构建渲染树（RenderTree）
-布局
-渲染
-
-在构建对象模型到构建渲染树的这一过程，还穿插着JS脚本的加载和执行。如下图所示：
-
-1.DOMTree的构建
-浏览器的渲染从解析HTML文档开始，宏观上，可以分为下面几个步骤：
-
-
-第一步（解析）：从网络或者磁盘下读取的HTML原始字节码，通过设置的charset编码，转换成相字符
-
-
-
-第二步（token化）：通过词法分析器，将字符串解析成Token，Token中会标注出当前的Token是开始标签，还是结束标签，或者文本标签等。
-
-
-
-第三步（生成Nodes并构建DOM树）：浏览器会根据Tokens里记录的开始标签，结束标签，将Tokens之间相互串联起来_（带有结束标签的Token不会生成Node）_。
-Node包含了这个节点的所有属性。例如&lt;img src="xxx.png" &gt;标签最终生成出的节点对象中会保存图片地址等信息。
-事实上，在构建DOM树时，不是要等所有的Tokens都转换成Nodes后才开始，而是一边生成Token一边采取深度遍历算法消耗Token来生成Node，如下图所示：
-图中有颜色的小数字代表构建的具体步骤，可以看出，首先生成出html Token,并消耗Token创建出html 节点对象，接着生成head Token并消耗Token创建出head节点对象…，当所有的Tokens都消耗完了，紧接着DOM树也就构建完了。
-
-
-这里抛出个小问题，为什么有时在js中访问DOM时浏览器会报错呢？
-因为在上述的解析的过程中，如果碰到了script或者link标签，就会根据src对应的地址去加载资源，在script标签没有设置async/defer属性时，这个加载过程是下载并执行完全部的代码，此时，DOM树还没有完全创建完毕，这个时候如果js企图访问script标签后面的DOM元素，浏览器就会抛出找不到该DOM元素的错误。
-值得注意的是：从bytes到Tokens的这个过程，浏览器都可以交给其他单独的线程去处理，不会堵塞浏览器的渲染线程。但是后面的部分就都在渲染线程下进行了，也就是我们常说的js单线程环境。
-2.CSSOMTree的构建
-DOM会记录页面的内容，但是浏览器还需要知道这些内容该用什么样式去展示，所以还需要构建CSSOMTree。CSSOM的生成过程和DOM的生成过程十分相似，也是：1.解析，2.Token化，3.生成Nodes并构建CSSOMTree：
-假设浏览器收到了下面这样一段css:
-body {font-size: 16px;}
-p {font-weight: bold;}
-p span {display:none;}
-span {color: red;}
-img {float: right;}
-最终会生成如下的CSSOMTree:
-
-从图中可以看出，最开始body有一个样式规则是font-size:16px，之后，在body这个样式基础上每个子节点还会添加自己单独的样式规则，比如span又添加了一个样式规则color:red。正是因为样式这种类似于继承的特性，浏览器设定了一条规则：CSSOMTree需要等到完全构建后才可以被使用，因为后面的属性可能会覆盖掉前面的设置。比如在上面的css代码基础上再添加一行代码p {font-size:12px}，那么之前设置的16px将会被覆盖成12px。
-下面是官方给的一种解释：
-
-未构建完的CSSOMTree是不准确的，浏览器必须等到CSSOMTree构建完毕后才能进入下一阶段。
-所以，CSS的加载速度与构建CSSOMTree的速度将直接影响首屏渲染速度，因此在默认情况下CSS被视为阻塞渲染的资源，需要将它尽早、尽快地下载到客户端，以便缩短首次渲染的时间。
-
-那么回到上面生成DOM时提到的JS问题：在标签没有设置async/defer属性时，js会阻塞DOM的生成。原因是js会改变DOMTree的内容，如果不阻塞，会出现一边生成DOM内容，一边修改DOM内容的情况，无法确保最终生成的DOMTree是确定唯一的。
-同理，JS也会可以修改CSS样式，影响CSSOMTree最终的结果。而我们前面提到，不完整的CSSOMTree是不可以被使用的，如果JS试图在浏览器还未完成CSSOMTree的下载和构建时去操作CSS样式，浏览器会暂停脚本的运行和DOM的构建，直至浏览器完成了CSSOM的下载和构建。也就是说，JS脚本的出现会让CSSOM的构建阻塞DOM的构建。
-
-平时谈及页面性能优化，经常会强调css文件应该放在html文档中的前面引入，js文件应该放在后面引入，这么做的原因是什么呢？
-
-举个例子：本来，DOM构建和CSSOM构建是两个过程，井水不犯河水。假设DOM构建完成需要1s，CSSOM构建也需要1s，在DOM构建了0.2s时发现了一个link标签，此时完成这个操作需要的时间大概是1.2s，如下图所示：
-
-而此时我们在HTML文档的中间插中入了一段JS代码，在DOM构建中间的过程中发现了这个script标签，假设这段JS代码只需要执行0.0001s，那么完成这个操作需要的时间就会变成：
-
-那如果我们把css放到前面，js放到最后引入时，构建时间会变成：
-
-由此可见，虽然只是插入了小小的一段只运行0.0001s的js代码，不同的引入时机也会严重影响DOMTree的构建速度。
-简而言之，如果在DOM，CSSOM和JavaScript执行之间引入大量的依赖关系，可能会导致浏览器在处理渲染资源时出现大幅度延迟：
-
-当浏览器遇到一个script标签时，DOMTree的构建将被暂停，直至脚本执行完毕
-JavaScript可以查询和修改DOMTree与CSSOMTree
-直至CSSOM构建完毕，JavaScript才会执行
-脚本在文档中的位置很重要
-
-3.渲染树的构建
-现在，我们已经拥有了完整的DOM树和CSSOM树。DOM 树上每一个节点对应着网页里每一个元素，CSSOM树上每个节点对应着网页里每个元素的样式，并且此时浏览器也可以通过 JavaScript 操作DOM/CSSOM树，动态改变它的结构。但是DOM/CSSOM树本身并不能直接用于排版和渲染，浏览器还会生成另外一棵树：Render树
-
-接下来我们来谈几条概念
-
-
-Render 树上的每一个节点被称为：RenderObject。
-
-
-RenderObject跟 DOM 节点几乎是一一对应的，当一个可见的 DOM 节点被添加到 DOM 树上时，内核就会为它生成对应的 RenderOject 添加到 Render 树上。
-
-
-其中，可见的DOM节点不包括：
-
-
-一些不会体现在渲染输出中的节点（&lt;html&gt;&lt;script&gt;&lt;link&gt;….），会直接被忽略掉。
-
-
-通过CSS隐藏的节点。例如上图中的span节点，因为有一个CSS显式规则在该节点上设置了display:none属性，那么它在生成RenderObject时会被直接忽略掉。
-
-
-Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。
-
-
-此时的Render树上，已经包含了网页上所有可见元素的内容和位置信息 排版引擎会根据Render树的内容和结构，准确的计算出元素该在网页上的什么位置。到此，我们已经具备进入布局的一切准备条件，但是通过上面我们知道，布局后面还有一个渲染过程，那么_Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。_这句话是什么意思呢？
-RenderObject and RenderLayer
-
-浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing等属性，浏览器需要生成另外一棵树：Layer树
-
-
-浏览器会为一些特定的RenderObject生成对应的RenderLayer，其中的规则是：
-
-是否是页面的根节点 It’s the root object for the page
-是否有css的一些布局属性（relative absolute or a transform) It has explicit CSS position properties (relative, absolute or a transform)
-是否透明 It is transparent
-是否有溢出 Has overflow, an alpha mask or reflection
-是否有css滤镜 Has a CSS filter
-是否包含一个canvas元素使得节点拥有视图上下文 Corresponds to canvas element that has a 3D (WebGL) context or an accelerated 2D context
-是否包含一个video元素 Corresponds to a video element
-
-当满足上面其中一个条件时，这个RrenderObject就会被浏览器选中生成对应的RenderLayer。至于那些没有被命运选中的RrenderObject，会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。
-浏览器渲染引擎在布局和渲染时会遍历整个Layer树，访问每一个RenderLayer，再遍历从属于这个RenderLayer的 RrenderObject，将每一个 RenderObject 绘制出来。可以理解为：Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 RenderLayer 和 RrenderObject 一起就决定了网页在屏幕上最终呈现出来的内容。
-4.布局
-到目前为止，浏览器计算出了哪些节点是可见的以及它的信息和样式，接下来就需要计算这些节点在设备视口内的确切位置和大小，这个过程我们称之为“布局”。
-布局最后的输出是一个“盒模型”：将所有相对测量值都转换成屏幕上的绝对像素。
-
-5.渲染
-最后，既然我们知道了哪些节点可见、它们的计算样式以及几何信息，我们终于可以将这些信息传递给最后一个阶段：将渲染树中的每个节点转换成屏幕上的实际像素：浏览器通过发出“Paint Setup”和“Paint”事件，将渲染树转换成屏幕上的像素。
-
-至此，我们就能够在浏览器上看到漂亮的网页了
-
-谈及页面性能优化，我们也常说要尽量减少浏览器的重排和重绘，浏览器重排和重绘时究竟做了哪些工作呢？
-
-我们平时常说的重排，其实就是浏览器计算render树，布局到渲染的这个过程，而重绘就是计算layer树到渲染的这个过程，每当触发一次重绘和重排时，浏览器都需要重新经过一遍上述的计算。很显然，重排会产生比重绘更大的开销，但无论是重排还是重绘，都会给浏览器渲染线程造成很大的负担，所以，我们在实际生产中要严格注意减少重排和重绘的触发。至于如何减少重排和重绘的次数，这里就不多做展开了，详细请听下回分解~
-总结：
-
-经过：1.构建对象模型（DOM，CSSOM），2.构建渲染树（RenderTree），3.布局，4.渲染 这几个步骤后，我们就能在浏览器上看到漂亮的网页啦。
-CSS被视为阻塞渲染的资源，应放到代码的头部尽快加载。
-同步的JavaScript会暂停DOMTree的构建，应放到代码的尾部最后加载，或者使用async/defer属性异步加载JavaScript。
-重排和重绘会给浏览器渲染线程造成很大的负担，尽量减少重排和重绘的触发次数
-
-参考文献：
-https://developers.google.com/web/fundamentals/performance/critical-rendering-path/constructing-the-object-model?hl=zh-cn
-https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-tree-construction?hl=zh-cn
-https://developers.google.com/web/fundamentals/performance/critical-rendering-path/render-blocking-css?hl=zh-cn
-https://mp.weixin.qq.com/s?__biz=MzA5NzkwNDk3MQ==&amp;mid=2650588806&amp;idx=1&amp;sn=408a54e7c8102fd6944c9a40b119015a&amp;scene=21#wechat_redirect
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>web</tag>
-        <tag>http</tag>
-        <tag>css</tag>
-        <tag>js</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>深度学习之视频人脸识别系列</title>
-    <url>/posts/a0f3c838/</url>
-    <content><![CDATA[系列1 简介
-出品 | 磐创AI技术团队
-【磐创AI导读】本文是深度学习之视频人脸识别系列的第一篇文章，介绍了人脸识别领域的一些基本概念，分析了深度学习在人脸识别的基本流程，并总结了近年来科研领域的研究进展，最后分析了静态数据与视频动态数据在人脸识别技术上的差异。欢迎大家点击上方篮子关注我们的公众号：磐创AI。
-一、基本概念
-1. 人脸识别（face identification）
-人脸识别是1对n的比对，给定一张人脸图片，如何在n张人脸图片中找到同一张人脸图片，相对于一个分类问题，将一张人脸划分到n张人脸中的一张。类似于管理人员进行的人脸识别门禁系统。
-2.人脸验证（face verification）
-人脸验证的1对1的比对，给定两张人脸图片，判断这两张人脸是否为同一人，类似于手机的人脸解锁系统，事先在手机在录入自己的脸部信息，然后在开锁时比对摄像头捕捉到的人脸是否与手机上录入的人脸为同一个人。
-3.人脸检测（face detection）
-人脸检测是在一张图片中把人脸检测出来，即在图片上把人脸用矩形框出来，并得到矩形的坐标，如下图所示。
-
-4. 人脸关键点检测
-根据输入的人脸图像，识别出面部关键特征点，如眼睛、鼻尖、嘴角点、眉毛以及人脸各部件轮廓点的坐标，如下图所示。
-
-5. 人脸矫正（人脸对齐）
-通过人脸关键点检测得到人脸的关键点坐标，然后根据人脸的关键点坐标调整人脸的角度，使人脸对齐，由于输入图像的尺寸是大小不一的，人脸区域大小也不相同，角度不一样，所以要通过坐标变换，对人脸图像进行归一化操作，如下图所示。
-
-二、基于深度学习的人脸识别算法基本流程
-随着神经网络的迅速发展和其对图像数据的强大的特征提取，深度学习运用于人脸识别也成为热点研究方向；2014年的开山之作DeepFace，第一个真正将大数据和深度学习结合应用于人脸识别与验证，确立人脸识别的常规流程：图片-&gt;人脸与关键点检测-&gt;人脸对齐-&gt;人脸表征（representation）-&gt;分类。首先将图片中的人脸检测处理并通过关键点进行对齐，如何输入到神经网络，得到特征向量，通过分类训练过程，该向量即为人脸的特征向量。要求出两张人脸的相似度即计算两个特征的向量度量之差，方法包括：SVM、SiameseNetwork、JointBayesian、L1距离、L2距离、cos距离等。
-三、科研领域近期进展
-科研领域近期进展主要集中于loss函数的研究，包括DeepId2（Contrastive Loss）、FaceNet（Triplet loss）、L-Softmax、SphereFace（A-Softmax）、Center Loss、L2-Softmax、NormFace、CosFace（AM-Softmax）、ArcFace（AA-Softmax）等。
-四、基于视频人脸识别和图片人脸识别的区别
-（_该小结部分参考于博客园 - 米罗西http://www.cnblogs.com/zhehan54/p/6727631.html_）
-相对于图片数据，目前视频人脸识别有很多挑战，包括：（1）视频数据一般为户外，视频图像质量比较差；（2）人脸图像比较小且模糊；（3）视频人脸识别对实时性要求更高。
-但是视频数据也有一些优越性，视频数据同时具有空间信息和时间信息，在时间和空间的联合空间中描述人脸和识别人脸会具有一定提升空间。在视频数据中人脸跟踪是一个提高识别的方法，首先检测出人脸，然后跟踪人脸特征随时间的变化。当捕捉到一帧比较好的图像时，再使用图片人脸识别算法进行识别。这类方法中跟踪和识别是单独进行的，时间信息只在跟踪阶段用到。
-【总结】：本期文章主要介绍了基于深度学习的人脸识别算法的一些基本入门知识，下一期我给大家介绍人脸识别中获取神经网络输入的算法，即关于人脸检测、人脸关键点检测与人脸对齐的一些重要算法和相关论文解析。
-系列2 人脸检测与对齐
-一、人脸检测与关键点检测
-1. 问题描述：
-人脸检测解决的问题为给定一张图片，输出图片中人脸的位置，即使用方框框住人脸，输出方框的左上角坐标和右下角坐标或者左上角坐标和长宽。算法难点包括：人脸大小差异、人脸遮挡、图片模糊、角度与姿态差异、表情差异等。而关键检测则是输出人脸关键点的坐标，如左眼（x1，y1）、右眼（x2，y2）、鼻子（x3，y3）、嘴巴左上角（x4，y4）、嘴巴右上角（x5，y5）等。
-2. 深度学习相关算法：
-（1）Cascade CNN
-Cascade CNN源于发表于2015年CVPR上的一篇论文A Convolutional Neural Network Cascade for Face Detection【2】，作者提出了一种级连的CNN网络结构用于人脸检测。算法主体框架是基于V-J的瀑布流思想【1】，是传统技术和深度网络相结合的一个代表，Cascade CNN包含了多个分类器，这些分类器使用级联结构进行组织，与V-J不同的地方在于Cascade CNN采用卷积网络作为每一级的分类器。整个网络的处理流程如下图所示：
-
-整个处理流程里包含了六个网络：12-net、12-calibration-net、24-net、24-calibration-net、48-net、48-calibration-net，其中三个二分类网络用于分类其是否为人脸，另外三个calibration网络用于矫正人脸框边界。其中第二个网络之后、第四个网络之后、第五个网络之后使用NMS算法过滤掉冗余的框。
-12-net，24-net和48-net的网络结构如下图所示：
-
-13-12-calibration-net，24-calibration-net，48-calibration-net的结构如下图所示：
-
-该算法结合了V-J框架构造了级连的CNN网络结构并设计边界矫正网络用来专门矫正人脸框边界，在AFW数据集上准确率达到97.97%。
-
-（2）Faceness-Net
-Faceness-Net源于论文A convolutional neural network cascade for face detection【3】，该算法基于DCNN网络【5】的人脸局部特征分类器，算法首先进行人脸局部特征的检测，使用多个基于DCNN网络的facial parts分类器对人脸进行评估，然后根据每个部件的得分进行规则分析得到Proposal的人脸区域，然后从局部到整体得到人脸候选区域，再对人脸候选区域进行人脸识别和矩形框坐标回归，该过程分为两个步骤。
-第一个步骤：每个人脸局部特征使用attribute-aware网络检测并生成人脸局部图，其中一共五个特征属性： 头发、眼睛、鼻子、嘴巴、胡子。然后通过人脸局部图根据评分构建人脸候选区域，具体如下图所示：
-
-第二个步骤：训练一个多任务的卷积网络来完成人脸二分类和矩形框坐标回归，进一步提升其效果，具体如下图所示：
-
-Faceness从脸部特征的角度来解决人脸检测中的遮挡和姿态角度问题，其整体性能在当时是非常好的，在AFW数据集上准确率可以达到98.05%。
-
-（3）MTCNN
-MTCNN源于论文Joint Face Detection and Alignment using Multi-task Cascaded Convolutional Networks【6】，是基于多任务级联卷积神经网络来解决人脸检测和对齐问题，同时输出图片的人脸矩阵框和关键点坐标（左眼、右眼、鼻子、嘴巴左上角、嘴巴右上角）。MTCNN为三阶的级联卷积神经网络，整体框架如下图所示：
-
-输入阶段：为应对目标多尺度问题，将原始图像resize到不同尺寸，构建图像金字塔，作为三阶级联架构的输入，这样处理可以更好地检测大小不一的人脸。
-第一阶段：通过一个全部由卷积层组成的CNN，取名P-Net，获取候选人脸框、关键点坐标和人脸分类（是人脸或不是），之后采用NMS过滤掉高重叠率的候选窗口。如下图所示：
-
-第二阶段：第一阶段输出的候选人脸框作为更为复杂的R-Net网络的输入，R-Net进一步筛除大量错误的候选人脸框，同样也通过NMS过滤掉高重叠率的候选窗口。如下图所示：
-
-第三阶段：与第二阶段类似，最终网络输出人脸框坐标、关键点坐标和人脸分类（是人脸或不是）。如下图所示：
-
-MTCNN通过三级的级联卷积神经网络对任务进行从粗到细的处理，还提出在线困难样本生成策略（online hard sample mining ）可以进一步提升性能。兼并了速度与准确率，速度在GPU上可以达到99FPS，在 FDDB数据集上可以达到95.04准确率，具体如下图所示：
-
-二、人脸对齐（部分参考于GraceDD的博客文章）
-人脸对齐通过人脸关键点检测得到人脸的关键点坐标，然后根据人脸的关键点坐标调整人脸的角度，使人脸对齐，由于输入图像的尺寸是大小不一的，人脸区域大小也不相同，角度不一样，所以要通过坐标变换，对人脸图像进行归一化操作。人脸关键点检测有很多算法可以使用包括：ASM、AAM、DCNN 、TCDCN 、MTCNN 、TCNN、TCNN等，这里就不详细介绍，主要说一下得到人脸关键点之后如何进行人脸对齐，是所有人脸达到归一化效果，该过程如下图所示：
-
-该过程涉及到图像的仿射变换，简单来说，“仿射变换”就是：“线性变换”+“平移”，即坐标的变换。假如我们希望人脸图片归一化为尺寸大小600600，左眼位置在（180，200），右眼位置在（420，200）。 这样人脸中心在图像高度的1/3位置，并且两个眼睛保持水平，所以我们选择左眼角位置为( 0.3width, height / 3 )，右眼角位置为（0.7*width , height / 3） 。
-利用这两个点计算图像的变换矩阵（similarity transform），该矩阵是一个2*3的矩阵，如下：
-
-如果我们想对一个矩形进行变换，其中x、y方向的缩放因为分别为sx，sy，同时旋转一个角度 ，然后再在x方向平移tx, 在y方向平移ty
-利用opencv的estimateRigidTransform方法，可以获得这样的变换矩阵，但遗憾的是，estimateRigidTransform至少需要三个点，所以我们需要构选第三个点，构造方法是用第三个点与已有的两个点构成等边三角形，这样第三个点的坐标为：
-
-代码如下：
-
-经过上一步的处理之后，所有的图像都变成一样大小，并且又三个关键点的位置是保持一致的，但因为除了三个点对齐了之外，其他点并没有对齐。所以根据得到的变换矩阵对剩下所有的点进行仿射变换，opencv代码如下所示：
-
-img为输入图像;
-warped为变换后图像，类型与src一致;
-M为变换矩阵，需要通过其它函数获得，当然也可以手动输入;
-Image_size为输出图像的大小;
-三、 总结
-本期文章主要介绍了人脸检测与对齐的相关算法，下一期我给大家介绍一下人脸表征的相关算法，即通过深度学习提取人脸特征，通过比较人脸特征进行人脸识别与验证。
-参考文献：
-
-【1】 S.Z.Li, L.Zhu, Z.Q.Zhang, A.Blake, H.J.Zhang, H.Y.Shum. Statistical learning of multi-view face detection. In: Proceedings of the 7-th European Conference on Computer Vision. Copenhagen, Denmark: Springer, 2002.67-81.
-【2】Li H, Lin Z, Shen X, et al. A convolutional neural network cascade for face detection[C]//Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition. 2015: 5325-5334.
-【3】Yang S, Luo P, Loy C C, et al. Faceness-Net: Face detection through deep facial part responses[J]. IEEE transactions on pattern analysis and machine intelligence, 2017.
-【4】Yang S, Luo P, Loy C C, et al. From facial parts responses to face detection: A deep learning approach[C]//Proceedings of the IEEE International Conference on Computer Vision. 2015: 3676-3684.
-【5】Sun Y, Wang X, Tang X. Deep convolutional network cascade for facial point detection[C]//Proceedings of the IEEE conference on computer vision and pattern recognition. 2013: 3476-3483.
-【6】Zhang K, Zhang Z, Li Z, et al. Joint face detection and alignment using multitask cascaded convolutional networks[J]. IEEE Signal Processing Letters, 2016, 23(10): 1499-1503.
-
-系列3：人脸表征
-一、人脸表征
-把人脸图像通过神经网络，得到一个特定维数的特征向量，该向量可以很好地表征人脸数据，使得不同人脸的两个特征向量距离尽可能大，同一张人脸的两个特征向量尽可能小，这样就可以通过特征向量来进行人脸识别。
-
-二、论文综述
-1. DeepFace：
-2014年论文DeepFace: Closing the Gap toHuman-Level Performance in Face Verification提出了DeepFace算法，第一个真正将大数据和深度学习神经网络结合应用于人脸识别与验证。在该人脸识别模型中分为四个阶段：人脸检测 =&gt; 人脸对齐 =&gt; 人脸表征 =&gt; 人脸分类，在LFW数据集中可以达到97.00%的准确率。
-（1）人脸检测与对齐：该模型使用3D模型来将人脸对齐，该方法过于繁琐，在实际应用中很少使用，经过3D对齐以后，形成的图像都是152×152的图像，具体步骤如下图。
-
-分为如下几步：
-a. 人脸检测，使用6个基点  b. 二维剪切，将人脸部分裁剪出来  c. 67个基点，然后Delaunay三角化，在轮廓处添加三角形来避免不连续  d. 将三角化后的人脸转换成3D形状  e. 三角化后的人脸变为有深度的3D三角网  f. 将三角网做偏转，使人脸的正面朝前。  g. 最后放正的人脸  h. 一个新角度的人脸（在论文中没有用到）
-（2）人脸表征：人脸表征使用了5个卷积层和1个最大池化层、1个全连接层，如下图所示。前三层的目的在于提取低层次的特征,为了网络保留更多图像信息只使用了一层池化层；后面三层都是使用参数不共享的卷积核，因为主要是因为人脸不同的区域的特征是不一样的，具有很大的区分性，比如鼻子和眼睛所表示的特征是不一样的，但是使用参数不共享的卷积核也增加了模型计算量以及需要更多的训练数据。最后输出的4096维向量进行L2归一化。
-
-a. Conv：32个11×11×3的卷积核
-b. max-pooling: 3×3， stride=2
-c. Conv: 16个9×9的卷积核
-d. Local-Conv: 16个9×9的卷积核，Local的意思是卷积核的参数不共享
-e. Local-Conv: 16个7×7的卷积核，参数不共享
-f. Local-Conv: 16个5×5的卷积核，参数不共享
-g. Fully-connected: 4096维
-h. Softmax: 4030维
-（3）分类：论文介绍了两种方法进行分类，加权的卡方距离和使用Siamese网络结构，设f1和f2为特征向量，上一个步骤的输出，则有：
-①加权卡方距离：计算公式如下，加权参数由线性SVM计算得到：
-
-②Siamese网络：网络结构是成对进行训练，得到的特征表示再使用如下公式进行计算距离：
-
-2. DeepID1：
-DeepID1 是2014年Deep LearningFace Representation from Predicting 10,000 Classes一文提出的，是DeepID三部曲的第一篇。DeepID1 使用softmax多分类训练，主要思想第一个是数据集的增大，包括训练集使用celebface，包含87628张图片，5436个人脸，增大了训练集；使用多尺寸输入，通过5个landmarks将每张人脸划分成10regions，每张图片提取60patches=10regions3scales2(RGB orgray)，第二个是网络结构，DeepID提取的人脸特征就是一个由连接第三层与第四层组成的全连接层特征，如下图所示，每个patches经过这个cnn网络，第四层的特征更加全局化（global），第三层的特征更加细节，因此DeepID连接了两者，以求同时包含全局，细节信息。
-
-60个patches使用60个CNN,每个CNN提取2*160=320维特征（与水平翻转一起输入），总网络模型如下图所示，最后分别使用联合贝叶斯算法与神经网络进行分类，并比较结果。
-
-模型最终以CelebFaces+中202,599图像作为训练集， patch数提升为100（10r10s2） ，特征数提升为1001602=32000 然后使用PCA降为150维 ，使用联合贝叶斯算法进行验证， 最终在LFW上达到97.20%的验证准确率。
-3. DeepID2：
-DeepID2是Deep Learning Face Representationby Joint Identification-Verification一文提出的，对DeepID1进行了进一步的改进，提出了contrastive loss，在分类任务，我们需要的是减少类内差距（同一人脸），增加类间差距（不同人脸），softmax loss分类的监督信号可以增大类间差距，但是却对类内差距影响不大，所以DeepID2加入了另一个loss，contrastive loss，从而增加验证的监督信号，就可以减少类内差距。
-网络结构类似DeepID1,不同之处在于使用了两种不同的损失函数，网络结构如下图所示。
-
-损失函数：
-①分类信号，Softmax loss。
-
-②验证信号，contrastiveloss，使用l2范数距离表示，m为阈值不参与训练，括号内的θve={m}，该损失函数可以让类间的距离给定一个限制margin，即m大小的距离。
-
-
-两loss的组合方式： 首先使用2个输入，计算Softmax loss和contrastive loss,总损失为二者通过λ加权求和，通过总损失来执行梯度下降更新卷积参数，通过Softmax loss来更新softmax层的参数。
-整个模型使用celebrate+数据集训练，每张图片使用了21 facial landmarks，分成200patches（20regions5scales2RGB&amp;Gray)，水平翻转后变为400patches，使用了200个卷积神经网络，提取400（2002）个Deepid2特征，使用贪婪算法降为25个Deepid2特征，使用PCA将25160Deepid2特征降为180维，最后使用联合贝叶斯算法进行验证，最终在LFW上得到的最终准确率是98.97%，使用7组25个Deepid2特征，SVM融合可得到准确率为99.15% 。DeepID2在2014 年是人脸领域非常有影响力的工作，也掀起了在人脸领域引进 MetricLearning 的浪潮。
-4. DeepID2+：
-DeepID2+源于论文Deeply learned facerepresentations are sparse, selective, and robust，DeepID2+是对DeepID2的改进。①卷积层在原来基础上再增加128维，第四层全连接层从160增加到512，训练数据增加了CelebFaces+ dataset，WDRef等，有12000个人脸的大约290,000张图片； ②每个卷积层的后面都加了一个512为的全连接层，并添加contrastive loss监督信号，而不仅在第四层全连接层上有 。网络结构如下图所示。
-
-最终在LFW数据集上准确率为99.47%。
-5. DeepID3：
-DeepID3源于2015年的Deepid3:Face recognition with very deep neural networks论文，该论文探究了复杂神经网络对人脸识别的作用。论文研究VGG与GoogleNet用于人脸识别的效果，论文在VGG和GooLeNet的基础上进行构建合适的结构，使得方便人脸识别。结果发现DeepID3的结果和DeepID2+相当，可能是由于数据集的瓶颈，需要更大的数据才能有更好的提升，两个网络结构如下图所示。
-
-网络输出使用PCA降维到300维的向量，使用联合贝叶斯算法进行验证，最终在LFW上得到的最终准确率是99.53%。
-6. FaceNet：
-FaceNet由论文Facenet: A unified embedding forface recognition and clustering提出，这篇 2015 年来自 Google 的 论文同样具有非常大的影响力，不仅仅成功应用了 TripletLoss 在 benchmark 上取得state-of-art 的结果，更因为他们提出了一个绝大部分人脸问题的统一解决框架，即：识别、验证、搜索等问题都可以放到特征空间里做，需要专注解决的仅仅是如何将人脸更好的映射到特征空间。FaceNet在DeepID的基础上，将 ContrastiveLoss 改进为 Triplet Loss，去掉softmaxloss。FaceNet实验了ZFNet类型网络和Inception类型网络，最终Inception类型网络效果更好，网络结构如下图所示。
-
-FaceNet没有使用PCA降维，而是在网络中直接训练输出128维的向量，用全连接层来完成降维，最后的128维的向量经过Triplet Loss。
-Triplet Loss输入不再是 Image Pair，而是三张图片（Triplet），分别为 Anchor Face（xa），Negative Face（xn）和 Positive Face（xp）。Anchor 与 Positive Face 为同一人，与 Negative Face 为不同人，在特征空间里 Anchor 与 Positive 的距离要小于 Anchor 与 Negative 的距离，且相差超过一个 Margin Alpha。
-loss的目标为：
-
-总loss公式为：
-
-Contrastive Loss与Triplet Loss的比较， Contrastive Loss目标是减少类内差距（两个蓝点），增加类间差距（蓝点与红点）；Triplet Loss则是输入三张图片，Anchor 与 Positive 的距离要小于 Anchor 与 Negative 的距离，且相差超过一个 Margin Alpha，即Triplet Loss同时约束了两个距离。
-
-最后FaceNet在LFW数据集上达到了99.63%的准确率。
-基于 ContrastiveLoss 和 Triplet Loss 的 MetricLearning 符合人的认知规律，在实际应用中也取得了不错的效果，但同时也有很多问题，由于ContrastiveLoss 和 Triplet Loss 的训练样本都基于pair 或者 triplet 的，可能的样本数是 O(N2) 或者 O (N3) 的，所以模型需要很久的计算才能拟合并且训练集需要足够大。
-三、总结
-本期文章主要介绍人脸表征相关算法和论文综述，主要是2014年到2016年的研究成果， ContrastiveLoss 和 Triplet Loss在实际应用中也取得了很好的效果，但是也有很多问题，由于Contrastive Loss 和 Triplet Loss 的训练样本都基于 pair 或者 triplet 的，可能的样本数是 O (N2) 或者 O (N3) 的，所以模型需要很久的计算才能拟合并且训练集要足够大，所以在之后的人脸识别研究中，大部分在于loss函数的研究，这部分将会在下一期给大家介绍。
-参考文献：
-
-【1】 Taigman Y, Yang M, Ranzato M A, et al.Deepface: Closing the gap to human-level performance in faceverification[C]//Proceedings of the IEEE conference on computer vision andpattern recognition. 2014: 1701-1708.
-【2】Sun Y, Wang X, Tang X. Deep learning facerepresentation from predicting 10,000 classes[C]//Proceedings of the IEEEconference on computer vision and pattern recognition. 2014: 1891-1898.
-【3】Sun Y, Chen Y, Wang X, et al. Deeplearning face representation by joint identification-verification[C]//Advancesin neural information processing systems. 2014: 1988-1996.
-【4】Sun Y, Liang D, Wang X, et al. Deepid3:Face recognition with very deep neural networks[J]. arXiv preprintarXiv:1502.00873, 2015.
-【5】Simonyan K, Zisserman A. Very deepconvolutional networks for large-scale image recognition[J]. arXiv preprintarXiv:1409.1556, 2014.
-【6】Szegedy C, Liu W, Jia Y, et al. Goingdeeper with convolutions[C]//Proceedings of the IEEE conference on computervision and pattern recognition. 2015: 1-9.
-【7】Sun Y, Wang X, Tang X. Deeply learned facerepresentations are sparse, selective, and robust[C]//Proceedings of the IEEEconference on computer vision and pattern recognition. 2015: 2892-2900.
-【8】Schroff F, Kalenichenko D, Philbin J.Facenet: A unified embedding for face recognition andclustering[C]//Proceedings of the IEEE conference on computer vision andpattern recognition. 2015: 815-823.
-
-系列4：人脸表征-续
-一、人脸表征
-把人脸图像通过神经网络，得到一个特定维数的特征向量，该向量可以很好地表征人脸数据，使得不同人脸的两个特征向量距离尽可能大，同一张人脸的两个特征向量尽可能小，这样就可以通过特征向量来进行人脸识别。
-
-二、论文综述
-1. L-Softmax：
-Softmax Loss函数被广泛应用于深度学习，较为简单实用，但是它并不能够明确引导神经网络学习区分性较高的特征。L-Softmax能够有效地引导网络学习使得样本类内距离较小、类间距离较大的特征，L-Softmax不但能够调节类间距离的间隔（margin）大小，而且能够防止过拟合。
-L-Softmax是对softmax loss的改进，softmax loss公式如下所示：
-
-其中 fj 表示最终全连接层的类别输出向量 f的第 j个元素, N为训练样本的个数，则 fyi可以表示为 fyi=WTyi xi，其中 0≤θj≤π，最终的损失函数可得：
-
-softmax的目的是使得WT1x&gt;WT2x，即 ∥W1∥∥x∥cos(θ1)&gt;∥W2∥∥x∥cos(θ2)，从而得到输入x（来自类别1）输出正确的分类结果。L-Softmax通过增加一个正整数变量m，从而产生一个决策余量，能够更加严格地约束上述不等式，即：
-
-其中0≤θ1&lt;π/m。如果W1和W2能够满足∥W1∥∥x∥cos(mθ1)&gt;∥W2∥∥x∥cos(θ2)，那么就必然满足∥W1∥∥x∥cos(θ1)&gt;∥W2∥∥x∥cos(θ2)，这样的约束对学习W1和W2的过程提出了更高的要求，在训练学习过程中，类间要比之前多了一个m的间隔，从而使得1类和2类有了更宽的分类决策边界。这种Margin Based Classification使得学习更加的困难，从而使类间距离增加了一个margin距离，L-Softmax loss的总公式如下：
-
-当m越大时，分类的边界越大，学习难度当然就越高。
-论文仅使用了WebFace数据集作为训练集和一个简单的卷积网络，就在LFW上达到了98.71%的正确率，证明了L-Softmax loss取得了比softmax loss更好的结果。
-2. SphereFace :
-SphereFace在MegaFace数据集上识别率在2017年排名第一，提出A-Softmax Loss使人脸识别达到不错的效果。A-Softmax Loss基于softmax loss和L-Softmax loss，在二分类模型中，softmax loss为：
-
-如果x为类别一，则希望p1&gt;p2,则二分类的划分函数为：
-
-权重归一化||w||为1，b为0，此时特征上的点映射到单位超球面上，则二分类的划分函数为：
-
-然后使用与L-Softmax loss相同的原理，使
-
-则A-Softmax Loss最终为：
-
-因此A-Softmax Loss是样本类别之间产生了角度距离，让决策函数更加严格并且更加具有可区分性。当m增大，角度距离也会增加。
-A-Softmax与L-Softmax的最大区别在于A-Softmax的权重归一化了，而L-Softmax则没有。A-Softmax权重的归一化导致特征上的点映射到单位超球面上，A-Softmax仅仅能从角度上划分类别，而L-Softmax是在角度与长度方向进行考量，两个方向如果划分不一就会收到干扰，导致精度下降。
-SphereFace使用的模型如下图所示：
-
-训练与测试过程如下图所示，在测试过程中使用余弦计算相似度：
-
-最终SphereFace在训练集较小的情况下，LFW数据集上准确率为99.42%。Sphereface效果很好，但是它不优美。在测试阶段，Sphereface通过特征间的余弦值来衡量相似性，即以角度为相似性的度量，在训练阶段，其实Sphereface的损失函数并不是在直接优化特征与类中心的角度，而是优化特征与类中心的角度在乘上一个特征的长度，这就造成了训练跟测试之间目标不一致。
-3. Normface :
-在优化人脸识别任务时，softmax本身优化的是没有归一化的内积结果，但是最后在预测的时候使用的一般是cosine距离或者欧式距离，这会导致优化目标和最终的距离度量其实并不一致。 Normface的核心思想是既然最后在特征对比的时候使用归一化的cosine距离，那么在训练的过程中把特征也做归一化处理，做了归一化之后，softmax的优化就变成了直接优化cosine距离了，归一化过程如下，其中e是为了防止除0的较小正数：
-
-相应的损失函数如下：
-
-其中 W 是归一化的权重，f_i 是归一化的特征，参数 s 的引入是因为保证梯度大小的合理性，去掉bias是因为softmax之前的fc有bias的情况下会使得有些类别在角度上没有区分性但是通过bias可以区分，在这种情况下如果对feature做normalize，会使得中间的那个小类别的feature变成一个单位球形并与其他的feature重叠在一起，所以在feature normalize的时候是不能加bias的。
-Normface使用了较小的模型使用多种loss训练，然后在LFW数据集上测试，证明了feature normalize的效果，结果如下：
-
-4. CosFace :
-Normface用特征归一化解决了Sphereface训练和测试不一致的问题。但是却没有了margin的惩罚，腾讯AI Lab的CosFace或者AM-softmax是在Normface的基础上引入了margin，损失函数为：
-
-其中特征与权值都做了归一化：
-
-分类决策为：
-
-，比之前增加了m的margin，m 是一个超参数，控制惩罚的力度，m 越大，惩罚越强。
-CosFace使用mtcnn进行人脸检测与对齐，人脸表征训练模型使用基于residual units 64层卷积网络的Sphere Face，在5M的训练集上训练，在LFW数据集上测试，精度达到99.73%。
-5. ArcFace :
-ArcFace源于论文Additive angular margin lossfor deep face recognition，也叫做InsightFace，论文基本介绍了近期较为流行的人脸识别模型，loss变化从softmax到AM-softmax，然后提出ArcFace，可以说起到了很好的综述作用，论文从三个方面探讨影响人脸识别模型精度的主要因素。
-（1）数据：数据方面，论文探讨了各个数据集的数据质量和优缺点，并对MS-Celeb-1M，MegaFace FaceScrub做了清洗，清洗后的数据公开。
-（2）网络：详细对比了不同的主流网络结构的性能，包括输入层尺寸大小、最后输出几层的不同结构、基本网络单元残差网络的不同结构、主干网络的不同模型。经过实验的证明，最后的网络结构：输入图片大小112x112；第一层convLayer 卷积核为33 stride 1时，网络输出77；主干网络使用ResNet100，并使用改进后的改进的残差网络结构，如下图；最后的几层输出层为最后一个卷积层后+BN-Dropout-FC-BN的结构。
-
-（3）损失函数：与 AM-softmax相比，区别在于Arcface引入margin的方式不同，损失函数为：
-
-Arcface的m是在余弦里面，AM-softmax的在外面，ArcFace更为直观并且在超球面维度上有更清晰的解释。Arcface在VGG2和MS-Celeb-1M数据集上训练，在LFW数据集上精度达到99.83%。
-三、总结
-本期文章主要介绍人脸表征相关算法和论文综述，人脸检测、对齐、特征提取等这些操作都可以在静态数据中完成，下一期将给大家介绍在视频数据中进行人脸识别的另一个重要的算法，视频人脸跟踪的概念与方法。
-参考文献：
-
-【1】 Liu W, Wen Y, Yu Z, et al. Large-MarginSoftmax Loss for Convolutional Neural Networks[C]//ICML. 2016: 507-516.1708.
-【2】Liu W, Wen Y, Yu Z, et al. Sphereface:Deep hypersphere embedding for face recognition[C]//The IEEE Conference onComputer Vision and Pattern Recognition (CVPR). 2017, 1: 1.
-【3】Wang F, Xiang X, Cheng J, et al. Normface:l 2 hypersphere embedding for face verification[C]//Proceedings of the 2017 ACMon Multimedia Conference. ACM, 2017: 1041-1049.
-【4】Wang F, Cheng J, Liu W, et al. Additivemargin softmax for face verification[J]. IEEE Signal Processing Letters, 2018,25(7): 926-930.
-【5】Wang H, Wang Y, Zhou Z, et al. CosFace:Large margin cosine loss for deep face recognition[J]. arXiv preprintarXiv:1801.09414, 2018.
-【6】Deng J, Guo J, Zafeiriou S. Arcface:Additive angular margin loss for deep face recognition[J]. arXiv preprintarXiv:1801.07698, 2018.
-
-编辑整理 磐创AI技术团队
-系列教程
-全部文章RSS订阅
-AI系列
-AI 分类 RSS 订阅
-
-深度学习之视频人脸识别系列
-中国区注册ChatGPT并使用全流程图解教程
-关于普朗克概率的的讨论
-信用卡对个人、社会以及国家的影响——ChatGPT辅助编写
-
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-GithubProfile美化与自动获取RSS文章教程
-Vercel部署高级用法教程
-webhook部署Hexo静态博客指南
-在宝塔VPS上面采用docker部署waline全流程图解教程
-
-Docker系列
-Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>ai</category>
-      </categories>
-      <tags>
-        <tag>ai</tag>
-        <tag>face</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>自动曝光原理</title>
-    <url>/posts/509c7bd3/</url>
-    <content><![CDATA[自动曝光的原理
-曝光是摄影中十分重要的一个环节，它决定了一张图片的明暗，如下图所示，第一张图片太暗，而第三种图片太亮。
-
-曝光由什么来决定
-使用过数码相机的人都知道曝光由光圈、曝光时间、ISO三者共同决定，详细的关系就不赘述。
-光圈：控制进光量；
-曝光时间：光到达的时间长度；
-ISO：增益；
-但是对于手机以及其他电子产品使用的微型摄像头，光圈大小是固定的，所以手机拍照的曝光由曝光时间和**增益(ISO)**来控制。
-什么是自动曝光
-数码相机中有一种手动模式，可手动设置光圈、曝光时间、ISO来控制曝光，该模式的使用对摄影师的要求会比较高。另外 数码相机的全自动模式、光圈优先模式、快门优先模式以及手机等电子产品的曝光都属于自动曝光。
-自动曝光就是相机代替人的操作，自动调节曝光时间、光圈、ISO进行曝光，使得所摄物体亮度正常。这句话解释起来很简单，但是存在两个难点问题：第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。
-自动曝光的标准
-在此之前需要了解物体的亮度与色彩是由物体对光线的反射率来决定的。例如纯黑色的放射率是0，纯白色的反射率是100%，处于中间的灰度的反射率是18%，这就是18%中间灰度。
-
-具有一定反射率的物体在最终的图像中被还原到了其相应的灰度级，这就意味着达到了正确的曝光。例如摄影师们通常在拍摄之前使用中性灰卡测试曝光是否正常。
-但是相机在各种场景下无法识别物体的反射率，因此采用了一个简单粗暴而又行之有效的方法，统一将图像整体平均亮度设置为中性灰的亮度。该方法基于**科学家认为自然界的平均反射率是18%**这一理论。当然，这个方法也不是走遍天下都不怕，比如拍摄雪景时需要增加曝光补偿，不然会偏暗，因为雪景的亮度远远大于中性灰度。这也就是摄影中的一句口诀的由来“白增黑减”。
-自动曝光算法
-上面已经讲了自动曝光的标准，也就确立了曝光目标，要达到这一目标还要自动曝光算法来实现。
-目前比较常见的算法有平均亮度法、权重均值法、亮度直方图等。其中最普遍的就是平均亮度法。平均亮度法就是对图像所以像素亮度求平均值，通过不断调整曝光参数最终达到目标亮度。而权重均值法是对图像不同区域设置不同权重来计算图像亮度，例如相机中的各种测光模式的选择就是改变不同区域的权重。亮度直方图法是通过为直方图中峰值分配不同权重来计算图像亮度。
-自动曝光实现的过程：
-第一步：对当前图像进行亮度统计；
-第二步：根据当前图像亮度确定曝光值；
-第三步：计算新的曝光参数，曝光时间、光圈、增益；
-第四步：将新的曝光参数应用到相机；
-第五步：重复步骤一到四，直到亮度满足要求。
-曝光参数调整_曝光表
-前面留下两个问题：“第一，相机不如人眼这样可以直观的分辨图像明暗，如何判断这幅图像是否亮度合适；第二，如何调整曝光时间、光圈、ISO,这三者调节的比例。” 第一个问题在前面有过解释，第二个问题也就是自动曝光实现步骤的第三步，曝光值由光圈、曝光时间、增益沟通决定，当计算出一个曝光量，曝光三要素有很多种组合方式。一般情况下有曝光曲线，每个曝光量对应一组参数。手机中曝光曲线可以通过Tuning调整。
-From: 积极的悲观主义者
-系列教程
-全部文章RSS订阅
-Embeded系列
-Embeded 分类 RSS 订阅
-
-海思MPP&amp;UNF构架源代码级分析
-3G,4G,Wifi选型需求分析及技术简介
-自动曝光原理
-ISP 数字图像处理 算法概述、工作原理、架构、处理流程
-
-]]></content>
-      <categories>
-        <category>embeded</category>
-      </categories>
-      <tags>
-        <tag>3a</tag>
-        <tag>ae</tag>
-        <tag>image</tag>
       </tags>
   </entry>
   <entry>
@@ -13098,9 +13098,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-MFuDRZHWIrKrAljU").style.height=document.getElementById("mmedia-MFuDRZHWIrKrAljU").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-PvufgoxMxoJsTdJq").style.height=document.getElementById("mmedia-PvufgoxMxoJsTdJq").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-MFuDRZHWIrKrAljU").style.height=document.getElementById("mmedia-MFuDRZHWIrKrAljU").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-PvufgoxMxoJsTdJq").style.height=document.getElementById("mmedia-PvufgoxMxoJsTdJq").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -19096,8 +19096,8 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 列表
 
- var hOliJASyWkQGqLAE_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    hOliJASyWkQGqLAE_options.container = document.getElementById("mmedia-hOliJASyWkQGqLAE");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(hOliJASyWkQGqLAE_options); 
+ var VTPxstmCWjrFIqcB_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    VTPxstmCWjrFIqcB_options.container = document.getElementById("mmedia-VTPxstmCWjrFIqcB");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(VTPxstmCWjrFIqcB_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -20516,13 +20516,13 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var oHeowcKlCKXFvqGV_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
-    oHeowcKlCKXFvqGV_options.container = document.getElementById("mmedia-oHeowcKlCKXFvqGV");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(oHeowcKlCKXFvqGV_options); 
+ var vzXKKfBSDuOUGTAI_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
+    vzXKKfBSDuOUGTAI_options.container = document.getElementById("mmedia-vzXKKfBSDuOUGTAI");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(vzXKKfBSDuOUGTAI_options); 
 
 
 
- var umzddONJOvQMbClg_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    umzddONJOvQMbClg_options.container = document.getElementById("mmedia-umzddONJOvQMbClg");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(umzddONJOvQMbClg_options); 
+ var bLZyOwquHhOkWebp_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    bLZyOwquHhOkWebp_options.container = document.getElementById("mmedia-bLZyOwquHhOkWebp");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(bLZyOwquHhOkWebp_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -20781,9 +20781,9 @@ Earthly 一个更加强大的镜像构建工具
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-LsQIAhbouazhezZf").style.height=document.getElementById("mmedia-LsQIAhbouazhezZf").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-TZoemflDqhGhueny").style.height=document.getElementById("mmedia-TZoemflDqhGhueny").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-LsQIAhbouazhezZf").style.height=document.getElementById("mmedia-LsQIAhbouazhezZf").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-TZoemflDqhGhueny").style.height=document.getElementById("mmedia-TZoemflDqhGhueny").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -20792,8 +20792,8 @@ Earthly 一个更加强大的镜像构建工具
 
 ## 中文翻唱
 
- var rbTQWhIEPYVQEqhn_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
-    rbTQWhIEPYVQEqhn_options.container = document.getElementById("mmedia-rbTQWhIEPYVQEqhn");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(rbTQWhIEPYVQEqhn_options); 
+ var gswqQUjGWSgtOpvx_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
+    gswqQUjGWSgtOpvx_options.container = document.getElementById("mmedia-gswqQUjGWSgtOpvx");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(gswqQUjGWSgtOpvx_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -45959,7 +45959,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts5591'));
+        var myChart = echarts.init(document.getElementById('echarts4359'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -46053,7 +46053,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts4606'));
+        var myChart = echarts.init(document.getElementById('echarts4737'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -46122,7 +46122,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts5478'));
+        var myChart = echarts.init(document.getElementById('echarts2800'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -51394,9 +51394,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-VdEnIkwYufZJKApp").style.height=document.getElementById("mmedia-VdEnIkwYufZJKApp").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-tOrdtuYxGiFyGcWk").style.height=document.getElementById("mmedia-tOrdtuYxGiFyGcWk").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-VdEnIkwYufZJKApp").style.height=document.getElementById("mmedia-VdEnIkwYufZJKApp").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-tOrdtuYxGiFyGcWk").style.height=document.getElementById("mmedia-tOrdtuYxGiFyGcWk").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 
@@ -55173,9 +55173,9 @@ chatGPT
 
 视频讲解
 B站
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-mzuRoTLkYKzUQtVN").style.height=document.getElementById("mmedia-mzuRoTLkYKzUQtVN").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-gUxvCclfvlaOSiij").style.height=document.getElementById("mmedia-gUxvCclfvlaOSiij").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-mzuRoTLkYKzUQtVN").style.height=document.getElementById("mmedia-mzuRoTLkYKzUQtVN").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-gUxvCclfvlaOSiij").style.height=document.getElementById("mmedia-gUxvCclfvlaOSiij").scrollWidth*0.76+"px";
     }; 
 youtube
 
@@ -60772,8 +60772,8 @@ CI/CD与Git Flow与GitLab
         <category>web</category>
       </categories>
       <tags>
-        <tag>hexo</tag>
         <tag>web</tag>
+        <tag>hexo</tag>
         <tag>webhook</tag>
       </tags>
   </entry>
