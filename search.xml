@@ -6610,6 +6610,66 @@ From: hackerchai
       </tags>
   </entry>
   <entry>
+    <title>通过宝塔面板实现MySQL性能简单调优</title>
+    <url>/posts/d5f56dd0/</url>
+    <content><![CDATA[
+在PHP+MYSQL架构网站运行过程中，往往会遇到各种性能问题影响，如MySQL、PHP、CPU、磁盘IO、缓存等，其中MySQL瓶颈就是最常见也最难解决的一种影响网站性能的因素；通常，我们会使用redis、memcached等缓存软件来缓存内容，这确实是最优的解决方案之一，但这需要网站程序的支持，然而多数常用网站程序并不支持或者不能完美支持这些缓存软件，今天我们就来谈谈如何通过MySQL自身的配置调整来优化MySQL性能，以缓解MySQL瓶颈问题。
+
+准备：
+
+​    1、宝塔Linux面板 正式版 5.2.0+ (2017/09/20发布)  测试版5.2.4+
+​    2、MySQL 5.x
+
+通常MySQL调优我们分以下几部分：
+
+​    1、MySQL配置参数调优 (需要根据网站运行情况调整)
+​    2、数据表索引调优 (效果明显，但通常优秀的开源程序都不需要调整)
+​    3、SQL语句调优 (这是程序员或DBA干的事)
+
+今天我们主要谈谈如果配合宝塔面板的新功能来进行MySQL配置参数调优，我们先来看两张图片：
+(图1)
+
+(图2)
+
+很明显，(图1)显示的是MySQL当前的运行状态，(图2)显示的是MySQL主要配置参数
+下面我们就来解读一下这两张图：
+1、活动/峰值连接数
+​      (图1)中当前活动的连接为1个，自MySQL服务启动以来，最高连接数为54；当最高连接数接近或等于(图2)中的max_connections时，应适当增加max_connections，需要注意的是，不要一下子增加过多，建议每次增加50，观察一段时间，不够再继续增加。
+2、线程缓存命中率
+​      (图1)中线程缓存命中率为99.78%，若这个值小于90%，建议适当增加(图2)中的thread_cache_size，建议每次增加8。
+3、索引命中率
+​      (图1)中索引命中率为99.50%，若这个值小于95%，建议适当增加(图2)中的key_buffer_size，建议每次增加64，需要说明的是，若您的数据库使用的是Innodb引擎，可忽略这个选项
+4、Innodb索引命中率
+(图1)中Innodb索引命中率为100%，若这个值小于95%，建议适当增加(图2)中的innodb_buffer_pool_size，建议每次增加64，需要说明的是，若您的数据库没有使用Innodb引擎，可忽略这个选项
+5、查询缓存命中率
+​      MySQL查询缓存是个比较受争议的功能，个人建议当你有在使用redis、memcached等缓存软件时，在(图2)中将query_cache_size设为0可以将其关闭，当你没有使用缓存软件，有多余的内存使用，且数据库瓶颈明显存在时，可以尝试开启查询缓存，这是个非常依赖数据表结构及SQL语句优化的功能，若数据表结构和SQL语句都针对查询缓存进行过优化，它的效果还是很不错的。
+6、创建临时表到磁盘
+​      (图1)中创建临时表到磁盘的比例是0.42%，这说明大部分临时表创建到内存了，不会过多增加磁盘IO的开销，建议，当比例大于2%时适当增加(图1)中的tmp_cache_size，建议每次增加32，当比例大于60%时，放弃吧，有些开源程序并没有专门优化过SQL语句，所以在运行过程中会开启大量临时表，加多少缓存都是不够用的。
+7、已打开的表
+​      当(图1)中的已打开的表接近或等于(图2)中的table_open_cache时，可以适当增加table_open_cache，但若设置过大可能导致您的程序频繁中断MySQL连接，建议在1024以内，最大不要超过2048。
+8、没有使用索引的量、没有使用索引的JOIN量
+​      若不为0，就检查下数据表索引吧，其实只要没有疯涨，比如一天增涨几千，一般可以忽略，必竟优化索引还是程序员或DBA去干比较合适。
+9、排序后的合并次数
+​      如果这个值在缓慢增张，建议适当增加(图2)中的sort_buffer_size，建议每次增加512，但最大不要超过8192，如果这个值一直在疯涨，增加sort_buffer_size也没用，就放弃这个选项吧，这个锅还是给程序开发者背。
+10、锁表次数
+​      如果服务器CPU开销不大的情况下，疯狂锁表，建议你将所有数据表转换成innodb，记得转换前备份哦。
+11、优化方案
+​      这个是我们根据内存大小给的一个推荐优化方案，仅是建议仅用于基础参考值，还是要根据实据情况来调整每一个配置项。
+注意：保存参数配置后不会立即生效，记得要重启MySQL服务。
+写在最后：
+因我本人并不是专业DBA，难免有错误或遗漏的地方，还请大家给予指正，另外，可能面板提供的参考数据及调整选项还不够丰富，我们在往后的更新中会根据需要考虑继续增加更多的调整选项，谢谢大家的支持。
+来自网络整理。
+]]></content>
+      <categories>
+        <category>mysql</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>mysql</tag>
+        <tag>优化</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>【Gitlab】GitBook+GitLab撰写发布技术文档-Part2:GitLab篇</title>
     <url>/posts/7790e989/</url>
     <content><![CDATA[上一篇文章介绍了如果用 gitbook 写书，并且我们已经通过 gitbook build命令把书的内容打包成 HTML 格式发布到了_book文件夹中。
@@ -6735,66 +6795,6 @@ Github Mkdocs
         <tag>linux</tag>
         <tag>git</tag>
         <tag>gitbook</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>通过宝塔面板实现MySQL性能简单调优</title>
-    <url>/posts/d5f56dd0/</url>
-    <content><![CDATA[
-在PHP+MYSQL架构网站运行过程中，往往会遇到各种性能问题影响，如MySQL、PHP、CPU、磁盘IO、缓存等，其中MySQL瓶颈就是最常见也最难解决的一种影响网站性能的因素；通常，我们会使用redis、memcached等缓存软件来缓存内容，这确实是最优的解决方案之一，但这需要网站程序的支持，然而多数常用网站程序并不支持或者不能完美支持这些缓存软件，今天我们就来谈谈如何通过MySQL自身的配置调整来优化MySQL性能，以缓解MySQL瓶颈问题。
-
-准备：
-
-​    1、宝塔Linux面板 正式版 5.2.0+ (2017/09/20发布)  测试版5.2.4+
-​    2、MySQL 5.x
-
-通常MySQL调优我们分以下几部分：
-
-​    1、MySQL配置参数调优 (需要根据网站运行情况调整)
-​    2、数据表索引调优 (效果明显，但通常优秀的开源程序都不需要调整)
-​    3、SQL语句调优 (这是程序员或DBA干的事)
-
-今天我们主要谈谈如果配合宝塔面板的新功能来进行MySQL配置参数调优，我们先来看两张图片：
-(图1)
-
-(图2)
-
-很明显，(图1)显示的是MySQL当前的运行状态，(图2)显示的是MySQL主要配置参数
-下面我们就来解读一下这两张图：
-1、活动/峰值连接数
-​      (图1)中当前活动的连接为1个，自MySQL服务启动以来，最高连接数为54；当最高连接数接近或等于(图2)中的max_connections时，应适当增加max_connections，需要注意的是，不要一下子增加过多，建议每次增加50，观察一段时间，不够再继续增加。
-2、线程缓存命中率
-​      (图1)中线程缓存命中率为99.78%，若这个值小于90%，建议适当增加(图2)中的thread_cache_size，建议每次增加8。
-3、索引命中率
-​      (图1)中索引命中率为99.50%，若这个值小于95%，建议适当增加(图2)中的key_buffer_size，建议每次增加64，需要说明的是，若您的数据库使用的是Innodb引擎，可忽略这个选项
-4、Innodb索引命中率
-(图1)中Innodb索引命中率为100%，若这个值小于95%，建议适当增加(图2)中的innodb_buffer_pool_size，建议每次增加64，需要说明的是，若您的数据库没有使用Innodb引擎，可忽略这个选项
-5、查询缓存命中率
-​      MySQL查询缓存是个比较受争议的功能，个人建议当你有在使用redis、memcached等缓存软件时，在(图2)中将query_cache_size设为0可以将其关闭，当你没有使用缓存软件，有多余的内存使用，且数据库瓶颈明显存在时，可以尝试开启查询缓存，这是个非常依赖数据表结构及SQL语句优化的功能，若数据表结构和SQL语句都针对查询缓存进行过优化，它的效果还是很不错的。
-6、创建临时表到磁盘
-​      (图1)中创建临时表到磁盘的比例是0.42%，这说明大部分临时表创建到内存了，不会过多增加磁盘IO的开销，建议，当比例大于2%时适当增加(图1)中的tmp_cache_size，建议每次增加32，当比例大于60%时，放弃吧，有些开源程序并没有专门优化过SQL语句，所以在运行过程中会开启大量临时表，加多少缓存都是不够用的。
-7、已打开的表
-​      当(图1)中的已打开的表接近或等于(图2)中的table_open_cache时，可以适当增加table_open_cache，但若设置过大可能导致您的程序频繁中断MySQL连接，建议在1024以内，最大不要超过2048。
-8、没有使用索引的量、没有使用索引的JOIN量
-​      若不为0，就检查下数据表索引吧，其实只要没有疯涨，比如一天增涨几千，一般可以忽略，必竟优化索引还是程序员或DBA去干比较合适。
-9、排序后的合并次数
-​      如果这个值在缓慢增张，建议适当增加(图2)中的sort_buffer_size，建议每次增加512，但最大不要超过8192，如果这个值一直在疯涨，增加sort_buffer_size也没用，就放弃这个选项吧，这个锅还是给程序开发者背。
-10、锁表次数
-​      如果服务器CPU开销不大的情况下，疯狂锁表，建议你将所有数据表转换成innodb，记得转换前备份哦。
-11、优化方案
-​      这个是我们根据内存大小给的一个推荐优化方案，仅是建议仅用于基础参考值，还是要根据实据情况来调整每一个配置项。
-注意：保存参数配置后不会立即生效，记得要重启MySQL服务。
-写在最后：
-因我本人并不是专业DBA，难免有错误或遗漏的地方，还请大家给予指正，另外，可能面板提供的参考数据及调整选项还不够丰富，我们在往后的更新中会根据需要考虑继续增加更多的调整选项，谢谢大家的支持。
-来自网络整理。
-]]></content>
-      <categories>
-        <category>mysql</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>mysql</tag>
-        <tag>优化</tag>
       </tags>
   </entry>
   <entry>
@@ -13380,9 +13380,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-uYBCsFDoQiZIjiuJ").style.height=document.getElementById("mmedia-uYBCsFDoQiZIjiuJ").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-KkVUUlSofrVNggqc").style.height=document.getElementById("mmedia-KkVUUlSofrVNggqc").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-uYBCsFDoQiZIjiuJ").style.height=document.getElementById("mmedia-uYBCsFDoQiZIjiuJ").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-KkVUUlSofrVNggqc").style.height=document.getElementById("mmedia-KkVUUlSofrVNggqc").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -19378,8 +19378,8 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 列表
 
- var WnpWZXAHTGlYxrvq_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    WnpWZXAHTGlYxrvq_options.container = document.getElementById("mmedia-WnpWZXAHTGlYxrvq");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(WnpWZXAHTGlYxrvq_options); 
+ var zhdeobFoNsqXlttK_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    zhdeobFoNsqXlttK_options.container = document.getElementById("mmedia-zhdeobFoNsqXlttK");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(zhdeobFoNsqXlttK_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -20798,13 +20798,13 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var tNfMkLwhBRVlSuCi_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
-    tNfMkLwhBRVlSuCi_options.container = document.getElementById("mmedia-tNfMkLwhBRVlSuCi");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(tNfMkLwhBRVlSuCi_options); 
+ var FNuZrHbxMstagvPU_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
+    FNuZrHbxMstagvPU_options.container = document.getElementById("mmedia-FNuZrHbxMstagvPU");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(FNuZrHbxMstagvPU_options); 
 
 
 
- var pGkyiRMdlHaHIpqu_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    pGkyiRMdlHaHIpqu_options.container = document.getElementById("mmedia-pGkyiRMdlHaHIpqu");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(pGkyiRMdlHaHIpqu_options); 
+ var dnlKqNrCKvABeMFz_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    dnlKqNrCKvABeMFz_options.container = document.getElementById("mmedia-dnlKqNrCKvABeMFz");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(dnlKqNrCKvABeMFz_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -21063,9 +21063,9 @@ Earthly 一个更加强大的镜像构建工具
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-FSsmJxHkpQNjULRq").style.height=document.getElementById("mmedia-FSsmJxHkpQNjULRq").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-goDYrpNlOxPwbGGk").style.height=document.getElementById("mmedia-goDYrpNlOxPwbGGk").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-FSsmJxHkpQNjULRq").style.height=document.getElementById("mmedia-FSsmJxHkpQNjULRq").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-goDYrpNlOxPwbGGk").style.height=document.getElementById("mmedia-goDYrpNlOxPwbGGk").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -21074,8 +21074,8 @@ Earthly 一个更加强大的镜像构建工具
 
 ## 中文翻唱
 
- var OXUaVobnzQpYJwwy_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
-    OXUaVobnzQpYJwwy_options.container = document.getElementById("mmedia-OXUaVobnzQpYJwwy");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(OXUaVobnzQpYJwwy_options); 
+ var IQGzUhFhlWKhrgiN_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
+    IQGzUhFhlWKhrgiN_options.container = document.getElementById("mmedia-IQGzUhFhlWKhrgiN");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(IQGzUhFhlWKhrgiN_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -47303,7 +47303,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts8632'));
+        var myChart = echarts.init(document.getElementById('echarts6382'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -47397,7 +47397,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts4013'));
+        var myChart = echarts.init(document.getElementById('echarts1786'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -47466,7 +47466,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts6692'));
+        var myChart = echarts.init(document.getElementById('echarts8935'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -47806,6 +47806,1598 @@ echarts.util.each(easingFuncs, function (easingFunc, name) {
         <tag>hexo</tag>
         <tag>matery</tag>
         <tag>echarts</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>hexo博客博文撰写篇之完美笔记大攻略终极完全版</title>
+    <url>/posts/253706ff/</url>
+    <content><![CDATA[
+hexo博客文章卷写技巧，包括MarkDown，hexo技巧，html插入，美化方法，写作方法，写作工具，知识储备方法，开发工具，等一系列全介绍！终极攻略篇。
+当然，这些写作技巧也可以用在hexo , hugo, next.js， wordpress上面，或者还是其它类型博客。
+在任何类型的写作上面，这些都是用得着的写作技巧！
+
+
+使用草稿
+新建文章
+一般我们都会使用 hexo new &lt;title&gt; 来建立文章，这种建立方法会将新文章建立在 source/_posts 目录下，当使用 hexo generate 编译 markdown 文件时，会将其 HTML 结果编译在 public 目录下，之后 hexo deploy 将会把 public 目录下所有文章部署到 GitHub，这是我们熟悉的 Hexo 流程。
+这种建立文章方式的缺点是：若我们同时编辑多篇文章，只要其中一篇文章尚未编辑完成，也会随着 hexo deploy 一起部署到 GitHub，也就是 GitHub 可能会看到我们尚未完成的文章。
+新建草稿
+hexo new draft &lt;title&gt;
+Hexo 另外提供 draft 机制，它的原理是新文章将建立在 source/_drafts 目录下，因此 hexo generate 并不会将其编译到 public 目录下，所以 hexo deploy 也不会将其部署到 GitHub。
+hexo S --draft
+虽然 hexo generate 不会编译 source/_drafts 目录下的文章，但 Hexo 的 Hexo server 另外提供 --draft 参数，这让我们只要搭配 hexo-browsersync plugins，就可以达到一边编辑 markdown 文章，一边使用浏览器预览的目的。
+将草稿发布为正式文章
+hexo P &lt;filename&gt;
+其中 &lt;filename&gt; 为不包含 md 后缀的文章名称。它的原理只是将文章从 source/_drafts 移动到 source/_posts 而已。
+之后的 hexo generate 与 hexo deploy 的用法就完全一样了。
+若日后想将正式文章转为为草稿，只需手动将文章从 source/_posts 目录移动到 source/_drafts 目录即可。
+新建普通页面
+这种形式类似是“关于”，“了解我们”之类的文章。
+hexo new page c
+创建一个标题为c的page
+和前两种不同，这个命令会在source文件夹内创建出c文件夹，与_posts，_drafts并列。文件夹里面有一个index.md文件。
+注意：刷新页面后，c并没有出现在页面中，而是需要访问http://localhost:4000/c/才可以看到。
+hexo命令速记
+# 开启服务
+hexo server
+
+# 新建文章
+hexo new a
+
+# 新建草稿
+hexo new draft b
+
+# 发布草稿成为文章
+hexo publish b
+
+# 普通页面
+hexo new page c
+
+# 清空缓存
+hexo clean
+# 生成静态文章
+hexo generate 或者是 hexo g
+# 部署文章
+hexo deploy 或者是 hexo d
+Front-matter
+Front-matter 是文件最上方以 --- 分隔的区域，用于指定个别文件的变量，举例来说：
+---
+title: Hello World
+date: 2013/7/13 20:46:25
+---
+以下是预先定义的参数，您可在模板中使用这些参数值并加以利用。
+
+
+
+参数
+描述
+默认值
+
+
+
+
+layout
+布局
+config.default_layout
+
+
+title
+标题
+文章的文件名
+
+
+date
+建立日期
+文件建立日期
+
+
+updated
+更新日期
+文件更新日期
+
+
+comments
+开启文章的评论功能
+true
+
+
+tags
+标签（不适用于分页）
+
+
+
+categories
+分类（不适用于分页）
+
+
+
+permalink
+覆盖文章网址
+
+
+
+excerpt
+Page excerpt in plain text. Use this plugin to format the text
+
+
+
+disableNunjucks
+Disable rendering of Nunjucks tag {{ }}/{% %} and tag plugins when enabled
+
+
+
+lang
+Set the language to override auto-detection
+Inherited from _config.yml
+
+
+
+布局
+The default layout is post, in accordance to the value of default_layout setting in _config.yml. When the layout is disabled (layout: false) in an article, it will not be processed with a theme. However, it will still be rendered by any available renderer: if an article is written in Markdown and a Markdown renderer (like the default hexo-renderer-marked) is installed, it will be rendered to HTML.
+Tag plugins are always processed regardless of layout, unless disabled by the disableNunjucks setting or renderer.
+分类和标签
+只有文章支持分类和标签，您可以在 Front-matter 中设置。在其他系统中，分类和标签听起来很接近，但是在 Hexo 中两者有着明显的差别：分类具有顺序性和层次性，也就是说 Foo, Bar 不等于 Bar, Foo；而标签没有顺序和层次。
+categories:
+- Diary
+tags:
+- PS3
+- Games
+warn 分类方法的分歧
+
+  如果您有过使用 WordPress 的经验，就很容易误解 Hexo 的分类方式。WordPress 支持对一篇文章设置多个分类，而且这些分类可以是同级的，也可以是父子分类。但是 Hexo 不支持指定多个同级分类。下面的指定方法：
+categories:
+  - Diary
+  - Life
+会使分类Life成为Diary的子分类，而不是并列分类。因此，有必要为您的文章选择尽可能准确的分类。
+如果你需要为文章添加多个分类，可以尝试以下 list 中的方法。
+categories:
+- [Diary, PlayStation]
+- [Diary, Games]
+- [Life]
+此时这篇文章同时包括三个分类： PlayStation 和 Games 分别都是父分类 Diary 的子分类，同时 Life 是一个没有子分类的分类。
+
+  
+JSON Front-matter
+除了 YAML 外，你也可以使用 JSON 来编写 Front-matter，只要将 --- 代换成 ;;; 即可。
+"title": "Hello World",
+"date": "2013/7/13 20:46:25"
+;;;
+主题Front-matter
+不同主题还有自己定义的Front-matter，以提供不同的特殊功能
+Front-matter 选项详解
+Front-matter 选项中的所有内容均为非必填的。但我仍然建议至少填写 title 和 date 的值。
+
+
+
+配置选项
+默认值
+描述
+
+
+
+
+title
+Markdown 的文件标题
+文章标题，强烈建议填写此选项
+
+
+date
+文件创建时的日期时间
+发布时间，强烈建议填写此选项，且最好保证全局唯一
+
+
+author
+根 _config.yml 中的 author
+文章作者
+
+
+img
+featureImages 中的某个值
+文章特征图，推荐使用图床(腾讯云、七牛云、又拍云等)来做图片的路径.如: http://xxx.com/xxx.jpg
+
+
+top
+true
+推荐文章（文章是否置顶），如果 top 值为 true，则会作为首页推荐文章
+
+
+hide
+false
+隐藏文章，如果hide值为true，则文章不会在首页显示
+
+
+cover
+false
+v1.0.2版本新增，表示该文章是否需要加入到首页轮播封面中
+
+
+coverImg
+无
+v1.0.2版本新增，表示该文章在首页轮播封面需要显示的图片路径，如果没有，则默认使用文章的特色图片
+
+
+password
+无
+文章阅读密码，如果要对文章设置阅读验证密码的话，就可以设置 password 的值，该值必须是用 SHA256 加密后的密码，防止被他人识破。前提是在主题的 config.yml 中激活了 verifyPassword 选项
+
+
+toc
+true
+是否开启 TOC，可以针对某篇文章单独关闭 TOC 的功能。前提是在主题的 config.yml 中激活了 toc 选项
+
+
+mathjax
+false
+是否开启数学公式支持 ，本文章是否开启 mathjax，且需要在主题的 _config.yml 文件中也需要开启才行
+
+
+summary
+无
+文章摘要，自定义的文章摘要内容，如果这个属性有值，文章卡片摘要就显示这段文字，否则程序会自动截取文章的部分内容作为摘要
+
+
+categories
+无
+文章分类，本主题的分类表示宏观上大的分类，只建议一篇文章一个分类
+
+
+tags
+无
+文章标签，一篇文章可以多个标签
+
+
+keywords
+文章标题
+文章关键字，SEO 时需要
+
+
+reprintPolicy
+cc_by
+文章转载规则， 可以是 cc_by, cc_by_nd, cc_by_sa, cc_by_nc, cc_by_nc_nd, cc_by_nc_sa, cc0, noreprint 或 pay 中的一个
+
+
+
+
+注意:
+
+如果 img 属性不填写的话，文章特色图会根据文章标题的 hashcode 的值取余，然后选取主题中对应的特色图片，从而达到让所有文章的特色图各有特色。
+date 的值尽量保证每篇文章是唯一的，因为本主题中 Gitalk 和 Gitment 识别 id 是通过 date 的值来作为唯一标识的。
+如果要对文章设置阅读验证密码的功能，不仅要在 Front-matter 中设置采用了 SHA256 加密的 password 的值，还需要在主题的 _config.yml 中激活了配置。有些在线的 SHA256 加密的地址，可供你使用：开源中国在线工具、chahuo、站长工具。
+您可以在文章md文件的 front-matter 中指定 reprintPolicy 来给单个文章配置转载规则
+
+
+以下为文章的 Front-matter 示例。
+最简示例
+---
+title: typora-vue-theme主题介绍
+date: 2018-09-07 09:25:00
+---
+使用模板
+
+hexo new使用的模板，最好自己定制修改
+下面是博主使用的
+
+scaffolds/post.md
+---
+layout: post
+title: {{ title }}
+date: {{ date }}
+author: 夜法之书
+categories: [web]	# 文章分类 建议只写一个
+tags: # 文章标签 文章卡片显示用
+    - EncryptedTag
+    - web
+    - http
+keywords: web, http	# seo标签
+summary: 简介，这里修改
+img: /medias_webp/cover/write.webp
+top: false      # 首页推荐文件
+hide: false
+cover: false    # 首页轮播
+coverImg: /medias_webp/cover/write.webp
+toc: true       # 是否开启目录
+tochide: false   # 默认是否隐藏目录
+mathjax: false
+mermaid: false
+echarts: false
+comments: true
+# password: false 	# SHA256 string  matery主题自带加密
+reprintPolicy: cc_by_nc_sa
+# password: ""    # hexo-blog-encrypt 插件需要的
+wrong_pass_message: 抱歉, 这个密码看着不太对, 请再试试.
+wrong_hash_message: 抱歉, 这个文章不能被校验, 不过您还是能看看解密后的内容.
+---
+
+&gt; 简介
+&gt; 
+
+&lt;!-- more --&gt;
+图片
+
+正文
+
+参考
+hexo内置标签
+
+所有hexo主题都支持的标签
+
+quote
+{% blockquote [author[, source]] [link] [source_link_title] %}
+content
+{% endblockquote %}
+没有提供参数，则只输出普通的 blockquote
+{% blockquote %}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque hendrerit lacus ut purus iaculis feugiat. Sed nec tempor elit, quis aliquam neque. Curabitur sed diam eget dolor fermentum semper at eu lorem.
+{% endblockquote %}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque hendrerit lacus ut purus iaculis feugiat. Sed nec tempor elit, quis aliquam neque. Curabitur sed diam eget dolor fermentum semper at eu lorem.
+
+引用书上的句子
+{% blockquote David Levithan, Wide Awake %}
+Do not just seek happiness for yourself. Seek happiness for all. Through kindness. Through mercy.
+{% endblockquote %}
+Do not just seek happiness for yourself. Seek happiness for all. Through kindness. Through mercy.
+David LevithanWide Awake
+引用 Twitter
+{% blockquote @DevDocs https://twitter.com/devdocs/status/356095192085962752 %}
+NEW: DevDocs now comes with syntax highlighting. http://devdocs.io
+{% endblockquote %}
+NEW: DevDocs now comes with syntax highlighting. http://devdocs.io
+@DevDocstwitter.com/devdocs/status/356095192085962752
+引用网络上的文章
+{% blockquote Seth Godin http://sethgodin.typepad.com/seths_blog/2009/07/welcome-to-island-marketing.html Welcome to Island Marketing %}
+Every interaction is both precious and an opportunity to delight.
+{% endblockquote %}
+Every interaction is both precious and an opportunity to delight.
+Seth GodinWelcome to Island Marketing
+代码块
+在文章中插入代码。
+markdown支持行内代码和区块代码
+
+`行代码`
+
+```
+代码块
+```
+别名： code
+{% codeblock [title] [lang:language] [url] [link text] [additional options] %}
+code snippet
+{% endcodeblock %}
+Specify additional options in option:value format, e.g. line_number:false first_line:5.
+
+
+
+Extra Options
+Description
+Default
+
+
+
+
+line_number
+Show line number
+true
+
+
+line_threshold
+Only show line numbers as long as the numbers of lines of the code block exceed such threshold.
+0
+
+
+highlight
+Enable code highlighting
+true
+
+
+first_line
+Specify the first line number
+1
+
+
+mark
+Line highlight specific line(s), each value separated by a comma. Specify number range using a dash Example: mark:1,4-7,10 will mark line 1, 4 to 7 and 10.
+
+
+
+wrap
+Wrap the code block in ``
+true
+
+
+
+样例
+普通的代码块
+{% codeblock %}
+alert('Hello World!');
+{% endcodeblock %}
+alert('Hello World!');
+指定语言
+{% codeblock lang:objc %}
+[rectangle setX: 10 y: 10 width: 20 height: 20];
+{% endcodeblock %}
+[rectangle setX: 10 y: 10 width: 20 height: 20];
+附加说明
+{% codeblock Array.map %}
+array.map(callback[, thisArg])
+{% endcodeblock %}
+Array.maparray.map(callback[, thisArg])
+附加说明和网址
+{% codeblock _.compact http://underscorejs.org/#compact Underscore.js %}
+_.compact([0, 1, false, 2, '', 3]);
+=&gt; [1, 2, 3]
+{% endcodeblock %}
+_.compactUnderscore.js_.compact([0, 1, false, 2, '', 3]);
+=&gt; [1, 2, 3]
+Include Code
+插入 source/downloads/code 文件夹内的代码文件。source/downloads/code 不是固定的，取决于你在配置文件中 code_dir 的配置。
+{% include_code [title] [lang:language] [from:line] [to:line] path/to/file %}
+样例
+嵌入 test.js 文件全文
+{% include_code lang:javascript test.js %}
+只嵌入第 3 行
+{% include_code lang:javascript from:3 to:3 test.js %}
+嵌入第 5 行至第 8 行
+{% include_code lang:javascript from:5 to:8 test.js %}
+嵌入第 5 行至文件结束
+{% include_code lang:javascript from:5 test.js %}
+嵌入第 1 行至第 8 行
+{% include_code lang:javascript to:8 test.js %}
+Pull Quote
+在文章中插入 Pull quote。
+{% pullquote [class] %}
+content
+{% endpullquote %}
+jsFiddle
+在文章中嵌入 jsFiddle。
+{% jsfiddle shorttag [tabs] [skin] [width] [height] %}
+Gist
+在文章中嵌入 Gist。
+{% gist gist_id [filename] %}
+iframe
+在文章中插入 iframe。
+{% iframe url [width] [height] %}
+Image
+在文章中插入指定大小的图片。
+{% img [class names] /path/to/image [width] [height] '"title text" "alt text"' %}
+Link
+在文章中插入链接，并自动给外部链接添加 target="_blank" 属性。
+{% link text url [external] [title] %}
+Youtube
+在文章中插入 Youtube 视频。
+{% youtube video_id [type] [cookie] %}
+Examples
+视频
+{% youtube lJIrF4YjHfQ %}
+播放列表
+{% youtube PL9hW1uS6HUfscJ9DHkOSoOX45MjXduUxo 'playlist' %}
+隐私模式
+禁止 YouTube cookie
+{% youtube lJIrF4YjHfQ false %}
+{% youtube PL9hW1uS6HUfscJ9DHkOSoOX45MjXduUxo 'playlist' false %}
+Vimeo
+在文章中插入 Vimeo 视频。
+{% vimeo video_id %}
+Raw
+如果您想在文章中插入 Swig 标签，可以尝试使用 Raw 标签，以免发生解析异常。
+{% raw %}
+content
+{% endraw %}
+引用文章
+引用其他文章的链接。
+{% post_path filename %}
+{% post_link filename [title] [escape] %}
+在使用此标签时可以忽略文章文件所在的路径或者文章的永久链接信息、如语言、日期。
+例如，在文章中使用 {% post_link how-to-bake-a-cake %} 时，只需有一个名为 how-to-bake-a-cake.md 的文章文件即可。即使这个文件位于站点文件夹的 source/posts/2015-02-my-family-holiday 目录下、或者文章的永久链接是 2018/en/how-to-bake-a-cake，都没有影响。
+默认链接文字是文章的标题，你也可以自定义要显示的文本。
+默认对文章的标题和自定义标题里的特殊字符进行转义。可以使用escape选项，禁止对特殊字符进行转义。
+链接使用文章的标题
+{% post_link hexo-3-8-released %}
+链接使用自定义文字
+{% post_link hexo-3-8-released '通往文章的链接' %}
+对标题的特殊字符进行转义
+{% post_link hexo-4-released 'How to use &lt;b&gt; tag in title' %}
+禁止对标题的特殊字符进行转义
+{% post_link hexo-4-released '&lt;b&gt;bold&lt;/b&gt; custom title' false %}
+引用资源
+引用文章的资源。
+{% asset_path filename %}
+{% asset_img [class names] slug [width] [height] [title text [alt text]] %}
+{% asset_link filename [title] [escape] %}
+资源（Asset）代表 source 文件夹中除了文章以外的所有文件，例如图片、CSS、JS 文件等。比方说，如果你的Hexo项目中只有少量图片，那最简单的方法就是将它们放在 source/images 文件夹中。然后通过类似于 ![](/images/image.jpg) 的方法访问它们。
+对于那些想要更有规律地提供图片和其他资源以及想要将他们的资源分布在各个文章上的人来说，Hexo也提供了更组织化的方式来管理资源。这个稍微有些复杂但是管理资源非常方便的功能可以通过将 config.yml 文件中的 post_asset_folder 选项设为 true 来打开。
+_config.ymlpost_asset_folder: true
+当资源文件管理功能打开后，Hexo将会在你每一次通过 hexo new [layout] &lt;title&gt; 命令创建新文章时自动创建一个文件夹。这个资源文件夹将会有与这个文章文件一样的名字。将所有与你的文章有关的资源放在这个关联文件夹中之后，你可以通过相对路径来引用它们，这样你就得到了一个更简单而且方便得多的工作流。
+相对路径引用的标签插件
+通过常规的 markdown 语法和相对路径来引用图片和其它资源可能会导致它们在存档页或者主页上显示不正确。在Hexo 2时代，社区创建了很多插件来解决这个问题。但是，随着Hexo 3 的发布，许多新的标签插件被加入到了核心代码中。这使得你可以更简单地在文章中引用你的资源。
+{% asset_path slug %}
+{% asset_img slug [title] %}
+{% asset_link slug [title] %}
+比如说：当你打开文章资源文件夹功能后，你把一个 example.jpg 图片放在了你的资源文件夹中，如果通过使用相对路径的常规 markdown 语法 ![](example.jpg) ，它将 不会 出现在首页上。（但是它会在文章中按你期待的方式工作）
+正确的引用图片方式是使用下列的标签插件而不是 markdown ：
+{% asset_img example.jpg This is an example image %}
+通过这种方式，图片将会同时出现在文章和主页以及归档页中。
+Embedding an image using markdown
+hexo-renderer-marked 3.1.0 introduced a new option that allows you to embed an image in markdown without using asset_img tag plugin.
+To enable:
+_config.ymlpost_asset_folder: true
+marked:
+  prependRoot: true
+  postAsset: true
+Once enabled, an asset image will be automatically resolved to its corresponding post’s path. For example, “image.jpg” is located at “/2020/01/02/foo/image.jpg”, meaning it is an asset image of “/2020/01/02/foo/“ post, ![](image.jpg) will be rendered as &lt;img src="/2020/01/02/foo/image.jpg"&gt;.
+Embed image
+hexo-renderer-marked 3.1.0+ can (optionally) resolves the post’s path of an image automatically, refer to this section on how to enable it.
+“foo.jpg” is located at http://example.com/2020/01/02/hello/foo.jpg.
+Default (no option)
+{% asset_img foo.jpg %}
+&lt;img src="/2020/01/02/hello/foo.jpg"&gt;
+Custom class
+{% asset_img post-image foo.jpg %}
+&lt;img src="/2020/01/02/hello/foo.jpg" class="post-image"&gt;
+Display size
+{% asset_img foo.jpg 500 400 %}
+&lt;img src="/2020/01/02/hello/foo.jpg" width="500" height="400"&gt;
+Title &amp; Alt
+{% asset_img logo.svg "lorem ipsum'dolor'" %}
+&lt;img src="/2020/01/02/hello/foo.jpg" title="lorem ipsum" alt="dolor"&gt;
+文章摘要和截断
+在文章中使用 &lt;!-- more --&gt;，那么 &lt;!-- more --&gt; 之前的文字将会被视为摘要。首页中将只出现这部分文字，同时这部分文字也会出现在正文之中。
+例如：
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+&lt;!-- more --&gt;
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+首页中将只会出现
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+正文中则会出现
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+注意，摘要可能会被 Front Matter 中的 excerpt 覆盖。
+引用数据
+有时您可能需要在主题中使用某些资料，而这些资料并不在文章内，并且是需要重复使用的，那么您可以考虑使用 Hexo 3.0 新增的「数据文件」功能。此功能会载入 source/_data 内的 YAML 或 JSON 文件，如此一来您便能在网站中复用这些文件了。
+举例来说，在 source/_data 文件夹中新建 menu.yml 文件：
+Home: /
+Gallery: /gallery/
+Archives: /archives/
+您就能在模板中使用这些资料：
+&lt;% for (var link in site.data.menu) { %&gt;
+  &lt;a href="&lt;%= site.data.menu[link] %&gt;"&gt; &lt;%= link %&gt; &lt;/a&gt;
+&lt;% } %&gt;
+渲染结果如下 :
+&lt;a href="/"&gt; Home &lt;/a&gt;
+&lt;a href="/gallery/"&gt; Gallery &lt;/a&gt;
+&lt;a href="/archives/"&gt; Archives &lt;/a&gt;
+Markdown写作
+
+下文着重介绍了MarkDown语法
+
+
+    
+        
+    
+    
+        Joplin 插件以及其Markdown语法。All in One!
+        
+        Joplin 实用插件介绍，以及Markdown语法说明。All in One! 强烈推荐，绝对是替代各种商业等笔记工具的第一选择。
+    
+
+中文技术文档的写作规范
+
+直接访问 中文技术文档的写作规范
+hexo插件强化写作
+
+下文介绍了一些Markdown语法，和一些常用的有用的Hexo插件
+
+
+    
+        
+    
+    
+        Hexo Markdown以及各种插件功能测试
+        
+        hexo matery hexo博客的一些功能测试，新插件的靶场。数学公式，Mermaid,plantuml图表绘制，音乐视频插入，bilibilid、豆瓣卡片等等。
+    
+
+主题插件
+
+很多主题内置很多tag语法，可以大大美化最终呈现效果
+
+使用fontawesome图标
+
+醒目度提升一大个等级！
+更多图标，这里查找 fontawesome
+
+
+ 支持Markdown
+Hexo 支持 GitHub Flavored Markdown 的所有功能, 甚至可以整合 Octopress 的大多数插件. 
+ 一键部署
+只需一条指令即可部署到Github Pages, 或其他网站
+ 丰富的插件
+Hexo 拥有强大的插件系统, 安装插件可以让 Hexo 支持 Jade, CoffeeScript. 
+
+- &lt;i class="fas fa-pencil-alt"&gt;&lt;/i&gt; 支持Markdown
+&lt;i&gt;Hexo 支持 GitHub Flavored Markdown 的所有功能, 甚至可以整合 Octopress 的大多数插件. &lt;/i&gt;
+- &lt;i class="fas fa-cloud-upload-alt"&gt;&lt;/i&gt; 一键部署
+&lt;i&gt;只需一条指令即可部署到Github Pages, 或其他网站&lt;/i&gt;
+- &lt;i class="fas fa-cog"&gt;&lt;/i&gt; 丰富的插件
+&lt;i&gt;Hexo 拥有强大的插件系统, 安装插件可以让 Hexo 支持 Jade, CoffeeScript. &lt;/i&gt;
+
+
+
+`&lt;i class="fab fa-github"&gt;&lt;/i&gt;`
+`&lt;i class="fab fa-github fa-lg"&gt;&lt;/i&gt;`
+`&lt;i class="fab fa-github fa-2x"&gt;&lt;/i&gt;`
+使用颜文字
+
+颜文字算是中文圈特有的文化符号了  (｡◕‿◕｡)ﾉ♥
+
+击掌/打招呼 ╭(●｀∀´●)╯╰(●’◡’●)╮ (●’◡’●)ﾉ ヾ(*´▽‘*)ﾉ
+
+手拉手 ╭(′▽`)╭(′▽`)╯
+
+好困呀（揉眼睛 ( ‘-ωก̀ )
+
+已阅留爪 &nbsp;(ฅ´ω`ฅ)
+
+勾手指可萌啦 ( ｡ớ ₃ờ)ھ
+
+开心 &nbsp;♪（＾∀＾●）ﾉｼ （●´∀｀）♪
+
+爱你么么哒 ( ˘ ³˘)♥ ( ˘ ³˘) •́ε•̀)ฅ (๑•́ ₃•̀๑٥) (๑ºั ³ ˘๑)♥ (๑ơ ₃ ơ)ﻌﻌﻌ♥ (ㆀ˘･з･˘)
+
+ε٩(๑&gt; ₃ &lt;)۶з
+
+爱心眼 ( •́ .̫ •̀ ) (´・ω・`) (●′ω`●) (´,,•ω•,,‘) (´；ω；‘) (´・н・‘) (›´ω`‹ ) (๑•ั็ω•็ั๑)( ˘•ω•˘ ) (●´ϖ`●) ( •̀∀•́ )
+
+疑问 &nbsp;◔ ‸◔？ （⊙.⊙）
+
+逃跑 ε=ε=ε=ε=ε=ε=┌(;￣◇￣)┘
+
+撒花 ｡:.ﾟヽ(｡◕‿◕｡)ﾉﾟ.:｡+ﾟ
+
+瞥眼 &nbsp;(¬､¬) (￢_￢)
+
+盯 &nbsp;≖‿≖✧ &nbsp;o‿≖✧ (๑•̀ㅂ•́)و✧
+
+中老年人/脸红系列 &nbsp;( ˙灬˙ ) (´•灬•‘) ε٩ (๑&gt; 灬 &lt;)۶з ( ˘•灬•˘ )(´-灬-‘) (๑´灬`๑) ٩(๑`灬´๑)۶ (•̅灬•̅ ) (๑ơ 灬 ơ) (ง •̀灬•́)ง
+
+加油！ (ง •̀_•́)ง (*•̀ㅂ•́)و
+
+无奈 &nbsp;╮(๑•́ ₃•̀๑)╭
+
+猫爪 ฅ’ω’ฅ ฅ(๑˙o˙๑)ฅ ٩(๛˘³˘)۶♥ ฅ(๑*д*๑)ฅ ฅ(๑˙o˙๑)ฅ ʕ•̀ω•́ʔ✧ (๑•̀ㅁ•́ฅ)ฅʕ•̫͡•ʔฅ ʕ•͡-•ʔ
+
+伸懒腰 &nbsp;٩(๑´0`๑)۶
+
+害羞 &nbsp;（//▽//）
+
+委屈 (,,•́ . •̀,,) (๑•́ ₃•̀๑) (๑•́ ₃ •̀),,Ծ‸Ծ,,
+
+着急/救命系列 &nbsp; ﾍ(;´Д｀ﾍ) (/ﾟДﾟ)/ (*゜ロ゜)ノ Σ( ￣д￣；) ！！！ Σ(っ °Д °;)っ ( •̀д•́) Σ( ° △ °|||)︴ =´Å‘=
+
+各种哭法 π__π &nbsp;T.T &nbsp;ε(┬┬＿┬┬)3 &nbsp;╥﹏╥ &nbsp;┬＿┬ &nbsp;(╥╯^╰╥)
+
+冒汗皱眉系列 (;¬_¬) ( ´◔ ‸◔`) (눈_눈) ( ∙̆ .̯ ∙̆ ) (;￢д￢) (“▔□▔)
+
+呆子 &nbsp;(•ิ_•ิ)
+
+认真脸 &nbsp;(..•˘_˘•..)
+
+喂喂 ((٩(//̀Д/́/)۶))
+
+盖被子 &nbsp;(:3[▓▓] (:3[▓▓▓▓▓▓▓▓▓] (¦3[▓▓]
+
+爬地 _(:з」∠)_ &nbsp;_(:qゝ∠)_ &nbsp;_(・ω・｣ ∠)_
+
+嘿嘿嘿 &nbsp;๑乛◡乛๑ (●´∀｀●)
+
+闭眼满足 &nbsp;(｡￫‿￩｡) （๑￫‿ฺ￩๑）（=ˇωˇ=）（⺻▽⺻ ）&lt;(￣︶￣)&gt;(•‾̑⌣‾̑•)✧˖° (๑˘ ˘๑)&nbsp; ♥(｡￫v￩｡)♥
+
+哇呀 &gt;ㅂ&lt; &nbsp;(๑&gt;m&lt;๑) &nbsp;o(&gt;ω&lt;)o &nbsp;≥▽≤
+
+噜啦啦 &nbsp; (づ￣ 3￣)づ ( ˙ε ˙ ) 乛 з乛 (￣ε￣) (｡◕ฺˇε ˇ◕ฺ｡）(๑¯ิε ¯ิ๑) ( ´´ิ∀´ )
+
+流口水 &nbsp;ԅ(¯﹃¯ԅ) （¯﹃¯）
+
+好呲 &nbsp;(๑´ڡ`๑) (๑＞ڡ＜)☆
+
+生气 &nbsp;(｀д′) (￣^￣) 哼！ &lt;(｀^′)&gt;
+
+瞪眼 &nbsp;٩͡[๏̯͡๏]
+
+掀桌系列
+
+无表情掀桌 ( ╯-_-)╯┴—┴ (ノ—_—)ノ~┴————┴ （╯－＿－）╯╧╧ （ノ*-_-*)ノ┴—┴&nbsp;
+
+娇蛮掀桌 (/= _ =)/~┴┴
+
+无语掀 （╯#-_-)╯╧═╧ ( ╯#-_-)╯┴—┴
+
+大力掀 (╯#-_-)╯~~~~~~~~~~~~~~~~~╧═╧&nbsp;
+
+抓狂掀桌 (╯￣Д￣)╯╘═╛ (ノ=Д=)ノ┻━┻ （╯#-皿-)╯~~╧═╧ (╯’ – ‘)╯︵ ┻━┻
+
+再他妈的掀一次 (╯°Д°)╯︵ ┻━┻ (｀□′)╯┴┴ ┴—┴ ╰(｀□′╰)
+
+泪奔掀桌 ((ノ*T_T*)ノ┴—┴ (┙&gt;∧&lt;)┙へ┻┻
+
+摆好 （\#-_-)\┯━┯ 桌放好 ┬─┬ ノ( ‘ – ‘ノ) 摆好摆好
+
+其它 ╭(￣▽￣)╯╧═╧ 单手掀 ╧═╧(-_-)╧═╧ 桌子飞人
+
+卖萌
+
+(•‾̑⌣‾̑•)✧˖°(๑¯ิε ¯ิ๑) (๑•́ ₃ •̀๑) ( ∙̆ .̯ ∙̆ ) (๑˘ ˘๑) (●′ω`●) ︶ε╰✿ ✿◡‿◡ (●･̆⍛･̆●)
+
+♫ ♫♬♪♫ ヾ(。◕ฺ∀◕ฺ)ノ♫♬ 。ﾟ+.ﾟヽ(●´ω｀●)ﾉ。 （●´3｀）~♪
+
+（●&gt;∀&lt;●）ィェ━ィ★彡 ♥♥(o￫ܫ￩o)♫ (〃＾∇＾)ぇ∧∧∧っ
+
+*゜✲ฺ(✿◕ฺ ∀◕ฺ)ฺノ†゜* （●´д｀）.。o
+
+ヽ(.◕ฺˇд ˇ◕ฺ;)ﾉ
+
+((٩(//̀Д/́/)۶)) (´；ω；`) ( `)3′) &nbsp;v(ﾟｰﾟ) =≡Σ((( つ•̀ω•́)つ
+
+(；′⌒`) ╰(*´︶`*)╯ ( ´´ิ∀´ิ` ) (´∩｀。) ( ื▿ ื) (｡ŏ_ŏ) ( •ิ _ •ิ ) ヽ(*΄◞ิ౪◟ิ‵ *)ﾉ ( ˘ ³˘)
+
+(๑&gt;m&lt;๑) (; ´_ゝ`) (*ˉ﹃ˉ) (◍’౪`◍)ﾉﾞ (｡◝‿◜｡) (ಠ .̫.̫ ಠ) (´◞⊖◟`) (。≖ˇェˇ≖｡) ℰ⋆‿⋆ℰ
+
+(ಠ .̫.̫ ಠ) p(´⌒｀｡q) ┗(´D`* (´D`*(´D`*)┛ &lt;(▰˘◡˘▰)&gt; (・ω&lt; )★ (*ﾟｪﾟ*) ✧ (≖ ‿ ≖)✧
+
+(◕ܫ◕) (｀◕‸◕´+) (▼ _ ▼) ( ◉ืൠ◉ื) ㄟ(◑‿◐ )ㄏ (●’◡’●)ﾉ♥ (｡◕ˇ∀ˇ◕） ~Ⴚ(●ტ●)Ⴢ~
+
+⊙.⊙ ( ◔ ڼ ◔ ) ( ´◔ ‸◔`) (☍﹏⁰) (♥◠‿◠)ﾉ ✪ω✪ ʅ(‾◡◝)ʃ (๑°3°๑) ლ(╹◡╹ლ )
+
+இwஇ (๑꒪◞౪◟꒪๑) (๑◕ܫ￩๑)b (*☉౪⊙*)　ヾ(o゜_,゜o)ノ ლↀѡↀლ (｡▰´◞◟｀▰｡)
+
+( ͡° ͜ʖ ͡°) 　( ͡° ͜ʖ ͡°)✧ (*゜ロ゜)ノ 　 ( ´･∀･｀) °(°ˊДˋ°) ° (つ﹏⊂) –\(˙&lt;&gt;˙)/-
+
+心情好 萌 满足
+
+ლ(´ڡ`ლ) (*≧m≦*) (*･ω･) ヾ(｡･ω･｡) (=ﾟωﾟ)ﾉ (○’ω’○) (´・ω・`) (。-`ω´-) (。⌒∇⌒)。(ﾉ≧∀≦)ﾉ
+
+(￣ω￣;) (◡‿◡✿) (◕‿◕✿) ♪(^∇^*) o(^▽^)o (●´▽｀●) (=￣ω￣=) o(*￣▽￣*)ブ (￣ε￣*) ( o｀ω′)
+
+o((&gt;ω&lt; ))o o(〃’▽’〃)o (＠゜▽゜) (*＾-゜)v ＼( ^▽^ )／ (｡・`ω´･) o(*////▽////*)q (・ω&lt; )★
+
+(*〞艸〝) (◍’౪`◍)ﾉﾞ(●’◡’●)ﾉ♥ヾ(o゜_,゜o)ノ (๑＞ڡ＜)☆ (・∀・(・∀・(・∀・*) ლ(･ิω･ิლ) (๑°3°๑)
+
+(˘❥˘) ︶ε╰✿ ƪ(•̃͡ε•̃͡)∫ʃ (*^︹^*)♡ ヽ(ｏﾟ∀ﾟｏ)ﾉ •́ε•̀~ ˇ▽ˇ （´◔౪◔）٩(๛ ˘ ³˘)۶ (๑•́ ₃ •̀๑) (*¯︶¯*) (●′ω`●)
+
+(U◕‿‿◕U）（*/ω＼*）(´இωஇ｀)゜(´∀｀)♡ (ღ˘⌣˘ღ) ヽ(○´∀`)ﾉ♪ (*´∀`*) (⁎⚈᷀᷁ᴗ⚈᷀᷁⁎) ( ´･◡･` )
+
+心情不好
+
+(→_←) (︶︹︺) （ﾉ´д｀）(･_-｡ ) ˋ(′～‵”)ˊ(　TロT)σ ( T﹏T ) (; ´_ゝ`) (,,Ծ‸Ծ,,) (ಥ_ಥ) ( ꈨຶ ˙̫̮ ꈨຶ )
+
+(;´༎ຶД༎ຶ`) (⌇ຶД⌇ຶ) (＞人＜) (°̥̥̥̥̥̥̥̥-°̥̥̥̥̥̥̥̥ ) థ౪థ இдஇ p(´⌒｀｡q) ( ´•︵•` ) º·(˚ ˃̣̣̥᷄⌓˂̣̣̥᷅ )‧º·˚ (´-ι_-｀) (┳◇┳) ( &gt;﹏&lt;。)～ ( ̤இॕ⌓இॕ ̤) °(ಗдಗ。)° (´இ皿இ｀)゜(´；ω；｀) ｡：ﾟ(｡ﾉω＼｡)ﾟ･｡(;*△*;) ( ཀ͝ ∧ ཀ͝ )
+
+呆呆的 无奈和汗颜
+
+〜(￣△￣〜) (〜￣△￣)〜 (*｡_｡) (；￣Д￣）(´Д｀) (*￣m￣) （￣～￣;） (￣ェ￣;) (￣◇￣;)
+
+┐(─__─)┌ (*´Д`) （＝＿＝）(￣ー￣*||| (-_-メ) (￣ ‘i ￣;) (￣ε(#￣) ( ¯▽¯；) (*ﾟｪﾟ*) (。≖ˇェˇ≖｡)
+
+(◒｡◒) ( ᖛ ̫ ᖛ )ʃ) ヽ(´o｀；（；￣ェ￣）( ´Д`)y━･~~
+
+搞怪颜文字
+
+ヘ(￣ω￣ヘ) ♪(┌・。・)┌ (－ｏ⌒) ☆～（ゝ。∂）╮(╯▽╰)╭ (￣︶￣)ψ (ˉ﹃ˉ) ೭(˵¯̴͒ꇴ¯̴͒˵)౨
+
+_(:з」∠)_ ( ◉ืൠ◉ื) 罒ω罒 (☝ ՞ਊ ՞)☝⃔⌄ ⃔ ─=≡Σ((( つ•̀ω•́)つ ٩꒰⍢ ꒱۶⁼³₌₃ Σ(￣。￣ﾉ)ﾉ ฅ(*ơ ₃ơ)ฅ”
+
+(｢･ω･)｢ (。･o･｡)ﾉ ~ (o´〰`o) ( • ̀ω ⁃᷄)✧ (ФwФ) ( ื▿ ื) ◐/v/◐ （ゝω・）(੭ु ‾̑ω‾̑)੭ु⁾⁾
+
+(ू ͒•‧̫•ू⑅ ͒) ᕦ(ò_óˇ)ᕤ ( ͡° ͜ʖ ͡°)
+
+斜眼 鄙视状
+
+(ਛ_≻ਛ) ( ﹁ ﹁ ) (¬д¬。) ( ¬､¬) (;¬_¬) (；¬д¬) (′д｀σ)σ .╮(﹀_﹀”)╭
+
+认真的样子
+
+(`･ω･´)ゞ(๑•̀.̫•́๑) (̿▀̿̿Ĺ̯̿̿▀̿ ̿)̄ ( ‾ʖ̫‾) ( •̀ .̫ •́ )✧ (๑•̀_•́๑) (ง •̀_•́)ง (｀◕‸◕´+) ( ∙̆ .̯ ∙̆ ) (•ิ_•ิ)
+
+惊恐 担心
+
+(,,#ﾟДﾟ) (」゜ロ゜)」 (;° ロ°) ヽ（゜ロ゜；）ノ (￣口￣)!! ┌(。Д。)┐(⊙ˍ⊙) Σ( ° △ °|||)︴
+
+（⊙＿⊙；）… (っ °Д °;)っ щ(゜ロ゜щ)
+
+不满 傲娇状
+
+(￣^￣) o(´^｀)o （￣へ￣）φ(￣ー￣ ) ╮(～▽～)╭ b(￣▽￣)d （￣ c￣）y▂ξ (ˉ▽￣～)
+
+o(一︿一+)o ε＝（＞ε＜）ˋ﹏ˊﾉ(≖ A ≖))ﾉ =3=3=3 (‵▽′)/
+
+气愤
+
+（╬￣皿￣） ヽ(ｏ`皿′ｏ)ﾉ ヽ(≧Д≦)ノ （＞д＜） （;≧皿≦） ヽ(#`Д´)ﾉ [○･｀Д´･○] ヽ( ｀0´)ﾉ
+
+Σ(-`Д´-ﾉ；)ﾉ o(-`д´- ｡) ヽ(●-`Д´-)ノ （｀＾´）ノ (╯‵□′)╯︵ ┴─┴ （╯－＿－）╯╧╧ ┗|｀O′|┛
+
+(o#゜ 曲゜)o (╯‵□′)╯···*～● 凸(艹皿艹 ) (ʘдʘ╬) ╰（‵□′）╯ s(・｀ヘ´・;)ゞ 山(≧皿≦)山
+
+(ノ｀Д´)ノ (┙&gt;∧&lt;)┙へ┻┻
+
+双人
+
+(●ゝω)ノヽ(∀＜●) o(╬￣皿￣)=○# (￣#)3￣) ╭(′▽`)╭(′▽`)╯(￣ε(#￣)☆╰╮o(￣皿￣///)
+
+( *￣▽￣)((≧︶≦*) (～￣▽￣)→))*￣▽￣*)o (┘￣︶￣)┘└(￣︶￣└) (〃￣︶￣)人(￣︶￣〃)
+
+&lt;( ‵□′)───C＜─___-)|| └(￣ ￣└)(┘￣ ￣)┘ ( *￣▽￣)((≧︶≦*) └│∵│┐┌│∵│┘ヽ(*´∀｀)八(´∀｀*)ノ \(“▔□▔)/\(“▔□▔)/ （*＾ω＾）人（＾ω＾*）(((*°▽°*)八(*°▽°*)))♪ヽ(＾▽＾)人(＾▽＾)人(＾▽＾)ﾉ
+
+｡*:★(´・ω・人・ω・`)｡:゜★｡ヽ(∀゜ )人( ゜∀)ノ
+
+得意 &lt;(￣︶￣)&gt; 乾杯 []~(￣▽￣)~* 滿足 (￣ˇ￣) 沒睡醒 (￣﹏￣) 狡猾(‵﹏′)
+
+被打一巴掌 (￣ε(#￣) 無言 (￣.￣) 無奈 ╮(￣▽￣)╭ 裝傻 (￣▽￣)~*
+
+驚訝 (⊙ˍ⊙) 發現(￣.￣)+ 驚嚇 Σ( ° △ °|||)︴ 冷 (￣▽￣)” 沒辦法 ╮(╯▽╰)╭
+
+貓咪臉 (=￣ω￣=) 疑惑 (￣３￣)a 阿達 (￣0 ￣)y 重創 (。_。) 不 (＞﹏＜)
+
+懷疑 (→_→) 睏 (￣o￣) . z Z 崇拜 m( _ _ )m 我想想 (ˇˍˇ) 生氣 &lt;(￣ ﹌ ￣)&gt;
+
+就是你 &lt;(￣ ﹌ ￣)@m
+
+小眼睛
+
+( ・ˍ・) (・ˍ・*) （p・_q） (〃・ｏ・〃) (*^・_・) (。・ˍ・。) (*・０・) (・ε・●) (｡･ω･) (。・д・。) (・∀・) （／ˍ・、） (・□・、*) (・－・。) (・▽・。) (・_・。)
+
+(・O・。) (ノ△・。) (＠・ˍ・) (*・・*) 人(・ε・；) (・ o ・) (・ェ・o) (′・∀・『)
+
+瞇瞇眼
+
+(* ￣ー￣) (￣ー￣〃) (＠￣ー￣＠) (* ￣︿￣) (*￣∇￣*) &lt;(ˍ ˍ*)&gt;
+
+(￣(●●)￣) (￣・・￣) (ー∀ー) (￣ｏ￣) (￣、￣) (*￣△￣*) (￣へ￣) (￣□￣) (￣～￣；) (。-ˍ-。 ) (￣ε￣；) (￣┬￣；) (￣∀￣) (ノへ￣、) (*￣ro￣)
+
+(ー人ー) (*￣ｍ￣)
+
+日系小眼睛
+
+(′▽`〃) ( ′ｏ`) (′ェ`) (′ε` ) (=′ー`) ( ′θ`) (′○` ) ( ′－`) (′∀`=)
+
+(*′▽`) (*′ノ0`) ( ′ロ` ) (′～`；） (′ ︿ `) (*′∇`*) (′ｍ`） (′0ノ`*)
+
+(＠。ε。＠) (=′∇`=） (●′ω`●) (′～`●) (′へ`、 ) (〃′o`) ( ；′⌒`)
+
+日系大眼睛
+
+(ΘΘ) (Θ～Θ〃) (ΘｏΘ) (ΘェΘ) (Θ∀Θ＃) (ΘдΘ；) (Θ皿Θメ) (ΘーΘ*)
+
+(Θ０Θ●) (Θ▽Θ) (ΘεΘ◎) (Θ◇Θ。) (ΘへΘ) (ΘˍΘ＝) (Θ、Θ) (Θ△Θ＠)
+
+(Θ３Θ)
+
+圆珠眼
+
+(°ー°〃) (＃°Д°) (。□。) (*。∀。) (*。∇^*) (* ^ー。)
+
+(＠。ー。 ＠) (。∇^☆) (ｏ。◇。) ( 。 ▽ 。) (＃。ε。＃) (。∇^d) (。・。；) (。皿。メ) (* 。 ３ ^) (〃。 ｏ 。〃) ( °◇ °) ( 。⊿。) (°□°；) ( ロ)。 。 (。Д。 ；) (*。ノO。) (； 。。)
+
+紧闭眼
+
+(&gt;&lt;) (;&gt;&lt;) (&gt;_&lt;) (&gt;.&lt;) (&gt;o&lt;) （＞▽＜） (＞Ｏ＜) (o&gt;▽&lt;) (&gt;◇&lt; ) (&gt;▽&lt;) (;&gt;△&lt;) (&gt;з&lt;) (o&gt;ェ&lt;) (＞д＜) (&gt;皿&lt;) (&gt;_&lt;、) (/_＜。) (&gt;。；) (&gt;。ヘ) (ノ_&lt;) (＞。☆) (&gt;y&lt;;)
+
+小狗嘴
+
+(-ω- ) (+ω+) (*ω* ) ( ^ω^) (;ω;) (。ω。) (『ω′) (・ω・=) (￣ω￣)
+
+(〃ω〃) (≧ω≦) (。・ω・) (=・ω・=) ( ＞ω＜) (′・ω・`) (/ω＼) (/ω・＼)
+
+(/・ω・＼) (ΘωΘ) (ΦωΦ)
+
+悲伤眼
+
+(ＵＵ＊) (ｕｕ〃) (ｕｏｕ〃) (Ｕ３Ｕ*) (●Ｕ_Ｕ●) (ｕ～ｕ=)
+
+(＠Ｕ▽Ｕ＠) (ＵAＵ＊) (Ｕ△Ｕ●) (ｕДｕ〃) (Ｕ◇Ｕ◎) (○ｕAｕ○)
+
+(ｕ▽ｕ＃) (＠Ｕ～Ｕ＠) (ｕ△ｕ＊) (ｕ◇ｕ〃) (ＵДＵ◎) (＝ｕ３ｕ＝)
+
+(ｕ_ｕ＃) (ＵｏＵ＊)
+
+
+
+＜（￣︶￣）＞ 满足且得意
+
+＜（￣︶￣）／ 满足并且伸出手表示赞同
+
+＜（＠￣︶￣＠）＞ 满足地脸红
+
+（＃￣▽￣＃） 害羞
+
+＼（￣︶￣）／ 抱抱
+
+ｂ（￣▽￣）ｄ 竖起双手拇指说好
+
+╰（￣▽￣）╭ 眉飞色舞
+
+（￣︶￣）↗ 出发吧
+
+○（＊￣︶￣＊）○ 吃饱睡好
+
+♀（￣▽￣）／ 优质女孩
+
+♂（￣▽￣）／ 优质男孩
+
+╮（╯◇╰）╭ 啾～啾～亲一个
+
+╭（′▽‵）╭（′▽‵）╭（′▽‵）╯ GO!
+
+（￣▽￣）～■□～（￣▽￣） 干杯
+
+＜（￣︶￣）＞＜（￣︶￣）＞＜（￣︶￣）＞ 当我们同在一起
+
+伤心
+
+（┬＿┬） 流泪
+
+（＞﹏＜） 痛苦
+
+（┬＿┬）↘ 跌倒
+
+〒▽〒 真命苦
+
+生气
+
+…（⊙＿⊙；）… 嘎？
+
+（￣∞￣） 猪！
+
+（︶︿︶） 不满
+
+╰（‵□′）╯ 暴怒
+
+（（‵□′）） 暴怒
+
+（︶︿︶）＝凸 比中指
+
+（╯－＿－）╯╧╧ 翻桌A
+
+（╯‵□′）╯︵┴─┴ 翻桌B
+
+┴─┴︵╰（‵□′╰） 翻桌C
+
+╭∩╮（￣▽￣）╭∩╮ 哼，去你的
+
+┴┴︵╰（‵□′）╯︵┴┴ 拆房子
+
+（╬￣皿￣）＝○＃（￣＃）３￣） 看拳
+
+＜（‵□′）＞───Ｃε（┬＿┬）３ 生气扭耳朵
+
+＜( ￣︿￣)︵θ︵θ︵θ︵θ︵☆（＞口＜－） 无影脚攻击
+
+道歉
+
+〈（＿ ＿）〉 道歉、鞠躬
+
+无奈、尴尬
+
+╮（￣▽￣）╭
+
+╮（╯＿╰）╭
+
+╮（﹀＿﹀）╭
+
+╮（￣﹏￣）╭
+
+ˋ（′～‵）ˊ
+
+┐（─__─）┌
+
+（￣口￣）
+
+（＃－.－）
+
+（─.─||）
+
+≡￣﹏￣≡
+
+其他
+
+（～￣▽￣～） 装傻
+
+\(“▔□▔)/\(“▔□▔)/\(“▔□▔)/ 大冷场
+
+&lt;(￣3￣)&gt;
+
+－(&gt;口＜-)
+
+&lt;(￣ c￣)y▂ξ 抽烟
+
+（￣Ｑ￣）╯ 滚一边去
+
+使用emoji
+⭕✅☑✔✖❌❎🌓🌔🌕🌖🌗🌘🌙🌚🌛🌜☀🌝🌞⭐🌟💉💊
+😀😁😂😃😎😍😘😗😙😚☺😇😐😑😶😏😣😥😮😯😪😫😴😭
+
+更多 emoji 参考 ( 👁️︠ ‿‿ ︡👁️)✊
+
+emoji表情符号
+full-emoji-list
+fsymbols
+
+
+插入html
+跳转位置演示（跳转位置设置点）
+
+我们可以在 Markdown 中插入一些简单的 HTML 代码或 CSS 片段来获得更多扩展，使得文章内容更具有多样性。以下演示几个简单功能。
+
+文字颜色
+#519D9E颜色演示
+&lt;p&gt;&lt;span  style="color: #519D9E; "&gt;#519D9E颜色演示&lt;/span&gt;&lt;/p&gt;
+文字大小
+0.7em 文字大小演示
+&lt;p&gt;&lt;span  style="font-size:0.7em;"&gt;0.7em 文字大小演示&lt;/span&gt;&lt;/p&gt;
+文字位置
+内容居中演示
+&lt;p style="text-align:center"&gt;内容居中演示&lt;/p&gt; # 可以修改 text-align 参数来设置文字位置。
+页内跳转
+点击到达跳转位置演示
+&lt;a ignore-external-link href="#demo"&gt;点击到达跳转位置演示&lt;/a&gt; # 在需要跳转的地方添加此代码。
+&lt;a ignore-external-link id="demo"&gt;跳转位置演示（跳转位置设置点）&lt;/a&gt; # 在跳转位置添加次代码。
+综合演示
+
+综合演示
+
+优雅使用 Hexo 写文章
+
+&lt;p style="text-align:center;color:#8EC0E4;font-size:1.5em;font-weight: bold;"&gt;
+综合演示
+&lt;br&gt;
+优雅使用 Hexo 写文章
+&lt;/p&gt;
+iframe 页面镶套
+iframe 页面镶套可以帮助我们更好的展示一个页面。比如以下演示页面。
+iframe自动加载
+
+&lt;iframe src="/galleries/" width="100%" height="500" name="topFrame" scrolling="yes"  noresize="noresize" frameborder="0" id="topFrame" loading="lazy"&gt;&lt;/iframe&gt;
+iframe鼠标点击加载
+  
+     点击加载主页 
+     点击加载相册 
+  
+    
+
+  &lt;ul&gt;
+    &lt;li&gt; &lt;a id="download" onclick="frameA.src='/'"  aria-label="iframe测试"&gt;点击加载主页&lt;/a&gt; &lt;/li&gt;
+    &lt;li&gt; &lt;a id="download" onclick="frameB.location='/galleries/'" &gt;点击加载相册&lt;/a&gt; &lt;/li&gt;
+  &lt;/ul&gt;
+  &lt;iframe id="frameA" src="" style="width:100%;height:500px;background-image:url(/medias_webp/loading.webp);background-size: 100% 100%;" frameborder="0"&gt;&lt;/iframe&gt;  
+&lt;iframe name="frameB" src="" style="width:100%;height:500px;background-image:url(/medias_webp/loading.webp);background-size: 100% 100%;"  frameborder="2"&gt;&lt;/iframe&gt;
+object标签
+
+&lt;object width="100%" height="400" data="/galleries/"&gt;&lt;/object&gt;
+details 标签
+用于展示代码较多需要折叠或折叠相关内容，以下为演示。summary 填写显示名称。
+
+Demo
+夜法之书
+欢迎光临
+
+
+&lt;details&gt;
+&lt;summary&gt;Demo&lt;/summary&gt;
+&lt;p&gt;&lt;a href="/" target="_blank"&gt;&lt;b&gt;夜法之书&lt;/b&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;b&gt;欢迎光临&lt;/b&gt;&lt;/p&gt;
+&lt;img width="200" src="/favicon.webp" alt="wechat"&gt;
+&lt;/details&gt;
+配图
+众所周知，博客好不好看，配图占一半。这里给大家推荐几个我常用找配图的地方。另外，请遵循相关网站的版权协议。
+Google Image是你的好搭档
+Wallpaper Hub
+
+点击跳转到 Wallpaper Hub
+Wallhaven
+
+点击跳转到 Wallhaven
+Unsplash
+
+点击跳转到 Unsplash
+插入Mermaid
+
+直接在我网页前端生成SVG图像，能够实现非常复杂，美观的流程图！
+Mermaid 简明教程  pluntuml 简明教程
+
+graph LR
+    1[Sonarr] == request Jackett / Prowlarr Torznab api ==&gt; 2(JProxy) == proxy Sonarr request ==&gt; 3(Jackett / Prowlarr) 
+    3(Jackett / Prowlarr) == return ==&gt; 2(JProxy) == return result after format ==&gt; 1(Sonarr)
+    2(JProxy) == replace search key ==&gt; 2(JProxy)
+    2(JProxy) == format result title ==&gt; 2(JProxy)
+插入音乐和视频
+
+教程： 插入音乐和视频
+插入优美的音乐可以愉悦阅读过程
+插入视频教程或者视频Live可以极大提高知识传播速度！
+
+内容为王
+前面提到了那么多的方法和工具，但是内容才是最重要的！
+内容好，前面提到的写作技巧和工具都可以忽略；内容不好，再多的方法和工具都是白费！谨记！
+尺度控制
+不同平台，能够容忍的尺度是不同的！
+面对不同的人群，不同地域，不同背景的读者，写作尺度需要区分！也就是需要主动自我阉割！
+能说的比能写的至少严格一个等级，私密场合口耳相传的可以更接近真相！
+
+能写出来，广泛传播的大众平台言论，都是被阉割删减过的。顶多给你一个入门的方向指引，甚至很多时候故意给你一个错误的方向误导你！
+很多假话，套话，写一写，喊一喊，自己真信就是傻逼了
+
+文学技巧
+对于技术文章，是不需要什么文学技巧的，有足够的行业积累，才能够写的深入浅出！
+如果你写的是头条账号，瓜田李下，下里巴人才能够吸引眼球，一些写作技巧，如适当的疑问，引用，递进，顶珠，等方法可以大大提高流量。但是，不要做标题党，广大读者包括笔者都痛恨标题党！
+关于谣言
+
+造谣一张嘴，辟谣跑断腿！
+
+社交平台通过故意制造谣言，引起社会对立，可以极大提高平台活跃度与曝光量！
+
+Facebook 内部员工就爆料 Facebook 故意挑起种族仇恨言论（具体详情请自行搜索新闻来源）。
+微博为什么是女权发源地，这与微博的故意放纵，背后资本都是相关的。
+
+另外，有不少收钱发帖的账号！
+
+国家应该对接受资本资助的平台账号备案，并严令禁止社交平台账号接受国外资本资助！
+这种账号日常就发一些没有时间，地点，人物等详细细节的文章，引导舆论，或者文化打压，渗透！
+关键这种你很难举报，博主举报了很多次，平台都说举报不成立，不算谣言！即使举报成功了，谣言也已经传播开了，对于造谣者来说也没多大损失！顶多删除一条就是，这种应该严惩的行为目前没看到什么法律法规的约束！
+但是，国家早晚会对这一块整治，法律会严惩这些造谣者的！别看这些造谣者一时收黑钱一时爽，总会有清算的一天的。各位读者遇到这类文章也多点击一下举报吧，举报间谍成功奖励50W哦！
+
+写作工具
+
+工欲善其事，必先利其器
+
+
+
+Markdown编辑器 Typora，早期beta版本免费
+
+
+截图 snippaste
+
+
+动图 ScreentoGIF
+
+
+图床 Picgo
+
+
+脑图 Draw.IO
+
+
+密码同步+随机生成+保存 BitWarden Docker
+
+
+图片处理 Photoshop？
+
+
+笔记工具 git + gitlab docker 或者 Joplin Docker
+
+
+私有笔记云
+
+平时不积累，用时方嫌少！
+建立自己的知识库，就显得那么重要了
+
+
+完美笔记进化论
+
+
+经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
+
+pigo图床搭建与配置
+Joplin教程
+Snipaste截图工具
+Typora 作为Markdown编辑器最强
+
+
+
+    
+        
+    
+    
+        完美笔记进化论
+        
+        wiznote docker版作为笔记管理搜索工具，typora作为markdown编辑器，只使用markdown格式笔记，Picgo作为图上上传工具，github作为图像图床，Snippaste作为截屏工具。一起组成笔记工具链。整体免费，满足selfhost， 富文本，多平台，版本管理，目录管理，可搜索，对图像友好的苛刻要求，超越市面所有产品，wiznote 还可以对外网提供服务。
+    
+
+
+Joplin入门指南&amp;实践方案
+
+
+
+Joplin和使用
+Joplin同步与备份
+Joplin导入与导出
+
+
+
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+
+
+
+Joplin安装使用，调用外部编辑器，网盘同步等等
+
+
+
+Joplin 插件以及其Markdown语法。All in One!
+
+
+
+Joplin简明教程
+markdown语法简明教程
+
+
+
+Joplin 插件使用推荐
+
+
+
+教你用各种插件打造一个强大的笔记工具。
+
+
+
+为知笔记私有化Docker部署
+
+
+
+如何部署自己私有的为知笔记。
+其实博主更推荐私有部署joplin
+
+
+私有Nas
+
+丰富自己的知识图谱！
+数据最值钱，自己的数据真正属于自己的，所以你需要一个私有Nas
+
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+
+    
+        
+    
+    
+        使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+        
+        jackett 作为种子源，sonarr剧集管理，bt下载，qbittorrent主力下载，使用iyuu转移辅种，emby，jellyfin做海报墙，sunfinder自动下载字幕。基本算是完美打通全流程自动追剧。bt种子文件命名规则SxxExx的自动识别下载，国内的资源手动查找下载，自动推送到emby刮削好
+    
+
+
+结构化自己的图书，音乐，和视频！
+丰富自己的见识，知识储备
+
+
+    
+        
+    
+    
+        如何建立自己的私人电子图书馆
+        
+        图书管理员似乎是个非常有前途的职业，远的有孔子，游学之前当图书管理员，近的有本朝开国毛教员，也当了很长时间图书管理员。我们也可以自己做个私人电子图书馆，当个图书管理员，说不定很有前途？
+    
+
+
+    
+        
+    
+    
+        如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库
+        
+        音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。
+    
+
+
+    
+        
+    
+    
+        如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+        
+        tinyMediaManager是最好用的视频刮削工具，可以刮削电影，动画，电视剧。使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息，配合Emby，Plex使用体验绝佳
+    
+
+
+音视频图书和音乐自动化管理框架图解
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+Transmission 使用及其配置
+Qbittorrent 参数详细设置教程
+PT 工具集，Linux硬链接助手
+QNAP 修改应用启动顺序
+qnap硬盘移动位置
+qnap IO 错误消除
+
+RSS订阅
+
+一直输出知识怎么能行？身体被掏空，急需补充能量！
+那么，你就需要一个好用的RSS订阅工具，TTRSS是一个好选择
+
+
+    
+        
+    
+    
+        RSS的使用与Tiny Tiny RSS Selfhost自建
+        
+        RSS是一种消息来源的格式规范，网站可以按照这种格式规范提供文章的标题、摘要、全文等信息给订阅用户，用户可以通过订阅不同网站 RSS 链接的方式将不同的信息源进行聚合，在一个工具里阅读这些内容
+    
+
+博客搭建
+
+私有博客，你值得拥有！
+
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化
+
+    
+        
+    
+    
+        [三万字教程]基于Hexo的matery主题搭建博客并深度优化
+        
+        一文介绍了Hexo利用github page搭建博客全过程，还附带一个博主自己定制过的`hexo Docker`，使用docker 配合博文将引导你搭建一个功能完善的blog，并指导全程免费seo优化，性能极致优化过程和工具。并附带几个常见问题的解决方案在文章最后。
+    
+
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+
+    
+        
+    
+    
+        hexo博客博文撰写篇之完美笔记大攻略终极完全版
+        
+        hexo博客文章卷写技巧，包括MarkDown，hexo技巧，html插入，美化方法，写作方法，知识储备方法，开发工具，等一系列全介绍！终极攻略篇
+    
+
+系列文章
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+
+
+使用nodeppt给hexo博客嵌入PPT演示
+
+
+Gitbook使用
+
+长篇专业电子书制作工具
+当你的文章写的长了，就可以考虑用Gitbook来制作电子书了
+
+
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+
+
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+
+
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+
+开发工具
+
+上面都是说的写作工具，该说说开发工具了。私有建立一个完善的DevOps将极大的提高你的开发效率和能力！
+
+
+    
+        
+    
+    
+        自建全套开源Devops开发系统
+        
+        目标：单节点，以最低成本，最低消耗，使用开源软件实现一个可用的DevOps！满足中小企业的研发、测试、运维需求。
+    
+
+
+
+自建全套开源Devops开发系统
+
+
+Git介绍以及分支模型图解
+
+
+三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
+
+
+DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
+
+
+项目开发管理工具推荐
+
+
+Gitlab的安装及使用教程完全版
+
+
+Gitlab的安装及使用
+
+
+Gitlab的安装及使用教程完全版
+
+
+破解Gitlab EE
+
+
+Gitlab的安装及使用
+
+
+CI/CD与Git Flow与GitLab
+
+
+Docker使用
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+博客美观性
+
+博客美观性增强方法
+
+
+
+使用标准Markdown语法
+
+
+使用hexo tag
+
+
+使用 hexo  主题 tag
+
+
+使用hexo 插件
+
+
+特殊符号
+
+
+CSS自定义
+
+
+博文可迁移性
+
+博客文章可迁移性评价
+
+
+
+使用标准Markdown语法
+
+
+少用hexo tag
+
+
+少用 hexo  主题 tag
+
+
+少用hexo 插件
+
+
+
+可以说，美观和可迁移性是不可兼得的。
+
+写作工具
+编辑器
+
+Typora
+marktext 开源替代
+
+图片上传
+
+Picgo
+
+截图
+
+
+snipaste
+
+
+FastStone Capture
+
+
+ScreenToGif
+
+
+笔记管理
+
+Joplin
+
+疑难杂陈
+问答 1：hexo g出错怎么办？
+
+npm包升级到最新试试？
+npm modules 模流删除，重新安装
+先移除所有文章，编译看看是否文章中出现了语法错误！
+可以用二分法定位语法错误
+特别注意插件tag语法是否有误
+hexo或者npm包先删除编译试试
+hexo，theme主题功能先零时关闭试试
+
+问答2：笔记丢失怎么办？
+
+使用 Git 保存 + Gitlab 服务器
+使用 Joplin，没有任何限制的批量导入导出 Markdown！
+不要使用任何私有格式的笔记工具，例如X知笔记
+
+问答3：修改不生效怎么办？
+
+本地 Docker 或者直接本地测试时，重启 hexo docker，hexo 一些修改需要下一次启动才能生效
+重启电脑
+如果插件问题，试着删除插件，重新安装插件测试
+如果使用了 CDN 服务，在线测试时，修改不生效怎么办？清除 CDN 缓存，暂时停用 CDN（如Cloudflare），CTRL + F5 来刷新网页试试！或者检查CDN版本是否正确，如 Jsdelivr
+
+后记
+
+写到这篇文章，基本把博客很大部分文章都串起来了，串成了一个圆环，一颗颗珍珠终于连成一串美丽的珍珠项链。一篇篇博文不再是孤岛，而是开始连成一片大陆了。
+
+参考
+
+Hexo Doc
+搭配 Fluid 如何优雅的写一篇文章
+Hexo 搭建个人博客系列：写作技巧篇
+
+系列教程
+全部文章RSS订阅
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+GithubProfile美化与自动获取RSS文章教程
+Vercel部署高级用法教程
+webhook部署Hexo静态博客指南
+在宝塔VPS上面采用docker部署waline全流程图解教程
+
+笔记系列
+Note分类RSS订阅
+
+完美笔记进化论
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Joplin入门指南&amp;实践方案
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+Joplin 插件以及其Markdown语法。All in One!
+Joplin 插件使用推荐
+为知笔记私有化Docker部署
+
+]]></content>
+      <categories>
+        <category>hexo</category>
+      </categories>
+      <tags>
+        <tag>markdown</tag>
+        <tag>hexo</tag>
+        <tag>写作</tag>
       </tags>
   </entry>
   <entry>
@@ -50976,7 +52568,17 @@ lobechat 支持多种大模型聊天机器人
 datawhalechina/self-llm: 《开源大模型食用指南》基于Linux环境快速部署开源大模型，更适合中国宝宝的部署教程
 
 AI 编程
+
+
 GPT Pilot
+
+
+Create your own and custom Copilot in VSCode with Ollama and CodeGPT | by Daniel Avila | CodeGPT
+
+
+rjmacarthy/twinny: The most no-nonsense, locally or API-hosted AI code completion plugin for Visual Studio Code - like GitHub Copilot but completely free and 100% private.
+
+
 伪造视频语音
 
 伪造语音，视频，对于诈骗行业来说，这是个好消息。但对于普通人来说，看到视频，也可能是对方精心伪造的，视频语音都失去了可信性了
@@ -51153,9 +52755,9 @@ Calibre相关的Docker很多，这是其中界面很漂亮的一个版本
 
 
 视频详细Calibre web讲解
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ZmWVpyUzXeTeupqJ").style.height=document.getElementById("mmedia-ZmWVpyUzXeTeupqJ").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-xmDuVbsjWJGjoPlY").style.height=document.getElementById("mmedia-xmDuVbsjWJGjoPlY").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-ZmWVpyUzXeTeupqJ").style.height=document.getElementById("mmedia-ZmWVpyUzXeTeupqJ").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-xmDuVbsjWJGjoPlY").style.height=document.getElementById("mmedia-xmDuVbsjWJGjoPlY").scrollWidth*0.76+"px";
     }; 
 Compose 安装示例
 
@@ -53140,1598 +54742,6 @@ C（Control），即控制反馈
       </tags>
   </entry>
   <entry>
-    <title>hexo博客博文撰写篇之完美笔记大攻略终极完全版</title>
-    <url>/posts/253706ff/</url>
-    <content><![CDATA[
-hexo博客文章卷写技巧，包括MarkDown，hexo技巧，html插入，美化方法，写作方法，写作工具，知识储备方法，开发工具，等一系列全介绍！终极攻略篇。
-当然，这些写作技巧也可以用在hexo , hugo, next.js， wordpress上面，或者还是其它类型博客。
-在任何类型的写作上面，这些都是用得着的写作技巧！
-
-
-使用草稿
-新建文章
-一般我们都会使用 hexo new &lt;title&gt; 来建立文章，这种建立方法会将新文章建立在 source/_posts 目录下，当使用 hexo generate 编译 markdown 文件时，会将其 HTML 结果编译在 public 目录下，之后 hexo deploy 将会把 public 目录下所有文章部署到 GitHub，这是我们熟悉的 Hexo 流程。
-这种建立文章方式的缺点是：若我们同时编辑多篇文章，只要其中一篇文章尚未编辑完成，也会随着 hexo deploy 一起部署到 GitHub，也就是 GitHub 可能会看到我们尚未完成的文章。
-新建草稿
-hexo new draft &lt;title&gt;
-Hexo 另外提供 draft 机制，它的原理是新文章将建立在 source/_drafts 目录下，因此 hexo generate 并不会将其编译到 public 目录下，所以 hexo deploy 也不会将其部署到 GitHub。
-hexo S --draft
-虽然 hexo generate 不会编译 source/_drafts 目录下的文章，但 Hexo 的 Hexo server 另外提供 --draft 参数，这让我们只要搭配 hexo-browsersync plugins，就可以达到一边编辑 markdown 文章，一边使用浏览器预览的目的。
-将草稿发布为正式文章
-hexo P &lt;filename&gt;
-其中 &lt;filename&gt; 为不包含 md 后缀的文章名称。它的原理只是将文章从 source/_drafts 移动到 source/_posts 而已。
-之后的 hexo generate 与 hexo deploy 的用法就完全一样了。
-若日后想将正式文章转为为草稿，只需手动将文章从 source/_posts 目录移动到 source/_drafts 目录即可。
-新建普通页面
-这种形式类似是“关于”，“了解我们”之类的文章。
-hexo new page c
-创建一个标题为c的page
-和前两种不同，这个命令会在source文件夹内创建出c文件夹，与_posts，_drafts并列。文件夹里面有一个index.md文件。
-注意：刷新页面后，c并没有出现在页面中，而是需要访问http://localhost:4000/c/才可以看到。
-hexo命令速记
-# 开启服务
-hexo server
-
-# 新建文章
-hexo new a
-
-# 新建草稿
-hexo new draft b
-
-# 发布草稿成为文章
-hexo publish b
-
-# 普通页面
-hexo new page c
-
-# 清空缓存
-hexo clean
-# 生成静态文章
-hexo generate 或者是 hexo g
-# 部署文章
-hexo deploy 或者是 hexo d
-Front-matter
-Front-matter 是文件最上方以 --- 分隔的区域，用于指定个别文件的变量，举例来说：
----
-title: Hello World
-date: 2013/7/13 20:46:25
----
-以下是预先定义的参数，您可在模板中使用这些参数值并加以利用。
-
-
-
-参数
-描述
-默认值
-
-
-
-
-layout
-布局
-config.default_layout
-
-
-title
-标题
-文章的文件名
-
-
-date
-建立日期
-文件建立日期
-
-
-updated
-更新日期
-文件更新日期
-
-
-comments
-开启文章的评论功能
-true
-
-
-tags
-标签（不适用于分页）
-
-
-
-categories
-分类（不适用于分页）
-
-
-
-permalink
-覆盖文章网址
-
-
-
-excerpt
-Page excerpt in plain text. Use this plugin to format the text
-
-
-
-disableNunjucks
-Disable rendering of Nunjucks tag {{ }}/{% %} and tag plugins when enabled
-
-
-
-lang
-Set the language to override auto-detection
-Inherited from _config.yml
-
-
-
-布局
-The default layout is post, in accordance to the value of default_layout setting in _config.yml. When the layout is disabled (layout: false) in an article, it will not be processed with a theme. However, it will still be rendered by any available renderer: if an article is written in Markdown and a Markdown renderer (like the default hexo-renderer-marked) is installed, it will be rendered to HTML.
-Tag plugins are always processed regardless of layout, unless disabled by the disableNunjucks setting or renderer.
-分类和标签
-只有文章支持分类和标签，您可以在 Front-matter 中设置。在其他系统中，分类和标签听起来很接近，但是在 Hexo 中两者有着明显的差别：分类具有顺序性和层次性，也就是说 Foo, Bar 不等于 Bar, Foo；而标签没有顺序和层次。
-categories:
-- Diary
-tags:
-- PS3
-- Games
-warn 分类方法的分歧
-
-  如果您有过使用 WordPress 的经验，就很容易误解 Hexo 的分类方式。WordPress 支持对一篇文章设置多个分类，而且这些分类可以是同级的，也可以是父子分类。但是 Hexo 不支持指定多个同级分类。下面的指定方法：
-categories:
-  - Diary
-  - Life
-会使分类Life成为Diary的子分类，而不是并列分类。因此，有必要为您的文章选择尽可能准确的分类。
-如果你需要为文章添加多个分类，可以尝试以下 list 中的方法。
-categories:
-- [Diary, PlayStation]
-- [Diary, Games]
-- [Life]
-此时这篇文章同时包括三个分类： PlayStation 和 Games 分别都是父分类 Diary 的子分类，同时 Life 是一个没有子分类的分类。
-
-  
-JSON Front-matter
-除了 YAML 外，你也可以使用 JSON 来编写 Front-matter，只要将 --- 代换成 ;;; 即可。
-"title": "Hello World",
-"date": "2013/7/13 20:46:25"
-;;;
-主题Front-matter
-不同主题还有自己定义的Front-matter，以提供不同的特殊功能
-Front-matter 选项详解
-Front-matter 选项中的所有内容均为非必填的。但我仍然建议至少填写 title 和 date 的值。
-
-
-
-配置选项
-默认值
-描述
-
-
-
-
-title
-Markdown 的文件标题
-文章标题，强烈建议填写此选项
-
-
-date
-文件创建时的日期时间
-发布时间，强烈建议填写此选项，且最好保证全局唯一
-
-
-author
-根 _config.yml 中的 author
-文章作者
-
-
-img
-featureImages 中的某个值
-文章特征图，推荐使用图床(腾讯云、七牛云、又拍云等)来做图片的路径.如: http://xxx.com/xxx.jpg
-
-
-top
-true
-推荐文章（文章是否置顶），如果 top 值为 true，则会作为首页推荐文章
-
-
-hide
-false
-隐藏文章，如果hide值为true，则文章不会在首页显示
-
-
-cover
-false
-v1.0.2版本新增，表示该文章是否需要加入到首页轮播封面中
-
-
-coverImg
-无
-v1.0.2版本新增，表示该文章在首页轮播封面需要显示的图片路径，如果没有，则默认使用文章的特色图片
-
-
-password
-无
-文章阅读密码，如果要对文章设置阅读验证密码的话，就可以设置 password 的值，该值必须是用 SHA256 加密后的密码，防止被他人识破。前提是在主题的 config.yml 中激活了 verifyPassword 选项
-
-
-toc
-true
-是否开启 TOC，可以针对某篇文章单独关闭 TOC 的功能。前提是在主题的 config.yml 中激活了 toc 选项
-
-
-mathjax
-false
-是否开启数学公式支持 ，本文章是否开启 mathjax，且需要在主题的 _config.yml 文件中也需要开启才行
-
-
-summary
-无
-文章摘要，自定义的文章摘要内容，如果这个属性有值，文章卡片摘要就显示这段文字，否则程序会自动截取文章的部分内容作为摘要
-
-
-categories
-无
-文章分类，本主题的分类表示宏观上大的分类，只建议一篇文章一个分类
-
-
-tags
-无
-文章标签，一篇文章可以多个标签
-
-
-keywords
-文章标题
-文章关键字，SEO 时需要
-
-
-reprintPolicy
-cc_by
-文章转载规则， 可以是 cc_by, cc_by_nd, cc_by_sa, cc_by_nc, cc_by_nc_nd, cc_by_nc_sa, cc0, noreprint 或 pay 中的一个
-
-
-
-
-注意:
-
-如果 img 属性不填写的话，文章特色图会根据文章标题的 hashcode 的值取余，然后选取主题中对应的特色图片，从而达到让所有文章的特色图各有特色。
-date 的值尽量保证每篇文章是唯一的，因为本主题中 Gitalk 和 Gitment 识别 id 是通过 date 的值来作为唯一标识的。
-如果要对文章设置阅读验证密码的功能，不仅要在 Front-matter 中设置采用了 SHA256 加密的 password 的值，还需要在主题的 _config.yml 中激活了配置。有些在线的 SHA256 加密的地址，可供你使用：开源中国在线工具、chahuo、站长工具。
-您可以在文章md文件的 front-matter 中指定 reprintPolicy 来给单个文章配置转载规则
-
-
-以下为文章的 Front-matter 示例。
-最简示例
----
-title: typora-vue-theme主题介绍
-date: 2018-09-07 09:25:00
----
-使用模板
-
-hexo new使用的模板，最好自己定制修改
-下面是博主使用的
-
-scaffolds/post.md
----
-layout: post
-title: {{ title }}
-date: {{ date }}
-author: 夜法之书
-categories: [web]	# 文章分类 建议只写一个
-tags: # 文章标签 文章卡片显示用
-    - EncryptedTag
-    - web
-    - http
-keywords: web, http	# seo标签
-summary: 简介，这里修改
-img: /medias_webp/cover/write.webp
-top: false      # 首页推荐文件
-hide: false
-cover: false    # 首页轮播
-coverImg: /medias_webp/cover/write.webp
-toc: true       # 是否开启目录
-tochide: false   # 默认是否隐藏目录
-mathjax: false
-mermaid: false
-echarts: false
-comments: true
-# password: false 	# SHA256 string  matery主题自带加密
-reprintPolicy: cc_by_nc_sa
-# password: ""    # hexo-blog-encrypt 插件需要的
-wrong_pass_message: 抱歉, 这个密码看着不太对, 请再试试.
-wrong_hash_message: 抱歉, 这个文章不能被校验, 不过您还是能看看解密后的内容.
----
-
-&gt; 简介
-&gt; 
-
-&lt;!-- more --&gt;
-图片
-
-正文
-
-参考
-hexo内置标签
-
-所有hexo主题都支持的标签
-
-quote
-{% blockquote [author[, source]] [link] [source_link_title] %}
-content
-{% endblockquote %}
-没有提供参数，则只输出普通的 blockquote
-{% blockquote %}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque hendrerit lacus ut purus iaculis feugiat. Sed nec tempor elit, quis aliquam neque. Curabitur sed diam eget dolor fermentum semper at eu lorem.
-{% endblockquote %}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque hendrerit lacus ut purus iaculis feugiat. Sed nec tempor elit, quis aliquam neque. Curabitur sed diam eget dolor fermentum semper at eu lorem.
-
-引用书上的句子
-{% blockquote David Levithan, Wide Awake %}
-Do not just seek happiness for yourself. Seek happiness for all. Through kindness. Through mercy.
-{% endblockquote %}
-Do not just seek happiness for yourself. Seek happiness for all. Through kindness. Through mercy.
-David LevithanWide Awake
-引用 Twitter
-{% blockquote @DevDocs https://twitter.com/devdocs/status/356095192085962752 %}
-NEW: DevDocs now comes with syntax highlighting. http://devdocs.io
-{% endblockquote %}
-NEW: DevDocs now comes with syntax highlighting. http://devdocs.io
-@DevDocstwitter.com/devdocs/status/356095192085962752
-引用网络上的文章
-{% blockquote Seth Godin http://sethgodin.typepad.com/seths_blog/2009/07/welcome-to-island-marketing.html Welcome to Island Marketing %}
-Every interaction is both precious and an opportunity to delight.
-{% endblockquote %}
-Every interaction is both precious and an opportunity to delight.
-Seth GodinWelcome to Island Marketing
-代码块
-在文章中插入代码。
-markdown支持行内代码和区块代码
-
-`行代码`
-
-```
-代码块
-```
-别名： code
-{% codeblock [title] [lang:language] [url] [link text] [additional options] %}
-code snippet
-{% endcodeblock %}
-Specify additional options in option:value format, e.g. line_number:false first_line:5.
-
-
-
-Extra Options
-Description
-Default
-
-
-
-
-line_number
-Show line number
-true
-
-
-line_threshold
-Only show line numbers as long as the numbers of lines of the code block exceed such threshold.
-0
-
-
-highlight
-Enable code highlighting
-true
-
-
-first_line
-Specify the first line number
-1
-
-
-mark
-Line highlight specific line(s), each value separated by a comma. Specify number range using a dash Example: mark:1,4-7,10 will mark line 1, 4 to 7 and 10.
-
-
-
-wrap
-Wrap the code block in ``
-true
-
-
-
-样例
-普通的代码块
-{% codeblock %}
-alert('Hello World!');
-{% endcodeblock %}
-alert('Hello World!');
-指定语言
-{% codeblock lang:objc %}
-[rectangle setX: 10 y: 10 width: 20 height: 20];
-{% endcodeblock %}
-[rectangle setX: 10 y: 10 width: 20 height: 20];
-附加说明
-{% codeblock Array.map %}
-array.map(callback[, thisArg])
-{% endcodeblock %}
-Array.maparray.map(callback[, thisArg])
-附加说明和网址
-{% codeblock _.compact http://underscorejs.org/#compact Underscore.js %}
-_.compact([0, 1, false, 2, '', 3]);
-=&gt; [1, 2, 3]
-{% endcodeblock %}
-_.compactUnderscore.js_.compact([0, 1, false, 2, '', 3]);
-=&gt; [1, 2, 3]
-Include Code
-插入 source/downloads/code 文件夹内的代码文件。source/downloads/code 不是固定的，取决于你在配置文件中 code_dir 的配置。
-{% include_code [title] [lang:language] [from:line] [to:line] path/to/file %}
-样例
-嵌入 test.js 文件全文
-{% include_code lang:javascript test.js %}
-只嵌入第 3 行
-{% include_code lang:javascript from:3 to:3 test.js %}
-嵌入第 5 行至第 8 行
-{% include_code lang:javascript from:5 to:8 test.js %}
-嵌入第 5 行至文件结束
-{% include_code lang:javascript from:5 test.js %}
-嵌入第 1 行至第 8 行
-{% include_code lang:javascript to:8 test.js %}
-Pull Quote
-在文章中插入 Pull quote。
-{% pullquote [class] %}
-content
-{% endpullquote %}
-jsFiddle
-在文章中嵌入 jsFiddle。
-{% jsfiddle shorttag [tabs] [skin] [width] [height] %}
-Gist
-在文章中嵌入 Gist。
-{% gist gist_id [filename] %}
-iframe
-在文章中插入 iframe。
-{% iframe url [width] [height] %}
-Image
-在文章中插入指定大小的图片。
-{% img [class names] /path/to/image [width] [height] '"title text" "alt text"' %}
-Link
-在文章中插入链接，并自动给外部链接添加 target="_blank" 属性。
-{% link text url [external] [title] %}
-Youtube
-在文章中插入 Youtube 视频。
-{% youtube video_id [type] [cookie] %}
-Examples
-视频
-{% youtube lJIrF4YjHfQ %}
-播放列表
-{% youtube PL9hW1uS6HUfscJ9DHkOSoOX45MjXduUxo 'playlist' %}
-隐私模式
-禁止 YouTube cookie
-{% youtube lJIrF4YjHfQ false %}
-{% youtube PL9hW1uS6HUfscJ9DHkOSoOX45MjXduUxo 'playlist' false %}
-Vimeo
-在文章中插入 Vimeo 视频。
-{% vimeo video_id %}
-Raw
-如果您想在文章中插入 Swig 标签，可以尝试使用 Raw 标签，以免发生解析异常。
-{% raw %}
-content
-{% endraw %}
-引用文章
-引用其他文章的链接。
-{% post_path filename %}
-{% post_link filename [title] [escape] %}
-在使用此标签时可以忽略文章文件所在的路径或者文章的永久链接信息、如语言、日期。
-例如，在文章中使用 {% post_link how-to-bake-a-cake %} 时，只需有一个名为 how-to-bake-a-cake.md 的文章文件即可。即使这个文件位于站点文件夹的 source/posts/2015-02-my-family-holiday 目录下、或者文章的永久链接是 2018/en/how-to-bake-a-cake，都没有影响。
-默认链接文字是文章的标题，你也可以自定义要显示的文本。
-默认对文章的标题和自定义标题里的特殊字符进行转义。可以使用escape选项，禁止对特殊字符进行转义。
-链接使用文章的标题
-{% post_link hexo-3-8-released %}
-链接使用自定义文字
-{% post_link hexo-3-8-released '通往文章的链接' %}
-对标题的特殊字符进行转义
-{% post_link hexo-4-released 'How to use &lt;b&gt; tag in title' %}
-禁止对标题的特殊字符进行转义
-{% post_link hexo-4-released '&lt;b&gt;bold&lt;/b&gt; custom title' false %}
-引用资源
-引用文章的资源。
-{% asset_path filename %}
-{% asset_img [class names] slug [width] [height] [title text [alt text]] %}
-{% asset_link filename [title] [escape] %}
-资源（Asset）代表 source 文件夹中除了文章以外的所有文件，例如图片、CSS、JS 文件等。比方说，如果你的Hexo项目中只有少量图片，那最简单的方法就是将它们放在 source/images 文件夹中。然后通过类似于 ![](/images/image.jpg) 的方法访问它们。
-对于那些想要更有规律地提供图片和其他资源以及想要将他们的资源分布在各个文章上的人来说，Hexo也提供了更组织化的方式来管理资源。这个稍微有些复杂但是管理资源非常方便的功能可以通过将 config.yml 文件中的 post_asset_folder 选项设为 true 来打开。
-_config.ymlpost_asset_folder: true
-当资源文件管理功能打开后，Hexo将会在你每一次通过 hexo new [layout] &lt;title&gt; 命令创建新文章时自动创建一个文件夹。这个资源文件夹将会有与这个文章文件一样的名字。将所有与你的文章有关的资源放在这个关联文件夹中之后，你可以通过相对路径来引用它们，这样你就得到了一个更简单而且方便得多的工作流。
-相对路径引用的标签插件
-通过常规的 markdown 语法和相对路径来引用图片和其它资源可能会导致它们在存档页或者主页上显示不正确。在Hexo 2时代，社区创建了很多插件来解决这个问题。但是，随着Hexo 3 的发布，许多新的标签插件被加入到了核心代码中。这使得你可以更简单地在文章中引用你的资源。
-{% asset_path slug %}
-{% asset_img slug [title] %}
-{% asset_link slug [title] %}
-比如说：当你打开文章资源文件夹功能后，你把一个 example.jpg 图片放在了你的资源文件夹中，如果通过使用相对路径的常规 markdown 语法 ![](example.jpg) ，它将 不会 出现在首页上。（但是它会在文章中按你期待的方式工作）
-正确的引用图片方式是使用下列的标签插件而不是 markdown ：
-{% asset_img example.jpg This is an example image %}
-通过这种方式，图片将会同时出现在文章和主页以及归档页中。
-Embedding an image using markdown
-hexo-renderer-marked 3.1.0 introduced a new option that allows you to embed an image in markdown without using asset_img tag plugin.
-To enable:
-_config.ymlpost_asset_folder: true
-marked:
-  prependRoot: true
-  postAsset: true
-Once enabled, an asset image will be automatically resolved to its corresponding post’s path. For example, “image.jpg” is located at “/2020/01/02/foo/image.jpg”, meaning it is an asset image of “/2020/01/02/foo/“ post, ![](image.jpg) will be rendered as &lt;img src="/2020/01/02/foo/image.jpg"&gt;.
-Embed image
-hexo-renderer-marked 3.1.0+ can (optionally) resolves the post’s path of an image automatically, refer to this section on how to enable it.
-“foo.jpg” is located at http://example.com/2020/01/02/hello/foo.jpg.
-Default (no option)
-{% asset_img foo.jpg %}
-&lt;img src="/2020/01/02/hello/foo.jpg"&gt;
-Custom class
-{% asset_img post-image foo.jpg %}
-&lt;img src="/2020/01/02/hello/foo.jpg" class="post-image"&gt;
-Display size
-{% asset_img foo.jpg 500 400 %}
-&lt;img src="/2020/01/02/hello/foo.jpg" width="500" height="400"&gt;
-Title &amp; Alt
-{% asset_img logo.svg "lorem ipsum'dolor'" %}
-&lt;img src="/2020/01/02/hello/foo.jpg" title="lorem ipsum" alt="dolor"&gt;
-文章摘要和截断
-在文章中使用 &lt;!-- more --&gt;，那么 &lt;!-- more --&gt; 之前的文字将会被视为摘要。首页中将只出现这部分文字，同时这部分文字也会出现在正文之中。
-例如：
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-&lt;!-- more --&gt;
-Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-首页中将只会出现
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-正文中则会出现
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-
-Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-注意，摘要可能会被 Front Matter 中的 excerpt 覆盖。
-引用数据
-有时您可能需要在主题中使用某些资料，而这些资料并不在文章内，并且是需要重复使用的，那么您可以考虑使用 Hexo 3.0 新增的「数据文件」功能。此功能会载入 source/_data 内的 YAML 或 JSON 文件，如此一来您便能在网站中复用这些文件了。
-举例来说，在 source/_data 文件夹中新建 menu.yml 文件：
-Home: /
-Gallery: /gallery/
-Archives: /archives/
-您就能在模板中使用这些资料：
-&lt;% for (var link in site.data.menu) { %&gt;
-  &lt;a href="&lt;%= site.data.menu[link] %&gt;"&gt; &lt;%= link %&gt; &lt;/a&gt;
-&lt;% } %&gt;
-渲染结果如下 :
-&lt;a href="/"&gt; Home &lt;/a&gt;
-&lt;a href="/gallery/"&gt; Gallery &lt;/a&gt;
-&lt;a href="/archives/"&gt; Archives &lt;/a&gt;
-Markdown写作
-
-下文着重介绍了MarkDown语法
-
-
-    
-        
-    
-    
-        Joplin 插件以及其Markdown语法。All in One!
-        
-        Joplin 实用插件介绍，以及Markdown语法说明。All in One! 强烈推荐，绝对是替代各种商业等笔记工具的第一选择。
-    
-
-中文技术文档的写作规范
-
-直接访问 中文技术文档的写作规范
-hexo插件强化写作
-
-下文介绍了一些Markdown语法，和一些常用的有用的Hexo插件
-
-
-    
-        
-    
-    
-        Hexo Markdown以及各种插件功能测试
-        
-        hexo matery hexo博客的一些功能测试，新插件的靶场。数学公式，Mermaid,plantuml图表绘制，音乐视频插入，bilibilid、豆瓣卡片等等。
-    
-
-主题插件
-
-很多主题内置很多tag语法，可以大大美化最终呈现效果
-
-使用fontawesome图标
-
-醒目度提升一大个等级！
-更多图标，这里查找 fontawesome
-
-
- 支持Markdown
-Hexo 支持 GitHub Flavored Markdown 的所有功能, 甚至可以整合 Octopress 的大多数插件. 
- 一键部署
-只需一条指令即可部署到Github Pages, 或其他网站
- 丰富的插件
-Hexo 拥有强大的插件系统, 安装插件可以让 Hexo 支持 Jade, CoffeeScript. 
-
-- &lt;i class="fas fa-pencil-alt"&gt;&lt;/i&gt; 支持Markdown
-&lt;i&gt;Hexo 支持 GitHub Flavored Markdown 的所有功能, 甚至可以整合 Octopress 的大多数插件. &lt;/i&gt;
-- &lt;i class="fas fa-cloud-upload-alt"&gt;&lt;/i&gt; 一键部署
-&lt;i&gt;只需一条指令即可部署到Github Pages, 或其他网站&lt;/i&gt;
-- &lt;i class="fas fa-cog"&gt;&lt;/i&gt; 丰富的插件
-&lt;i&gt;Hexo 拥有强大的插件系统, 安装插件可以让 Hexo 支持 Jade, CoffeeScript. &lt;/i&gt;
-
-
-
-`&lt;i class="fab fa-github"&gt;&lt;/i&gt;`
-`&lt;i class="fab fa-github fa-lg"&gt;&lt;/i&gt;`
-`&lt;i class="fab fa-github fa-2x"&gt;&lt;/i&gt;`
-使用颜文字
-
-颜文字算是中文圈特有的文化符号了  (｡◕‿◕｡)ﾉ♥
-
-击掌/打招呼 ╭(●｀∀´●)╯╰(●’◡’●)╮ (●’◡’●)ﾉ ヾ(*´▽‘*)ﾉ
-
-手拉手 ╭(′▽`)╭(′▽`)╯
-
-好困呀（揉眼睛 ( ‘-ωก̀ )
-
-已阅留爪 &nbsp;(ฅ´ω`ฅ)
-
-勾手指可萌啦 ( ｡ớ ₃ờ)ھ
-
-开心 &nbsp;♪（＾∀＾●）ﾉｼ （●´∀｀）♪
-
-爱你么么哒 ( ˘ ³˘)♥ ( ˘ ³˘) •́ε•̀)ฅ (๑•́ ₃•̀๑٥) (๑ºั ³ ˘๑)♥ (๑ơ ₃ ơ)ﻌﻌﻌ♥ (ㆀ˘･з･˘)
-
-ε٩(๑&gt; ₃ &lt;)۶з
-
-爱心眼 ( •́ .̫ •̀ ) (´・ω・`) (●′ω`●) (´,,•ω•,,‘) (´；ω；‘) (´・н・‘) (›´ω`‹ ) (๑•ั็ω•็ั๑)( ˘•ω•˘ ) (●´ϖ`●) ( •̀∀•́ )
-
-疑问 &nbsp;◔ ‸◔？ （⊙.⊙）
-
-逃跑 ε=ε=ε=ε=ε=ε=┌(;￣◇￣)┘
-
-撒花 ｡:.ﾟヽ(｡◕‿◕｡)ﾉﾟ.:｡+ﾟ
-
-瞥眼 &nbsp;(¬､¬) (￢_￢)
-
-盯 &nbsp;≖‿≖✧ &nbsp;o‿≖✧ (๑•̀ㅂ•́)و✧
-
-中老年人/脸红系列 &nbsp;( ˙灬˙ ) (´•灬•‘) ε٩ (๑&gt; 灬 &lt;)۶з ( ˘•灬•˘ )(´-灬-‘) (๑´灬`๑) ٩(๑`灬´๑)۶ (•̅灬•̅ ) (๑ơ 灬 ơ) (ง •̀灬•́)ง
-
-加油！ (ง •̀_•́)ง (*•̀ㅂ•́)و
-
-无奈 &nbsp;╮(๑•́ ₃•̀๑)╭
-
-猫爪 ฅ’ω’ฅ ฅ(๑˙o˙๑)ฅ ٩(๛˘³˘)۶♥ ฅ(๑*д*๑)ฅ ฅ(๑˙o˙๑)ฅ ʕ•̀ω•́ʔ✧ (๑•̀ㅁ•́ฅ)ฅʕ•̫͡•ʔฅ ʕ•͡-•ʔ
-
-伸懒腰 &nbsp;٩(๑´0`๑)۶
-
-害羞 &nbsp;（//▽//）
-
-委屈 (,,•́ . •̀,,) (๑•́ ₃•̀๑) (๑•́ ₃ •̀),,Ծ‸Ծ,,
-
-着急/救命系列 &nbsp; ﾍ(;´Д｀ﾍ) (/ﾟДﾟ)/ (*゜ロ゜)ノ Σ( ￣д￣；) ！！！ Σ(っ °Д °;)っ ( •̀д•́) Σ( ° △ °|||)︴ =´Å‘=
-
-各种哭法 π__π &nbsp;T.T &nbsp;ε(┬┬＿┬┬)3 &nbsp;╥﹏╥ &nbsp;┬＿┬ &nbsp;(╥╯^╰╥)
-
-冒汗皱眉系列 (;¬_¬) ( ´◔ ‸◔`) (눈_눈) ( ∙̆ .̯ ∙̆ ) (;￢д￢) (“▔□▔)
-
-呆子 &nbsp;(•ิ_•ิ)
-
-认真脸 &nbsp;(..•˘_˘•..)
-
-喂喂 ((٩(//̀Д/́/)۶))
-
-盖被子 &nbsp;(:3[▓▓] (:3[▓▓▓▓▓▓▓▓▓] (¦3[▓▓]
-
-爬地 _(:з」∠)_ &nbsp;_(:qゝ∠)_ &nbsp;_(・ω・｣ ∠)_
-
-嘿嘿嘿 &nbsp;๑乛◡乛๑ (●´∀｀●)
-
-闭眼满足 &nbsp;(｡￫‿￩｡) （๑￫‿ฺ￩๑）（=ˇωˇ=）（⺻▽⺻ ）&lt;(￣︶￣)&gt;(•‾̑⌣‾̑•)✧˖° (๑˘ ˘๑)&nbsp; ♥(｡￫v￩｡)♥
-
-哇呀 &gt;ㅂ&lt; &nbsp;(๑&gt;m&lt;๑) &nbsp;o(&gt;ω&lt;)o &nbsp;≥▽≤
-
-噜啦啦 &nbsp; (づ￣ 3￣)づ ( ˙ε ˙ ) 乛 з乛 (￣ε￣) (｡◕ฺˇε ˇ◕ฺ｡）(๑¯ิε ¯ิ๑) ( ´´ิ∀´ )
-
-流口水 &nbsp;ԅ(¯﹃¯ԅ) （¯﹃¯）
-
-好呲 &nbsp;(๑´ڡ`๑) (๑＞ڡ＜)☆
-
-生气 &nbsp;(｀д′) (￣^￣) 哼！ &lt;(｀^′)&gt;
-
-瞪眼 &nbsp;٩͡[๏̯͡๏]
-
-掀桌系列
-
-无表情掀桌 ( ╯-_-)╯┴—┴ (ノ—_—)ノ~┴————┴ （╯－＿－）╯╧╧ （ノ*-_-*)ノ┴—┴&nbsp;
-
-娇蛮掀桌 (/= _ =)/~┴┴
-
-无语掀 （╯#-_-)╯╧═╧ ( ╯#-_-)╯┴—┴
-
-大力掀 (╯#-_-)╯~~~~~~~~~~~~~~~~~╧═╧&nbsp;
-
-抓狂掀桌 (╯￣Д￣)╯╘═╛ (ノ=Д=)ノ┻━┻ （╯#-皿-)╯~~╧═╧ (╯’ – ‘)╯︵ ┻━┻
-
-再他妈的掀一次 (╯°Д°)╯︵ ┻━┻ (｀□′)╯┴┴ ┴—┴ ╰(｀□′╰)
-
-泪奔掀桌 ((ノ*T_T*)ノ┴—┴ (┙&gt;∧&lt;)┙へ┻┻
-
-摆好 （\#-_-)\┯━┯ 桌放好 ┬─┬ ノ( ‘ – ‘ノ) 摆好摆好
-
-其它 ╭(￣▽￣)╯╧═╧ 单手掀 ╧═╧(-_-)╧═╧ 桌子飞人
-
-卖萌
-
-(•‾̑⌣‾̑•)✧˖°(๑¯ิε ¯ิ๑) (๑•́ ₃ •̀๑) ( ∙̆ .̯ ∙̆ ) (๑˘ ˘๑) (●′ω`●) ︶ε╰✿ ✿◡‿◡ (●･̆⍛･̆●)
-
-♫ ♫♬♪♫ ヾ(。◕ฺ∀◕ฺ)ノ♫♬ 。ﾟ+.ﾟヽ(●´ω｀●)ﾉ。 （●´3｀）~♪
-
-（●&gt;∀&lt;●）ィェ━ィ★彡 ♥♥(o￫ܫ￩o)♫ (〃＾∇＾)ぇ∧∧∧っ
-
-*゜✲ฺ(✿◕ฺ ∀◕ฺ)ฺノ†゜* （●´д｀）.。o
-
-ヽ(.◕ฺˇд ˇ◕ฺ;)ﾉ
-
-((٩(//̀Д/́/)۶)) (´；ω；`) ( `)3′) &nbsp;v(ﾟｰﾟ) =≡Σ((( つ•̀ω•́)つ
-
-(；′⌒`) ╰(*´︶`*)╯ ( ´´ิ∀´ิ` ) (´∩｀。) ( ื▿ ื) (｡ŏ_ŏ) ( •ิ _ •ิ ) ヽ(*΄◞ิ౪◟ิ‵ *)ﾉ ( ˘ ³˘)
-
-(๑&gt;m&lt;๑) (; ´_ゝ`) (*ˉ﹃ˉ) (◍’౪`◍)ﾉﾞ (｡◝‿◜｡) (ಠ .̫.̫ ಠ) (´◞⊖◟`) (。≖ˇェˇ≖｡) ℰ⋆‿⋆ℰ
-
-(ಠ .̫.̫ ಠ) p(´⌒｀｡q) ┗(´D`* (´D`*(´D`*)┛ &lt;(▰˘◡˘▰)&gt; (・ω&lt; )★ (*ﾟｪﾟ*) ✧ (≖ ‿ ≖)✧
-
-(◕ܫ◕) (｀◕‸◕´+) (▼ _ ▼) ( ◉ืൠ◉ื) ㄟ(◑‿◐ )ㄏ (●’◡’●)ﾉ♥ (｡◕ˇ∀ˇ◕） ~Ⴚ(●ტ●)Ⴢ~
-
-⊙.⊙ ( ◔ ڼ ◔ ) ( ´◔ ‸◔`) (☍﹏⁰) (♥◠‿◠)ﾉ ✪ω✪ ʅ(‾◡◝)ʃ (๑°3°๑) ლ(╹◡╹ლ )
-
-இwஇ (๑꒪◞౪◟꒪๑) (๑◕ܫ￩๑)b (*☉౪⊙*)　ヾ(o゜_,゜o)ノ ლↀѡↀლ (｡▰´◞◟｀▰｡)
-
-( ͡° ͜ʖ ͡°) 　( ͡° ͜ʖ ͡°)✧ (*゜ロ゜)ノ 　 ( ´･∀･｀) °(°ˊДˋ°) ° (つ﹏⊂) –\(˙&lt;&gt;˙)/-
-
-心情好 萌 满足
-
-ლ(´ڡ`ლ) (*≧m≦*) (*･ω･) ヾ(｡･ω･｡) (=ﾟωﾟ)ﾉ (○’ω’○) (´・ω・`) (。-`ω´-) (。⌒∇⌒)。(ﾉ≧∀≦)ﾉ
-
-(￣ω￣;) (◡‿◡✿) (◕‿◕✿) ♪(^∇^*) o(^▽^)o (●´▽｀●) (=￣ω￣=) o(*￣▽￣*)ブ (￣ε￣*) ( o｀ω′)
-
-o((&gt;ω&lt; ))o o(〃’▽’〃)o (＠゜▽゜) (*＾-゜)v ＼( ^▽^ )／ (｡・`ω´･) o(*////▽////*)q (・ω&lt; )★
-
-(*〞艸〝) (◍’౪`◍)ﾉﾞ(●’◡’●)ﾉ♥ヾ(o゜_,゜o)ノ (๑＞ڡ＜)☆ (・∀・(・∀・(・∀・*) ლ(･ิω･ิლ) (๑°3°๑)
-
-(˘❥˘) ︶ε╰✿ ƪ(•̃͡ε•̃͡)∫ʃ (*^︹^*)♡ ヽ(ｏﾟ∀ﾟｏ)ﾉ •́ε•̀~ ˇ▽ˇ （´◔౪◔）٩(๛ ˘ ³˘)۶ (๑•́ ₃ •̀๑) (*¯︶¯*) (●′ω`●)
-
-(U◕‿‿◕U）（*/ω＼*）(´இωஇ｀)゜(´∀｀)♡ (ღ˘⌣˘ღ) ヽ(○´∀`)ﾉ♪ (*´∀`*) (⁎⚈᷀᷁ᴗ⚈᷀᷁⁎) ( ´･◡･` )
-
-心情不好
-
-(→_←) (︶︹︺) （ﾉ´д｀）(･_-｡ ) ˋ(′～‵”)ˊ(　TロT)σ ( T﹏T ) (; ´_ゝ`) (,,Ծ‸Ծ,,) (ಥ_ಥ) ( ꈨຶ ˙̫̮ ꈨຶ )
-
-(;´༎ຶД༎ຶ`) (⌇ຶД⌇ຶ) (＞人＜) (°̥̥̥̥̥̥̥̥-°̥̥̥̥̥̥̥̥ ) థ౪థ இдஇ p(´⌒｀｡q) ( ´•︵•` ) º·(˚ ˃̣̣̥᷄⌓˂̣̣̥᷅ )‧º·˚ (´-ι_-｀) (┳◇┳) ( &gt;﹏&lt;。)～ ( ̤இॕ⌓இॕ ̤) °(ಗдಗ。)° (´இ皿இ｀)゜(´；ω；｀) ｡：ﾟ(｡ﾉω＼｡)ﾟ･｡(;*△*;) ( ཀ͝ ∧ ཀ͝ )
-
-呆呆的 无奈和汗颜
-
-〜(￣△￣〜) (〜￣△￣)〜 (*｡_｡) (；￣Д￣）(´Д｀) (*￣m￣) （￣～￣;） (￣ェ￣;) (￣◇￣;)
-
-┐(─__─)┌ (*´Д`) （＝＿＝）(￣ー￣*||| (-_-メ) (￣ ‘i ￣;) (￣ε(#￣) ( ¯▽¯；) (*ﾟｪﾟ*) (。≖ˇェˇ≖｡)
-
-(◒｡◒) ( ᖛ ̫ ᖛ )ʃ) ヽ(´o｀；（；￣ェ￣）( ´Д`)y━･~~
-
-搞怪颜文字
-
-ヘ(￣ω￣ヘ) ♪(┌・。・)┌ (－ｏ⌒) ☆～（ゝ。∂）╮(╯▽╰)╭ (￣︶￣)ψ (ˉ﹃ˉ) ೭(˵¯̴͒ꇴ¯̴͒˵)౨
-
-_(:з」∠)_ ( ◉ืൠ◉ื) 罒ω罒 (☝ ՞ਊ ՞)☝⃔⌄ ⃔ ─=≡Σ((( つ•̀ω•́)つ ٩꒰⍢ ꒱۶⁼³₌₃ Σ(￣。￣ﾉ)ﾉ ฅ(*ơ ₃ơ)ฅ”
-
-(｢･ω･)｢ (。･o･｡)ﾉ ~ (o´〰`o) ( • ̀ω ⁃᷄)✧ (ФwФ) ( ื▿ ื) ◐/v/◐ （ゝω・）(੭ु ‾̑ω‾̑)੭ु⁾⁾
-
-(ू ͒•‧̫•ू⑅ ͒) ᕦ(ò_óˇ)ᕤ ( ͡° ͜ʖ ͡°)
-
-斜眼 鄙视状
-
-(ਛ_≻ਛ) ( ﹁ ﹁ ) (¬д¬。) ( ¬､¬) (;¬_¬) (；¬д¬) (′д｀σ)σ .╮(﹀_﹀”)╭
-
-认真的样子
-
-(`･ω･´)ゞ(๑•̀.̫•́๑) (̿▀̿̿Ĺ̯̿̿▀̿ ̿)̄ ( ‾ʖ̫‾) ( •̀ .̫ •́ )✧ (๑•̀_•́๑) (ง •̀_•́)ง (｀◕‸◕´+) ( ∙̆ .̯ ∙̆ ) (•ิ_•ิ)
-
-惊恐 担心
-
-(,,#ﾟДﾟ) (」゜ロ゜)」 (;° ロ°) ヽ（゜ロ゜；）ノ (￣口￣)!! ┌(。Д。)┐(⊙ˍ⊙) Σ( ° △ °|||)︴
-
-（⊙＿⊙；）… (っ °Д °;)っ щ(゜ロ゜щ)
-
-不满 傲娇状
-
-(￣^￣) o(´^｀)o （￣へ￣）φ(￣ー￣ ) ╮(～▽～)╭ b(￣▽￣)d （￣ c￣）y▂ξ (ˉ▽￣～)
-
-o(一︿一+)o ε＝（＞ε＜）ˋ﹏ˊﾉ(≖ A ≖))ﾉ =3=3=3 (‵▽′)/
-
-气愤
-
-（╬￣皿￣） ヽ(ｏ`皿′ｏ)ﾉ ヽ(≧Д≦)ノ （＞д＜） （;≧皿≦） ヽ(#`Д´)ﾉ [○･｀Д´･○] ヽ( ｀0´)ﾉ
-
-Σ(-`Д´-ﾉ；)ﾉ o(-`д´- ｡) ヽ(●-`Д´-)ノ （｀＾´）ノ (╯‵□′)╯︵ ┴─┴ （╯－＿－）╯╧╧ ┗|｀O′|┛
-
-(o#゜ 曲゜)o (╯‵□′)╯···*～● 凸(艹皿艹 ) (ʘдʘ╬) ╰（‵□′）╯ s(・｀ヘ´・;)ゞ 山(≧皿≦)山
-
-(ノ｀Д´)ノ (┙&gt;∧&lt;)┙へ┻┻
-
-双人
-
-(●ゝω)ノヽ(∀＜●) o(╬￣皿￣)=○# (￣#)3￣) ╭(′▽`)╭(′▽`)╯(￣ε(#￣)☆╰╮o(￣皿￣///)
-
-( *￣▽￣)((≧︶≦*) (～￣▽￣)→))*￣▽￣*)o (┘￣︶￣)┘└(￣︶￣└) (〃￣︶￣)人(￣︶￣〃)
-
-&lt;( ‵□′)───C＜─___-)|| └(￣ ￣└)(┘￣ ￣)┘ ( *￣▽￣)((≧︶≦*) └│∵│┐┌│∵│┘ヽ(*´∀｀)八(´∀｀*)ノ \(“▔□▔)/\(“▔□▔)/ （*＾ω＾）人（＾ω＾*）(((*°▽°*)八(*°▽°*)))♪ヽ(＾▽＾)人(＾▽＾)人(＾▽＾)ﾉ
-
-｡*:★(´・ω・人・ω・`)｡:゜★｡ヽ(∀゜ )人( ゜∀)ノ
-
-得意 &lt;(￣︶￣)&gt; 乾杯 []~(￣▽￣)~* 滿足 (￣ˇ￣) 沒睡醒 (￣﹏￣) 狡猾(‵﹏′)
-
-被打一巴掌 (￣ε(#￣) 無言 (￣.￣) 無奈 ╮(￣▽￣)╭ 裝傻 (￣▽￣)~*
-
-驚訝 (⊙ˍ⊙) 發現(￣.￣)+ 驚嚇 Σ( ° △ °|||)︴ 冷 (￣▽￣)” 沒辦法 ╮(╯▽╰)╭
-
-貓咪臉 (=￣ω￣=) 疑惑 (￣３￣)a 阿達 (￣0 ￣)y 重創 (。_。) 不 (＞﹏＜)
-
-懷疑 (→_→) 睏 (￣o￣) . z Z 崇拜 m( _ _ )m 我想想 (ˇˍˇ) 生氣 &lt;(￣ ﹌ ￣)&gt;
-
-就是你 &lt;(￣ ﹌ ￣)@m
-
-小眼睛
-
-( ・ˍ・) (・ˍ・*) （p・_q） (〃・ｏ・〃) (*^・_・) (。・ˍ・。) (*・０・) (・ε・●) (｡･ω･) (。・д・。) (・∀・) （／ˍ・、） (・□・、*) (・－・。) (・▽・。) (・_・。)
-
-(・O・。) (ノ△・。) (＠・ˍ・) (*・・*) 人(・ε・；) (・ o ・) (・ェ・o) (′・∀・『)
-
-瞇瞇眼
-
-(* ￣ー￣) (￣ー￣〃) (＠￣ー￣＠) (* ￣︿￣) (*￣∇￣*) &lt;(ˍ ˍ*)&gt;
-
-(￣(●●)￣) (￣・・￣) (ー∀ー) (￣ｏ￣) (￣、￣) (*￣△￣*) (￣へ￣) (￣□￣) (￣～￣；) (。-ˍ-。 ) (￣ε￣；) (￣┬￣；) (￣∀￣) (ノへ￣、) (*￣ro￣)
-
-(ー人ー) (*￣ｍ￣)
-
-日系小眼睛
-
-(′▽`〃) ( ′ｏ`) (′ェ`) (′ε` ) (=′ー`) ( ′θ`) (′○` ) ( ′－`) (′∀`=)
-
-(*′▽`) (*′ノ0`) ( ′ロ` ) (′～`；） (′ ︿ `) (*′∇`*) (′ｍ`） (′0ノ`*)
-
-(＠。ε。＠) (=′∇`=） (●′ω`●) (′～`●) (′へ`、 ) (〃′o`) ( ；′⌒`)
-
-日系大眼睛
-
-(ΘΘ) (Θ～Θ〃) (ΘｏΘ) (ΘェΘ) (Θ∀Θ＃) (ΘдΘ；) (Θ皿Θメ) (ΘーΘ*)
-
-(Θ０Θ●) (Θ▽Θ) (ΘεΘ◎) (Θ◇Θ。) (ΘへΘ) (ΘˍΘ＝) (Θ、Θ) (Θ△Θ＠)
-
-(Θ３Θ)
-
-圆珠眼
-
-(°ー°〃) (＃°Д°) (。□。) (*。∀。) (*。∇^*) (* ^ー。)
-
-(＠。ー。 ＠) (。∇^☆) (ｏ。◇。) ( 。 ▽ 。) (＃。ε。＃) (。∇^d) (。・。；) (。皿。メ) (* 。 ３ ^) (〃。 ｏ 。〃) ( °◇ °) ( 。⊿。) (°□°；) ( ロ)。 。 (。Д。 ；) (*。ノO。) (； 。。)
-
-紧闭眼
-
-(&gt;&lt;) (;&gt;&lt;) (&gt;_&lt;) (&gt;.&lt;) (&gt;o&lt;) （＞▽＜） (＞Ｏ＜) (o&gt;▽&lt;) (&gt;◇&lt; ) (&gt;▽&lt;) (;&gt;△&lt;) (&gt;з&lt;) (o&gt;ェ&lt;) (＞д＜) (&gt;皿&lt;) (&gt;_&lt;、) (/_＜。) (&gt;。；) (&gt;。ヘ) (ノ_&lt;) (＞。☆) (&gt;y&lt;;)
-
-小狗嘴
-
-(-ω- ) (+ω+) (*ω* ) ( ^ω^) (;ω;) (。ω。) (『ω′) (・ω・=) (￣ω￣)
-
-(〃ω〃) (≧ω≦) (。・ω・) (=・ω・=) ( ＞ω＜) (′・ω・`) (/ω＼) (/ω・＼)
-
-(/・ω・＼) (ΘωΘ) (ΦωΦ)
-
-悲伤眼
-
-(ＵＵ＊) (ｕｕ〃) (ｕｏｕ〃) (Ｕ３Ｕ*) (●Ｕ_Ｕ●) (ｕ～ｕ=)
-
-(＠Ｕ▽Ｕ＠) (ＵAＵ＊) (Ｕ△Ｕ●) (ｕДｕ〃) (Ｕ◇Ｕ◎) (○ｕAｕ○)
-
-(ｕ▽ｕ＃) (＠Ｕ～Ｕ＠) (ｕ△ｕ＊) (ｕ◇ｕ〃) (ＵДＵ◎) (＝ｕ３ｕ＝)
-
-(ｕ_ｕ＃) (ＵｏＵ＊)
-
-
-
-＜（￣︶￣）＞ 满足且得意
-
-＜（￣︶￣）／ 满足并且伸出手表示赞同
-
-＜（＠￣︶￣＠）＞ 满足地脸红
-
-（＃￣▽￣＃） 害羞
-
-＼（￣︶￣）／ 抱抱
-
-ｂ（￣▽￣）ｄ 竖起双手拇指说好
-
-╰（￣▽￣）╭ 眉飞色舞
-
-（￣︶￣）↗ 出发吧
-
-○（＊￣︶￣＊）○ 吃饱睡好
-
-♀（￣▽￣）／ 优质女孩
-
-♂（￣▽￣）／ 优质男孩
-
-╮（╯◇╰）╭ 啾～啾～亲一个
-
-╭（′▽‵）╭（′▽‵）╭（′▽‵）╯ GO!
-
-（￣▽￣）～■□～（￣▽￣） 干杯
-
-＜（￣︶￣）＞＜（￣︶￣）＞＜（￣︶￣）＞ 当我们同在一起
-
-伤心
-
-（┬＿┬） 流泪
-
-（＞﹏＜） 痛苦
-
-（┬＿┬）↘ 跌倒
-
-〒▽〒 真命苦
-
-生气
-
-…（⊙＿⊙；）… 嘎？
-
-（￣∞￣） 猪！
-
-（︶︿︶） 不满
-
-╰（‵□′）╯ 暴怒
-
-（（‵□′）） 暴怒
-
-（︶︿︶）＝凸 比中指
-
-（╯－＿－）╯╧╧ 翻桌A
-
-（╯‵□′）╯︵┴─┴ 翻桌B
-
-┴─┴︵╰（‵□′╰） 翻桌C
-
-╭∩╮（￣▽￣）╭∩╮ 哼，去你的
-
-┴┴︵╰（‵□′）╯︵┴┴ 拆房子
-
-（╬￣皿￣）＝○＃（￣＃）３￣） 看拳
-
-＜（‵□′）＞───Ｃε（┬＿┬）３ 生气扭耳朵
-
-＜( ￣︿￣)︵θ︵θ︵θ︵θ︵☆（＞口＜－） 无影脚攻击
-
-道歉
-
-〈（＿ ＿）〉 道歉、鞠躬
-
-无奈、尴尬
-
-╮（￣▽￣）╭
-
-╮（╯＿╰）╭
-
-╮（﹀＿﹀）╭
-
-╮（￣﹏￣）╭
-
-ˋ（′～‵）ˊ
-
-┐（─__─）┌
-
-（￣口￣）
-
-（＃－.－）
-
-（─.─||）
-
-≡￣﹏￣≡
-
-其他
-
-（～￣▽￣～） 装傻
-
-\(“▔□▔)/\(“▔□▔)/\(“▔□▔)/ 大冷场
-
-&lt;(￣3￣)&gt;
-
-－(&gt;口＜-)
-
-&lt;(￣ c￣)y▂ξ 抽烟
-
-（￣Ｑ￣）╯ 滚一边去
-
-使用emoji
-⭕✅☑✔✖❌❎🌓🌔🌕🌖🌗🌘🌙🌚🌛🌜☀🌝🌞⭐🌟💉💊
-😀😁😂😃😎😍😘😗😙😚☺😇😐😑😶😏😣😥😮😯😪😫😴😭
-
-更多 emoji 参考 ( 👁️︠ ‿‿ ︡👁️)✊
-
-emoji表情符号
-full-emoji-list
-fsymbols
-
-
-插入html
-跳转位置演示（跳转位置设置点）
-
-我们可以在 Markdown 中插入一些简单的 HTML 代码或 CSS 片段来获得更多扩展，使得文章内容更具有多样性。以下演示几个简单功能。
-
-文字颜色
-#519D9E颜色演示
-&lt;p&gt;&lt;span  style="color: #519D9E; "&gt;#519D9E颜色演示&lt;/span&gt;&lt;/p&gt;
-文字大小
-0.7em 文字大小演示
-&lt;p&gt;&lt;span  style="font-size:0.7em;"&gt;0.7em 文字大小演示&lt;/span&gt;&lt;/p&gt;
-文字位置
-内容居中演示
-&lt;p style="text-align:center"&gt;内容居中演示&lt;/p&gt; # 可以修改 text-align 参数来设置文字位置。
-页内跳转
-点击到达跳转位置演示
-&lt;a ignore-external-link href="#demo"&gt;点击到达跳转位置演示&lt;/a&gt; # 在需要跳转的地方添加此代码。
-&lt;a ignore-external-link id="demo"&gt;跳转位置演示（跳转位置设置点）&lt;/a&gt; # 在跳转位置添加次代码。
-综合演示
-
-综合演示
-
-优雅使用 Hexo 写文章
-
-&lt;p style="text-align:center;color:#8EC0E4;font-size:1.5em;font-weight: bold;"&gt;
-综合演示
-&lt;br&gt;
-优雅使用 Hexo 写文章
-&lt;/p&gt;
-iframe 页面镶套
-iframe 页面镶套可以帮助我们更好的展示一个页面。比如以下演示页面。
-iframe自动加载
-
-&lt;iframe src="/galleries/" width="100%" height="500" name="topFrame" scrolling="yes"  noresize="noresize" frameborder="0" id="topFrame" loading="lazy"&gt;&lt;/iframe&gt;
-iframe鼠标点击加载
-  
-     点击加载主页 
-     点击加载相册 
-  
-    
-
-  &lt;ul&gt;
-    &lt;li&gt; &lt;a id="download" onclick="frameA.src='/'"  aria-label="iframe测试"&gt;点击加载主页&lt;/a&gt; &lt;/li&gt;
-    &lt;li&gt; &lt;a id="download" onclick="frameB.location='/galleries/'" &gt;点击加载相册&lt;/a&gt; &lt;/li&gt;
-  &lt;/ul&gt;
-  &lt;iframe id="frameA" src="" style="width:100%;height:500px;background-image:url(/medias_webp/loading.webp);background-size: 100% 100%;" frameborder="0"&gt;&lt;/iframe&gt;  
-&lt;iframe name="frameB" src="" style="width:100%;height:500px;background-image:url(/medias_webp/loading.webp);background-size: 100% 100%;"  frameborder="2"&gt;&lt;/iframe&gt;
-object标签
-
-&lt;object width="100%" height="400" data="/galleries/"&gt;&lt;/object&gt;
-details 标签
-用于展示代码较多需要折叠或折叠相关内容，以下为演示。summary 填写显示名称。
-
-Demo
-夜法之书
-欢迎光临
-
-
-&lt;details&gt;
-&lt;summary&gt;Demo&lt;/summary&gt;
-&lt;p&gt;&lt;a href="/" target="_blank"&gt;&lt;b&gt;夜法之书&lt;/b&gt;&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;&lt;b&gt;欢迎光临&lt;/b&gt;&lt;/p&gt;
-&lt;img width="200" src="/favicon.webp" alt="wechat"&gt;
-&lt;/details&gt;
-配图
-众所周知，博客好不好看，配图占一半。这里给大家推荐几个我常用找配图的地方。另外，请遵循相关网站的版权协议。
-Google Image是你的好搭档
-Wallpaper Hub
-
-点击跳转到 Wallpaper Hub
-Wallhaven
-
-点击跳转到 Wallhaven
-Unsplash
-
-点击跳转到 Unsplash
-插入Mermaid
-
-直接在我网页前端生成SVG图像，能够实现非常复杂，美观的流程图！
-Mermaid 简明教程  pluntuml 简明教程
-
-graph LR
-    1[Sonarr] == request Jackett / Prowlarr Torznab api ==&gt; 2(JProxy) == proxy Sonarr request ==&gt; 3(Jackett / Prowlarr) 
-    3(Jackett / Prowlarr) == return ==&gt; 2(JProxy) == return result after format ==&gt; 1(Sonarr)
-    2(JProxy) == replace search key ==&gt; 2(JProxy)
-    2(JProxy) == format result title ==&gt; 2(JProxy)
-插入音乐和视频
-
-教程： 插入音乐和视频
-插入优美的音乐可以愉悦阅读过程
-插入视频教程或者视频Live可以极大提高知识传播速度！
-
-内容为王
-前面提到了那么多的方法和工具，但是内容才是最重要的！
-内容好，前面提到的写作技巧和工具都可以忽略；内容不好，再多的方法和工具都是白费！谨记！
-尺度控制
-不同平台，能够容忍的尺度是不同的！
-面对不同的人群，不同地域，不同背景的读者，写作尺度需要区分！也就是需要主动自我阉割！
-能说的比能写的至少严格一个等级，私密场合口耳相传的可以更接近真相！
-
-能写出来，广泛传播的大众平台言论，都是被阉割删减过的。顶多给你一个入门的方向指引，甚至很多时候故意给你一个错误的方向误导你！
-很多假话，套话，写一写，喊一喊，自己真信就是傻逼了
-
-文学技巧
-对于技术文章，是不需要什么文学技巧的，有足够的行业积累，才能够写的深入浅出！
-如果你写的是头条账号，瓜田李下，下里巴人才能够吸引眼球，一些写作技巧，如适当的疑问，引用，递进，顶珠，等方法可以大大提高流量。但是，不要做标题党，广大读者包括笔者都痛恨标题党！
-关于谣言
-
-造谣一张嘴，辟谣跑断腿！
-
-社交平台通过故意制造谣言，引起社会对立，可以极大提高平台活跃度与曝光量！
-
-Facebook 内部员工就爆料 Facebook 故意挑起种族仇恨言论（具体详情请自行搜索新闻来源）。
-微博为什么是女权发源地，这与微博的故意放纵，背后资本都是相关的。
-
-另外，有不少收钱发帖的账号！
-
-国家应该对接受资本资助的平台账号备案，并严令禁止社交平台账号接受国外资本资助！
-这种账号日常就发一些没有时间，地点，人物等详细细节的文章，引导舆论，或者文化打压，渗透！
-关键这种你很难举报，博主举报了很多次，平台都说举报不成立，不算谣言！即使举报成功了，谣言也已经传播开了，对于造谣者来说也没多大损失！顶多删除一条就是，这种应该严惩的行为目前没看到什么法律法规的约束！
-但是，国家早晚会对这一块整治，法律会严惩这些造谣者的！别看这些造谣者一时收黑钱一时爽，总会有清算的一天的。各位读者遇到这类文章也多点击一下举报吧，举报间谍成功奖励50W哦！
-
-写作工具
-
-工欲善其事，必先利其器
-
-
-
-Markdown编辑器 Typora，早期beta版本免费
-
-
-截图 snippaste
-
-
-动图 ScreentoGIF
-
-
-图床 Picgo
-
-
-脑图 Draw.IO
-
-
-密码同步+随机生成+保存 BitWarden Docker
-
-
-图片处理 Photoshop？
-
-
-笔记工具 git + gitlab docker 或者 Joplin Docker
-
-
-私有笔记云
-
-平时不积累，用时方嫌少！
-建立自己的知识库，就显得那么重要了
-
-
-完美笔记进化论
-
-
-经历了很长时间，使用了各种各样的方案，最终选择了一种相对完美的方式。docker私有部署运行的joplin，使用markdown语法，github作为图床，picgo作为图像自动上传后端，pypora作为MD编辑器，Snipaste作为截图工具。后备gitlab ee selfhost备份，自建图床VPS多线负载均衡。cloudflare partner cdn加速，jsdelivr加速。
-
-pigo图床搭建与配置
-Joplin教程
-Snipaste截图工具
-Typora 作为Markdown编辑器最强
-
-
-
-    
-        
-    
-    
-        完美笔记进化论
-        
-        wiznote docker版作为笔记管理搜索工具，typora作为markdown编辑器，只使用markdown格式笔记，Picgo作为图上上传工具，github作为图像图床，Snippaste作为截屏工具。一起组成笔记工具链。整体免费，满足selfhost， 富文本，多平台，版本管理，目录管理，可搜索，对图像友好的苛刻要求，超越市面所有产品，wiznote 还可以对外网提供服务。
-    
-
-
-Joplin入门指南&amp;实践方案
-
-
-
-Joplin和使用
-Joplin同步与备份
-Joplin导入与导出
-
-
-
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-
-
-
-Joplin安装使用，调用外部编辑器，网盘同步等等
-
-
-
-Joplin 插件以及其Markdown语法。All in One!
-
-
-
-Joplin简明教程
-markdown语法简明教程
-
-
-
-Joplin 插件使用推荐
-
-
-
-教你用各种插件打造一个强大的笔记工具。
-
-
-
-为知笔记私有化Docker部署
-
-
-
-如何部署自己私有的为知笔记。
-其实博主更推荐私有部署joplin
-
-
-私有Nas
-
-丰富自己的知识图谱！
-数据最值钱，自己的数据真正属于自己的，所以你需要一个私有Nas
-
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-
-    
-        
-    
-    
-        使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-        
-        jackett 作为种子源，sonarr剧集管理，bt下载，qbittorrent主力下载，使用iyuu转移辅种，emby，jellyfin做海报墙，sunfinder自动下载字幕。基本算是完美打通全流程自动追剧。bt种子文件命名规则SxxExx的自动识别下载，国内的资源手动查找下载，自动推送到emby刮削好
-    
-
-
-结构化自己的图书，音乐，和视频！
-丰富自己的见识，知识储备
-
-
-    
-        
-    
-    
-        如何建立自己的私人电子图书馆
-        
-        图书管理员似乎是个非常有前途的职业，远的有孔子，游学之前当图书管理员，近的有本朝开国毛教员，也当了很长时间图书管理员。我们也可以自己做个私人电子图书馆，当个图书管理员，说不定很有前途？
-    
-
-
-    
-        
-    
-    
-        如何使用media Go,MusicBrainz,Mp3tag工具刮削音乐 整理音乐资料库
-        
-        音乐文件则是将歌名、歌手、专辑、发行时间、歌词、封面图等信息写入文件标签，称为ID3 Tag 。它能够在MP3中附加曲子的演出者、作者以及其它类别资讯，方便众多乐曲的管理。
-    
-
-
-    
-        
-    
-    
-        如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-        
-        tinyMediaManager是最好用的视频刮削工具，可以刮削电影，动画，电视剧。使用TinyMediaManager生成nfo元数据文件，多媒体软件解析生成海报墙展示丰富的影片信息，配合Emby，Plex使用体验绝佳
-    
-
-
-音视频图书和音乐自动化管理框架图解
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-Transmission 使用及其配置
-Qbittorrent 参数详细设置教程
-PT 工具集，Linux硬链接助手
-QNAP 修改应用启动顺序
-qnap硬盘移动位置
-qnap IO 错误消除
-
-RSS订阅
-
-一直输出知识怎么能行？身体被掏空，急需补充能量！
-那么，你就需要一个好用的RSS订阅工具，TTRSS是一个好选择
-
-
-    
-        
-    
-    
-        RSS的使用与Tiny Tiny RSS Selfhost自建
-        
-        RSS是一种消息来源的格式规范，网站可以按照这种格式规范提供文章的标题、摘要、全文等信息给订阅用户，用户可以通过订阅不同网站 RSS 链接的方式将不同的信息源进行聚合，在一个工具里阅读这些内容
-    
-
-博客搭建
-
-私有博客，你值得拥有！
-
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化
-
-    
-        
-    
-    
-        [三万字教程]基于Hexo的matery主题搭建博客并深度优化
-        
-        一文介绍了Hexo利用github page搭建博客全过程，还附带一个博主自己定制过的`hexo Docker`，使用docker 配合博文将引导你搭建一个功能完善的blog，并指导全程免费seo优化，性能极致优化过程和工具。并附带几个常见问题的解决方案在文章最后。
-    
-
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-
-    
-        
-    
-    
-        hexo博客博文撰写篇之完美笔记大攻略终极完全版
-        
-        hexo博客文章卷写技巧，包括MarkDown，hexo技巧，html插入，美化方法，写作方法，知识储备方法，开发工具，等一系列全介绍！终极攻略篇
-    
-
-系列文章
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-
-
-使用nodeppt给hexo博客嵌入PPT演示
-
-
-Gitbook使用
-
-长篇专业电子书制作工具
-当你的文章写的长了，就可以考虑用Gitbook来制作电子书了
-
-
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-
-
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-
-
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-
-开发工具
-
-上面都是说的写作工具，该说说开发工具了。私有建立一个完善的DevOps将极大的提高你的开发效率和能力！
-
-
-    
-        
-    
-    
-        自建全套开源Devops开发系统
-        
-        目标：单节点，以最低成本，最低消耗，使用开源软件实现一个可用的DevOps！满足中小企业的研发、测试、运维需求。
-    
-
-
-
-自建全套开源Devops开发系统
-
-
-Git介绍以及分支模型图解
-
-
-三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
-
-
-DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
-
-
-项目开发管理工具推荐
-
-
-Gitlab的安装及使用教程完全版
-
-
-Gitlab的安装及使用
-
-
-Gitlab的安装及使用教程完全版
-
-
-破解Gitlab EE
-
-
-Gitlab的安装及使用
-
-
-CI/CD与Git Flow与GitLab
-
-
-Docker使用
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-博客美观性
-
-博客美观性增强方法
-
-
-
-使用标准Markdown语法
-
-
-使用hexo tag
-
-
-使用 hexo  主题 tag
-
-
-使用hexo 插件
-
-
-特殊符号
-
-
-CSS自定义
-
-
-博文可迁移性
-
-博客文章可迁移性评价
-
-
-
-使用标准Markdown语法
-
-
-少用hexo tag
-
-
-少用 hexo  主题 tag
-
-
-少用hexo 插件
-
-
-
-可以说，美观和可迁移性是不可兼得的。
-
-写作工具
-编辑器
-
-Typora
-marktext 开源替代
-
-图片上传
-
-Picgo
-
-截图
-
-
-snipaste
-
-
-FastStone Capture
-
-
-ScreenToGif
-
-
-笔记管理
-
-Joplin
-
-疑难杂陈
-问答 1：hexo g出错怎么办？
-
-npm包升级到最新试试？
-npm modules 模流删除，重新安装
-先移除所有文章，编译看看是否文章中出现了语法错误！
-可以用二分法定位语法错误
-特别注意插件tag语法是否有误
-hexo或者npm包先删除编译试试
-hexo，theme主题功能先零时关闭试试
-
-问答2：笔记丢失怎么办？
-
-使用 Git 保存 + Gitlab 服务器
-使用 Joplin，没有任何限制的批量导入导出 Markdown！
-不要使用任何私有格式的笔记工具，例如X知笔记
-
-问答3：修改不生效怎么办？
-
-本地 Docker 或者直接本地测试时，重启 hexo docker，hexo 一些修改需要下一次启动才能生效
-重启电脑
-如果插件问题，试着删除插件，重新安装插件测试
-如果使用了 CDN 服务，在线测试时，修改不生效怎么办？清除 CDN 缓存，暂时停用 CDN（如Cloudflare），CTRL + F5 来刷新网页试试！或者检查CDN版本是否正确，如 Jsdelivr
-
-后记
-
-写到这篇文章，基本把博客很大部分文章都串起来了，串成了一个圆环，一颗颗珍珠终于连成一串美丽的珍珠项链。一篇篇博文不再是孤岛，而是开始连成一片大陆了。
-
-参考
-
-Hexo Doc
-搭配 Fluid 如何优雅的写一篇文章
-Hexo 搭建个人博客系列：写作技巧篇
-
-系列教程
-全部文章RSS订阅
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-GithubProfile美化与自动获取RSS文章教程
-Vercel部署高级用法教程
-webhook部署Hexo静态博客指南
-在宝塔VPS上面采用docker部署waline全流程图解教程
-
-笔记系列
-Note分类RSS订阅
-
-完美笔记进化论
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Joplin入门指南&amp;实践方案
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-Joplin 插件以及其Markdown语法。All in One!
-Joplin 插件使用推荐
-为知笔记私有化Docker部署
-
-]]></content>
-      <categories>
-        <category>hexo</category>
-      </categories>
-      <tags>
-        <tag>markdown</tag>
-        <tag>hexo</tag>
-        <tag>写作</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>信用卡对个人、社会以及国家的影响——ChatGPT辅助编写</title>
     <url>/posts/b648bb9c/</url>
     <content><![CDATA[
@@ -56529,9 +56539,9 @@ chatGPT
 
 视频讲解
 B站
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-tDyHoxwhmJsAXuzo").style.height=document.getElementById("mmedia-tDyHoxwhmJsAXuzo").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-LKcWulWTAqHafKhA").style.height=document.getElementById("mmedia-LKcWulWTAqHafKhA").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-tDyHoxwhmJsAXuzo").style.height=document.getElementById("mmedia-tDyHoxwhmJsAXuzo").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-LKcWulWTAqHafKhA").style.height=document.getElementById("mmedia-LKcWulWTAqHafKhA").scrollWidth*0.76+"px";
     }; 
 youtube
 
@@ -62508,6 +62518,234 @@ bitwarden 功能十分强大，上面介绍了不少有趣又实用的用法，�
         <tag>web</tag>
         <tag>密码</tag>
         <tag>bitwarden</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>如何安装OfficeLTSC2021并KMS破解激活教程</title>
+    <url>/posts/c17af2e6/</url>
+    <content><![CDATA[
+office功能强大，是日常办公必备工具！其激活和破解其实可以很简单，使用KMS激活，纯命令行激活，不需要破解工具，没有中毒风险！如何下载office 并激活，自建 KMS 服务器本文全介绍。
+
+
+
+背景
+office零售版和批量授权版区别
+零售版（RTL Edition） 指的是官方出售的版本，只能激活一台电脑！享受微软售后技术服务！Retail（零售版也称消费者版，32和64位共用安装包，要转换才能KMS激活）
+批量授权版（VOL Edition） 指的是针对企业客户的大批量采购的版本，可用MARK密钥永久激活！（批量版也称商业版或大客户批量授权版，缩写VL或VOL）
+﹂适用企业客户批量许可部署的版本，无需转换可以通过使用KMS激活授权
+﹂安装可以自定义组件和安装位置，无需第三方部署工具
+简单的说，零售版用KEY激活后，如果微软不封，可以一直使用。（你有正版KEY不用担心这个问题）
+批量授权版(也称大客户版，缩写VOL或VL)可以在网上找MARK密钥激活，一旦激活成功，不怕被封；也可以用KMS进行180天激活。
+这两个版本功能上并无区别，只是激活的方式不一样。
+新版变化
+Office LTSC 2021 和 Office 2021 的更新历史记录 | Microsoft Docs
+https://docs.microsoft.com/en-us/officeupdates/update-history-office-2021
+安装文件下载地址
+官方下载
+如何下载和安装 Office LTSC 2021
+对于 Windows，Office LTSC 2021 是使用即点即用安装技术安装的。Microsoft 不提供安装程序下载;相反，计算机管理员需要使用 Office 部署工具 （ODT） 来安装 Office LTSC 2021。操作方法如下：
+
+官方教程
+
+技巧：
+提示：在安装 Office LTSC 2021 之前，您需要卸载 Office 的现有版本。
+步骤1：前往Microsoft官网下载Office部署工具。
+第 2 步：运行 Office 部署工具 exe 文件进行安装。然后，吃午饭并选择一个文件夹来存储文件。
+
+步骤3： 然后，您可以在该位置看到这些文件。
+
+第4步： 现在，您需要创建configuration.xml文件。复制**“Configuration-Office2021Enterprise”文件**，重命名为configuration.xml 选择“使用记事本打开”。
+configuration.xml
+&lt;!-- Office 2021 enterprise client configuration file sample. To be used for Office 2021 
+     enterprise volume licensed products only, including Office 2021 Professional Plus,
+     Visio 2021, and Project 2021.
+
+     Do not use this sample to install Office 365 products.
+
+     For detailed information regarding configuration options visit: http://aka.ms/ODT. 
+     To use the configuration file be sure to remove the comments
+
+     The following sample allows you to download and install Office 2021 Professional Plus,
+     Visio 2021 Professional, and Project 2021 Professional directly from the Office CDN.
+
+     This configuration file will remove all other Click-to-Run products in order to avoid
+     product conflicts and ensure successful setup.
+ --&gt;
+
+
+
+&lt;Configuration&gt;
+
+  &lt;Add OfficeClientEdition="64" Channel="PerpetualVL2021"&gt;
+    &lt;Product ID="ProPlus2021Volume"&gt;
+      &lt;Language ID="zh-CN" /&gt;
+	  &lt;Language ID="en-us" /&gt;
+      &lt;ExcludeApp ID="Lync" /&gt;
+    &lt;/Product&gt;
+    &lt;Product ID="VisioPro2021Volume"&gt;
+      &lt;Language ID="zh-CN" /&gt;
+	  &lt;Language ID="en-us" /&gt;
+    &lt;/Product&gt;
+    &lt;Product ID="ProjectPro2021Volume"&gt;
+      &lt;Language ID="zh-CN" /&gt;
+	  &lt;Language ID="en-us" /&gt;
+    &lt;/Product&gt;
+  &lt;/Add&gt;
+
+  &lt;Remove All="True" /&gt;
+
+  &lt;!--  &lt;RemoveMSI All="True" /&gt; --&gt;
+
+  &lt;!--  &lt;Display Level="None" AcceptEULA="TRUE" /&gt;  --&gt;
+
+  &lt;!--  &lt;Property Name="AUTOACTIVATE" Value="1" /&gt;  --&gt;
+
+&lt;/Configuration&gt;
+
+步骤5：在搜索框中键入cmd，然后选择以管理员身份运行。执行以下命令：
+./setup.exe /configure .\configuration.xml
+
+步骤6：接下来，出现安装进度窗口。您只需要按照屏幕上的说明完成安装即可。
+第三方下载
+如果已经安装office2021可以直接跳到步骤二进行KMS激活
+Office_Pro_Plus_2021_LTSC+Project+Visio_x64_zh_CN_VL_2021-10.iso
+https://alumnialbany-my.sharepoint.com/:f:/g/personal/mlj_alumni_albany_edu/Ej_Pxw_VUKFJmDe-Dgsn43EBg4QStSii4ajw66MinvEYyg?e=fYgjXF
+
+vl版office2021，标准版和专业增强版均可通过KMS激活
+OInstall.exe可能会被Windows安全中心误报，信任即可。
+
+KMS激活
+以管理员身份运行CMD或者Powershell，输入以下命令
+cd  "C:\Program Files\Microsoft Office\Office16"
+cscript ospp.vbs /sethst:kms.0t.net.cn
+cscript ospp.vbs /setprt:1688
+cscript ospp.vbs /act
+*32位office2021安装位置 “C:\Program Files (x86)\Microsoft Office\Office16”
+等待激活完成即可！
+
+*如激活失败，请确认
+
+是否以管理员身份运行的cmd
+office2021的版本是否是vl版，如果是零售版转换到VL版
+office365不支持KMS激活
+
+office2021零售版转VL版命令
+以管理员身份运行cmd，依次执行以下命令
+cd  "C:\Program Files\Microsoft Office\Office16"
+for /f %x in ('dir /b ..\root\Licenses16\ProPlus2021VL_KMS*.xrm-ms') do cscript ospp.vbs /inslic:"..\root\Licenses16\%x"
+32位office2021安装位置 “C:\Program Files (x86)\Microsoft Office\Office16”
+
+KMS 服务器列表
+kms.03k.org
+kms.chinancce.com
+kms.luody.info
+kms.lotro.cc
+kms.luochenzhimu.com
+kms8.MSGuides.com
+kms9.MSGuides.com
+
+KMS 列表
+kms可用性检测网址
+
+Office2021各版本KMS序列号
+
+
+
+Product
+GVLK
+
+
+
+
+Office LTSC 专业增强版 2021
+FXYTK-NJJ8C-GB6DW-3DYQT-6F7TH
+
+
+Office LTSC 标准版 2021
+KDX7X-BNVR8-TXXGX-4Q7Y8-78VT3
+
+
+Project Professional 2021 年 1 月
+FTNWT-C6WBT-8HMGF-K9PRX-QV9H8
+
+
+Project Standard 2021
+J2JDC-NJCYY-9RGQ4-YXWMH-T3D4T
+
+
+VisioLTSC Professional 2021
+KNH8D-FGHT4-T8RK3-CTDYJ-K2HT4
+
+
+VisioLTSC Standard 2021
+MJVNY-BYWPY-CWV6J-2RKRT-4M8QG
+
+
+Access LTSC 2021
+WM8YG-YNGDD-4JHDC-PG3F4-FC4T4
+
+
+ExcelLTSC 2021
+NWG3X-87C9K-TC7YY-BC2G7-G6RVC
+
+
+OutlookLTSC 2021
+C9FM6-3N72F-GFJXB-TM3V9-T86R9
+
+
+PowerPointLTSC 2021
+TY7XF-NFRBR-KJ44C-G83KF-GX27K
+
+
+PublisherLTSC 2021
+2MW9D-N4BXM-9VBPG-Q7W6M-KFBGQ
+
+
+Skype for BusinessLTSC 2021
+HWCXN-K3WBT-WJBKY-R8BD9-XK29P
+
+
+Word LTSC 2021
+TN8H9-M34D3-Y64V9-TR72V-X79KV
+
+
+
+自建KMS服务器
+
+KMS服务器（Key Management Service）主要用于管理和激活微软的Windows操作系统和Office软件。如果不放心网络上面的 KMS 服务器，可以自建 KMS 服务器！
+
+安装Docker管理器
+宝塔面板 - 软件商店 - Docker管理器 3.9.1 - 安装
+
+拉取镜像并启动
+在终端输入以下指令：
+拉取镜像
+docker pull teddysun/kms
+启动容器
+docker run -d -p 1688:1688 --name kms --restart=always teddysun/kms
+开放安全组端口
+在服务商安全组和宝塔面板的防火墙处开放TCP端口号1688
+
+
+检查PING情况
+打开PING网站，输入 你的服务器IP:1688 然后点击 Go 按钮
+等待后如果能全部Ping通显示Successful则表示KMS服务器已搭建成功
+
+参考&amp;致谢
+
+Docker之三分钟搭建KMS服务器
+Office2021安装文件下载和KMS激活
+Deploy Office LTSC 2021
+
+]]></content>
+      <categories>
+        <category>tools</category>
+      </categories>
+      <tags>
+        <tag>tools</tag>
+        <tag>office</tag>
+        <tag>kms</tag>
+        <tag>破解</tag>
       </tags>
   </entry>
 </search>
