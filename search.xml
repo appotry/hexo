@@ -13435,9 +13435,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-zykcqyQmBMZrozLe").style.height=document.getElementById("mmedia-zykcqyQmBMZrozLe").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-BUQwphJAfPcHRjRN").style.height=document.getElementById("mmedia-BUQwphJAfPcHRjRN").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-zykcqyQmBMZrozLe").style.height=document.getElementById("mmedia-zykcqyQmBMZrozLe").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-BUQwphJAfPcHRjRN").style.height=document.getElementById("mmedia-BUQwphJAfPcHRjRN").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -14294,6 +14294,104 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
+    <title>CMake快速入门教程</title>
+    <url>/posts/495db4d3/</url>
+    <content><![CDATA[1.cmake简介
+cmake是跨平台的makefile文件生成工具,是为了解决各个平台下面make工具不同造成的makefile文件格式不同的问题.也就是cmake是用来解决跨平台编译问题的.常见的还有autotool工具集，该工具集用于GNU软件协议的makefile文件生成，方便GNU包的编译和安装。
+2.cmake文件编辑规则
+
+1)命令不区分大小写，但是变量区分大小写。
+2)注释使用#符号
+3)命令如果有多个参数，互相之间用空格隔开
+
+3.cmake保留变量
+cmake里面有很多的预定义变量,是程序环境固有的,比如CUDA_NVCC_FLAGS,不同的变量有固定的作用,比如CUDA_NVCC_FLAGS是nvcc的参数list,变量可以使用set命令和list命令进行赋值和追加值,要注意的是变量可能可以有多个值,值与值之间用分号分开,可以使用set(var a b c)给var赋值a b c,还可以使用list命令给var追加删除插入值等,不同的变量有不同的值域,需要查阅手册
+4.cmake变量引用
+cmake里面变量的取值引用要使用${var}的形式,但是在赋值的时候是不需要的,和shell命令有点相似.
+5.cmake指定Debug和Release版本
+指定Debug和Release一共有三种方法：
+1.使用ADD_COMPILE_OPTIONS()加入-g指定Debug版本.
+2.使用SET( CMAKE_BUILD_TYPE Debug/Rrelease)指定Debug
+在下面加入：
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
+SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+上面的设置C++编译选项，对于C语言，设置CMAKE_C_FLAGS_DEBUG、CMAKE_._FLAGS_RELEASE变量，一般来说最好两个都设置原因是CMake 中有一个变量 CMAKE_BUILD_TYPE ,可以的取值是 Debug Release等.当这个变量值为 Debug 的时候,CMake 会使用变量 CMAKE_CXX_FLAGS_DEBUG 和 CMAKE_C_FLAGS_DEBUG 中的字符串作为编译选项生成 Makefile
+编译动态库or静态库时，最好通过修改CXXFLAGS和CFLAGS，以支持-fPIC，这个选项有时是默认开启，有时默认关闭，但为了以后的应用，库文件最好都使用-fPIC编译
+
+在使用cmake命令时加上-DCMAKE_BUILD_TYPE=Debug/Release
+
+5.cmake指定生成文件
+CUDA_ADD_LIBRARY()指明目标文件是库文件,CUDA_ADD_EXECUTABLE()指明生成的文件为可执行文件
+6.配置模板
+通常我们要在工程目录下面创建include、src文件夹，include文件夹里面存放头文件，src文件夹里面存放源代码，注意这时候的源代码里面包含头文件的路径应该是“…/include/xx.h”，然后在工程根目录下面创建CMakeLists.txt文件，里面写入命令.在编译的时候为了不搞乱工程目录，在工程根目录下面创建build文件夹，在里面使用“cmake …”命令创建CMakefile,再make即可。
+#指定cmake最低版本号
+cmake_minimum_required(VERSION 3.2)
+
+#指定项目名称
+PROJECT(Liner_Struct)
+
+#指定头文件目录，不同目录用空格隔开,目录中有空格可用引号
+#如果是相对路径，相对于CMakeLists.txt文件
+INCLUDE_DIRECTORIES(include)
+
+#指定源文件目录，DIR_SRCS值自定义变量，下面的命令对其进行了赋值
+AUX_SOURCE_DIRECTORY(src DIR_SRCS)
+
+#设置变量用于存放所有的编译文件，
+#TEST_LINER_STRUCT是自定义变量，使用SET给其赋值
+SET(TEST_LINER_STRUCT ${DIR_SRCS})
+
+#增加编译选项
+#判断是否为gcc编译器，如果是，增加编译选项
+#c99是c语言的标准，常用的还有c++标准c++11
+#下面的命令判断是否编译器是gcc
+#message命令是输出信息,例如下面的输出“optional:-std=c99”
+if(CMAKE_COMPILER_IS_GNUCXX)
+    ADD_COMPILE_OPTIONS(-std=c99)
+    message(STATUS "optional:-std=c99")
+endif(CMAKE_COMPILER_IS_GNUCXX)
+
+#配置生成文件
+#${PROJECT_NAME}是cmake自带变量，其值和PROJECT()命令指定的一样
+#${TEST_LINER_STRUCT}是自定义变量，上文赋值的
+ADD_EXECUTABLE(${PROJECT_NAME} ${TEST_LINER_STRUCT})
+7.if-else语句
+cmake中的if-else语句
+if(exp)
+     cmdA
+     cmdB
+elseif(exp)
+      cmdC
+endif(exp)
+最简单得到一个应用
+if(ARM)
+   #ARM平台
+else()
+  #非ARM平台 
+endif()
+使用cmake -DARM=1 … 时编译ARM代码，使用cmake -DAMR=0 …编译非ARM代码
+8.与平台编译器的结合
+8.1windows
+在windows上运行cmake可以生成对应的VS的工程文件，然后使用相应的VS打开工程就可以进行编译。要注意的是如果使用VS2010及其以前的版本，C不支持C99，也就是变量的命名必须放在函数或者域的最前面，不能放在中间，特别麻烦。VS2015在安装后可能还需要打开VS，新建工程时选择VC可能相关组件还没有安装，如果这时候使用cmake会提示找不到C、C编译器（类似yuNo CMAKE_CXX_COMPILER could be found）的错误。安装了相关的组件后cmake即不会有错误。
+8.2 为VS2015生成的项目
+打开工程文件后可以看到有3个项目，其中只有一个和我们有直接关系，就是我们在CMakeLists.txt里面定义的PROJECT_NAME,剩下的两个是ALL_BUILD和ZERO_CHECK.
+ZERO_CHECK
+该目标会检查生成工程的 CMake 配置文件（ CMakeLists.txt ）是否更新。如更新，将运行 CMake 重新生成工程文件。
+如果确信 CMakeLists.txt 不会被更新，或者希望手工运行 CMake 重新生成工程文件，可以在 CMakeLists.txt 配置文件中添加 set(CMAKE_SUPPRESS_REGENERATION FALSE) 命令， ZERO_CHECK 目标将不会生成。
+ALL_BUILD
+该目标会导致工程中所有项目被构建，类似 Visual Studio 的 Build All 或者 make 的 make all命令。
+转载 CMake快速入门教程
+]]></content>
+      <categories>
+        <category>linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>cmake</tag>
+        <tag>develop</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>如何通过IPV6访问Qnap NAS中Docker的服务</title>
     <url>/posts/462f1e5c/</url>
     <content><![CDATA[
@@ -14975,104 +15073,6 @@ Earthly 一个更加强大的镜像构建工具
         <tag>proxy</tag>
         <tag>swarm</tag>
         <tag>ubuntu</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>CMake快速入门教程</title>
-    <url>/posts/495db4d3/</url>
-    <content><![CDATA[1.cmake简介
-cmake是跨平台的makefile文件生成工具,是为了解决各个平台下面make工具不同造成的makefile文件格式不同的问题.也就是cmake是用来解决跨平台编译问题的.常见的还有autotool工具集，该工具集用于GNU软件协议的makefile文件生成，方便GNU包的编译和安装。
-2.cmake文件编辑规则
-
-1)命令不区分大小写，但是变量区分大小写。
-2)注释使用#符号
-3)命令如果有多个参数，互相之间用空格隔开
-
-3.cmake保留变量
-cmake里面有很多的预定义变量,是程序环境固有的,比如CUDA_NVCC_FLAGS,不同的变量有固定的作用,比如CUDA_NVCC_FLAGS是nvcc的参数list,变量可以使用set命令和list命令进行赋值和追加值,要注意的是变量可能可以有多个值,值与值之间用分号分开,可以使用set(var a b c)给var赋值a b c,还可以使用list命令给var追加删除插入值等,不同的变量有不同的值域,需要查阅手册
-4.cmake变量引用
-cmake里面变量的取值引用要使用${var}的形式,但是在赋值的时候是不需要的,和shell命令有点相似.
-5.cmake指定Debug和Release版本
-指定Debug和Release一共有三种方法：
-1.使用ADD_COMPILE_OPTIONS()加入-g指定Debug版本.
-2.使用SET( CMAKE_BUILD_TYPE Debug/Rrelease)指定Debug
-在下面加入：
-SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
-SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
-上面的设置C++编译选项，对于C语言，设置CMAKE_C_FLAGS_DEBUG、CMAKE_._FLAGS_RELEASE变量，一般来说最好两个都设置原因是CMake 中有一个变量 CMAKE_BUILD_TYPE ,可以的取值是 Debug Release等.当这个变量值为 Debug 的时候,CMake 会使用变量 CMAKE_CXX_FLAGS_DEBUG 和 CMAKE_C_FLAGS_DEBUG 中的字符串作为编译选项生成 Makefile
-编译动态库or静态库时，最好通过修改CXXFLAGS和CFLAGS，以支持-fPIC，这个选项有时是默认开启，有时默认关闭，但为了以后的应用，库文件最好都使用-fPIC编译
-
-在使用cmake命令时加上-DCMAKE_BUILD_TYPE=Debug/Release
-
-5.cmake指定生成文件
-CUDA_ADD_LIBRARY()指明目标文件是库文件,CUDA_ADD_EXECUTABLE()指明生成的文件为可执行文件
-6.配置模板
-通常我们要在工程目录下面创建include、src文件夹，include文件夹里面存放头文件，src文件夹里面存放源代码，注意这时候的源代码里面包含头文件的路径应该是“…/include/xx.h”，然后在工程根目录下面创建CMakeLists.txt文件，里面写入命令.在编译的时候为了不搞乱工程目录，在工程根目录下面创建build文件夹，在里面使用“cmake …”命令创建CMakefile,再make即可。
-#指定cmake最低版本号
-cmake_minimum_required(VERSION 3.2)
-
-#指定项目名称
-PROJECT(Liner_Struct)
-
-#指定头文件目录，不同目录用空格隔开,目录中有空格可用引号
-#如果是相对路径，相对于CMakeLists.txt文件
-INCLUDE_DIRECTORIES(include)
-
-#指定源文件目录，DIR_SRCS值自定义变量，下面的命令对其进行了赋值
-AUX_SOURCE_DIRECTORY(src DIR_SRCS)
-
-#设置变量用于存放所有的编译文件，
-#TEST_LINER_STRUCT是自定义变量，使用SET给其赋值
-SET(TEST_LINER_STRUCT ${DIR_SRCS})
-
-#增加编译选项
-#判断是否为gcc编译器，如果是，增加编译选项
-#c99是c语言的标准，常用的还有c++标准c++11
-#下面的命令判断是否编译器是gcc
-#message命令是输出信息,例如下面的输出“optional:-std=c99”
-if(CMAKE_COMPILER_IS_GNUCXX)
-    ADD_COMPILE_OPTIONS(-std=c99)
-    message(STATUS "optional:-std=c99")
-endif(CMAKE_COMPILER_IS_GNUCXX)
-
-#配置生成文件
-#${PROJECT_NAME}是cmake自带变量，其值和PROJECT()命令指定的一样
-#${TEST_LINER_STRUCT}是自定义变量，上文赋值的
-ADD_EXECUTABLE(${PROJECT_NAME} ${TEST_LINER_STRUCT})
-7.if-else语句
-cmake中的if-else语句
-if(exp)
-     cmdA
-     cmdB
-elseif(exp)
-      cmdC
-endif(exp)
-最简单得到一个应用
-if(ARM)
-   #ARM平台
-else()
-  #非ARM平台 
-endif()
-使用cmake -DARM=1 … 时编译ARM代码，使用cmake -DAMR=0 …编译非ARM代码
-8.与平台编译器的结合
-8.1windows
-在windows上运行cmake可以生成对应的VS的工程文件，然后使用相应的VS打开工程就可以进行编译。要注意的是如果使用VS2010及其以前的版本，C不支持C99，也就是变量的命名必须放在函数或者域的最前面，不能放在中间，特别麻烦。VS2015在安装后可能还需要打开VS，新建工程时选择VC可能相关组件还没有安装，如果这时候使用cmake会提示找不到C、C编译器（类似yuNo CMAKE_CXX_COMPILER could be found）的错误。安装了相关的组件后cmake即不会有错误。
-8.2 为VS2015生成的项目
-打开工程文件后可以看到有3个项目，其中只有一个和我们有直接关系，就是我们在CMakeLists.txt里面定义的PROJECT_NAME,剩下的两个是ALL_BUILD和ZERO_CHECK.
-ZERO_CHECK
-该目标会检查生成工程的 CMake 配置文件（ CMakeLists.txt ）是否更新。如更新，将运行 CMake 重新生成工程文件。
-如果确信 CMakeLists.txt 不会被更新，或者希望手工运行 CMake 重新生成工程文件，可以在 CMakeLists.txt 配置文件中添加 set(CMAKE_SUPPRESS_REGENERATION FALSE) 命令， ZERO_CHECK 目标将不会生成。
-ALL_BUILD
-该目标会导致工程中所有项目被构建，类似 Visual Studio 的 Build All 或者 make 的 make all命令。
-转载 CMake快速入门教程
-]]></content>
-      <categories>
-        <category>linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>cmake</tag>
-        <tag>develop</tag>
       </tags>
   </entry>
   <entry>
@@ -19433,8 +19433,8 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 列表
 
- var mRehaObwXhHKflXD_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    mRehaObwXhHKflXD_options.container = document.getElementById("mmedia-mRehaObwXhHKflXD");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(mRehaObwXhHKflXD_options); 
+ var HWeXlQmVJizaTGRs_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    HWeXlQmVJizaTGRs_options.container = document.getElementById("mmedia-HWeXlQmVJizaTGRs");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(HWeXlQmVJizaTGRs_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -20853,13 +20853,13 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var KtFNJWMtDkdvRgQC_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
-    KtFNJWMtDkdvRgQC_options.container = document.getElementById("mmedia-KtFNJWMtDkdvRgQC");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(KtFNJWMtDkdvRgQC_options); 
+ var imFXqxUxaILWldrN_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
+    imFXqxUxaILWldrN_options.container = document.getElementById("mmedia-imFXqxUxaILWldrN");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(imFXqxUxaILWldrN_options); 
 
 
 
- var WvakddFCEaUqcwxv_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    WvakddFCEaUqcwxv_options.container = document.getElementById("mmedia-WvakddFCEaUqcwxv");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(WvakddFCEaUqcwxv_options); 
+ var Aekpafocpcnyreld_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    Aekpafocpcnyreld_options.container = document.getElementById("mmedia-Aekpafocpcnyreld");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(Aekpafocpcnyreld_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -21118,9 +21118,9 @@ Earthly 一个更加强大的镜像构建工具
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-jVTKUtqFWJmFgXrF").style.height=document.getElementById("mmedia-jVTKUtqFWJmFgXrF").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-RfLLGVzSRiYUGAAP").style.height=document.getElementById("mmedia-RfLLGVzSRiYUGAAP").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-jVTKUtqFWJmFgXrF").style.height=document.getElementById("mmedia-jVTKUtqFWJmFgXrF").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-RfLLGVzSRiYUGAAP").style.height=document.getElementById("mmedia-RfLLGVzSRiYUGAAP").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -21129,8 +21129,8 @@ Earthly 一个更加强大的镜像构建工具
 
 ## 中文翻唱
 
- var gTldaTKJzbiDQiGS_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
-    gTldaTKJzbiDQiGS_options.container = document.getElementById("mmedia-gTldaTKJzbiDQiGS");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(gTldaTKJzbiDQiGS_options); 
+ var rWjkxCnhQXGmoDTY_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
+    rWjkxCnhQXGmoDTY_options.container = document.getElementById("mmedia-rWjkxCnhQXGmoDTY");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(rWjkxCnhQXGmoDTY_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -28398,878 +28398,6 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
-    <title>基于Hexo的matery主题搭建博客自定义修改篇2</title>
-    <url>/posts/4d8a0b22/</url>
-    <content><![CDATA[Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-GithubProfile美化与自动获取RSS文章教程
-Vercel部署高级用法教程
-webhook部署Hexo静态博客指南
-在宝塔VPS上面采用docker部署waline全流程图解教程
-
-如果本主题中的诸多功能和主题色彩你不满意，可以在主题中自定义修改，很多更自由的功能和细节点的修改难以在主题的 _config.yml 中完成，需要修改源代码才来完成。以下列出了可能有用的地方：
-自定义Logo
-免费生成 logo 的网站很多，这里给一个个人使用的网站。
-
-找一个喜欢的图片
-https://www.logosc.cn/logo/ 图片上传到这里，然后安装提示生成图片
-下载生成的图标文件，替换主题中对应的文件！
-
-还有其它的服务推荐
-
-Iconifier：
-
-网址：https://iconifier.net/
-Iconifier 是一个简单易用的在线图标生成器，支持导入 PNG、JPG 和 GIF 格式的图片，并生成相应的 SVG 图标。你可以通过上传图片或者提供图片的 URL 来生成图标。
-
-
-SVGOMG：
-
-网址：https://jakearchibald.github.io/svgomg/
-SVGOMG 是一个由 Google 开发的 SVG 优化工具，它可以帮助你压缩和优化现有的 SVG 文件，并提供一些额外的编辑功能，比如调整路径和属性。你可以在这个工具中导入已有的 SVG 文件并进行编辑和优化。
-
-
-Flaticon：
-
-网址：https://www.flaticon.com/
-Flaticon 是一个图标搜索引擎，提供了大量的免费图标资源供用户选择。你可以在 Flaticon 上搜索你需要的图标，然后下载为 SVG 格式。虽然 Flaticon 提供了大量的免费图标资源，但一些高质量的图标可能需要付费下载。
-
-
-
-修改主题颜色
-配色包括导航栏，底部栏，a标签等，主题配色是绿色。
-修改themes\Matery\source\css\matery.css样式
-快捷键ctrl+F查找到#4cbf30（浅绿色）和#0f9d58（深绿色）还有首页字体颜色，修改为你喜欢的颜色
-/* 整体背景颜色，包括导航、移动端的导航、页尾、标签页等的背景颜色. */ 
-.bg-color { 
-	background-image: linear-gradient(to right, #4cbf30 0%, #0f9d58 100%); 
-} 
-/*如果想去掉banner图的颜色渐变效果，请将以下的css属性注释掉或者删除掉即可*/ 
-@-webkit-keyframes rainbow { 
-	/* 动态切换背景颜色. */ 
-} 
-@keyframes rainbow { 
-	/* 动态切换背景颜色. */ 
-}
-
-背景樱花飘落效果
-在themes/matery/source/js目录下新建sakura.js文件，打开这个网址传送门，将内容复制粘贴到sakura.js即可。
-然后在themes/matery/layout/layout.ejs文件内添加下面的内容：
-&lt;script type="text/javascript"&gt;
-//只在桌面版网页启用特效
-var windowWidth = $(window).width();
-if (windowWidth &gt; 768) {
-    document.write('&lt;script type="text/javascript" src="/js/sakura.js"&gt;&lt;\/script&gt;');
-}
-&lt;/script&gt;
-修改花瓣的数量
-因为普遍在使用的樱花背景效果花瓣数太多了，一些人不太喜欢。
-于是按不同花瓣数量做了几个新的 js ，并提供如下 cdn 形式的引用：
-https://cdn.jsdelivr.net/gh/fz6m/Private-web@1.2/js/sakura/sakura-small.js
-以上为少量樱花效果，另提供几个不同数量的文件引用名：
-
-
-
-文件名
-说明
-
-
-
-
-sakura-small.js
-少量樱花
-
-
-sakura-half.js
-樱花相对原效果数量减半
-
-
-sakura-reduce.js
-樱花相对原效果减少1/4
-
-
-sakura-original.js
-樱花数量不变（原效果）
-
-
-
-自定义鼠标样式
-首先将鼠标样式下载到本地，推荐大家一个网站：https://zhutix.com/ico/ori-cursors/
-以我的为例，我将鼠标指针样式放在了主题文件夹下的medias目录下，然后打开themes\matery\source\css下的my.css文件，添加内容如下：
-*{
-    cursor: url("/medias/imgs/zhengchang.ico"),auto!important;
-}
-:active{
-    cursor: url("/medias/imgs/dianji.ico"),auto!important;
-}
-取消首页渐变颜色动画
-在themes\Matery\source\css\matery.css，ctrl+F快捷键查找.bg-cover:after，注释掉即可。
-/* .bg-cover:after {
-    -webkit-animation: rainbow 60s infinite;
-    animation: rainbow 60s infinite;
-} */
-首页随机图片轮播
-themes\matery\layout\_partial\bg-cover-content.ejs
-修改随机获取一张图片：
-$('.bg-cover').css('background-image', 'url(&lt;%- theme.featureImages[Math.floor(Math.random() * theme.featureImages.length + 1)-1] %&gt;)');
-优化目录栏，透明化
-目录样式竟然在：themes\Matery\layout\_partial\post-detail-toc.ejs
-.toc-widget {
-    width: 345px;
-    padding-left: 20px;
-    background-color: rgb(255, 255, 255,0.7);
-    border-radius: 10px;
-    box-shadow: 0 10px 35px 2px rgba(0, 0, 0, .15), 0 5px 15px rgba(0, 0, 0, .07), 0 2px 5px -5px rgba(0, 0, 0, .1) !important;
-}
-增加点击跳转评论按钮
-新建文件themes\Matery\layout\_partial\back-comment.ejs,粘贴如下代码
-我这里评论是valine，直接填写的valine的id——href="#vcomments",如果是其他评论，对应修改即可。
-&lt;!-- 直达评论 --&gt;
-&lt;div id="to_comment" class="comment-scroll"&gt;
-    &lt;a class="btn-floating btn-large waves-effect waves-light" href="#vcomments" title="直达评论"&gt;
-        &lt;i class="fas fa-comments"&gt;&lt;/i&gt;
-    &lt;/a&gt;
-&lt;/div&gt;
-在themes\Matery\layout\_partial\valine.ejs文末添加一条，引用第一步的内容；
-&lt;%- partial('_partial/back-comment.ejs') %&gt;
-则只在valine存在的页面才显示直达评论，防止首页其他地方也出现按钮。其实还可以优化为浮动出现，有一点麻烦，我这里没有设置。
-增加样式在themes\Matery\source\css\matery.css添加内容如下：
-/*直达评论按钮样式*/
-.comment-scroll {
-    position: fixed;
-    right: 15px;
-    bottom: 135px;
-    padding-top: 15px;
-    margin-bottom: 0;
-    z-index: 998;
-}
-
-.comment-scroll .btn-floating {
-    background: linear-gradient(to bottom right, #FF9999 0%, #ff6666 100%);
-    width: 48px;
-    height: 48px;
-}
-
-.comment-scroll .btn-floating i {
-    line-height: 48px;
-    font-size: 1.8rem;
-}
-
-bottom: 135px;是距离底部的高度，看看你是否需要修改。
-添加简体繁体一键切换
-
-首先，我们可以在这里右键另存下载简繁字体切换所需的 tw_cn.js 文件，我们把这个文件放到 ~/themes/(你的主题名)/source/js/ 文件夹下。
-修改模板，在我们想要显示简繁转换按钮的地方添加如下代码。例如，我在 NexT 主题的布局文件 ~/themes/(你的主题名)/layout/_partials/footer.ejs 里添加了如下代码：
-
-&lt;div class="translate-style"&gt;
-繁/简：&lt;a id="translateLink" href="javascript:translatePage();"&gt;繁体
-&lt;/a&gt;
-&lt;/div&gt;
-&lt;script type="text/javascript" src="/js/tw_cn.js"&gt;&lt;/script&gt;
-&lt;script type="text/javascript"&gt;
-var defaultEncoding = 2; //网站编写字体是否繁体，1-繁体，2-简体
-var translateDelay = 0; //延迟时间,若不在前, 要设定延迟翻译时间, 如100表示100ms,默认为0
-var cookieDomain = "https://1han.wiki/"; //Cookie地址, 一定要设定, 通常为你的网址
-var msgToTraditionalChinese = "繁体"; //此处可以更改为你想要显示的文字
-var msgToSimplifiedChinese = "简体"; //同上，但两处均不建议更改
-var translateButtonId = "translateLink"; //默认互换id
-translateInitilization();
-&lt;/script&gt;
-读者可以在博客底部点击简体 / 繁体来看具体的切换字体效果。
-修改滑动条
-/* 滚动条 */
-::-webkit-scrollbar-thumb {
-    background-color: #FF2A68;
-    background-image: -webkit-linear-gradient(45deg,rgba(255,255,255,.4) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.4) 50%,rgba(255,255,255,.4) 75%,transparent 75%,transparent);
-    border-radius: 3em;
-}
-::-webkit-scrollbar-track {
-    background-color: #ffcacaff;
-    border-radius: 3em;
-}
-::-webkit-scrollbar {
-    width: 8px;
-    height: 15px;
-}
-文章标题添加打字机效果
-定位到文章标题代码 layout/_partial/post-cover.ejs
-&lt;h1 class="description center-align post-title"&gt;&lt;%= page.title %&gt;&lt;/h1&gt;
-文章标题代码替换成下面的代码
-&lt;script src="&lt;%- theme.jsDelivr.url %&gt;&lt;%- url_for(theme.libs.js.typed) %&gt;"&gt;&lt;/script&gt;
-&lt;% if (theme.post.enable) { %&gt;
-    &lt;script&gt;
-        var typedObj = new Typed("#post-title", {
-            strings: [ '&lt;%= page.title %&gt;' ],
-            startDelay: &lt;%= theme.post.startDelay %&gt;,
-            typeSpeed: &lt;%= theme.post.typeSpeed %&gt;,
-            loop: &lt;%= theme.post.loop %&gt;,
-            backSpeed: &lt;%= theme.post.backSpeed %&gt;,
-            showCursor: &lt;%= theme.post.showCursor %&gt;
-        });
-    &lt;/script&gt;
-&lt;% } %&gt;
-
-最后在主题配置文件中进行配置 _config.yml
-# 文章标题
-post:
-  enable: true
-  loop: false # 是否循环
-  showCursor: true # 是否显示光标
-  startDelay: 500 # 开始延迟
-  typeSpeed: 100 # 打字速度
-  backSpeed: 50 # 删除速度
-现在就完成了为一言和文章标题添加打字机效果
-更换字体
-一般网站的web字体都可以直接从Google-Font获取资源，这样不用担心字体商业带来的法律问题。
-常见的开源字体有：
-思源黑体 、 文泉驿 、 文鼎开放字体 、 柳体 、 cwTeX中文字体 、 濑户字体、江西拙楷体等。
-1）创建web字体引用
-@font-face{
-    font-family: '引用的字体名称';
-    src: url('谷歌字体路径（或者其他什么字体引用）');   
-}
-2）在网页合适的位置进行字体引用
-①利用浏览器检查元素，获取需要定义字体的部分
-②在主体的配置文件中(hexo-theme-matery/layout/…)找到对应的渲染(.ejs)文件，查找需要修改的部分
-①演示一下利用浏览器获取定义字体的部分
-
-对获取到的id选择器：#artDetail进行css渲染
-#artDetail {
-    font-family: '引用的web字体';
-}
-②利用主体的ejs渲染文件找出需要修饰的部分（加入自定义类）
-
-/*使用我在文章内容详情定义的diyFnot类**/
-.diyfont {
-   font-family: '引用的web字体'; 
-}
-
-/*也可以使用自带的id*/
-#artDetail {
-    font-family: '引用的web字体'; 
-}
-网站全局化字体定义
-@font-face{
-    font-family: '引用的字体名称';
-    src: url('谷歌字体路径（或者其他什么字体引用）');   
-}
-
-body {
-    font-family: '引用的web字体名称'; 
-}
-引用本地的字体文件
-当然有时候那个谷歌字体的网站可能登录不上去，需要科学上网，很烦人！我们也可以直接下载下字体文件，将他放在本地，进行直接引用！看下面操作👇
-①在本地的hexo根目录的source文件下创立diy-font文件夹:/source/diy-font
-在该文件下存放你的字体文件，比如：/source/diy-font/IBMPlexMono-Italic.ttf
-②引用本地字体（仍然是在my.css文件中书写代码）
-@font-face{
-    font-family: 'hl';
-    src: url('../diy-font/IBMPlexMono-Italic.ttf');
-}
-
-/** 表示全局使用，如果不想全局使用不要添加该段 */
-body{
-    font-family: 'hl';
-}
-
-
-/* 可以局部使用，建议添加 */
-.diyFont{
-    font-family: 'hl';
-}
-这样我们就可以实现引用本地的字体了，并且在web有效！
-在你想要使用的元素的 class 里面加上 diyFont 即可。
-
-
-直接使用
-F12，找到对应的代码片段即可：
-
-
-&lt;span class="logo-span diyFont"&gt;测试字体&lt;/span&gt;
-
-
-模板使用
-找到对应的模板 header.ejs中的代码片段使用即可：
-
-
-&lt;span class="logo-span diyFont"&gt;&lt;%= config.title %&gt;&lt;/span&gt;
-修改主题颜色
-在主题文件的 /source/css/matery.css 文件中，搜索 .bg-color 来修改背景颜色：
-/* 整体背景颜色，包括导航、移动端的导航、页尾、标签页等的背景颜色. */
-.bg-color {
-  background-image: linear-gradient(to right, #4cbf30 0%, #0f9d58 100%);
-}
-
-@-webkit-keyframes rainbow {
-  /* 动态切换背景颜色. */
-}
-
-@keyframes rainbow {
-  /* 动态切换背景颜色. */
-}
-修改 banner 图和文章特色图
-可以直接在 /source/medias/banner 文件夹中更换喜欢的 banner 图片，主题代码中是每天动态切换一张，只需 7 张即可。如果会 JavaScript 代码，可以修改成自己喜欢切换逻辑，如：随机切换等，banner 切换的代码位置在 /layout/_partial/bg-cover-content.ejs 文件的 &lt;script&gt;&lt;/script&gt; 代码中：
-$(".bg-cover").css("background-image", "url(/medias/banner/" + new Date().getDay() + ".jpg)");
-在 /source/medias/featureimages 文件夹中默认有 24 张特色图片，你可以再增加或者减少，并需要在 _config.yml 做同步修改。
-Hexo 跳过渲染
-在Hexo部署时会默认渲染source下的所有html页面，但有时候想在Hexo博客上单独自定义html页面或README.md时，却不希望被Hexo渲染。因此对某个文件或者目录进行排除渲染是非常必要的。
-方法一：font matter
-Hexo新建网站页面，然后将你的代码直接写入 index.md 中
-在 Front matter 中添加 layout: false，此方法适用于单一的纯HTML
-CSS 页面。
----
-title: tools
-date: 2020-04-28 00:00:00
-type: "tools"
-layout: false
----
-方法二：skip rende
-在博客根目录下的 _config.yml，找到 skip_render，大概在32行左右，写入你想要的跳过渲染的路径，注意缩进和空格。
-# 指定目录跳过hexo渲染
-skip_render:
-  - 'tools/*'
-  - 'tools/**'
-
-注释：tools/* 表示在目录 source/fireworks 下的文件全部跳过渲染，tools/** 表示在博客根目录 source/tools/ 文件夹下的文件全部跳过渲染（例如页面的 js、css 在另一个文件夹中）。
-
-博客中插入音乐
-hexo-tag-aplayer
-hexo-tag-aplayerAPlayer 播放器的 Hexo 标签插件（现已支持 MetingJS）。
-安装
-npm install --save hexo-tag-aplayer
-使用方法——aplayer
-{% aplayer title author url [picture_url, narrow, autoplay, width:xxx, lrc:xxx] %}
-
-title : 曲目标题
-author: 曲目作者
-url: 音乐文件 URL 地址
-picture_url: (可选) 音乐对应的图片地址
-narrow: （可选）播放器袖珍风格
-autoplay: (可选) 自动播放，移动端浏览器暂时不支持此功能
-width:xxx: (可选) 播放器宽度 (默认: 100%)
-lrc:xxx: （可选）歌词文件 URL 地址
-例如：
-
-{% aplayer "她的睫毛" "周杰伦" "http://home.ustc.edu.cn/~mmmwhy/%d6%dc%bd%dc%c2%d7%20-%20%cb%fd%b5%c4%bd%de%c3%ab.mp3"  "http://home.ustc.edu.cn/~mmmwhy/jay.jpg" %}
-如果你觉得前面的方法不太好用，可以用下面的方法，使用MetingJS。
-使用方法——MetingJS
-MetingJS 是基于Meting API 的 APlayer 衍生播放器，支持对于 QQ音乐、网易云音乐、虾米、酷狗、百度等平台的音乐播放。
-第一步：修改_config.yml配置
-在hexo的配置文件_config.yml中添加：
-aplayer:
-	meting: true
-第二步：使用MetingJS 播放器
-&lt;!-- 简单示例 (id, server, type)  --&gt;
-{% meting "571184509" "xiami" "playlist" %}
-有关的选项列表如下:
-
-
-
-选项
-默认值
-描述
-
-
-
-
-id
-必须值
-歌曲 id / 播放列表 id / 相册 id / 搜索关键字
-
-
-server
-必须值
-音乐平台: netease, tencent, kugou, xiami, baidu
-
-
-type
-必须值
-song, playlist, album, search, artist
-
-
-fixed
-false
-开启固定模式
-
-
-mini
-false
-开启迷你模式
-
-
-loop
-all
-列表循环模式：all, one,none
-
-
-order
-list
-列表播放模式： list, random
-
-
-volume
-0.7
-播放器音量
-
-
-lrctype
-0
-歌词格式类型
-
-
-listfolded
-false
-指定音乐播放列表是否折叠
-
-
-storagename
-metingjs
-LocalStorage 中存储播放器设定的键名
-
-
-autoplay
-true
-自动播放，移动端浏览器暂时不支持此功能
-
-
-mutex
-true
-该选项开启时，如果同页面有其他 aplayer 播放，该播放器会暂停
-
-
-listmaxheight
-340px
-播放列表的最大长度
-
-
-preload
-auto
-音乐文件预载入模式，可选项： none, metadata, auto
-
-
-theme
-#ad7a86
-播放器风格色彩设置
-
-
-
-博客中插入视频
-hexo-tag-dplayer
-hexo-tag-dplayer 是 DPlayer 播放器的 Hexo 标签插件
-安装
-npm install --save hexo-tag-dplayer
-使用
-{% dplayer key=value ... %}
-例：
-{% dplayer "url=http://www.nenu.edu.cn/_upload/article/videos/03/5f/7c999eed42e3aadc413d7f851f0e/0f50b3eb-9285-41d2-ac4d-6cc363651aad_B.mp4"  "autoplay=true" "preload=metadata" "hotkey=true" %} 
-有关的选项列表如下:
-
-
-
-选项
-默认值
-描述
-
-
-
-
-url
-必须值
-视频地址
-
-
-loop
-false
-视频循环播放
-
-
-volume
-0.7
-播放器音量
-
-
-hotkey
-true
-开启热键
-
-
-autoplay
-true
-自动播放，移动端浏览器暂时不支持此功能
-
-
-logo
--
-在左上角展示一个 logo，你可以通过 CSS 调整它的大小和位置
-
-
-mutex
-true
-该选项开启时，如果同页面有其他播放，该播放器会暂停
-
-
-highlight
-[]
-自定义进度条提示点
-
-
-preload
-auto
-视频文件预载入模式，可选项： none, metadata, auto
-
-
-theme
-#ad7a86
-播放器风格色彩设置
-
-
-
-注：如果使用腾讯视频、优酷视频等在线视频网站的资源，需要先进行视频地址解析，如点量视频解析，获取到实际的视频地址。
-其他使用方法
-在使用优酷或者腾讯视频时可以直接复制分享代码到文章中，如：
-&lt;iframe height=498 width=510 src='https://player.youku.com/embed/XMjk4ODAyMzIyOA==' frameborder=0 'allowfullscreen'&gt;&lt;/iframe&gt;
-参考文献
-
-
-hexo-tag-aplayer
-hexo-tag-dplayer
-
-
-hexo-tag-videojs
-
-录屏：OBS	OBS Studio录屏教程
-视频切片：FFmpeg
-托管：任何一个支持静态资源访问的都可以，比如跑个 Nginx
-Hexo 插件：hexo-tag-videojs
-
-
-Video标签需要加载完整个视频文件（如mp4）才能开始播放，拖动不便。
-使用bilibili服务，审查手段未知，可能看你白嫖就封号了
-自托管ts切片综合考虑是最佳方案！
-
-FFmpeg m3u8 切片
-要使用FFmpeg将一个MP4文件制作为M3U8文件并使用TS分片，您可以按照以下步骤进行操作：
-
-安装FFmpeg
-
-首先，您需要安装FFmpeg。可以在FFmpeg的官方网站（https://ffmpeg.org/）上下载适用于您的操作系统的二进制文件。
-
-制作M3U8文件和TS分片
-
-使用以下命令，将您的MP4文件制作为M3U8文件和TS分片：
-ffmpeg -i input.mp4 -codec copy -vbsf h264_mp4toannexb -map 0 -f segment -segment_list output.m3u8 -segment_time 10 output%03d.ts
-
--i input.mp4：指定输入文件为input.mp4。
--codec copy：使用与输入文件相同的编解码器。
--vbsf h264_mp4toannexb：将MP4的H.264视频流转换为MPEG-TS格式，以便进行分片。
--map 0：将所有输入流映射到输出中。
--f segment：指定输出格式为segment，表示进行分段。
--segment_list output.m3u8：指定输出的M3U8文件名为output.m3u8。
--segment_time 10：指定每个TS分片的时长为10秒。
-output%03d.ts：指定输出的TS分片文件名为output001.ts、output002.ts等。
-
-执行命令后，FFmpeg将开始处理您的视频，并将其制作为M3U8文件和多个TS分片。
-
-检查输出
-
-完成后，您可以在当前目录下找到一个名为output.m3u8的文件，以及一系列以output001.ts、output002.ts等命名的TS分片文件。您可以使用任何支持M3U8格式的播放器来播放此视频。
-外链跳转插件
-使用 npm 或者 yarn 安装
-## npm 安装
-npm install hexo-external-link --save
-## yarn 安装
-yarn add hexo-external-link
-之后在博客站点根目录下添加如下配置：
-hexo_external_link:
-  enable: true
-  enable_base64_encode: true
-  url_param_name: 'u'
-  html_file_name: 'go.html'
-  target_blank: true
-  link_rel: 'external nofollow noopener noreferrer'
-  domain: 'your_domain' # 如果开启了防盗链，填写你的域名
-  safety_chain: true
-文章生成永久链接
-主题默认的文章链接配置是
-premalink: :year/:month/:day/:title
-这种生成的链接地址很长，文章版权的链接地址会出现一大串字符编码，一点也不好看。因此需要修改文章生成链接的格式。 首先再根目录下执行下面的命令： hexo-abbrlinkGitHub地址
-npm install hexo-abbrlink --save
-然后再站点配置文件下添加如下配置：
-abbrlink: 
-    alg: crc16 #算法：
-    crc16(default) and crc32 rep: hex #进制： dec(default) and hex: dec #输出进制：十进制和十六进制，默认为10进制。丨dec为十进制，hex为十六进制
-再将站点配置文件的permalink的值修改为：
-permalink: posts/:abbrlink.html  # 此处可以自己设置，也可以直接使用 :/abbrlink
-生成完后，原md文件的Front-matter 内会增加abbrlink 字段，值为生成的ID 。这个字段确保了在我们修改了Front-matter 内的博客标题title或创建日期date字段之后而不会改变链接地址.
-Hexo 插件推荐
-
-hexo 的强大之处在于，拥有非常多的免费开源插件给你使用！
-
-
-
-
-插件
-功能
-文档链接
-
-
-
-
-hexo-generator-index-pin-top
-文章置顶
-https://github.com/netcan/hexo-generator-index-pin-top
-
-
-hexo-wordcount
-文章字数统计和阅读时长统计
-https://github.com/willin/hexo-wordcount
-
-
-hexo-abbrlink
-生成URL短链接
-https://github.com/rozbo/hexo-abbrlink
-
-
-hexo-lazyload-image
-图片懒加载
-https://github.com/Troy-Yang/hexo-lazyload-image
-
-
-hexo-generator-baidu-sitemap
-生成baidusitemap.xml
-https://github.com/coneycode/hexo-generator-baidu-sitemap
-
-
-hexo-generator-sitemap
-生成sitemap.xml
-https://github.com/hexojs/hexo-generator-sitemap
-
-
-hexo-generator-feed
-生成RSS文件
-https://github.com/hexojs/hexo-generator-feed
-
-
-hexo-external-link
-外链跳转
-https://github.com/hvnobug/hexo-external-link
-
-
-hexo-autonofollow
-自动对外部链接增加nofollow属性
-https://github.com/liuzc/hexo-autonofollow
-
-
-hexo-filter-nofollow
-为外链添加 rel="noopener external nofollow noreferrer"
-https://github.com/hexojs/hexo-filter-nofollow
-
-
-hexo-prism-plugin
-代码高亮
-https://github.com/ele828/hexo-prism-plugin
-
-
-hexo-neat
-博客压缩
-https://github.com/rozbo/hexo-neat
-
-
-hexo-allminifier
-https://developer.aliyun.com/mirror/npm/package/hexo-all-minifier
-
-
-
-hexo-tag-aplayer
-aplayer音乐播放器
-https://github.com/MoePlayer/hexo-tag-aplayer
-
-
-hexo-tag-dplayer
-dplayer视频播放器
-https://github.com/MoePlayer/hexo-tag-dplayer
-
-
-hexo-douban
-添加豆瓣读书，电影，游戏页面
-https://github.com/mythsman/hexo-douban
-
-
-hexo-generator-searchdb
-本地搜索,生成search.xml
-https://github.com/theme-next/hexo-generator-searchdb
-
-
-hexo-algoliasearch
-搜索系统
-https://github.com/LouisBarranqueiro/hexo-algoliasearch
-
-
-hexo-algolia
-https://github.com/oncletom/hexo-algolia
-
-
-
-hexo-generator-search
-本地搜索系统
-https://github.com/wzpan/hexo-generator-search
-
-
-hexo-baidu-url-submit
-百度站长主动推送
-https://github.com/huiwang/hexo-baidu-url-submit
-
-
-hexo-offline
-开启PWA
-https://github.com/JLHwung/hexo-offline
-
-
-hexo-pwa
-https://github.com/lavas-project/hexo-pwa
-
-
-
-hexo-helper-live2d
-看板娘
-https://github.com/EYHN/hexo-helper-live2d
-
-
-hexo-addlink
-文末添加当前文章链接和版权声明
-https://github.com/acwong00/hexo-addlink
-
-
-hexo-blog-encrypt
-博客文章加密
-https://github.com/MikeCoder/hexo-blog-encrypt
-
-
-hexo-simple-mindmap
-博客添加脑图
-https://github.com/HunterXuan/hexo-simple-mindmap
-
-
-hexo-pdf
-博客展示pdf
-https://github.com/superalsrk/hexo-pdf
-
-
-hexo-tag-echarts
-博客添加图表
-https://github.com/zhoulvjun/hexo-tag-echarts
-
-
-hexo-steam-games
-添加Steam游戏界面
-https://github.com/HCLonely/hexo-steam-games
-
-
-hexo-bilibili-bangumi
-添加bilibili番剧页面
-https://github.com/HCLonely/hexo-bilibili-bangumi
-
-
-hexo-generator-random
-生成随机文章页面
-https://github.com/Drew233/hexo-generator-random
-
-
-hexo-web-push-notification
-web推送插件
-https://github.com/glazec/hexo-web-push-notification
-
-
-
-
-本教程还有其它五大部分，更多内容请见Hexo系列教程
-
-系列教程
-全部文章RSS订阅
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-GithubProfile美化与自动获取RSS文章教程
-Vercel部署高级用法教程
-webhook部署Hexo静态博客指南
-在宝塔VPS上面采用docker部署waline全流程图解教程
-
-笔记系列
-Note分类RSS订阅
-
-完美笔记进化论
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Joplin入门指南&amp;实践方案
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-Joplin 插件以及其Markdown语法。All in One!
-Joplin 插件使用推荐
-为知笔记私有化Docker部署
-
-Gitbook使用系列
-Gitbook分类RSS订阅
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-Gitlab 使用系列
-Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-]]></content>
-      <categories>
-        <category>hexo</category>
-      </categories>
-      <tags>
-        <tag>github</tag>
-        <tag>hexo</tag>
-        <tag>matery</tag>
-        <tag>cdn</tag>
-        <tag>seo</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>基于Hexo的matery主题搭建博客网络优化篇3</title>
     <url>/posts/9b056c86/</url>
     <content><![CDATA[
@@ -30726,6 +29854,878 @@ search:
 
 
 还可以给search.xml添加上jsdelivr cdn 加速！
+
+
+
+本教程还有其它五大部分，更多内容请见Hexo系列教程
+
+系列教程
+全部文章RSS订阅
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+GithubProfile美化与自动获取RSS文章教程
+Vercel部署高级用法教程
+webhook部署Hexo静态博客指南
+在宝塔VPS上面采用docker部署waline全流程图解教程
+
+笔记系列
+Note分类RSS订阅
+
+完美笔记进化论
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Joplin入门指南&amp;实践方案
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+Joplin 插件以及其Markdown语法。All in One!
+Joplin 插件使用推荐
+为知笔记私有化Docker部署
+
+Gitbook使用系列
+Gitbook分类RSS订阅
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+Gitlab 使用系列
+Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+]]></content>
+      <categories>
+        <category>hexo</category>
+      </categories>
+      <tags>
+        <tag>github</tag>
+        <tag>hexo</tag>
+        <tag>matery</tag>
+        <tag>cdn</tag>
+        <tag>seo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>基于Hexo的matery主题搭建博客自定义修改篇2</title>
+    <url>/posts/4d8a0b22/</url>
+    <content><![CDATA[Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+GithubProfile美化与自动获取RSS文章教程
+Vercel部署高级用法教程
+webhook部署Hexo静态博客指南
+在宝塔VPS上面采用docker部署waline全流程图解教程
+
+如果本主题中的诸多功能和主题色彩你不满意，可以在主题中自定义修改，很多更自由的功能和细节点的修改难以在主题的 _config.yml 中完成，需要修改源代码才来完成。以下列出了可能有用的地方：
+自定义Logo
+免费生成 logo 的网站很多，这里给一个个人使用的网站。
+
+找一个喜欢的图片
+https://www.logosc.cn/logo/ 图片上传到这里，然后安装提示生成图片
+下载生成的图标文件，替换主题中对应的文件！
+
+还有其它的服务推荐
+
+Iconifier：
+
+网址：https://iconifier.net/
+Iconifier 是一个简单易用的在线图标生成器，支持导入 PNG、JPG 和 GIF 格式的图片，并生成相应的 SVG 图标。你可以通过上传图片或者提供图片的 URL 来生成图标。
+
+
+SVGOMG：
+
+网址：https://jakearchibald.github.io/svgomg/
+SVGOMG 是一个由 Google 开发的 SVG 优化工具，它可以帮助你压缩和优化现有的 SVG 文件，并提供一些额外的编辑功能，比如调整路径和属性。你可以在这个工具中导入已有的 SVG 文件并进行编辑和优化。
+
+
+Flaticon：
+
+网址：https://www.flaticon.com/
+Flaticon 是一个图标搜索引擎，提供了大量的免费图标资源供用户选择。你可以在 Flaticon 上搜索你需要的图标，然后下载为 SVG 格式。虽然 Flaticon 提供了大量的免费图标资源，但一些高质量的图标可能需要付费下载。
+
+
+
+修改主题颜色
+配色包括导航栏，底部栏，a标签等，主题配色是绿色。
+修改themes\Matery\source\css\matery.css样式
+快捷键ctrl+F查找到#4cbf30（浅绿色）和#0f9d58（深绿色）还有首页字体颜色，修改为你喜欢的颜色
+/* 整体背景颜色，包括导航、移动端的导航、页尾、标签页等的背景颜色. */ 
+.bg-color { 
+	background-image: linear-gradient(to right, #4cbf30 0%, #0f9d58 100%); 
+} 
+/*如果想去掉banner图的颜色渐变效果，请将以下的css属性注释掉或者删除掉即可*/ 
+@-webkit-keyframes rainbow { 
+	/* 动态切换背景颜色. */ 
+} 
+@keyframes rainbow { 
+	/* 动态切换背景颜色. */ 
+}
+
+背景樱花飘落效果
+在themes/matery/source/js目录下新建sakura.js文件，打开这个网址传送门，将内容复制粘贴到sakura.js即可。
+然后在themes/matery/layout/layout.ejs文件内添加下面的内容：
+&lt;script type="text/javascript"&gt;
+//只在桌面版网页启用特效
+var windowWidth = $(window).width();
+if (windowWidth &gt; 768) {
+    document.write('&lt;script type="text/javascript" src="/js/sakura.js"&gt;&lt;\/script&gt;');
+}
+&lt;/script&gt;
+修改花瓣的数量
+因为普遍在使用的樱花背景效果花瓣数太多了，一些人不太喜欢。
+于是按不同花瓣数量做了几个新的 js ，并提供如下 cdn 形式的引用：
+https://cdn.jsdelivr.net/gh/fz6m/Private-web@1.2/js/sakura/sakura-small.js
+以上为少量樱花效果，另提供几个不同数量的文件引用名：
+
+
+
+文件名
+说明
+
+
+
+
+sakura-small.js
+少量樱花
+
+
+sakura-half.js
+樱花相对原效果数量减半
+
+
+sakura-reduce.js
+樱花相对原效果减少1/4
+
+
+sakura-original.js
+樱花数量不变（原效果）
+
+
+
+自定义鼠标样式
+首先将鼠标样式下载到本地，推荐大家一个网站：https://zhutix.com/ico/ori-cursors/
+以我的为例，我将鼠标指针样式放在了主题文件夹下的medias目录下，然后打开themes\matery\source\css下的my.css文件，添加内容如下：
+*{
+    cursor: url("/medias/imgs/zhengchang.ico"),auto!important;
+}
+:active{
+    cursor: url("/medias/imgs/dianji.ico"),auto!important;
+}
+取消首页渐变颜色动画
+在themes\Matery\source\css\matery.css，ctrl+F快捷键查找.bg-cover:after，注释掉即可。
+/* .bg-cover:after {
+    -webkit-animation: rainbow 60s infinite;
+    animation: rainbow 60s infinite;
+} */
+首页随机图片轮播
+themes\matery\layout\_partial\bg-cover-content.ejs
+修改随机获取一张图片：
+$('.bg-cover').css('background-image', 'url(&lt;%- theme.featureImages[Math.floor(Math.random() * theme.featureImages.length + 1)-1] %&gt;)');
+优化目录栏，透明化
+目录样式竟然在：themes\Matery\layout\_partial\post-detail-toc.ejs
+.toc-widget {
+    width: 345px;
+    padding-left: 20px;
+    background-color: rgb(255, 255, 255,0.7);
+    border-radius: 10px;
+    box-shadow: 0 10px 35px 2px rgba(0, 0, 0, .15), 0 5px 15px rgba(0, 0, 0, .07), 0 2px 5px -5px rgba(0, 0, 0, .1) !important;
+}
+增加点击跳转评论按钮
+新建文件themes\Matery\layout\_partial\back-comment.ejs,粘贴如下代码
+我这里评论是valine，直接填写的valine的id——href="#vcomments",如果是其他评论，对应修改即可。
+&lt;!-- 直达评论 --&gt;
+&lt;div id="to_comment" class="comment-scroll"&gt;
+    &lt;a class="btn-floating btn-large waves-effect waves-light" href="#vcomments" title="直达评论"&gt;
+        &lt;i class="fas fa-comments"&gt;&lt;/i&gt;
+    &lt;/a&gt;
+&lt;/div&gt;
+在themes\Matery\layout\_partial\valine.ejs文末添加一条，引用第一步的内容；
+&lt;%- partial('_partial/back-comment.ejs') %&gt;
+则只在valine存在的页面才显示直达评论，防止首页其他地方也出现按钮。其实还可以优化为浮动出现，有一点麻烦，我这里没有设置。
+增加样式在themes\Matery\source\css\matery.css添加内容如下：
+/*直达评论按钮样式*/
+.comment-scroll {
+    position: fixed;
+    right: 15px;
+    bottom: 135px;
+    padding-top: 15px;
+    margin-bottom: 0;
+    z-index: 998;
+}
+
+.comment-scroll .btn-floating {
+    background: linear-gradient(to bottom right, #FF9999 0%, #ff6666 100%);
+    width: 48px;
+    height: 48px;
+}
+
+.comment-scroll .btn-floating i {
+    line-height: 48px;
+    font-size: 1.8rem;
+}
+
+bottom: 135px;是距离底部的高度，看看你是否需要修改。
+添加简体繁体一键切换
+
+首先，我们可以在这里右键另存下载简繁字体切换所需的 tw_cn.js 文件，我们把这个文件放到 ~/themes/(你的主题名)/source/js/ 文件夹下。
+修改模板，在我们想要显示简繁转换按钮的地方添加如下代码。例如，我在 NexT 主题的布局文件 ~/themes/(你的主题名)/layout/_partials/footer.ejs 里添加了如下代码：
+
+&lt;div class="translate-style"&gt;
+繁/简：&lt;a id="translateLink" href="javascript:translatePage();"&gt;繁体
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;script type="text/javascript" src="/js/tw_cn.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript"&gt;
+var defaultEncoding = 2; //网站编写字体是否繁体，1-繁体，2-简体
+var translateDelay = 0; //延迟时间,若不在前, 要设定延迟翻译时间, 如100表示100ms,默认为0
+var cookieDomain = "https://1han.wiki/"; //Cookie地址, 一定要设定, 通常为你的网址
+var msgToTraditionalChinese = "繁体"; //此处可以更改为你想要显示的文字
+var msgToSimplifiedChinese = "简体"; //同上，但两处均不建议更改
+var translateButtonId = "translateLink"; //默认互换id
+translateInitilization();
+&lt;/script&gt;
+读者可以在博客底部点击简体 / 繁体来看具体的切换字体效果。
+修改滑动条
+/* 滚动条 */
+::-webkit-scrollbar-thumb {
+    background-color: #FF2A68;
+    background-image: -webkit-linear-gradient(45deg,rgba(255,255,255,.4) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.4) 50%,rgba(255,255,255,.4) 75%,transparent 75%,transparent);
+    border-radius: 3em;
+}
+::-webkit-scrollbar-track {
+    background-color: #ffcacaff;
+    border-radius: 3em;
+}
+::-webkit-scrollbar {
+    width: 8px;
+    height: 15px;
+}
+文章标题添加打字机效果
+定位到文章标题代码 layout/_partial/post-cover.ejs
+&lt;h1 class="description center-align post-title"&gt;&lt;%= page.title %&gt;&lt;/h1&gt;
+文章标题代码替换成下面的代码
+&lt;script src="&lt;%- theme.jsDelivr.url %&gt;&lt;%- url_for(theme.libs.js.typed) %&gt;"&gt;&lt;/script&gt;
+&lt;% if (theme.post.enable) { %&gt;
+    &lt;script&gt;
+        var typedObj = new Typed("#post-title", {
+            strings: [ '&lt;%= page.title %&gt;' ],
+            startDelay: &lt;%= theme.post.startDelay %&gt;,
+            typeSpeed: &lt;%= theme.post.typeSpeed %&gt;,
+            loop: &lt;%= theme.post.loop %&gt;,
+            backSpeed: &lt;%= theme.post.backSpeed %&gt;,
+            showCursor: &lt;%= theme.post.showCursor %&gt;
+        });
+    &lt;/script&gt;
+&lt;% } %&gt;
+
+最后在主题配置文件中进行配置 _config.yml
+# 文章标题
+post:
+  enable: true
+  loop: false # 是否循环
+  showCursor: true # 是否显示光标
+  startDelay: 500 # 开始延迟
+  typeSpeed: 100 # 打字速度
+  backSpeed: 50 # 删除速度
+现在就完成了为一言和文章标题添加打字机效果
+更换字体
+一般网站的web字体都可以直接从Google-Font获取资源，这样不用担心字体商业带来的法律问题。
+常见的开源字体有：
+思源黑体 、 文泉驿 、 文鼎开放字体 、 柳体 、 cwTeX中文字体 、 濑户字体、江西拙楷体等。
+1）创建web字体引用
+@font-face{
+    font-family: '引用的字体名称';
+    src: url('谷歌字体路径（或者其他什么字体引用）');   
+}
+2）在网页合适的位置进行字体引用
+①利用浏览器检查元素，获取需要定义字体的部分
+②在主体的配置文件中(hexo-theme-matery/layout/…)找到对应的渲染(.ejs)文件，查找需要修改的部分
+①演示一下利用浏览器获取定义字体的部分
+
+对获取到的id选择器：#artDetail进行css渲染
+#artDetail {
+    font-family: '引用的web字体';
+}
+②利用主体的ejs渲染文件找出需要修饰的部分（加入自定义类）
+
+/*使用我在文章内容详情定义的diyFnot类**/
+.diyfont {
+   font-family: '引用的web字体'; 
+}
+
+/*也可以使用自带的id*/
+#artDetail {
+    font-family: '引用的web字体'; 
+}
+网站全局化字体定义
+@font-face{
+    font-family: '引用的字体名称';
+    src: url('谷歌字体路径（或者其他什么字体引用）');   
+}
+
+body {
+    font-family: '引用的web字体名称'; 
+}
+引用本地的字体文件
+当然有时候那个谷歌字体的网站可能登录不上去，需要科学上网，很烦人！我们也可以直接下载下字体文件，将他放在本地，进行直接引用！看下面操作👇
+①在本地的hexo根目录的source文件下创立diy-font文件夹:/source/diy-font
+在该文件下存放你的字体文件，比如：/source/diy-font/IBMPlexMono-Italic.ttf
+②引用本地字体（仍然是在my.css文件中书写代码）
+@font-face{
+    font-family: 'hl';
+    src: url('../diy-font/IBMPlexMono-Italic.ttf');
+}
+
+/** 表示全局使用，如果不想全局使用不要添加该段 */
+body{
+    font-family: 'hl';
+}
+
+
+/* 可以局部使用，建议添加 */
+.diyFont{
+    font-family: 'hl';
+}
+这样我们就可以实现引用本地的字体了，并且在web有效！
+在你想要使用的元素的 class 里面加上 diyFont 即可。
+
+
+直接使用
+F12，找到对应的代码片段即可：
+
+
+&lt;span class="logo-span diyFont"&gt;测试字体&lt;/span&gt;
+
+
+模板使用
+找到对应的模板 header.ejs中的代码片段使用即可：
+
+
+&lt;span class="logo-span diyFont"&gt;&lt;%= config.title %&gt;&lt;/span&gt;
+修改主题颜色
+在主题文件的 /source/css/matery.css 文件中，搜索 .bg-color 来修改背景颜色：
+/* 整体背景颜色，包括导航、移动端的导航、页尾、标签页等的背景颜色. */
+.bg-color {
+  background-image: linear-gradient(to right, #4cbf30 0%, #0f9d58 100%);
+}
+
+@-webkit-keyframes rainbow {
+  /* 动态切换背景颜色. */
+}
+
+@keyframes rainbow {
+  /* 动态切换背景颜色. */
+}
+修改 banner 图和文章特色图
+可以直接在 /source/medias/banner 文件夹中更换喜欢的 banner 图片，主题代码中是每天动态切换一张，只需 7 张即可。如果会 JavaScript 代码，可以修改成自己喜欢切换逻辑，如：随机切换等，banner 切换的代码位置在 /layout/_partial/bg-cover-content.ejs 文件的 &lt;script&gt;&lt;/script&gt; 代码中：
+$(".bg-cover").css("background-image", "url(/medias/banner/" + new Date().getDay() + ".jpg)");
+在 /source/medias/featureimages 文件夹中默认有 24 张特色图片，你可以再增加或者减少，并需要在 _config.yml 做同步修改。
+Hexo 跳过渲染
+在Hexo部署时会默认渲染source下的所有html页面，但有时候想在Hexo博客上单独自定义html页面或README.md时，却不希望被Hexo渲染。因此对某个文件或者目录进行排除渲染是非常必要的。
+方法一：font matter
+Hexo新建网站页面，然后将你的代码直接写入 index.md 中
+在 Front matter 中添加 layout: false，此方法适用于单一的纯HTML
+CSS 页面。
+---
+title: tools
+date: 2020-04-28 00:00:00
+type: "tools"
+layout: false
+---
+方法二：skip rende
+在博客根目录下的 _config.yml，找到 skip_render，大概在32行左右，写入你想要的跳过渲染的路径，注意缩进和空格。
+# 指定目录跳过hexo渲染
+skip_render:
+  - 'tools/*'
+  - 'tools/**'
+
+注释：tools/* 表示在目录 source/fireworks 下的文件全部跳过渲染，tools/** 表示在博客根目录 source/tools/ 文件夹下的文件全部跳过渲染（例如页面的 js、css 在另一个文件夹中）。
+
+博客中插入音乐
+hexo-tag-aplayer
+hexo-tag-aplayerAPlayer 播放器的 Hexo 标签插件（现已支持 MetingJS）。
+安装
+npm install --save hexo-tag-aplayer
+使用方法——aplayer
+{% aplayer title author url [picture_url, narrow, autoplay, width:xxx, lrc:xxx] %}
+
+title : 曲目标题
+author: 曲目作者
+url: 音乐文件 URL 地址
+picture_url: (可选) 音乐对应的图片地址
+narrow: （可选）播放器袖珍风格
+autoplay: (可选) 自动播放，移动端浏览器暂时不支持此功能
+width:xxx: (可选) 播放器宽度 (默认: 100%)
+lrc:xxx: （可选）歌词文件 URL 地址
+例如：
+
+{% aplayer "她的睫毛" "周杰伦" "http://home.ustc.edu.cn/~mmmwhy/%d6%dc%bd%dc%c2%d7%20-%20%cb%fd%b5%c4%bd%de%c3%ab.mp3"  "http://home.ustc.edu.cn/~mmmwhy/jay.jpg" %}
+如果你觉得前面的方法不太好用，可以用下面的方法，使用MetingJS。
+使用方法——MetingJS
+MetingJS 是基于Meting API 的 APlayer 衍生播放器，支持对于 QQ音乐、网易云音乐、虾米、酷狗、百度等平台的音乐播放。
+第一步：修改_config.yml配置
+在hexo的配置文件_config.yml中添加：
+aplayer:
+	meting: true
+第二步：使用MetingJS 播放器
+&lt;!-- 简单示例 (id, server, type)  --&gt;
+{% meting "571184509" "xiami" "playlist" %}
+有关的选项列表如下:
+
+
+
+选项
+默认值
+描述
+
+
+
+
+id
+必须值
+歌曲 id / 播放列表 id / 相册 id / 搜索关键字
+
+
+server
+必须值
+音乐平台: netease, tencent, kugou, xiami, baidu
+
+
+type
+必须值
+song, playlist, album, search, artist
+
+
+fixed
+false
+开启固定模式
+
+
+mini
+false
+开启迷你模式
+
+
+loop
+all
+列表循环模式：all, one,none
+
+
+order
+list
+列表播放模式： list, random
+
+
+volume
+0.7
+播放器音量
+
+
+lrctype
+0
+歌词格式类型
+
+
+listfolded
+false
+指定音乐播放列表是否折叠
+
+
+storagename
+metingjs
+LocalStorage 中存储播放器设定的键名
+
+
+autoplay
+true
+自动播放，移动端浏览器暂时不支持此功能
+
+
+mutex
+true
+该选项开启时，如果同页面有其他 aplayer 播放，该播放器会暂停
+
+
+listmaxheight
+340px
+播放列表的最大长度
+
+
+preload
+auto
+音乐文件预载入模式，可选项： none, metadata, auto
+
+
+theme
+#ad7a86
+播放器风格色彩设置
+
+
+
+博客中插入视频
+hexo-tag-dplayer
+hexo-tag-dplayer 是 DPlayer 播放器的 Hexo 标签插件
+安装
+npm install --save hexo-tag-dplayer
+使用
+{% dplayer key=value ... %}
+例：
+{% dplayer "url=http://www.nenu.edu.cn/_upload/article/videos/03/5f/7c999eed42e3aadc413d7f851f0e/0f50b3eb-9285-41d2-ac4d-6cc363651aad_B.mp4"  "autoplay=true" "preload=metadata" "hotkey=true" %} 
+有关的选项列表如下:
+
+
+
+选项
+默认值
+描述
+
+
+
+
+url
+必须值
+视频地址
+
+
+loop
+false
+视频循环播放
+
+
+volume
+0.7
+播放器音量
+
+
+hotkey
+true
+开启热键
+
+
+autoplay
+true
+自动播放，移动端浏览器暂时不支持此功能
+
+
+logo
+-
+在左上角展示一个 logo，你可以通过 CSS 调整它的大小和位置
+
+
+mutex
+true
+该选项开启时，如果同页面有其他播放，该播放器会暂停
+
+
+highlight
+[]
+自定义进度条提示点
+
+
+preload
+auto
+视频文件预载入模式，可选项： none, metadata, auto
+
+
+theme
+#ad7a86
+播放器风格色彩设置
+
+
+
+注：如果使用腾讯视频、优酷视频等在线视频网站的资源，需要先进行视频地址解析，如点量视频解析，获取到实际的视频地址。
+其他使用方法
+在使用优酷或者腾讯视频时可以直接复制分享代码到文章中，如：
+&lt;iframe height=498 width=510 src='https://player.youku.com/embed/XMjk4ODAyMzIyOA==' frameborder=0 'allowfullscreen'&gt;&lt;/iframe&gt;
+参考文献
+
+
+hexo-tag-aplayer
+hexo-tag-dplayer
+
+
+hexo-tag-videojs
+
+录屏：OBS	OBS Studio录屏教程
+视频切片：FFmpeg
+托管：任何一个支持静态资源访问的都可以，比如跑个 Nginx
+Hexo 插件：hexo-tag-videojs
+
+
+Video标签需要加载完整个视频文件（如mp4）才能开始播放，拖动不便。
+使用bilibili服务，审查手段未知，可能看你白嫖就封号了
+自托管ts切片综合考虑是最佳方案！
+
+FFmpeg m3u8 切片
+要使用FFmpeg将一个MP4文件制作为M3U8文件并使用TS分片，您可以按照以下步骤进行操作：
+
+安装FFmpeg
+
+首先，您需要安装FFmpeg。可以在FFmpeg的官方网站（https://ffmpeg.org/）上下载适用于您的操作系统的二进制文件。
+
+制作M3U8文件和TS分片
+
+使用以下命令，将您的MP4文件制作为M3U8文件和TS分片：
+ffmpeg -i input.mp4 -codec copy -vbsf h264_mp4toannexb -map 0 -f segment -segment_list output.m3u8 -segment_time 10 output%03d.ts
+
+-i input.mp4：指定输入文件为input.mp4。
+-codec copy：使用与输入文件相同的编解码器。
+-vbsf h264_mp4toannexb：将MP4的H.264视频流转换为MPEG-TS格式，以便进行分片。
+-map 0：将所有输入流映射到输出中。
+-f segment：指定输出格式为segment，表示进行分段。
+-segment_list output.m3u8：指定输出的M3U8文件名为output.m3u8。
+-segment_time 10：指定每个TS分片的时长为10秒。
+output%03d.ts：指定输出的TS分片文件名为output001.ts、output002.ts等。
+
+执行命令后，FFmpeg将开始处理您的视频，并将其制作为M3U8文件和多个TS分片。
+
+检查输出
+
+完成后，您可以在当前目录下找到一个名为output.m3u8的文件，以及一系列以output001.ts、output002.ts等命名的TS分片文件。您可以使用任何支持M3U8格式的播放器来播放此视频。
+外链跳转插件
+使用 npm 或者 yarn 安装
+## npm 安装
+npm install hexo-external-link --save
+## yarn 安装
+yarn add hexo-external-link
+之后在博客站点根目录下添加如下配置：
+hexo_external_link:
+  enable: true
+  enable_base64_encode: true
+  url_param_name: 'u'
+  html_file_name: 'go.html'
+  target_blank: true
+  link_rel: 'external nofollow noopener noreferrer'
+  domain: 'your_domain' # 如果开启了防盗链，填写你的域名
+  safety_chain: true
+文章生成永久链接
+主题默认的文章链接配置是
+premalink: :year/:month/:day/:title
+这种生成的链接地址很长，文章版权的链接地址会出现一大串字符编码，一点也不好看。因此需要修改文章生成链接的格式。 首先再根目录下执行下面的命令： hexo-abbrlinkGitHub地址
+npm install hexo-abbrlink --save
+然后再站点配置文件下添加如下配置：
+abbrlink: 
+    alg: crc16 #算法：
+    crc16(default) and crc32 rep: hex #进制： dec(default) and hex: dec #输出进制：十进制和十六进制，默认为10进制。丨dec为十进制，hex为十六进制
+再将站点配置文件的permalink的值修改为：
+permalink: posts/:abbrlink.html  # 此处可以自己设置，也可以直接使用 :/abbrlink
+生成完后，原md文件的Front-matter 内会增加abbrlink 字段，值为生成的ID 。这个字段确保了在我们修改了Front-matter 内的博客标题title或创建日期date字段之后而不会改变链接地址.
+Hexo 插件推荐
+
+hexo 的强大之处在于，拥有非常多的免费开源插件给你使用！
+
+
+
+
+插件
+功能
+文档链接
+
+
+
+
+hexo-generator-index-pin-top
+文章置顶
+https://github.com/netcan/hexo-generator-index-pin-top
+
+
+hexo-wordcount
+文章字数统计和阅读时长统计
+https://github.com/willin/hexo-wordcount
+
+
+hexo-abbrlink
+生成URL短链接
+https://github.com/rozbo/hexo-abbrlink
+
+
+hexo-lazyload-image
+图片懒加载
+https://github.com/Troy-Yang/hexo-lazyload-image
+
+
+hexo-generator-baidu-sitemap
+生成baidusitemap.xml
+https://github.com/coneycode/hexo-generator-baidu-sitemap
+
+
+hexo-generator-sitemap
+生成sitemap.xml
+https://github.com/hexojs/hexo-generator-sitemap
+
+
+hexo-generator-feed
+生成RSS文件
+https://github.com/hexojs/hexo-generator-feed
+
+
+hexo-external-link
+外链跳转
+https://github.com/hvnobug/hexo-external-link
+
+
+hexo-autonofollow
+自动对外部链接增加nofollow属性
+https://github.com/liuzc/hexo-autonofollow
+
+
+hexo-filter-nofollow
+为外链添加 rel="noopener external nofollow noreferrer"
+https://github.com/hexojs/hexo-filter-nofollow
+
+
+hexo-prism-plugin
+代码高亮
+https://github.com/ele828/hexo-prism-plugin
+
+
+hexo-neat
+博客压缩
+https://github.com/rozbo/hexo-neat
+
+
+hexo-allminifier
+https://developer.aliyun.com/mirror/npm/package/hexo-all-minifier
+
+
+
+hexo-tag-aplayer
+aplayer音乐播放器
+https://github.com/MoePlayer/hexo-tag-aplayer
+
+
+hexo-tag-dplayer
+dplayer视频播放器
+https://github.com/MoePlayer/hexo-tag-dplayer
+
+
+hexo-douban
+添加豆瓣读书，电影，游戏页面
+https://github.com/mythsman/hexo-douban
+
+
+hexo-generator-searchdb
+本地搜索,生成search.xml
+https://github.com/theme-next/hexo-generator-searchdb
+
+
+hexo-algoliasearch
+搜索系统
+https://github.com/LouisBarranqueiro/hexo-algoliasearch
+
+
+hexo-algolia
+https://github.com/oncletom/hexo-algolia
+
+
+
+hexo-generator-search
+本地搜索系统
+https://github.com/wzpan/hexo-generator-search
+
+
+hexo-baidu-url-submit
+百度站长主动推送
+https://github.com/huiwang/hexo-baidu-url-submit
+
+
+hexo-offline
+开启PWA
+https://github.com/JLHwung/hexo-offline
+
+
+hexo-pwa
+https://github.com/lavas-project/hexo-pwa
+
+
+
+hexo-helper-live2d
+看板娘
+https://github.com/EYHN/hexo-helper-live2d
+
+
+hexo-addlink
+文末添加当前文章链接和版权声明
+https://github.com/acwong00/hexo-addlink
+
+
+hexo-blog-encrypt
+博客文章加密
+https://github.com/MikeCoder/hexo-blog-encrypt
+
+
+hexo-simple-mindmap
+博客添加脑图
+https://github.com/HunterXuan/hexo-simple-mindmap
+
+
+hexo-pdf
+博客展示pdf
+https://github.com/superalsrk/hexo-pdf
+
+
+hexo-tag-echarts
+博客添加图表
+https://github.com/zhoulvjun/hexo-tag-echarts
+
+
+hexo-steam-games
+添加Steam游戏界面
+https://github.com/HCLonely/hexo-steam-games
+
+
+hexo-bilibili-bangumi
+添加bilibili番剧页面
+https://github.com/HCLonely/hexo-bilibili-bangumi
+
+
+hexo-generator-random
+生成随机文章页面
+https://github.com/Drew233/hexo-generator-random
+
+
+hexo-web-push-notification
+web推送插件
+https://github.com/glazec/hexo-web-push-notification
+
 
 
 
@@ -47358,7 +47358,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts3115'));
+        var myChart = echarts.init(document.getElementById('echarts7142'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -47452,7 +47452,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts8663'));
+        var myChart = echarts.init(document.getElementById('echarts8055'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -47521,7 +47521,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts1405'));
+        var myChart = echarts.init(document.getElementById('echarts2134'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -51459,7 +51459,7 @@ PMI 指数
 
 楼市什么时候跌到位？
 从历史发展来看，如果一种产品兼具刚需和可垄断这两条属性，一旦他称为财政工具，其价格必然涨到天际，例如古时候的盐，从春秋时期管仲搞垄断开始一直到秦朝，价格就没便宜过。
-为什么普通老百姓吃口盐要付出那么高的代价，盐肯定是不缺的，但是垄断制造了稀缺，加上盐的刚需性，自然而然就成了古代充盈国库的工具。
+为什么普通老百姓吃口盐要付出那么高的代价？盐肯定是不缺的，但是垄断制造了稀缺，加上盐的刚需性，自然而然就成了古代充盈国库的工具。
 古代是盐搁现代就是房子，但房子有一样是盐所没有的，那就是债务创造的功能，这也是房子比盐优的地方。但是有债务就一定有周期，债务周期是没法避免的，任何经济体，只要依赖货币扩张或者债务扩张来刺激经济，它就一定会发生债务周期。
 债务周期又分长短，短周期大约五到七年一个轮回，每次都可以通过货币扩张制造通胀来稀释债务，然而每一次都会使债务再上一个台阶。因为货币资金的本质依然是债务扩张，这就相当于用更高的债务去解决眼前的债务，所以扩张到最后就没法再扩张了，货币也就无法继续超发，这个时候经济就走到了长周期的末尾，这个周期大约是60到80年。
 一旦增长预期没有了，价格越高就意味着泡沫越大，然后迎来的就是债务毁灭。所以对于楼市来说，光涨房价是没用的，还得把收入一起涨起来，才能维持这个债务周期继续运行。因为真正的资产不是房子，你看即使房子烂尾了，银行也不慌，直到大家停止还贷，它才会紧张。这就说明房子不是资产，打工人的负债才是真正的资产。更确切的说，银行真正在意的是打工人的持续还债所产生的现金流，当这个现金流开始不稳定时，债务就失去了扩张的动力，旧债的价值就变得不可信任，各种地产相关的债券和商票的价值就会下跌。
@@ -56834,9 +56834,9 @@ chatGPT
 
 视频讲解
 B站
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-LNoxCkamjfaQvNPP").style.height=document.getElementById("mmedia-LNoxCkamjfaQvNPP").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-sNgsyotKWgThknNh").style.height=document.getElementById("mmedia-sNgsyotKWgThknNh").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-LNoxCkamjfaQvNPP").style.height=document.getElementById("mmedia-LNoxCkamjfaQvNPP").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-sNgsyotKWgThknNh").style.height=document.getElementById("mmedia-sNgsyotKWgThknNh").scrollWidth*0.76+"px";
     }; 
 youtube
 
@@ -58687,6 +58687,689 @@ Earthly 一个更加强大的镜像构建工具
         <tag>bt</tag>
         <tag>pt</tag>
         <tag>nas</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>人格类型分类总结归纳</title>
+    <url>/posts/ec34b111/</url>
+    <content><![CDATA[
+本文介绍了什么是人格特质，怎么分类，并介绍了主流分析方法：BMTI以及五大人格分析方法。后面着重介绍了敏感型人格和内向人格的优势，最后介绍了人格缺陷的一些分类和特点。与人打交道，这些了解不可或缺
+
+
+
+人格特质
+
+人格是一个复杂而多维的概念，对其进行科学的研究和分类有助于我们更好地理解自己和他人。在心理学领域，Myers-Briggs Type Indicator（MBTI）和Big Five五大人格特质理论是两种广泛应用的人格理论。本文将深入介绍这两种理论，并对各种人格类型进行分类和详细解读，以帮助读者更好地了解人格特质及其影响。
+
+人格是指个体在思维、情感和行为等方面的长期稳定的特点和倾向。MBTI和Big Five理论是两种广泛使用的人格理论，它们各自从不同的角度探索和解释个体的人格特质。
+Myers-Briggs Type Indicator (MBTI)：
+MBTI是一种基于心理类型的理论，由伊莎贝尔·布里格斯-迈尔斯（Isabel Briggs Myers）和凯瑟琳·库克布里格斯（Katherine Cook Briggs）母女于 20 世纪 40 年代开发而成。它将人格分为四个维度，每个维度包含两个对立的特质，共计16种人格类型。
+
+
+外向(E) vs. 内向(I)：
+
+外向型：喜欢与人交往，注重外部世界，善于社交和表达。
+内向型：喜欢独处，注重内心体验，善于思考和反省。
+
+
+
+感觉(S) vs. 直觉(N)：
+
+感觉型：重视具体事实和细节，偏好实际经验和直接感知。
+直觉型：善于看到事物的整体和潜在意义，偏好理论和抽象思维。
+
+
+
+思维(T) vs. 感觉(F)：
+
+思维型：以逻辑和客观分析为导向，更注重事物的理性和合理性。
+感觉型：以情感和价值观为导向，更注重人情味和情感表达。
+
+
+
+判断(J) vs. 感知(P)：
+
+判断型：喜欢有计划和组织，偏好决断和结论。
+感知型：喜欢开放性和灵活性，偏好探索和观察。
+
+
+
+Big Five 五大人格特质理论：
+大五人格是目前心理学界最受认可的人格模型之一，它由 Lewis Goldberg 等人在 1980 年代提出。Big Five理论是一种基于因素分析的人格理论，将人格特质分为五个维度，每个维度描述了人格的一个方面，通过测量这些维度可以描述一个人的整体人格特征。
+
+
+外向性 (Extraversion)：
+
+社交性、活跃、乐观、爱冒险、寻求刺激。
+
+
+
+宜人性 (Agreeableness)：
+
+亲和力、合作性、信任、宽容、关心他人。
+
+
+
+尽责性 (Conscientiousness)：
+
+责任感、自律性、目标导向、细致、可靠。
+
+
+
+神经质 (Neuroticism)：
+
+焦虑、易怒、抑郁、情绪不稳定、易受压力影响。
+
+
+
+开放性 (Openness to Experience)：
+
+好奇心、想象力、创造力、对新事物的接受度、审美情趣。
+
+
+
+每个维度上，个体都会具有一定的倾向，但没有绝对的“好”或“坏”。
+人格分类及特点：
+
+
+外向型 (Extraverted)：
+
+社交能力强，乐观开朗，喜欢冒险和挑战，与他人相处融洽。
+
+
+
+内向型 (Introverted)：
+
+善于思考和反省，喜欢独立思考，对深入的交流更感兴趣。
+
+
+
+感觉型 (Sensing)：
+
+重视现实和具体事实，偏好实际经验和实用性，注重细节和常规。
+
+
+
+直觉型 (Intuitive)：
+
+想象力丰富，喜欢探索新观念和未来可能性，关注整体和潜在意义。
+
+
+
+思维型 (Thinking)：
+
+逻辑性强，善于分析和解决问题，注重客观、理性的决策。
+
+
+
+感觉型 (Feeling)：
+
+关注人情味和价值观，重视他人感受，善于表达情感。
+
+
+
+判断型 (Judging)：
+
+喜欢有计划和组织，注重目标达成和任务完成。
+
+
+
+感知型 (Perceiving)：
+
+喜欢开放性和灵活性，善于适应变化和保持开放心态。
+
+
+
+MBTI和Big Five理论提供了两种不同但互补的人格分类方式，帮助我们更好地理解自己和他人。每种人格类型都有其独特的特点和优势，而理解这些特点有助于促进个人成长、提高自我认知水平，以及改善人际关系。
+人格分类
+以下是 MBTI 和大五人格的两种人格分类方法：
+MBTI
+
+
+
+类型
+特征
+
+
+
+
+ISTJ
+务实、可靠、逻辑性强
+
+
+ISFJ
+善良、体贴、乐于助人
+
+
+INFJ
+富有同情心、理想主义、洞察力强
+
+
+INTJ
+独立、理智、具有战略眼光
+
+
+ISTP
+独立、行动力强、善于解决问题
+
+
+ISFP
+热爱自由、追求美感、富有创造力
+
+
+INFP
+理想主义、富有同情心、注重个人价值观
+
+
+INTP
+理智、客观、善于分析
+
+
+ESTP
+热情、活泼、喜欢冒险
+
+
+ESFP
+热情、友善、善于交际
+
+
+ENFP
+热情、乐观、富有创造力
+
+
+ENTP
+聪明、机智、善于辩论
+
+
+ESTJ
+务实、高效、注重秩序
+
+
+ESFJ
+热情、友善、乐于助人
+
+
+ENFJ
+富有领导力、鼓舞人心、充满热情
+
+
+ENTJ
+独立、自信、具有战略眼光
+
+
+
+大五人格
+
+
+
+维度
+高分特征
+低分特征
+
+
+
+
+开放性
+想象力丰富、好奇心强、乐于接受新事物
+墨守成规、缺乏好奇心、不善于接受新事物
+
+
+尽责性
+认真负责、有条理、追求完美
+粗心大意、懒惰、拖延症
+
+
+外向性
+喜欢与他人交往、充满活力、积极乐观
+内向、喜欢独处、沉默寡言
+
+
+宜人性
+友善、体贴、乐于助人
+冷漠、自私、不善于表达情感
+
+
+神经质
+情绪敏感、容易焦虑、压力感强
+情绪稳定、乐观豁达、抗压能力强
+
+
+
+应用
+MBTI 和大五人格可以应用于多个领域，例如：
+
+职业咨询：帮助人们找到适合自己的职业
+团队建设：帮助团队成员更好地沟通和合作
+个人成长：帮助人们了解自己、提升自我认知
+
+注意事项
+MBTI 和大五人格只是评估人格的工具，它们无法完全描述一个人的性格。在使用这些工具时，应注意以下几点：
+
+没有绝对的“好”或“坏”的人格类型，换一个使用环境，可能好坏就相互转换了
+人格类型不是一成不变的，可能会随着时间发生变化
+
+为什么说高敏感人格是大后期人格
+洞察力是高敏人群独有的强大天赋，但在未建立内在系统和正确认知前,只会导致讨好型人格或过度感知危险而特别缺乏安全感。
+但如果通过修炼开发了此天赋,高敏人不仅能控制自己的情绪,还能高度觉知他人情绪且不受影响并引导他人情绪。
+现实生活中大多数人都将敏感视为一个缺点
+你这个人什么都好,就是太敏感了,甚至会把敏感和玻璃心混为一谈。其实那些成打式的人大多都是敏感和极端的,平和与随和其实是一种凡人的情绪共识。而我们的传统校园教育就是要把大多数人都培养成平凡人、易管理的人。因为很多看似与共识价值观相反的失误反而是正确的。
+比如很多人信奉读书无用论,因为他们看到很多人即便读完了硕士和博士,依然找不到好的工作,依然赚得不多。而那些达官显贵是绝对不会让自己的孩子不读书的,因为他们知道一些只有他们自己家族认可,大多数人不认可的东西。不知你发现了没,很多官员和企业家骨子里都是高敏之人,他们会比常人更容易发现一些细节,更容易听懂一些弦外之声,跟他们相处是非常心累的。
+你能说他们小心眼玻璃心吗?显然不是,因为小肚鸡肠之人往往是不可能做到非富即贵的。讲到这里,相信你就明白了,高敏感和小心眼是两码事。高明之人不一定会因敏感知识而生气,但他们拥有这样一份天赋,可以比常人更迅速的察觉到一些常人不懂的事情。这样就很容易先人一步,发现机会、抓住机会、发现危机、避开危机。
+20% 左右的人带有高敏感
+这个世界上只有 20% 左右的人带有与生俱来的高敏感。这些人拥有一种特殊的神经处理系统,他们的耳朵可以听到更广的频率,他们的味蕾可以尝出更丰富的味道,他们的鼻子可以更细致的辨别香水的成分。他们也有更强的共情力。
+在一个电影院里,情节动人处,有些人一边吃着爆米花一边面无表情,而有些人哭得稀里哗啦,一包纸巾都不够用。见你流泪,我一眼忱。这真不是矫情,这是高敏感。
+但高敏感往往被视为必须克制的缺点
+但自小我们所接受的教育里,就是教我们压抑这种天赋,扔掉这种天赋,然后变成一个普通人。这个时代流行了一个新词,校顿敢力。很多人会将其视为正面褒义的性格词汇。经常有人说,不要太敏感,不要想太多,不要玻璃心,要控制,要宽容,要忍耐。然后敏感成了一个彻头彻尾的贬义词。
+你看过漫画龙珠吗?你看过电影《触不可及》吗?里面的主角都是钝感力十足的人,这类人已经成为主流价值观、主流审美里受人欢迎的性格。高敏感不是一种病,更不是一种性格缺陷。高敏和深弱往往是一个硬币的两面,不是外形是否强壮,而是内在里要么气血弱,要么精神弱,敏感而易疲劳。所以觉醒的高敏人往往都是气血管理的高手。
+敏感不代表冲动,能瞬间接收到一些信息,不一定瞬间就会反映出来,他们懂得“知者耻语,善者不言”,看透不说透,还是好朋友。但其实大多数人或者信奉遁敏的人,通常没有这种敏锐的观察力。现实生活中,不知你是否听过一种声音,多来自于年长者长辈们,他们告诉你,太敏感,太注重细节,成不了大事。
+你听到过类似的话吗?如果听到过,你可以回想一下,说这话的人是一个成功的人吗?是一个成了大事的人吗?大概率不是,真正成了大事的人,往往是不喜欢说脚的,因为他们知道他们的成功秘籍,你拿钱都买不走。他们本身也不缺钱,怎么可能随随便便就交给你。好为人士是人类的本性,但高敏之人通常是人群中最沉默的那个人,他们善于观察,但不愿意表达。
+当然,这并不代表他们没有表达能力,相反,他们通常具有超人的表达能力,因为他们的大脑所接收的信息要多于钝感力强的人。因此,看到这里,你要明白,以后不管别人怎么说,你就坚信没心没肺不是褒义词。能够破局的高明者,就是从修罗化境杀出来的神灵。
+高敏感带来更强大的心理素质
+不同于身强者天生的性格与身体催生的意志,高敏人由于会在前期大量感受不同的痛苦,被动进行脱敏训练,这将赐予高敏者一种纯粹的意志力。这种强大的心理是不需要他物支撑而存在的,有组成黑色生命力。黑色生命力这个词源自美国心理学家维尔纳的研究。他在数十年的走访中见过数以千计的问题家庭,他专门寻找那些处在糟糕的处境中,看起来有很大概率成为问题少年,但实际却成长得异常优秀的孩子。
+他想知道是什么力量让这些孩子走出原生环境的束缚,变得光芒四射。维尔纳在 20 世纪 80 年代对夏威夷某小岛上的 698 个孩子进行追踪研究。那个贫穷的小岛上面,许多参与调查的孩子们的身后,都有一个甚至两个患有酗酒、毒瘾、暴力、恶习或因此染上精神疾病的父母。按照大众的认知,在这种家庭环境长大的孩子,人生基本算完了。
+然而,出乎维尔纳意料,有 2/3 的孩子确实重蹈覆辙了这个悲剧。可还有 1/3 的孩子成长为自信、能干、关怀他人的优秀成年人,在学业、家庭和事业上都获得了成功。维尔纳认为,这 1/3 的孩子有能力摆脱糟糕环境影响,他把这种能力称为“修复力”,后来也被称之为“黑色生命力”。
+生活远比小说要精彩。每个人的人生轨迹都不可能是一根直线,而是一条不断震荡的曲线。真正强大的人,都曾独自穿越过一片黑暗森林,如同种子在土壤里独自扎根。在这段至暗时光,需要忍受各种委屈、辛苦不被认可,隐忍不被理解,真心不被接纳,付出没有结果。凡是最终穿过这片黑暗沼泽地的人,才能真正看穿人性,看透人间冷暖,才能百炼成钢。
+几乎每一个人都无可避免地有过至少一段剧烈滑落的低谷期,那就是每个人都必然会经历的至暗时光。强大的人就诞生于此,因为在这段剧烈滑落的波谷中,有人爬了上来,有人却再也没有。他的自信与勇气,在被至暗时光彻底击碎后,就再也没能回来。在这里,他需要经历的远比他尚未成熟的心灵想象的更多,比如世界观的重构,三观的崩坏,不公平的碾压,自我怀疑的低谷。
+但如果熬过去了,就会得到一种全新的力量。黑色生命力就像是从地狱回来的人,因此,各位,至暗时刻低谷期,不要焦虑,不要绝望,甚至不要祈祷它快点结束,好好利用它们反思人生,马上就会迎来命运的转机。
+人生最大的悲哀不是没有机会,而是站在机会前面,没看见或者没准备好。而大多数人推崇的钝感力,大概率会让你错过机会的。我们这个社会从来都是歌颂平庸、排斥不凡的,因为优秀的人注定是孤独的,注定是与众不同的。高敏之人,因为从幼年开始就比同龄人接受更多的信息,因此他们往往比普通人更有耐心,更有专注力。
+你真的以为人与人的差别不大吗?其实我可以负责任的告诉你,差别巨大。你想过没有,为什么有的人有耐心看完一本书、一篇超长的文章,并且乐此不倦。而有的人超过 100 字,看着就头晕,他们只喜欢看类似于微博那样的一句话,概括一个新闻、一个话题、一个故事。
+短期内,这两种习惯只因天赋的相差所产生的差距并不大,但久而久之,极有可能会塑造出完全不同的两类人。人与人的智商差距确实不大,但这里少了一个时间状语,那就是刚出生或小时候、成年后的人生。天赋的惯性会促使你走向不同的人生,且越走越远。
+你有耐心看长的内容吗?高敏感人群通常具有三个层面的能力:第一是情绪管理能力;第二是对复杂的认知和理解能力;第三是一种应对世事变迁的人生哲学,又被心理学家称为智慧。他们对风险的忍受能力会变得很高。人往往经历过逆境和重大遭遇后,对人性有了更深层的理解,破三观,树新观,创立新的认知系统,学会换一个角度看世界,学会正式接纳,用不一样的方法得到不同结果。
+也正因为如此,相较而言,在这些拥有高敏感性格的人生中,也有更多机会可能发生一些不寻常的事。我们该如何做,才能守住自己的高敏感天赋,或者培养出一种高敏感的性格?
+
+提高自我意识和自我认知,深刻的了解和评估自己的思维方式、情绪方式和行为方式,不过度在意自己的过错,提高对内心真实想法的在意程度,培养自己的批判性思维,明确和了解自己和自己的目标。
+接纳自己的一切,包括负面情绪,越抗拒越浓烈。正如海林格在诗中所说,所有的事情都是因缘和合而来,一切的发生都是必然。若我觉得应该是另外一种可能,伤害的只有我自己,我唯一能做的就是允许。
+不害怕孤独,学会做减法,看淡一切的别离合变迁,学会在逆境中自我救赎和提升。关注自己有限的精力,不急于珍视所为的事和人,不在无意义的事上过度消耗自己。为自己的生活设定界限,区分什么让你舒适,什么让你不适,然后勇敢作出选择。
+
+如果有完美主义倾向,那就适当降低自我要求,不要害怕别人的否定。打破非黑即白的世界观。这个世界不是非黑即白的二元对立,而是存在大量的灰色地带,没必要让自己绷得太紧。有意识的给生活留白,放松注意力,阻断信息输入,整理一天的情绪,帮助自己恢复能量。
+最后让我们记住一点,低敏感度的人往往精力充沛,爱好广泛,人生更有广度。而高敏感的人,因为内心世界更丰富,人生往往更有深度。最后,一定要记住,高敏感是一种天赋,如果你具备了这种能力,那么请好好珍惜它。
+为什么内向人格更容易成功
+内向人格在当今社会中普遍被误解和低估，被视为软弱、害羞、不合群的特质。然而，实际上，内向的人们可能拥有许多优势，这些优势能够在工作和生活中帮助他们更容易取得成功。
+内向人格的误解
+1. 被认为软弱、害羞、不合群
+内向的人们经常被误解为软弱和害羞，因为他们不像外向的人那样大声表达自己的意见或者主动与他人交流。然而，内向并不意味着缺乏自信或者自我意识，只是他们更喜欢独处或者与少数几个亲近的人交往，内向的人不需要狐朋狗友凑热闹，他们专注于内在的成长。
+2. 被认为不适合领导岗位和管理
+内向的人们经常被认为不适合领导岗位或者管理职位，因为他们不像外向的人那样善于社交和表达。然而，许多成功的领导者和管理者实际上都是内向的，他们通过深思熟虑和善于倾听来取得了领导者的地位。
+3. 被认为不善社交和表达
+内向的人们常常被认为不善于社交和表达，因为他们不像外向的人那样喜欢在人群中表现自己。然而，内向的人们在个人关系中往往更加真诚和深入，他们更擅长建立深层次的关系，而不是仅仅停留在表面上。
+内向人格的优势
+1. 思考和专注能力强
+内向的人们通常拥有更强的思考和专注能力，他们更善于独自思考问题并找到解决方法。他们可以在一个相对安静的环境中工作，而不受外界干扰。
+2. 审慎和稳重的性格
+内向的人们往往更加审慎和稳重，他们不会轻易被外界影响或者诱惑。他们善于在面对挑战或者压力时保持冷静，并且能够有效地应对各种情况。
+内向人格更易成功的证据
+1. 企业高管和公司创始人中内向较多
+许多成功的企业高管和公司创始人实际上都是内向的，他们通过深思熟虑和专注于细节来取得了成功。世界500强CEO和高管中，内向人格占据大多数，国内大公司创始人和高管也是内向人格占比绝对优势。独立思考和倾听能力更容易做好管理岗。
+2. 内向销售的业绩表现较好
+一些研究统计表明，被认为更适合外向人格的职业，实际上绝对大多数销售冠军都是内向人格，内向的销售普遍比外向人格销售业绩更高。这是因为内向的人们往往更加倾听客户的需求并提供更有针对性的解决方案。
+3. 成功案例
+世界各地都有许多成功的内向人士，例如著名的科学家、作家、艺术家等。他们通过他们的才华和努力取得了在各自领域的成功，并且成为了榜样和启示。
+内向人格更合适的职业
+1. 学术和研究相关
+内向的人们通常更适合从事需要深思熟虑和独立工作的职业，比如学术研究、科学研究等。
+2. 艺术和创造类
+许多艺术家和创作者实际上都是内向的，他们通过他们的创造力和想象力创造了许多优秀的作品。
+3. 分析和判断类
+内向的人们往往更擅长分析和判断问题，因此他们在需要分析和决策的职业中可能更容易成功，比如金融、管理咨询等。
+时代和环境的变化
+随着时代的变化，对独立思考能力和专业能力的需求越来越大，许多工作重心也从社交应酬转移到专业能力上。因此，内向的人们在当今社会中可能更容易获得成功，并且受到更多的重视和认可。
+内向人格的优势和成功证据不仅能够帮助内向的人们更好地认识自己，也能够让社会更加理解和重视内向的特质，为内向的人们提供更多的机会和支持。
+人格缺陷
+边缘型 (Borderline Personality):
+
+特点：
+
+情绪不稳定：情绪波动大，容易陷入极端的情绪状态，如愤怒、焦虑、沮丧等。
+不稳定的人际关系：常常有强烈的亲密关系需求，但也容易产生矛盾和冲突，导致关系不稳定。
+自我认同模糊：对自己的认知和身份感缺乏稳定性，容易受到外部影响而变化。
+冲动和自残行为：常常表现出冲动和自毁行为，包括自残、酗酒、药物滥用等。
+
+
+
+自恋型 (Narcissistic Personality):
+
+特点：
+
+自我中心：过度关注自己的权力、美貌、成功等方面，认为自己是特殊、优越的人。
+需要赞扬和崇拜：渴望得到他人的赞美和崇拜，对自己的成就和品质过分自满。
+缺乏同情心：对他人的需求和感受缺乏关注，常常表现出漠视或轻视他人的特征。
+脆弱的自尊心：虽然外表自信，但内心对自尊心的损伤非常敏感，容易因批评而产生强烈的愤怒或羞耻。
+
+
+
+偏执型 (Paranoid Personality):
+
+特点：
+
+怀疑和不信任：偏执型个体常常怀疑他人的动机和真实意图，对他人的行为持高度警惕态度，倾向于认为他人对自己有敌意。
+敏感和戒备：他们对任何可能被解读为攻击或背叛的行为都非常敏感，因此常常保持警觉和戒备心态。
+固执和坚持：偏执型个体往往坚持己见，对自己的看法和想法持续坚定，不易受到他人的影响或说服。
+难以相处：由于其强烈的怀疑和不信任，偏执型个体往往难以与他人建立良好的关系，社交能力较差。
+
+
+
+表演型 (Histrionic Personality):
+
+特点：
+
+过分关注自我：表演型个体倾向于追求注意和认可，常常将自己置于关注的中心，喜欢成为注意焦点。
+情绪表达强烈：他们情绪表达较为夸张和强烈，经常会出现情绪波动较大的情况，以引起他人的注意和同情。
+行为表现夸张：表演型个体倾向于夸大其词、夸张其行为，以吸引他人的注意和赞赏，常常表现出戏剧性的行为。
+关系易变：由于其对他人的关注和认可需求较高，表演型个体往往会频繁改变关系，但关系表面上的深度可能并不持久。
+
+
+
+焦虑型 (Anxious):
+
+特点：
+
+过度担忧：持续处于紧张和担忧状态，对未来和未知事物感到恐惧和不安。
+焦虑症状：可能出现焦虑症状，如心慌、呼吸困难、胸闷等，严重时可能影响正常生活。
+完美主义倾向：追求完美和控制，对自己和他人的要求过高，导致持续的紧张和压力。
+社交困难：由于过度担忧和紧张，可能难以处理社交场合，产生社交焦虑症状。
+
+
+
+回避型 (Avoidant):
+
+特点：
+
+回避社交：因为害怕批评和拒绝，避免参加社交活动和与他人互动，导致社交孤立。
+自我负面评价：对自己缺乏信心，常常自我贬低，认为自己不配与他人交往或受到欢迎。
+过度敏感：对他人的评价和反应过度敏感，容易因小事受伤或产生消极情绪。
+避免面对问题：倾向于回避可能引起焦虑或痛苦的问题，逃避解决困难和挑战。
+
+
+
+强迫型 (Obsessive-Compulsive):
+
+特点：
+
+强迫性思维：持续出现不受控制的强迫性思维，例如对安全、卫生、秩序等方面的过度关注。
+强迫性行为：为了缓解强迫性思维带来的焦虑，进行重复、刻板的行为，如反复洗手、检查等。
+过分注重细节：对细节和完美主义有过分的追求，常常陷入琐碎的细节中无法自拔。
+控制欲强：试图通过控制自己的环境和行为来减轻内心的不安，但实际上增加了焦虑和压力。
+
+
+
+抑郁型 (Depressive):
+
+特点：
+
+持续沮丧：情绪持续低落，感到无望、无助，丧失对生活的兴趣和热情。
+自我评价过低：对自己持有消极、负面的评价，认为自己无能、无价值，经常自责和自责。
+睡眠障碍：可能出现睡眠障碍，包括入睡困难、睡眠过多或睡眠质量不佳。
+注意力难以集中：难以集中注意力，思维迟缓，记忆力减退，工作和日常活动效率低下。
+
+
+
+狂躁型 (Bipolar):
+
+特点：
+
+情绪波动：周期性地经历情绪波动，交替出现狂躁和抑郁的状态。
+狂躁期特征：狂躁期情绪高涨，兴奋、冲动，活力旺盛，可能出现冲动行为和不理性决策。
+抑郁期特征：抑郁期情绪低落，感到无助、绝望，丧失兴趣和愉悦感，可能出现自我负罪感和自杀念头。
+轮转周期：狂躁期和抑郁期之间会有周期性的交替，这种情绪波动对日常生活和社交关系都造成了困扰。
+
+
+
+除了上述提到的人格障碍和心理疾病，还有其他类型，例如：
+精神分裂症 (Schizophrenia):
+
+特点：
+
+幻觉和妄想：常常出现幻觉和妄想，如听到声音或看到不存在的东西，或对自己的身份、能力等产生严重的妄想。
+思维混乱：思维内容不连贯，逻辑跳跃，难以理解或追踪其思维过程。
+情感淡漠：对外界刺激和情感反应减少，表情呆滞，情感表达单调。
+社交功能下降：由于症状的影响，社交能力和功能明显下降，日常生活受到严重影响。
+
+
+
+恐慌障碍 (Panic Disorder):
+
+特点：
+
+突发性恐慌发作：突然出现强烈的恐慌和焦虑症状，伴随心悸、呼吸困难、出汗等生理反应。
+避开触发因素：为了避免再次出现恐慌发作，可能会避免特定的场所或情境，严重影响生活质量。
+恐惧再发作：对恐慌发作的再次发作持续担忧和恐惧，形成恐惧恶性循环。
+生理反应：恐慌发作时可能出现的生理症状，如头晕、胸闷、手抖等，加剧恐慌的感觉。
+
+
+
+参考&amp;致谢
+
+高敏感人格的究极形态 九哥
+
+
+最后再次强调，人的性格会随着时间、环境，对象变化而变化，不是一成不变的，不要刻舟求剑！
+机械的划分人的性格是愚蠢的，弱智的，强制划分你的性格的人极大概率是为了PUA你，极少数才是真心为你好。
+
+系列教程
+全部文章RSS订阅
+项目管理系列
+AI 分类 RSS 订阅
+
+如何做一个完整的硬件项目的项目管理之简明教程
+几种常用管理模型和方法
+PMBOK指南（第6版）
+如何做好竞品分析
+一大堆寓意深刻的管理故事锦集
+人格类型分类总结归纳
+
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+GithubProfile美化与自动获取RSS文章教程
+Vercel部署高级用法教程
+webhook部署Hexo静态博客指南
+在宝塔VPS上面采用docker部署waline全流程图解教程
+
+]]></content>
+      <categories>
+        <category>社会观察</category>
+      </categories>
+      <tags>
+        <tag>社会观察</tag>
+        <tag>人性</tag>
+        <tag>人格分析</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>GithubProfile美化与自动获取RSS文章教程</title>
+    <url>/posts/a3c81cc3/</url>
+    <content><![CDATA[
+如何让你的 github profile 让人眼前一亮？默认的 github profile 页面是支持 Markdown 语法的，如是可以玩出很多花样来！给它添加各种特效和信息吧
+
+
+
+
+点击查看大体积动图
+Github Stats Card
+
+Github https://github.com/appotry/github-readme-stats 参考代码
+Docker Hub https://hub.docker.com/r/bloodstar/github-readme-stats
+更详细参数使用说明，请参考 Github 仓库 Readme 说明
+由于 github 对 api 调用次数有限制，最好自建服务器使用！
+
+自建 Docker 服务
+docker-compose.yml
+version: "3"
+services:
+  grs:
+    image: bloodstar/github-readme-stats:latest
+    container_name: grs
+    environment:
+      PAT_1: ghp_****
+      CACHE_SECONDS: 600
+    ports:
+      - 9000:9000
+docker run
+$ docker run \
+  --name grs \
+  --restart=unless-stopped \
+  -d \
+  -e PAT_1="ghp_****" \
+  bloodstar/github-readme-stats
+Vercel 和 docker 调用差异
+和Vercel 部署调用不同，不需要 /api
+
+这里vercel 和 docker 调用接口一致是比较容易实现的。为了方便和上游同步，这里就没有做修改。
+
+# Vercel 部署调用
+![](https://ghstats.17lai.site/api?username=appotry)
+
+# Docker 部署调用
+![](https://ghstats.17lai.site/?username=appotry)
+
+[![Appotry's GitHub stats](https://ghstats.17lai.site/?username=appotry)](https://github.com/appotry/github-readme-stats)
+GitHub Stats Card
+[![Appotry's GitHub stats](https://ghstats.17lai.site/?username=appotry)](https://github.com/appotry/github-readme-stats)
+
+&lt;picture&gt;
+  &lt;source
+    srcset="https://ghstats.17lai.site/?username=appotry&amp;show_icons=true&amp;theme=dark"
+    media="(prefers-color-scheme: dark)"
+  /&gt;
+  &lt;source
+    srcset="https://ghstats.17lai.site/?username=appotry&amp;show_icons=true"
+    media="(prefers-color-scheme: light), (prefers-color-scheme: no-preference)"
+  /&gt;
+  &lt;img src="https://ghstats.17lai.site/?username=appotry&amp;show_icons=true" /&gt;
+&lt;/picture&gt;
+
+  
+  
+  
+
+GitHub Repo Pins
+[![Readme Card](https://ghstats.17lai.site/pin/?username=anuraghazra&amp;repo=github-readme-stats)](https://github.com/anuraghazra/github-readme-stats)
+
+GitHub Gist Pins
+[![Gist Card](https:///ghstats.17lai.site/gist?id=bbfce31e0217a3689c8d961a356cb10d)](https://gist.github.com/Yizack/bbfce31e0217a3689c8d961a356cb10d/)
+
+Top Languages Card
+[![Top Langs](https://ghstats.17lai.site/top-langs/?username=anuraghazra)](https://github.com/anuraghazra/github-readme-stats)
+
+WakaTime Stats Card
+[![Harlok's WakaTime stats](https://ghstats.17lai.site/wakatime?username=ffflabs)](https://github.com/anuraghazra/github-readme-stats)
+
+自动获取最新 RSS 文章
+
+项目代码需要 rss2才能用。为了下面代码正常运行，需要安装支持 RSS2 的 hexo 插件 hexo-feed
+
+创建 Profile Repo
+创建一个和用户名一样的仓库，这个仓库就是你的 Github Profile 仓库。仓库的Readme.md 文件将会显示在 github/[name]
+代码仓库导入 https://github.com/appotry/appotry
+修改个人信息
+
+.template/README.md
+generator.py
+.github/workflows/get rss.yml
+
+.template/README.md
+把博主的信息，换为你自己的信息
+generator.py
+把常量定义修改为你自己的信息
+# 常量定义
+POSTS_RSS_URL = 'https://blog.17lai.site/rss.xml'
+BLOG_URL_PREFIX = 'https://blog.17lai.site'
+RECENT_POST_LIMIT = 12
+.github/workflows/get rss.yml
+修改文件仓库名称等相关内容
+创建 action CI_TOKEN
+- name: Generate README.md for github.com
+  env:
+   GH_REPO: github.com/appotry/appotry.git
+  run: |
+   mkdir -p /home/runner/work/artifacts/
+   cd /home/runner/work/artifacts/
+   git clone https://github.com/appotry/appotry.git 
+   cd /home/runner/work/artifacts/appotry
+   git config user.name "appotry"
+   git config user.email "andycrusoe@gmail.com"
+   rm -f README.md
+
+配置完成后，运行 github action
+
+最终效果
+
+当然，还有很多其它方法用来美化 Github Profile
+这里只是介绍了简单的几种，profile中使用的技术还没介绍完全
+
+
+参考&amp;致谢
+
+使用 Python 生成博客目录并自动更新 README
+
+
+最近发现一个 github action 实现了类似的功能 gautamkrishnar/blog-post-workflow
+
+系列教程
+全部文章RSS订阅
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+GithubProfile美化与自动获取RSS文章教程
+Vercel部署高级用法教程
+webhook部署Hexo静态博客指南
+在宝塔VPS上面采用docker部署waline全流程图解教程
+
+笔记系列
+Note分类RSS订阅
+
+完美笔记进化论
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Joplin入门指南&amp;实践方案
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+Joplin 插件以及其Markdown语法。All in One!
+Joplin 插件使用推荐
+为知笔记私有化Docker部署
+
+]]></content>
+      <categories>
+        <category>develop</category>
+      </categories>
+      <tags>
+        <tag>github</tag>
+        <tag>develop</tag>
+        <tag>profile</tag>
       </tags>
   </entry>
   <entry>
@@ -61363,689 +62046,6 @@ bash shell命令行选项与修传入参数处理_linux shell
         <tag>linux</tag>
         <tag>shell</tag>
         <tag>bash</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>人格类型分类总结归纳</title>
-    <url>/posts/ec34b111/</url>
-    <content><![CDATA[
-本文介绍了什么是人格特质，怎么分类，并介绍了主流分析方法：BMTI以及五大人格分析方法。后面着重介绍了敏感型人格和内向人格的优势，最后介绍了人格缺陷的一些分类和特点。与人打交道，这些了解不可或缺
-
-
-
-人格特质
-
-人格是一个复杂而多维的概念，对其进行科学的研究和分类有助于我们更好地理解自己和他人。在心理学领域，Myers-Briggs Type Indicator（MBTI）和Big Five五大人格特质理论是两种广泛应用的人格理论。本文将深入介绍这两种理论，并对各种人格类型进行分类和详细解读，以帮助读者更好地了解人格特质及其影响。
-
-人格是指个体在思维、情感和行为等方面的长期稳定的特点和倾向。MBTI和Big Five理论是两种广泛使用的人格理论，它们各自从不同的角度探索和解释个体的人格特质。
-Myers-Briggs Type Indicator (MBTI)：
-MBTI是一种基于心理类型的理论，由伊莎贝尔·布里格斯-迈尔斯（Isabel Briggs Myers）和凯瑟琳·库克布里格斯（Katherine Cook Briggs）母女于 20 世纪 40 年代开发而成。它将人格分为四个维度，每个维度包含两个对立的特质，共计16种人格类型。
-
-
-外向(E) vs. 内向(I)：
-
-外向型：喜欢与人交往，注重外部世界，善于社交和表达。
-内向型：喜欢独处，注重内心体验，善于思考和反省。
-
-
-
-感觉(S) vs. 直觉(N)：
-
-感觉型：重视具体事实和细节，偏好实际经验和直接感知。
-直觉型：善于看到事物的整体和潜在意义，偏好理论和抽象思维。
-
-
-
-思维(T) vs. 感觉(F)：
-
-思维型：以逻辑和客观分析为导向，更注重事物的理性和合理性。
-感觉型：以情感和价值观为导向，更注重人情味和情感表达。
-
-
-
-判断(J) vs. 感知(P)：
-
-判断型：喜欢有计划和组织，偏好决断和结论。
-感知型：喜欢开放性和灵活性，偏好探索和观察。
-
-
-
-Big Five 五大人格特质理论：
-大五人格是目前心理学界最受认可的人格模型之一，它由 Lewis Goldberg 等人在 1980 年代提出。Big Five理论是一种基于因素分析的人格理论，将人格特质分为五个维度，每个维度描述了人格的一个方面，通过测量这些维度可以描述一个人的整体人格特征。
-
-
-外向性 (Extraversion)：
-
-社交性、活跃、乐观、爱冒险、寻求刺激。
-
-
-
-宜人性 (Agreeableness)：
-
-亲和力、合作性、信任、宽容、关心他人。
-
-
-
-尽责性 (Conscientiousness)：
-
-责任感、自律性、目标导向、细致、可靠。
-
-
-
-神经质 (Neuroticism)：
-
-焦虑、易怒、抑郁、情绪不稳定、易受压力影响。
-
-
-
-开放性 (Openness to Experience)：
-
-好奇心、想象力、创造力、对新事物的接受度、审美情趣。
-
-
-
-每个维度上，个体都会具有一定的倾向，但没有绝对的“好”或“坏”。
-人格分类及特点：
-
-
-外向型 (Extraverted)：
-
-社交能力强，乐观开朗，喜欢冒险和挑战，与他人相处融洽。
-
-
-
-内向型 (Introverted)：
-
-善于思考和反省，喜欢独立思考，对深入的交流更感兴趣。
-
-
-
-感觉型 (Sensing)：
-
-重视现实和具体事实，偏好实际经验和实用性，注重细节和常规。
-
-
-
-直觉型 (Intuitive)：
-
-想象力丰富，喜欢探索新观念和未来可能性，关注整体和潜在意义。
-
-
-
-思维型 (Thinking)：
-
-逻辑性强，善于分析和解决问题，注重客观、理性的决策。
-
-
-
-感觉型 (Feeling)：
-
-关注人情味和价值观，重视他人感受，善于表达情感。
-
-
-
-判断型 (Judging)：
-
-喜欢有计划和组织，注重目标达成和任务完成。
-
-
-
-感知型 (Perceiving)：
-
-喜欢开放性和灵活性，善于适应变化和保持开放心态。
-
-
-
-MBTI和Big Five理论提供了两种不同但互补的人格分类方式，帮助我们更好地理解自己和他人。每种人格类型都有其独特的特点和优势，而理解这些特点有助于促进个人成长、提高自我认知水平，以及改善人际关系。
-人格分类
-以下是 MBTI 和大五人格的两种人格分类方法：
-MBTI
-
-
-
-类型
-特征
-
-
-
-
-ISTJ
-务实、可靠、逻辑性强
-
-
-ISFJ
-善良、体贴、乐于助人
-
-
-INFJ
-富有同情心、理想主义、洞察力强
-
-
-INTJ
-独立、理智、具有战略眼光
-
-
-ISTP
-独立、行动力强、善于解决问题
-
-
-ISFP
-热爱自由、追求美感、富有创造力
-
-
-INFP
-理想主义、富有同情心、注重个人价值观
-
-
-INTP
-理智、客观、善于分析
-
-
-ESTP
-热情、活泼、喜欢冒险
-
-
-ESFP
-热情、友善、善于交际
-
-
-ENFP
-热情、乐观、富有创造力
-
-
-ENTP
-聪明、机智、善于辩论
-
-
-ESTJ
-务实、高效、注重秩序
-
-
-ESFJ
-热情、友善、乐于助人
-
-
-ENFJ
-富有领导力、鼓舞人心、充满热情
-
-
-ENTJ
-独立、自信、具有战略眼光
-
-
-
-大五人格
-
-
-
-维度
-高分特征
-低分特征
-
-
-
-
-开放性
-想象力丰富、好奇心强、乐于接受新事物
-墨守成规、缺乏好奇心、不善于接受新事物
-
-
-尽责性
-认真负责、有条理、追求完美
-粗心大意、懒惰、拖延症
-
-
-外向性
-喜欢与他人交往、充满活力、积极乐观
-内向、喜欢独处、沉默寡言
-
-
-宜人性
-友善、体贴、乐于助人
-冷漠、自私、不善于表达情感
-
-
-神经质
-情绪敏感、容易焦虑、压力感强
-情绪稳定、乐观豁达、抗压能力强
-
-
-
-应用
-MBTI 和大五人格可以应用于多个领域，例如：
-
-职业咨询：帮助人们找到适合自己的职业
-团队建设：帮助团队成员更好地沟通和合作
-个人成长：帮助人们了解自己、提升自我认知
-
-注意事项
-MBTI 和大五人格只是评估人格的工具，它们无法完全描述一个人的性格。在使用这些工具时，应注意以下几点：
-
-没有绝对的“好”或“坏”的人格类型，换一个使用环境，可能好坏就相互转换了
-人格类型不是一成不变的，可能会随着时间发生变化
-
-为什么说高敏感人格是大后期人格
-洞察力是高敏人群独有的强大天赋，但在未建立内在系统和正确认知前,只会导致讨好型人格或过度感知危险而特别缺乏安全感。
-但如果通过修炼开发了此天赋,高敏人不仅能控制自己的情绪,还能高度觉知他人情绪且不受影响并引导他人情绪。
-现实生活中大多数人都将敏感视为一个缺点
-你这个人什么都好,就是太敏感了,甚至会把敏感和玻璃心混为一谈。其实那些成打式的人大多都是敏感和极端的,平和与随和其实是一种凡人的情绪共识。而我们的传统校园教育就是要把大多数人都培养成平凡人、易管理的人。因为很多看似与共识价值观相反的失误反而是正确的。
-比如很多人信奉读书无用论,因为他们看到很多人即便读完了硕士和博士,依然找不到好的工作,依然赚得不多。而那些达官显贵是绝对不会让自己的孩子不读书的,因为他们知道一些只有他们自己家族认可,大多数人不认可的东西。不知你发现了没,很多官员和企业家骨子里都是高敏之人,他们会比常人更容易发现一些细节,更容易听懂一些弦外之声,跟他们相处是非常心累的。
-你能说他们小心眼玻璃心吗?显然不是,因为小肚鸡肠之人往往是不可能做到非富即贵的。讲到这里,相信你就明白了,高敏感和小心眼是两码事。高明之人不一定会因敏感知识而生气,但他们拥有这样一份天赋,可以比常人更迅速的察觉到一些常人不懂的事情。这样就很容易先人一步,发现机会、抓住机会、发现危机、避开危机。
-20% 左右的人带有高敏感
-这个世界上只有 20% 左右的人带有与生俱来的高敏感。这些人拥有一种特殊的神经处理系统,他们的耳朵可以听到更广的频率,他们的味蕾可以尝出更丰富的味道,他们的鼻子可以更细致的辨别香水的成分。他们也有更强的共情力。
-在一个电影院里,情节动人处,有些人一边吃着爆米花一边面无表情,而有些人哭得稀里哗啦,一包纸巾都不够用。见你流泪,我一眼忱。这真不是矫情,这是高敏感。
-但高敏感往往被视为必须克制的缺点
-但自小我们所接受的教育里,就是教我们压抑这种天赋,扔掉这种天赋,然后变成一个普通人。这个时代流行了一个新词,校顿敢力。很多人会将其视为正面褒义的性格词汇。经常有人说,不要太敏感,不要想太多,不要玻璃心,要控制,要宽容,要忍耐。然后敏感成了一个彻头彻尾的贬义词。
-你看过漫画龙珠吗?你看过电影《触不可及》吗?里面的主角都是钝感力十足的人,这类人已经成为主流价值观、主流审美里受人欢迎的性格。高敏感不是一种病,更不是一种性格缺陷。高敏和深弱往往是一个硬币的两面,不是外形是否强壮,而是内在里要么气血弱,要么精神弱,敏感而易疲劳。所以觉醒的高敏人往往都是气血管理的高手。
-敏感不代表冲动,能瞬间接收到一些信息,不一定瞬间就会反映出来,他们懂得“知者耻语,善者不言”,看透不说透,还是好朋友。但其实大多数人或者信奉遁敏的人,通常没有这种敏锐的观察力。现实生活中,不知你是否听过一种声音,多来自于年长者长辈们,他们告诉你,太敏感,太注重细节,成不了大事。
-你听到过类似的话吗?如果听到过,你可以回想一下,说这话的人是一个成功的人吗?是一个成了大事的人吗?大概率不是,真正成了大事的人,往往是不喜欢说脚的,因为他们知道他们的成功秘籍,你拿钱都买不走。他们本身也不缺钱,怎么可能随随便便就交给你。好为人士是人类的本性,但高敏之人通常是人群中最沉默的那个人,他们善于观察,但不愿意表达。
-当然,这并不代表他们没有表达能力,相反,他们通常具有超人的表达能力,因为他们的大脑所接收的信息要多于钝感力强的人。因此,看到这里,你要明白,以后不管别人怎么说,你就坚信没心没肺不是褒义词。能够破局的高明者,就是从修罗化境杀出来的神灵。
-高敏感带来更强大的心理素质
-不同于身强者天生的性格与身体催生的意志,高敏人由于会在前期大量感受不同的痛苦,被动进行脱敏训练,这将赐予高敏者一种纯粹的意志力。这种强大的心理是不需要他物支撑而存在的,有组成黑色生命力。黑色生命力这个词源自美国心理学家维尔纳的研究。他在数十年的走访中见过数以千计的问题家庭,他专门寻找那些处在糟糕的处境中,看起来有很大概率成为问题少年,但实际却成长得异常优秀的孩子。
-他想知道是什么力量让这些孩子走出原生环境的束缚,变得光芒四射。维尔纳在 20 世纪 80 年代对夏威夷某小岛上的 698 个孩子进行追踪研究。那个贫穷的小岛上面,许多参与调查的孩子们的身后,都有一个甚至两个患有酗酒、毒瘾、暴力、恶习或因此染上精神疾病的父母。按照大众的认知,在这种家庭环境长大的孩子,人生基本算完了。
-然而,出乎维尔纳意料,有 2/3 的孩子确实重蹈覆辙了这个悲剧。可还有 1/3 的孩子成长为自信、能干、关怀他人的优秀成年人,在学业、家庭和事业上都获得了成功。维尔纳认为,这 1/3 的孩子有能力摆脱糟糕环境影响,他把这种能力称为“修复力”,后来也被称之为“黑色生命力”。
-生活远比小说要精彩。每个人的人生轨迹都不可能是一根直线,而是一条不断震荡的曲线。真正强大的人,都曾独自穿越过一片黑暗森林,如同种子在土壤里独自扎根。在这段至暗时光,需要忍受各种委屈、辛苦不被认可,隐忍不被理解,真心不被接纳,付出没有结果。凡是最终穿过这片黑暗沼泽地的人,才能真正看穿人性,看透人间冷暖,才能百炼成钢。
-几乎每一个人都无可避免地有过至少一段剧烈滑落的低谷期,那就是每个人都必然会经历的至暗时光。强大的人就诞生于此,因为在这段剧烈滑落的波谷中,有人爬了上来,有人却再也没有。他的自信与勇气,在被至暗时光彻底击碎后,就再也没能回来。在这里,他需要经历的远比他尚未成熟的心灵想象的更多,比如世界观的重构,三观的崩坏,不公平的碾压,自我怀疑的低谷。
-但如果熬过去了,就会得到一种全新的力量。黑色生命力就像是从地狱回来的人,因此,各位,至暗时刻低谷期,不要焦虑,不要绝望,甚至不要祈祷它快点结束,好好利用它们反思人生,马上就会迎来命运的转机。
-人生最大的悲哀不是没有机会,而是站在机会前面,没看见或者没准备好。而大多数人推崇的钝感力,大概率会让你错过机会的。我们这个社会从来都是歌颂平庸、排斥不凡的,因为优秀的人注定是孤独的,注定是与众不同的。高敏之人,因为从幼年开始就比同龄人接受更多的信息,因此他们往往比普通人更有耐心,更有专注力。
-你真的以为人与人的差别不大吗?其实我可以负责任的告诉你,差别巨大。你想过没有,为什么有的人有耐心看完一本书、一篇超长的文章,并且乐此不倦。而有的人超过 100 字,看着就头晕,他们只喜欢看类似于微博那样的一句话,概括一个新闻、一个话题、一个故事。
-短期内,这两种习惯只因天赋的相差所产生的差距并不大,但久而久之,极有可能会塑造出完全不同的两类人。人与人的智商差距确实不大,但这里少了一个时间状语,那就是刚出生或小时候、成年后的人生。天赋的惯性会促使你走向不同的人生,且越走越远。
-你有耐心看长的内容吗?高敏感人群通常具有三个层面的能力:第一是情绪管理能力;第二是对复杂的认知和理解能力;第三是一种应对世事变迁的人生哲学,又被心理学家称为智慧。他们对风险的忍受能力会变得很高。人往往经历过逆境和重大遭遇后,对人性有了更深层的理解,破三观,树新观,创立新的认知系统,学会换一个角度看世界,学会正式接纳,用不一样的方法得到不同结果。
-也正因为如此,相较而言,在这些拥有高敏感性格的人生中,也有更多机会可能发生一些不寻常的事。我们该如何做,才能守住自己的高敏感天赋,或者培养出一种高敏感的性格?
-
-提高自我意识和自我认知,深刻的了解和评估自己的思维方式、情绪方式和行为方式,不过度在意自己的过错,提高对内心真实想法的在意程度,培养自己的批判性思维,明确和了解自己和自己的目标。
-接纳自己的一切,包括负面情绪,越抗拒越浓烈。正如海林格在诗中所说,所有的事情都是因缘和合而来,一切的发生都是必然。若我觉得应该是另外一种可能,伤害的只有我自己,我唯一能做的就是允许。
-不害怕孤独,学会做减法,看淡一切的别离合变迁,学会在逆境中自我救赎和提升。关注自己有限的精力,不急于珍视所为的事和人,不在无意义的事上过度消耗自己。为自己的生活设定界限,区分什么让你舒适,什么让你不适,然后勇敢作出选择。
-
-如果有完美主义倾向,那就适当降低自我要求,不要害怕别人的否定。打破非黑即白的世界观。这个世界不是非黑即白的二元对立,而是存在大量的灰色地带,没必要让自己绷得太紧。有意识的给生活留白,放松注意力,阻断信息输入,整理一天的情绪,帮助自己恢复能量。
-最后让我们记住一点,低敏感度的人往往精力充沛,爱好广泛,人生更有广度。而高敏感的人,因为内心世界更丰富,人生往往更有深度。最后,一定要记住,高敏感是一种天赋,如果你具备了这种能力,那么请好好珍惜它。
-为什么内向人格更容易成功
-内向人格在当今社会中普遍被误解和低估，被视为软弱、害羞、不合群的特质。然而，实际上，内向的人们可能拥有许多优势，这些优势能够在工作和生活中帮助他们更容易取得成功。
-内向人格的误解
-1. 被认为软弱、害羞、不合群
-内向的人们经常被误解为软弱和害羞，因为他们不像外向的人那样大声表达自己的意见或者主动与他人交流。然而，内向并不意味着缺乏自信或者自我意识，只是他们更喜欢独处或者与少数几个亲近的人交往，内向的人不需要狐朋狗友凑热闹，他们专注于内在的成长。
-2. 被认为不适合领导岗位和管理
-内向的人们经常被认为不适合领导岗位或者管理职位，因为他们不像外向的人那样善于社交和表达。然而，许多成功的领导者和管理者实际上都是内向的，他们通过深思熟虑和善于倾听来取得了领导者的地位。
-3. 被认为不善社交和表达
-内向的人们常常被认为不善于社交和表达，因为他们不像外向的人那样喜欢在人群中表现自己。然而，内向的人们在个人关系中往往更加真诚和深入，他们更擅长建立深层次的关系，而不是仅仅停留在表面上。
-内向人格的优势
-1. 思考和专注能力强
-内向的人们通常拥有更强的思考和专注能力，他们更善于独自思考问题并找到解决方法。他们可以在一个相对安静的环境中工作，而不受外界干扰。
-2. 审慎和稳重的性格
-内向的人们往往更加审慎和稳重，他们不会轻易被外界影响或者诱惑。他们善于在面对挑战或者压力时保持冷静，并且能够有效地应对各种情况。
-内向人格更易成功的证据
-1. 企业高管和公司创始人中内向较多
-许多成功的企业高管和公司创始人实际上都是内向的，他们通过深思熟虑和专注于细节来取得了成功。世界500强CEO和高管中，内向人格占据大多数，国内大公司创始人和高管也是内向人格占比绝对优势。独立思考和倾听能力更容易做好管理岗。
-2. 内向销售的业绩表现较好
-一些研究统计表明，被认为更适合外向人格的职业，实际上绝对大多数销售冠军都是内向人格，内向的销售普遍比外向人格销售业绩更高。这是因为内向的人们往往更加倾听客户的需求并提供更有针对性的解决方案。
-3. 成功案例
-世界各地都有许多成功的内向人士，例如著名的科学家、作家、艺术家等。他们通过他们的才华和努力取得了在各自领域的成功，并且成为了榜样和启示。
-内向人格更合适的职业
-1. 学术和研究相关
-内向的人们通常更适合从事需要深思熟虑和独立工作的职业，比如学术研究、科学研究等。
-2. 艺术和创造类
-许多艺术家和创作者实际上都是内向的，他们通过他们的创造力和想象力创造了许多优秀的作品。
-3. 分析和判断类
-内向的人们往往更擅长分析和判断问题，因此他们在需要分析和决策的职业中可能更容易成功，比如金融、管理咨询等。
-时代和环境的变化
-随着时代的变化，对独立思考能力和专业能力的需求越来越大，许多工作重心也从社交应酬转移到专业能力上。因此，内向的人们在当今社会中可能更容易获得成功，并且受到更多的重视和认可。
-内向人格的优势和成功证据不仅能够帮助内向的人们更好地认识自己，也能够让社会更加理解和重视内向的特质，为内向的人们提供更多的机会和支持。
-人格缺陷
-边缘型 (Borderline Personality):
-
-特点：
-
-情绪不稳定：情绪波动大，容易陷入极端的情绪状态，如愤怒、焦虑、沮丧等。
-不稳定的人际关系：常常有强烈的亲密关系需求，但也容易产生矛盾和冲突，导致关系不稳定。
-自我认同模糊：对自己的认知和身份感缺乏稳定性，容易受到外部影响而变化。
-冲动和自残行为：常常表现出冲动和自毁行为，包括自残、酗酒、药物滥用等。
-
-
-
-自恋型 (Narcissistic Personality):
-
-特点：
-
-自我中心：过度关注自己的权力、美貌、成功等方面，认为自己是特殊、优越的人。
-需要赞扬和崇拜：渴望得到他人的赞美和崇拜，对自己的成就和品质过分自满。
-缺乏同情心：对他人的需求和感受缺乏关注，常常表现出漠视或轻视他人的特征。
-脆弱的自尊心：虽然外表自信，但内心对自尊心的损伤非常敏感，容易因批评而产生强烈的愤怒或羞耻。
-
-
-
-偏执型 (Paranoid Personality):
-
-特点：
-
-怀疑和不信任：偏执型个体常常怀疑他人的动机和真实意图，对他人的行为持高度警惕态度，倾向于认为他人对自己有敌意。
-敏感和戒备：他们对任何可能被解读为攻击或背叛的行为都非常敏感，因此常常保持警觉和戒备心态。
-固执和坚持：偏执型个体往往坚持己见，对自己的看法和想法持续坚定，不易受到他人的影响或说服。
-难以相处：由于其强烈的怀疑和不信任，偏执型个体往往难以与他人建立良好的关系，社交能力较差。
-
-
-
-表演型 (Histrionic Personality):
-
-特点：
-
-过分关注自我：表演型个体倾向于追求注意和认可，常常将自己置于关注的中心，喜欢成为注意焦点。
-情绪表达强烈：他们情绪表达较为夸张和强烈，经常会出现情绪波动较大的情况，以引起他人的注意和同情。
-行为表现夸张：表演型个体倾向于夸大其词、夸张其行为，以吸引他人的注意和赞赏，常常表现出戏剧性的行为。
-关系易变：由于其对他人的关注和认可需求较高，表演型个体往往会频繁改变关系，但关系表面上的深度可能并不持久。
-
-
-
-焦虑型 (Anxious):
-
-特点：
-
-过度担忧：持续处于紧张和担忧状态，对未来和未知事物感到恐惧和不安。
-焦虑症状：可能出现焦虑症状，如心慌、呼吸困难、胸闷等，严重时可能影响正常生活。
-完美主义倾向：追求完美和控制，对自己和他人的要求过高，导致持续的紧张和压力。
-社交困难：由于过度担忧和紧张，可能难以处理社交场合，产生社交焦虑症状。
-
-
-
-回避型 (Avoidant):
-
-特点：
-
-回避社交：因为害怕批评和拒绝，避免参加社交活动和与他人互动，导致社交孤立。
-自我负面评价：对自己缺乏信心，常常自我贬低，认为自己不配与他人交往或受到欢迎。
-过度敏感：对他人的评价和反应过度敏感，容易因小事受伤或产生消极情绪。
-避免面对问题：倾向于回避可能引起焦虑或痛苦的问题，逃避解决困难和挑战。
-
-
-
-强迫型 (Obsessive-Compulsive):
-
-特点：
-
-强迫性思维：持续出现不受控制的强迫性思维，例如对安全、卫生、秩序等方面的过度关注。
-强迫性行为：为了缓解强迫性思维带来的焦虑，进行重复、刻板的行为，如反复洗手、检查等。
-过分注重细节：对细节和完美主义有过分的追求，常常陷入琐碎的细节中无法自拔。
-控制欲强：试图通过控制自己的环境和行为来减轻内心的不安，但实际上增加了焦虑和压力。
-
-
-
-抑郁型 (Depressive):
-
-特点：
-
-持续沮丧：情绪持续低落，感到无望、无助，丧失对生活的兴趣和热情。
-自我评价过低：对自己持有消极、负面的评价，认为自己无能、无价值，经常自责和自责。
-睡眠障碍：可能出现睡眠障碍，包括入睡困难、睡眠过多或睡眠质量不佳。
-注意力难以集中：难以集中注意力，思维迟缓，记忆力减退，工作和日常活动效率低下。
-
-
-
-狂躁型 (Bipolar):
-
-特点：
-
-情绪波动：周期性地经历情绪波动，交替出现狂躁和抑郁的状态。
-狂躁期特征：狂躁期情绪高涨，兴奋、冲动，活力旺盛，可能出现冲动行为和不理性决策。
-抑郁期特征：抑郁期情绪低落，感到无助、绝望，丧失兴趣和愉悦感，可能出现自我负罪感和自杀念头。
-轮转周期：狂躁期和抑郁期之间会有周期性的交替，这种情绪波动对日常生活和社交关系都造成了困扰。
-
-
-
-除了上述提到的人格障碍和心理疾病，还有其他类型，例如：
-精神分裂症 (Schizophrenia):
-
-特点：
-
-幻觉和妄想：常常出现幻觉和妄想，如听到声音或看到不存在的东西，或对自己的身份、能力等产生严重的妄想。
-思维混乱：思维内容不连贯，逻辑跳跃，难以理解或追踪其思维过程。
-情感淡漠：对外界刺激和情感反应减少，表情呆滞，情感表达单调。
-社交功能下降：由于症状的影响，社交能力和功能明显下降，日常生活受到严重影响。
-
-
-
-恐慌障碍 (Panic Disorder):
-
-特点：
-
-突发性恐慌发作：突然出现强烈的恐慌和焦虑症状，伴随心悸、呼吸困难、出汗等生理反应。
-避开触发因素：为了避免再次出现恐慌发作，可能会避免特定的场所或情境，严重影响生活质量。
-恐惧再发作：对恐慌发作的再次发作持续担忧和恐惧，形成恐惧恶性循环。
-生理反应：恐慌发作时可能出现的生理症状，如头晕、胸闷、手抖等，加剧恐慌的感觉。
-
-
-
-参考&amp;致谢
-
-高敏感人格的究极形态 九哥
-
-
-最后再次强调，人的性格会随着时间、环境，对象变化而变化，不是一成不变的，不要刻舟求剑！
-机械的划分人的性格是愚蠢的，弱智的，强制划分你的性格的人极大概率是为了PUA你，极少数才是真心为你好。
-
-系列教程
-全部文章RSS订阅
-项目管理系列
-AI 分类 RSS 订阅
-
-如何做一个完整的硬件项目的项目管理之简明教程
-几种常用管理模型和方法
-PMBOK指南（第6版）
-如何做好竞品分析
-一大堆寓意深刻的管理故事锦集
-人格类型分类总结归纳
-
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-GithubProfile美化与自动获取RSS文章教程
-Vercel部署高级用法教程
-webhook部署Hexo静态博客指南
-在宝塔VPS上面采用docker部署waline全流程图解教程
-
-]]></content>
-      <categories>
-        <category>社会观察</category>
-      </categories>
-      <tags>
-        <tag>社会观察</tag>
-        <tag>人性</tag>
-        <tag>人格分析</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>GithubProfile美化与自动获取RSS文章教程</title>
-    <url>/posts/a3c81cc3/</url>
-    <content><![CDATA[
-如何让你的 github profile 让人眼前一亮？默认的 github profile 页面是支持 Markdown 语法的，如是可以玩出很多花样来！给它添加各种特效和信息吧
-
-
-
-
-点击查看大体积动图
-Github Stats Card
-
-Github https://github.com/appotry/github-readme-stats 参考代码
-Docker Hub https://hub.docker.com/r/bloodstar/github-readme-stats
-更详细参数使用说明，请参考 Github 仓库 Readme 说明
-由于 github 对 api 调用次数有限制，最好自建服务器使用！
-
-自建 Docker 服务
-docker-compose.yml
-version: "3"
-services:
-  grs:
-    image: bloodstar/github-readme-stats:latest
-    container_name: grs
-    environment:
-      PAT_1: ghp_****
-      CACHE_SECONDS: 600
-    ports:
-      - 9000:9000
-docker run
-$ docker run \
-  --name grs \
-  --restart=unless-stopped \
-  -d \
-  -e PAT_1="ghp_****" \
-  bloodstar/github-readme-stats
-Vercel 和 docker 调用差异
-和Vercel 部署调用不同，不需要 /api
-
-这里vercel 和 docker 调用接口一致是比较容易实现的。为了方便和上游同步，这里就没有做修改。
-
-# Vercel 部署调用
-![](https://ghstats.17lai.site/api?username=appotry)
-
-# Docker 部署调用
-![](https://ghstats.17lai.site/?username=appotry)
-
-[![Appotry's GitHub stats](https://ghstats.17lai.site/?username=appotry)](https://github.com/appotry/github-readme-stats)
-GitHub Stats Card
-[![Appotry's GitHub stats](https://ghstats.17lai.site/?username=appotry)](https://github.com/appotry/github-readme-stats)
-
-&lt;picture&gt;
-  &lt;source
-    srcset="https://ghstats.17lai.site/?username=appotry&amp;show_icons=true&amp;theme=dark"
-    media="(prefers-color-scheme: dark)"
-  /&gt;
-  &lt;source
-    srcset="https://ghstats.17lai.site/?username=appotry&amp;show_icons=true"
-    media="(prefers-color-scheme: light), (prefers-color-scheme: no-preference)"
-  /&gt;
-  &lt;img src="https://ghstats.17lai.site/?username=appotry&amp;show_icons=true" /&gt;
-&lt;/picture&gt;
-
-  
-  
-  
-
-GitHub Repo Pins
-[![Readme Card](https://ghstats.17lai.site/pin/?username=anuraghazra&amp;repo=github-readme-stats)](https://github.com/anuraghazra/github-readme-stats)
-
-GitHub Gist Pins
-[![Gist Card](https:///ghstats.17lai.site/gist?id=bbfce31e0217a3689c8d961a356cb10d)](https://gist.github.com/Yizack/bbfce31e0217a3689c8d961a356cb10d/)
-
-Top Languages Card
-[![Top Langs](https://ghstats.17lai.site/top-langs/?username=anuraghazra)](https://github.com/anuraghazra/github-readme-stats)
-
-WakaTime Stats Card
-[![Harlok's WakaTime stats](https://ghstats.17lai.site/wakatime?username=ffflabs)](https://github.com/anuraghazra/github-readme-stats)
-
-自动获取最新 RSS 文章
-
-项目代码需要 rss2才能用。为了下面代码正常运行，需要安装支持 RSS2 的 hexo 插件 hexo-feed
-
-创建 Profile Repo
-创建一个和用户名一样的仓库，这个仓库就是你的 Github Profile 仓库。仓库的Readme.md 文件将会显示在 github/[name]
-代码仓库导入 https://github.com/appotry/appotry
-修改个人信息
-
-.template/README.md
-generator.py
-.github/workflows/get rss.yml
-
-.template/README.md
-把博主的信息，换为你自己的信息
-generator.py
-把常量定义修改为你自己的信息
-# 常量定义
-POSTS_RSS_URL = 'https://blog.17lai.site/rss.xml'
-BLOG_URL_PREFIX = 'https://blog.17lai.site'
-RECENT_POST_LIMIT = 12
-.github/workflows/get rss.yml
-修改文件仓库名称等相关内容
-创建 action CI_TOKEN
-- name: Generate README.md for github.com
-  env:
-   GH_REPO: github.com/appotry/appotry.git
-  run: |
-   mkdir -p /home/runner/work/artifacts/
-   cd /home/runner/work/artifacts/
-   git clone https://github.com/appotry/appotry.git 
-   cd /home/runner/work/artifacts/appotry
-   git config user.name "appotry"
-   git config user.email "andycrusoe@gmail.com"
-   rm -f README.md
-
-配置完成后，运行 github action
-
-最终效果
-
-当然，还有很多其它方法用来美化 Github Profile
-这里只是介绍了简单的几种，profile中使用的技术还没介绍完全
-
-
-参考&amp;致谢
-
-使用 Python 生成博客目录并自动更新 README
-
-
-最近发现一个 github action 实现了类似的功能 gautamkrishnar/blog-post-workflow
-
-系列教程
-全部文章RSS订阅
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-GithubProfile美化与自动获取RSS文章教程
-Vercel部署高级用法教程
-webhook部署Hexo静态博客指南
-在宝塔VPS上面采用docker部署waline全流程图解教程
-
-笔记系列
-Note分类RSS订阅
-
-完美笔记进化论
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Joplin入门指南&amp;实践方案
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-Joplin 插件以及其Markdown语法。All in One!
-Joplin 插件使用推荐
-为知笔记私有化Docker部署
-
-]]></content>
-      <categories>
-        <category>develop</category>
-      </categories>
-      <tags>
-        <tag>github</tag>
-        <tag>develop</tag>
-        <tag>profile</tag>
       </tags>
   </entry>
   <entry>
