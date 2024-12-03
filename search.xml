@@ -1,150 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Github Pages + jekyll 全面介绍极简搭建个人网站和博客</title>
-    <url>/posts/1991789c/</url>
-    <content><![CDATA[利用github pages搭建个人博客。本文指导建立github工程，并配置github pages搭建博客的全过程。
-注意：图床使用github，图片显示问题自己解决
-第一步，建立Github仓库
-首先到这里Github，创建一个仓库。
-
-仓库名称有固定的格式： username.github.io，其中username必须是Github账户的用户名（我的是scottcgi），github.io是固定的，这个地址将会成为个人站点的网站地址。另外，我们可以勾选Initialize this repository with a README，让仓库自动创建一个README.md文件，我们用它来做站点的首页（当然也可以不创建，后面自行创建，或是建立index.html也行）。
-注意： username如果不是Github账户名，这个仓库就会成为username.github.io的子站点，比如访问地址会是：username.github.io/aaa.github.io。可见，username.github.io是github默认分配给你的域名，同名仓库即代表着默认网站内容。而username.github.io/仓库名称，是用来访问你的其它仓库的地址。
-第二步，设置仓库开启Github Pages
-进入仓库设置界面，如图。
-
-这里能够重新修改仓库的名称，比如这个仓库内容是fork别人的，就可以在这里修改成自己的username.github.io名称。
-
-在Setting页面下有Github Pages的设置选项。绿色表示部署成功，每次修改仓库内容，都会出发Github jekyll重新编译部署，需要1-2分钟的时间，更新才能体现。如果有编译错误，包括js，css，html，markdown语法问题，都会显示红色以及错误页面和行号，同时会发邮件通知。其中，Source有以下几个选项：
-gh-pages branch 是项目新建一个分支命名为这个，使用这个分支来做站点内容。
-master branch 是使用主分支也是默认的，来作为站点内容。
-master branch/docs folder 是使用主分支的docs文件夹来作为站点内容。
-None 就是禁用Github Pages。
-如果是username.github.io只能使用主分支，其它仓库项目可以选择其它两个。接下来Choose a theme是Github提供的内置的网站主题，选择即可应用无需其它设置。Custom domain是自定义域名，本文暂不讨论。
-第三步，使用Github内置主题
-选择好主题，过一会刷新网站地址就已经能看到效果了，而在Code页面仅有两个文件。
-
-编辑README.md文件的内容，就会默认显示在网站首页，_config.yml 是jekyll的全局配置文件，现在里面只有一句话，theme: jekyll-theme-modernist。我们可以手动修改这个theme主题配置，网站就会应用不同的主题。
-Github内置支持的几个主题，官方的仓库在这里：https://pages.github.com/themes，每个README.md里都有介绍如何设置。
-那么我们现在就有两种方法来使用这些主题：
-第一种，就是直接fork一个主题仓库，然后修改仓库名称为我们自己的，然后修改我们需要的部分。
-
-第二种，只是简单的Choose (Change) theme（或在_config.yml设置theme），然后我们对照着官方仓库的主题目录，需要改什么文件就按照同样的路径拷贝单独一个文件到自己的仓库来修改（保持路径一致），这样就可以保持自己仓库的简洁。（如果使用了github内置的主题，github就会把你仓库的内容和内置主题内容合并到一起编译成静态网页。）
-另外，更多主题可以参看这两个地址（不要挑花眼了）： jekyll themes 和 jekyll wiki site。
-第四步，jekyll的目录结构
-我们只需要关注几个核心的目录结构如下（可以自己创建）：
-- _layouts （存放页面模板，md或html文件的内容会填充模板）
-- _sass（存放样式表）
-- _includes （可以复用在其它页面被include的html页面）
-- _posts（博客文章页面）
-- assets（原生的资源文件）
-  - js
-  - css
-  - image
-- _config.yml （全局配置文件）
-- index.html, index.md, README.md （首页index.html优先级最高，如果没有index，默认启用README.md文件）
-- 自定义文件和目录
-  更多更详细的目录结构参看jekyll官网：https://jekyllrb.com/docs/structure
-第五步，jekyll的模板编程语言Liquid的使用
-
-
-变量  被嵌入在页面中，会在静态页面生成的时候被替换成具体的数值。常用的全局变量对象有：site 和 page。这两个对象有很多默认自带的属性，比如：，。更多的默认值参看：https://jekyllrb.com/docs/variables。
-
-
-site对象对应的就是网站范围，自定义变量放在_config.yml中，比如title:标题使用访问。
-
-
-page对象对应的是单个页面，自定义变量放在每个页面的最开头，比如：
-
-
-myNum:100
- 
-myStr:我是字符串
-使用 和  访问。
-条件判断语句，更多详见：https://shopify.github.io/liquid/tags/control-flow
-
-循环迭代，更多详见：https://shopify.github.io/liquid/tags/iteration
-
-默认函数，可以对变量进行一些处理，比如大小写转化、数学运算、格式化、排序等等，在Liquid中叫做Filters。比如{{ "Hello World!" | downcase }}转换字符串为小写。更多内置函数详见：https://jekyllrb.com/docs/liquid/filters
-第六步，使用_config.yml文件设置jekyll
-如果不是fork别人的仓库，就需要自己创建一个这个文件。然后，我们就可以配置一些默认的属性来控制jekyll的编译过程。更多详细的内置属性详见：https://jekyllrb.com/docs/configuration/default
-同时我们可以自定变量，会自动绑定到site对象上，比如我们可以把导航配置到_config.yml中：
-
-
-当然，我们也可以把一些数据单独放入一个yml文件，然后放在固定的数据文件夹_data下，比如_data/navigation.yml，这样访问这个文件的数据对象就是site.data.navigation。
-第七步，_layouts模板配置
-_layouts文件夹存放的是页面模板，默认需要一个default.html，什么意思？就是说，layout提供一个页面的布局框架，这是固定的模式，包括样式、结构、布局、脚本控制等等。然后，我们在用其它md或html文件去动态填充这个框架，这样就形成了一个完整的页面。比如我的default.html页面如下：
-
-
-
-{% seo %} 是jekyll的一个插件提供的seo优化，详情在这里：https://github.com/jekyll/jekyll-seo-tag
-核心在于 content 这个变量是内置的，会用我们的md或html页面填充这部分内容。
-其它的，我们看到会大量使用变量和流程控制代码，来填充模板的方方面面。
-于是，填充模板的内容，一方面是来自读取配置文件的变量，一方面是来自_includes的页面，还有就是来自 content 对应的页面。
-当然，我们也可以不使用 content 来填充模板，而是使用_includes的页面来代替content  ，但这样不够灵活，因为使用content ，我们可以在每个页面单独设置对应的layout模板。
-
-第八步，md和html页面编写
-站点内容页面，可以使用markdown或html来编写，但markdown编写的md文件，在浏览器地址访问的时候依然使用html文件后缀。推荐使用markdown来书写内容，语法参见：Github md 示例 和 Github md 教程。比如下面这个About.md页面：
----
-layout: default
-title: About
----
-# About page
- 
-This page tells you a little bit about me.
- 
-layout: default 就是告诉jekyll这个页面使用哪个模板，即这个页面会放入哪个模板的content。当然，我们可以在_layouts文件夹下提供多个不同的模板，然后根据需要不同的页面使用不同的layout。
-页面可以放在任意位置和目录，访问的时候从站点域名开始，带上目录名称，再次注意需要使用html结尾。如果想要自定义浏览器的访问路径，可以参看详细设置：permalinks。
-md和html页面的区别：
-md有自己的语法，可以使用少量的html标签，最终会编译成html，侧重于内容编写。
-html可以随意使用html标签，可以使用liquid模板语言，侧重于页面模板和功能控制。
-至此，我们就可以在github上，新建md文件然后编辑提交，等待几分钟编译生成之后，就可以在浏览器里看到页面内容了。
-第九步，博客文章编写和管理
-我们自然可以新建目录，提交文章，然后添加一个文章列表页面。但我们也可以把这些交给jekyll的内置机制来完成，因为它提供了一些方便的内置文章管理功能。
-
-_posts文件夹是内置的放置文章的目录，我们可以将固定格式year-moth-day-name.md名称的md文件放到这里。比如新建一篇md的博客文章放到_posts目录下：
-
----
-layout: post
----
-这是一篇博客文章。
-
-
-接下来我们需要添加一个post的模板页面到_layouts文件夹下面。
-
-
-可见，模板页面本身也可以使用模板，这里post使用了default模板，而这里 content 就会填充_posts下面编写的页面（如果页面使用了layout: post模板）。
-最后，我们还需要编写一个博客文章列表的页面，用来展示所有的文章。比如在根目录新建blog.html页面：
-
-
-site.posts jekyll会自动生成_posts目录的对象。
-_post.url jekyll会自动会设置在_posts目录下的页面url。
-post.title 默认是md文件名称，但也可以在文章页面自定义title: 我的文章自定义名称。
-post.excerpt 默认是文章第一段的摘要文字。
-
-第十步，Github Pages的限制
-
-Github Pages 并不是无限存储和无限流量的静态站点服务，一些限制如下：
-内容存储不能超过1GB。
-每个月100GB流量带宽。
-每小时编译构建次数不超过10次。（在线修改重新编译并未发现这个限制）
-更多参看官方说明：usage-limits。
-
-总结
-在实际的使用过程中，我发现完全可以在Github网站上，编写md和html页面，修改js和css文件，来完成站点的设置和搭建。只不过每次修改都要触发Github jekyll的编译行为，有点慢（不知道是不是增量编译），没有在本地修改调试的速度快。
-更多jekyll详细的设置和功能，参看官方网站的文档：https://jekyllrb.com/docs。
-原文链接：https://blog.csdn.net/tom_221x/article/details/84630283
-]]></content>
-      <categories>
-        <category>web</category>
-      </categories>
-      <tags>
-        <tag>github</tag>
-        <tag>jekyll</tag>
-        <tag>blog</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>海思MPP&amp;UNF构架源代码级分析</title>
     <url>/posts/13894dce/</url>
     <content><![CDATA[
@@ -1102,6 +958,331 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
       </tags>
   </entry>
   <entry>
+    <title>Github Pages + jekyll 全面介绍极简搭建个人网站和博客</title>
+    <url>/posts/1991789c/</url>
+    <content><![CDATA[利用github pages搭建个人博客。本文指导建立github工程，并配置github pages搭建博客的全过程。
+注意：图床使用github，图片显示问题自己解决
+第一步，建立Github仓库
+首先到这里Github，创建一个仓库。
+
+仓库名称有固定的格式： username.github.io，其中username必须是Github账户的用户名（我的是scottcgi），github.io是固定的，这个地址将会成为个人站点的网站地址。另外，我们可以勾选Initialize this repository with a README，让仓库自动创建一个README.md文件，我们用它来做站点的首页（当然也可以不创建，后面自行创建，或是建立index.html也行）。
+注意： username如果不是Github账户名，这个仓库就会成为username.github.io的子站点，比如访问地址会是：username.github.io/aaa.github.io。可见，username.github.io是github默认分配给你的域名，同名仓库即代表着默认网站内容。而username.github.io/仓库名称，是用来访问你的其它仓库的地址。
+第二步，设置仓库开启Github Pages
+进入仓库设置界面，如图。
+
+这里能够重新修改仓库的名称，比如这个仓库内容是fork别人的，就可以在这里修改成自己的username.github.io名称。
+
+在Setting页面下有Github Pages的设置选项。绿色表示部署成功，每次修改仓库内容，都会出发Github jekyll重新编译部署，需要1-2分钟的时间，更新才能体现。如果有编译错误，包括js，css，html，markdown语法问题，都会显示红色以及错误页面和行号，同时会发邮件通知。其中，Source有以下几个选项：
+gh-pages branch 是项目新建一个分支命名为这个，使用这个分支来做站点内容。
+master branch 是使用主分支也是默认的，来作为站点内容。
+master branch/docs folder 是使用主分支的docs文件夹来作为站点内容。
+None 就是禁用Github Pages。
+如果是username.github.io只能使用主分支，其它仓库项目可以选择其它两个。接下来Choose a theme是Github提供的内置的网站主题，选择即可应用无需其它设置。Custom domain是自定义域名，本文暂不讨论。
+第三步，使用Github内置主题
+选择好主题，过一会刷新网站地址就已经能看到效果了，而在Code页面仅有两个文件。
+
+编辑README.md文件的内容，就会默认显示在网站首页，_config.yml 是jekyll的全局配置文件，现在里面只有一句话，theme: jekyll-theme-modernist。我们可以手动修改这个theme主题配置，网站就会应用不同的主题。
+Github内置支持的几个主题，官方的仓库在这里：https://pages.github.com/themes，每个README.md里都有介绍如何设置。
+那么我们现在就有两种方法来使用这些主题：
+第一种，就是直接fork一个主题仓库，然后修改仓库名称为我们自己的，然后修改我们需要的部分。
+
+第二种，只是简单的Choose (Change) theme（或在_config.yml设置theme），然后我们对照着官方仓库的主题目录，需要改什么文件就按照同样的路径拷贝单独一个文件到自己的仓库来修改（保持路径一致），这样就可以保持自己仓库的简洁。（如果使用了github内置的主题，github就会把你仓库的内容和内置主题内容合并到一起编译成静态网页。）
+另外，更多主题可以参看这两个地址（不要挑花眼了）： jekyll themes 和 jekyll wiki site。
+第四步，jekyll的目录结构
+我们只需要关注几个核心的目录结构如下（可以自己创建）：
+- _layouts （存放页面模板，md或html文件的内容会填充模板）
+- _sass（存放样式表）
+- _includes （可以复用在其它页面被include的html页面）
+- _posts（博客文章页面）
+- assets（原生的资源文件）
+  - js
+  - css
+  - image
+- _config.yml （全局配置文件）
+- index.html, index.md, README.md （首页index.html优先级最高，如果没有index，默认启用README.md文件）
+- 自定义文件和目录
+  更多更详细的目录结构参看jekyll官网：https://jekyllrb.com/docs/structure
+第五步，jekyll的模板编程语言Liquid的使用
+
+
+变量  被嵌入在页面中，会在静态页面生成的时候被替换成具体的数值。常用的全局变量对象有：site 和 page。这两个对象有很多默认自带的属性，比如：，。更多的默认值参看：https://jekyllrb.com/docs/variables。
+
+
+site对象对应的就是网站范围，自定义变量放在_config.yml中，比如title:标题使用访问。
+
+
+page对象对应的是单个页面，自定义变量放在每个页面的最开头，比如：
+
+
+myNum:100
+ 
+myStr:我是字符串
+使用 和  访问。
+条件判断语句，更多详见：https://shopify.github.io/liquid/tags/control-flow
+
+循环迭代，更多详见：https://shopify.github.io/liquid/tags/iteration
+
+默认函数，可以对变量进行一些处理，比如大小写转化、数学运算、格式化、排序等等，在Liquid中叫做Filters。比如{{ "Hello World!" | downcase }}转换字符串为小写。更多内置函数详见：https://jekyllrb.com/docs/liquid/filters
+第六步，使用_config.yml文件设置jekyll
+如果不是fork别人的仓库，就需要自己创建一个这个文件。然后，我们就可以配置一些默认的属性来控制jekyll的编译过程。更多详细的内置属性详见：https://jekyllrb.com/docs/configuration/default
+同时我们可以自定变量，会自动绑定到site对象上，比如我们可以把导航配置到_config.yml中：
+
+
+当然，我们也可以把一些数据单独放入一个yml文件，然后放在固定的数据文件夹_data下，比如_data/navigation.yml，这样访问这个文件的数据对象就是site.data.navigation。
+第七步，_layouts模板配置
+_layouts文件夹存放的是页面模板，默认需要一个default.html，什么意思？就是说，layout提供一个页面的布局框架，这是固定的模式，包括样式、结构、布局、脚本控制等等。然后，我们在用其它md或html文件去动态填充这个框架，这样就形成了一个完整的页面。比如我的default.html页面如下：
+
+
+
+{% seo %} 是jekyll的一个插件提供的seo优化，详情在这里：https://github.com/jekyll/jekyll-seo-tag
+核心在于 content 这个变量是内置的，会用我们的md或html页面填充这部分内容。
+其它的，我们看到会大量使用变量和流程控制代码，来填充模板的方方面面。
+于是，填充模板的内容，一方面是来自读取配置文件的变量，一方面是来自_includes的页面，还有就是来自 content 对应的页面。
+当然，我们也可以不使用 content 来填充模板，而是使用_includes的页面来代替content  ，但这样不够灵活，因为使用content ，我们可以在每个页面单独设置对应的layout模板。
+
+第八步，md和html页面编写
+站点内容页面，可以使用markdown或html来编写，但markdown编写的md文件，在浏览器地址访问的时候依然使用html文件后缀。推荐使用markdown来书写内容，语法参见：Github md 示例 和 Github md 教程。比如下面这个About.md页面：
+---
+layout: default
+title: About
+---
+# About page
+ 
+This page tells you a little bit about me.
+ 
+layout: default 就是告诉jekyll这个页面使用哪个模板，即这个页面会放入哪个模板的content。当然，我们可以在_layouts文件夹下提供多个不同的模板，然后根据需要不同的页面使用不同的layout。
+页面可以放在任意位置和目录，访问的时候从站点域名开始，带上目录名称，再次注意需要使用html结尾。如果想要自定义浏览器的访问路径，可以参看详细设置：permalinks。
+md和html页面的区别：
+md有自己的语法，可以使用少量的html标签，最终会编译成html，侧重于内容编写。
+html可以随意使用html标签，可以使用liquid模板语言，侧重于页面模板和功能控制。
+至此，我们就可以在github上，新建md文件然后编辑提交，等待几分钟编译生成之后，就可以在浏览器里看到页面内容了。
+第九步，博客文章编写和管理
+我们自然可以新建目录，提交文章，然后添加一个文章列表页面。但我们也可以把这些交给jekyll的内置机制来完成，因为它提供了一些方便的内置文章管理功能。
+
+_posts文件夹是内置的放置文章的目录，我们可以将固定格式year-moth-day-name.md名称的md文件放到这里。比如新建一篇md的博客文章放到_posts目录下：
+
+---
+layout: post
+---
+这是一篇博客文章。
+
+
+接下来我们需要添加一个post的模板页面到_layouts文件夹下面。
+
+
+可见，模板页面本身也可以使用模板，这里post使用了default模板，而这里 content 就会填充_posts下面编写的页面（如果页面使用了layout: post模板）。
+最后，我们还需要编写一个博客文章列表的页面，用来展示所有的文章。比如在根目录新建blog.html页面：
+
+
+site.posts jekyll会自动生成_posts目录的对象。
+_post.url jekyll会自动会设置在_posts目录下的页面url。
+post.title 默认是md文件名称，但也可以在文章页面自定义title: 我的文章自定义名称。
+post.excerpt 默认是文章第一段的摘要文字。
+
+第十步，Github Pages的限制
+
+Github Pages 并不是无限存储和无限流量的静态站点服务，一些限制如下：
+内容存储不能超过1GB。
+每个月100GB流量带宽。
+每小时编译构建次数不超过10次。（在线修改重新编译并未发现这个限制）
+更多参看官方说明：usage-limits。
+
+总结
+在实际的使用过程中，我发现完全可以在Github网站上，编写md和html页面，修改js和css文件，来完成站点的设置和搭建。只不过每次修改都要触发Github jekyll的编译行为，有点慢（不知道是不是增量编译），没有在本地修改调试的速度快。
+更多jekyll详细的设置和功能，参看官方网站的文档：https://jekyllrb.com/docs。
+原文链接：https://blog.csdn.net/tom_221x/article/details/84630283
+]]></content>
+      <categories>
+        <category>web</category>
+      </categories>
+      <tags>
+        <tag>github</tag>
+        <tag>jekyll</tag>
+        <tag>blog</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PT 工具集，Linux硬链接助手</title>
+    <url>/posts/bb600b4b/</url>
+    <content><![CDATA[由于自我需求，写了两个脚本完成PT下载和保种两全其美的硬链接 Linux shell 脚本方案。
+PTtool
+
+Github: appotry/PTtool
+纯Bash Shell硬链接工具！支持所有Linux， BSD， Mac，群辉，威联通等支持标准Shell的操作系统！
+
+
+PT工具集合
+
+硬链接工具 自动硬链接工具
+flexget-nexusphp, 自动下载刷流工具。Flexget插件，增强对NexusPHP的过滤
+nas-tools 源码备份，已经停止开发！注意暂时功能不够完善，Bug较多，评价是试用，尝鲜，还不能胜任主力！后续Bug得不到修正，强烈建议切换到Sonarr，radarr，flexget。
+MoviePilot nas-tools 作者重构项目，提升了速度，在功能，bug稳定性方面还待提升。可以提前试用
+PTools 一个新的自动签到，种子推送工具，刚出来，可以关注
+IYUUAutoReseed 自动辅种助手。PT三剑客
+PTPP 浏览器辅种助手。PT三剑客
+pt_helper, 非开源软件 自动刷流与签到。PT三剑客 nas-tools可以替代刷流
+PT站生成海报墙
+一键转种脚本 PT一键转种脚本（树大版）
+PT_signin PT自动签到 Github Action 版
+flexget qbittorrent删种、辅种 自动签到 插件
+Auto_Upload 自动发种机 全自动将本地资源发布到 PT 站并自动辅种   使用教程
+Upload_Machine 自动将本地资源发布到PT站 看简介比 Auto_Upload 功能更强大
+qBittorrent rss订阅规则管理
+Mkv Auto Subset ASS字幕字体子集化 MKV批量提取/生成
+jproxy 优化 Sonarr 对资源的识别率，主要是针对动漫
+xarr-rss 剧情Rss订阅处理器 目前非开源？
+pter 猫站使用脚本集合
+auto-bangumi 基于Mikan Project的中文自动追番解决方案 解决中文自动追番痛点
+BangumiBot 类似auto-bangumi的中文自动追番工具，只是auto-bangumi支持Qbittorrent，BangumiBot支持Aria2/Tr
+embyExternalUrl Emby调用外部播放器播放视频，以使用本地解码能力
+subtitle-translator-electron Translate subtitle using ChatGPT，使用ChatGPT翻译字幕
+
+相关教程
+
+从零开始玩PT-入门到精通
+如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
+视频图书和音乐完全自动化管理框架图解
+如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
+qBittorrent 参数详细设置教程
+transmission 使用及其配置
+Potplayer终极优化教程实现PC视频播放最强画质
+
+框架自动化构架图解
+
+点击放大
+
+
+graph LR
+    1[Sonarr / Radarr] == 请求 Jackett / Prowlarr Torznab 接口 ==&gt; 2(JProxy) == 代理 Sonarr / Radarr 请求 ==&gt; 3(Jackett / Prowlarr) 
+
+    3(Jackett / Prowlarr) == 返回原始结果 ==&gt; 2(JProxy) == 返回格式化结果 ==&gt; 1(Sonarr / Radarr)
+    
+    2(JProxy) == 优化查询关键字 ==&gt; 2(JProxy)
+    2(JProxy) == 格式化查询结果 ==&gt; 2(JProxy)
+jproxy 使用图解
+硬链接工具
+
+设计目的
+方便PT用户硬链接文件，在最大可能情况下节约空间，并保持做种。
+小于1M的文件直接复制，方便emby，tmm等工具刮削修改nfo等小文件。
+大于1M的文件硬链接到目的目录，可以修改文件名，但是不能修改文件内容！
+例如：
+/share/Download/src #保存下载的PT文件
+/share/Download/dst #保存你自己处理过的视频文件，把emby，tmm的目录设置到dst下面
+下载脚本后chmod +x mklink.sh给与执行权限
+使用mklink脚本修改如下，然后直接运行mklink.sh。就可以把src下面的文件全部硬链接到dst目录。mklink适合一次性把源文件夹链接到目的文件夹
+SRC="/share/Download/src"
+DST="/share/Download/dst"
+注意：
+
+源目录，目的目录需要在一个硬盘分区里面。硬链接不能跨分区。
+硬链接过的文件可以使用mv来修改存储目录，不影响硬链接效果。但是cp会增加一份存储空间。所以对于已经硬链接过的文件，使用mv，不要使用cp。
+
+解决的问题
+tmm，emby刮削的时候，必定修改nfo文件，下载的封面等图片不同刮削站点都不同，所以小文件复制，不怕修改。大文件硬链接，占有一份空间
+被硬链接过的文件，同时存在多个地方，但是都指向一个存储空间，只有所有的硬链接都删除了，这个文件才会被系统删除。
+同时，所有的硬链接文件，修改其中一个，其它所有指向这个位置的硬链接文件都被修改了。
+使用说明
+下载资源目录/share/Download，qbittorrent资源分类下载到/share/Download/src/下面的各个子目录，例如tv, anime, tv, movie, 4k, soft等等
+创建一个资源整理使用目录/share/Download/dst/目录，然后就可以把/share/Download/src和/share/Download/dst目录作为下面2个脚本的输入目录，来使用了
+小文件直接复制，方便tmm刮削修改nfo文件，大文件硬链接，只占有一份空间，但有2分文件，可以改名，移动目录，方便tmm整理刮削。 做种，emby使用两不误！
+建议目录结构
+/share/Downlosd/src       # BT下载工具默认保存主目录
+/share/Download/dst       # 硬链接目的目录，Emby，tmm，使用的目录，保存各种刮削信息。以及个人文件名修改，目录结构修改。
+在src目录下面建立子目录movie,music,anime,tv,4k等等，在qbittorrent里面设置分类，
+指向这里的movie,music,anime，tv等子目录。下载完后使用下面的硬链接脚本，
+把文件硬链接到目的文件夹。tmm，emby使用目的文件夹刮削数据。
+qbittorrent使用设置
+
+移动种子保存位置
+在qt的web界面种子上面右键，选择菜单保存位置
+设置分类目录
+在qt的web界面种子上面右键，选择分类-&gt;新分类，先写分类名称和路径。对于多文件种子，种子添加时选择自动管理。对于单文件种子，请自行添加子文件夹，或强制创建子文件夹。
+
+mklink.sh
+修改脚本参数源目录，目的目录,替换为你自己的目录。
+脚本将把源目录所有文件硬链接到目的目录，小于1M的文件直接复制到目的目录。方便nfo等小文件刮削修改，大于1M的文件
+硬链接到目的目录，以节约空间，2份文件只占有一份空间。
+mklink 直接针对2个文件夹做硬链接，小于1m的复制，但是没有判断是否已经硬链接过。适合全新的没有硬链接过的目录。
+#mklink.sh sourcedir dstdir
+mklink.sh /share/Download/tmp/src /share/Download/tmp/dst
+dirlink.sh
+设计原理：针对输入原路径下一级子目录判断是否有文件islinked.lk，
+有这个文件就跳过，没有就硬链接这个子目录到目的目录生成对应的子目录。
+小于1M的文件复制，大于1M的文件硬链接。
+可以直接修改脚本源目录，目的目录参数，也可以从参数$!,$2输入源目录，目的目录。
+此脚本和mklink.sh区别在于，将检查每个目录是否已经被硬链接过，已经连接过的将跳过去不再硬链接。
+原理是在源文件夹目录下添加文件islinked.lk，通过检测这个文件来判断是否硬链接过
+SRC="/share/Download/tmp/src/movie"
+DST="/share/Download/tmp/dst/movie"
+注意：src目录下面的文件需要放到各个子目录下面去，例如src/anime/amine1,src/tv/tv2，这样才能保证islinked.lk工作正常
+目录设置可以直接修改脚本，也可以命令行参数输入
+#dirlink.sh sourcedir dstdir
+dirlink.sh /share/Download/tmp/src /share/Download/tmp/dst
+重新建立连接，一次性删除所有islinked.lk文件
+find /share/Download/tmp -name "islinked.lk" | xargs rm -f
+替换前面的路径/share/Download/tmp为你自己的路径，操作和rm相关的命令一定注意不要输入错误，删错文件代价极大！
+一次性硬链接多个目录
+如下所示脚本link.sh
+#!/bin/sh
+/share/Download/source/dirlink.sh /share/Download/source/anime /share/Download/dst/anime
+/share/Download/source/dirlink.sh /share/Download/source/movie /share/Download/dst/movie
+/share/Download/source/dirlink.sh /share/Download/source/tv /share/Download/dst/tv
+修改限制2M大小以下的复制
+修改脚本参数FILEGIG，原脚本是1M大小，修改为下面这样就是2M大小
+FILEGIG=2000000c
+1000000c 表示 1000000 字节，也就是 1MB。在 find 命令中，可以使用 c 表示字节，k 表示千字节，M 表示兆字节，G 表示吉字节等，这些后缀可以用来指定 -size 选项所匹配的文件大小。
+如果要计算具体的字节大小，可以使用以下转换关系：
+1 字节（Byte）= 8 比特（Bit）
+1 千字节（KB）= 1024 字节
+1 兆字节（MB）= 1024 KB
+1 吉字节（GB）= 1024 MB
+因此，如果要查找大于 10MB 的文件，可以使用 -size +10M，如果要查找大于 100MB 的文件，可以使用 -size +100M。
+在本脚本中，修改方式就是10M就改为FILEGIG=10M，限制100M，就改为FILEGIG=100M
+autolink.sh
+qBittorrent 下载完成时自动硬链接下载完的种子，适用于新下载完成的种子文件。以前下载完成的文件建议使用link.sh脚本的方法。
+注意：脚本会判断是否进行硬链接的分类，分类详情见脚本内容。
+
+修改脚本目标目录
+将你的目录填在your_path的等号后。
+设置下载完成后自动运行
+在qt的web界面g，点击工具-&gt;选项-&gt;下载，勾选“Torrent 完成时运行外部程序”，填入/path/to/autolink.sh "%N" "%D" "%L"
+注意：填入autolink.sh的绝对位置，同时autolink与dirlink须在同一目录
+
+这个脚本使用，需要手动修改脚本中的分类，下面这一行！
+if [[ "$torrent_category" == *"movies"* || "$torrent_category" == *"series"* || "$torrent_category" == *"documents"* || "$torrent_category" == *"operas"* ]]
+$torrent_category 是qBittorrent分类名称，也是目录名称！
+注意事项
+
+注意Linux权限，如果运行出错，请检查所使用的的用户和用户组权限。目的目录是否可写！
+
+使用声明
+数据无价，小心操作。
+本脚本（除autolink.sh外）没有rm删除，只有mkdir和cp， 最多搞乱文件系统。但要注意不要把目的地目录设置到系统目录去了。
+一切后果自负
+感觉对你有帮助，来个star吧
+Contributing
+
+Fork it ( https://github.com/appotry/PTtool/fork )
+Create your feature branch (git checkout -b my-new-feature)
+Commit your changes (git commit -am 'Add some feature')
+Push to the branch (git push origin my-new-feature)
+Create a new Pull Request
+
+]]></content>
+      <categories>
+        <category>linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>hardlink</tag>
+        <tag>bt</tag>
+        <tag>pt</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Gitlab的安装及使用</title>
     <url>/posts/d08eb7b/</url>
     <content><![CDATA[Gitlab概述
@@ -1532,187 +1713,6 @@ Gitlab的安装及使用
         <tag>gitlab</tag>
         <tag>git</tag>
         <tag>crack</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>PT 工具集，Linux硬链接助手</title>
-    <url>/posts/bb600b4b/</url>
-    <content><![CDATA[由于自我需求，写了两个脚本完成PT下载和保种两全其美的硬链接 Linux shell 脚本方案。
-PTtool
-
-Github: appotry/PTtool
-纯Bash Shell硬链接工具！支持所有Linux， BSD， Mac，群辉，威联通等支持标准Shell的操作系统！
-
-
-PT工具集合
-
-硬链接工具 自动硬链接工具
-flexget-nexusphp, 自动下载刷流工具。Flexget插件，增强对NexusPHP的过滤
-nas-tools 源码备份，已经停止开发！注意暂时功能不够完善，Bug较多，评价是试用，尝鲜，还不能胜任主力！后续Bug得不到修正，强烈建议切换到Sonarr，radarr，flexget。
-MoviePilot nas-tools 作者重构项目，提升了速度，在功能，bug稳定性方面还待提升。可以提前试用
-PTools 一个新的自动签到，种子推送工具，刚出来，可以关注
-IYUUAutoReseed 自动辅种助手。PT三剑客
-PTPP 浏览器辅种助手。PT三剑客
-pt_helper, 非开源软件 自动刷流与签到。PT三剑客 nas-tools可以替代刷流
-PT站生成海报墙
-一键转种脚本 PT一键转种脚本（树大版）
-PT_signin PT自动签到 Github Action 版
-flexget qbittorrent删种、辅种 自动签到 插件
-Auto_Upload 自动发种机 全自动将本地资源发布到 PT 站并自动辅种   使用教程
-Upload_Machine 自动将本地资源发布到PT站 看简介比 Auto_Upload 功能更强大
-qBittorrent rss订阅规则管理
-Mkv Auto Subset ASS字幕字体子集化 MKV批量提取/生成
-jproxy 优化 Sonarr 对资源的识别率，主要是针对动漫
-xarr-rss 剧情Rss订阅处理器 目前非开源？
-pter 猫站使用脚本集合
-auto-bangumi 基于Mikan Project的中文自动追番解决方案 解决中文自动追番痛点
-BangumiBot 类似auto-bangumi的中文自动追番工具，只是auto-bangumi支持Qbittorrent，BangumiBot支持Aria2/Tr
-embyExternalUrl Emby调用外部播放器播放视频，以使用本地解码能力
-subtitle-translator-electron Translate subtitle using ChatGPT，使用ChatGPT翻译字幕
-
-相关教程
-
-从零开始玩PT-入门到精通
-如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
-视频图书和音乐完全自动化管理框架图解
-如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!
-qBittorrent 参数详细设置教程
-transmission 使用及其配置
-Potplayer终极优化教程实现PC视频播放最强画质
-
-框架自动化构架图解
-
-点击放大
-
-
-graph LR
-    1[Sonarr / Radarr] == 请求 Jackett / Prowlarr Torznab 接口 ==&gt; 2(JProxy) == 代理 Sonarr / Radarr 请求 ==&gt; 3(Jackett / Prowlarr) 
-
-    3(Jackett / Prowlarr) == 返回原始结果 ==&gt; 2(JProxy) == 返回格式化结果 ==&gt; 1(Sonarr / Radarr)
-    
-    2(JProxy) == 优化查询关键字 ==&gt; 2(JProxy)
-    2(JProxy) == 格式化查询结果 ==&gt; 2(JProxy)
-jproxy 使用图解
-硬链接工具
-
-设计目的
-方便PT用户硬链接文件，在最大可能情况下节约空间，并保持做种。
-小于1M的文件直接复制，方便emby，tmm等工具刮削修改nfo等小文件。
-大于1M的文件硬链接到目的目录，可以修改文件名，但是不能修改文件内容！
-例如：
-/share/Download/src #保存下载的PT文件
-/share/Download/dst #保存你自己处理过的视频文件，把emby，tmm的目录设置到dst下面
-下载脚本后chmod +x mklink.sh给与执行权限
-使用mklink脚本修改如下，然后直接运行mklink.sh。就可以把src下面的文件全部硬链接到dst目录。mklink适合一次性把源文件夹链接到目的文件夹
-SRC="/share/Download/src"
-DST="/share/Download/dst"
-注意：
-
-源目录，目的目录需要在一个硬盘分区里面。硬链接不能跨分区。
-硬链接过的文件可以使用mv来修改存储目录，不影响硬链接效果。但是cp会增加一份存储空间。所以对于已经硬链接过的文件，使用mv，不要使用cp。
-
-解决的问题
-tmm，emby刮削的时候，必定修改nfo文件，下载的封面等图片不同刮削站点都不同，所以小文件复制，不怕修改。大文件硬链接，占有一份空间
-被硬链接过的文件，同时存在多个地方，但是都指向一个存储空间，只有所有的硬链接都删除了，这个文件才会被系统删除。
-同时，所有的硬链接文件，修改其中一个，其它所有指向这个位置的硬链接文件都被修改了。
-使用说明
-下载资源目录/share/Download，qbittorrent资源分类下载到/share/Download/src/下面的各个子目录，例如tv, anime, tv, movie, 4k, soft等等
-创建一个资源整理使用目录/share/Download/dst/目录，然后就可以把/share/Download/src和/share/Download/dst目录作为下面2个脚本的输入目录，来使用了
-小文件直接复制，方便tmm刮削修改nfo文件，大文件硬链接，只占有一份空间，但有2分文件，可以改名，移动目录，方便tmm整理刮削。 做种，emby使用两不误！
-建议目录结构
-/share/Downlosd/src       # BT下载工具默认保存主目录
-/share/Download/dst       # 硬链接目的目录，Emby，tmm，使用的目录，保存各种刮削信息。以及个人文件名修改，目录结构修改。
-在src目录下面建立子目录movie,music,anime,tv,4k等等，在qbittorrent里面设置分类，
-指向这里的movie,music,anime，tv等子目录。下载完后使用下面的硬链接脚本，
-把文件硬链接到目的文件夹。tmm，emby使用目的文件夹刮削数据。
-qbittorrent使用设置
-
-移动种子保存位置
-在qt的web界面种子上面右键，选择菜单保存位置
-设置分类目录
-在qt的web界面种子上面右键，选择分类-&gt;新分类，先写分类名称和路径。对于多文件种子，种子添加时选择自动管理。对于单文件种子，请自行添加子文件夹，或强制创建子文件夹。
-
-mklink.sh
-修改脚本参数源目录，目的目录,替换为你自己的目录。
-脚本将把源目录所有文件硬链接到目的目录，小于1M的文件直接复制到目的目录。方便nfo等小文件刮削修改，大于1M的文件
-硬链接到目的目录，以节约空间，2份文件只占有一份空间。
-mklink 直接针对2个文件夹做硬链接，小于1m的复制，但是没有判断是否已经硬链接过。适合全新的没有硬链接过的目录。
-#mklink.sh sourcedir dstdir
-mklink.sh /share/Download/tmp/src /share/Download/tmp/dst
-dirlink.sh
-设计原理：针对输入原路径下一级子目录判断是否有文件islinked.lk，
-有这个文件就跳过，没有就硬链接这个子目录到目的目录生成对应的子目录。
-小于1M的文件复制，大于1M的文件硬链接。
-可以直接修改脚本源目录，目的目录参数，也可以从参数$!,$2输入源目录，目的目录。
-此脚本和mklink.sh区别在于，将检查每个目录是否已经被硬链接过，已经连接过的将跳过去不再硬链接。
-原理是在源文件夹目录下添加文件islinked.lk，通过检测这个文件来判断是否硬链接过
-SRC="/share/Download/tmp/src/movie"
-DST="/share/Download/tmp/dst/movie"
-注意：src目录下面的文件需要放到各个子目录下面去，例如src/anime/amine1,src/tv/tv2，这样才能保证islinked.lk工作正常
-目录设置可以直接修改脚本，也可以命令行参数输入
-#dirlink.sh sourcedir dstdir
-dirlink.sh /share/Download/tmp/src /share/Download/tmp/dst
-重新建立连接，一次性删除所有islinked.lk文件
-find /share/Download/tmp -name "islinked.lk" | xargs rm -f
-替换前面的路径/share/Download/tmp为你自己的路径，操作和rm相关的命令一定注意不要输入错误，删错文件代价极大！
-一次性硬链接多个目录
-如下所示脚本link.sh
-#!/bin/sh
-/share/Download/source/dirlink.sh /share/Download/source/anime /share/Download/dst/anime
-/share/Download/source/dirlink.sh /share/Download/source/movie /share/Download/dst/movie
-/share/Download/source/dirlink.sh /share/Download/source/tv /share/Download/dst/tv
-修改限制2M大小以下的复制
-修改脚本参数FILEGIG，原脚本是1M大小，修改为下面这样就是2M大小
-FILEGIG=2000000c
-1000000c 表示 1000000 字节，也就是 1MB。在 find 命令中，可以使用 c 表示字节，k 表示千字节，M 表示兆字节，G 表示吉字节等，这些后缀可以用来指定 -size 选项所匹配的文件大小。
-如果要计算具体的字节大小，可以使用以下转换关系：
-1 字节（Byte）= 8 比特（Bit）
-1 千字节（KB）= 1024 字节
-1 兆字节（MB）= 1024 KB
-1 吉字节（GB）= 1024 MB
-因此，如果要查找大于 10MB 的文件，可以使用 -size +10M，如果要查找大于 100MB 的文件，可以使用 -size +100M。
-在本脚本中，修改方式就是10M就改为FILEGIG=10M，限制100M，就改为FILEGIG=100M
-autolink.sh
-qBittorrent 下载完成时自动硬链接下载完的种子，适用于新下载完成的种子文件。以前下载完成的文件建议使用link.sh脚本的方法。
-注意：脚本会判断是否进行硬链接的分类，分类详情见脚本内容。
-
-修改脚本目标目录
-将你的目录填在your_path的等号后。
-设置下载完成后自动运行
-在qt的web界面g，点击工具-&gt;选项-&gt;下载，勾选“Torrent 完成时运行外部程序”，填入/path/to/autolink.sh "%N" "%D" "%L"
-注意：填入autolink.sh的绝对位置，同时autolink与dirlink须在同一目录
-
-这个脚本使用，需要手动修改脚本中的分类，下面这一行！
-if [[ "$torrent_category" == *"movies"* || "$torrent_category" == *"series"* || "$torrent_category" == *"documents"* || "$torrent_category" == *"operas"* ]]
-$torrent_category 是qBittorrent分类名称，也是目录名称！
-注意事项
-
-注意Linux权限，如果运行出错，请检查所使用的的用户和用户组权限。目的目录是否可写！
-
-使用声明
-数据无价，小心操作。
-本脚本（除autolink.sh外）没有rm删除，只有mkdir和cp， 最多搞乱文件系统。但要注意不要把目的地目录设置到系统目录去了。
-一切后果自负
-感觉对你有帮助，来个star吧
-Contributing
-
-Fork it ( https://github.com/appotry/PTtool/fork )
-Create your feature branch (git checkout -b my-new-feature)
-Commit your changes (git commit -am 'Add some feature')
-Push to the branch (git push origin my-new-feature)
-Create a new Pull Request
-
-]]></content>
-      <categories>
-        <category>linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>hardlink</tag>
-        <tag>bt</tag>
-        <tag>pt</tag>
       </tags>
   </entry>
   <entry>
@@ -2562,222 +2562,6 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
       </tags>
   </entry>
   <entry>
-    <title>宝塔linux面板重启、重置等命令整合</title>
-    <url>/posts/7b4e434c/</url>
-    <content><![CDATA[宝塔linux面板重启、重置等命令整合
-宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。
-来源于网络，原作已经不可考据，整理更新到目前最新版。
-现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、
-但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦
-Linux面板7.6.0安装命令：
-Centos安装命令：
-yum install -y wget &amp;&amp; wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; sh install.sh
-咨询离线安装版本
-试验性Centos/Ubuntu/Debian安装命令 独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中
-curl -sSO http://download.bt.cn/install/install_panel.sh &amp;&amp; bash install_panel.sh
-Ubuntu/Deepin安装命令：
-wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; sudo bash install.sh
-Debian安装命令：
-wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; bash install.sh
-Fedora安装命令:
-wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; bash install.sh
-Linux面板7.6.0升级命令：curl http://download.bt.cn/install/update6.sh|bash
-以上节点无法使用的情况下，请使用下面的备用节点：
-备用节点【香港】：
-（宝塔推荐使用CN2 双程GIA高品质，免备案的尊云zun.com香港云服务器安装）
-yum install -y wget &amp;&amp; wget -O install.sh http://103.224.251.67:5880/install/install_6.0.sh &amp;&amp; sh install.sh
-管理宝塔
-#停止
-/etc/init.d/bt stop
-#启动
-/etc/init.d/bt start
-#重启
-/etc/init.d/bt restart
-#卸载
-/etc/init.d/bt stop &amp;&amp; chkconfig --del bt &amp;&amp; rm -f /etc/init.d/bt &amp;&amp; rm -rf /www/server/panel
-#查看当前面板端口
-cat /www/server/panel/data/port.pl
-#修改面板端口，如要改成8881（centos 6  系统）
-echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
-iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 8881  -j ACCEPT
-service iptables save
-service iptables restart
-#修改面板端口，如要改成8881（centos 7  系统）
-echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
-firewall-cmd --permanent --zone=public  --add-port=8881/tcp
-firewall-cmd --reload
-#强制修改MySQL管理(root)密码，如要改成123456
-cd /www/server/panel &amp;&amp; python tools.pyc root 123456
-#修改面板密码，如要改成123456
-cd /www/server/panel &amp;&amp; python tools.pyc panel 123456
-#查看宝塔日志
-cat /tmp/panelBoot.pl
-#查看软件安装日志
-cat /tmp/panelExec.log
-#站点配置文件位置
-/www/server/panel/vhost
-#删除域名绑定面板
-rm -f /www/server/panel/data/domain.conf
-#清理登陆限制
-rm -f /www/server/panel/data/*.login
-#查看面板授权IP
-cat /www/server/panel/data/limitip.conf
-#关闭访问限制
-rm -f /www/server/panel/data/limitip.conf
-#查看许可域名
-cat /www/server/panel/data/domain.conf
-#关闭面板SSL
-rm -f /www/server/panel/data/ssl.pl &amp;&amp; /etc/init.d/bt restart
-#查看面板错误日志
-cat /tmp/panelBoot
-#查看数据库错误日志
-cat /www/server/data/*.err
-#站点配置文件目录(nginx)
-/www/server/panel/vhost/nginx
-#站点配置文件目录(apache)
-/www/server/panel/vhost/apache
-#站点默认目录
-/www/wwwroot
-#数据库备份目录
-/www/backup/database
-#站点备份目录
-/www/backup/site
-#站点日志
-/www/wwwlogs
-# 执行宝塔Linux面板升级命令
-curl https://download.bt.cn/install/update_panel.sh|bash
-Nginx服务管理
-#nginx安装目录
-/www/server/nginx
-#启动
-/etc/init.d/nginx start
-#停止
-/etc/init.d/nginx stop
-#重启
-/etc/init.d/nginx restart
-#启载
-/etc/init.d/nginx reload
-#nginx配置文件
-/www/server/nginx/conf/nginx.conf
-Apache服务管理
-#apache安装目录
-/www/server/httpd
-#启动
-/etc/init.d/httpd start
-#停止
-/etc/init.d/httpd stop
-#重启
-/etc/init.d/httpd restart
-#启载
-/etc/init.d/httpd reload
-#apache配置文件
-/www/server/apache/conf/httpd.conf
-MySQL服务管理
-#mysql安装目录
-/www/server/mysql
-#phpmyadmin安装目录
-/www/server/phpmyadmin
-#数据存储目录
-/www/server/data
-#启动
-/etc/init.d/mysqld start
-#停止
-/etc/init.d/mysqld stop
-#重启
-/etc/init.d/mysqld restart
-#启载
-/etc/init.d/mysqld reload
-#mysql配置文件
-/etc/my.cnf
-FTP服务管理
-#ftp安装目录
-/www/server/pure-ftpd
-#启动
-/etc/init.d/pure-ftpd start
-#停止
-/etc/init.d/pure-ftpd stop
-#重启
-/etc/init.d/pure-ftpd restart
-#ftp配置文件
-/www/server/pure-ftpd/etc/pure-ftpd.conf
-PHP服务管理
-#php安装目录
-/www/server/php
-#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} start
-#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} stop
-#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} restart
-#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)
-/etc/init.d/php-fpm-{52|53|54|55|56|70|71} reload
-#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)
-/www/server/php/{52|53|54|55|56|70|71}/etc/php.ini
-Redis服务管理
-#redis安装目录
-/www/server/redis
-#启动
-/etc/init.d/redis start
-#停止
-/etc/init.d/redis stop
-#redis配置文件
-/www/server/redis/redis.conf
-Memcached服务管理
-#memcached安装目录
-/usr/local/memcached
-#启动
-/etc/init.d/memcached start
-#停止
-/etc/init.d/memcached stop
-#重启
-/etc/init.d/memcached restart
-#启载
-/etc/init.d/memcached reload
-参考
-
-bt doc
-宝塔面板手册
-
-附赠
-强制升级宝塔数据库版本
-方法一
-
-
-打开/www/server/panel/class目录下的panelPlugin.py文件
-
-
-修改如下所示的部分代码
-
-
-注释下面代码
-8.0.0版本约802行
-if not self.check_mem_limit(versionInfo['mem_limit']):
-    return public.returnMsg(
-        False,
-        '至少需要[%dMB]内存才能安装' % versionInfo['mem_limit'])
-
-重启宝塔面板
-
-此时就可以顺利升级数据库版本了！
-方法二：修改宝塔面板文件/www/server/panel/date/plugin.json
-在宝塔面板文件中找到/www/server/panel/date，修改plugin.json文件。搜索
-/www/server/mysql/bin/mysql
-根据所要安装的mysql版本修改对应的配置，mem_limit是内存限制，CPU_limit是CPU限制。将对应值修改为小于你服务器你内存或者CPU的值。
-]]></content>
-      <categories>
-        <category>linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>宝塔</tag>
-        <tag>vps</tag>
-        <tag>建站</tag>
-        <tag>nginx</tag>
-        <tag>apache</tag>
-        <tag>mysql</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>docker使用简明教程</title>
     <url>/posts/42b6a86d/</url>
     <content><![CDATA[关于docker安装，查看，镜像管理，以及一个实用Dockerfile， LAMP，PHP，LTMJ。
@@ -2988,11 +2772,227 @@ Earthly 一个更加强大的镜像构建工具
       </categories>
       <tags>
         <tag>linux</tag>
-        <tag>mysql</tag>
         <tag>docker</tag>
         <tag>lamp</tag>
         <tag>php</tag>
+        <tag>mysql</tag>
         <tag>tomcat</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>宝塔linux面板重启、重置等命令整合</title>
+    <url>/posts/7b4e434c/</url>
+    <content><![CDATA[宝塔linux面板重启、重置等命令整合
+宝塔对新手入门还是比较友好的，方便了入门小站搭建。入门可用，一些新东西也可以在里面看看。大型应用还是的自己搭建。
+来源于网络，原作已经不可考据，整理更新到目前最新版。
+现在有很多网友都在使用宝塔主机管理系统、对一些不懂linux操作的朋友来说，是一个很好的管理系统、
+但是有些朋友重启服务器以后，有可能造成一些服务无法重启。今天我们搜集下关于宝塔面板的命令集锦
+Linux面板7.6.0安装命令：
+Centos安装命令：
+yum install -y wget &amp;&amp; wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; sh install.sh
+咨询离线安装版本
+试验性Centos/Ubuntu/Debian安装命令 独立运行环境（py3.7） 可能存在少量兼容性问题 不断优化中
+curl -sSO http://download.bt.cn/install/install_panel.sh &amp;&amp; bash install_panel.sh
+Ubuntu/Deepin安装命令：
+wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; sudo bash install.sh
+Debian安装命令：
+wget -O install.sh http://download.bt.cn/install/install-ubuntu_6.0.sh &amp;&amp; bash install.sh
+Fedora安装命令:
+wget -O install.sh http://download.bt.cn/install/install_6.0.sh &amp;&amp; bash install.sh
+Linux面板7.6.0升级命令：curl http://download.bt.cn/install/update6.sh|bash
+以上节点无法使用的情况下，请使用下面的备用节点：
+备用节点【香港】：
+（宝塔推荐使用CN2 双程GIA高品质，免备案的尊云zun.com香港云服务器安装）
+yum install -y wget &amp;&amp; wget -O install.sh http://103.224.251.67:5880/install/install_6.0.sh &amp;&amp; sh install.sh
+管理宝塔
+#停止
+/etc/init.d/bt stop
+#启动
+/etc/init.d/bt start
+#重启
+/etc/init.d/bt restart
+#卸载
+/etc/init.d/bt stop &amp;&amp; chkconfig --del bt &amp;&amp; rm -f /etc/init.d/bt &amp;&amp; rm -rf /www/server/panel
+#查看当前面板端口
+cat /www/server/panel/data/port.pl
+#修改面板端口，如要改成8881（centos 6  系统）
+echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
+iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 8881  -j ACCEPT
+service iptables save
+service iptables restart
+#修改面板端口，如要改成8881（centos 7  系统）
+echo '8881'  &gt;  /www/server/panel/data/port.pl &amp;&amp;  /etc/init.d/bt restart
+firewall-cmd --permanent --zone=public  --add-port=8881/tcp
+firewall-cmd --reload
+#强制修改MySQL管理(root)密码，如要改成123456
+cd /www/server/panel &amp;&amp; python tools.pyc root 123456
+#修改面板密码，如要改成123456
+cd /www/server/panel &amp;&amp; python tools.pyc panel 123456
+#查看宝塔日志
+cat /tmp/panelBoot.pl
+#查看软件安装日志
+cat /tmp/panelExec.log
+#站点配置文件位置
+/www/server/panel/vhost
+#删除域名绑定面板
+rm -f /www/server/panel/data/domain.conf
+#清理登陆限制
+rm -f /www/server/panel/data/*.login
+#查看面板授权IP
+cat /www/server/panel/data/limitip.conf
+#关闭访问限制
+rm -f /www/server/panel/data/limitip.conf
+#查看许可域名
+cat /www/server/panel/data/domain.conf
+#关闭面板SSL
+rm -f /www/server/panel/data/ssl.pl &amp;&amp; /etc/init.d/bt restart
+#查看面板错误日志
+cat /tmp/panelBoot
+#查看数据库错误日志
+cat /www/server/data/*.err
+#站点配置文件目录(nginx)
+/www/server/panel/vhost/nginx
+#站点配置文件目录(apache)
+/www/server/panel/vhost/apache
+#站点默认目录
+/www/wwwroot
+#数据库备份目录
+/www/backup/database
+#站点备份目录
+/www/backup/site
+#站点日志
+/www/wwwlogs
+# 执行宝塔Linux面板升级命令
+curl https://download.bt.cn/install/update_panel.sh|bash
+Nginx服务管理
+#nginx安装目录
+/www/server/nginx
+#启动
+/etc/init.d/nginx start
+#停止
+/etc/init.d/nginx stop
+#重启
+/etc/init.d/nginx restart
+#启载
+/etc/init.d/nginx reload
+#nginx配置文件
+/www/server/nginx/conf/nginx.conf
+Apache服务管理
+#apache安装目录
+/www/server/httpd
+#启动
+/etc/init.d/httpd start
+#停止
+/etc/init.d/httpd stop
+#重启
+/etc/init.d/httpd restart
+#启载
+/etc/init.d/httpd reload
+#apache配置文件
+/www/server/apache/conf/httpd.conf
+MySQL服务管理
+#mysql安装目录
+/www/server/mysql
+#phpmyadmin安装目录
+/www/server/phpmyadmin
+#数据存储目录
+/www/server/data
+#启动
+/etc/init.d/mysqld start
+#停止
+/etc/init.d/mysqld stop
+#重启
+/etc/init.d/mysqld restart
+#启载
+/etc/init.d/mysqld reload
+#mysql配置文件
+/etc/my.cnf
+FTP服务管理
+#ftp安装目录
+/www/server/pure-ftpd
+#启动
+/etc/init.d/pure-ftpd start
+#停止
+/etc/init.d/pure-ftpd stop
+#重启
+/etc/init.d/pure-ftpd restart
+#ftp配置文件
+/www/server/pure-ftpd/etc/pure-ftpd.conf
+PHP服务管理
+#php安装目录
+/www/server/php
+#启动(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 start)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} start
+#停止(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 stop)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} stop
+#重启(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 restart)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} restart
+#启载(请根据安装PHP版本号做更改，例如：/etc/init.d/php-fpm-54 reload)
+/etc/init.d/php-fpm-{52|53|54|55|56|70|71} reload
+#配置文件(请根据安装PHP版本号做更改，例如：/www/server/php/52/etc/php.ini)
+/www/server/php/{52|53|54|55|56|70|71}/etc/php.ini
+Redis服务管理
+#redis安装目录
+/www/server/redis
+#启动
+/etc/init.d/redis start
+#停止
+/etc/init.d/redis stop
+#redis配置文件
+/www/server/redis/redis.conf
+Memcached服务管理
+#memcached安装目录
+/usr/local/memcached
+#启动
+/etc/init.d/memcached start
+#停止
+/etc/init.d/memcached stop
+#重启
+/etc/init.d/memcached restart
+#启载
+/etc/init.d/memcached reload
+参考
+
+bt doc
+宝塔面板手册
+
+附赠
+强制升级宝塔数据库版本
+方法一
+
+
+打开/www/server/panel/class目录下的panelPlugin.py文件
+
+
+修改如下所示的部分代码
+
+
+注释下面代码
+8.0.0版本约802行
+if not self.check_mem_limit(versionInfo['mem_limit']):
+    return public.returnMsg(
+        False,
+        '至少需要[%dMB]内存才能安装' % versionInfo['mem_limit'])
+
+重启宝塔面板
+
+此时就可以顺利升级数据库版本了！
+方法二：修改宝塔面板文件/www/server/panel/date/plugin.json
+在宝塔面板文件中找到/www/server/panel/date，修改plugin.json文件。搜索
+/www/server/mysql/bin/mysql
+根据所要安装的mysql版本修改对应的配置，mem_limit是内存限制，CPU_limit是CPU限制。将对应值修改为小于你服务器你内存或者CPU的值。
+]]></content>
+      <categories>
+        <category>linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>mysql</tag>
+        <tag>宝塔</tag>
+        <tag>vps</tag>
+        <tag>建站</tag>
+        <tag>nginx</tag>
+        <tag>apache</tag>
       </tags>
   </entry>
   <entry>
@@ -7442,8 +7442,8 @@ MySQL教程
       </categories>
       <tags>
         <tag>linux</tag>
-        <tag>mysql</tag>
         <tag>docker</tag>
+        <tag>mysql</tag>
         <tag>mariadb</tag>
       </tags>
   </entry>
@@ -7608,436 +7608,6 @@ webhook部署Hexo静态博客指南
         <tag>joplin</tag>
         <tag>docker</tag>
         <tag>note</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Joplin 插件以及其Markdown语法。All in One!</title>
-    <url>/posts/92d347d6/</url>
-    <content><![CDATA[Joplin是一个以Markdown为主要语法的笔记程序，发展到今天增加了许多插件，这些插件也大大增强了它的功能，今天我们就讲讲Joplin的各个插件的作用和使用方法。
-首先我们打开Joplin，依次点击工具-&gt;选项设置页面，然后点击Markdown选项卡，我们就可以看到如下界面
-
-下面我们一个一个讲解一下每个插件的大概作用和用法，某些插件的详细使用方法可能需要我独立写一篇文章来介绍，这里我就先抛砖引玉大致介绍一下。
-启动软中断插件
-Joplin默认使用的是硬中断方式，那么什么是软中断什么是硬中断呢？如果你刚开始使用Markdown撰写自己的笔记你可能会非常的不习惯，因为标准的Markdown语法里面换行需要两个回车符号，但是像word之类的编辑器都是一个回车，普通人会感觉很不习惯，所以Joplin默认采用了硬中断方式，这样你可以使用一个回车符实现换行。但是当我们启用软中断插件之后，我们就需要两个回车符来实现换行（准确说应该是分段），使用两个空格加一个回车来实现换行，前者的间距会比后者的大。启用软中断其实对于普通人来说不是很好用，很难适应，所以我不建议大家开启该插件！
-启用typographer支持
-这个插件的作用是用来申明我们的版权的，因为有时候我们可能需要将我们的笔记分享给别人，但是想要声明文章是我们写的，我们就可以启用该插件来声明我们的著作权，而且该插件会给我们渲染成指定的版权声明格式，讲讲怎么用：
-我们启用插件之后，在我们想要声明著作权的地方键入：
-(c)著作权所有人
-然后Joplin就会给我们渲染为：
-
-是不是很熟悉，很多网页的底部都会有这个声明！
-启用数学表达式
-这个是Markdown自带语法，Joplin使用插件来实现的，其实就是大家在Markdown语法里面看到的行内公式使用…，行间公式使用$$…$$。需要说明的是Joplin使用的是Katex来解析数学符号，它的语法和Latex的数学公式写法差不多，我到现在还没有碰到很大的不同的地方！
-启用高亮==Mark==句法
-这个其实就是一个语句高亮插件，中间的语句会被高亮显示，有助于我们对重要的内容进行强调，自己一试就一目了然了。
-
-启用脚注
-脚注的功能就是对文中的某一个特定的术语等进行解释补充说明，有点像是论文的参考文献，下面是一个简单的示例，相信大家一看就懂
-
-根据图片你可能明白了脚注的使用方法：在我们想要使用脚注的地方使用[^唯一标识符]注明，然后在文章的最后使用响应的标识符进行说明即可，比如例子中的
-[^lightzhan]:知乎搜索light zhan即可找到我了
-注意那个冒号一定要是英文冒号，中文冒号可能无法被成功解析。
-启用目录扩展
-启用该扩展，我们就可以使用相应的语法在某个位置插入我们文章的目录，具体的语法为
-[toc]
-注意着是一个固定的符号，不需要改变什么，只需要在我们想要插入目录的地方放上**[toc]**即可，例如
-
-上图最重要的就是坐上脚的[toc]指令，该指令自动生成了右边的整个目录！
-启用下标~sub~和上标^sup^句法
-一看到sub如果不小心就会认为这个是删除线，大错特错了，一定要明白两者的区别，删除线是左右都是两个波浪线，而这个只有一个波浪线，一定要搞清楚这个。下面我们看看这个插件的作用和用法。
-这两个插件的作用其实很简单，就是下标和上标，看例子应该就明白的
-
-启用术语表插件
-对于这个插件得先知道什么是术语表。所谓的术语表其实可以理解为一个定义的列表，很多专业的书籍的前面都会有术语表，因为它需要给出书中所用术语的定义和解释。还不懂？我们在Joplin中启用该插件，然后新建一个笔记，输入如下文字：
-Qdown
-
-:   Qdown是由lightzhan开发的全功能软件下载程序，这里是程序的介绍页哦:http://lightzhan.xyz/index.php/qdown/ 
-
-LightZhan
-
-:   计算机爱好一名，爱折腾哎生活，*欢迎知乎关注lightzhan哦*
-
-        可以嵌入一些代码
-
-    定义第三段 
-这些文字会被解析显示为：
-
-对比一下发现了什么没有？术语表的每一项由两个部分组成，第一部分是术语，第二部分是该术语的解释，多个术语及其解释组合在一起就组成了表，这就是术语表！需要特别注意的是术语表的书写格式是固定的，如果你想要快速上手，建议你拷贝上面我提供的示例进行修改，修改两下你就懂格式到底是怎么回事了！
-启用缩写句法
-这个插件很有意思，也很有用。你是否记得有些程序的按钮，当你把鼠标放上去的时候它会显示按钮的作用。不记得了？不存在，我们也使用例子来说明。下面我们启用缩写句法插件，然后新建笔记，在笔记里面输入：
-*[Qdown]: 由lightzhan开发
-*[LightZhan]:  欢迎知乎关注我哦
-Qdown 是由 LightZhan 开发的一款全协议下载器.
-该文本会被Joplin显示为
-
-这可能并不能完全显示出该插件的作用，因为截图的原因截不到，当我们把鼠标放在Qdown上面的时候，鼠标所在的位置处会弹出“由lightzhan”开发的提示。不理解的可以拷贝上面的代码到Joplin感受一下，记得要开启该插件哦！需要注意的是该句中对应的缩写词前后都要有空格，负责你可能看不到上面的效果。
-启用Markdown emoji
-该插件是用于在我们的笔记中插入表情的，这是一个简单的示例截图
-
-详细的表情和表情的代码，可以参考这里。
-启用++insert++句法
-这个插件很好理解，一试便知道作用和用法了
-
-说了那么多，就是在对应的文字下面显示一个下划线！
-Markdown是非常好用的笔记书写规范，记着，Markdown不是某一个软件，而是一个通用的笔记书写规范，通过使用该规范进行写作，解析器会按照规定的样式将其渲染显示出来，说得直白点就是用于文字排版的。
-Markdown的排版语法
-这里的讲解如果有不懂的可以参见下一节的示例：
-
-标题。markdown的标题使用“#”符号开头，一级标题一个”#”，二级标题两个“#”（也就是“##”），以此类推三级标题四级标题…….，不同级的标题会被渲染为不同的大小和样式（根据各个软件和相应的主题而定）；
-粗体。markdown的粗体字使用两个“**”包裹即可，比如 “你好”解析后变为“你好”；
-斜体。markdown的斜体使用“*”或者“_”包裹，比如“你好”解析显示为“你好”；
-引用。markdown的引用使用“&gt;”开头，大部分软件要求“&gt;”要和引用内容之间有一个空格；
-代码。对于程序员来说可能想要在文中插入代码，markdown是支持插入代码的，行间代码使用一个"`"符号包裹，注意这个符号是键盘左上角Esc下面的那个键，不是我们所谓的英文上一撇；
-数学公式。markdown的数学解析一般使用latex语法，行内公式使用一个$包裹即可，行间公式使用两个$包裹；
-markdown的列表分为有序列表和无序列表。有序列表就是有序号，无序列表就是 无序号，有序列表就是在数字后面一个点，然后空一格写正文，比如：1. xxxxxxx，第二点需要新起一行2. xxxxxx。无序列表是使用“*”或者“-”开始，后面跟一个空格写上正文。
-markdown的勾选框。markdown的勾选框使用- [ ]，注意字符之间都是有空格的。比如：第一行- [ ] A,第二行- [ ] B。这样对应的渲染结果就是勾选框和对应的选项。注意字符之间的空格！
-表格。markdown的表格非常易于理解，请看下面的示例。
-
-示例代码和渲染结果
-下面的示例左边是书写文字，右边是渲染结果，注意书写文字里面的标识符和内容之间的空格：
-
-
-
-需要说明的是上面的粗体显示为了橘红色的字体，这是我自己设置的格式，这个等大家熟悉了后可以使用CSS设计自己喜欢的样式。下面是表格的渲染结果 （其中左边的源代码不用那样对齐 ，横线的个数一处最少3个就行 ，右边是解析后的显示结果） ：
-
-额~，左边左下角那个是鼠标光标，不是文字内容哈。需要说明的是不同的软件的不同的主题可能显示的结果会不一样，但是书写的语法是不变的。
-启用 multimarkdown 表格扩展
-这个插件说高深也不高深，看名字应该就能知道这是一个增强Markdown表格功能的插件，大家记得Markdown的表格是怎么使用的吗？如果忘记的话赶紧看看这篇文章回顾一下，不然下面的内容可能体会不会那么深！
-好啦，我这里假设读者知道markdown的表格是怎么用的，然后我们开始讲解multimarkdown扩展。Markdown自带的表格功能是非常有限的，如果你使用过的话就会发现它能做出来的表格一定是规整的，行和列一定是划分均匀整齐的，但是有时候我们需要的表格可能是这样的：
-
-这种表格使用Markdown的表格是不可能做出来的，因为分组的效果和占用两个格子的效果是做不出来的，但是如果你启用了MultiMarkdown插件，你就可以使用下面的代码渲染出来：
-|             |          分组                 ||
-第一个表头     | 第二个表头     | 第三个表头      |
- ------------ | :-----------: | -----------:   |
-内容          |          占用两个格子           ||
-内容          |   **内容**     |         内容    |
-新的一部分     |     更多       |         更多    |
-更多          | 带有一个跳过的 '\|'              ||
-[LightZhan制作]
-你可以把上面的代码拷贝进Joplin编辑器研究一番就能理解MultiMardown表格扩展的用法了，下面我详细讲解一下。
-MultiMarkdown的表格扩展支持下面的功能：
-
-使得元素占据多个列（上面的示例中有）
-使得元素占据多个行
-在表格上面或者下面对表头进行分组（上面的例子中有）
-在表格的上面或者下面标注表格标题（上面的例子中有）
-在表格中包含分块元素（列表、代码、段落等等）
-表格不需要表头
-
-上面标注了“上面的例子中有”的我这里就不在讲了，因为代码一研究或者修改修改就知道咋回事的，下面我们主要讲讲上面的例子中没有涉及到的。
-1.使得表格占据多行。这个其实很好用，但是有两种情况。第一种情况是一个项目占据两格。这种情况要占据多行的话，在我们对应列的起始行写上内容，然后接下来要合并的行直接写“^^”。不明白不存在，我们来一个例子：
-
-上面对应的代码是什么呢？看下面：
-作者		| 信息			  | 信息		 |
-----:		| --------------:         | ---------:	         |
-LightZhan	| ligthzhan.xyz 				||
-^^		| 更多Joplin教程           | Qdown下载器	         |
-[LightZhan制作，允许规范转载]
-把上面的代码拷贝进编辑器改改试试，很容易明白里面的玄机的！
-第二种情况是我们添加块，看下面一点。
-2.**在表格中添加块元素。**这个不用多说，直接在表格的格子里面用Markdown语法写作，渲染成对应的Markdown格式！比如加粗、斜体、代码块等等。下面来一个简单的例子，需要注意的是下面的例子当中我们的内容有几行！
-|   Markdown   | 渲染结果       |
-|--------------|---------------|
-|    *斜体*    | *斜体*         | \
-|              |               |
-|    - 项目1   | - 项目1        | \
-|    - 项目2   | - 项目2        |
-|    ```python | ```python       \
-|    .1 + .2   | .1 + .2         \
-|    ```       | ```           |
-[LightZhan制作，允许规范转载]
-注意代码后面的”\”，这个符号是指定换行的，如果项目占据多行一定要写上。上面的代码复制黏贴进编辑器可以看到下面的渲染结果
-
-**3.表格不需要表头。**这个也很简单，直接不写表头即可。拷贝下面的代码进编辑器
-----:		| --------------: | ---------:	 |
-LightZhan	| lightzhan.xyz 	        ||
-^^		| 更多Joplin教程  | Qdown下载器	 |
-[LightZhan制作，允许规范转载]
-然后你就可以看到惊喜
-
-启用Fountain语法支持
-这个插件的目标人群非常少，Fountain语法是用来写电影剧本的，而且要是要细讲的话估计又是一篇文章，因为使用的人非常少，所以我这里就不讲这个了。
-Mermaid插件的作用
-Mermaid是一个用于画流程图、时序图、类图、状态图、甘特图、饼图的Markdown扩展，其中状态图是最新8.4版本的新功能。如果你不知道这些图是干什么的，不存在，下面的教程里面我会每个都给出例子。
-在Joplin里面使用Mermaid
-在Joplin里面如果想要使用Mermaid，那么你需要使用代码块，并且代码的类型填写mermaid，详细的格式如下：
-```mermaid
-graph TD
-    Start --&gt; Stop
-```
-在渲染区我们就能得到如下的结果
-
-Mermaid流程图
-下面我们讲解在Mermaid里面画流程图。上一节的示例便是流程图，我们把上一节的代码拿出来分析一下。首先我们看代码的第一行：graph TD，这一行代码有两个作用，graph表示我们图的类型，graph表示流程图，而第二个TD表示图的方向，可能的方向有如下几个
-
-TB：自顶向下
-BT：自底向上
-RL：从右到左
-LR：从左到右
-TD：和TB一样
-
-上面我们的例子使用的是TD，如果你对其它的方向不明白，可以把代码拷贝到编辑器里面修改方向参数就可以理解各个方向的意义了。
-上面的代码非常基础，因为如果要实现比较复杂的流程图，我们就需要使用一些比较高级的语法，比如定义节点。所谓的节点，你可以简单的理解为上面图片中的方框，但是如果我们要使用其它形状的节点怎么办呢？在上面的例子中我使用了默认的节点定义方法，也就是直接使用文本,这种方式定义节点的话id和显示文本是一样的，而且形状是固定的矩形。如果要定义不同的节点形状，或者使得id和显示文本不一样，可以使用下面的语法
-
-定义矩形形状的节点：id[text]
-定义圆角矩形的节点：id(text)
-定义椭圆形的节点：id([text])
-定义圆柱形的节点：id[(text)]
-定义圆形的节点：id((text))
-定义非对称图形的节点：id&gt;text]
-定义菱形的节点：id{text}
-定义六角形的节点：id
-定义平行四边形的节点(两个方向)：id[/text/]或者[\text]
-定义梯形的节点(两个方向)：id[/text] 或者 di[\text/]
-
-注意上面的id和text是需要我们自己定义替换的，如果同一个id有多个text，取最后一次的定义值！
-有了节点我们还需要将节点连接起来，也就是我们要使用线条或者箭头来进行节点的连接，Mermaid支持下面的方式：
-
-实线箭头：A–&gt;B
-实线无箭头：A–B
-无箭头实线上带文本：A–text–B
-实线箭头带文本：A–&gt;|text|B 或者 A–text–&gt;B
-虚线箭头：A-.-&gt;B
-虚线箭头带文本：A-.text.-&gt;B
-粗线箭头：A==&gt;B
-粗线箭头带箭头：Atext&gt;B
-
-最好的办法就是把上面的代码拷贝进编辑器看看，一看你应该就能理解各个图形的形状！
-上面我们讲解了节点和连线，下面我们说说图形的绘制。上面我使用的例子非常基础，下面来一个复杂点的例子供大家修改和研究
-```mermaid
-graph TD
-    light[LightZhan]
-    url[lightzhan.xyz]
-    QdownUrl[访问LightZhan博客Qdown页面]
-    Qdown((Qdown))
-    function[功能]
-    Qdown--&gt;|作者|light 
-    light--个人主页--&gt;url
-    Qdown--&gt;function
-    Qdown--&gt;QdownUrl
-    function1[极速下载]
-    function2[磁链/BT下载]
-    function3[迅雷下载]
-    function5[下载体验]
-    function4[Http/Https/FTP/SFTP]
-    function-.功能1.-&gt;function1
-    function-.功能2.-&gt;function2
-    function-.功能3.-&gt;function3
-    function-.功能4.-&gt;function4
-    function-.更多功能.-&gt;function5
-    annocement[本文首发于lightzhan.xyz,允许规范转载]
-
-```
-上面代码的渲染结果如下：
-
-如果不清楚，可以把上面的代码拷贝到编辑器进行修改和摸索！
-Mermaid时序图
-时序图是用于展示过程的方式和顺序的。举例来说，两个人之间的对话:
-A先问B：Qdown是啥？B回答：Qdown是全功能的下载软件！A又问：哪里可以下载呀？B回答： http://lightzhan.xyz/index.php/qdown/ 。我们使用mermaid绘制时序图来展示上面的对话过程：
-
-这样是不是看上去清晰了很多了呢？希望通过这个例子能让你深切地感受到时序图是干什么用的！好了，放上上面的时序图的代码供大家研究：
-```mermaid
-sequenceDiagram
-A-&gt;&gt;B:Qdown是啥？
-B--&gt;&gt;A:Qdown是全功能的下载软件！
-A-&gt;&gt;B:哪里可以下载呀？
-B--&gt;&gt;A:http://lightzhan.xyz/index.php/qdown/
-```
-让我们来简单分析一下上面的代码。你可能注意到了第一行的sequenceDiagram，这个就是告诉mermaid我们在这里绘制时序图，然后下面有箭头，在时序图里面，mermaid支持下面类型的箭头和线段：
-
-实线并且没有箭头：A-&gt;B:text
-虚线没有箭头：A–&gt;B:text
-实线带箭头：A-&gt;&gt;B:text
-虚线带箭头：A–&gt;&gt;B:text
-实线并且在终点带一个x：A-xB:text
-虚线并且在终点带一个x：A–xB:text
-
-上面的text就是要显示在箭头或线段上的文本，在mermaid的时序图里面被称为消息，线段或箭头类型如果有不清楚的可以拷贝到编辑器里面看看，一目了然！
-还记得上面我们在流程图里面的节点吗？在时序图里面不是定义节点，而是定义参与者，也就是上面的A和B。上面的代码中我们定义参与者的方式采用的是默认方式，也就是不显示定义，有时候我们的参与者的名字太长的话可以使用显示定义来定义别名：
-participant John
-participant Alice
-participant A as Alice
-participant J as John
-上面代码的第一二行仅仅是显式定义我们的参与者，第三四行给我们的参与者定义别名，定义了别名后我们在下面的使用中就可以直接使用A代替Alice，使用J代替John了，这样输入会方便很多！
-好了，时序图差不多就讲到这里，接下来的一些高级用法大部分我们都用不到，或者要使用的话不如使用专业的绘图软件使用插图的方式导入。
-使用Mermaid绘制类图
-类的定义
-在讲解如何绘制类图之前我们先了解一下什么是类图！如果你是计算机专业或者会计算机编程的话应该就懂面向对象编程，对象是类的实例，而这里要绘制的类图就和面向对象编程里面的类相关。
-对于编程人员来说，函数具有参数和返回值，属性具有变量类型，我们举一个例子来说一下：
-class BankAccount{
-  +String owner
-  +BigDecimal balance
-  +deposit(amount) bool
-  +withdrawl(amount)
-}
-上面的代码的渲染结果为：
-
-上面的代码是我直接从官方借鉴的，可以直观地看出对于银行账户（BankAccount），一共有两个属性和两个方法，属性都是具有对应的变量类型，而对于函数具有参数（amount），并且deposit函数还具有bool类型的返回值。你或许看到了前面的+号，这个是对应变量或属性的可见性，分别有：
-
-+ public
-– private
-# protected
-~ Package/Internal
-
-如果我们想要定义的函数是抽象函数咋办呢？在括号的后面添加*即可：
-someAbstractMethod()*
-在渲染过后抽象函数会使用斜体进行显示，这里就不截图展示了。对于静态函数，将后面的*换为$即可，在显示时静态函数会具有下划线。
-类之间的关系
-在编程中我们常常会用到的关系：
-
-
-
-&lt;|–
-继承（Inheritance）
-
-
-
-
-*–
-组成（Composition）
-
-
-o–
-聚集（Aggregation）
-
-
-–&gt;
-关联（Association）
-
-
-—
-实线（Link (Solid)）
-
-
-…&gt;
-依赖（Dependency）
-
-
-…|&gt;
-实现（Realization）
-
-
-…
-虚线（Link (Dashed)）
-
-
-
-下面我们举一个例子：“狗”继承自“动物”类别
-```mermaid
-classDiagram
-    class 动物{
-        特点1：能动
-        特点2：能叫
-    }
-    class 狗{
-        特点1：4条腿
-        特点2：会汪汪叫
-        特点3：可爱至极
-        汪汪叫(陌生人)
-    }
-    动物 &lt;|-- 狗
-```
-渲染结果为：
-
-结合代码和展示结果应该很好理解，这就是一个狗继承自动物的简单例子，我们还可以对关系结果打标签：
-```mermaid
-classDiagram
-    class 动物{
-        特点1：能动
-        特点2：能叫
-    }
-    class 狗{
-        特点1：4条腿
-        特点2：会汪汪叫
-        特点3：可爱至极
-        汪汪叫(陌生人)
-    }
-    动物 &lt;|-- 狗:属于（继承）
-```
-我们在关系指示后面加上冒号，然后后面加上关系说明，这样在渲染结果当中我们就可以看到箭头上出现了我们需要的标签说明：
-
-好了，使用mermaid绘制类图就讲到这里，还有一些用法不是很常用，我就不讲了。
-使用mermaid绘制饼图
-绘制饼图的需求比较多，很多数据展示需要我们绘制饼图，幸运的是mermaid给我们提供了绘制饼图的功能，使用方法极其简单：
-```mermaid
-pie
-    title LightZhan创作，允许规范转载（http://lightzhan.xyz）
-    "Joplin" : 42.96
-    "Qdown" : 50.05
-    " 黑科技" : 10.01
-    "其它" :  5
-
-```
-在上面的代码中，pie关键字指定我们要绘制饼图，然后tiltile指定我们的标题，后面是数据分布，注意，mermaid会将我们输入的数据进行计算，上面的数据加起来并不是100，所以我们看到在下面的渲染结果中数据对应不上。
-
-Joplin插件非常丰富，你能找到各种各样的功能，这里推荐一些插件使用，见下面这篇文章， Joplin插件推荐。
-参考：
-
-lightzhan.xyz
-
-系列教程
-全部文章RSS订阅
-笔记系列
-Note分类RSS订阅
-
-完美笔记进化论
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Joplin入门指南&amp;实践方案
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-Joplin 插件以及其Markdown语法。All in One!
-Joplin 插件使用推荐
-为知笔记私有化Docker部署
-
-Gitbook使用系列
-Gitbook分类RSS订阅
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-Gitlab 使用系列
-Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-GithubProfile美化与自动获取RSS文章教程
-Vercel部署高级用法教程
-webhook部署Hexo静态博客指南
-在宝塔VPS上面采用docker部署waline全流程图解教程
-
-]]></content>
-      <categories>
-        <category>note</category>
-      </categories>
-      <tags>
-        <tag>markdown</tag>
-        <tag>joplin</tag>
-        <tag>note</tag>
-        <tag>mermaid</tag>
       </tags>
   </entry>
   <entry>
@@ -8550,6 +8120,436 @@ webhook部署Hexo静态博客指南
         <tag>wiz</tag>
         <tag>docker</tag>
         <tag>note</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Joplin 插件以及其Markdown语法。All in One!</title>
+    <url>/posts/92d347d6/</url>
+    <content><![CDATA[Joplin是一个以Markdown为主要语法的笔记程序，发展到今天增加了许多插件，这些插件也大大增强了它的功能，今天我们就讲讲Joplin的各个插件的作用和使用方法。
+首先我们打开Joplin，依次点击工具-&gt;选项设置页面，然后点击Markdown选项卡，我们就可以看到如下界面
+
+下面我们一个一个讲解一下每个插件的大概作用和用法，某些插件的详细使用方法可能需要我独立写一篇文章来介绍，这里我就先抛砖引玉大致介绍一下。
+启动软中断插件
+Joplin默认使用的是硬中断方式，那么什么是软中断什么是硬中断呢？如果你刚开始使用Markdown撰写自己的笔记你可能会非常的不习惯，因为标准的Markdown语法里面换行需要两个回车符号，但是像word之类的编辑器都是一个回车，普通人会感觉很不习惯，所以Joplin默认采用了硬中断方式，这样你可以使用一个回车符实现换行。但是当我们启用软中断插件之后，我们就需要两个回车符来实现换行（准确说应该是分段），使用两个空格加一个回车来实现换行，前者的间距会比后者的大。启用软中断其实对于普通人来说不是很好用，很难适应，所以我不建议大家开启该插件！
+启用typographer支持
+这个插件的作用是用来申明我们的版权的，因为有时候我们可能需要将我们的笔记分享给别人，但是想要声明文章是我们写的，我们就可以启用该插件来声明我们的著作权，而且该插件会给我们渲染成指定的版权声明格式，讲讲怎么用：
+我们启用插件之后，在我们想要声明著作权的地方键入：
+(c)著作权所有人
+然后Joplin就会给我们渲染为：
+
+是不是很熟悉，很多网页的底部都会有这个声明！
+启用数学表达式
+这个是Markdown自带语法，Joplin使用插件来实现的，其实就是大家在Markdown语法里面看到的行内公式使用…，行间公式使用$$…$$。需要说明的是Joplin使用的是Katex来解析数学符号，它的语法和Latex的数学公式写法差不多，我到现在还没有碰到很大的不同的地方！
+启用高亮==Mark==句法
+这个其实就是一个语句高亮插件，中间的语句会被高亮显示，有助于我们对重要的内容进行强调，自己一试就一目了然了。
+
+启用脚注
+脚注的功能就是对文中的某一个特定的术语等进行解释补充说明，有点像是论文的参考文献，下面是一个简单的示例，相信大家一看就懂
+
+根据图片你可能明白了脚注的使用方法：在我们想要使用脚注的地方使用[^唯一标识符]注明，然后在文章的最后使用响应的标识符进行说明即可，比如例子中的
+[^lightzhan]:知乎搜索light zhan即可找到我了
+注意那个冒号一定要是英文冒号，中文冒号可能无法被成功解析。
+启用目录扩展
+启用该扩展，我们就可以使用相应的语法在某个位置插入我们文章的目录，具体的语法为
+[toc]
+注意着是一个固定的符号，不需要改变什么，只需要在我们想要插入目录的地方放上**[toc]**即可，例如
+
+上图最重要的就是坐上脚的[toc]指令，该指令自动生成了右边的整个目录！
+启用下标~sub~和上标^sup^句法
+一看到sub如果不小心就会认为这个是删除线，大错特错了，一定要明白两者的区别，删除线是左右都是两个波浪线，而这个只有一个波浪线，一定要搞清楚这个。下面我们看看这个插件的作用和用法。
+这两个插件的作用其实很简单，就是下标和上标，看例子应该就明白的
+
+启用术语表插件
+对于这个插件得先知道什么是术语表。所谓的术语表其实可以理解为一个定义的列表，很多专业的书籍的前面都会有术语表，因为它需要给出书中所用术语的定义和解释。还不懂？我们在Joplin中启用该插件，然后新建一个笔记，输入如下文字：
+Qdown
+
+:   Qdown是由lightzhan开发的全功能软件下载程序，这里是程序的介绍页哦:http://lightzhan.xyz/index.php/qdown/ 
+
+LightZhan
+
+:   计算机爱好一名，爱折腾哎生活，*欢迎知乎关注lightzhan哦*
+
+        可以嵌入一些代码
+
+    定义第三段 
+这些文字会被解析显示为：
+
+对比一下发现了什么没有？术语表的每一项由两个部分组成，第一部分是术语，第二部分是该术语的解释，多个术语及其解释组合在一起就组成了表，这就是术语表！需要特别注意的是术语表的书写格式是固定的，如果你想要快速上手，建议你拷贝上面我提供的示例进行修改，修改两下你就懂格式到底是怎么回事了！
+启用缩写句法
+这个插件很有意思，也很有用。你是否记得有些程序的按钮，当你把鼠标放上去的时候它会显示按钮的作用。不记得了？不存在，我们也使用例子来说明。下面我们启用缩写句法插件，然后新建笔记，在笔记里面输入：
+*[Qdown]: 由lightzhan开发
+*[LightZhan]:  欢迎知乎关注我哦
+Qdown 是由 LightZhan 开发的一款全协议下载器.
+该文本会被Joplin显示为
+
+这可能并不能完全显示出该插件的作用，因为截图的原因截不到，当我们把鼠标放在Qdown上面的时候，鼠标所在的位置处会弹出“由lightzhan”开发的提示。不理解的可以拷贝上面的代码到Joplin感受一下，记得要开启该插件哦！需要注意的是该句中对应的缩写词前后都要有空格，负责你可能看不到上面的效果。
+启用Markdown emoji
+该插件是用于在我们的笔记中插入表情的，这是一个简单的示例截图
+
+详细的表情和表情的代码，可以参考这里。
+启用++insert++句法
+这个插件很好理解，一试便知道作用和用法了
+
+说了那么多，就是在对应的文字下面显示一个下划线！
+Markdown是非常好用的笔记书写规范，记着，Markdown不是某一个软件，而是一个通用的笔记书写规范，通过使用该规范进行写作，解析器会按照规定的样式将其渲染显示出来，说得直白点就是用于文字排版的。
+Markdown的排版语法
+这里的讲解如果有不懂的可以参见下一节的示例：
+
+标题。markdown的标题使用“#”符号开头，一级标题一个”#”，二级标题两个“#”（也就是“##”），以此类推三级标题四级标题…….，不同级的标题会被渲染为不同的大小和样式（根据各个软件和相应的主题而定）；
+粗体。markdown的粗体字使用两个“**”包裹即可，比如 “你好”解析后变为“你好”；
+斜体。markdown的斜体使用“*”或者“_”包裹，比如“你好”解析显示为“你好”；
+引用。markdown的引用使用“&gt;”开头，大部分软件要求“&gt;”要和引用内容之间有一个空格；
+代码。对于程序员来说可能想要在文中插入代码，markdown是支持插入代码的，行间代码使用一个"`"符号包裹，注意这个符号是键盘左上角Esc下面的那个键，不是我们所谓的英文上一撇；
+数学公式。markdown的数学解析一般使用latex语法，行内公式使用一个$包裹即可，行间公式使用两个$包裹；
+markdown的列表分为有序列表和无序列表。有序列表就是有序号，无序列表就是 无序号，有序列表就是在数字后面一个点，然后空一格写正文，比如：1. xxxxxxx，第二点需要新起一行2. xxxxxx。无序列表是使用“*”或者“-”开始，后面跟一个空格写上正文。
+markdown的勾选框。markdown的勾选框使用- [ ]，注意字符之间都是有空格的。比如：第一行- [ ] A,第二行- [ ] B。这样对应的渲染结果就是勾选框和对应的选项。注意字符之间的空格！
+表格。markdown的表格非常易于理解，请看下面的示例。
+
+示例代码和渲染结果
+下面的示例左边是书写文字，右边是渲染结果，注意书写文字里面的标识符和内容之间的空格：
+
+
+
+需要说明的是上面的粗体显示为了橘红色的字体，这是我自己设置的格式，这个等大家熟悉了后可以使用CSS设计自己喜欢的样式。下面是表格的渲染结果 （其中左边的源代码不用那样对齐 ，横线的个数一处最少3个就行 ，右边是解析后的显示结果） ：
+
+额~，左边左下角那个是鼠标光标，不是文字内容哈。需要说明的是不同的软件的不同的主题可能显示的结果会不一样，但是书写的语法是不变的。
+启用 multimarkdown 表格扩展
+这个插件说高深也不高深，看名字应该就能知道这是一个增强Markdown表格功能的插件，大家记得Markdown的表格是怎么使用的吗？如果忘记的话赶紧看看这篇文章回顾一下，不然下面的内容可能体会不会那么深！
+好啦，我这里假设读者知道markdown的表格是怎么用的，然后我们开始讲解multimarkdown扩展。Markdown自带的表格功能是非常有限的，如果你使用过的话就会发现它能做出来的表格一定是规整的，行和列一定是划分均匀整齐的，但是有时候我们需要的表格可能是这样的：
+
+这种表格使用Markdown的表格是不可能做出来的，因为分组的效果和占用两个格子的效果是做不出来的，但是如果你启用了MultiMarkdown插件，你就可以使用下面的代码渲染出来：
+|             |          分组                 ||
+第一个表头     | 第二个表头     | 第三个表头      |
+ ------------ | :-----------: | -----------:   |
+内容          |          占用两个格子           ||
+内容          |   **内容**     |         内容    |
+新的一部分     |     更多       |         更多    |
+更多          | 带有一个跳过的 '\|'              ||
+[LightZhan制作]
+你可以把上面的代码拷贝进Joplin编辑器研究一番就能理解MultiMardown表格扩展的用法了，下面我详细讲解一下。
+MultiMarkdown的表格扩展支持下面的功能：
+
+使得元素占据多个列（上面的示例中有）
+使得元素占据多个行
+在表格上面或者下面对表头进行分组（上面的例子中有）
+在表格的上面或者下面标注表格标题（上面的例子中有）
+在表格中包含分块元素（列表、代码、段落等等）
+表格不需要表头
+
+上面标注了“上面的例子中有”的我这里就不在讲了，因为代码一研究或者修改修改就知道咋回事的，下面我们主要讲讲上面的例子中没有涉及到的。
+1.使得表格占据多行。这个其实很好用，但是有两种情况。第一种情况是一个项目占据两格。这种情况要占据多行的话，在我们对应列的起始行写上内容，然后接下来要合并的行直接写“^^”。不明白不存在，我们来一个例子：
+
+上面对应的代码是什么呢？看下面：
+作者		| 信息			  | 信息		 |
+----:		| --------------:         | ---------:	         |
+LightZhan	| ligthzhan.xyz 				||
+^^		| 更多Joplin教程           | Qdown下载器	         |
+[LightZhan制作，允许规范转载]
+把上面的代码拷贝进编辑器改改试试，很容易明白里面的玄机的！
+第二种情况是我们添加块，看下面一点。
+2.**在表格中添加块元素。**这个不用多说，直接在表格的格子里面用Markdown语法写作，渲染成对应的Markdown格式！比如加粗、斜体、代码块等等。下面来一个简单的例子，需要注意的是下面的例子当中我们的内容有几行！
+|   Markdown   | 渲染结果       |
+|--------------|---------------|
+|    *斜体*    | *斜体*         | \
+|              |               |
+|    - 项目1   | - 项目1        | \
+|    - 项目2   | - 项目2        |
+|    ```python | ```python       \
+|    .1 + .2   | .1 + .2         \
+|    ```       | ```           |
+[LightZhan制作，允许规范转载]
+注意代码后面的”\”，这个符号是指定换行的，如果项目占据多行一定要写上。上面的代码复制黏贴进编辑器可以看到下面的渲染结果
+
+**3.表格不需要表头。**这个也很简单，直接不写表头即可。拷贝下面的代码进编辑器
+----:		| --------------: | ---------:	 |
+LightZhan	| lightzhan.xyz 	        ||
+^^		| 更多Joplin教程  | Qdown下载器	 |
+[LightZhan制作，允许规范转载]
+然后你就可以看到惊喜
+
+启用Fountain语法支持
+这个插件的目标人群非常少，Fountain语法是用来写电影剧本的，而且要是要细讲的话估计又是一篇文章，因为使用的人非常少，所以我这里就不讲这个了。
+Mermaid插件的作用
+Mermaid是一个用于画流程图、时序图、类图、状态图、甘特图、饼图的Markdown扩展，其中状态图是最新8.4版本的新功能。如果你不知道这些图是干什么的，不存在，下面的教程里面我会每个都给出例子。
+在Joplin里面使用Mermaid
+在Joplin里面如果想要使用Mermaid，那么你需要使用代码块，并且代码的类型填写mermaid，详细的格式如下：
+```mermaid
+graph TD
+    Start --&gt; Stop
+```
+在渲染区我们就能得到如下的结果
+
+Mermaid流程图
+下面我们讲解在Mermaid里面画流程图。上一节的示例便是流程图，我们把上一节的代码拿出来分析一下。首先我们看代码的第一行：graph TD，这一行代码有两个作用，graph表示我们图的类型，graph表示流程图，而第二个TD表示图的方向，可能的方向有如下几个
+
+TB：自顶向下
+BT：自底向上
+RL：从右到左
+LR：从左到右
+TD：和TB一样
+
+上面我们的例子使用的是TD，如果你对其它的方向不明白，可以把代码拷贝到编辑器里面修改方向参数就可以理解各个方向的意义了。
+上面的代码非常基础，因为如果要实现比较复杂的流程图，我们就需要使用一些比较高级的语法，比如定义节点。所谓的节点，你可以简单的理解为上面图片中的方框，但是如果我们要使用其它形状的节点怎么办呢？在上面的例子中我使用了默认的节点定义方法，也就是直接使用文本,这种方式定义节点的话id和显示文本是一样的，而且形状是固定的矩形。如果要定义不同的节点形状，或者使得id和显示文本不一样，可以使用下面的语法
+
+定义矩形形状的节点：id[text]
+定义圆角矩形的节点：id(text)
+定义椭圆形的节点：id([text])
+定义圆柱形的节点：id[(text)]
+定义圆形的节点：id((text))
+定义非对称图形的节点：id&gt;text]
+定义菱形的节点：id{text}
+定义六角形的节点：id
+定义平行四边形的节点(两个方向)：id[/text/]或者[\text]
+定义梯形的节点(两个方向)：id[/text] 或者 di[\text/]
+
+注意上面的id和text是需要我们自己定义替换的，如果同一个id有多个text，取最后一次的定义值！
+有了节点我们还需要将节点连接起来，也就是我们要使用线条或者箭头来进行节点的连接，Mermaid支持下面的方式：
+
+实线箭头：A–&gt;B
+实线无箭头：A–B
+无箭头实线上带文本：A–text–B
+实线箭头带文本：A–&gt;|text|B 或者 A–text–&gt;B
+虚线箭头：A-.-&gt;B
+虚线箭头带文本：A-.text.-&gt;B
+粗线箭头：A==&gt;B
+粗线箭头带箭头：Atext&gt;B
+
+最好的办法就是把上面的代码拷贝进编辑器看看，一看你应该就能理解各个图形的形状！
+上面我们讲解了节点和连线，下面我们说说图形的绘制。上面我使用的例子非常基础，下面来一个复杂点的例子供大家修改和研究
+```mermaid
+graph TD
+    light[LightZhan]
+    url[lightzhan.xyz]
+    QdownUrl[访问LightZhan博客Qdown页面]
+    Qdown((Qdown))
+    function[功能]
+    Qdown--&gt;|作者|light 
+    light--个人主页--&gt;url
+    Qdown--&gt;function
+    Qdown--&gt;QdownUrl
+    function1[极速下载]
+    function2[磁链/BT下载]
+    function3[迅雷下载]
+    function5[下载体验]
+    function4[Http/Https/FTP/SFTP]
+    function-.功能1.-&gt;function1
+    function-.功能2.-&gt;function2
+    function-.功能3.-&gt;function3
+    function-.功能4.-&gt;function4
+    function-.更多功能.-&gt;function5
+    annocement[本文首发于lightzhan.xyz,允许规范转载]
+
+```
+上面代码的渲染结果如下：
+
+如果不清楚，可以把上面的代码拷贝到编辑器进行修改和摸索！
+Mermaid时序图
+时序图是用于展示过程的方式和顺序的。举例来说，两个人之间的对话:
+A先问B：Qdown是啥？B回答：Qdown是全功能的下载软件！A又问：哪里可以下载呀？B回答： http://lightzhan.xyz/index.php/qdown/ 。我们使用mermaid绘制时序图来展示上面的对话过程：
+
+这样是不是看上去清晰了很多了呢？希望通过这个例子能让你深切地感受到时序图是干什么用的！好了，放上上面的时序图的代码供大家研究：
+```mermaid
+sequenceDiagram
+A-&gt;&gt;B:Qdown是啥？
+B--&gt;&gt;A:Qdown是全功能的下载软件！
+A-&gt;&gt;B:哪里可以下载呀？
+B--&gt;&gt;A:http://lightzhan.xyz/index.php/qdown/
+```
+让我们来简单分析一下上面的代码。你可能注意到了第一行的sequenceDiagram，这个就是告诉mermaid我们在这里绘制时序图，然后下面有箭头，在时序图里面，mermaid支持下面类型的箭头和线段：
+
+实线并且没有箭头：A-&gt;B:text
+虚线没有箭头：A–&gt;B:text
+实线带箭头：A-&gt;&gt;B:text
+虚线带箭头：A–&gt;&gt;B:text
+实线并且在终点带一个x：A-xB:text
+虚线并且在终点带一个x：A–xB:text
+
+上面的text就是要显示在箭头或线段上的文本，在mermaid的时序图里面被称为消息，线段或箭头类型如果有不清楚的可以拷贝到编辑器里面看看，一目了然！
+还记得上面我们在流程图里面的节点吗？在时序图里面不是定义节点，而是定义参与者，也就是上面的A和B。上面的代码中我们定义参与者的方式采用的是默认方式，也就是不显示定义，有时候我们的参与者的名字太长的话可以使用显示定义来定义别名：
+participant John
+participant Alice
+participant A as Alice
+participant J as John
+上面代码的第一二行仅仅是显式定义我们的参与者，第三四行给我们的参与者定义别名，定义了别名后我们在下面的使用中就可以直接使用A代替Alice，使用J代替John了，这样输入会方便很多！
+好了，时序图差不多就讲到这里，接下来的一些高级用法大部分我们都用不到，或者要使用的话不如使用专业的绘图软件使用插图的方式导入。
+使用Mermaid绘制类图
+类的定义
+在讲解如何绘制类图之前我们先了解一下什么是类图！如果你是计算机专业或者会计算机编程的话应该就懂面向对象编程，对象是类的实例，而这里要绘制的类图就和面向对象编程里面的类相关。
+对于编程人员来说，函数具有参数和返回值，属性具有变量类型，我们举一个例子来说一下：
+class BankAccount{
+  +String owner
+  +BigDecimal balance
+  +deposit(amount) bool
+  +withdrawl(amount)
+}
+上面的代码的渲染结果为：
+
+上面的代码是我直接从官方借鉴的，可以直观地看出对于银行账户（BankAccount），一共有两个属性和两个方法，属性都是具有对应的变量类型，而对于函数具有参数（amount），并且deposit函数还具有bool类型的返回值。你或许看到了前面的+号，这个是对应变量或属性的可见性，分别有：
+
++ public
+– private
+# protected
+~ Package/Internal
+
+如果我们想要定义的函数是抽象函数咋办呢？在括号的后面添加*即可：
+someAbstractMethod()*
+在渲染过后抽象函数会使用斜体进行显示，这里就不截图展示了。对于静态函数，将后面的*换为$即可，在显示时静态函数会具有下划线。
+类之间的关系
+在编程中我们常常会用到的关系：
+
+
+
+&lt;|–
+继承（Inheritance）
+
+
+
+
+*–
+组成（Composition）
+
+
+o–
+聚集（Aggregation）
+
+
+–&gt;
+关联（Association）
+
+
+—
+实线（Link (Solid)）
+
+
+…&gt;
+依赖（Dependency）
+
+
+…|&gt;
+实现（Realization）
+
+
+…
+虚线（Link (Dashed)）
+
+
+
+下面我们举一个例子：“狗”继承自“动物”类别
+```mermaid
+classDiagram
+    class 动物{
+        特点1：能动
+        特点2：能叫
+    }
+    class 狗{
+        特点1：4条腿
+        特点2：会汪汪叫
+        特点3：可爱至极
+        汪汪叫(陌生人)
+    }
+    动物 &lt;|-- 狗
+```
+渲染结果为：
+
+结合代码和展示结果应该很好理解，这就是一个狗继承自动物的简单例子，我们还可以对关系结果打标签：
+```mermaid
+classDiagram
+    class 动物{
+        特点1：能动
+        特点2：能叫
+    }
+    class 狗{
+        特点1：4条腿
+        特点2：会汪汪叫
+        特点3：可爱至极
+        汪汪叫(陌生人)
+    }
+    动物 &lt;|-- 狗:属于（继承）
+```
+我们在关系指示后面加上冒号，然后后面加上关系说明，这样在渲染结果当中我们就可以看到箭头上出现了我们需要的标签说明：
+
+好了，使用mermaid绘制类图就讲到这里，还有一些用法不是很常用，我就不讲了。
+使用mermaid绘制饼图
+绘制饼图的需求比较多，很多数据展示需要我们绘制饼图，幸运的是mermaid给我们提供了绘制饼图的功能，使用方法极其简单：
+```mermaid
+pie
+    title LightZhan创作，允许规范转载（http://lightzhan.xyz）
+    "Joplin" : 42.96
+    "Qdown" : 50.05
+    " 黑科技" : 10.01
+    "其它" :  5
+
+```
+在上面的代码中，pie关键字指定我们要绘制饼图，然后tiltile指定我们的标题，后面是数据分布，注意，mermaid会将我们输入的数据进行计算，上面的数据加起来并不是100，所以我们看到在下面的渲染结果中数据对应不上。
+
+Joplin插件非常丰富，你能找到各种各样的功能，这里推荐一些插件使用，见下面这篇文章， Joplin插件推荐。
+参考：
+
+lightzhan.xyz
+
+系列教程
+全部文章RSS订阅
+笔记系列
+Note分类RSS订阅
+
+完美笔记进化论
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Joplin入门指南&amp;实践方案
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+Joplin 插件以及其Markdown语法。All in One!
+Joplin 插件使用推荐
+为知笔记私有化Docker部署
+
+Gitbook使用系列
+Gitbook分类RSS订阅
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+Gitlab 使用系列
+Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+GithubProfile美化与自动获取RSS文章教程
+Vercel部署高级用法教程
+webhook部署Hexo静态博客指南
+在宝塔VPS上面采用docker部署waline全流程图解教程
+
+]]></content>
+      <categories>
+        <category>note</category>
+      </categories>
+      <tags>
+        <tag>markdown</tag>
+        <tag>joplin</tag>
+        <tag>note</tag>
+        <tag>mermaid</tag>
       </tags>
   </entry>
   <entry>
@@ -13458,9 +13458,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-dPQbIBSGbMUcjEyI").style.height=document.getElementById("mmedia-dPQbIBSGbMUcjEyI").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-xpsjbyKgcxTpnYNE").style.height=document.getElementById("mmedia-xpsjbyKgcxTpnYNE").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-dPQbIBSGbMUcjEyI").style.height=document.getElementById("mmedia-dPQbIBSGbMUcjEyI").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-xpsjbyKgcxTpnYNE").style.height=document.getElementById("mmedia-xpsjbyKgcxTpnYNE").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -19531,8 +19531,8 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 列表
 
- var BCdbGjXqvhTLFIvG_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    BCdbGjXqvhTLFIvG_options.container = document.getElementById("mmedia-BCdbGjXqvhTLFIvG");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(BCdbGjXqvhTLFIvG_options); 
+ var VCMeiSdQbqTXnJZy_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    VCMeiSdQbqTXnJZy_options.container = document.getElementById("mmedia-VCMeiSdQbqTXnJZy");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(VCMeiSdQbqTXnJZy_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -20951,13 +20951,13 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var ARqYJqgHgpqSZgHz_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
-    ARqYJqgHgpqSZgHz_options.container = document.getElementById("mmedia-ARqYJqgHgpqSZgHz");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(ARqYJqgHgpqSZgHz_options); 
+ var IzcLVUKXQQeSWPTw_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
+    IzcLVUKXQQeSWPTw_options.container = document.getElementById("mmedia-IzcLVUKXQQeSWPTw");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(IzcLVUKXQQeSWPTw_options); 
 
 
 
- var iNYsqYfQBhJmnGAV_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    iNYsqYfQBhJmnGAV_options.container = document.getElementById("mmedia-iNYsqYfQBhJmnGAV");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(iNYsqYfQBhJmnGAV_options); 
+ var QURuQtlLEBqIQCHy_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    QURuQtlLEBqIQCHy_options.container = document.getElementById("mmedia-QURuQtlLEBqIQCHy");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(QURuQtlLEBqIQCHy_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -21216,9 +21216,9 @@ Earthly 一个更加强大的镜像构建工具
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-BrGmCYBXCSWEcdQJ").style.height=document.getElementById("mmedia-BrGmCYBXCSWEcdQJ").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-TMHJdHUkYmyProjC").style.height=document.getElementById("mmedia-TMHJdHUkYmyProjC").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-BrGmCYBXCSWEcdQJ").style.height=document.getElementById("mmedia-BrGmCYBXCSWEcdQJ").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-TMHJdHUkYmyProjC").style.height=document.getElementById("mmedia-TMHJdHUkYmyProjC").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -21227,8 +21227,8 @@ Earthly 一个更加强大的镜像构建工具
 
 ## 中文翻唱
 
- var vdbBkqWexxYZcfvz_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
-    vdbBkqWexxYZcfvz_options.container = document.getElementById("mmedia-vdbBkqWexxYZcfvz");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(vdbBkqWexxYZcfvz_options); 
+ var oRqQhxohuJywLsmq_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
+    oRqQhxohuJywLsmq_options.container = document.getElementById("mmedia-oRqQhxohuJywLsmq");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(oRqQhxohuJywLsmq_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -31655,95 +31655,6 @@ Gitlab的安装及使用
       </tags>
   </entry>
   <entry>
-    <title>项目开发管理工具推荐</title>
-    <url>/posts/f4c3ad41/</url>
-    <content><![CDATA[
-软件开发是复杂的创造性的劳动，需要依赖大量工具才能完成，因此想要提高软件开发的效率和质量，离不开强大、高效、易用、维护成本低的工具，下面我根据自己的经验，推荐一些好用的工具。
-
-即时通讯
-
-更推荐自建开源替代。
-
-即时通讯和会议系统是项目开发过程中必不可少的，尤其是远程办公时，会议系统更是不可或缺。企业微信拥有和微信一致的沟通体验，简单易用。企业微信可随时随地发起和参与音视频会议，支持300人同时参会，并为主持人提供了管理功能。发言时还可演示文档或电脑屏幕，支持实时标注演示内容。
-
-官方网站：https://work.weixin.qq.com/
-项目管理
-目前主流的项目管理通常采用敏捷开发的模式，因此项目管理工具也要选择支持敏捷开发模式的工具，不建议使用禅道这样的重流程的工具，不适合敏捷团队，这里我推荐Taiga，它设计简洁，操作简单，充分体现了敏捷开发的理念。
-
-官方网站：https://taiga.io
-在线体验：https://tree.taiga.io
-体验版服务器在国外，访问可能会有点慢。
-代码托管
-前几年使用的比较多是SVN，近几年基本都使用GIT了，开源项目大都使用Github，虽然免费，但国内访问不稳定，速度慢，因此国内的公司基本都会自己搭建，我先后为公司搭建过两个托管平台，一个是Gitlab，一个是Gitea，Gitlab功能比较全面，但对硬件资源要求比较高，而且性能一般。所以推荐使用另一个开源的git托管平台——Gitea。
-
-官方网站：https://gitea.io
-在线体验：https://gitea.com
-持续交付
-最知名、使用最广泛的开源的持续集成、交付平台当属Jenkins，主要的优势在于有大量免费的插件可以使用，但实际使用发现，很多插件质量很差，配置项很多，真正想要落地，其实需要自己编写shell脚本。这里我推荐基于docker技术的一款现代化的持续交付平台DroneCI，它使用简单，可以和主流的Git代码托管平台无缝对接，并且不需要编写代码就可以满足大多数持续构建、交付的需求。
-
-官方网站：https://drone.io
-在线体验：https://cloud.drone.io
-体验版服务器在国外，访问可能会有点慢。
-制品库(本地仓库)
-Maven 仓库是项目中依赖的第三方库，这个库所在的位置叫做仓库。Maven 仓库能帮助我们管理构件（主要是JAR），它就是放置所有JAR文件（WAR，ZIP，POM等等）的地方。
-后来，除了Maven仓库，还有npm、nuget、pypi、docker等仓库也需要本地仓库。
-市面上可选的通用的本地仓库有：nexus、ARTIFACTORY，ARTIFACTORY是收费的，nexus是免费的，同时nexus以其易用性和可靠性，成为目前市场上最主流的本地仓库。
-官方网站：https://www.sonatype.com/product-nexus-repository
-文件存储
-在公司中，文件分享是一个很常用的功能，不同于云盘，他对性能和安全性没有那么高的要求，简单易用才是大家最关心的，这里推荐chfs，chfs是一个免费的、HTTP协议的文件共享服务器，使用浏览器可以快速访问。与其他常用文件共享方式（如FTP，飞秋，网盘，自己建站）相比，具有使用简单，适用场景更多的优点，在个人使用以及共享给他人的场景中非常方便快捷。
-官方网站：http://iscute.cn/chfs
-绘图(流程图、UML、思维导图)
-draw.io 是一个强大简洁的在线的绘图网站，支持流程图，UML图，架构图，原型图等。支持Github，Google Drive, One drive等网盘同步，并且永久免费。如果觉得使用Web版不方便，draw.io 也提供了多平台的离线桌面版可供下载。
-
-在线版：https://www.draw.io
-本地部署版：https://github.com/jgraph/drawio/releases/latest
-PC 安装版：https://github.com/jgraph/drawio-desktop/releases/latest
-接口管理
-维护不同工具之间数据一致性非常困难、低效。并且这里不仅仅是工作量的问题，更大的问题是多个系统之间数据不一致，导致协作低效、频繁出问题，开发测试人员痛苦不堪。
-Apifox 是接口管理、开发、测试全流程集成工具，定位 Postman + Swagger + Mock + JMeter。通过一套系统、一份数据，解决多个系统之间的数据同步问题。只要定义好接口文档，接口调试、数据 Mock、接口测试就可以直接使用，无需再次定义；接口文档和接口开发调试使用同一个工具，接口调试完成后即可保证和接口文档定义完全一致。高效、及时、准确！
-
-官方网站：https://www.apifox.cn
-安全测试
-在今天，网站的安全是容易被忽视的，黑客具备广泛的攻击手段，例如SQL注入，XSS，文件包含，目录遍历，参数篡改，认证攻击等，虽然你配置了正确的防火墙和WAF，但是这些安全防御软件仍然存在策略性的绕过。因此，需要您定期的扫描你的web应用，但是手动检测你所有的web应用是否存在安全漏洞比较复杂和费时，所以您需要一款自动化的web漏洞扫描工具来检测您的web应用是否存在安全漏洞。
-Acunetix Web Vulnerability Scanner（简称AWVS）是一款知名的Web网络漏洞扫描工具，它通过网络爬虫测试你的网站安全，检测流行安全漏洞。
-
-官方网站：https://www.acunetix.com
-性能测试
-Locust是一个用于可扩展的，分布式的，性能测试的，开源的，用Python编写框架/工具，它非常容易使用，也非常好学。
-它的主要思想就是模拟一群用户将访问你的网站。每个用户的行为由你编写的python代码定义，同时可以从Web界面中实时观察到用户的行为。
-Locust完全是事件驱动的，因此在单台机器上能够支持几千并发用户访问。
-与其它许多基于事件的应用相比，Locust并不使用回调，而是使用gevent，而gevent是基于协程的，可以用同步的方式来编写异步执行的代码。
-
-官方网站：https://www.locust.io
-代码静态分析平台
-SonarQube 是一款用于代码质量管理的开源工具，它主要用于管理源代码的质量。 通过插件形式，可以支持众多计算机语言，比如 java, C#, go，C/C++, PL/SQL, Cobol, JavaScrip, Groovy 等。sonar可以通过PMD,CheckStyle,Findbugs等等代码规则检测工具来检测你的代码，帮助你发现代码的漏洞，Bug，异味等信息。
-Sonar 不仅提供了对 IDE 的支持，可以在 Eclipse和 IntelliJ IDEA 这些工具里联机查看结果；同时 Sonar 还对大量的持续集成工具提供了接口支持，可以很方便地在持续集成中使用 Sonar
-
-官方网站：https://www.sonarqube.org
-系列教程
-全部文章RSS订阅
-Devops系列
-Devops 分类 RSS 订阅
-
-自建全套开源Devops开发系统
-Git介绍以及分支模型图解
-三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
-DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
-项目开发管理工具推荐
-Gitlab的安装及使用教程完全版
-Gitlab的安装及使用
-那些有用的Github工具介绍！Action、app、workflow等
-
-]]></content>
-      <categories>
-        <category>devops</category>
-      </categories>
-      <tags>
-        <tag>ci/cd</tag>
-        <tag>devops</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境</title>
     <url>/posts/39563241/</url>
     <content><![CDATA[
@@ -33773,6 +33684,95 @@ Gitlab的安装及使用
         <tag>docker</tag>
         <tag>k8s</tag>
         <tag>harbor</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>项目开发管理工具推荐</title>
+    <url>/posts/f4c3ad41/</url>
+    <content><![CDATA[
+软件开发是复杂的创造性的劳动，需要依赖大量工具才能完成，因此想要提高软件开发的效率和质量，离不开强大、高效、易用、维护成本低的工具，下面我根据自己的经验，推荐一些好用的工具。
+
+即时通讯
+
+更推荐自建开源替代。
+
+即时通讯和会议系统是项目开发过程中必不可少的，尤其是远程办公时，会议系统更是不可或缺。企业微信拥有和微信一致的沟通体验，简单易用。企业微信可随时随地发起和参与音视频会议，支持300人同时参会，并为主持人提供了管理功能。发言时还可演示文档或电脑屏幕，支持实时标注演示内容。
+
+官方网站：https://work.weixin.qq.com/
+项目管理
+目前主流的项目管理通常采用敏捷开发的模式，因此项目管理工具也要选择支持敏捷开发模式的工具，不建议使用禅道这样的重流程的工具，不适合敏捷团队，这里我推荐Taiga，它设计简洁，操作简单，充分体现了敏捷开发的理念。
+
+官方网站：https://taiga.io
+在线体验：https://tree.taiga.io
+体验版服务器在国外，访问可能会有点慢。
+代码托管
+前几年使用的比较多是SVN，近几年基本都使用GIT了，开源项目大都使用Github，虽然免费，但国内访问不稳定，速度慢，因此国内的公司基本都会自己搭建，我先后为公司搭建过两个托管平台，一个是Gitlab，一个是Gitea，Gitlab功能比较全面，但对硬件资源要求比较高，而且性能一般。所以推荐使用另一个开源的git托管平台——Gitea。
+
+官方网站：https://gitea.io
+在线体验：https://gitea.com
+持续交付
+最知名、使用最广泛的开源的持续集成、交付平台当属Jenkins，主要的优势在于有大量免费的插件可以使用，但实际使用发现，很多插件质量很差，配置项很多，真正想要落地，其实需要自己编写shell脚本。这里我推荐基于docker技术的一款现代化的持续交付平台DroneCI，它使用简单，可以和主流的Git代码托管平台无缝对接，并且不需要编写代码就可以满足大多数持续构建、交付的需求。
+
+官方网站：https://drone.io
+在线体验：https://cloud.drone.io
+体验版服务器在国外，访问可能会有点慢。
+制品库(本地仓库)
+Maven 仓库是项目中依赖的第三方库，这个库所在的位置叫做仓库。Maven 仓库能帮助我们管理构件（主要是JAR），它就是放置所有JAR文件（WAR，ZIP，POM等等）的地方。
+后来，除了Maven仓库，还有npm、nuget、pypi、docker等仓库也需要本地仓库。
+市面上可选的通用的本地仓库有：nexus、ARTIFACTORY，ARTIFACTORY是收费的，nexus是免费的，同时nexus以其易用性和可靠性，成为目前市场上最主流的本地仓库。
+官方网站：https://www.sonatype.com/product-nexus-repository
+文件存储
+在公司中，文件分享是一个很常用的功能，不同于云盘，他对性能和安全性没有那么高的要求，简单易用才是大家最关心的，这里推荐chfs，chfs是一个免费的、HTTP协议的文件共享服务器，使用浏览器可以快速访问。与其他常用文件共享方式（如FTP，飞秋，网盘，自己建站）相比，具有使用简单，适用场景更多的优点，在个人使用以及共享给他人的场景中非常方便快捷。
+官方网站：http://iscute.cn/chfs
+绘图(流程图、UML、思维导图)
+draw.io 是一个强大简洁的在线的绘图网站，支持流程图，UML图，架构图，原型图等。支持Github，Google Drive, One drive等网盘同步，并且永久免费。如果觉得使用Web版不方便，draw.io 也提供了多平台的离线桌面版可供下载。
+
+在线版：https://www.draw.io
+本地部署版：https://github.com/jgraph/drawio/releases/latest
+PC 安装版：https://github.com/jgraph/drawio-desktop/releases/latest
+接口管理
+维护不同工具之间数据一致性非常困难、低效。并且这里不仅仅是工作量的问题，更大的问题是多个系统之间数据不一致，导致协作低效、频繁出问题，开发测试人员痛苦不堪。
+Apifox 是接口管理、开发、测试全流程集成工具，定位 Postman + Swagger + Mock + JMeter。通过一套系统、一份数据，解决多个系统之间的数据同步问题。只要定义好接口文档，接口调试、数据 Mock、接口测试就可以直接使用，无需再次定义；接口文档和接口开发调试使用同一个工具，接口调试完成后即可保证和接口文档定义完全一致。高效、及时、准确！
+
+官方网站：https://www.apifox.cn
+安全测试
+在今天，网站的安全是容易被忽视的，黑客具备广泛的攻击手段，例如SQL注入，XSS，文件包含，目录遍历，参数篡改，认证攻击等，虽然你配置了正确的防火墙和WAF，但是这些安全防御软件仍然存在策略性的绕过。因此，需要您定期的扫描你的web应用，但是手动检测你所有的web应用是否存在安全漏洞比较复杂和费时，所以您需要一款自动化的web漏洞扫描工具来检测您的web应用是否存在安全漏洞。
+Acunetix Web Vulnerability Scanner（简称AWVS）是一款知名的Web网络漏洞扫描工具，它通过网络爬虫测试你的网站安全，检测流行安全漏洞。
+
+官方网站：https://www.acunetix.com
+性能测试
+Locust是一个用于可扩展的，分布式的，性能测试的，开源的，用Python编写框架/工具，它非常容易使用，也非常好学。
+它的主要思想就是模拟一群用户将访问你的网站。每个用户的行为由你编写的python代码定义，同时可以从Web界面中实时观察到用户的行为。
+Locust完全是事件驱动的，因此在单台机器上能够支持几千并发用户访问。
+与其它许多基于事件的应用相比，Locust并不使用回调，而是使用gevent，而gevent是基于协程的，可以用同步的方式来编写异步执行的代码。
+
+官方网站：https://www.locust.io
+代码静态分析平台
+SonarQube 是一款用于代码质量管理的开源工具，它主要用于管理源代码的质量。 通过插件形式，可以支持众多计算机语言，比如 java, C#, go，C/C++, PL/SQL, Cobol, JavaScrip, Groovy 等。sonar可以通过PMD,CheckStyle,Findbugs等等代码规则检测工具来检测你的代码，帮助你发现代码的漏洞，Bug，异味等信息。
+Sonar 不仅提供了对 IDE 的支持，可以在 Eclipse和 IntelliJ IDEA 这些工具里联机查看结果；同时 Sonar 还对大量的持续集成工具提供了接口支持，可以很方便地在持续集成中使用 Sonar
+
+官方网站：https://www.sonarqube.org
+系列教程
+全部文章RSS订阅
+Devops系列
+Devops 分类 RSS 订阅
+
+自建全套开源Devops开发系统
+Git介绍以及分支模型图解
+三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
+DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
+项目开发管理工具推荐
+Gitlab的安装及使用教程完全版
+Gitlab的安装及使用
+那些有用的Github工具介绍！Action、app、workflow等
+
+]]></content>
+      <categories>
+        <category>devops</category>
+      </categories>
+      <tags>
+        <tag>ci/cd</tag>
+        <tag>devops</tag>
       </tags>
   </entry>
   <entry>
@@ -47701,7 +47701,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts4565'));
+        var myChart = echarts.init(document.getElementById('echarts3152'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -47795,7 +47795,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts9471'));
+        var myChart = echarts.init(document.getElementById('echarts5514'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -47864,7 +47864,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts2995'));
+        var myChart = echarts.init(document.getElementById('echarts9536'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -54634,8 +54634,8 @@ CI/CD与Git Flow与GitLab
         <category>hexo</category>
       </categories>
       <tags>
-        <tag>宝塔</tag>
         <tag>docker</tag>
+        <tag>宝塔</tag>
         <tag>hexo</tag>
         <tag>waline</tag>
       </tags>
@@ -57356,9 +57356,9 @@ chatGPT
 
 视频讲解
 B站
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-lBpOdOsjQqBRRuBv").style.height=document.getElementById("mmedia-lBpOdOsjQqBRRuBv").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-LipDqNrJjileyEgu").style.height=document.getElementById("mmedia-LipDqNrJjileyEgu").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-lBpOdOsjQqBRRuBv").style.height=document.getElementById("mmedia-lBpOdOsjQqBRRuBv").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-LipDqNrJjileyEgu").style.height=document.getElementById("mmedia-LipDqNrJjileyEgu").scrollWidth*0.76+"px";
     }; 
 youtube
 
@@ -65003,9 +65003,9 @@ openai/whisper
 完了这歌拿了“五个一工程奖”(全国精神文明建设领域的最高奖)，那些年度金曲奖跟国家的五个一奖比就是小宝宝。 《爱是你我》就不是情歌，它的“爱”指的互帮互助的人间真爱，“你我”指代人人、每个人，爱是你我，意即人民互帮互助，人间充满真爱。
 “这世界 我来了  任凭风暴旋涡” 这首歌表达的是面对再大的困难，也不退缩，一种对生活的热爱，对征服困难的自信！
 现场 MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-wLxjpllBxYczwlUI").style.height=document.getElementById("mmedia-wLxjpllBxYczwlUI").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-CDouhhacYYiwXRzj").style.height=document.getElementById("mmedia-CDouhhacYYiwXRzj").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-wLxjpllBxYczwlUI").style.height=document.getElementById("mmedia-wLxjpllBxYczwlUI").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-CDouhhacYYiwXRzj").style.height=document.getElementById("mmedia-CDouhhacYYiwXRzj").scrollWidth*0.76+"px";
     }; 
 歌曲《爱是你我》歌词
 爱是你我  
