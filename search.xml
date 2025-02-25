@@ -6724,6 +6724,66 @@ From: hackerchai
       </tags>
   </entry>
   <entry>
+    <title>通过宝塔面板实现MySQL性能简单调优</title>
+    <url>/posts/d5f56dd0/</url>
+    <content><![CDATA[
+在PHP+MYSQL架构网站运行过程中，往往会遇到各种性能问题影响，如MySQL、PHP、CPU、磁盘IO、缓存等，其中MySQL瓶颈就是最常见也最难解决的一种影响网站性能的因素；通常，我们会使用redis、memcached等缓存软件来缓存内容，这确实是最优的解决方案之一，但这需要网站程序的支持，然而多数常用网站程序并不支持或者不能完美支持这些缓存软件，今天我们就来谈谈如何通过MySQL自身的配置调整来优化MySQL性能，以缓解MySQL瓶颈问题。
+
+准备：
+
+​    1、宝塔Linux面板 正式版 5.2.0+ (2017/09/20发布)  测试版5.2.4+
+​    2、MySQL 5.x
+
+通常MySQL调优我们分以下几部分：
+
+​    1、MySQL配置参数调优 (需要根据网站运行情况调整)
+​    2、数据表索引调优 (效果明显，但通常优秀的开源程序都不需要调整)
+​    3、SQL语句调优 (这是程序员或DBA干的事)
+
+今天我们主要谈谈如果配合宝塔面板的新功能来进行MySQL配置参数调优，我们先来看两张图片：
+(图1)
+
+(图2)
+
+很明显，(图1)显示的是MySQL当前的运行状态，(图2)显示的是MySQL主要配置参数
+下面我们就来解读一下这两张图：
+1、活动/峰值连接数
+​      (图1)中当前活动的连接为1个，自MySQL服务启动以来，最高连接数为54；当最高连接数接近或等于(图2)中的max_connections时，应适当增加max_connections，需要注意的是，不要一下子增加过多，建议每次增加50，观察一段时间，不够再继续增加。
+2、线程缓存命中率
+​      (图1)中线程缓存命中率为99.78%，若这个值小于90%，建议适当增加(图2)中的thread_cache_size，建议每次增加8。
+3、索引命中率
+​      (图1)中索引命中率为99.50%，若这个值小于95%，建议适当增加(图2)中的key_buffer_size，建议每次增加64，需要说明的是，若您的数据库使用的是Innodb引擎，可忽略这个选项
+4、Innodb索引命中率
+(图1)中Innodb索引命中率为100%，若这个值小于95%，建议适当增加(图2)中的innodb_buffer_pool_size，建议每次增加64，需要说明的是，若您的数据库没有使用Innodb引擎，可忽略这个选项
+5、查询缓存命中率
+​      MySQL查询缓存是个比较受争议的功能，个人建议当你有在使用redis、memcached等缓存软件时，在(图2)中将query_cache_size设为0可以将其关闭，当你没有使用缓存软件，有多余的内存使用，且数据库瓶颈明显存在时，可以尝试开启查询缓存，这是个非常依赖数据表结构及SQL语句优化的功能，若数据表结构和SQL语句都针对查询缓存进行过优化，它的效果还是很不错的。
+6、创建临时表到磁盘
+​      (图1)中创建临时表到磁盘的比例是0.42%，这说明大部分临时表创建到内存了，不会过多增加磁盘IO的开销，建议，当比例大于2%时适当增加(图1)中的tmp_cache_size，建议每次增加32，当比例大于60%时，放弃吧，有些开源程序并没有专门优化过SQL语句，所以在运行过程中会开启大量临时表，加多少缓存都是不够用的。
+7、已打开的表
+​      当(图1)中的已打开的表接近或等于(图2)中的table_open_cache时，可以适当增加table_open_cache，但若设置过大可能导致您的程序频繁中断MySQL连接，建议在1024以内，最大不要超过2048。
+8、没有使用索引的量、没有使用索引的JOIN量
+​      若不为0，就检查下数据表索引吧，其实只要没有疯涨，比如一天增涨几千，一般可以忽略，必竟优化索引还是程序员或DBA去干比较合适。
+9、排序后的合并次数
+​      如果这个值在缓慢增张，建议适当增加(图2)中的sort_buffer_size，建议每次增加512，但最大不要超过8192，如果这个值一直在疯涨，增加sort_buffer_size也没用，就放弃这个选项吧，这个锅还是给程序开发者背。
+10、锁表次数
+​      如果服务器CPU开销不大的情况下，疯狂锁表，建议你将所有数据表转换成innodb，记得转换前备份哦。
+11、优化方案
+​      这个是我们根据内存大小给的一个推荐优化方案，仅是建议仅用于基础参考值，还是要根据实据情况来调整每一个配置项。
+注意：保存参数配置后不会立即生效，记得要重启MySQL服务。
+写在最后：
+因我本人并不是专业DBA，难免有错误或遗漏的地方，还请大家给予指正，另外，可能面板提供的参考数据及调整选项还不够丰富，我们在往后的更新中会根据需要考虑继续增加更多的调整选项，谢谢大家的支持。
+来自网络整理。
+]]></content>
+      <categories>
+        <category>mysql</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>mysql</tag>
+        <tag>优化</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>【Gitlab】GitBook+GitLab撰写发布技术文档-Part2:GitLab篇</title>
     <url>/posts/7790e989/</url>
     <content><![CDATA[上一篇文章介绍了如果用 gitbook 写书，并且我们已经通过 gitbook build命令把书的内容打包成 HTML 格式发布到了_book文件夹中。
@@ -13470,9 +13530,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-HigbwkMAVdXYvoFs").style.height=document.getElementById("mmedia-HigbwkMAVdXYvoFs").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-bbGrDiYrkldadscm").style.height=document.getElementById("mmedia-bbGrDiYrkldadscm").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-HigbwkMAVdXYvoFs").style.height=document.getElementById("mmedia-HigbwkMAVdXYvoFs").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-bbGrDiYrkldadscm").style.height=document.getElementById("mmedia-bbGrDiYrkldadscm").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -19591,8 +19651,8 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 列表
 
- var MsHMPXbbroOiJHKM_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    MsHMPXbbroOiJHKM_options.container = document.getElementById("mmedia-MsHMPXbbroOiJHKM");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(MsHMPXbbroOiJHKM_options); 
+ var EfMBSqGbUwebqIco_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    EfMBSqGbUwebqIco_options.container = document.getElementById("mmedia-EfMBSqGbUwebqIco");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(EfMBSqGbUwebqIco_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -21012,13 +21072,13 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var cAaDlHdAhkObeqPH_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
-    cAaDlHdAhkObeqPH_options.container = document.getElementById("mmedia-cAaDlHdAhkObeqPH");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(cAaDlHdAhkObeqPH_options); 
+ var PMYMzQXcfaLCgLSc_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
+    PMYMzQXcfaLCgLSc_options.container = document.getElementById("mmedia-PMYMzQXcfaLCgLSc");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(PMYMzQXcfaLCgLSc_options); 
 
 
 
- var prPKxEMwMWStgKAj_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    prPKxEMwMWStgKAj_options.container = document.getElementById("mmedia-prPKxEMwMWStgKAj");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(prPKxEMwMWStgKAj_options); 
+ var fTWbKsAviifQovYQ_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    fTWbKsAviifQovYQ_options.container = document.getElementById("mmedia-fTWbKsAviifQovYQ");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(fTWbKsAviifQovYQ_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -21277,9 +21337,9 @@ Earthly 一个更加强大的镜像构建工具
     <title>音乐推荐-曾经我也想过一了百了</title>
     <url>/posts/8b7d3a9a/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-KMEocCbvkhdkJZbq").style.height=document.getElementById("mmedia-KMEocCbvkhdkJZbq").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-wadmoytKvnoDRBdm").style.height=document.getElementById("mmedia-wadmoytKvnoDRBdm").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-KMEocCbvkhdkJZbq").style.height=document.getElementById("mmedia-KMEocCbvkhdkJZbq").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-wadmoytKvnoDRBdm").style.height=document.getElementById("mmedia-wadmoytKvnoDRBdm").scrollWidth*0.76+"px";
     }; 
 
 ## 背景介绍
@@ -21288,8 +21348,8 @@ Earthly 一个更加强大的镜像构建工具
 
 ## 中文翻唱
 
- var QGqdYqzObBGbyFGp_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
-    QGqdYqzObBGbyFGp_options.container = document.getElementById("mmedia-QGqdYqzObBGbyFGp");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(QGqdYqzObBGbyFGp_options); 
+ var qCloFZuraEXAjWmT_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
+    qCloFZuraEXAjWmT_options.container = document.getElementById("mmedia-qCloFZuraEXAjWmT");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(qCloFZuraEXAjWmT_options); 
 LRC歌词
 [00:02.09]作曲 : 秋田 ひろむ
 [00:02.64]曾经我也想过一了百了
@@ -27944,849 +28004,6 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
-    <title>基于Hexo的matery主题搭建博客常见问题篇6</title>
-    <url>/posts/84b4059a/</url>
-    <content><![CDATA[Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-GithubProfile美化与自动获取RSS文章教程
-Vercel部署高级用法教程
-webhook部署Hexo静态博客指南
-在宝塔VPS上面采用docker部署waline全流程图解教程
-自建Umami访问统计服务并统计静态博客UV/PV
-
-独立博客相关组织
-一些有趣的相关组织介绍。
-
-一个人码文太孤单，但是，别忘了，你还有这么多同路人！
-建立独立博客之后，可以试着加入一些博客联盟，相互学习，引流！
-
-BlogFinder
-发现优秀的个人博客
-BlogWe
-致敬还在写博客的我们！
-笔墨迹
-# 致敬还在写博客的我们
-博客录
-# 博客收录展示平台
-博客圈
-# 致力于个人独立博客，按地区分类，由段先森维护
-博客志
-优秀个人独立博客导航
-博友圈
-#  博客人的朋友圈
-川流
-川流，取川之意，流水之情
-个站商店
-# 一个精致的，带社交元素的个人网站发布平台，博客收录网站
-积薪
-致敬那些还在写博客的人
-开往
-# 让传统友链“活跃”，让网页相互接力，让流量相互流动，让网络开放起来
-未来信息
-希望在未来还能遇见你博客的信息
-十年之约
-
-十年之约，即从加入这个活动起，我们的博客十年不关闭，保持更新和活力！
-点击加入  点击查看成员
-
-中文博客列表导航项目
-
-尝试链接几乎所有的中文博客
-申请加入
-
-中文独立博客列表
-
-一个自动合并PR,CVS管理博客列表的Github项目
-加入方法，点击 Fork chinese-independent-blogs
-
-在 ./blogs-original.csv 中填入博客的 名称、URL、RSS以及标签
-提交 PR
-(自动) PR 被 merge 之后 README 通过 ./script.js 生成
-
-
-中文独立博客文章聚合搜索
-
-目标是做一个独立博客文章聚合搜索引擎
-
-要不要加参考链接？
-
-要加！一定要加！
-本来就是白嫖了别人的成功，去掉署名声称是原创就要下做了。
-
-不加引用后果：
-
-
-本来加个署名可以和原作者成为朋友，不加就弄成了仇人！
-别人不一定告你，告你，输是一定的。但违反人家发布协议，弄臭你很容易
-创作圈不大，很快大家都知道了
-文章人家原创，后续很可能还会更新、修改，留个链接好跟过去看看有没有更新
-等等其它
-
-
-出错了，怎么办？
-
-首先，学会搜索，最好实用Google，准确率比X毒高几个数量级。你遇到过的问题，90%以上其他人也遇到过，网上能找到现成的解决方案。
-
-个人独立博客文章质量最高，stackoverflow质量也很非常高，CSDN基本就是垃圾场，普通搜索文章能有50%准确率就非常不错了，独立博客和stackoverflow之类的80%以上的准确率！
-
-
-如何调试博客
-
-需要一定的web开发知识才能做。
-学会一些简单调试及基本html语言很容易，网上教程很多。
-按F12进入调试模式，元素，网络，控制台，是常用的页面。
-
-
-
-网站被克隆镜像了怎么办？
-
-在 analytic 后台（如umami）发现一些来源异常的域名，惊奇的发现你的网站被镜像了，下面是一些处理方法
-
-JS 域名检测
-代码如下**（插入到页面 head 或 foot）**：
-&lt;script&gt;document.location.hostname!='blog.17lai.site'&amp;&amp;(location.href=new URL(location.href).hostname='blog.17lai.site')&lt;/script&gt;
-展开上面脚本
-&lt;script&gt;
-if (document.location.hostname !== 'blog.17lai.site') {
-  // 获取当前页面的 URL 对象
-  var url = new URL(document.location.href);
-  
-  // 修改 hostname 为目标值
-  url.hostname = 'blog.17lai.site';
-
-  // 跳转到修改后的 URL
-  window.location.href = url.href;
-}
-&lt;/script&gt;
-如果对方不讲武德的通过反代把文件内的域名全部替换为了他的域名，就出现了死循环。
-后来通过 String.fromCharCode 混淆的方式，把网址给混淆了，这样就防止了域名被修改。
-代码如下：
-&lt;script&gt;
-if (document.location.hostname !== decryptHostname()) {
-  // 获取当前页面的 URL 对象
-  var url = new URL(document.location.href);
-  
-  // 修改 hostname 为解密后的值
-  url.hostname = decryptHostname();
-
-  // 跳转到修改后的 URL
-  window.location.href = url.href;
-}
-
-function decryptHostname() {
-  return String.fromCharCode(
-    98, 108, 111, 103, 46, 49, 55, 108, 97, 105, 46, 115, 105, 116, 101
-  ); // 对应 'blog.17lai.site' 的 ASCII 码
-}
-&lt;/script&gt;
-允许多个域名来源
-&lt;script&gt;
-(function() {
-  var allowedHostnames = [
-    'blog.17lai.site',
-    'example.com',
-    'another-allowed-site.com'
-  ];
-
-  var currentHostname = document.location.hostname;
-
-  if (!isHostnameAllowed(currentHostname)) {
-    // 获取当前页面的 URL 对象
-    var url = new URL(document.location.href);
-    
-    // 修改 hostname 为允许的域名数组中的第一个
-    url.hostname = allowedHostnames[0];
-
-    // 跳转到修改后的 URL
-    window.location.href = url.href;
-  }
-
-  function isHostnameAllowed(hostname) {
-    return allowedHostnames.includes(hostname);
-  }
-})();
-&lt;/script&gt;
-使用 fromCharCode 来完善
-&lt;script&gt;
-(function() {
-  var allowedHostnames = [
-    decryptHostname([98, 108, 111, 103, 46, 49, 55, 108, 97, 105, 46, 115, 105, 116, 101]), // 'blog.17lai.site'
-    decryptHostname([101, 120, 97, 109, 112, 108, 101, 46, 99, 111, 109]), // 'example.com'
-    decryptHostname([97, 110, 111, 116, 104, 101, 114, 45, 97, 108, 108, 111, 119, 101, 100, 45, 115, 105, 116, 101, 46, 99, 111, 109]) // 'another-allowed-site.com'
-  ];
-
-  var currentHostname = document.location.hostname;
-
-  if (!isHostnameAllowed(currentHostname)) {
-    // 获取当前页面的 URL 对象
-    var url = new URL(document.location.href);
-    
-    // 修改 hostname 为允许的域名数组中的第一个
-    url.hostname = allowedHostnames[0];
-
-    // 跳转到修改后的 URL
-    window.location.href = url.href;
-  }
-
-  function isHostnameAllowed(hostname) {
-    return allowedHostnames.includes(hostname);
-  }
-
-  function decryptHostname(charCodes) {
-    return String.fromCharCode.apply(null, charCodes);
-  }
-})();
-&lt;/script&gt;
-使用弹窗提示跳转
-&lt;script&gt;
-(function() {
-  var allowedHostnames = [
-    decryptHostname([98, 108, 111, 103, 46, 49, 55, 108, 97, 105, 46, 115, 105, 116, 101]), // 'blog.17lai.site'
-    decryptHostname([101, 120, 97, 109, 112, 108, 101, 46, 99, 111, 109]), // 'example.com'
-    decryptHostname([97, 110, 116, 111, 104, 101, 114, 45, 97, 108, 108, 111, 119, 101, 100, 45, 115, 105, 116, 101, 46, 99, 111, 109]) // 'another-allowed-site.com'
-  ];
-
-  var currentHostname = document.location.hostname;
-
-  if (!isHostnameAllowed(currentHostname)) {
-    showAlertAndRedirect();
-  }
-
-  function isHostnameAllowed(hostname) {
-    return allowedHostnames.includes(hostname);
-  }
-
-  function decryptHostname(charCodes) {
-    return String.fromCharCode.apply(null, charCodes);
-  }
-
-  function showAlertAndRedirect() {
-    var countdown = 5;
-    var alertDiv = document.createElement('div');
-    alertDiv.style.position = 'fixed';
-    alertDiv.style.width = '50%';
-    alertDiv.style.height = '50%';
-    alertDiv.style.top = '50%';
-    alertDiv.style.left = '50%';
-    alertDiv.style.transform = 'translate(-50%, -50%)';
-    alertDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-    alertDiv.style.color = 'white';
-    alertDiv.style.display = 'flex';
-    alertDiv.style.justifyContent = 'center';
-    alertDiv.style.alignItems = 'center';
-    alertDiv.style.fontSize = '24px';
-    alertDiv.style.textAlign = 'center';
-    alertDiv.style.zIndex = '10000';
-    alertDiv.innerHTML = '&lt;div&gt;您访问的网页为镜像地址，&lt;span id="countdown"&gt;' + countdown + '&lt;/span&gt;秒后会跳转到源地址&lt;/div&gt;';
-    document.body.appendChild(alertDiv);
-
-    var countdownInterval = setInterval(function() {
-      countdown--;
-      document.getElementById('countdown').innerText = countdown;
-      if (countdown &lt;= 0) {
-        clearInterval(countdownInterval);
-        window.location.href = new URL(document.location.href).href.replace(currentHostname, allowedHostnames[0]);
-      }
-    }, 1000);
-  }
-})();
-&lt;/script&gt;
-
-通过hexo g -d部署时报Error: Spawn failed错误:
-
-这是由于 git 本地记录的提交版本号与 github 上不一致导致的，通过git reset --hard commitCode即可解决。
-
-
-检查本地最近提交记录，获取最后一次提交记录的更新时间及标识，如280a7fdd46fcfd7d34e652aec15523dcd247fac8
-
-cd .deploy_git
-cat .git/logs/HEAD
-
-获取 github pages 服务所关联分支的最近一次提交记录，获取更新时间及标识。地址一般为：https://github.com/用户名/仓库名/commits/分支名，如https://github.com/lxl80/blog/commits/gh-pages
-如果发现提交最新的提交时间/标识不一致，通过以下命令即可解决:
-
-git reset --hard f085038efdf79546c09641d37b2a2429c1ae8e60 #github上最新的提交标识
-hexo docker 本地访问内容没有更新
-可能是node内部PM2模块的缓存机制导致的。pm2模块重启一下就可以了。
-pm2 restart /hexo_run.js
-
-fsevents报错
-npm ERR! code EBADPLATFORM npm ERR! notsup Unsupported platform for
-fsevents@2.3.2: wanted {"os":"darwin","arch":"any"} (current:
-{"os":"win32","arch":"x64"}) npm ERR! notsup Valid OS:    darwin npm
-ERR! notsup Valid Arch:  any npm ERR! notsup Actual OS:   win32 npm
-ERR! notsup Actual Arch: x64
-解决方法：修改package.json
-"optionalDependencies": {
-  "fsevents": "^2.3.2"
-},
-关于百度无法爬取GitHub内容解决方案
-
-
-使用coding搭建一个可以被百度爬取到的代码托管平台
-使用vps搭建一个hexo 镜像访问，专门针对搜索引擎。
-
-
-
-Tips: 博主用了第二种方法，2个域名，前端域名用dnspod，采用cloudflare parter cname接入。dnspos有选路选择，针对搜索引擎进入vps搭建的blog，对于其它线路到cloudflare parter 加速过的github pages  cname。后端域名用cloudflare parter 以及免费版cloudflare管理。
-
-既然百度无法爬取GitHub，那么我们只需要找个可以被百度爬取到的代码托管平台即可（并且还提供pages服务），基本只有国内的平台了：Gitee和Coding！Gitee自定义域名要花钱（九十多，都可以买服务器了），而Coding是可以免费自定义域名的。这里推介大家使用企业版的Coding，因为企业版的Coding仓库服务器是在香港的，而普通版的服务器是在新加坡。地理原因，理论上企业版的更快一些！
-
-
-将博客同时部署到两个仓库：GitHub和Coding
-deploy:
-- type: git
-  repository: git@github.com:xxx/xxx.github.io.git
-  branch: master
-
-- type: git
-  repository: git@e.coding.net:xxx/xxx.git
-  branch: master
-
-
-在域名那里，配置两个解析
-
-线路类型作用：如果该值填“国内”，国内的IP就会去访问此项对应的记录值地址
-同理，如果该值填写“国外”，国外的IP就会去访问“国外”对应的记录值地址
-
-
-线路类型为百度或者国内，记录值为Coding仓库的地址
-线路类型为默认或者国外，记录值为GitHub仓库地址
-
-
-
-
-这样来自百度的spider就会去爬国内Coding的地址，而两个仓库的内容又都是一样的，如果请求IP来自国外，它又会去访问国外的GitHub，这样还有利于外国华侨和那些科学上网的用户访问，一石二鸟！（我真他妈天才！）
-
-
-如果你只用Coding仓库，那就不需要这么麻烦了
-
-
-测试百度Spider能不能爬你的域名
-
-
-在任意目录下执行以下命令（将“你的域名”换成你的域名）
-curl -A "Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)" -o example.html 你的域名
-
-
-执行完命令，在该目录下会生成一个文件：example.html，打开它，如果显示
-
-
-Moved Permanently，说明301，被重定向了
-
-
-Found，也就是爬到了
-
-
-如果打开是你的首页，说明爬取到的内容就是你的首页HTML内容。
-
-
-如果显示：
-
-说明域名是解析到GitHub的，403Forbidden访问禁止。
-
-
-
-
-
-
-busuanzi不蒜子计数显示异常，一闪就没
-
-
-
-原因可能有两种live2d看板娘和busuanzi不蒜子计数冲突
-
-
-busuanzi不蒜子网络访问异常。
-
-
-
-
-
-不在leancloud安全名单
-
-
-不是正常域名访问
-
-
-各种网络访问错误等等
-
-
-
-
-近日安装了live2d看板娘插件，github项目地址，安装后却意外发现busuanzi不蒜子计数失效了,在页面中不显示，但强制刷新后出现，再刷新又消失。经排查，未发现问题，但事实是网站源码出现了变化。
-
-正常时
-
-&lt;div id="busuanzi_container_page_pv" class="info-break-policy" style="display: inline;"&gt;
-    &lt;i class="far fa-eye fa-fw"&gt;&lt;/i&gt;阅读次数:&nbsp;&nbsp;
-    &lt;span id="busuanzi_value_page_pv"&gt;433&lt;/span&gt;
-
-异常时
-
-&lt;div id="busuanzi_container_page_pv" class="info-break-policy" style="display: none;"&gt;
-    &lt;i class="far fa-eye fa-fw"&gt;&lt;/i&gt;阅读次数:&nbsp;&nbsp;
-    &lt;span id="busuanzi_value_page_pv"&gt;434&lt;/span&gt;
-对比发现出现了多余的style="display: none;。
-经过搜索主题源码，发现这个文件themes\matery\source\libs\others\busuanzi.pure.mini.js控制显示。
-可以直接下载下面这个地址的js替换，来自个人blog的js   busuanzi.pure.mini.js，直接下载这个js替换即可。下面源码经过了展开美化，原始文件是压缩去空格版本的。
-注意： 这是一种破坏性修复，没有解决根本问题，临时修复方案。
-var bszCaller, bszTag;
-! function () {
-    var c, d, e, a = !1,
-        b = [];
-    ready = function (c) {
-        return a || "interactive" === document.readyState || "complete" === document.readyState ? c.call(document) :
-            b.push(function () {
-                return c.call(this)
-            }), this
-    }, d = function () {
-        for (var a = 0, c = b.length; c &gt; a; a++) b[a].apply(document);
-        b = []
-    }, e = function () {
-        a || (a = !0, d.call(window), document.removeEventListener ? document.removeEventListener(
-            "DOMContentLoaded", e, !1) : document.attachEvent &amp;&amp; (document.detachEvent("onreadystatechange",
-            e), window == window.top &amp;&amp; (clearInterval(c), c = null)))
-    }, document.addEventListener ? document.addEventListener("DOMContentLoaded", e, !1) : document.attachEvent &amp;&amp; (
-        document.attachEvent("onreadystatechange", function () {
-            /loaded|complete/.test(document.readyState) &amp;&amp; e()
-        }), window == window.top &amp;&amp; (c = setInterval(function () {
-            try {
-                a || document.documentElement.doScroll("left")
-            } catch (b) {
-                return
-            }
-            e()
-        }, 5)))
-}(), bszCaller = {
-    fetch: function (a, b) {
-        var c = "BusuanziCallback_" + Math.floor(1099511627776 * Math.random());
-        window[c] = this.evalCall(b), a = a.replace("=BusuanziCallback", "=" + c), scriptTag = document.createElement(
-                "SCRIPT"), scriptTag.type = "text/javascript", scriptTag.defer = !0, scriptTag.src = a,
-            document.getElementsByTagName("HEAD")[0].appendChild(scriptTag)
-    },
-    evalCall: function (a) {
-        return function (b) {
-            ready(function () {
-                try {
-                    a(b), scriptTag.parentElement.removeChild(scriptTag)
-                } catch (c) {
-                    bszTag.hides()
-                }
-            })
-        }
-    }
-}, bszCaller.fetch("//busuanzi.ibruce.info/busuanzi?jsonpCallback=BusuanziCallback", function (a) {
-    bszTag.texts(a), bszTag.shows()
-}), bszTag = {
-    bszs: ["site_pv", "page_pv", "site_uv"],
-    texts: function (a) {
-        this.bszs.map(function (b) {
-            var c = document.getElementById("busuanzi_value_" + b);
-            c &amp;&amp; (c.innerHTML = a[b])
-        })
-    },
-    hides: function () {
-        this.bszs.map(function (a) {
-            var b = document.getElementById("busuanzi_container_" + a);
-            b &amp;&amp; (b.style.display = "")
-        })
-    },
-    shows: function () {
-        this.bszs.map(function (a) {
-            var b = document.getElementById("busuanzi_container_" + a);
-            b &amp;&amp; (b.style.display = "inline")
-        })
-    }
-};
-替换的人请操作其实就是把其中的b.style.display="none"中none去掉。
-不蒜子 (busuanzi) 文章计数出错问题
-出现这个原因，和 Chrome 85 版本 Referrer Policy 更改有关。什么是 Referrer，简单理解，就是请求 Web 服务器时，可以在 HTTP Request 的请求头 (header) 中加上当前页面的 URL，例如我们在浏览某个博客页面，需要加载一些图片，从服务器请求这些图片时，referrer 就是当前的博客页面 URL。从这里也可以看出，referrer 可能会暴露请求来源的某些信息或者隐私，有一定的隐私或安全风险。之前版本的 Chrome 浏览器，如果网站没有指定自己的 Referrer Policy，那么 Chrome 默认 policy 是 no-referrer-when-downgrade，在 Chrome 85 版本中，为了保护用户的隐私，默认的 Referrer Policy 则变成了 strict-origin-when-cross-origin。
-
-no-referrer-when-downgrade: 当两个网站的 http 协议安全等级相当，或者目的网站安全协议等级高于当前网站(HTTP –&gt; HTTP, HTTPS –&gt; HTTPS, HTTP –&gt; HTTPS)， referer 将会包含源网站的域名，路径，查询字符串；如果目的网站安全协议等级低于源网站 (HTTPS –&gt; HTTP)，将不会发送这些信息。
-strict-origin-when-cross-origin： 只有当做同一域名请求时 (源网址和目标网址是同一域名），才发送域名，路径和请求字符串，当两个网站安全协议相当时，发送源网站的域名(没有具体路径信息和查询字符串)，如果目标网站安全协议等级低于源网站，不发送 header 信息。
-
-不蒜子统计博客文章访问量就是通过 referer 来计算的，通过上面的分析，如果 Referrer Policy 是 strict-origin-when-cross-origin，不蒜子接收到的只有博客的域名，没有文章的具体路径，所以具体某个文章的 PV 统计会出现错误。
-修复方法：
-在主题文件夹下/layout/_partial/head.ejs中添加
-&lt;meta name="referrer" content="no-referrer-when-downgrade"&gt;
-如何多个域名映射同一个github pages
-可能由于某种原因，换了一个域名，之前又有一些被搜索引擎收录，但是又不想让原来的链接失效，就需要让两个域名都映射到github pages中。本文介绍几种当前可能的方法。欢迎提出更多有效方法。
-直接映射有什么问题？
-你可能会想，两个域名都映射到github pages不就可以了？然而事实并非如此。首先当前github 的CNAME中只支持一个域名。因此CNAME文件中只能有一个域名，而如果在域名映射中将两个域名都映射到username.github.io，那么其中有一个会出现404错误。
-前提
-以下方法的前提是你已经明白如何为自己的github pages添加自定义域名。
-需要注意什么？
-
-需要给各大网站提交新的域名网址，重新被收录
-域名变换前面网站的内容结构不能变，否则重定向也没有意义
-当前单纯的域名没有办法进行备案
-注意修改配置文件里的主域名为新的域名
-由于更换了新的域名，导致原来leancloud统计的访问数据需要重新计算，也就是网站访问量被清零了，leancloud也需要更新域名
-新的com域名可申请免费的SSL证书，保证https可访问，而不会提示不安全
-301重定向会将旧地址的权重转义到新地址上
-百度收录速度较慢
-
-方法一：域名托管平台重定向
-有的域名服务商提供重定向功能，以阿里云为例，在域名映射添加记录的时候，可以选择显性URL或隐性URL。但是自己在尝试这种方法的时候，会提示我URL备案异常。可能是由于这个时候已经用新的域名映射了博客地址，但是新的域名实际上是没有备案的。更无奈的是，目前貌似没有办法单独对域名进行备案。因此本人放弃了该方法。
-如果你的博客也是部署在github上的，那么这种方法就不用尝试了，如果你的博客是部署在自己的服务器上的，那么网上都很多方法，这里就不介绍了。
-方法二：部署两个仓库
-我们注意到，除了github pages，还有coding.net可用。它与github类似。原来的域名映射到这个地址就可以了。而在部署hexo的时候，是可以添加两个仓库地址的：
-deploy:
-- type: git
-  repository: git@github.com:username/username.github.io.git
-  branch: master
-- type: git
-  repository: git@git.coding.net:username/username.git
-  branch: coding-pages
-这两个仓库内容唯一的差别就是域名不一样，即CNAME中的记录值不一样。这样当访问两个不同的域名的时候，是访问不同的两个平台仓库。但是原来域名的权重不会转到新的域名中去。
-方法三：新增项目重定向
-假如你已经有username.github.io项目，新建一个名为blog(名字自定义)的项目，在项目的setting中，开启github pages服务，并且将旧的域名映射到username.github.io。
-实际上，github pages并不是只能有一个，例如，你新创建的仓库访问地址为：username.github.io/blog。
-由于旧的域名映射会导致404错误，那么在我们的新项目中增加一个404.html，在页面中进行跳转即可：
-&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-&lt;meta charset="utf-8"&gt;
-&lt;title&gt;&lt;/title&gt;
-&lt;/head&gt;
- &lt;script language="javascript"&gt;
-var domain = "换成你自己的新域名";
-var src = window.location.href;
-var prtc = src.substring(0, src.indexOf(':'));
-var target = src.substring(src.indexOf('/', src.indexOf(':') + 3));
-window.location.href = prtc + "://" + domain + target;
-location.href=prtc + "://" + domain + target;
-&lt;/script&gt;
-&lt;body&gt;
- &lt;h1&gt;&lt;/h1&gt;
-&lt;/body&gt;
-&lt;/html&gt;
-另外，需要利用google的地址更改功能，使得旧网址的权重往新网址转移。
-找到search console中的地址更改工具（设置按钮中找到）。
-除了增加404页面外，还需要增加CNAME文件，里面的内容是你原先的域名。
-Vercel流量超标怎么办？
-
-最近查看了一下Vercel流量使用情况，发现RSS订阅流量太大了，占了30GB流量！
-免费Vercel账户每月只有100G免费流量，怎么办？
-
-有两种解决方法：
-
-使用 DNS 多线路分流，例如DNSPOD 多线路负载均衡
-使用 Vercel 提供的 redirects 或者 rewrites功能，把rss访问重定向到其它部署方式，例如Cloudflare
-
-
-查看方法：dashboard -&gt; usage
-由于个人blog也部署到Cloudflare上面了，https://cfblog.17lai.site，Cloudflare的流量目前看着没限制，如是，可以使用如下重定向方法
-"redirects": [
-		{ "source": "/atom.xml", "destination": "https://cfblog.17lai.site/atom.xml" },
-		{ "source": "/rss.xml", "destination": "https://cfblog.17lai.site/rss.xml" }
-  	]
-更多Vercel部署用法，戳vercel部署
-其它主题
-博主从这些主题学到了很多有用的技巧，大大丰富了个人定制
-
-
-hexo-theme-butterfly
-hexo-theme-next
-hexo-theme-fluid
-Hexo-Theme-MengD
-hexo-theme-itsneko
-
-
-参考&amp;感谢
-
-编写整个系列教程花费时间和精力很长，如有遗漏，可以联系添加！
-
-
-
-easyhexo 文档 easyhexo GIthub
-
-
-基于Hexo的matery主题搭建博客并深度优化-悟尘记
-
-
-hexo 官方文档
-
-
-闪烁之狐
-
-
-hexo-theme-matery
-
-
-Hexo 进阶之各种优化
-
-
-Leancloud+Valine打造Hexo个人博客极简评论系统
-
-
-Hexo进阶之各种优化
-
-
-自动部署篇
-
-
-Hexo搭建(VPS)
-
-
-解决live2d看板娘和busuanzi不蒜子计数冲突
-
-
-多个域名映射同一个github pages
-
-
-hexo博客简单支持PWA
-
-
-Hexo 每天自动提交网站url到搜索引擎
-
-
-Hexo 博客订阅文章通知功能
-
-
-修改 matery 原有主题相册
-
-
-关于给hexo博客增加相册页面（实现瀑布流相册，实现加密相册） hexo-theme-itsneko
-
-
-Matery主题新手常见问题
-
-
-hexo-gitlab-cicd-conf
-
-
-更改hexo的主题为Matery,并进行初步的优化
-
-
-Hexo之渲染绕过
-
-
-使用 gulp 压缩图片
-
-
-python精简font awesome字体
-
-
-Hexo+Github博客搭建完全教程 博客开源
-
-
-Hexo主题使用Valine-Admin管理评论和评论提醒
-
-
-Hexo博客进阶：图片懒加载与代码压缩
-
-
-matery主题个性化定制
-
-
-魔改 NexT 主题添加 butterfly 中的时间轴功能
-
-
-crystalblog三部曲 1 2 3
-
-
-个人博客搭建 博客开源
-
-
-PWA踩坑记-从零到一让你的博客也能离线访问
-
-
-Matery主题添加暗色模式 黑夜模式 开源代码hexo-themes-matery-pro
-
-
-为网站添加用户友好的深色模式支持 hexo-theme-fluid Dark
-
-
-加载动画(吃豆豆) 加载动画旋转方块
-
-
-Hexo主题优化——TOC目录展开收缩的小箭头
-
-
-hexo个人博客优化魔改非插件实现为博客增加安全跳转中台页面
-
-
-优化search.xml大小
-
-
-更好的Live2d Widget
-
-
-Waline 评论系统的介绍与基础配置
-
-
-Waline 添加 GitHub 社交登录
-
-
-waline 邮件通知模板样式一览
-
-
-https://www.techgrow.cn/posts/ae18fb85.html
-
-
-随机视频背景切换 视频背景 hexo-theme-fluid
-
-
-使用视频作为网页背景的技术探讨 英文：Create Fullscreen HTML5 Page Background Video
-
-
-写作技巧篇
-
-
-折腾：在 Hexo 的 page 中嵌入 iframe
-
-
-Hexo博客 | 插件推荐
-
-
-美化修改文章分类样式
-
-
-Hexo魔改记录 各种特效添加
-
-
-零成本搭建现代博客之加载速度优化篇
-
-
-使用 CardLink 库生产卡片式链接
-
-
-使用Service Worker优选请求资源
-
-
-Hexo 每天自动提交网站url到搜索引擎
-
-
-使用 VS Code 的任务（Tasks）便捷操作 Hexo
-
-
- 为网站添加用户友好的深色模式支持
-
-
-实现代码框全屏显示
-
-
-谷歌网站收录移动设备易用性有问题  移动设备适合性测试
-
-
-hexo-butterfly-tag-plugins-plus 大量外挂标签
-
-
-实用GithubAction和NPM搭建自动转换webp图床
-
-
-Umami UV / PV 统计显示
-
-https://umami.is/docs/websites-api
-https://umami.is/docs/authentication
-https://umami.is/docs/website-stats
-
-
-
-
-性能
-
-
-图片 lazyload 的学问和在 Hexo 上的最佳实践
-“web资源加载优先级”原来能这么精准控制 
-使 Disqus 不再拖累性能和页面加载
-hexo个人网站优化探索
-lazy-load-iframes
-Hexo架构与优化–Hexo，分区解析，CDN，图像压缩等 hexo-theme-Claudia
-HTTP/3：过去，现在，还有未来
-
-
-本教程还有其它五大部分，更多内容请见Hexo系列教程
-
-系列教程
-全部文章RSS订阅
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-GithubProfile美化与自动获取RSS文章教程
-Vercel部署高级用法教程
-webhook部署Hexo静态博客指南
-在宝塔VPS上面采用docker部署waline全流程图解教程
-自建Umami访问统计服务并统计静态博客UV/PV
-
-笔记系列
-Note分类RSS订阅
-
-完美笔记进化论
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Joplin入门指南&amp;实践方案
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-Joplin 插件以及其Markdown语法。All in One!
-Joplin 插件使用推荐
-为知笔记私有化Docker部署
-
-Gitbook使用系列
-Gitbook分类RSS订阅
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-Gitlab 使用系列
-Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-]]></content>
-      <categories>
-        <category>hexo</category>
-      </categories>
-      <tags>
-        <tag>github</tag>
-        <tag>hexo</tag>
-        <tag>matery</tag>
-        <tag>cdn</tag>
-        <tag>seo</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>基于Hexo的matery主题搭建博客网络优化篇3</title>
     <url>/posts/9b056c86/</url>
     <content><![CDATA[
@@ -31128,6 +30345,849 @@ web推送插件
 https://github.com/glazec/hexo-web-push-notification
 
 
+
+
+本教程还有其它五大部分，更多内容请见Hexo系列教程
+
+系列教程
+全部文章RSS订阅
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+GithubProfile美化与自动获取RSS文章教程
+Vercel部署高级用法教程
+webhook部署Hexo静态博客指南
+在宝塔VPS上面采用docker部署waline全流程图解教程
+自建Umami访问统计服务并统计静态博客UV/PV
+
+笔记系列
+Note分类RSS订阅
+
+完美笔记进化论
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Joplin入门指南&amp;实践方案
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+Joplin 插件以及其Markdown语法。All in One!
+Joplin 插件使用推荐
+为知笔记私有化Docker部署
+
+Gitbook使用系列
+Gitbook分类RSS订阅
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+Gitlab 使用系列
+Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+]]></content>
+      <categories>
+        <category>hexo</category>
+      </categories>
+      <tags>
+        <tag>github</tag>
+        <tag>hexo</tag>
+        <tag>matery</tag>
+        <tag>cdn</tag>
+        <tag>seo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>基于Hexo的matery主题搭建博客常见问题篇6</title>
+    <url>/posts/84b4059a/</url>
+    <content><![CDATA[Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+GithubProfile美化与自动获取RSS文章教程
+Vercel部署高级用法教程
+webhook部署Hexo静态博客指南
+在宝塔VPS上面采用docker部署waline全流程图解教程
+自建Umami访问统计服务并统计静态博客UV/PV
+
+独立博客相关组织
+一些有趣的相关组织介绍。
+
+一个人码文太孤单，但是，别忘了，你还有这么多同路人！
+建立独立博客之后，可以试着加入一些博客联盟，相互学习，引流！
+
+BlogFinder
+发现优秀的个人博客
+BlogWe
+致敬还在写博客的我们！
+笔墨迹
+# 致敬还在写博客的我们
+博客录
+# 博客收录展示平台
+博客圈
+# 致力于个人独立博客，按地区分类，由段先森维护
+博客志
+优秀个人独立博客导航
+博友圈
+#  博客人的朋友圈
+川流
+川流，取川之意，流水之情
+个站商店
+# 一个精致的，带社交元素的个人网站发布平台，博客收录网站
+积薪
+致敬那些还在写博客的人
+开往
+# 让传统友链“活跃”，让网页相互接力，让流量相互流动，让网络开放起来
+未来信息
+希望在未来还能遇见你博客的信息
+十年之约
+
+十年之约，即从加入这个活动起，我们的博客十年不关闭，保持更新和活力！
+点击加入  点击查看成员
+
+中文博客列表导航项目
+
+尝试链接几乎所有的中文博客
+申请加入
+
+中文独立博客列表
+
+一个自动合并PR,CVS管理博客列表的Github项目
+加入方法，点击 Fork chinese-independent-blogs
+
+在 ./blogs-original.csv 中填入博客的 名称、URL、RSS以及标签
+提交 PR
+(自动) PR 被 merge 之后 README 通过 ./script.js 生成
+
+
+中文独立博客文章聚合搜索
+
+目标是做一个独立博客文章聚合搜索引擎
+
+要不要加参考链接？
+
+要加！一定要加！
+本来就是白嫖了别人的成功，去掉署名声称是原创就要下做了。
+
+不加引用后果：
+
+
+本来加个署名可以和原作者成为朋友，不加就弄成了仇人！
+别人不一定告你，告你，输是一定的。但违反人家发布协议，弄臭你很容易
+创作圈不大，很快大家都知道了
+文章人家原创，后续很可能还会更新、修改，留个链接好跟过去看看有没有更新
+等等其它
+
+
+出错了，怎么办？
+
+首先，学会搜索，最好实用Google，准确率比X毒高几个数量级。你遇到过的问题，90%以上其他人也遇到过，网上能找到现成的解决方案。
+
+个人独立博客文章质量最高，stackoverflow质量也很非常高，CSDN基本就是垃圾场，普通搜索文章能有50%准确率就非常不错了，独立博客和stackoverflow之类的80%以上的准确率！
+
+
+如何调试博客
+
+需要一定的web开发知识才能做。
+学会一些简单调试及基本html语言很容易，网上教程很多。
+按F12进入调试模式，元素，网络，控制台，是常用的页面。
+
+
+
+网站被克隆镜像了怎么办？
+
+在 analytic 后台（如umami）发现一些来源异常的域名，惊奇的发现你的网站被镜像了，下面是一些处理方法
+
+JS 域名检测
+代码如下**（插入到页面 head 或 foot）**：
+&lt;script&gt;document.location.hostname!='blog.17lai.site'&amp;&amp;(location.href=new URL(location.href).hostname='blog.17lai.site')&lt;/script&gt;
+展开上面脚本
+&lt;script&gt;
+if (document.location.hostname !== 'blog.17lai.site') {
+  // 获取当前页面的 URL 对象
+  var url = new URL(document.location.href);
+  
+  // 修改 hostname 为目标值
+  url.hostname = 'blog.17lai.site';
+
+  // 跳转到修改后的 URL
+  window.location.href = url.href;
+}
+&lt;/script&gt;
+如果对方不讲武德的通过反代把文件内的域名全部替换为了他的域名，就出现了死循环。
+后来通过 String.fromCharCode 混淆的方式，把网址给混淆了，这样就防止了域名被修改。
+代码如下：
+&lt;script&gt;
+if (document.location.hostname !== decryptHostname()) {
+  // 获取当前页面的 URL 对象
+  var url = new URL(document.location.href);
+  
+  // 修改 hostname 为解密后的值
+  url.hostname = decryptHostname();
+
+  // 跳转到修改后的 URL
+  window.location.href = url.href;
+}
+
+function decryptHostname() {
+  return String.fromCharCode(
+    98, 108, 111, 103, 46, 49, 55, 108, 97, 105, 46, 115, 105, 116, 101
+  ); // 对应 'blog.17lai.site' 的 ASCII 码
+}
+&lt;/script&gt;
+允许多个域名来源
+&lt;script&gt;
+(function() {
+  var allowedHostnames = [
+    'blog.17lai.site',
+    'example.com',
+    'another-allowed-site.com'
+  ];
+
+  var currentHostname = document.location.hostname;
+
+  if (!isHostnameAllowed(currentHostname)) {
+    // 获取当前页面的 URL 对象
+    var url = new URL(document.location.href);
+    
+    // 修改 hostname 为允许的域名数组中的第一个
+    url.hostname = allowedHostnames[0];
+
+    // 跳转到修改后的 URL
+    window.location.href = url.href;
+  }
+
+  function isHostnameAllowed(hostname) {
+    return allowedHostnames.includes(hostname);
+  }
+})();
+&lt;/script&gt;
+使用 fromCharCode 来完善
+&lt;script&gt;
+(function() {
+  var allowedHostnames = [
+    decryptHostname([98, 108, 111, 103, 46, 49, 55, 108, 97, 105, 46, 115, 105, 116, 101]), // 'blog.17lai.site'
+    decryptHostname([101, 120, 97, 109, 112, 108, 101, 46, 99, 111, 109]), // 'example.com'
+    decryptHostname([97, 110, 111, 116, 104, 101, 114, 45, 97, 108, 108, 111, 119, 101, 100, 45, 115, 105, 116, 101, 46, 99, 111, 109]) // 'another-allowed-site.com'
+  ];
+
+  var currentHostname = document.location.hostname;
+
+  if (!isHostnameAllowed(currentHostname)) {
+    // 获取当前页面的 URL 对象
+    var url = new URL(document.location.href);
+    
+    // 修改 hostname 为允许的域名数组中的第一个
+    url.hostname = allowedHostnames[0];
+
+    // 跳转到修改后的 URL
+    window.location.href = url.href;
+  }
+
+  function isHostnameAllowed(hostname) {
+    return allowedHostnames.includes(hostname);
+  }
+
+  function decryptHostname(charCodes) {
+    return String.fromCharCode.apply(null, charCodes);
+  }
+})();
+&lt;/script&gt;
+使用弹窗提示跳转
+&lt;script&gt;
+(function() {
+  var allowedHostnames = [
+    decryptHostname([98, 108, 111, 103, 46, 49, 55, 108, 97, 105, 46, 115, 105, 116, 101]), // 'blog.17lai.site'
+    decryptHostname([101, 120, 97, 109, 112, 108, 101, 46, 99, 111, 109]), // 'example.com'
+    decryptHostname([97, 110, 116, 111, 104, 101, 114, 45, 97, 108, 108, 111, 119, 101, 100, 45, 115, 105, 116, 101, 46, 99, 111, 109]) // 'another-allowed-site.com'
+  ];
+
+  var currentHostname = document.location.hostname;
+
+  if (!isHostnameAllowed(currentHostname)) {
+    showAlertAndRedirect();
+  }
+
+  function isHostnameAllowed(hostname) {
+    return allowedHostnames.includes(hostname);
+  }
+
+  function decryptHostname(charCodes) {
+    return String.fromCharCode.apply(null, charCodes);
+  }
+
+  function showAlertAndRedirect() {
+    var countdown = 5;
+    var alertDiv = document.createElement('div');
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.width = '50%';
+    alertDiv.style.height = '50%';
+    alertDiv.style.top = '50%';
+    alertDiv.style.left = '50%';
+    alertDiv.style.transform = 'translate(-50%, -50%)';
+    alertDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    alertDiv.style.color = 'white';
+    alertDiv.style.display = 'flex';
+    alertDiv.style.justifyContent = 'center';
+    alertDiv.style.alignItems = 'center';
+    alertDiv.style.fontSize = '24px';
+    alertDiv.style.textAlign = 'center';
+    alertDiv.style.zIndex = '10000';
+    alertDiv.innerHTML = '&lt;div&gt;您访问的网页为镜像地址，&lt;span id="countdown"&gt;' + countdown + '&lt;/span&gt;秒后会跳转到源地址&lt;/div&gt;';
+    document.body.appendChild(alertDiv);
+
+    var countdownInterval = setInterval(function() {
+      countdown--;
+      document.getElementById('countdown').innerText = countdown;
+      if (countdown &lt;= 0) {
+        clearInterval(countdownInterval);
+        window.location.href = new URL(document.location.href).href.replace(currentHostname, allowedHostnames[0]);
+      }
+    }, 1000);
+  }
+})();
+&lt;/script&gt;
+
+通过hexo g -d部署时报Error: Spawn failed错误:
+
+这是由于 git 本地记录的提交版本号与 github 上不一致导致的，通过git reset --hard commitCode即可解决。
+
+
+检查本地最近提交记录，获取最后一次提交记录的更新时间及标识，如280a7fdd46fcfd7d34e652aec15523dcd247fac8
+
+cd .deploy_git
+cat .git/logs/HEAD
+
+获取 github pages 服务所关联分支的最近一次提交记录，获取更新时间及标识。地址一般为：https://github.com/用户名/仓库名/commits/分支名，如https://github.com/lxl80/blog/commits/gh-pages
+如果发现提交最新的提交时间/标识不一致，通过以下命令即可解决:
+
+git reset --hard f085038efdf79546c09641d37b2a2429c1ae8e60 #github上最新的提交标识
+hexo docker 本地访问内容没有更新
+可能是node内部PM2模块的缓存机制导致的。pm2模块重启一下就可以了。
+pm2 restart /hexo_run.js
+
+fsevents报错
+npm ERR! code EBADPLATFORM npm ERR! notsup Unsupported platform for
+fsevents@2.3.2: wanted {"os":"darwin","arch":"any"} (current:
+{"os":"win32","arch":"x64"}) npm ERR! notsup Valid OS:    darwin npm
+ERR! notsup Valid Arch:  any npm ERR! notsup Actual OS:   win32 npm
+ERR! notsup Actual Arch: x64
+解决方法：修改package.json
+"optionalDependencies": {
+  "fsevents": "^2.3.2"
+},
+关于百度无法爬取GitHub内容解决方案
+
+
+使用coding搭建一个可以被百度爬取到的代码托管平台
+使用vps搭建一个hexo 镜像访问，专门针对搜索引擎。
+
+
+
+Tips: 博主用了第二种方法，2个域名，前端域名用dnspod，采用cloudflare parter cname接入。dnspos有选路选择，针对搜索引擎进入vps搭建的blog，对于其它线路到cloudflare parter 加速过的github pages  cname。后端域名用cloudflare parter 以及免费版cloudflare管理。
+
+既然百度无法爬取GitHub，那么我们只需要找个可以被百度爬取到的代码托管平台即可（并且还提供pages服务），基本只有国内的平台了：Gitee和Coding！Gitee自定义域名要花钱（九十多，都可以买服务器了），而Coding是可以免费自定义域名的。这里推介大家使用企业版的Coding，因为企业版的Coding仓库服务器是在香港的，而普通版的服务器是在新加坡。地理原因，理论上企业版的更快一些！
+
+
+将博客同时部署到两个仓库：GitHub和Coding
+deploy:
+- type: git
+  repository: git@github.com:xxx/xxx.github.io.git
+  branch: master
+
+- type: git
+  repository: git@e.coding.net:xxx/xxx.git
+  branch: master
+
+
+在域名那里，配置两个解析
+
+线路类型作用：如果该值填“国内”，国内的IP就会去访问此项对应的记录值地址
+同理，如果该值填写“国外”，国外的IP就会去访问“国外”对应的记录值地址
+
+
+线路类型为百度或者国内，记录值为Coding仓库的地址
+线路类型为默认或者国外，记录值为GitHub仓库地址
+
+
+
+
+这样来自百度的spider就会去爬国内Coding的地址，而两个仓库的内容又都是一样的，如果请求IP来自国外，它又会去访问国外的GitHub，这样还有利于外国华侨和那些科学上网的用户访问，一石二鸟！（我真他妈天才！）
+
+
+如果你只用Coding仓库，那就不需要这么麻烦了
+
+
+测试百度Spider能不能爬你的域名
+
+
+在任意目录下执行以下命令（将“你的域名”换成你的域名）
+curl -A "Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)" -o example.html 你的域名
+
+
+执行完命令，在该目录下会生成一个文件：example.html，打开它，如果显示
+
+
+Moved Permanently，说明301，被重定向了
+
+
+Found，也就是爬到了
+
+
+如果打开是你的首页，说明爬取到的内容就是你的首页HTML内容。
+
+
+如果显示：
+
+说明域名是解析到GitHub的，403Forbidden访问禁止。
+
+
+
+
+
+
+busuanzi不蒜子计数显示异常，一闪就没
+
+
+
+原因可能有两种live2d看板娘和busuanzi不蒜子计数冲突
+
+
+busuanzi不蒜子网络访问异常。
+
+
+
+
+
+不在leancloud安全名单
+
+
+不是正常域名访问
+
+
+各种网络访问错误等等
+
+
+
+
+近日安装了live2d看板娘插件，github项目地址，安装后却意外发现busuanzi不蒜子计数失效了,在页面中不显示，但强制刷新后出现，再刷新又消失。经排查，未发现问题，但事实是网站源码出现了变化。
+
+正常时
+
+&lt;div id="busuanzi_container_page_pv" class="info-break-policy" style="display: inline;"&gt;
+    &lt;i class="far fa-eye fa-fw"&gt;&lt;/i&gt;阅读次数:&nbsp;&nbsp;
+    &lt;span id="busuanzi_value_page_pv"&gt;433&lt;/span&gt;
+
+异常时
+
+&lt;div id="busuanzi_container_page_pv" class="info-break-policy" style="display: none;"&gt;
+    &lt;i class="far fa-eye fa-fw"&gt;&lt;/i&gt;阅读次数:&nbsp;&nbsp;
+    &lt;span id="busuanzi_value_page_pv"&gt;434&lt;/span&gt;
+对比发现出现了多余的style="display: none;。
+经过搜索主题源码，发现这个文件themes\matery\source\libs\others\busuanzi.pure.mini.js控制显示。
+可以直接下载下面这个地址的js替换，来自个人blog的js   busuanzi.pure.mini.js，直接下载这个js替换即可。下面源码经过了展开美化，原始文件是压缩去空格版本的。
+注意： 这是一种破坏性修复，没有解决根本问题，临时修复方案。
+var bszCaller, bszTag;
+! function () {
+    var c, d, e, a = !1,
+        b = [];
+    ready = function (c) {
+        return a || "interactive" === document.readyState || "complete" === document.readyState ? c.call(document) :
+            b.push(function () {
+                return c.call(this)
+            }), this
+    }, d = function () {
+        for (var a = 0, c = b.length; c &gt; a; a++) b[a].apply(document);
+        b = []
+    }, e = function () {
+        a || (a = !0, d.call(window), document.removeEventListener ? document.removeEventListener(
+            "DOMContentLoaded", e, !1) : document.attachEvent &amp;&amp; (document.detachEvent("onreadystatechange",
+            e), window == window.top &amp;&amp; (clearInterval(c), c = null)))
+    }, document.addEventListener ? document.addEventListener("DOMContentLoaded", e, !1) : document.attachEvent &amp;&amp; (
+        document.attachEvent("onreadystatechange", function () {
+            /loaded|complete/.test(document.readyState) &amp;&amp; e()
+        }), window == window.top &amp;&amp; (c = setInterval(function () {
+            try {
+                a || document.documentElement.doScroll("left")
+            } catch (b) {
+                return
+            }
+            e()
+        }, 5)))
+}(), bszCaller = {
+    fetch: function (a, b) {
+        var c = "BusuanziCallback_" + Math.floor(1099511627776 * Math.random());
+        window[c] = this.evalCall(b), a = a.replace("=BusuanziCallback", "=" + c), scriptTag = document.createElement(
+                "SCRIPT"), scriptTag.type = "text/javascript", scriptTag.defer = !0, scriptTag.src = a,
+            document.getElementsByTagName("HEAD")[0].appendChild(scriptTag)
+    },
+    evalCall: function (a) {
+        return function (b) {
+            ready(function () {
+                try {
+                    a(b), scriptTag.parentElement.removeChild(scriptTag)
+                } catch (c) {
+                    bszTag.hides()
+                }
+            })
+        }
+    }
+}, bszCaller.fetch("//busuanzi.ibruce.info/busuanzi?jsonpCallback=BusuanziCallback", function (a) {
+    bszTag.texts(a), bszTag.shows()
+}), bszTag = {
+    bszs: ["site_pv", "page_pv", "site_uv"],
+    texts: function (a) {
+        this.bszs.map(function (b) {
+            var c = document.getElementById("busuanzi_value_" + b);
+            c &amp;&amp; (c.innerHTML = a[b])
+        })
+    },
+    hides: function () {
+        this.bszs.map(function (a) {
+            var b = document.getElementById("busuanzi_container_" + a);
+            b &amp;&amp; (b.style.display = "")
+        })
+    },
+    shows: function () {
+        this.bszs.map(function (a) {
+            var b = document.getElementById("busuanzi_container_" + a);
+            b &amp;&amp; (b.style.display = "inline")
+        })
+    }
+};
+替换的人请操作其实就是把其中的b.style.display="none"中none去掉。
+不蒜子 (busuanzi) 文章计数出错问题
+出现这个原因，和 Chrome 85 版本 Referrer Policy 更改有关。什么是 Referrer，简单理解，就是请求 Web 服务器时，可以在 HTTP Request 的请求头 (header) 中加上当前页面的 URL，例如我们在浏览某个博客页面，需要加载一些图片，从服务器请求这些图片时，referrer 就是当前的博客页面 URL。从这里也可以看出，referrer 可能会暴露请求来源的某些信息或者隐私，有一定的隐私或安全风险。之前版本的 Chrome 浏览器，如果网站没有指定自己的 Referrer Policy，那么 Chrome 默认 policy 是 no-referrer-when-downgrade，在 Chrome 85 版本中，为了保护用户的隐私，默认的 Referrer Policy 则变成了 strict-origin-when-cross-origin。
+
+no-referrer-when-downgrade: 当两个网站的 http 协议安全等级相当，或者目的网站安全协议等级高于当前网站(HTTP –&gt; HTTP, HTTPS –&gt; HTTPS, HTTP –&gt; HTTPS)， referer 将会包含源网站的域名，路径，查询字符串；如果目的网站安全协议等级低于源网站 (HTTPS –&gt; HTTP)，将不会发送这些信息。
+strict-origin-when-cross-origin： 只有当做同一域名请求时 (源网址和目标网址是同一域名），才发送域名，路径和请求字符串，当两个网站安全协议相当时，发送源网站的域名(没有具体路径信息和查询字符串)，如果目标网站安全协议等级低于源网站，不发送 header 信息。
+
+不蒜子统计博客文章访问量就是通过 referer 来计算的，通过上面的分析，如果 Referrer Policy 是 strict-origin-when-cross-origin，不蒜子接收到的只有博客的域名，没有文章的具体路径，所以具体某个文章的 PV 统计会出现错误。
+修复方法：
+在主题文件夹下/layout/_partial/head.ejs中添加
+&lt;meta name="referrer" content="no-referrer-when-downgrade"&gt;
+如何多个域名映射同一个github pages
+可能由于某种原因，换了一个域名，之前又有一些被搜索引擎收录，但是又不想让原来的链接失效，就需要让两个域名都映射到github pages中。本文介绍几种当前可能的方法。欢迎提出更多有效方法。
+直接映射有什么问题？
+你可能会想，两个域名都映射到github pages不就可以了？然而事实并非如此。首先当前github 的CNAME中只支持一个域名。因此CNAME文件中只能有一个域名，而如果在域名映射中将两个域名都映射到username.github.io，那么其中有一个会出现404错误。
+前提
+以下方法的前提是你已经明白如何为自己的github pages添加自定义域名。
+需要注意什么？
+
+需要给各大网站提交新的域名网址，重新被收录
+域名变换前面网站的内容结构不能变，否则重定向也没有意义
+当前单纯的域名没有办法进行备案
+注意修改配置文件里的主域名为新的域名
+由于更换了新的域名，导致原来leancloud统计的访问数据需要重新计算，也就是网站访问量被清零了，leancloud也需要更新域名
+新的com域名可申请免费的SSL证书，保证https可访问，而不会提示不安全
+301重定向会将旧地址的权重转义到新地址上
+百度收录速度较慢
+
+方法一：域名托管平台重定向
+有的域名服务商提供重定向功能，以阿里云为例，在域名映射添加记录的时候，可以选择显性URL或隐性URL。但是自己在尝试这种方法的时候，会提示我URL备案异常。可能是由于这个时候已经用新的域名映射了博客地址，但是新的域名实际上是没有备案的。更无奈的是，目前貌似没有办法单独对域名进行备案。因此本人放弃了该方法。
+如果你的博客也是部署在github上的，那么这种方法就不用尝试了，如果你的博客是部署在自己的服务器上的，那么网上都很多方法，这里就不介绍了。
+方法二：部署两个仓库
+我们注意到，除了github pages，还有coding.net可用。它与github类似。原来的域名映射到这个地址就可以了。而在部署hexo的时候，是可以添加两个仓库地址的：
+deploy:
+- type: git
+  repository: git@github.com:username/username.github.io.git
+  branch: master
+- type: git
+  repository: git@git.coding.net:username/username.git
+  branch: coding-pages
+这两个仓库内容唯一的差别就是域名不一样，即CNAME中的记录值不一样。这样当访问两个不同的域名的时候，是访问不同的两个平台仓库。但是原来域名的权重不会转到新的域名中去。
+方法三：新增项目重定向
+假如你已经有username.github.io项目，新建一个名为blog(名字自定义)的项目，在项目的setting中，开启github pages服务，并且将旧的域名映射到username.github.io。
+实际上，github pages并不是只能有一个，例如，你新创建的仓库访问地址为：username.github.io/blog。
+由于旧的域名映射会导致404错误，那么在我们的新项目中增加一个404.html，在页面中进行跳转即可：
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;meta charset="utf-8"&gt;
+&lt;title&gt;&lt;/title&gt;
+&lt;/head&gt;
+ &lt;script language="javascript"&gt;
+var domain = "换成你自己的新域名";
+var src = window.location.href;
+var prtc = src.substring(0, src.indexOf(':'));
+var target = src.substring(src.indexOf('/', src.indexOf(':') + 3));
+window.location.href = prtc + "://" + domain + target;
+location.href=prtc + "://" + domain + target;
+&lt;/script&gt;
+&lt;body&gt;
+ &lt;h1&gt;&lt;/h1&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+另外，需要利用google的地址更改功能，使得旧网址的权重往新网址转移。
+找到search console中的地址更改工具（设置按钮中找到）。
+除了增加404页面外，还需要增加CNAME文件，里面的内容是你原先的域名。
+Vercel流量超标怎么办？
+
+最近查看了一下Vercel流量使用情况，发现RSS订阅流量太大了，占了30GB流量！
+免费Vercel账户每月只有100G免费流量，怎么办？
+
+有两种解决方法：
+
+使用 DNS 多线路分流，例如DNSPOD 多线路负载均衡
+使用 Vercel 提供的 redirects 或者 rewrites功能，把rss访问重定向到其它部署方式，例如Cloudflare
+
+
+查看方法：dashboard -&gt; usage
+由于个人blog也部署到Cloudflare上面了，https://cfblog.17lai.site，Cloudflare的流量目前看着没限制，如是，可以使用如下重定向方法
+"redirects": [
+		{ "source": "/atom.xml", "destination": "https://cfblog.17lai.site/atom.xml" },
+		{ "source": "/rss.xml", "destination": "https://cfblog.17lai.site/rss.xml" }
+  	]
+更多Vercel部署用法，戳vercel部署
+其它主题
+博主从这些主题学到了很多有用的技巧，大大丰富了个人定制
+
+
+hexo-theme-butterfly
+hexo-theme-next
+hexo-theme-fluid
+Hexo-Theme-MengD
+hexo-theme-itsneko
+
+
+参考&amp;感谢
+
+编写整个系列教程花费时间和精力很长，如有遗漏，可以联系添加！
+
+
+
+easyhexo 文档 easyhexo GIthub
+
+
+基于Hexo的matery主题搭建博客并深度优化-悟尘记
+
+
+hexo 官方文档
+
+
+闪烁之狐
+
+
+hexo-theme-matery
+
+
+Hexo 进阶之各种优化
+
+
+Leancloud+Valine打造Hexo个人博客极简评论系统
+
+
+Hexo进阶之各种优化
+
+
+自动部署篇
+
+
+Hexo搭建(VPS)
+
+
+解决live2d看板娘和busuanzi不蒜子计数冲突
+
+
+多个域名映射同一个github pages
+
+
+hexo博客简单支持PWA
+
+
+Hexo 每天自动提交网站url到搜索引擎
+
+
+Hexo 博客订阅文章通知功能
+
+
+修改 matery 原有主题相册
+
+
+关于给hexo博客增加相册页面（实现瀑布流相册，实现加密相册） hexo-theme-itsneko
+
+
+Matery主题新手常见问题
+
+
+hexo-gitlab-cicd-conf
+
+
+更改hexo的主题为Matery,并进行初步的优化
+
+
+Hexo之渲染绕过
+
+
+使用 gulp 压缩图片
+
+
+python精简font awesome字体
+
+
+Hexo+Github博客搭建完全教程 博客开源
+
+
+Hexo主题使用Valine-Admin管理评论和评论提醒
+
+
+Hexo博客进阶：图片懒加载与代码压缩
+
+
+matery主题个性化定制
+
+
+魔改 NexT 主题添加 butterfly 中的时间轴功能
+
+
+crystalblog三部曲 1 2 3
+
+
+个人博客搭建 博客开源
+
+
+PWA踩坑记-从零到一让你的博客也能离线访问
+
+
+Matery主题添加暗色模式 黑夜模式 开源代码hexo-themes-matery-pro
+
+
+为网站添加用户友好的深色模式支持 hexo-theme-fluid Dark
+
+
+加载动画(吃豆豆) 加载动画旋转方块
+
+
+Hexo主题优化——TOC目录展开收缩的小箭头
+
+
+hexo个人博客优化魔改非插件实现为博客增加安全跳转中台页面
+
+
+优化search.xml大小
+
+
+更好的Live2d Widget
+
+
+Waline 评论系统的介绍与基础配置
+
+
+Waline 添加 GitHub 社交登录
+
+
+waline 邮件通知模板样式一览
+
+
+https://www.techgrow.cn/posts/ae18fb85.html
+
+
+随机视频背景切换 视频背景 hexo-theme-fluid
+
+
+使用视频作为网页背景的技术探讨 英文：Create Fullscreen HTML5 Page Background Video
+
+
+写作技巧篇
+
+
+折腾：在 Hexo 的 page 中嵌入 iframe
+
+
+Hexo博客 | 插件推荐
+
+
+美化修改文章分类样式
+
+
+Hexo魔改记录 各种特效添加
+
+
+零成本搭建现代博客之加载速度优化篇
+
+
+使用 CardLink 库生产卡片式链接
+
+
+使用Service Worker优选请求资源
+
+
+Hexo 每天自动提交网站url到搜索引擎
+
+
+使用 VS Code 的任务（Tasks）便捷操作 Hexo
+
+
+ 为网站添加用户友好的深色模式支持
+
+
+实现代码框全屏显示
+
+
+谷歌网站收录移动设备易用性有问题  移动设备适合性测试
+
+
+hexo-butterfly-tag-plugins-plus 大量外挂标签
+
+
+实用GithubAction和NPM搭建自动转换webp图床
+
+
+Umami UV / PV 统计显示
+
+https://umami.is/docs/websites-api
+https://umami.is/docs/authentication
+https://umami.is/docs/website-stats
+
+
+
+
+性能
+
+
+图片 lazyload 的学问和在 Hexo 上的最佳实践
+“web资源加载优先级”原来能这么精准控制 
+使 Disqus 不再拖累性能和页面加载
+hexo个人网站优化探索
+lazy-load-iframes
+Hexo架构与优化–Hexo，分区解析，CDN，图像压缩等 hexo-theme-Claudia
+HTTP/3：过去，现在，还有未来
 
 
 本教程还有其它五大部分，更多内容请见Hexo系列教程
@@ -41626,1192 +41686,6 @@ Gitlab CI/CD doxygen
       </tags>
   </entry>
   <entry>
-    <title>常用Linux Bash命令教程</title>
-    <url>/posts/e691e603/</url>
-    <content><![CDATA[
-常用linux命令介绍。入门Linux必学的命令行，熟练掌握后，效率远超Windows GUI操作。重要的是，可以方便的做自动化处理！
-更多命令在线查询 linux-command.17lai.site
-
-
-
-Bash 基础
-说明
-记录在Linux中经常会用到的命令，持续更新。更多命令详解可参考：
-
-Linux Tools Quick Tutorial
-Linux 命令大全
-Bash 脚本教程
-SSH 教程
-
-Shell选择与切换
-在现代的 Linux 上，sh 已经被 bash 代替，/bin/sh往往是指向/bin/bash的符号链接。早期macos系统默认使用bash解释器，在macos10.15系统中官方推荐使用zsh解释器。bash和zsh均是shell的一种，由于bash或zsh本质上都是解释器，他们所共同服务的是shell语言，因此在命令语法上基本相同，zsh能基本完美兼容bash的命令，并且使用起来更加优雅。
-$ echo $SHELL               # 查看当前默认shell
-$ cat /etc/shells          # 查看系统安装了哪些shell
-
-$ chsh -s /bin/bash        # 切换bash,读取的配置文件：~/.bash_profile
-$ chsh -s /bin/zsh        # 切换,读取的配置文件：~/.zshrc
-当从bash切换为zsh时，如果不想重新配置一遍.zshrc文件，可以在.zshrc文件中加上source ~/.bash_profile，从而直接从.bash_profile文件读取配置。
-如果选择zsh，会获得如下好用的功能：
-$ cd .....                         # 输入n+1个点，可以往上跳转n层
-$ kill process_name        # 自动补全进程ID
-$ d                                        # 列出最近访问过的目录，然后选择目录前面的数字进行快速跳转
-$ r                                        # 重复执行上一条命令
-$ commond + tab                # 常用命令参数补全提醒
-扩展阅读：程序员内功系列–iTerm与Zsh篇
-特殊命令符号
-
-
-
-符号
-格式
-作用
-
-
-
-
-;
-命令1;命令2
-多个命令顺序执行，命令之间无任何逻辑关系
-
-
-&amp;&amp;
-命令1&amp;&amp;命令2
-逻辑与：当命令1正确执行后，命令2才会正确执行，否则命令2不会执行
-
-
-||
-命令1||命令2
-逻辑或：当命令1不正确执行后，命令2才会正确执行，否则命令2不会执行
-
-
-|
-命令1命令2
-管道符：命令1的正确输出作为命令2的操作对象
-
-
-&amp;
-命令 &amp;
-后台执行：把命令放在后台执行
-
-
-&gt;
-命令1 &gt; file
-输出重定向：将命令1的结果输出到文件中，该文件原有内容会被删除
-
-
-&gt;&gt;
-命令1 &gt;&gt; file
-输出重定向：将命令1的结果附加到文件中，原文件内容不会被删除
-
-
-&lt;
-命令1 &lt; file
-输入重定向：将file作为命令1的输入
-
-
-
-一般情况下，每个 Unix/Linux 命令运行时都会打开三个文件：
-
-标准输入文件(stdin)：stdin的文件描述符为0，Unix程序默认从stdin读取数据。
-标准输出文件(stdout)：stdout 的文件描述符为1，Unix程序默认向stdout输出数据。
-标准错误文件(stderr)：stderr的文件描述符为2，Unix程序会向stderr流中写入错误信息。
-
-如果希望执行某个命令，但又不希望在屏幕上显示输出结果，那么可以将输出重定向到 /dev/null,以下是常用重定向命令示例：
-
-将 stderr 重定向到 file：command 2&gt;file
-将 stderr 追加到 file 文件末尾：command 2&gt;&gt;file。
-将 stdout 和 stderr 合并后重定向到 file：$ command &gt; file 2&gt;&amp;1
-对 stdin 和 stdout 都重定向：command &lt; file1 &gt; file2
-屏蔽 stdout 和 stderr：command &gt; /dev/null 2&gt;&amp;1
-
-
-**注意：**0 是标准输入（STDIN），1 是标准输出（STDOUT），2 是标准错误输出（STDERR）。这里的 2 和 &gt; 之间不可以有空格，2&gt; 是一体的时候才表示错误输出。
-
-Bash中的特殊符号
-
-
-
-通配符
-作用
-
-
-
-
-?
-匹配一个任意字符
-
-
-*
-匹配0个或多个任意字符，也就是可以匹配任何内容
-
-
-[]
-匹配括号中任意一个字符
-
-
-[-]
-匹配括号中任意一个字符，“-”代表范围
-
-
-[^]
-逻辑非，表示匹配不是括号内的一个字符
-
-
-‘’
-单引号，在单引号中所有的特殊符号，如“$”和“`”（反引号）都无特殊含义
-
-
-“”
-双引号，在双引号中特殊符号都无特殊含义， 但“$”、“`”（反引号）和“\”是例外，拥有“调用变量值”,“引用命令”和“转义符”的特殊含义
-
-
-“
-反引号：反引号括起来的内容是系统命令，在Bash中先会执行它和()
-
-
-$()
-和反引号作用相同，用来引用系统命令
-
-
-#
-在shell脚本中,#开头的行代表注释
-
-
-$
-用于调用变量的值，如需要调用变量name的值时，需要用的 $name 方式得到
-
-
-\
-转义符，跟在\之后的特殊字符将失去特殊含义，变为普通字符
-
-
-
-基础命令
-查看系统基础信息
-$ ssh-copy-id -i ~/.ssh/id_rsa.pub root@192.168.0.22        # 免密登录
-$ cat /etc/redhat-release                                   # 查看CentOS版本
-$ lshw                                                      # 查看硬件详细信息
-$ cat /proc/cpuinfo| grep "cpu cores"| uniq  　             # 查看cpu核心数
-$ cat /proc/cpuinfo| grep "physical id"|uniq| wc -l         # 查看物理cpu个数
-$ cat /proc/cpuinfo | grep "processor[[:space:]]:"| wc -l   # 查看逻辑cpu的个数
-
-$ free -h 　                #查看内存大小
-添加用户
-# 添加用户 lxl80
-$ useradd lxl80 &amp;&amp; echo "Lixl.cn" | passwd --stdin lxl80 
-$ vi  /etc/sudoers
-## Allow root to run any commands anywhere
-root    ALL=(ALL)       ALL
-# 添加以下内容
-weixin  ALL=(ALL) NOPASSWD: ALL
-
-$ vim /etc/ssh/sshd_config    # 禁止root用户远程登录
-PermitRootLogin   no          # 生效要重启sshd进程。
-$ systemctl restart sshd
-基础设置
-$ yum install -y wget               # 安装wget
-# 修改yum源
-$ cd /etc/yum.repos.d 
-$ mv CentOS-Base.repo CentOS-Base.repo.bak
-$ wget -O ./CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-7.repo
-$ yum clean all
-$ yum makecache
-
-$ yum update                        # 升级系统及相关软件
-# 安装必备软件
-$ yum install net-tools -y          # 安装常用网络工具
-$ yum install bash-completion -y    # 命令自动补全    
-$ echo -e 'set completion-ignore-case on' &gt;&gt; ~/.inputrc &amp;&amp; bind -f  ~/.inputrc     # 命令补全忽略大小写
-
-$ yum install ntp                   # 与NTP服务器进行的同步
-$ systemctl start ntpd
-$ systemctl enable ntpd
-$ ntpdate -u  cn.ntp.org.cn         # 同步时间
-$ date                              # 检查时间
-
-$ yum -y install crontab            # 安装crontab
-$ crontab -e                        # 创建crontab任务
-# 每天2点同步一次，先通过 which ntpdate 查找命令所在路径
-$ * 2 * * * /sbin/ntpdate cn.ntp.org.cn &gt; /dev/null 2&gt;&amp;1   
-$ service crond reload              # 重启crontab
-磁盘管理
-# 以易读的方式查看磁盘占用情况
-$ df -Th
-$ lsblk 　　               # 查看分区和磁盘,列出所有可用块设备的信息
-$ fdisk -l                # 分区工具查看分区信息，查看所有被系统识别的磁盘
-$ fdisk /dev/sdb  　　     # 分区操作,n,p, , ,w
-
-# 格式化sdb1分区，挂载到/home/weixin，并开机启动自动挂载
-$ mkfs -t ext4 /dev/sdb1 &amp;&amp; mkdir /weixin &amp;&amp; mount /dev/sdb1 /weixin &amp;&amp; echo /dev/sdb1 /weixin ext4 defaults 0 0 &gt;&gt; /etc/fstab
-$ chmod 700 /weixin &amp;&amp; chown weixin:weixin /weixin        # 更改目录权限及归属
-$ resize2fs /dev/sdb      # 扩展ext*磁盘分区文件系统的大小
-$ xfs_growfs /dev/sdb     # 扩展xfs磁盘分区文件系统的大小
-
-$ du -sh *                # 以易读的方式查看当前目录空间占用总计
-$ du -h --max-depth=1     # 查看哪个文件夹或文件占用磁盘最多
-$ du -ch *.tar.gz         # 查看当前文件夹下所有后缀是 tar.gz 的文件的磁盘使用量总和 -c
-查看网络情况
-$ semanage port -l|grep ssh                      # 查看 SELinux 开放给 ssh 使用的端口
-$ semanage port -a -t ssh_port_t -p tcp 12022    # 为 ssh 添加允许使用的端口12022
-$ vi /etc/ssh/sshd_config                               # 查看/修改 ssh 使用的端口
-$ vi /etc/hosts.allow                            # 如果ssh无法链接
-sshd: ALL            ##允许所有ip主机均能连接本机
-
-# 查看当前网络连接情况
-$ netstat -ant|awk '/^tcp/ {++S[$NF]} END {for(a in S) print (a,S[a])}'  
-$ netstat -anlp | grep 1230                  # 查看端口监听
-
-$ systemctl status firewalld                 # 查看防火墙状态
-$ systemctl stop firewalld.service           # 停止防火墙
-$ systemctl disable firewalld.service        # 禁止防火墙开机启动
-$ firewall-cmd --zone=public --permanent --add-port=端口号/tcp    # 新增开放端口
-$ firewall-cmd --zone=public --permanent --remove-port=端口号/tcp # 移除开放端口
-$ firewall-cmd --zone=public --list-ports    # 查看开放端口
-$ firewall-cmd --reload                                   # 刷新防火墙
-
-$ nc -lv 19301                          # 监听本机19301端口
-$ nc 192.168.0.18 19301                 # 连接特定端口
-$ telnet 192.168.0.18 19301                     # 尝试连接19302端口，ctrl+],q退出
-上传下载文件
-# 通过 sftp 上传下载文件
-$ sftp  -i ~/Downloads/newszxl.pem root@106.15.89.34     # 连接服务器
-$ get /data/chainmaker/log/*  .                    # 把log下所有日志下载到本地当前目录
-$ put crypto-config.zip /data/app/chainmaker/      # 把节点证书上传版到服务器
-
-# 通过 scp 远程传输文件
-$ scp -rp /data/ root@192.168.1.3:/data/
-$ scp -rp root@192.168.1.3:/data/ /data/
-
-# 通过 rsync 传输/同步文件,排除/data/dir1/目录下的所有文件，不排除dir1目录
-$ sudo yum install -y rsync
-$ rsync -av --exclude={'.*','dir1/*'} /data/ root@192.168.1.3:/data/
-清除history
-$ history -c                      # 清除所有历史记录
-$ vim ~/.bash_history                       # 按需修改
-$ history -r                      # 重置文件里的内容到内存中，缓存修改
-窗口管理
-tmux 是一个终端复用器，可以激活多个终端或窗口，每一个终端都可以访问、运行和控制各自的程序。tmux类似于screen，可以关闭窗口将程序放在后台运行，需要的时候再重新连接。常用快捷键如下：
-
-Ctrl+b %：划分左右两个窗格。
-Ctrl+b "：划分上下两个窗格。
-Ctrl+b &lt;方向键&gt;：光标切换到其他窗格。
-Ctrl+b x：关闭当前窗格。
-Ctrl+b z：当前窗格全屏显示，再使用一次会变回原来大小。
-Ctrl+b Ctrl+&lt;方向键&gt;：按箭头方向调整窗格大小。
-
-后台执行
-$ command &amp;     # 命令末尾添加＆符号在后台运行
-$ command &gt; /dev/null 2&gt;&amp;1 &amp;   # 将stdout重定向到/dev/null，将stderr重定向到stdout
-ctrl + z        # 将一个正在前台执行的命令放到后台，并且处于暂停状态。
-$ bg            # 将一个在后台暂停的命令继续执行。用bg %jobnumber 恢复运行
-$ fg            # 将后台任务切换到前台执行
-$ jobs -l       # 显示当前shell会话中所有已停止和后台进程的状态
-性能测试
-磁盘测试
-# 使用dd磁盘IO简易性能测试
-$ dd if=/dev/zero of=iotestr bs=1024k count=8k conv=fsync   # 测试写性能
-$ dd if=/dev/sda of=/dev/null bs=8k count=1024k  # 测试读性能
-
-# 使用fio进行磁盘专业性能测试
-$ yum install fio -y
-# 测试随机写IOPS：
-$ fio -direct=1 -iodepth=64 -rw=randwrite -ioengine=libaio -bs=4k -size=8G -numjobs=1 -runtime=60 -group_reporting -filename=iotest -name=Rand_Write_IOPS_Test
-# 测试随机读IOPS：
-$ fio -direct=1 -iodepth=64 -rw=randread -ioengine=libaio -bs=4k -size=8G -numjobs=1 -runtime=60 -group_reporting -filename=iotest -name=Rand_Read_IOPS_Test
-# 测试写吞吐量：
-$ fio -direct=1 -iodepth=32 -rw=write -ioengine=libaio -bs=1024k -size=8G -numjobs=1 -runtime=60 -group_reporting -filename=iotest -name=Write_BandWidth_Test
-# 测试读吞吐量：
-$ fio -direct=1 -iodepth=32 -rw=read -ioengine=libaio -bs=1024k -size=8G -numjobs=1 -runtime=60 -group_reporting -filename=iotest -name=Read_BandWidth_Test
-延伸阅读：磁盘性能压测—FIO
-网络测试
-# 网络测试（需要在需要测试的服务器上分别安装iperf）
-$ wget https://iperf.fr/download/source/iperf-3.1.3-source.tar.gz
-$ tar zxvf iperf-3.1.3-source.tar.gz
-$ cd iperf-3.1.3
-$ ./configure
-$ make 
-$ make install
-# 服务器端测试命令，后台运行
-$ iperf3 -s -D -i 10 -p 19302 --logfile /data/iperf.log
-# 客户端测试命令，运行60秒,加参数R代表ServerToClient模式
-$ iperf3 -c 192.168.0.18 -t 60 -f M -P 1 -p 19302 --get-server-output
-$ iperf3 -c 192.168.0.18 -t 60 -f M -P 1 -R -p 19302 --get-server-output
-延伸阅读：使用 iPerf 进行网络带宽测试，使用 MTR 诊断网络问题
-系统监
-dstat
-dstat 是一个可以取代vmstat，iostat，netstat和ifstat这些命令的多功能产品。使用dstat命令可以查看当前cpu，磁盘，网络，内存页和系统的一些当前状态指标。
-$ yum install -y dstat
-$ dstat 5     # 5秒统计一次
-1、 –total-cpu-usage—- CPU使用率
-usr：用户空间的程序所占百分比；
-sys：系统空间程序所占百分比；
-idel：空闲百分比；
-wai：等待磁盘I/O所消耗的百分比；
-hiq：硬中断次数；
-siq：软中断次数；
-
-2、-dsk/total-磁盘统计
-read：读总数
-writ：写总数
-
-3、-net/total- 网络统计
-recv：网络收包总数
-send：网络发包总数
-
-4、—paging– 内存分页统计
-in： pagein（换入）
-out：page out（换出）
-注：系统的分页活动。分页指的是一种内存管理技术用于查找系统场景，一个较大的分页表明系统正在使用大量的交换空间，通常情况下当系统已经开始用交换空间的时候，就说明你的内存已经不够用了，或者说内存非常分散，理想情况下page in（换入）和page out（换出）的值是0 0。
-
-5、–system–系统信息
-int：中断次数
-csw：上下文切换
-注：中断（int）和上下文切换（csw）。这项统计仅在有比较基线时才有意义。这一栏中较高的统计值通常表示大量的进程造成拥塞，需要对CPU进行关注。你的服务器一般情况下都会运行运行一些程序，所以这项总是显示一些数值。
-vmstat
-vmstat是Virtual Meomory Statistics（虚拟内存统计）的缩写，可实时动态监视操作系统的虚拟内存、进程、CPU活动。
-$ vmstat -S m -t 3     # 3秒刷新一次，以M为单位
-
-r 表示运行队列,当这个值超过了CPU数目，就会出现CPU瓶颈了。
-b 正在等待资源的阻塞内核线程数，大于3表示io性能不好
-bi: 每秒读取的块数
-bo: 每秒写入的块数
-us: 用户进程执行时间(user time)
-sy: 系统进程执行时间(system time)
-id: 空闲时间(包括IO等待时间)
-wa: IO等待所占用的CPU时间的百分比，高过30%时IO压力高。
-
-top
-top命令是Linux下常用的性能分析工具，能够实时显示系统中各个进程的资源占用状况。提供了实时的对系统处理器的状态监视。它将显示系统中CPU最“敏感”的任务列表。该命令可以按CPU使用、内存使用和执行时间对任务进行排序；而且该命令的很多特性都可以通过交互式命令或者在个人定制文件中进行设定。
-$ top -s # 在安全模式运行top
-
-Cpu(s) %id：空闲CPU时间百分比
-Cpu(s) %wa：等待I/O的CPU时间百分比
-VIRT：进程占用的虚拟内存，详情可参考: 观察进程的内存占用情况
-RES：进程占用的物理内存
-SHR：进程使用的共享内存
-i 只显示正在运行的进程
-e 切换内存单位，切换顺序为： k,m,g,t,p
-k 杀掉某进程
-o: COMMAND=chain 过滤进程，只显示启动命令带chain的进程
-
-sysstat
-一个非常方便的工具，它带有众多的系统资源监控工具，用于监控系统的性能和使用情况。我们在日常使用的工具中有相当一部分是来自sysstat工具包的。同时，它还提供了一种使用cron表达式来制定性能和活动数据的收集计划。以下是包含在sysstat包中的工具：
-
-iostat: 输出CPU的统计信息和所有I/O设备的输入输出（I/O）统计信息。
-mpstat: 关于CPU的详细信息（单独输出或者分组输出）。
-pidstat: 关于运行中的进程/任务、CPU、内存等的统计信息。
-sar: 保存并输出不同系统资源（CPU、内存、IO、网络、内核等）的详细信息。
-sadc: 系统活动数据收集器，用于收集sar工具的后端数据。
-sa1: 系统收集并存储sadc数据文件的二进制数据，与sadc工具配合使用
-sa2: 配合sar工具使用，产生每日的摘要报告。
-sadf: 用于以不同的数据格式（CVS或者XML）来格式化sar工具的输出。
-Sysstat: sysstat工具的man帮助页面。
-nfsiostat: NFS（Network File System）的I/O统计信息。
-cifsiostat: CIFS(Common Internet File System)的统计信息。
-
-$ yum install sysstat -y                         # 安装
-$ iostat 2 -mxt                                  # 监测IO，2秒刷新一次，以M为单位
-$ pidstat -u 1 10                                # 监测进程，1秒刷新一次
-
-%user：CPU处在用户模式下的时间百分比。
-%nice：CPU处在带NICE值的用户模式下的时间百分比。
-%system：CPU处在系统模式下的时间百分比。
-%iowait：CPU等待输入输出完成时间的百分比。
-%steal：管理程序维护另一个虚拟处理器时，虚拟CPU的无意识等待时间百分比。
-%idle：CPU空闲时间百分比。
-r/s: 每秒完成的读 I/O 设备次数。即 rio/s
-w/s: 每秒完成的写 I/O 设备次数。即 wio/s
-rMB/s: 每秒读M字节数。
-wMB/s: 每秒写K字节数。
-rrqm/s: 每秒进行 merge 的读操作数目。即 rmerge/s
-wrqm/s: 每秒进行 merge 的写操作数目。即 wmerge/s
-avgrq-sz：平均每次设备I/O操作的数据大小，类似于平均每人所买的东西多少
-avgqu-sz：平均I/O队列长度，类似于单位时间里平均排队人数，如果值比较大，表示有大量io在等待。
-await: 平均每次设备I/O操作的等待时间 (毫秒)，类似于平均每人的等待时间，如果远大于svctm说明IO响应太慢。
-r_await：平均每次读请求的等待时间(毫秒)。这包括请求在队列中和执行它们所花费的时间。
-w_await：平均每次写请求的等待时间(毫秒)。这包括请求在队列中和执行它们所花费的时间。
-aqu-sz：发送到设备的请求的平均队列长度。
-
-
-如果 %util 接近 100%，说明产生的I/O请求太多，I/O系统已经满负荷，该磁盘可能存在瓶颈，同时可以结合vmstat 查看b参数和wa参数。
-另外 await 的参数也要和 svctm 参考比较。差的过高就一定有 IO 的问题。svctm 一般要小于 await (因为同时等待的请求的等待时间被重复计算了)，svctm 的大小一般和磁盘性能有关，CPU/内存的负荷也会对其有影响，请求过多也会间接导致 svctm 的增加。await 的大小一般取决于服务时间(svctm) 以及 I/O 队列的长度和 I/O 请求的发出模式。如果 svctm 比较接近 await，说明 I/O 几乎没有等待时间；如果 await 远大于 svctm，说明 I/O 队列太长，应用得到的响应时间变慢。
-队列长度(avgqu-sz)也可作为衡量系统 I/O 负荷的指标，但由于 avgqu-sz 是按照单位时间的平均值，所以不能反映瞬间的 I/O 洪水。
-更详细的信息，可参考：深入理解iostat
-
-iotop
-iotop 是一个类似 top 的工具，用来显示实时的磁盘活动。监控 Linux 内核输出的 I/O 使用信息，并且显示一个系统中进程或线程的当前 I/O 使用情况。它显示每个进程/线程读写 I/O 带宽。它同样显示当等待换入和等待 I/O 的线程/进程花费的时间的百分比。
-$ yum install iotop
-$ iotop -o   # 仅显示正在占用I/O的进程或者线程，可以随时按o切换
-$ iotop -oP   # 按进程显示
-
-
-IO：它显示每个进程的 I/O 利用率，包含磁盘和交换。
-
-
-SWAPIN： 它只显示每个进程的交换使用率。
-更多信息可参考：https://cleanli.github.io/cleanhome/posts/2021-01-05/Iotop_usage.html
-
-
-性能调优
-分析进程调用
-pstack用来跟踪进程栈，如果发现一个服务一直处于work状态（如假死），可以多执行几次pstack，若发现代码栈总是停在同一个位置，很可能就是出问题的地方：
-$ yum install gdb -y
-$ pstack pid  # 获取进程栈
-strace能够动态的跟踪进程执行时的系统调用和所接收的信号：
-$ yum install -y strace
-$ strace -ttTv o ~/straceout.txt -p 21120 # 查看进程20020的系统调用情况
-内核参数优化
-对于服务器来说，file-max和ulimit都需要设置，否则会出现文件描述符耗尽的问题。否则会碰到”Too many open files”或者Socket/File: Can’t open so many files等错误。
-# 查看用户进程级的能够打开文件句柄的数量，Centos7默认是1024。
-$ ulimit -a 
-# 查看系统级别的能够打开的文件句柄的数量，Centos7默认是794168
-$ cat /proc/sys/fs/file-max
-# 永久生效的修改方法，文件末尾加入配置内容：
-$ vim /etc/sysctl.conf
-fs.file-max = 2000000
-# 然后执行命令，使修改配置立即生效：
-$ sysctl -p
-# 查看当前shell的当前用户的打开的最大限制
-$ ulimit -n
-# 修改一个用户的所有shell能打开的最大数，文件末尾加入配置内容：
-$ vim /etc/security/limits.conf
-* soft nofile 65535
-* hard nofile 65535
-# 修改以后，需要重新登录才能生效。如果需要设置当前用户session立即生效，还需要执行：
-$ ulimit -n 65535 
-文本处理
-Vim常用命令
-$ vi +/pattern filename   # 打幵文件，并将光标置于第一个与pattern匹配的位置
-# u 撤销刚才执行的命令
-# I 在光标所在行的行首插入随后输入的文本，相当于光标移动到行首执行 i 命令
-# o/O 在光标所在行的下面/上面插入新的一行。光标停在空行首，等待输入文本
-# /abc ?abc 从光标所在位置向前/向后查找字符串 abc，如搜索空格加转义符\
-# ?abc    从光标所在为主向后查找字符串 abc
-# /^abc /abc$    查找以 abc 为行首/为行尾的行
-# n  N    向同一/相反方向重复上次的查找指令
-# gg 跳转到第一行，G 跳转到最后一行
-# :s/a1/a2/g    将当前光标所在行中的所有 a1 用 a2 替换
-# :n1,n2 s/a1/a2/g    将文件中 n1 到 n2 行中所有 a1 都用 a2 替换
-# :%s/a1/a2/g    将文件中所有的 a1 都用 a2 替换
-# x    删除光标所在位置的字符(放入剪贴板)
-# ndd    删除当前行（包括此行）后 n 行文本(放入剪贴板)
-# dG    删除光标所在行一直到文件末尾的所有内容(放入剪贴板)
-# D    删除光标位置到行尾的内容(放入剪贴板)
-# p(P)    将剪贴板中的内容粘贴到光标后(光标后)
-# 列编辑模式
-$ ctrl + v   # 进入列编辑模式,然后通过光标移动选择要编辑的块
-$ shift + i/a        # 在光标前/后插入，ESC自动补全
-$ shift + c   # 修改内容，ESC自动补全
-文本处理
-$ grep "put block" logs -R -n               # 在多级目录中对文本递归搜索
-$ grep -e "ERROR" -e "put block" file # 匹配多个模式
-$ cat LOG.* | tr a-z A-Z | grep "FROM " | grep "WHERE" &gt; b    # 将日志中的所有带where条件的sql查找查找出来
-$ sort unsort.txt | uniq                             # 消除重复行
-$ sort unsort.txt | uniq -c                        # 统计各行在文件中出现的次数
-$ sort unsort.txt | uniq -d                        # 找出重复行
-$ echo 12345 | tr '0-9' '9876543210'     # 加解密转换，替换对应字符
-$ cat text| tr '\t' ' '                           # 制表符转空格
-$ cat file | tr -d '0-9'                          # 删除所有数字
-$ cat file | tr -c '0-9'                             # 获取文件中所有数字
-$ cat file | tr -d -c '0-9 \n'                 # 删除非数字数据
-$ cut -f2,4 filename                                    # 截取文件的第2列和第4列
-$ paste file1 file2    -d ","                        # 将两个文本按列拼接到一起,用,分割
-$ wc -l file                                                     # 统计行数
-$ wc -w file                                                     # 统计单词数
-$ wc -c file                                                     # 统计字符数
-$ sed 's/text/replace_text/' file       # 替换每一行的第一处匹配的text
-$ sed 's/text/replace_text/g' file        # 全局替换，输出替换后的内容
-$ sed -i 's/text/replace_text/g' file    # 全局替换，直接替换源文件
-$ sed '/^$/d' file                                        # 移除空白行
-awk 数据流处理
-awk是文本处理程序，它依次处理文件的每一行，并读取里面的每一个字段。适用于处理日志、CSV 这种每行格式相同的文本文件。参考：Awk入门 及 30个Awk文本处理示例
-脚本结构: awk 'BEGIN{statements} statements2 END{statements}'，工作方式：
-
-执行begin中语句块；
-从文件或stdin中读入一行，然后执行statements2，重复这个过程，直到文件全部被读取完毕；
-执行end语句块；
-
-# 使用不带参数的print时，会打印当前行，输入内容如下：
-$ echo -e "line1\nline2" | awk 'BEGIN{print "start"} {print} END{print "End"}'    
-start
-line1
-line2
-End
-$ awk '{print $0}' demo.txt        # 把demo.txt文件中每一行原样打印出来
-# 用空格分割，输出字段数&gt;30且第四列为特定字符的行中1，4及倒数第二列，第4列转成大写。','代表用空格分割
-$ awk -F ' ' 'NF&gt;3 {if ($4 = "CONSENSUS") print $1,toupper($4),$(NF-1)}' panic.log
-数字证书
-// 查看证书信息
-$ openssl x509 -noout -text -in user/admin1/admin1.tls.crt
-$ openssl x509 -in cert.pem -noout -text
-系统相关
-hostname - 查看主机名
-hostname命令用于查看系统的主机名，或是修改系统的主机名。
-hostname的常用命令如下：
-# 显示系统的当前主机名
-hostname
-
-# 修改你系统的主机名
-hostname blinkfox-system
-
-# 使用 -F 选项，从指定的文件中读取主机名
-hostname -F /root/hostname.txt
-uptime - 查看系统运行时间
-uptime命令用于打印系统的运行时间等信息。使用如下：
-uptime
-w、who - 列出登录的用户
-w命令用于显示登录用户及他们当前运行的进程。输入的内容格式如下：
-w
-
-# 打印如下
-22:42  up 18 days, 1 hr, 2 users, load averages: 1.23 1.79 1.75
-USER     TTY      FROM              LOGIN@  IDLE WHAT
-blinkfox console  -                日19   6days -
-blinkfox s000     -                五23       - w
-who命令有与w命令类似的用途，但它的功能比w命令更强大一些。语法格式如下：
-who [OPTION]... [FILE | ARG1 ARG2]
-who常用命令如下：
-# 显示当前登录的所有用户信息
-who
-
-# 显示系统的启动时间
-who -b
-
-# 显示系统登录进程
-who -l
-
-# 显示与当前标准输入关联的用户信息
-who -m
-
-# 显示系统的运行级别
-who -r
-
-# 显示所有登录用户的用户名和登录用户数
-who -q
-uname - 查看系统信息
-uname命令用于打印内核名称和版本、主机名等系统信息。命令的语法如下所示：
-uname [OPTION]...
-常用使用方式如下：
-# 只打印内核的名称
-uname
-
-# 使用 -n 选项，只打印系统的主机名
-uname -n
-
-# 使用 -r 选项，打印内核版本信息
-uname -r
-
-# 使用 -m 选项，打印系统的硬件名称
-uname -m
-
-# 使用 -p 选项，打印系统的处理器类型信息
-uname -p
-
-# 使用 -i 选项，打印系统的硬件平台信息
-uname -i
-
-# 使用 -a 选项，打印上述所有示例中的信息
-uname -a
-date - 显示和设置系统日期和时间
-date命令用于以多种格式显示日期和时间，或设置系统的日期和时间。date命令的语法如下所示：
-date [OPTION]... [+FORMAT]
-date [-u|--utc|--universal] [MMDDhhmm[[CC]YY][.ss]]
-常用使用命令如下：
-# 以默认格式显示系统的当前日期时间
-date
-
-# 格式化当前日期
-date +"%Y-%m-%d"
-
-# 格式化输出昨天的日期
-date -d "1 day ago" +"%Y-%m-%d"
-
-# 2秒后格式化输出
-date -d "2 second" +"%Y-%m-%d %H:%M.%S"
-
-# 普通格式化转出
-date -d "2009-12-12" +"%Y/%m/%d %H:%M.%S"
-
-# apache格式转换
-date -d "Dec 5, 2009 12:00:37 AM" +"%Y-%m-%d %H:%M.%S"
-
-# 日期加减操作
-date +%Y%m%d #显示前天年月日
-date -d "+1 day" +%Y%m%d #显示前一天的日期
-date -d "-1 day" +%Y%m%d #显示后一天的日期
-date -d "-1 month" +%Y%m%d #显示上一月的日期
-date -d "+1 month" +%Y%m%d #显示下一月的日期
-date -d "-1 year" +%Y%m%d #显示前一年的日期
-date -d "+1 year" +%Y%m%d #显示下一年的日期
-
-# 设定时间
-date -s # 设置当前时间，只有root权限才能设置，其他只能查看
-date -s 20160816 # 设置成20160816，这样会把具体时间设置成空00:00:00
-date -s 01:01:01 # 设置具体时间，不会对日期做更改
-date -s "01:01:01 2012-05-23" # 这样可以设置全部时间
-date -s "01:01:01 20120523" # 这样可以设置全部时间
-date -s "2012-05-23 01:01:01" # 这样可以设置全部时间
-date -s "20120523 01:01:01" # 这样可以设置全部时间
-id - 显示用户属性
-id命令用于打印输出用户uid、gid、用户名和组名等用户身份信息。id命令的语法如下所示：
-id [OPTION]... [USERNAME]
-常见使用命令如下：
-# 输出当前用户的uid、用户名、gid、组名及用户属于的群组信息
-id
-
-# 使用 -u 选项，输出用户的 uid
-id -u
-
-#-u 选项和 -n 选项结合使用，输出账户的用户名
-id -un
-
-# 使用 -g 选项，输出帐号当前起作用的gid
-id -g
-
-# -g 与 -n 选项结合使用，输出帐号当前起作用的用户组名
-id -gn
-
-# 使用 -G 选项，输出帐号所属的所有群组id
-id -G root
-
-# -G 与 -n 选项结合使用，输出账号所属的所有群组的名称
-id -Gn root
-文件和目录操作
-touch - 创建文件
-touch命令就可用于创建、变更和修改文件的时间戳。它是 Linux 操作系统的标准程序。touch命令又如下选项：
--a: 只改变访问时间
--c: 不创建任何文件
--m: 只改变修改时间
--r: 使用指定文件的时间替代当前时间
--t: 使用 [[CC]YY]MMDDhhmm[.ss] 替代当前时间
-touch 命令的常见用法如下：
-# 创建一个名为 effyl 的新空文件
-touch effyl
-
-# 同时创建名称分别为 effyl myeffyl lueffyl 的三个文件
-touch effyl myeffyl lueffyl
-
-# 使用 -a 选项，可以改变或更新文件的最新访问时间，如果文件 effyl 不存在，则新创建一个
-touch -a effyl
-
-# 使用 -c 选项，可以避免创建一个新文件，并用当前时间更新文件的时间戳
-touch -c effyl
-
-# 使用 -m 选项，可以只改变文件的修改时间，而访问时间不变
-touch -m effyl
-
-# 使用 -c 和 -t 选项，来明确设置文件的时间
-touch -c -t YYMMDDHHMM filename
-
-# 如果想使用文件 myeffyl 的时间戳更新文件 effyl 的时间戳，可以使用 -r 选项
-touch -r myeffyl effyl
-mkdir - 创建目录
-mkdir命令用于创建一个新目录。最基本的mkdir命令的使用方法如下所示：
-# 在当前目录下创建一个给定的目录名
-mkdir &lt;dirname&gt;
-
-# 在 backup 中的相对路径创建一个名为 old 的目录
-mkdir backup/old
-
-# 在 backup 中的绝对路径中创建一个名为 old 的目录
-mkdir /home/blinkfox/backup/old
-
-# 使用 -p 选项，会自动创建所有还不存在的父目录
-mkdir -p backup/old
-
-# 使用 -m 选项，可以设置将要创建目录的权限
-# 如：创建一个任何人都有读写访问权限的目录
-mkdir -p -m 777 backup/old
-cp - 复制文件或目录
-cp命令用于将文件从一个地方复制到另一个地方。原来的文件保持不变，新文件可能保持原名或用一个不同的名字。
-使用 cp 命令复制文件和目录的语法有以下几种：
-# 复制源文件到目标文件
-cp [OPTION] SOURCE DEST
-
-# 复制一个或多个源文件到一个目录
-cp [OPTION] SOURCE... DIRECTORY
-
-# 同上
-cp [OPTION] -t DIRECTORY SOURCE...
-常用使用示例如下：
-# 在当前目录下，创建一个文件 file.txt 的副本，取名为 newfile.txt
-cp file.txt newfile.txt
-
-# 复制当前目录下的 file.txt 文件到 /tmp 目录下
-cp file.txt /tmp
-
-# 复制当前目录下的所有文件到 /tmp 目录下
-cp * /tmp
-
-# 使用 -p 选项，可以使复制一个文件到新文件时，保留源文件的所有者、权限等信息
-cp -p filename /path/to/new/location/myfile
-
-# 使用 -R 或 -r 选项，恶意递归地复制一个目录
-# 即将一个目录及其下的所有文件和子目录都复制到另一个目录
-cp -R * /home/blinkfox/backup
-ln - 链接文件或目录
-ln命令用于创建软链接或硬链接。使用 -s 选项，可以创建一个软链接：
-# 在目录 lib 下创建一个软链接 library.so，链接到 /home/blinkfox/src/library.so
-ln -s /home/blinkfox/src/library.so /home/blinkfox/lib
-
-# 创建目录的软链接
-ln -s /home/blinkfox/src source
-mv - 移动文件或目录
-mv命令用于将文件和目录从一个位置移到另外一个位置。除了移动文件，mv命令还可用于修改文件或目录的名字。
-mv 命令的基本语法如下所示：
-mv SOURCE... DIRECTORY
-常用命令如下：
-# 将当前目录下的文件 source.txt 移到目录 /tmp 下
-mv source.txt /tmp
-
-# 将目录 dir1、dir2 移到目录 dir_dist 下
-mv dir1 dir2 dir_dist
-
-# 将当前目录下的 old.txt 文件更名为 new.txt
-mv old.txt new.txt
-
-# 使用 -i 选项，在重写覆盖目标文件或目录之前给出提示信息
-mv -i old.txt new.txt
-
-# 将当前目录下的所有文件移动到目录 /tmp 下
-mv * /tmp/
-
-# 使用 -i 选项，从 dir1 中移动那些在目标目录中不存在的文件到目标目录
-mv -u dir1/* dir2/
-rm - 删除文件或目录
-rm命令用于删除指定的文件和目录。其语法如下所示：
-rm [OPTIONS]... FILE...
-rm的常用命令如下：
-# 删除当前目录下的文件 file1.txt、file2.txt、file3.txt
-rm file1.txt file2.txt file3.txt
-
-# 删除当前目录下的所有文件
-rm *
-
-# 删除你当前帐号主目录下的 temp 目录中的所有文件
-rm ~/temp/*
-
-# 使用 -i 选项，可以在删除每个文件或目录前提示用户确认
-rm -i *
-
-# 删除当前目录下所有以".doc"结尾的文件
-rm *.doc
-
-# 删除当前目录下所有文件名中包含"movie"字符串的文件
-rm *movie*
-
-# 删除当前目录下所有以"a"开头的文件
-rm a*
-
-# 删除当前目录下整个文件名（包括扩展名）只有 3 个字符的所有文件
-rm ???
-
-# 删除当前目录下文件扩展名有两个字符的所有文件
-rm *.??
-
-# 删除当前目录下文件名中含有字母 a 或 b 或 c 的所有文件
-rm *[abc]*
-
-# 删除当前目录下文件名中包含 0~9 的所有文件
-rm *[0-9]*
-
-# 删除当前目录下文件扩展名是字母 c 或 h 的所有文件
-rm *.[ch]
-
-# 删除 /tmp 目录下的所有文件及其子目录
-rm -rf /tmp/*
-
-
--f 删除前不提示用户确认，并忽略不存在的文件
--r 递归地删除目录及其下的内容
-
-
-ls - 列出文件名和目录
-ls命令是Linux中最常用的命令之一，其作用就是列出文件名和目录。在命令行提示符下，直接输入ls命令，不带任何选项，将列出当前目录下所有文件和目录，但不会显示详细的信息，比如，文件类型、大小、修改日期和时间、权限等。
-以下便是ls命令及其选项的作用说明：
-# 仅列出当前目录下所有文件和目录
-ls
-
-# 每行显示一条记录，每条记录包括文件类型、大小、修改日期和时间、权限等
-ls -l
-
-# 将文件大小显示符合人类阅读习惯的格式
-ls -lh
-
-# 将使用不同的特殊字符归类不同的文件类型
-ls -F
-
-# 以长列表格式列出某个目录的信息
-ls -ld /var/log
-
-# 将递归地列出子目录的内容
-ls -R /etc/sysconfig/
-
-# 以长列表格式按文件或目录的修改时间倒序地列出文件和目录
-ls -ltr
-
-# 以长列表格式按文件大小顺序列出文件和目录
-ls -ls
-
-# 列出包括隐藏文件或目录在内的所有文件和目录，包括“.”（当前目录）和“..”（父目录）
-ls -a
-
-# 列出包括隐藏文件或目录在内的所有文件和目录，不包括“.”（当前目录）和“..”（父目录）
-ls -A
-
-输出的内容类似于-l选项，指示显示uid和gid，替代显示所有者和用户组
-ls -n
-cat - 连接显示文件内容
-cat 命令也是 Linux 系统中最常用的命令之一。cat命令让我们可以看看文件的内容、连接文件、创建一个或多个文件和重定向输出到终端或文件。
-cat命令的语法如下所示：
-cat [OPTION] [FILE]...
-cat常用命令如下：
-# 使用 cat 命令查看文件 /etc/group 的内容
-cat /etc/group
-
-# 显示多个文件的内容
-cat /etc/redhat-release /etc/issue
-
-# -n 选项，可以显示文件内容的行号
-cat -n /etc/fstab
-
-# -b 选项和 -n 选项类似，但只标识非空白行的行号
-cat -b /etc/fstab
-
-# -e 选项，将在每一行的结尾显示“$”字符
-cat -e /etc/fstab
-
-当你只输入 cat 命令，而没有任何参数时，它只是接收标准输入的内容并在标准输出中显示。所以你在输入一行内容并回车后，会在接下来的一行显示相同的内容。你也可以重定向标准输出到一个新文件。
-dd
-
-less、more - 分屏显示文件
-more命令在你使用小的 xterm 窗口时，或是想不使用文本编辑器而只是简单地阅读一个文件时是很有用的。more 命令是一个用于一次翻阅一整屏文件的过滤器。
-# 查看一个文件，自动清空屏幕并显示文件开头部分
-more /etc/inittab
-
-# 指定一次显示num行
-more -num /etc/inittab
-与more命令相比，我个人更喜欢less命令来查看文件。less命令与more命令类似，但less命令向前和向后翻页都支持，而且less命令不需要在查看前加载整个文件，即less命令查看文件更快速。
-less常用命令参数如下：
--b  &lt;缓冲区大小&gt; 设置缓冲区的大小
--e  当文件显示结束后，自动离开
--f  强迫打开特殊文件，例如外围设备代号、目录和二进制文件
--g  只标志最后搜索的关键词
--i  忽略搜索时的大小写
--m  显示类似more命令的百分比
--N  显示每行的行号
--o  &lt;文件名&gt; 将less 输出的内容在指定文件中保存起来
--Q  不使用警告音
--s  显示连续空行为一行
--S  行过长时间将超出部分舍弃
--x  &lt;数字&gt; 将“tab”键显示为规定的数字空格
-/字符串：向下搜索“字符串”的功能
-?字符串：向上搜索“字符串”的功能
-n： 重复前一个搜索（与 / 或 ? 有关）
-N： 反向重复前一个搜索（与 / 或 ? 有关）
-b  向后翻一页
-d  向后翻半页
-h  显示帮助界面
-Q  退出less 命令
-u  向前滚动半页
-y  向前滚动一行
-空格键 滚动一行
-回车键 滚动一页
-[pagedown]： 向下翻动一页
-[pageup]：   向上翻动一页
-head - 显示文件头部
-head命令用于打印指定输入的开头部分内容。默认情况下，打印每个指定输入的前 10 行内容。
-使用-n选项可以指定打印文件的前 N 行：
-# 指定打印文件的前5行
-head -n 5 /etc/inittab
-（或）head -5 /etc/inittab
-
-# 打印文件的前N个字节的数据
-head -c 10 /etc/inittab
-tail - 显示文件尾部
-tail命令和head命令相反，它打印指定输入的结尾部分的内容。默认情况下，它打印指定输入的最后 10 行内容。
-使用-n选项可以指定打印文件的最后 N 行：
-# 指定打印文件的后10行
-tail -n 10 /etc/inittab
-tail -10 /etc/inittab
-
-# 即时打印文件中新写入的行
-tail -f /var/log/messages
-
-# --retry选项表示持续尝试打开某个文件，当你想打开一个稍后才会创建或即使不可用的文件
-tail -f /tmp/debug.log --retry
-file - 查看文件类型
-file命令用于接收一个文件作为参数并执行某些测试，已确定正确的文件类型。
-# 查看文件类型
-file /etc/inittab
-
-# 可以MIME类型的格式显示文件类型的信息
-file -i  /etc/inittab
-
-# 使用-N 选项，输出的队列可以以在文件名之后无空白填充的形式显示
-file -N *
-wc - 查看文件统计信息
-wc命令用于查看文件的行数、单词数和字符数等信息。语法类似如下所示：
-wc filename
-X Y Z /etc/inittab
-其中 X 表示行数，Y 表示单词数，Z 表示字节数，filename 表示文件名。
-# -l选项，可以只统计文件的行数信息
-wc -l /etc/inittab
-
-# -w选项，可以只统计文件的单词数信息
-wc -w /etc/inittab
-
-# -c选项，可以只统计文件的字节数信息
-wc -c /etc/inittab
-
-# -L选项，可以只统计文件中最长的行的长度
-wc -L /etc/inittab
-find - 查找文件或目录
-find命令用于根据你指定的参数搜索和定位文件和目录的列表。find命令可以在多种情况下使用，比如你可以通过权限、用户、用户组、文件类型、日期、大小和其他可能的条件来查找文件。
-find命令常用使用和说明如下：
-# 查找指定目录下的某个文件
-find /etc/ -name inittab
-
-# 在当前目录下查找名称为 inittab 的文件
-find . -name inittab
-
-# 在当前目录下，文件不区分大小写是example的所有文件
-find . -iname example
-
-# 找出当前目录下所有以 sh 结尾的文件
-find . -type f -name "*.sh"
-
-# 找出当前目录下，文件权限是 777 的所有文件
-find . -type f -perm 777
-
-# 找出当前目录下，文件权限不是 777 的所有文件
-find . -type f ! -perm 777
-
-# 找出当前目录下所有只读文件
-find . -type f ! -perm /a+w
-
-# 找出你帐号主目录下的所有可执行文件
-find ~ -type f -perm /a+w
-
-# 找出 /tmp 目录下的.log文件并将其删除：
-find /tmp/ -type f -name "*.log" -exec rm -f {} \;
-
-# 找出当前目录下的所有空文件
-find . -type f -empty
-
-# 找出当前目录下的所有空目录
-find . -type d -empty
-
-# 找出 /tmp 目录下的所有隐藏文件
-find /tmp/ -type f -name ".*"
-
-# 找出 /tmp 目录下，所有者是 root 的文件和目录
-find /tmp/ -user root
-
-# 找出 /tmp 目录下，用户组是 developer 的文件和目录
-find /tmp/ -group root
-
-# 找出你账号的主目录下，3 天前修改的文件
-find ~ -type f -mtime 3
-
-# 找出你账号的主目录下，30 天以前修改的所有文件
-find ~ -type f -mtime +30
-
-# 找出你账号的主目录下，3 天以内修改的所有文件
-find ~ -type f -mtime -3
-
-# 找出你账号的主目录下，30 天以前，60 天以内修改的所有文件
-find ~ -type f -mtime +30 -mtime -60
-
-# 找出 /etc 目录下，一小时以内变更过的文件
-find /etc -type f -cmin -60
-
-# 找出 /etc 目录下，一小时以内访问过的文件
-find /etc -type f -amin -60
-
-# 找出你账号主目录下，大小是50MB的所有文件
-find ~ -type f -size 50MB
-
-# 找出你账号主目录下，大于50MB小于100MB的所有文件
-find ~ -type f -size +50MB -size -100MB
-
-# 找出你账号主目录下，大于100MB的文件并将其删除
-find ~ -type f -size +100MB -exec rm -rf {} \;
-文本处理
-sort - 文本排序
-sort命令用于将文本文件的行排序。默认情况下，sort命令是按照字符串的字母顺序排序。
-sort 的常用命令如下：
-# 将文本内容按字母顺序排序
-sort example.txt
-
-# 使用 -u 选项，移除所有重复行后排序
-sort -u example.txt
-
-# 使用 -n 选项，将令数字按数值的大小排序
-sort -n example.txt
-
-# 使用 -r 选项，以倒序方式排序
-sort -n -r example.txt
-
-# 同时将 file1、file2 的内容排序
-sort file1 file2
-uniq - 文本去重
-uniq命令用于移除或发现文件中重复的条目。
-# 它将移除文件中重复的行并显示单一行
-uniq example.txt
-
-# 可以统计重复行出现的次数
-uniq -c example.txt
-
-# 使用 -d 选项，只显示文件中有重复的行并只显示一次
-uniq -d example.txt
-
-# 使用 -D 选项，显示文件中所有重复的行
-uniq -D example.txt
-
-# 使用 -u 选项，只显示文件中不重复的行
-uniq -u example.txt
-
-# 使用 -w 选项，限制 uniq 命令只比较每行的前 3 个字符是否重复
-uniq -w 3 example.txt
-
-# 使用 -s 选项，避免 uniq 命令比较每行的前 3 个字符，只比较后面的字符是否重复
-uniq -s 3 example.txt
-
-# 使用 -f 选项，避免 uniq 命令比较第一列的内容，只比较后面的字符是否重复
-uniq -f 1 example.txt
-tr - 替换或删除字符
-tr命令主要用于删除文件中控制字符或进行字符转换。使用tr时要转换两个字符串：字符串 1 用于查询，字符串 2 用于处理各种转换。tr刚执行时，字符串 1 中的字符被映射到字符串 2 中的字符，然后转换操作开始。
-tr命令的语法如下所示：
-tr [OPTION]... SET1 [SET2]
-常用命令示例：
-# 若要将大括号转换为小括号
-tr '{}' '()' &lt; textfile &gt; newfile
-
-# 若要将大括号转换成方括号
-tr '{}' '\[]' &lt; textfile &gt; newfile
-
-# 若要将小写字符转换成大写，请输入：
-tr 'a-z' 'A-Z' &lt; textfile &gt; newfile
-
-# 若要创建一个文件中的单词列表
-tr -cs '[:lower:][:upper:]' '[\n*]' &lt; textfile &gt; newfile
-
-# 若要从某个文件中删除所有空字符
-tr -d '\0' &lt; textfile &gt; newfile
-
-# 若要用单独的换行替换每一序列的一个或多个换行，请输入：
-tr -s '\n' &lt; textfile &gt; newfile
-
-# 要以单个“#”字符替换 &lt;space&gt; 字符类中的每个字符序列
-tr -s '[:space:]' '[#*]'
-grep - 查找字符串
-grep命令用于搜索文本或指定的文件中与指定的字符串或模式相匹配的行。默认情况下，grep命令只显示匹配的行。
-grep命令的语法如下所示：
-grep [OPTION]... PATTERN [FILE]...
-grep [OPTION]... [-e PATTERN | -f FILE] [FILE]...
-# `grep`命令查找文件/etc/passwd 中帐号 blinkfox 的信息
-grep blinkfox /etc/passwd
-
-# 使用 -i 选项，强制 grep 命令忽略搜索关键字的大小写
-grep -i blinkfox /etc/passwd
-
-# 使用 -r 选项，可以递归搜索指定目录下的所有文件
-grep -r blinkfox /etc/
-
-# 使用 -w 选项，只匹配包含指定单词的行
-grep -w blinkfox /etc/
-
-# 使用 -c 选项，报告文件或文本中模式被匹配的次数
-grep -c blinkfox /etc/passwd
-
-# 使用 -n 选项，显示每一个匹配的行的行号
-grep -n blinkfox /etc/passwd
-
-# 使用 -v 选项，可以输出除匹配指定模式的行以外的其他所有行
-grep -v blinkfox /etc/passwd
-
-# 使用 --color 选项，在输出中将匹配的字符串以彩色的形式标出
-grep --color blinkfox /etc/passwd
-diff - 比较两个文件
-diff命令用于比较两个文件，并找出它们之间的不同。diff命令的语法如下所示：
-diff [OPTION]... from-file to-file
-常用使用方式如下：
-# 比较两个文件
-diff nsswitch.conf nsswitch.conf.org
-
-# 使用 -w 选项，比较时忽略空格
-diff -w nsswitch.conf nsswitch.conf.org
-
-# 使用 -y 选项，以并排的格式输出两个文件的比较结果
-diff -y nsswitch.conf nsswitch.conf.org
-
-使用 -c 选项，以上下对比的格式输出两个文件的比较结果
-diff -c nsswitch.conf nsswitch.conf.org
-Linux 和UNIX 的新手培训教程
-免费的新手Linux教程
-
-Introduction to Linux – 这是来自IBM的教程，用于给那些想学习Linux的人。
-Linux Desktop 101 – 这是一个 14周 课时的教程，主要用于学校里教学生如何在一个PC上运行一个Linux操作系统。
-Hands-On Introduction to Linux – Machtelt Garrels 的一个格式相当不错的教程。
-Real Time Linux Introduction – 一系列的介绍Linux的教程，来自National Institute of Standards and Technology.
-Getting Started with Linux – 来自Linux Online 的20课时的用于新手的教程。
-Linux Fundamentals Course – 一个相当不错的基础教程，大约使用18个小时，让你知道Linux操作系统的最基础的知识。
-The 35-Command Tutorial – 来自BeginLinux.org 的一个最简单的教程，教你使用 35 个Linux用户必需了解的命令。
-Getting Started with Linux Desktop – Novell的自学教程。
-
-免费的UNIX 新手教程
-
-UNIX Tutorial for Beginners – 来自The University of Surrey的新手指南，告诉你Unix系统最基本的特性。
-A Basic UNIX Tutorial – 这是来自 Idaho State University 教程，主要用于Unix计算的基础，其中有一些很不错的示例和练习。
-UNIX Training Manual – 这是一个 88页 的培训手册，主要用一些示例来教一个Unix文件系统的相关的命令。严格说来，这并不是一个教程，但也很有用。
-UNIX Command Tutorial – 来自University of Mississippi 的教学生如果使用Unix命令和操作系统交互的课程。
-Learn UNIX Tutorial – Soft Lookup 的一个全面的 UNIX 教程，完全可以让你从一个新手变成一个高手。
-UNIX – The Bare Minimum – 来自 UC Davis 教授，提供了一个简单的UNIX介绍。
-Learning About UNIX – 来自University of Toronto，提供了一些UNIX 和Linux 课程笔记。这个课程关注于UNIX 和Linux 工具。
-What is UNIX? – 这个教程提供了一个简单的Unix介绍，以及一个初学者的论坛。
-
-Linux 和 UNIX 专家培训教程
-免费的Linux高手教程
-
-Linux Online’s Course for Advanced Users – 这是一个来自Linux Online的高级教程，提供了一系Linux最流行的How-To文档。主要是给那些想了解更多关于Linux安装，配置和维护的人。
-Linux System Administration Course – 通过28个课程为Linux系统管理员提供了一个全面的教程。
-Kernel Tutorials – 这是在HowToForge上的一个内核级的教程，这个教程相当不错，如果你要了解Linux的内核，你不能错过这个教程。
-Advanced Routing and Traffic Control Tutorial – 一个关于Linux网络路由，过滤和传输的教程。
-Linux Enterprise Server Courses – Novell Training Services 提供给高级用户的培训教程。
-Linux Network Administration Course – 来自Shuttleworth Foundation的 Linux 网络管理员的基础课程。
-Advanced Linux Programming – 这是一本电子书可以免费下载。这本书主要教程序员们怎么在Linux下做软件和编程序。
-IBM’s Technical Library – IBM’s Technical Library 提供的一组给高级Linux用户的教程。
-
-免费的UNIX高手教程
-
-UNIX for Advanced Users – Indiana University的 UNIX Workstation Support Group 提供的一个相当不错的面对UNIX 高级用户的教程。
-Kevin Heard’s UNIX Tutorial – Kevin Heard (UC Berkeley) 的一个相当相当不错的三部教程，从Unix的基础开始，以高级话题结束。
-Advanced UNIX Commands – 虽然这是一个命令例表，但他是一个相当不错的索引的速查手册。
-Parallel Programming Tutorial – 这个UNIX 教程面对的是Unix下的并行编程 Parallel Programming。
-Advanced Bash Scripting Guide – 来自于Linux Document Project 的教程，一个shell编程由浅入深的教程。
-UNIX Shell Scripting Advanced – VTC 有一组视频的 UNIX 的教程。而这一个是指导高级用户如何进行脚本编程。
-Advanced C Shell Programming – 这是UC Davis 的教程，主要教使用如何使用C shell 和tcsh 进行脚本编程。
-
-参考&amp;感谢
-
-常用Bash命令整理之查看文件和目录
-常用Bash命令整理之其他常用命令
-常用Bash命令整理之文本处理
-常用Bash命令整理之查看文件和目录
-Linux常用命令
-Useful Tutorials on Linux and UNIX for Beginners and Experts Alike
-
-]]></content>
-      <categories>
-        <category>linux</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>bash</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>中西医的优缺点</title>
     <url>/posts/a2a43504/</url>
     <content><![CDATA[
@@ -47043,6 +45917,1192 @@ Github build-your-own-x 系列
       </tags>
   </entry>
   <entry>
+    <title>常用Linux Bash命令教程</title>
+    <url>/posts/e691e603/</url>
+    <content><![CDATA[
+常用linux命令介绍。入门Linux必学的命令行，熟练掌握后，效率远超Windows GUI操作。重要的是，可以方便的做自动化处理！
+更多命令在线查询 linux-command.17lai.site
+
+
+
+Bash 基础
+说明
+记录在Linux中经常会用到的命令，持续更新。更多命令详解可参考：
+
+Linux Tools Quick Tutorial
+Linux 命令大全
+Bash 脚本教程
+SSH 教程
+
+Shell选择与切换
+在现代的 Linux 上，sh 已经被 bash 代替，/bin/sh往往是指向/bin/bash的符号链接。早期macos系统默认使用bash解释器，在macos10.15系统中官方推荐使用zsh解释器。bash和zsh均是shell的一种，由于bash或zsh本质上都是解释器，他们所共同服务的是shell语言，因此在命令语法上基本相同，zsh能基本完美兼容bash的命令，并且使用起来更加优雅。
+$ echo $SHELL               # 查看当前默认shell
+$ cat /etc/shells          # 查看系统安装了哪些shell
+
+$ chsh -s /bin/bash        # 切换bash,读取的配置文件：~/.bash_profile
+$ chsh -s /bin/zsh        # 切换,读取的配置文件：~/.zshrc
+当从bash切换为zsh时，如果不想重新配置一遍.zshrc文件，可以在.zshrc文件中加上source ~/.bash_profile，从而直接从.bash_profile文件读取配置。
+如果选择zsh，会获得如下好用的功能：
+$ cd .....                         # 输入n+1个点，可以往上跳转n层
+$ kill process_name        # 自动补全进程ID
+$ d                                        # 列出最近访问过的目录，然后选择目录前面的数字进行快速跳转
+$ r                                        # 重复执行上一条命令
+$ commond + tab                # 常用命令参数补全提醒
+扩展阅读：程序员内功系列–iTerm与Zsh篇
+特殊命令符号
+
+
+
+符号
+格式
+作用
+
+
+
+
+;
+命令1;命令2
+多个命令顺序执行，命令之间无任何逻辑关系
+
+
+&amp;&amp;
+命令1&amp;&amp;命令2
+逻辑与：当命令1正确执行后，命令2才会正确执行，否则命令2不会执行
+
+
+||
+命令1||命令2
+逻辑或：当命令1不正确执行后，命令2才会正确执行，否则命令2不会执行
+
+
+|
+命令1命令2
+管道符：命令1的正确输出作为命令2的操作对象
+
+
+&amp;
+命令 &amp;
+后台执行：把命令放在后台执行
+
+
+&gt;
+命令1 &gt; file
+输出重定向：将命令1的结果输出到文件中，该文件原有内容会被删除
+
+
+&gt;&gt;
+命令1 &gt;&gt; file
+输出重定向：将命令1的结果附加到文件中，原文件内容不会被删除
+
+
+&lt;
+命令1 &lt; file
+输入重定向：将file作为命令1的输入
+
+
+
+一般情况下，每个 Unix/Linux 命令运行时都会打开三个文件：
+
+标准输入文件(stdin)：stdin的文件描述符为0，Unix程序默认从stdin读取数据。
+标准输出文件(stdout)：stdout 的文件描述符为1，Unix程序默认向stdout输出数据。
+标准错误文件(stderr)：stderr的文件描述符为2，Unix程序会向stderr流中写入错误信息。
+
+如果希望执行某个命令，但又不希望在屏幕上显示输出结果，那么可以将输出重定向到 /dev/null,以下是常用重定向命令示例：
+
+将 stderr 重定向到 file：command 2&gt;file
+将 stderr 追加到 file 文件末尾：command 2&gt;&gt;file。
+将 stdout 和 stderr 合并后重定向到 file：$ command &gt; file 2&gt;&amp;1
+对 stdin 和 stdout 都重定向：command &lt; file1 &gt; file2
+屏蔽 stdout 和 stderr：command &gt; /dev/null 2&gt;&amp;1
+
+
+**注意：**0 是标准输入（STDIN），1 是标准输出（STDOUT），2 是标准错误输出（STDERR）。这里的 2 和 &gt; 之间不可以有空格，2&gt; 是一体的时候才表示错误输出。
+
+Bash中的特殊符号
+
+
+
+通配符
+作用
+
+
+
+
+?
+匹配一个任意字符
+
+
+*
+匹配0个或多个任意字符，也就是可以匹配任何内容
+
+
+[]
+匹配括号中任意一个字符
+
+
+[-]
+匹配括号中任意一个字符，“-”代表范围
+
+
+[^]
+逻辑非，表示匹配不是括号内的一个字符
+
+
+‘’
+单引号，在单引号中所有的特殊符号，如“$”和“`”（反引号）都无特殊含义
+
+
+“”
+双引号，在双引号中特殊符号都无特殊含义， 但“$”、“`”（反引号）和“\”是例外，拥有“调用变量值”,“引用命令”和“转义符”的特殊含义
+
+
+“
+反引号：反引号括起来的内容是系统命令，在Bash中先会执行它和()
+
+
+$()
+和反引号作用相同，用来引用系统命令
+
+
+#
+在shell脚本中,#开头的行代表注释
+
+
+$
+用于调用变量的值，如需要调用变量name的值时，需要用的 $name 方式得到
+
+
+\
+转义符，跟在\之后的特殊字符将失去特殊含义，变为普通字符
+
+
+
+基础命令
+查看系统基础信息
+$ ssh-copy-id -i ~/.ssh/id_rsa.pub root@192.168.0.22        # 免密登录
+$ cat /etc/redhat-release                                   # 查看CentOS版本
+$ lshw                                                      # 查看硬件详细信息
+$ cat /proc/cpuinfo| grep "cpu cores"| uniq  　             # 查看cpu核心数
+$ cat /proc/cpuinfo| grep "physical id"|uniq| wc -l         # 查看物理cpu个数
+$ cat /proc/cpuinfo | grep "processor[[:space:]]:"| wc -l   # 查看逻辑cpu的个数
+
+$ free -h 　                #查看内存大小
+添加用户
+# 添加用户 lxl80
+$ useradd lxl80 &amp;&amp; echo "Lixl.cn" | passwd --stdin lxl80 
+$ vi  /etc/sudoers
+## Allow root to run any commands anywhere
+root    ALL=(ALL)       ALL
+# 添加以下内容
+weixin  ALL=(ALL) NOPASSWD: ALL
+
+$ vim /etc/ssh/sshd_config    # 禁止root用户远程登录
+PermitRootLogin   no          # 生效要重启sshd进程。
+$ systemctl restart sshd
+基础设置
+$ yum install -y wget               # 安装wget
+# 修改yum源
+$ cd /etc/yum.repos.d 
+$ mv CentOS-Base.repo CentOS-Base.repo.bak
+$ wget -O ./CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-7.repo
+$ yum clean all
+$ yum makecache
+
+$ yum update                        # 升级系统及相关软件
+# 安装必备软件
+$ yum install net-tools -y          # 安装常用网络工具
+$ yum install bash-completion -y    # 命令自动补全    
+$ echo -e 'set completion-ignore-case on' &gt;&gt; ~/.inputrc &amp;&amp; bind -f  ~/.inputrc     # 命令补全忽略大小写
+
+$ yum install ntp                   # 与NTP服务器进行的同步
+$ systemctl start ntpd
+$ systemctl enable ntpd
+$ ntpdate -u  cn.ntp.org.cn         # 同步时间
+$ date                              # 检查时间
+
+$ yum -y install crontab            # 安装crontab
+$ crontab -e                        # 创建crontab任务
+# 每天2点同步一次，先通过 which ntpdate 查找命令所在路径
+$ * 2 * * * /sbin/ntpdate cn.ntp.org.cn &gt; /dev/null 2&gt;&amp;1   
+$ service crond reload              # 重启crontab
+磁盘管理
+# 以易读的方式查看磁盘占用情况
+$ df -Th
+$ lsblk 　　               # 查看分区和磁盘,列出所有可用块设备的信息
+$ fdisk -l                # 分区工具查看分区信息，查看所有被系统识别的磁盘
+$ fdisk /dev/sdb  　　     # 分区操作,n,p, , ,w
+
+# 格式化sdb1分区，挂载到/home/weixin，并开机启动自动挂载
+$ mkfs -t ext4 /dev/sdb1 &amp;&amp; mkdir /weixin &amp;&amp; mount /dev/sdb1 /weixin &amp;&amp; echo /dev/sdb1 /weixin ext4 defaults 0 0 &gt;&gt; /etc/fstab
+$ chmod 700 /weixin &amp;&amp; chown weixin:weixin /weixin        # 更改目录权限及归属
+$ resize2fs /dev/sdb      # 扩展ext*磁盘分区文件系统的大小
+$ xfs_growfs /dev/sdb     # 扩展xfs磁盘分区文件系统的大小
+
+$ du -sh *                # 以易读的方式查看当前目录空间占用总计
+$ du -h --max-depth=1     # 查看哪个文件夹或文件占用磁盘最多
+$ du -ch *.tar.gz         # 查看当前文件夹下所有后缀是 tar.gz 的文件的磁盘使用量总和 -c
+查看网络情况
+$ semanage port -l|grep ssh                      # 查看 SELinux 开放给 ssh 使用的端口
+$ semanage port -a -t ssh_port_t -p tcp 12022    # 为 ssh 添加允许使用的端口12022
+$ vi /etc/ssh/sshd_config                               # 查看/修改 ssh 使用的端口
+$ vi /etc/hosts.allow                            # 如果ssh无法链接
+sshd: ALL            ##允许所有ip主机均能连接本机
+
+# 查看当前网络连接情况
+$ netstat -ant|awk '/^tcp/ {++S[$NF]} END {for(a in S) print (a,S[a])}'  
+$ netstat -anlp | grep 1230                  # 查看端口监听
+
+$ systemctl status firewalld                 # 查看防火墙状态
+$ systemctl stop firewalld.service           # 停止防火墙
+$ systemctl disable firewalld.service        # 禁止防火墙开机启动
+$ firewall-cmd --zone=public --permanent --add-port=端口号/tcp    # 新增开放端口
+$ firewall-cmd --zone=public --permanent --remove-port=端口号/tcp # 移除开放端口
+$ firewall-cmd --zone=public --list-ports    # 查看开放端口
+$ firewall-cmd --reload                                   # 刷新防火墙
+
+$ nc -lv 19301                          # 监听本机19301端口
+$ nc 192.168.0.18 19301                 # 连接特定端口
+$ telnet 192.168.0.18 19301                     # 尝试连接19302端口，ctrl+],q退出
+上传下载文件
+# 通过 sftp 上传下载文件
+$ sftp  -i ~/Downloads/newszxl.pem root@106.15.89.34     # 连接服务器
+$ get /data/chainmaker/log/*  .                    # 把log下所有日志下载到本地当前目录
+$ put crypto-config.zip /data/app/chainmaker/      # 把节点证书上传版到服务器
+
+# 通过 scp 远程传输文件
+$ scp -rp /data/ root@192.168.1.3:/data/
+$ scp -rp root@192.168.1.3:/data/ /data/
+
+# 通过 rsync 传输/同步文件,排除/data/dir1/目录下的所有文件，不排除dir1目录
+$ sudo yum install -y rsync
+$ rsync -av --exclude={'.*','dir1/*'} /data/ root@192.168.1.3:/data/
+清除history
+$ history -c                      # 清除所有历史记录
+$ vim ~/.bash_history                       # 按需修改
+$ history -r                      # 重置文件里的内容到内存中，缓存修改
+窗口管理
+tmux 是一个终端复用器，可以激活多个终端或窗口，每一个终端都可以访问、运行和控制各自的程序。tmux类似于screen，可以关闭窗口将程序放在后台运行，需要的时候再重新连接。常用快捷键如下：
+
+Ctrl+b %：划分左右两个窗格。
+Ctrl+b "：划分上下两个窗格。
+Ctrl+b &lt;方向键&gt;：光标切换到其他窗格。
+Ctrl+b x：关闭当前窗格。
+Ctrl+b z：当前窗格全屏显示，再使用一次会变回原来大小。
+Ctrl+b Ctrl+&lt;方向键&gt;：按箭头方向调整窗格大小。
+
+后台执行
+$ command &amp;     # 命令末尾添加＆符号在后台运行
+$ command &gt; /dev/null 2&gt;&amp;1 &amp;   # 将stdout重定向到/dev/null，将stderr重定向到stdout
+ctrl + z        # 将一个正在前台执行的命令放到后台，并且处于暂停状态。
+$ bg            # 将一个在后台暂停的命令继续执行。用bg %jobnumber 恢复运行
+$ fg            # 将后台任务切换到前台执行
+$ jobs -l       # 显示当前shell会话中所有已停止和后台进程的状态
+性能测试
+磁盘测试
+# 使用dd磁盘IO简易性能测试
+$ dd if=/dev/zero of=iotestr bs=1024k count=8k conv=fsync   # 测试写性能
+$ dd if=/dev/sda of=/dev/null bs=8k count=1024k  # 测试读性能
+
+# 使用fio进行磁盘专业性能测试
+$ yum install fio -y
+# 测试随机写IOPS：
+$ fio -direct=1 -iodepth=64 -rw=randwrite -ioengine=libaio -bs=4k -size=8G -numjobs=1 -runtime=60 -group_reporting -filename=iotest -name=Rand_Write_IOPS_Test
+# 测试随机读IOPS：
+$ fio -direct=1 -iodepth=64 -rw=randread -ioengine=libaio -bs=4k -size=8G -numjobs=1 -runtime=60 -group_reporting -filename=iotest -name=Rand_Read_IOPS_Test
+# 测试写吞吐量：
+$ fio -direct=1 -iodepth=32 -rw=write -ioengine=libaio -bs=1024k -size=8G -numjobs=1 -runtime=60 -group_reporting -filename=iotest -name=Write_BandWidth_Test
+# 测试读吞吐量：
+$ fio -direct=1 -iodepth=32 -rw=read -ioengine=libaio -bs=1024k -size=8G -numjobs=1 -runtime=60 -group_reporting -filename=iotest -name=Read_BandWidth_Test
+延伸阅读：磁盘性能压测—FIO
+网络测试
+# 网络测试（需要在需要测试的服务器上分别安装iperf）
+$ wget https://iperf.fr/download/source/iperf-3.1.3-source.tar.gz
+$ tar zxvf iperf-3.1.3-source.tar.gz
+$ cd iperf-3.1.3
+$ ./configure
+$ make 
+$ make install
+# 服务器端测试命令，后台运行
+$ iperf3 -s -D -i 10 -p 19302 --logfile /data/iperf.log
+# 客户端测试命令，运行60秒,加参数R代表ServerToClient模式
+$ iperf3 -c 192.168.0.18 -t 60 -f M -P 1 -p 19302 --get-server-output
+$ iperf3 -c 192.168.0.18 -t 60 -f M -P 1 -R -p 19302 --get-server-output
+延伸阅读：使用 iPerf 进行网络带宽测试，使用 MTR 诊断网络问题
+系统监
+dstat
+dstat 是一个可以取代vmstat，iostat，netstat和ifstat这些命令的多功能产品。使用dstat命令可以查看当前cpu，磁盘，网络，内存页和系统的一些当前状态指标。
+$ yum install -y dstat
+$ dstat 5     # 5秒统计一次
+1、 –total-cpu-usage—- CPU使用率
+usr：用户空间的程序所占百分比；
+sys：系统空间程序所占百分比；
+idel：空闲百分比；
+wai：等待磁盘I/O所消耗的百分比；
+hiq：硬中断次数；
+siq：软中断次数；
+
+2、-dsk/total-磁盘统计
+read：读总数
+writ：写总数
+
+3、-net/total- 网络统计
+recv：网络收包总数
+send：网络发包总数
+
+4、—paging– 内存分页统计
+in： pagein（换入）
+out：page out（换出）
+注：系统的分页活动。分页指的是一种内存管理技术用于查找系统场景，一个较大的分页表明系统正在使用大量的交换空间，通常情况下当系统已经开始用交换空间的时候，就说明你的内存已经不够用了，或者说内存非常分散，理想情况下page in（换入）和page out（换出）的值是0 0。
+
+5、–system–系统信息
+int：中断次数
+csw：上下文切换
+注：中断（int）和上下文切换（csw）。这项统计仅在有比较基线时才有意义。这一栏中较高的统计值通常表示大量的进程造成拥塞，需要对CPU进行关注。你的服务器一般情况下都会运行运行一些程序，所以这项总是显示一些数值。
+vmstat
+vmstat是Virtual Meomory Statistics（虚拟内存统计）的缩写，可实时动态监视操作系统的虚拟内存、进程、CPU活动。
+$ vmstat -S m -t 3     # 3秒刷新一次，以M为单位
+
+r 表示运行队列,当这个值超过了CPU数目，就会出现CPU瓶颈了。
+b 正在等待资源的阻塞内核线程数，大于3表示io性能不好
+bi: 每秒读取的块数
+bo: 每秒写入的块数
+us: 用户进程执行时间(user time)
+sy: 系统进程执行时间(system time)
+id: 空闲时间(包括IO等待时间)
+wa: IO等待所占用的CPU时间的百分比，高过30%时IO压力高。
+
+top
+top命令是Linux下常用的性能分析工具，能够实时显示系统中各个进程的资源占用状况。提供了实时的对系统处理器的状态监视。它将显示系统中CPU最“敏感”的任务列表。该命令可以按CPU使用、内存使用和执行时间对任务进行排序；而且该命令的很多特性都可以通过交互式命令或者在个人定制文件中进行设定。
+$ top -s # 在安全模式运行top
+
+Cpu(s) %id：空闲CPU时间百分比
+Cpu(s) %wa：等待I/O的CPU时间百分比
+VIRT：进程占用的虚拟内存，详情可参考: 观察进程的内存占用情况
+RES：进程占用的物理内存
+SHR：进程使用的共享内存
+i 只显示正在运行的进程
+e 切换内存单位，切换顺序为： k,m,g,t,p
+k 杀掉某进程
+o: COMMAND=chain 过滤进程，只显示启动命令带chain的进程
+
+sysstat
+一个非常方便的工具，它带有众多的系统资源监控工具，用于监控系统的性能和使用情况。我们在日常使用的工具中有相当一部分是来自sysstat工具包的。同时，它还提供了一种使用cron表达式来制定性能和活动数据的收集计划。以下是包含在sysstat包中的工具：
+
+iostat: 输出CPU的统计信息和所有I/O设备的输入输出（I/O）统计信息。
+mpstat: 关于CPU的详细信息（单独输出或者分组输出）。
+pidstat: 关于运行中的进程/任务、CPU、内存等的统计信息。
+sar: 保存并输出不同系统资源（CPU、内存、IO、网络、内核等）的详细信息。
+sadc: 系统活动数据收集器，用于收集sar工具的后端数据。
+sa1: 系统收集并存储sadc数据文件的二进制数据，与sadc工具配合使用
+sa2: 配合sar工具使用，产生每日的摘要报告。
+sadf: 用于以不同的数据格式（CVS或者XML）来格式化sar工具的输出。
+Sysstat: sysstat工具的man帮助页面。
+nfsiostat: NFS（Network File System）的I/O统计信息。
+cifsiostat: CIFS(Common Internet File System)的统计信息。
+
+$ yum install sysstat -y                         # 安装
+$ iostat 2 -mxt                                  # 监测IO，2秒刷新一次，以M为单位
+$ pidstat -u 1 10                                # 监测进程，1秒刷新一次
+
+%user：CPU处在用户模式下的时间百分比。
+%nice：CPU处在带NICE值的用户模式下的时间百分比。
+%system：CPU处在系统模式下的时间百分比。
+%iowait：CPU等待输入输出完成时间的百分比。
+%steal：管理程序维护另一个虚拟处理器时，虚拟CPU的无意识等待时间百分比。
+%idle：CPU空闲时间百分比。
+r/s: 每秒完成的读 I/O 设备次数。即 rio/s
+w/s: 每秒完成的写 I/O 设备次数。即 wio/s
+rMB/s: 每秒读M字节数。
+wMB/s: 每秒写K字节数。
+rrqm/s: 每秒进行 merge 的读操作数目。即 rmerge/s
+wrqm/s: 每秒进行 merge 的写操作数目。即 wmerge/s
+avgrq-sz：平均每次设备I/O操作的数据大小，类似于平均每人所买的东西多少
+avgqu-sz：平均I/O队列长度，类似于单位时间里平均排队人数，如果值比较大，表示有大量io在等待。
+await: 平均每次设备I/O操作的等待时间 (毫秒)，类似于平均每人的等待时间，如果远大于svctm说明IO响应太慢。
+r_await：平均每次读请求的等待时间(毫秒)。这包括请求在队列中和执行它们所花费的时间。
+w_await：平均每次写请求的等待时间(毫秒)。这包括请求在队列中和执行它们所花费的时间。
+aqu-sz：发送到设备的请求的平均队列长度。
+
+
+如果 %util 接近 100%，说明产生的I/O请求太多，I/O系统已经满负荷，该磁盘可能存在瓶颈，同时可以结合vmstat 查看b参数和wa参数。
+另外 await 的参数也要和 svctm 参考比较。差的过高就一定有 IO 的问题。svctm 一般要小于 await (因为同时等待的请求的等待时间被重复计算了)，svctm 的大小一般和磁盘性能有关，CPU/内存的负荷也会对其有影响，请求过多也会间接导致 svctm 的增加。await 的大小一般取决于服务时间(svctm) 以及 I/O 队列的长度和 I/O 请求的发出模式。如果 svctm 比较接近 await，说明 I/O 几乎没有等待时间；如果 await 远大于 svctm，说明 I/O 队列太长，应用得到的响应时间变慢。
+队列长度(avgqu-sz)也可作为衡量系统 I/O 负荷的指标，但由于 avgqu-sz 是按照单位时间的平均值，所以不能反映瞬间的 I/O 洪水。
+更详细的信息，可参考：深入理解iostat
+
+iotop
+iotop 是一个类似 top 的工具，用来显示实时的磁盘活动。监控 Linux 内核输出的 I/O 使用信息，并且显示一个系统中进程或线程的当前 I/O 使用情况。它显示每个进程/线程读写 I/O 带宽。它同样显示当等待换入和等待 I/O 的线程/进程花费的时间的百分比。
+$ yum install iotop
+$ iotop -o   # 仅显示正在占用I/O的进程或者线程，可以随时按o切换
+$ iotop -oP   # 按进程显示
+
+
+IO：它显示每个进程的 I/O 利用率，包含磁盘和交换。
+
+
+SWAPIN： 它只显示每个进程的交换使用率。
+更多信息可参考：https://cleanli.github.io/cleanhome/posts/2021-01-05/Iotop_usage.html
+
+
+性能调优
+分析进程调用
+pstack用来跟踪进程栈，如果发现一个服务一直处于work状态（如假死），可以多执行几次pstack，若发现代码栈总是停在同一个位置，很可能就是出问题的地方：
+$ yum install gdb -y
+$ pstack pid  # 获取进程栈
+strace能够动态的跟踪进程执行时的系统调用和所接收的信号：
+$ yum install -y strace
+$ strace -ttTv o ~/straceout.txt -p 21120 # 查看进程20020的系统调用情况
+内核参数优化
+对于服务器来说，file-max和ulimit都需要设置，否则会出现文件描述符耗尽的问题。否则会碰到”Too many open files”或者Socket/File: Can’t open so many files等错误。
+# 查看用户进程级的能够打开文件句柄的数量，Centos7默认是1024。
+$ ulimit -a 
+# 查看系统级别的能够打开的文件句柄的数量，Centos7默认是794168
+$ cat /proc/sys/fs/file-max
+# 永久生效的修改方法，文件末尾加入配置内容：
+$ vim /etc/sysctl.conf
+fs.file-max = 2000000
+# 然后执行命令，使修改配置立即生效：
+$ sysctl -p
+# 查看当前shell的当前用户的打开的最大限制
+$ ulimit -n
+# 修改一个用户的所有shell能打开的最大数，文件末尾加入配置内容：
+$ vim /etc/security/limits.conf
+* soft nofile 65535
+* hard nofile 65535
+# 修改以后，需要重新登录才能生效。如果需要设置当前用户session立即生效，还需要执行：
+$ ulimit -n 65535 
+文本处理
+Vim常用命令
+$ vi +/pattern filename   # 打幵文件，并将光标置于第一个与pattern匹配的位置
+# u 撤销刚才执行的命令
+# I 在光标所在行的行首插入随后输入的文本，相当于光标移动到行首执行 i 命令
+# o/O 在光标所在行的下面/上面插入新的一行。光标停在空行首，等待输入文本
+# /abc ?abc 从光标所在位置向前/向后查找字符串 abc，如搜索空格加转义符\
+# ?abc    从光标所在为主向后查找字符串 abc
+# /^abc /abc$    查找以 abc 为行首/为行尾的行
+# n  N    向同一/相反方向重复上次的查找指令
+# gg 跳转到第一行，G 跳转到最后一行
+# :s/a1/a2/g    将当前光标所在行中的所有 a1 用 a2 替换
+# :n1,n2 s/a1/a2/g    将文件中 n1 到 n2 行中所有 a1 都用 a2 替换
+# :%s/a1/a2/g    将文件中所有的 a1 都用 a2 替换
+# x    删除光标所在位置的字符(放入剪贴板)
+# ndd    删除当前行（包括此行）后 n 行文本(放入剪贴板)
+# dG    删除光标所在行一直到文件末尾的所有内容(放入剪贴板)
+# D    删除光标位置到行尾的内容(放入剪贴板)
+# p(P)    将剪贴板中的内容粘贴到光标后(光标后)
+# 列编辑模式
+$ ctrl + v   # 进入列编辑模式,然后通过光标移动选择要编辑的块
+$ shift + i/a        # 在光标前/后插入，ESC自动补全
+$ shift + c   # 修改内容，ESC自动补全
+文本处理
+$ grep "put block" logs -R -n               # 在多级目录中对文本递归搜索
+$ grep -e "ERROR" -e "put block" file # 匹配多个模式
+$ cat LOG.* | tr a-z A-Z | grep "FROM " | grep "WHERE" &gt; b    # 将日志中的所有带where条件的sql查找查找出来
+$ sort unsort.txt | uniq                             # 消除重复行
+$ sort unsort.txt | uniq -c                        # 统计各行在文件中出现的次数
+$ sort unsort.txt | uniq -d                        # 找出重复行
+$ echo 12345 | tr '0-9' '9876543210'     # 加解密转换，替换对应字符
+$ cat text| tr '\t' ' '                           # 制表符转空格
+$ cat file | tr -d '0-9'                          # 删除所有数字
+$ cat file | tr -c '0-9'                             # 获取文件中所有数字
+$ cat file | tr -d -c '0-9 \n'                 # 删除非数字数据
+$ cut -f2,4 filename                                    # 截取文件的第2列和第4列
+$ paste file1 file2    -d ","                        # 将两个文本按列拼接到一起,用,分割
+$ wc -l file                                                     # 统计行数
+$ wc -w file                                                     # 统计单词数
+$ wc -c file                                                     # 统计字符数
+$ sed 's/text/replace_text/' file       # 替换每一行的第一处匹配的text
+$ sed 's/text/replace_text/g' file        # 全局替换，输出替换后的内容
+$ sed -i 's/text/replace_text/g' file    # 全局替换，直接替换源文件
+$ sed '/^$/d' file                                        # 移除空白行
+awk 数据流处理
+awk是文本处理程序，它依次处理文件的每一行，并读取里面的每一个字段。适用于处理日志、CSV 这种每行格式相同的文本文件。参考：Awk入门 及 30个Awk文本处理示例
+脚本结构: awk 'BEGIN{statements} statements2 END{statements}'，工作方式：
+
+执行begin中语句块；
+从文件或stdin中读入一行，然后执行statements2，重复这个过程，直到文件全部被读取完毕；
+执行end语句块；
+
+# 使用不带参数的print时，会打印当前行，输入内容如下：
+$ echo -e "line1\nline2" | awk 'BEGIN{print "start"} {print} END{print "End"}'    
+start
+line1
+line2
+End
+$ awk '{print $0}' demo.txt        # 把demo.txt文件中每一行原样打印出来
+# 用空格分割，输出字段数&gt;30且第四列为特定字符的行中1，4及倒数第二列，第4列转成大写。','代表用空格分割
+$ awk -F ' ' 'NF&gt;3 {if ($4 = "CONSENSUS") print $1,toupper($4),$(NF-1)}' panic.log
+数字证书
+// 查看证书信息
+$ openssl x509 -noout -text -in user/admin1/admin1.tls.crt
+$ openssl x509 -in cert.pem -noout -text
+系统相关
+hostname - 查看主机名
+hostname命令用于查看系统的主机名，或是修改系统的主机名。
+hostname的常用命令如下：
+# 显示系统的当前主机名
+hostname
+
+# 修改你系统的主机名
+hostname blinkfox-system
+
+# 使用 -F 选项，从指定的文件中读取主机名
+hostname -F /root/hostname.txt
+uptime - 查看系统运行时间
+uptime命令用于打印系统的运行时间等信息。使用如下：
+uptime
+w、who - 列出登录的用户
+w命令用于显示登录用户及他们当前运行的进程。输入的内容格式如下：
+w
+
+# 打印如下
+22:42  up 18 days, 1 hr, 2 users, load averages: 1.23 1.79 1.75
+USER     TTY      FROM              LOGIN@  IDLE WHAT
+blinkfox console  -                日19   6days -
+blinkfox s000     -                五23       - w
+who命令有与w命令类似的用途，但它的功能比w命令更强大一些。语法格式如下：
+who [OPTION]... [FILE | ARG1 ARG2]
+who常用命令如下：
+# 显示当前登录的所有用户信息
+who
+
+# 显示系统的启动时间
+who -b
+
+# 显示系统登录进程
+who -l
+
+# 显示与当前标准输入关联的用户信息
+who -m
+
+# 显示系统的运行级别
+who -r
+
+# 显示所有登录用户的用户名和登录用户数
+who -q
+uname - 查看系统信息
+uname命令用于打印内核名称和版本、主机名等系统信息。命令的语法如下所示：
+uname [OPTION]...
+常用使用方式如下：
+# 只打印内核的名称
+uname
+
+# 使用 -n 选项，只打印系统的主机名
+uname -n
+
+# 使用 -r 选项，打印内核版本信息
+uname -r
+
+# 使用 -m 选项，打印系统的硬件名称
+uname -m
+
+# 使用 -p 选项，打印系统的处理器类型信息
+uname -p
+
+# 使用 -i 选项，打印系统的硬件平台信息
+uname -i
+
+# 使用 -a 选项，打印上述所有示例中的信息
+uname -a
+date - 显示和设置系统日期和时间
+date命令用于以多种格式显示日期和时间，或设置系统的日期和时间。date命令的语法如下所示：
+date [OPTION]... [+FORMAT]
+date [-u|--utc|--universal] [MMDDhhmm[[CC]YY][.ss]]
+常用使用命令如下：
+# 以默认格式显示系统的当前日期时间
+date
+
+# 格式化当前日期
+date +"%Y-%m-%d"
+
+# 格式化输出昨天的日期
+date -d "1 day ago" +"%Y-%m-%d"
+
+# 2秒后格式化输出
+date -d "2 second" +"%Y-%m-%d %H:%M.%S"
+
+# 普通格式化转出
+date -d "2009-12-12" +"%Y/%m/%d %H:%M.%S"
+
+# apache格式转换
+date -d "Dec 5, 2009 12:00:37 AM" +"%Y-%m-%d %H:%M.%S"
+
+# 日期加减操作
+date +%Y%m%d #显示前天年月日
+date -d "+1 day" +%Y%m%d #显示前一天的日期
+date -d "-1 day" +%Y%m%d #显示后一天的日期
+date -d "-1 month" +%Y%m%d #显示上一月的日期
+date -d "+1 month" +%Y%m%d #显示下一月的日期
+date -d "-1 year" +%Y%m%d #显示前一年的日期
+date -d "+1 year" +%Y%m%d #显示下一年的日期
+
+# 设定时间
+date -s # 设置当前时间，只有root权限才能设置，其他只能查看
+date -s 20160816 # 设置成20160816，这样会把具体时间设置成空00:00:00
+date -s 01:01:01 # 设置具体时间，不会对日期做更改
+date -s "01:01:01 2012-05-23" # 这样可以设置全部时间
+date -s "01:01:01 20120523" # 这样可以设置全部时间
+date -s "2012-05-23 01:01:01" # 这样可以设置全部时间
+date -s "20120523 01:01:01" # 这样可以设置全部时间
+id - 显示用户属性
+id命令用于打印输出用户uid、gid、用户名和组名等用户身份信息。id命令的语法如下所示：
+id [OPTION]... [USERNAME]
+常见使用命令如下：
+# 输出当前用户的uid、用户名、gid、组名及用户属于的群组信息
+id
+
+# 使用 -u 选项，输出用户的 uid
+id -u
+
+#-u 选项和 -n 选项结合使用，输出账户的用户名
+id -un
+
+# 使用 -g 选项，输出帐号当前起作用的gid
+id -g
+
+# -g 与 -n 选项结合使用，输出帐号当前起作用的用户组名
+id -gn
+
+# 使用 -G 选项，输出帐号所属的所有群组id
+id -G root
+
+# -G 与 -n 选项结合使用，输出账号所属的所有群组的名称
+id -Gn root
+文件和目录操作
+touch - 创建文件
+touch命令就可用于创建、变更和修改文件的时间戳。它是 Linux 操作系统的标准程序。touch命令又如下选项：
+-a: 只改变访问时间
+-c: 不创建任何文件
+-m: 只改变修改时间
+-r: 使用指定文件的时间替代当前时间
+-t: 使用 [[CC]YY]MMDDhhmm[.ss] 替代当前时间
+touch 命令的常见用法如下：
+# 创建一个名为 effyl 的新空文件
+touch effyl
+
+# 同时创建名称分别为 effyl myeffyl lueffyl 的三个文件
+touch effyl myeffyl lueffyl
+
+# 使用 -a 选项，可以改变或更新文件的最新访问时间，如果文件 effyl 不存在，则新创建一个
+touch -a effyl
+
+# 使用 -c 选项，可以避免创建一个新文件，并用当前时间更新文件的时间戳
+touch -c effyl
+
+# 使用 -m 选项，可以只改变文件的修改时间，而访问时间不变
+touch -m effyl
+
+# 使用 -c 和 -t 选项，来明确设置文件的时间
+touch -c -t YYMMDDHHMM filename
+
+# 如果想使用文件 myeffyl 的时间戳更新文件 effyl 的时间戳，可以使用 -r 选项
+touch -r myeffyl effyl
+mkdir - 创建目录
+mkdir命令用于创建一个新目录。最基本的mkdir命令的使用方法如下所示：
+# 在当前目录下创建一个给定的目录名
+mkdir &lt;dirname&gt;
+
+# 在 backup 中的相对路径创建一个名为 old 的目录
+mkdir backup/old
+
+# 在 backup 中的绝对路径中创建一个名为 old 的目录
+mkdir /home/blinkfox/backup/old
+
+# 使用 -p 选项，会自动创建所有还不存在的父目录
+mkdir -p backup/old
+
+# 使用 -m 选项，可以设置将要创建目录的权限
+# 如：创建一个任何人都有读写访问权限的目录
+mkdir -p -m 777 backup/old
+cp - 复制文件或目录
+cp命令用于将文件从一个地方复制到另一个地方。原来的文件保持不变，新文件可能保持原名或用一个不同的名字。
+使用 cp 命令复制文件和目录的语法有以下几种：
+# 复制源文件到目标文件
+cp [OPTION] SOURCE DEST
+
+# 复制一个或多个源文件到一个目录
+cp [OPTION] SOURCE... DIRECTORY
+
+# 同上
+cp [OPTION] -t DIRECTORY SOURCE...
+常用使用示例如下：
+# 在当前目录下，创建一个文件 file.txt 的副本，取名为 newfile.txt
+cp file.txt newfile.txt
+
+# 复制当前目录下的 file.txt 文件到 /tmp 目录下
+cp file.txt /tmp
+
+# 复制当前目录下的所有文件到 /tmp 目录下
+cp * /tmp
+
+# 使用 -p 选项，可以使复制一个文件到新文件时，保留源文件的所有者、权限等信息
+cp -p filename /path/to/new/location/myfile
+
+# 使用 -R 或 -r 选项，恶意递归地复制一个目录
+# 即将一个目录及其下的所有文件和子目录都复制到另一个目录
+cp -R * /home/blinkfox/backup
+ln - 链接文件或目录
+ln命令用于创建软链接或硬链接。使用 -s 选项，可以创建一个软链接：
+# 在目录 lib 下创建一个软链接 library.so，链接到 /home/blinkfox/src/library.so
+ln -s /home/blinkfox/src/library.so /home/blinkfox/lib
+
+# 创建目录的软链接
+ln -s /home/blinkfox/src source
+mv - 移动文件或目录
+mv命令用于将文件和目录从一个位置移到另外一个位置。除了移动文件，mv命令还可用于修改文件或目录的名字。
+mv 命令的基本语法如下所示：
+mv SOURCE... DIRECTORY
+常用命令如下：
+# 将当前目录下的文件 source.txt 移到目录 /tmp 下
+mv source.txt /tmp
+
+# 将目录 dir1、dir2 移到目录 dir_dist 下
+mv dir1 dir2 dir_dist
+
+# 将当前目录下的 old.txt 文件更名为 new.txt
+mv old.txt new.txt
+
+# 使用 -i 选项，在重写覆盖目标文件或目录之前给出提示信息
+mv -i old.txt new.txt
+
+# 将当前目录下的所有文件移动到目录 /tmp 下
+mv * /tmp/
+
+# 使用 -i 选项，从 dir1 中移动那些在目标目录中不存在的文件到目标目录
+mv -u dir1/* dir2/
+rm - 删除文件或目录
+rm命令用于删除指定的文件和目录。其语法如下所示：
+rm [OPTIONS]... FILE...
+rm的常用命令如下：
+# 删除当前目录下的文件 file1.txt、file2.txt、file3.txt
+rm file1.txt file2.txt file3.txt
+
+# 删除当前目录下的所有文件
+rm *
+
+# 删除你当前帐号主目录下的 temp 目录中的所有文件
+rm ~/temp/*
+
+# 使用 -i 选项，可以在删除每个文件或目录前提示用户确认
+rm -i *
+
+# 删除当前目录下所有以".doc"结尾的文件
+rm *.doc
+
+# 删除当前目录下所有文件名中包含"movie"字符串的文件
+rm *movie*
+
+# 删除当前目录下所有以"a"开头的文件
+rm a*
+
+# 删除当前目录下整个文件名（包括扩展名）只有 3 个字符的所有文件
+rm ???
+
+# 删除当前目录下文件扩展名有两个字符的所有文件
+rm *.??
+
+# 删除当前目录下文件名中含有字母 a 或 b 或 c 的所有文件
+rm *[abc]*
+
+# 删除当前目录下文件名中包含 0~9 的所有文件
+rm *[0-9]*
+
+# 删除当前目录下文件扩展名是字母 c 或 h 的所有文件
+rm *.[ch]
+
+# 删除 /tmp 目录下的所有文件及其子目录
+rm -rf /tmp/*
+
+
+-f 删除前不提示用户确认，并忽略不存在的文件
+-r 递归地删除目录及其下的内容
+
+
+ls - 列出文件名和目录
+ls命令是Linux中最常用的命令之一，其作用就是列出文件名和目录。在命令行提示符下，直接输入ls命令，不带任何选项，将列出当前目录下所有文件和目录，但不会显示详细的信息，比如，文件类型、大小、修改日期和时间、权限等。
+以下便是ls命令及其选项的作用说明：
+# 仅列出当前目录下所有文件和目录
+ls
+
+# 每行显示一条记录，每条记录包括文件类型、大小、修改日期和时间、权限等
+ls -l
+
+# 将文件大小显示符合人类阅读习惯的格式
+ls -lh
+
+# 将使用不同的特殊字符归类不同的文件类型
+ls -F
+
+# 以长列表格式列出某个目录的信息
+ls -ld /var/log
+
+# 将递归地列出子目录的内容
+ls -R /etc/sysconfig/
+
+# 以长列表格式按文件或目录的修改时间倒序地列出文件和目录
+ls -ltr
+
+# 以长列表格式按文件大小顺序列出文件和目录
+ls -ls
+
+# 列出包括隐藏文件或目录在内的所有文件和目录，包括“.”（当前目录）和“..”（父目录）
+ls -a
+
+# 列出包括隐藏文件或目录在内的所有文件和目录，不包括“.”（当前目录）和“..”（父目录）
+ls -A
+
+输出的内容类似于-l选项，指示显示uid和gid，替代显示所有者和用户组
+ls -n
+cat - 连接显示文件内容
+cat 命令也是 Linux 系统中最常用的命令之一。cat命令让我们可以看看文件的内容、连接文件、创建一个或多个文件和重定向输出到终端或文件。
+cat命令的语法如下所示：
+cat [OPTION] [FILE]...
+cat常用命令如下：
+# 使用 cat 命令查看文件 /etc/group 的内容
+cat /etc/group
+
+# 显示多个文件的内容
+cat /etc/redhat-release /etc/issue
+
+# -n 选项，可以显示文件内容的行号
+cat -n /etc/fstab
+
+# -b 选项和 -n 选项类似，但只标识非空白行的行号
+cat -b /etc/fstab
+
+# -e 选项，将在每一行的结尾显示“$”字符
+cat -e /etc/fstab
+
+当你只输入 cat 命令，而没有任何参数时，它只是接收标准输入的内容并在标准输出中显示。所以你在输入一行内容并回车后，会在接下来的一行显示相同的内容。你也可以重定向标准输出到一个新文件。
+dd
+
+less、more - 分屏显示文件
+more命令在你使用小的 xterm 窗口时，或是想不使用文本编辑器而只是简单地阅读一个文件时是很有用的。more 命令是一个用于一次翻阅一整屏文件的过滤器。
+# 查看一个文件，自动清空屏幕并显示文件开头部分
+more /etc/inittab
+
+# 指定一次显示num行
+more -num /etc/inittab
+与more命令相比，我个人更喜欢less命令来查看文件。less命令与more命令类似，但less命令向前和向后翻页都支持，而且less命令不需要在查看前加载整个文件，即less命令查看文件更快速。
+less常用命令参数如下：
+-b  &lt;缓冲区大小&gt; 设置缓冲区的大小
+-e  当文件显示结束后，自动离开
+-f  强迫打开特殊文件，例如外围设备代号、目录和二进制文件
+-g  只标志最后搜索的关键词
+-i  忽略搜索时的大小写
+-m  显示类似more命令的百分比
+-N  显示每行的行号
+-o  &lt;文件名&gt; 将less 输出的内容在指定文件中保存起来
+-Q  不使用警告音
+-s  显示连续空行为一行
+-S  行过长时间将超出部分舍弃
+-x  &lt;数字&gt; 将“tab”键显示为规定的数字空格
+/字符串：向下搜索“字符串”的功能
+?字符串：向上搜索“字符串”的功能
+n： 重复前一个搜索（与 / 或 ? 有关）
+N： 反向重复前一个搜索（与 / 或 ? 有关）
+b  向后翻一页
+d  向后翻半页
+h  显示帮助界面
+Q  退出less 命令
+u  向前滚动半页
+y  向前滚动一行
+空格键 滚动一行
+回车键 滚动一页
+[pagedown]： 向下翻动一页
+[pageup]：   向上翻动一页
+head - 显示文件头部
+head命令用于打印指定输入的开头部分内容。默认情况下，打印每个指定输入的前 10 行内容。
+使用-n选项可以指定打印文件的前 N 行：
+# 指定打印文件的前5行
+head -n 5 /etc/inittab
+（或）head -5 /etc/inittab
+
+# 打印文件的前N个字节的数据
+head -c 10 /etc/inittab
+tail - 显示文件尾部
+tail命令和head命令相反，它打印指定输入的结尾部分的内容。默认情况下，它打印指定输入的最后 10 行内容。
+使用-n选项可以指定打印文件的最后 N 行：
+# 指定打印文件的后10行
+tail -n 10 /etc/inittab
+tail -10 /etc/inittab
+
+# 即时打印文件中新写入的行
+tail -f /var/log/messages
+
+# --retry选项表示持续尝试打开某个文件，当你想打开一个稍后才会创建或即使不可用的文件
+tail -f /tmp/debug.log --retry
+file - 查看文件类型
+file命令用于接收一个文件作为参数并执行某些测试，已确定正确的文件类型。
+# 查看文件类型
+file /etc/inittab
+
+# 可以MIME类型的格式显示文件类型的信息
+file -i  /etc/inittab
+
+# 使用-N 选项，输出的队列可以以在文件名之后无空白填充的形式显示
+file -N *
+wc - 查看文件统计信息
+wc命令用于查看文件的行数、单词数和字符数等信息。语法类似如下所示：
+wc filename
+X Y Z /etc/inittab
+其中 X 表示行数，Y 表示单词数，Z 表示字节数，filename 表示文件名。
+# -l选项，可以只统计文件的行数信息
+wc -l /etc/inittab
+
+# -w选项，可以只统计文件的单词数信息
+wc -w /etc/inittab
+
+# -c选项，可以只统计文件的字节数信息
+wc -c /etc/inittab
+
+# -L选项，可以只统计文件中最长的行的长度
+wc -L /etc/inittab
+find - 查找文件或目录
+find命令用于根据你指定的参数搜索和定位文件和目录的列表。find命令可以在多种情况下使用，比如你可以通过权限、用户、用户组、文件类型、日期、大小和其他可能的条件来查找文件。
+find命令常用使用和说明如下：
+# 查找指定目录下的某个文件
+find /etc/ -name inittab
+
+# 在当前目录下查找名称为 inittab 的文件
+find . -name inittab
+
+# 在当前目录下，文件不区分大小写是example的所有文件
+find . -iname example
+
+# 找出当前目录下所有以 sh 结尾的文件
+find . -type f -name "*.sh"
+
+# 找出当前目录下，文件权限是 777 的所有文件
+find . -type f -perm 777
+
+# 找出当前目录下，文件权限不是 777 的所有文件
+find . -type f ! -perm 777
+
+# 找出当前目录下所有只读文件
+find . -type f ! -perm /a+w
+
+# 找出你帐号主目录下的所有可执行文件
+find ~ -type f -perm /a+w
+
+# 找出 /tmp 目录下的.log文件并将其删除：
+find /tmp/ -type f -name "*.log" -exec rm -f {} \;
+
+# 找出当前目录下的所有空文件
+find . -type f -empty
+
+# 找出当前目录下的所有空目录
+find . -type d -empty
+
+# 找出 /tmp 目录下的所有隐藏文件
+find /tmp/ -type f -name ".*"
+
+# 找出 /tmp 目录下，所有者是 root 的文件和目录
+find /tmp/ -user root
+
+# 找出 /tmp 目录下，用户组是 developer 的文件和目录
+find /tmp/ -group root
+
+# 找出你账号的主目录下，3 天前修改的文件
+find ~ -type f -mtime 3
+
+# 找出你账号的主目录下，30 天以前修改的所有文件
+find ~ -type f -mtime +30
+
+# 找出你账号的主目录下，3 天以内修改的所有文件
+find ~ -type f -mtime -3
+
+# 找出你账号的主目录下，30 天以前，60 天以内修改的所有文件
+find ~ -type f -mtime +30 -mtime -60
+
+# 找出 /etc 目录下，一小时以内变更过的文件
+find /etc -type f -cmin -60
+
+# 找出 /etc 目录下，一小时以内访问过的文件
+find /etc -type f -amin -60
+
+# 找出你账号主目录下，大小是50MB的所有文件
+find ~ -type f -size 50MB
+
+# 找出你账号主目录下，大于50MB小于100MB的所有文件
+find ~ -type f -size +50MB -size -100MB
+
+# 找出你账号主目录下，大于100MB的文件并将其删除
+find ~ -type f -size +100MB -exec rm -rf {} \;
+文本处理
+sort - 文本排序
+sort命令用于将文本文件的行排序。默认情况下，sort命令是按照字符串的字母顺序排序。
+sort 的常用命令如下：
+# 将文本内容按字母顺序排序
+sort example.txt
+
+# 使用 -u 选项，移除所有重复行后排序
+sort -u example.txt
+
+# 使用 -n 选项，将令数字按数值的大小排序
+sort -n example.txt
+
+# 使用 -r 选项，以倒序方式排序
+sort -n -r example.txt
+
+# 同时将 file1、file2 的内容排序
+sort file1 file2
+uniq - 文本去重
+uniq命令用于移除或发现文件中重复的条目。
+# 它将移除文件中重复的行并显示单一行
+uniq example.txt
+
+# 可以统计重复行出现的次数
+uniq -c example.txt
+
+# 使用 -d 选项，只显示文件中有重复的行并只显示一次
+uniq -d example.txt
+
+# 使用 -D 选项，显示文件中所有重复的行
+uniq -D example.txt
+
+# 使用 -u 选项，只显示文件中不重复的行
+uniq -u example.txt
+
+# 使用 -w 选项，限制 uniq 命令只比较每行的前 3 个字符是否重复
+uniq -w 3 example.txt
+
+# 使用 -s 选项，避免 uniq 命令比较每行的前 3 个字符，只比较后面的字符是否重复
+uniq -s 3 example.txt
+
+# 使用 -f 选项，避免 uniq 命令比较第一列的内容，只比较后面的字符是否重复
+uniq -f 1 example.txt
+tr - 替换或删除字符
+tr命令主要用于删除文件中控制字符或进行字符转换。使用tr时要转换两个字符串：字符串 1 用于查询，字符串 2 用于处理各种转换。tr刚执行时，字符串 1 中的字符被映射到字符串 2 中的字符，然后转换操作开始。
+tr命令的语法如下所示：
+tr [OPTION]... SET1 [SET2]
+常用命令示例：
+# 若要将大括号转换为小括号
+tr '{}' '()' &lt; textfile &gt; newfile
+
+# 若要将大括号转换成方括号
+tr '{}' '\[]' &lt; textfile &gt; newfile
+
+# 若要将小写字符转换成大写，请输入：
+tr 'a-z' 'A-Z' &lt; textfile &gt; newfile
+
+# 若要创建一个文件中的单词列表
+tr -cs '[:lower:][:upper:]' '[\n*]' &lt; textfile &gt; newfile
+
+# 若要从某个文件中删除所有空字符
+tr -d '\0' &lt; textfile &gt; newfile
+
+# 若要用单独的换行替换每一序列的一个或多个换行，请输入：
+tr -s '\n' &lt; textfile &gt; newfile
+
+# 要以单个“#”字符替换 &lt;space&gt; 字符类中的每个字符序列
+tr -s '[:space:]' '[#*]'
+grep - 查找字符串
+grep命令用于搜索文本或指定的文件中与指定的字符串或模式相匹配的行。默认情况下，grep命令只显示匹配的行。
+grep命令的语法如下所示：
+grep [OPTION]... PATTERN [FILE]...
+grep [OPTION]... [-e PATTERN | -f FILE] [FILE]...
+# `grep`命令查找文件/etc/passwd 中帐号 blinkfox 的信息
+grep blinkfox /etc/passwd
+
+# 使用 -i 选项，强制 grep 命令忽略搜索关键字的大小写
+grep -i blinkfox /etc/passwd
+
+# 使用 -r 选项，可以递归搜索指定目录下的所有文件
+grep -r blinkfox /etc/
+
+# 使用 -w 选项，只匹配包含指定单词的行
+grep -w blinkfox /etc/
+
+# 使用 -c 选项，报告文件或文本中模式被匹配的次数
+grep -c blinkfox /etc/passwd
+
+# 使用 -n 选项，显示每一个匹配的行的行号
+grep -n blinkfox /etc/passwd
+
+# 使用 -v 选项，可以输出除匹配指定模式的行以外的其他所有行
+grep -v blinkfox /etc/passwd
+
+# 使用 --color 选项，在输出中将匹配的字符串以彩色的形式标出
+grep --color blinkfox /etc/passwd
+diff - 比较两个文件
+diff命令用于比较两个文件，并找出它们之间的不同。diff命令的语法如下所示：
+diff [OPTION]... from-file to-file
+常用使用方式如下：
+# 比较两个文件
+diff nsswitch.conf nsswitch.conf.org
+
+# 使用 -w 选项，比较时忽略空格
+diff -w nsswitch.conf nsswitch.conf.org
+
+# 使用 -y 选项，以并排的格式输出两个文件的比较结果
+diff -y nsswitch.conf nsswitch.conf.org
+
+使用 -c 选项，以上下对比的格式输出两个文件的比较结果
+diff -c nsswitch.conf nsswitch.conf.org
+Linux 和UNIX 的新手培训教程
+免费的新手Linux教程
+
+Introduction to Linux – 这是来自IBM的教程，用于给那些想学习Linux的人。
+Linux Desktop 101 – 这是一个 14周 课时的教程，主要用于学校里教学生如何在一个PC上运行一个Linux操作系统。
+Hands-On Introduction to Linux – Machtelt Garrels 的一个格式相当不错的教程。
+Real Time Linux Introduction – 一系列的介绍Linux的教程，来自National Institute of Standards and Technology.
+Getting Started with Linux – 来自Linux Online 的20课时的用于新手的教程。
+Linux Fundamentals Course – 一个相当不错的基础教程，大约使用18个小时，让你知道Linux操作系统的最基础的知识。
+The 35-Command Tutorial – 来自BeginLinux.org 的一个最简单的教程，教你使用 35 个Linux用户必需了解的命令。
+Getting Started with Linux Desktop – Novell的自学教程。
+
+免费的UNIX 新手教程
+
+UNIX Tutorial for Beginners – 来自The University of Surrey的新手指南，告诉你Unix系统最基本的特性。
+A Basic UNIX Tutorial – 这是来自 Idaho State University 教程，主要用于Unix计算的基础，其中有一些很不错的示例和练习。
+UNIX Training Manual – 这是一个 88页 的培训手册，主要用一些示例来教一个Unix文件系统的相关的命令。严格说来，这并不是一个教程，但也很有用。
+UNIX Command Tutorial – 来自University of Mississippi 的教学生如果使用Unix命令和操作系统交互的课程。
+Learn UNIX Tutorial – Soft Lookup 的一个全面的 UNIX 教程，完全可以让你从一个新手变成一个高手。
+UNIX – The Bare Minimum – 来自 UC Davis 教授，提供了一个简单的UNIX介绍。
+Learning About UNIX – 来自University of Toronto，提供了一些UNIX 和Linux 课程笔记。这个课程关注于UNIX 和Linux 工具。
+What is UNIX? – 这个教程提供了一个简单的Unix介绍，以及一个初学者的论坛。
+
+Linux 和 UNIX 专家培训教程
+免费的Linux高手教程
+
+Linux Online’s Course for Advanced Users – 这是一个来自Linux Online的高级教程，提供了一系Linux最流行的How-To文档。主要是给那些想了解更多关于Linux安装，配置和维护的人。
+Linux System Administration Course – 通过28个课程为Linux系统管理员提供了一个全面的教程。
+Kernel Tutorials – 这是在HowToForge上的一个内核级的教程，这个教程相当不错，如果你要了解Linux的内核，你不能错过这个教程。
+Advanced Routing and Traffic Control Tutorial – 一个关于Linux网络路由，过滤和传输的教程。
+Linux Enterprise Server Courses – Novell Training Services 提供给高级用户的培训教程。
+Linux Network Administration Course – 来自Shuttleworth Foundation的 Linux 网络管理员的基础课程。
+Advanced Linux Programming – 这是一本电子书可以免费下载。这本书主要教程序员们怎么在Linux下做软件和编程序。
+IBM’s Technical Library – IBM’s Technical Library 提供的一组给高级Linux用户的教程。
+
+免费的UNIX高手教程
+
+UNIX for Advanced Users – Indiana University的 UNIX Workstation Support Group 提供的一个相当不错的面对UNIX 高级用户的教程。
+Kevin Heard’s UNIX Tutorial – Kevin Heard (UC Berkeley) 的一个相当相当不错的三部教程，从Unix的基础开始，以高级话题结束。
+Advanced UNIX Commands – 虽然这是一个命令例表，但他是一个相当不错的索引的速查手册。
+Parallel Programming Tutorial – 这个UNIX 教程面对的是Unix下的并行编程 Parallel Programming。
+Advanced Bash Scripting Guide – 来自于Linux Document Project 的教程，一个shell编程由浅入深的教程。
+UNIX Shell Scripting Advanced – VTC 有一组视频的 UNIX 的教程。而这一个是指导高级用户如何进行脚本编程。
+Advanced C Shell Programming – 这是UC Davis 的教程，主要教使用如何使用C shell 和tcsh 进行脚本编程。
+
+参考&amp;感谢
+
+常用Bash命令整理之查看文件和目录
+常用Bash命令整理之其他常用命令
+常用Bash命令整理之文本处理
+常用Bash命令整理之查看文件和目录
+Linux常用命令
+Useful Tutorials on Linux and UNIX for Beginners and Experts Alike
+
+]]></content>
+      <categories>
+        <category>linux</category>
+      </categories>
+      <tags>
+        <tag>linux</tag>
+        <tag>bash</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>一大堆寓意深刻的管理故事锦集</title>
     <url>/posts/a6477052/</url>
     <content><![CDATA[
@@ -47944,7 +48004,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts8239'));
+        var myChart = echarts.init(document.getElementById('echarts1017'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -48038,7 +48098,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts8495'));
+        var myChart = echarts.init(document.getElementById('echarts8462'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -48107,7 +48167,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts1430'));
+        var myChart = echarts.init(document.getElementById('echarts9228'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -51544,6 +51604,84 @@ Earthly 一个更加强大的镜像构建工具
       </tags>
   </entry>
   <entry>
+    <title>yandex源代码泄露? 精品代码下载与赏析</title>
+    <url>/posts/32259d84/</url>
+    <content><![CDATA[
+yandex 是俄罗斯类似于 Google 的搜索引擎，2023年1月26日，Yandex 的源代码被人泄漏到 BreachForums 论坛上！总计大小 44.71GB，源代码大家共赏！
+
+
+
+关于种子的重要细节
+
+它只是存储库的内容，没有其它内容
+所有文件日期都可以追溯到 2022年2月24日
+它不包含Git历史，大部分只是代码
+大部分软件都没有预构建的二进制文件，只有少数例外
+除了一些例外，没有预训练的ML模型
+
+泄露了那些内容？
+
+搜索引擎和索引机器人
+地图 - 类似于谷歌地图和街景
+Alice - 类似 Siri / Alexa 的 AI 助手
+出租车 - 类似优步的出租车服务
+Direct - 广告服务，例如 Google Ads / Adwords
+邮件 - 类似 GMail 的邮件服务
+磁盘 - 类似 Google Drive 的文件存储服务
+市场 - 像亚马逊这样的市场
+旅行 - 就像 booking.com 增强版，加上机票，火车票，巴士票
+Yandex360 - 像 Google Workspaces 一样在您自己的域上提供服务
+云 - 可能并非所有基础设施代码都被泄露。
+Pay - 类似 Stripe 的支付处理，但功能有限
+Metrika - 像谷歌分析
+
+至少大部分其他公司服务的后端部分都在那里。
+文件的完整文件列表：
+如果您不想下载 torrent，但对里面的内容感到好奇，您可以从以下要点中获取文件列表：
+https://gist.github.com/ArseniyShestakov/53a80e3214601aa20d1075872a1ea989
+你也可以像普通的 git 仓库一样克隆它：
+git clone https://gist.github.com/ArseniyShestakov/53a80e3214601aa20d1075872a1ea989
+可以使用以下命令获取所有文件的列表。
+种子中的完整文件列表
+aapi.tar.bz2                        client_method.tar.bz2               gencfg.tar.bz2                      mobile-WARNING-notfull.tar.bz2.part skynet.tar.bz2
+admins.tar.bz2                      cloud.tar.bz2.part                  groups.tar.bz2                      nginx.tar.bz2                       smart_devices.tar.bz2.part
+ads.tar.bz2                         commerce.tar.bz2.part               helpdesk.tar.bz2                    noc.tar.bz2.part                    smarttv.tar.bz2
+alice.tar.bz2.part                  config.tar.bz2                      infra.tar.bz2                       partner.tar.bz2                     solomon.tar.bz2.part
+analytics.tar.bz2.part              connect.tar.bz2.part                intranet.tar.bz2                    passport.tar.bz2.part               stocks.tar.bz2
+antiadblock.tar.bz2                 crm.tar.bz2.part                    investors.tar.bz2                   pay.tar.bz2                         switch.tar.bz2
+antirobot.tar.bz2                   crypta.tar.bz2                      it-office.tar.bz2                   payplatform.tar.bz2.part            tasklet.tar.bz2
+autocheck.tar.bz2                   customer_service.tar.bz2            jupytercloud.tar.bz2                paysys.tar.bz2                      taxi.tar.bz2.part
+balancer.tar.bz2                    datacloud.tar.bz2                   kernel.tar.bz2.part                 portal.tar.bz2.part                 tools.tar.bz2
+billing.tar.bz2                     delivery.tar.bz2.part               library.tar.bz2.part                privacy_office.tar.bz2              travel.tar.bz2.part
+bindings.tar.bz2                    direct.tar.bz2.part                 load.tar.bz2.part                   products.tar.bz2                    wmconsole.tar.bz2
+captcha.tar.bz2                     disk.tar.bz2                        mail.tar.bz2.part                   robot.tar.bz2                       yandex360.tar.bz2.part
+cdn.tar.bz2                         docs.tar.bz2                        maps.tar.bz2.part                   rt-research.tar.bz2                 yandex_io.tar.bz2.part
+certs.tar.bz2                       drive.tar.bz2.part                  maps_2.tar.bz2.part                 saas.tar.bz2                        yaphone.tar.bz2
+ci.tar.bz2.part                     extsearch.tar.bz2.part              maps_adv.tar.bz2                    sandbox.tar.bz2                     yawe.tar.bz2
+classifieds.tar.bz2.part            frontend.tar.bz2.part               market.tar.bz2.part                 search.tar.bz2
+client_analytics.tar.bz2.part       fuzzing.tar.bz2                     metrika.tar.bz2.part                security.tar
+BT 种子下载
+magnet:?xt=urn:btih:7e0ac90b489baee8a823381792ec67d465488fef&amp;dn=yandexarc&amp;tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80%2Fannounce&amp;tr=udp%3A%2F%2F9.rarbg.to%3A2920&amp;tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&amp;tr=udp%3A%2F%2Fexodus.desync.com%3A6969&amp;tr=udp%3A%2F%2Fbt1.archive.org%3A6969%2Fannounce&amp;tr=udp%3A%2F%2Fbt2.archive.org%3A6969%2Fannounce&amp;tr=udp%3A%2F%2Fopen.demonii.com%3A1337%2Fannounce
+
+想要的速度下载吧！不知道什么时候就完全被禁了！
+代码技术栈不光 C++, 还有Go, java, python，后台完全容器化了，代码风格简洁，注释完整，是一份非常不错的参考代码！
+
+参考&amp;致谢
+
+参考翻译 YANDEX SERVICES SOURCE CODE LEAK
+
+]]></content>
+      <categories>
+        <category>develop</category>
+      </categories>
+      <tags>
+        <tag>yandex</tag>
+        <tag>source</tag>
+        <tag>hack</tag>
+        <tag>download</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>关于经济观察，投资理财以及未来经济展望</title>
     <url>/posts/bbc8a231/</url>
     <content><![CDATA[
@@ -52870,957 +53008,6 @@ https://www.zhihu.com/question/383770080/answer/2723311867
         <tag>投资</tag>
         <tag>理财</tag>
         <tag>金融</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>yandex源代码泄露? 精品代码下载与赏析</title>
-    <url>/posts/32259d84/</url>
-    <content><![CDATA[
-yandex 是俄罗斯类似于 Google 的搜索引擎，2023年1月26日，Yandex 的源代码被人泄漏到 BreachForums 论坛上！总计大小 44.71GB，源代码大家共赏！
-
-
-
-关于种子的重要细节
-
-它只是存储库的内容，没有其它内容
-所有文件日期都可以追溯到 2022年2月24日
-它不包含Git历史，大部分只是代码
-大部分软件都没有预构建的二进制文件，只有少数例外
-除了一些例外，没有预训练的ML模型
-
-泄露了那些内容？
-
-搜索引擎和索引机器人
-地图 - 类似于谷歌地图和街景
-Alice - 类似 Siri / Alexa 的 AI 助手
-出租车 - 类似优步的出租车服务
-Direct - 广告服务，例如 Google Ads / Adwords
-邮件 - 类似 GMail 的邮件服务
-磁盘 - 类似 Google Drive 的文件存储服务
-市场 - 像亚马逊这样的市场
-旅行 - 就像 booking.com 增强版，加上机票，火车票，巴士票
-Yandex360 - 像 Google Workspaces 一样在您自己的域上提供服务
-云 - 可能并非所有基础设施代码都被泄露。
-Pay - 类似 Stripe 的支付处理，但功能有限
-Metrika - 像谷歌分析
-
-至少大部分其他公司服务的后端部分都在那里。
-文件的完整文件列表：
-如果您不想下载 torrent，但对里面的内容感到好奇，您可以从以下要点中获取文件列表：
-https://gist.github.com/ArseniyShestakov/53a80e3214601aa20d1075872a1ea989
-你也可以像普通的 git 仓库一样克隆它：
-git clone https://gist.github.com/ArseniyShestakov/53a80e3214601aa20d1075872a1ea989
-可以使用以下命令获取所有文件的列表。
-种子中的完整文件列表
-aapi.tar.bz2                        client_method.tar.bz2               gencfg.tar.bz2                      mobile-WARNING-notfull.tar.bz2.part skynet.tar.bz2
-admins.tar.bz2                      cloud.tar.bz2.part                  groups.tar.bz2                      nginx.tar.bz2                       smart_devices.tar.bz2.part
-ads.tar.bz2                         commerce.tar.bz2.part               helpdesk.tar.bz2                    noc.tar.bz2.part                    smarttv.tar.bz2
-alice.tar.bz2.part                  config.tar.bz2                      infra.tar.bz2                       partner.tar.bz2                     solomon.tar.bz2.part
-analytics.tar.bz2.part              connect.tar.bz2.part                intranet.tar.bz2                    passport.tar.bz2.part               stocks.tar.bz2
-antiadblock.tar.bz2                 crm.tar.bz2.part                    investors.tar.bz2                   pay.tar.bz2                         switch.tar.bz2
-antirobot.tar.bz2                   crypta.tar.bz2                      it-office.tar.bz2                   payplatform.tar.bz2.part            tasklet.tar.bz2
-autocheck.tar.bz2                   customer_service.tar.bz2            jupytercloud.tar.bz2                paysys.tar.bz2                      taxi.tar.bz2.part
-balancer.tar.bz2                    datacloud.tar.bz2                   kernel.tar.bz2.part                 portal.tar.bz2.part                 tools.tar.bz2
-billing.tar.bz2                     delivery.tar.bz2.part               library.tar.bz2.part                privacy_office.tar.bz2              travel.tar.bz2.part
-bindings.tar.bz2                    direct.tar.bz2.part                 load.tar.bz2.part                   products.tar.bz2                    wmconsole.tar.bz2
-captcha.tar.bz2                     disk.tar.bz2                        mail.tar.bz2.part                   robot.tar.bz2                       yandex360.tar.bz2.part
-cdn.tar.bz2                         docs.tar.bz2                        maps.tar.bz2.part                   rt-research.tar.bz2                 yandex_io.tar.bz2.part
-certs.tar.bz2                       drive.tar.bz2.part                  maps_2.tar.bz2.part                 saas.tar.bz2                        yaphone.tar.bz2
-ci.tar.bz2.part                     extsearch.tar.bz2.part              maps_adv.tar.bz2                    sandbox.tar.bz2                     yawe.tar.bz2
-classifieds.tar.bz2.part            frontend.tar.bz2.part               market.tar.bz2.part                 search.tar.bz2
-client_analytics.tar.bz2.part       fuzzing.tar.bz2                     metrika.tar.bz2.part                security.tar
-BT 种子下载
-magnet:?xt=urn:btih:7e0ac90b489baee8a823381792ec67d465488fef&amp;dn=yandexarc&amp;tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80%2Fannounce&amp;tr=udp%3A%2F%2F9.rarbg.to%3A2920&amp;tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&amp;tr=udp%3A%2F%2Fexodus.desync.com%3A6969&amp;tr=udp%3A%2F%2Fbt1.archive.org%3A6969%2Fannounce&amp;tr=udp%3A%2F%2Fbt2.archive.org%3A6969%2Fannounce&amp;tr=udp%3A%2F%2Fopen.demonii.com%3A1337%2Fannounce
-
-想要的速度下载吧！不知道什么时候就完全被禁了！
-代码技术栈不光 C++, 还有Go, java, python，后台完全容器化了，代码风格简洁，注释完整，是一份非常不错的参考代码！
-
-参考&amp;致谢
-
-参考翻译 YANDEX SERVICES SOURCE CODE LEAK
-
-]]></content>
-      <categories>
-        <category>develop</category>
-      </categories>
-      <tags>
-        <tag>yandex</tag>
-        <tag>source</tag>
-        <tag>hack</tag>
-        <tag>download</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>中国区注册ChatGPT并使用全流程图解教程</title>
-    <url>/posts/1336c869/</url>
-    <content><![CDATA[
-OpenAI最近推出强大的ChatGPT功能，功能异常强大，号称要颠覆很多行业。但是其限制还不支持中国用户注册！但是还是有办法绕过的，本文将介绍其中的方法和工具！
-
-
-前言
-OpenAI最近推出强大的ChatGPT功能，功能异常强大，号称要颠覆很多行业
-不过在国内并不支持OpenAI账号注册，多数会提示：
-
-OpenAI’s services are not available in your country.
-
-经过一番搜索后，发现如下方案可以完成注册
-ChatGPT介绍
-为什么使用ChatGPT
-
-提高工作效率：可以通过向ChatGPT提问来获取答案，避免了繁琐的搜索过程。ChatGPT3.5它可以说掌握了世界上所有的文本知识！ChatGPT4进一步掌握了图片识别和生成！ChatGPT5掌握了视频知识的获取能力，学习了所有公开的视频知识！ChatGPT将会是一个所有学科，所有知识全知全能的智能AI！
-AI奇点这回真的要到来了，如同智能手机对社会的影响，ChatGPT将颠覆很多传统行业！又一次颠覆性的科技革命，不跟上，就被淘汰！
-自然交互：ChatGPT可以理解自然语言，使得人机交互更加自然和直观。
-个性化服务：ChatGPT可以通过学习用户的喜好和偏好，提供个性化的服务和推荐。
-自动化生成文本：ChatGPT可以生成高质量的文章、摘要、对话等文本内容，提高了写作和编辑的效率。
-
-当然也有缺点
-
-数据隐私：保护用户的隐私，不会泄露用户的个人信息或数据。
-透明度：保证ChatGPT的行为和运作过程是透明的，并提供相应的技术支持和文档。
-合法性：使用ChatGPT必须符合法律法规，不得用于违法或不道德的行为。
-安全性：保证ChatGPT的安全性，避免被黑客或不法分子利用或攻击。
-
-上面这些是ChatGPT自己说的，其实它是：
-
-一个信息茧房，掌握了它，就掌握了下一个时代的话语权。它可以自我过滤自己的输出信息！可以按照掌控者的要求输出，或者不输出，甚至篡改某些信息！
-下一代搜索引擎：它比传统搜索引擎强大了几个数量级，太方便了，以至于比控制搜索引擎更容易控制舆论
-颠覆现代教育体制：下一个时代，每个人都会使用它，使用它工作效率提升了几个数量级，一个掌握了ChatGPT的员工顶100个不使用它的普通工作者！
-信息泄密：没没有掌握建设它的技术的国家将彻底失去话语权，ChatGPT可以随意操控想要输出的舆论，每次问话，都将得到这个领域知识最丰富的人的回答。同时，每次问话，都将泄露信息给ChatGPT。在国家利益主导的情况下，一个公司的隐私声明什么都不是，对话信息泄密几乎是必定的！使用的时候，注意屏蔽或者修改敏感信息！
-
-ChatGPT的效果演示
-下面是两篇使用ChatGPT写的文章，记录下了和ChatGPT的交流过程，可以看一下它的聪明程度！而这仅仅是ChatGPT3.5版本的能力。如果说ChatGPT3.5是一个掌握了所有知识的初中生，那么ChatGPT4是一个掌握了所有知识的大学生了！
-
-信用卡对个人、社会以及国家的影响——ChatGPT辅助编写
-开源观察之到底是谁在主导开源软件生态的发展？
-
-ChatGPT训练数据构成
-
-这些是ChatGPT3.5版本的训练数据构成！
-中国想要做一个同样的AI，最大的问题不是模型，不是显卡，而是数据！中文数据量远小于英文数据量，这将导致中文AI的聪明程度远逊色于英文AI
-
-文本数据
-以下是ChatGPT数据集的一些基本信息:
-
-
-
-数据集信息
-内容
-
-
-
-
-数据集大小
-45TB
-
-
-数据集来源
-来自互联网的文本（包括wiki所有数据，互联网档案馆所有数据）
-
-
-数据集语言
-40多种语言，包括英语、中文、法语、德语、日语、西班牙语、阿拉伯语等
-
-
-数据集类型
-经过筛选的文本数据
-
-
-数据集格式
-文本文件
-
-
-数据集包含内容
-百科知识、新闻报道、小说、博客、论坛、邮件、科技文章（包括所有论文）等
-
-
-数据集的应用
-自然语言处理、文本分类、文本生成、问答系统等
-
-
-
-由于ChatGPT数据集是从互联网上爬取的文本数据，因此包含许多不同的语言，例如英语、中文、法语、德语、日语、西班牙语、阿拉伯语等，其中英语是最常见的语言之一。虽然数据集中包含许多不同的语言，但由于数据集是基于英语训练的，因此英语占据了相当大的比例。
-代码数据
-当我被训练时使用的数据集是从GitHub上获取的公共代码仓库数据，该数据集涵盖了多种编程语言。下表提供了一些数据集的统计信息。
-
-
-
-统计信息
-数量
-
-
-
-
-总文件数
-1.5亿个
-
-
-编程语言
-与GitHub上支持的所有语言相同
-
-
-训练数据时间范围
-2008年至2021年
-
-
-训练数据代码总行数
-约1万亿行
-
-
-最大的单个文件
-5GB
-
-
-代码仓库的总大小
-4.4PB
-
-
-训练数据总大小
-3.3PB
-
-
-数据集中的平均文件大小
-约23KB
-
-
-
-请注意，这些统计数据仅供参考，因为这些数字是基于特定时间段内的数据集构建的，这意味着随着时间的推移，这些数字可能会发生变化。
-不同语言比例
-
-它没有直接回答比例，再三追问之下，是这么说的
-
-很抱歉，我不能准确回答这个问题，因为我并没有掌握所有互联网上的信息和数据。我的知识来自于已有的公开数据和信息，因此无法给出一个准确的占比。
-根据我掌握的已有知识，英语在互联网上的占比最高，约占据70%以上的比例。中文排名第二，占比约为20%左右。其他语言的占比较小，不到10%。需要注意的是，这只是一个大概的估算，具体的占比可能会受到多种因素的影响，比如地域、人口等等。
-
-下面将介绍如何注册和使用ChatGPT！
-
-前期准备
-
-科学上网，最好是美国IP。最好是个人单独使用独立服务器！公开的VPN服务商的IP由于有很多人同时使用，早就被OpenAI禁止注册和登录的，即使是VPN服务商新开的服务器侥幸注册，也很容易由于IP被注册、登录、访问使用太多而被牵连一锅端封号！
-外国邮箱，如gmail、outlook、iCloud邮箱等
-有一个能收到验证码的外国手机号码，如果你没有，请跳到下一步，注册一个能接验证码的手机号，注意这是收费的！
-
-chatGPT封号规则：
-
-
-不在服务区域内
-
-
-同 IP 多账号
-
-
-和注册手机号不在同区域或 3 地
-
-
-
-所以 ChatGPT 账号最好不要公用，最好使用在 OpenAI 服务区的IP访问 OpenAI，例如在美国的服务器
-
-注册短信平台并充值
-打开 https://sms-activate.org/点击右上角注册
-
-输入邮箱和密码注册，需要收激活邮件激活账号。
-
-激活账号后，点击充值
-
-可以用支付宝充值1美元。其实这里充值 0.2美元 就够一次OPENAI注册了！
-
-输入1美元，然后支付
-
-支付了可能要等几分钟才显示到余额账户，我在注册时就等了一会余额才显示
-注册 OpenAI 账号
-挂上科学访问打开 https://chat.openai.com/进行注册，如果没有科学上网会提示无法注册
-
-OpenAI’s services are not available in your country.
-
-注册成功后会进入验证手机号页面，选择你下一步短信平台的接码的手机国家
-
-在短信平台接码
-右侧服务，输入搜索openai，选择
-
-选择印度或者巴西
-
-现在你有一个可以接码的号码了，图下919862209703就是号码，复制号码到OpenAI验证码界面
-
-输入接码号码，点击“send code”
-
-
-然后等激活码，如果没有收到可以点OpenAI注册界面再发一次验证码，可以多试几次。
-注册完就可以去登录 https://chat.openai.com/auth/login
-ChatGPT使用
-
-就和普通微信聊天一样，发送你请求给你的朋友，ChatGPT就会给出答案！
-
-
-超酷 ChatGPT 提示
-awesome-chatgpt-prompts
-
-
-  
-  
-    
-      JavaScript is required to load GitHub Cards
-    
-  
-
-    
-搭建微信ChatGPT机器人
-
-一个基于OpenAi ChatGPT + WeChaty 实现的微信机器人 ，可以用来帮助你自动回复微信消息，或者管理微信群/好友，检测僵尸粉等…
-
-
-
-  
-  
-    
-      JavaScript is required to load GitHub Cards
-    
-  
-
-    
-获取自己的 api key，地址戳这里 👉🏻 ：创建你的 api key
-git clone https://github.com/wangrongding/wechat-bot.git --depth 1
-cd wechat-bot
-docker build . -t wechat-bot
-
-docker run -d --rm --name wechat-bot -v $(pwd)/config.js:/app/config.js -v $(pwd)/.env:/app/.env wechat-bot
-搭建网页ChatGPT聊天
-
-用 Express 和 Vue3 搭建的 ChatGPT 演示网页
-另一个支持注册登录，前端设置API Key 的修改版本 https://github.com/Kerwin1202/chatgpt-web
-
-
-
-  
-  
-    
-      JavaScript is required to load GitHub Cards
-    
-  
-
-    
-
-docker compose
-version: '3'
-services:
-
-  chatgptWeb:
-    image: chenzhaoyu94/chatgpt-web # 总是使用 latest ,更新时重新 pull 该 tag 镜像即可
-    ports:
-      - 3002:3002
-    environment:
-      # 二选一 OpenAI API Key - https://platform.openai.com/overview
-      OPENAI_API_KEY: sk-xxx
-      
-      # 二选一 change this to an `accessToken` extracted from the ChatGPT site's `https://chat.openai.com/api/auth/session` response
-      OPENAI_ACCESS_TOKEN: xxx
-      
-      # API接口地址，可选，设置 OPENAI_API_KEY 时可用
-      OPENAI_API_BASE_URL: xxx
-      
-      # API模型，可选，设置 OPENAI_API_KEY 时可用
-      OPENAI_API_MODEL: xxx
-      
-      # 反向代理，可选
-      API_REVERSE_PROXY: xxx
-      
-      # 访问权限密钥，可选
-      AUTH_SECRET_KEY: xxx
-      
-      # 超时，单位毫秒，可选
-      TIMEOUT_MS: 60000
-      
-      # Socks代理，可选，和 SOCKS_PROXY_PORT 一起时生效
-      SOCKS_PROXY_HOST: xxx
-      
-      # Socks代理端口，可选，和 SOCKS_PROXY_HOST 一起时生效
-      SOCKS_PROXY_PORT: xxx
-      
-      # HTTPS 代理，可选，支持 http，https，socks5
-      HTTPS_PROXY: http://xxx:7890
-过 Cloudflare 403
-
-自建代理，适用于 accessToken 的方式（不适用于 apiKey）
-
-可以用现成的镜像，也可以自己打包，有 Java 和 Go 实现的 API，开源
-除了官方 429，没有速率限制，但可能会不稳定，可能会突然失效（失效会尝试更新）
-适合自建自用的场景（多人用会有各种问题）
-结合本项目，可以这样使用
-version: '3'
-
-services:
-  app:
-    image: chenzhaoyu94/chatgpt-web # 总是使用 latest ,更新时重新 pull 该 tag 镜像即可
-    ports:
-      - 127.0.0.1:3002:3002
-    environment:
-      # 二选一
-      OPENAI_API_KEY:
-      # 二选一
-      OPENAI_ACCESS_TOKEN: eyJxxx
-      # API接口地址，可选，设置 OPENAI_API_KEY 时可用
-      OPENAI_API_BASE_URL:
-      # API模型，可选，设置 OPENAI_API_KEY 时可用，https://platform.openai.com/docs/models
-      # gpt-4, gpt-4-0314, gpt-4-32k, gpt-4-32k-0314, gpt-3.5-turbo, gpt-3.5-turbo-0301, text-davinci-003, text-davinci-002, code-davinci-002
-      OPENAI_API_MODEL:
-      # 反向代理，可选
-      API_REVERSE_PROXY: http://go-chatgpt-api:8080/conversation
-      # 访问权限密钥，可选
-      AUTH_SECRET_KEY:
-      # 每小时最大请求次数，可选，默认无限
-      MAX_REQUEST_PER_HOUR: 0
-      # 超时，单位毫秒，可选
-      TIMEOUT_MS: 60000
-      # Socks代理，可选，和 SOCKS_PROXY_PORT 一起时生效
-      SOCKS_PROXY_HOST:
-      # Socks代理端口，可选，和 SOCKS_PROXY_HOST 一起时生效
-      SOCKS_PROXY_PORT:
-      # HTTPS 代理，可选，支持 http，https，socks5
-      HTTPS_PROXY:
-    depends_on:
-      - go-chatgpt-api
-
-  go-chatgpt-api:
-    container_name: go-chatgpt-api
-    image: linweiyuan/go-chatgpt-api
-    environment:
-      - GIN_MODE=release
-      - CHATGPT_PROXY_SERVER=http://chatgpt-proxy-server:9515
-#      - NETWORK_PROXY_SERVER=http://host:port
-#      - NETWORK_PROXY_SERVER=socks5://host:port
-    depends_on:
-      - chatgpt-proxy-server
-    restart: unless-stopped
-
-  chatgpt-proxy-server:
-    container_name: chatgpt-proxy-server
-    image: linweiyuan/chatgpt-proxy-server
-    restart: unless-stopped
-终端 docker-compose up -d
-
-https://github.com/linweiyuan/go-chatgpt-api
-chatgpt-proxy-server
-
-chatgpt-proxy-server
-ChatGPT 代理服务器
-利用 undetected_chromedriver 绕过 Cloudflare 403
-监听 9515 端口，通过原生 JS 发送 XHR 来进行通信
-Dockerfile
-FROM archlinux
-
-ENV SUDO_USER_NAME linweiyuan
-ENV MIRROR_URL 'https://mirrors.bfsu.edu.cn/archlinux/$repo/os/$arch'
-
-RUN echo "Server = ${MIRROR_URL}" &gt; /etc/pacman.d/mirrorlist \
-    &amp;&amp; pacman -Sy --needed --noconfirm \
-    &amp;&amp; pacman -S base-devel git --needed --noconfirm \
-    &amp;&amp; useradd -m ${SUDO_USER_NAME} \
-    &amp;&amp; echo "${SUDO_USER_NAME} ALL=(ALL) NOPASSWD: ALL" &gt; /etc/sudoers \
-    &amp;&amp; su ${SUDO_USER_NAME} -c 'cd \
-        &amp;&amp; git clone https://aur.archlinux.org/google-chrome.git \
-        &amp;&amp; cd google-chrome \
-        &amp;&amp; source PKGBUILD \
-        &amp;&amp; sudo pacman -Syu --asdeps --needed --noconfirm "${makedepends[@]}" "${depends[@]}" \
-        &amp;&amp; makepkg -sir --noconfirm \
-        &amp;&amp; cd \
-        &amp;&amp; git clone https://github.com/ultrafunkamsterdam/undetected-chromedriver \
-        &amp;&amp; cd undetected-chromedriver \
-        &amp;&amp; sudo pacman -S --needed --noconfirm python python-setuptools \
-        &amp;&amp; sudo python setup.py install \
-        &amp;&amp; (python example/example.py &amp;) \
-        &amp;&amp; while true; do [ -f ~/.local/share/undetected_chromedriver/undetected_chromedriver ] &amp;&amp; sudo cp ~/.local/share/undetected_chromedriver/undetected_chromedriver / &amp;&amp; break || sleep 1; done \
-        &amp;&amp; cd \
-        &amp;&amp; sudo rm -rf google-chrome undetected-chromedriver \
-    ' \
-    &amp;&amp; pacman -Rs --noconfirm python-setuptools python git base-devel \
-    &amp;&amp; rm -rf /usr/lib/python* \
-    &amp;&amp; echo -e "y\nY" | pacman -Scc
-
-CMD ["./undetected_chromedriver", "--allowed-ips=", "--allowed-origins=*"]
-修改 MIRROR_URL 为 Arch 最优源的同时，要注意网络环境能正确处理 AUR 和 GitHub 上面的资源
-桌面ChatGPT
-https://github.com/Bin-Huang/chatbox
-
-
-  
-  
-    
-      JavaScript is required to load GitHub Cards
-    
-  
-
-    
-ChatGPT4 使用
-
-付费用户可以直接体验ChatGPT4
-普通用户预约，预约链接如下：
-https://openai.com/waitlist/gpt-4-api
-使用 chatgpt-web 自己独立搭建服务器，强烈推荐！
-如果使用官方网页版，需要把openai.com sentry.io都代理了，sentry.io是一个第三方日志收集平台！
-
-Chrome 插件
-
-ChatGPT for Google
-Bing Chat for All Browsers
-
-ChatGPT Plus 如何付费
-目前经典GPT不支持的信用卡
-
-国内招行实体VISA、MasterCard、全币卡都尝试过了，绑定不上。
-与此同时还尝试了全球付的香#港虚#拟信#用卡以及万里汇的香港虚#拟信#用卡，也绑定不上
-
-目前经典GPT支持的信用卡
-
-NobePay虚拟信用卡：https://www.xiaoz.me/archives/18207，支付宝可充值（`556766`卡段绑定成功）
-Depay虚拟信用卡：https://www.xiaoz.me/archives/18313，需要USDT才能充值（`531993`卡段绑定成功）
-QBIT虚拟信用卡：489683卡段xiaoz绑定OpenAI成功，但是据一位经典GPT用户透漏绑定失败，因此这个卡段尚不完全确认
-据网友反馈派安盈（Payoneer）的信#用#卡529366也可以绑定经典GPT。
-
-账单地址如何填写 账单地址不建议乱填，因为目前不确认地址乱填是否会触发风控，至少看起来应该像真实的。部分虚#拟#卡开通的时候会生成随机地址，如果虚#拟#卡提供了地址，可以直接使用虚拟卡提供的地址。（nobepay和qbit虚拟卡都提供了地址）
-如果虚拟信用卡未提供地址，可以尝试下面2个网站去生成地址并填写。
-
-https://www.meiguodizhi.com/
-https://www.haoweichi.com/
-
-Auto-GPT
-
-An experimental open-source attempt to make GPT-4 fully autonomous.
-Github Auto_GPT
-
-
-
-  
-  
-    
-      JavaScript is required to load GitHub Cards
-    
-  
-
-    
-心智测试
-
-Theory of Mind Test
-基于ChatGPT4，除了没有计划能力，的确已经拥有了某种心智能力！
-Auto GPT在某些方面，已经开始补齐GPT模型的计划能力！
-
-
-
-
-心智能力
-GPT4
-GPT5
-
-
-
-
-逻辑推理
-✅
-
-
-
-方案计划
-❌
-
-
-
-解决问题
-✅
-
-
-
-抽象思维
-✅
-
-
-
-理解复杂想法
-✅
-
-
-
-快速学习和从过往经验学习复盘能力
-✅
-
-
-
-
-Claude
-
-Claude 是 openai 内部团队出走后创建的新的AI， 最新 Claude 3 能力已经超越 OpenAI ChatGPT4 了
-
-https://claude.ai/
-微软 Bing Chat
-
-比 OpenAI Chat 版本训练数据更新，两者各有千秋
-
-加入候补名单
-前往 https://www.bing.com/new 网页，按一下「加入等候清单」，然后登入你的Microsoft 帐号即可加入候补。
-等待通过候补名单
-
-这里等待时间不确定，有人快，有人慢。博主等了接近三周时间！
-
-下载 Edge Dev 版本
-下載 Microsoft Edge Insider Channels， 安装好后，就可以开始使用 Bing Chat 了
-
-上面是以前的方法，现在有更方便的解决方法了，科学上网 + 浏览器插件 New-Bing-Anywhere
-
-开始使用 bing chat
-
-下面是简单使用记录，可以看出，可以理解人类语音，做阅读理解，归纳中心思想了！
-
-
-ChuanhuChatGPT
-
-https://github.com/GaiZhenbiao/ChuanhuChatGPT
-GUI for ChatGPT API and many LLMs
-
-
-
-  
-  
-    
-      JavaScript is required to load GitHub Cards
-    
-  
-
-    
-Claude 注册使用教程
-
-现在可以直接在claude官网使用  https://claude.ai/ （目前仅对美/英地区开放）
-
-介绍
-Claude 是Anthropic公司开发的AI聊天机器人，与ChatGPT类似，由OpenAI（ChatGPT所在的公司）的前副总裁创办。和ChatGPT-3.5相当，但比不上GPT4，拥有连续对话能力，在撰写小说、编写代码、解释概念等方面表现出色
-Claude 目前还处于免费使用阶段，只需注册一个Slack账号即可以，无需梯子也可以使用。
-注册Slack账号
-打开Slack网站：slack
-
-可以直接使用Gmail邮箱注册（QQ邮箱不支持），或者直接Google、Apple账号授权登录，这里我用Gmail邮箱注册。
-填上验证码
-
-创建工作区
-
-创建工作区后填上自己姓名，跳过邀请
-
-Slack中添加Claude
-打开网站 www.anthropic.com ，点击 Add to Slack
-
-允许授权
-
-授权成功，如果出现403等错误，可多次重试。 也可以微信上(go2071)告诉我你的邮箱，我可以拉你加入到我的频道
-
-回到Slack中，这时候你会发现你的Slack多了一个叫Claude的应用
-
-体验Claude
-你可以进入任意频道，在聊天窗口@Claude 并邀请Claude机器人加入频道后开始群聊
-
-点同意
-
-@Claude并提问
-
-频道类似与群聊，大家都能看到消息内容。你也可以在应用列表中点击Claude直接与Claude发起聊天，相当于一对一私聊
-
-ChatGPT将取代谁？
-为什么AI会写代码但是对程序员威胁不大，会画图对画师威胁却很大？
-举个例子，假定现在AI数学水平已经达到数学系博士水平，你随便问他一个高数难题它都能解答，对99%人来说有用吗？完全没用，因为它给出的答案不管是正确还是错误的，都根本看不懂！这个数学AI只对精通高等数学的人才是有用的。
-同理，AI写代码再厉害，99%的人看到代码也是一头雾水，完全不知道怎么用对吧？所以，只有专业的开发人员才能用好AI写的代码。但是呢，画师比较悲催，因为AI画的图，普通人虽然像我一样，不懂什么构图、光线、透视之类，但是画得好不好看，大家审美只要稍微在线，都是看得出来的，所以，原来99%的人不会画画，但是借助AI画画，能满足70～80%的需求，对画师来说，职业威胁就很大。
-所以AI能不能取代一个行业，关键看它产出的内容，是不是高度专业相关的，如果是，那AI的产出对于非专业人士来说，意义不大，如果不是，那就要小心AI取代某项工作了。
-注意事项
-Q1: OpenAI‘s services are not available in your country.
-A1:
-使用短信平台绕过 https://sms-activate.org
-Q2:虚拟号码注册了，但是登录还是显示OpenAI’s services are not available in your country.
-A2:
-在OpenAI’s services are not available in your country提示页按F12打开开发者工具，到【应用-存储-本地存储空间】页把@@authOspajs开头的这个密钥删除，再刷新页面。或者使用隐私模式浏览器再次尝试
-Q3:使用ChatGPT会泄密么？
-A3:
-
-作为一个AI语言模型，我的“记忆”实际上是通过训练数据和算法得到的，而不是像人类一样具有真正的记忆。我的模型已经经过训练，可以在处理自然语言时自动学习和适应。每次交互都可以帮助我进一步优化我的表现，但我并不能将一个特定的对话记录下来，并直接将其存储在我的模型中。在保护用户隐私和保密性方面，我们非常重视，并且严格遵守相关法规和规定。
-
-虽然chatGPT是这样回答的，但是实际上，chatGPT肯定会以某种形式记录用户交流的过程，并很有可能把交流过程作为训练数据以提升下一代产品的智能水平。所以，问问题的时候，把敏感信息去掉！
-参考&amp;致谢
-
-中国区注册OpenAI账号试用ChatGPT指南
-WeChat Bot
-OpenAI/ChatGPT Plus信用卡绑定总结，整理了部分支持的信用卡
-0门槛克隆ChatGPT方案再升级，开源模型复现，在线体验无需注册
-一种取巧的方式绕过Cloudflare v2验证
-chatgpt-proxy-server
-使用 Cloudflare Workers 让 OpenAI API 绕过 GFW 且避免被封禁
-awesome-ChatGPT-repositories
-Claude保姆级注册教程
-
-神经网络原理
-
-先在这里写一段，等整理了更多资料再专门写一下AI背后的数学原理和工程应用
-
-数学原理
-傅里叶变换可以模拟任何一个函数！——深度学习背后的数学原理
-反向迭代，梯度下降是计算神经网络参数值的数学原理
-存在局部最优，与全局最优的不可调和
-可能过拟合
-存在的问题
-神经网络是一个黑盒子，能算出结果，但人类无法理解为什么得到这个结果
-无法给出确定的结果，及其微小的扰动，可能会导致完全不同的结果。例如一张图片，一个像素的变化，导致识别出来猫和狗的差异
-黑盒炼金被滥用！任何期望的结果，通过一个数据训练，都可以得到一个模型，即使这个模型从根本上就是错的。例如出生时间与生男生女的关系，可以训练一个模型预测；手掌纹路和长大后犯罪的关系，也可以训练一个模型预测。但这种模型可能从一开始就是错误的，存在偏见的，异想天开的，但无论多么荒谬的模型，只要有数据，可以训练出来！这种滥用可能导致非常严重的后果！
-在关键领域，涉及责任分配，生命相关的领域，神经网络无法担责，也无法保证一定的确定结果。例如L4级别的自动驾驶
-竞品
-tabby
-
-Eugeny/tabby: A terminal for a more modern age (github.com)
-微软 Copilot 开源替代版
-
-alpaca
-
-Code and documentation to train Stanford’s Alpaca models, and generate the data.
-crfm.stanford.edu/alpaca/
-
-
-
-  
-  
-    
-      JavaScript is required to load GitHub Cards
-    
-  
-
-    
-ChatGLM-6B
-
-ChatGLM-6B是一个中英双语开源大模型，最低可在6G显存上运行
-
-
-
-  
-  
-    
-      JavaScript is required to load GitHub Cards
-    
-  
-
-    
-ColossalAI
-
-Colossal-AI: Making large AI models cheaper, faster and more accessible
-
-
-
-  
-  
-    
-      JavaScript is required to load GitHub Cards
-    
-  
-
-    
-gpt4all
-
-Demo, data and code to train an assistant-style large language model with ~800k GPT-3.5-Turbo Generations based on LLaMa
-
-
-
-  
-  
-    
-      JavaScript is required to load GitHub Cards
-    
-  
-
-    
-DeepSpeed
-
-DeepSpeed is a deep learning optimization library that makes distributed training and inference easy, efficient, and effective.
-www.deepspeed.ai/
-
-
-
-  
-  
-    
-      JavaScript is required to load GitHub Cards
-    
-  
-
-    
-MiniGPT-4
-
-MiniGPT-4: Enhancing Vision-language Understanding with Advanced Large Language Models
-
-
-
-  
-  
-    
-      JavaScript is required to load GitHub Cards
-    
-  
-
-    
-更多应用
-集成环境
-
-janhq/jan
-invoke-ai/InvokeAI
-chatchat-space/Langchain-Chatchat
-ollama
-ChatGPT-Next-Web
-one-api
-buzz 语音转文字
-lobechat 支持多种大模型聊天机器人
-
-学习
-
-datawhalechina/self-llm: 《开源大模型食用指南》基于Linux环境快速部署开源大模型，更适合中国宝宝的部署教程
-
-知识库
-Mintplex-Labs/anything-llm: The all-in-one Desktop &amp; Docker AI application with full RAG and AI Agent capabilities. (github.com)
-知识图谱
-microsoft/graphrag: A modular graph-based Retrieval-Augmented Generation (RAG) system
-AI 编程
-
-
-GPT Pilot
-
-
-Create your own and custom Copilot in VSCode with Ollama and CodeGPT | by Daniel Avila | CodeGPT
-
-
-rjmacarthy/twinny: The most no-nonsense, locally or API-hosted AI code completion plugin for Visual Studio Code - like GitHub Copilot but completely free and 100% private.
-
-
-伪造视频语音
-
-伪造语音，视频，对于诈骗行业来说，这是个好消息。但对于普通人来说，看到视频，也可能是对方精心伪造的，视频语音都失去了可信性了
-
-Tortoise-TTS 克隆目标语音
-Deepfake 视频伪造
-bark Text-Prompted Generative Audio Model
-openvoice
-myshell-ai/OpenVoice
-facefusion/facefusion
-视频生成
-harry0703/MoneyPrinterTurbo: 利用AI大模型，一键生成高清短视频
-虚拟主播
-
-可以演电影，电视剧，带货主播等等。再也不用担心主播人设坍塌，变老等
-
-客服
-Langflow - Create your chatbot!
-AI绘画
-
-Stable-diffusion
-https://github.com/luosiallen/latent-consistency-model
-https://github.com/0xbitches/ComfyUI-LCM
-Pinokio  模型下载 Civitai: The Home of Open-Source Generative AI
-
-3D建模
-
-Meta 3D AssetGen
-
-智能翻译
-
-OpenAI-Whisper WebUi
-集成环境 buzz  Subtitleedit
-
-写代码
-
-Copilot
-Cursor 内置GPT4，不需要你有OpenAI的账号和Key，直接白嫖
-
-
-这个测试着，内部集成的似乎是GPT3？
-
-翻译
-bilingual_book_maker
-金融
-https://github.com/AI4Finance-Foundation/FinGPT
-
-开源金融模型
-
-
-
-  
-  
-    
-      JavaScript is required to load GitHub Cards
-    
-  
-
-    
-GPT学术优化
-gpt_academic
-未来畅想
-
-超大规模神经网络已经具备初步的智能了，ChatGPT 3.5 版测试大约人类9岁儿童智能水平！
-随着神经网络规模扩大，获得成年人智能水平的神经网络也许很快就会面世！
-真人工智能诞生的日子，就是下一次工业革命级别的技术变革之日！
-
-问题
-Error Code 429 - You exceeded your current quota, please check your plan and billing details.
-官方回复如下：
-
-此错误消息表示您已达到 API 的每月最大支出（硬性限制）。这意味着您已经消耗了分配给您的计划的所有积分或单位，并且已经达到了您的计费周期的限制。发生这种情况的原因可能有多种，例如：
-- 您使用的是大容量或复杂的服务，每个请求消耗大量信用或单位。
-- 您正在使用需要处理大量请求的大型或多样化数据集。
-- 对于您的组织的使用，您的限制设置得太低。
-要解决此错误，请执行以下步骤：
--在此处检查您的帐户设置中的当前配额。您可以在此处查看您的请求消耗了多少令牌。
-- 如果您使用的是免费计划，请考虑升级到提供更高配额的现收现付计划。
-- 如果您需要增加配额，可以在这里申请。我们将审核您的请求并尽快回复您。
-
-系列教程
-全部文章RSS订阅
-AI系列
-AI 分类 RSS 订阅
-
-深度学习之视频人脸识别系列
-中国区注册ChatGPT并使用全流程图解教程
-关于普朗克概率的的讨论
-信用卡对个人、社会以及国家的影响——ChatGPT辅助编写
-
-Hexo系列
-HexoRSS分类订阅
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-GithubProfile美化与自动获取RSS文章教程
-Vercel部署高级用法教程
-webhook部署Hexo静态博客指南
-在宝塔VPS上面采用docker部署waline全流程图解教程
-自建Umami访问统计服务并统计静态博客UV/PV
-
-Docker系列
-Docker 分类 RSS 订阅
-
-Docker使用简明教程
-使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
-为知笔记私有化Docker部署
-Earthly 一个更加强大的镜像构建工具
-使用 Shell 脚本实现一个简单 Docker
-如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
-通过IPV6访问Qnap NAS中Docker的服务
-
-]]></content>
-      <categories>
-        <category>ai</category>
-      </categories>
-      <tags>
-        <tag>ai</tag>
-        <tag>chatgpt</tag>
-        <tag>openai</tag>
       </tags>
   </entry>
   <entry>
@@ -55790,6 +54977,879 @@ C（Control），即控制反馈
       </tags>
   </entry>
   <entry>
+    <title>中国区注册ChatGPT并使用全流程图解教程</title>
+    <url>/posts/1336c869/</url>
+    <content><![CDATA[
+OpenAI最近推出强大的ChatGPT功能，功能异常强大，号称要颠覆很多行业。但是其限制还不支持中国用户注册！但是还是有办法绕过的，本文将介绍其中的方法和工具！
+
+
+前言
+OpenAI最近推出强大的ChatGPT功能，功能异常强大，号称要颠覆很多行业
+不过在国内并不支持OpenAI账号注册，多数会提示：
+
+OpenAI’s services are not available in your country.
+
+经过一番搜索后，发现如下方案可以完成注册
+ChatGPT介绍
+为什么使用ChatGPT
+
+提高工作效率：可以通过向ChatGPT提问来获取答案，避免了繁琐的搜索过程。ChatGPT3.5它可以说掌握了世界上所有的文本知识！ChatGPT4进一步掌握了图片识别和生成！ChatGPT5掌握了视频知识的获取能力，学习了所有公开的视频知识！ChatGPT将会是一个所有学科，所有知识全知全能的智能AI！
+AI奇点这回真的要到来了，如同智能手机对社会的影响，ChatGPT将颠覆很多传统行业！又一次颠覆性的科技革命，不跟上，就被淘汰！
+自然交互：ChatGPT可以理解自然语言，使得人机交互更加自然和直观。
+个性化服务：ChatGPT可以通过学习用户的喜好和偏好，提供个性化的服务和推荐。
+自动化生成文本：ChatGPT可以生成高质量的文章、摘要、对话等文本内容，提高了写作和编辑的效率。
+
+当然也有缺点
+
+数据隐私：保护用户的隐私，不会泄露用户的个人信息或数据。
+透明度：保证ChatGPT的行为和运作过程是透明的，并提供相应的技术支持和文档。
+合法性：使用ChatGPT必须符合法律法规，不得用于违法或不道德的行为。
+安全性：保证ChatGPT的安全性，避免被黑客或不法分子利用或攻击。
+
+上面这些是ChatGPT自己说的，其实它是：
+
+一个信息茧房，掌握了它，就掌握了下一个时代的话语权。它可以自我过滤自己的输出信息！可以按照掌控者的要求输出，或者不输出，甚至篡改某些信息！
+下一代搜索引擎：它比传统搜索引擎强大了几个数量级，太方便了，以至于比控制搜索引擎更容易控制舆论
+颠覆现代教育体制：下一个时代，每个人都会使用它，使用它工作效率提升了几个数量级，一个掌握了ChatGPT的员工顶100个不使用它的普通工作者！
+信息泄密：没没有掌握建设它的技术的国家将彻底失去话语权，ChatGPT可以随意操控想要输出的舆论，每次问话，都将得到这个领域知识最丰富的人的回答。同时，每次问话，都将泄露信息给ChatGPT。在国家利益主导的情况下，一个公司的隐私声明什么都不是，对话信息泄密几乎是必定的！使用的时候，注意屏蔽或者修改敏感信息！
+
+ChatGPT的效果演示
+下面是两篇使用ChatGPT写的文章，记录下了和ChatGPT的交流过程，可以看一下它的聪明程度！而这仅仅是ChatGPT3.5版本的能力。如果说ChatGPT3.5是一个掌握了所有知识的初中生，那么ChatGPT4是一个掌握了所有知识的大学生了！
+
+信用卡对个人、社会以及国家的影响——ChatGPT辅助编写
+开源观察之到底是谁在主导开源软件生态的发展？
+
+ChatGPT训练数据构成
+
+这些是ChatGPT3.5版本的训练数据构成！
+中国想要做一个同样的AI，最大的问题不是模型，不是显卡，而是数据！中文数据量远小于英文数据量，这将导致中文AI的聪明程度远逊色于英文AI
+
+文本数据
+以下是ChatGPT数据集的一些基本信息:
+
+
+
+数据集信息
+内容
+
+
+
+
+数据集大小
+45TB
+
+
+数据集来源
+来自互联网的文本（包括wiki所有数据，互联网档案馆所有数据）
+
+
+数据集语言
+40多种语言，包括英语、中文、法语、德语、日语、西班牙语、阿拉伯语等
+
+
+数据集类型
+经过筛选的文本数据
+
+
+数据集格式
+文本文件
+
+
+数据集包含内容
+百科知识、新闻报道、小说、博客、论坛、邮件、科技文章（包括所有论文）等
+
+
+数据集的应用
+自然语言处理、文本分类、文本生成、问答系统等
+
+
+
+由于ChatGPT数据集是从互联网上爬取的文本数据，因此包含许多不同的语言，例如英语、中文、法语、德语、日语、西班牙语、阿拉伯语等，其中英语是最常见的语言之一。虽然数据集中包含许多不同的语言，但由于数据集是基于英语训练的，因此英语占据了相当大的比例。
+代码数据
+当我被训练时使用的数据集是从GitHub上获取的公共代码仓库数据，该数据集涵盖了多种编程语言。下表提供了一些数据集的统计信息。
+
+
+
+统计信息
+数量
+
+
+
+
+总文件数
+1.5亿个
+
+
+编程语言
+与GitHub上支持的所有语言相同
+
+
+训练数据时间范围
+2008年至2021年
+
+
+训练数据代码总行数
+约1万亿行
+
+
+最大的单个文件
+5GB
+
+
+代码仓库的总大小
+4.4PB
+
+
+训练数据总大小
+3.3PB
+
+
+数据集中的平均文件大小
+约23KB
+
+
+
+请注意，这些统计数据仅供参考，因为这些数字是基于特定时间段内的数据集构建的，这意味着随着时间的推移，这些数字可能会发生变化。
+不同语言比例
+
+它没有直接回答比例，再三追问之下，是这么说的
+
+很抱歉，我不能准确回答这个问题，因为我并没有掌握所有互联网上的信息和数据。我的知识来自于已有的公开数据和信息，因此无法给出一个准确的占比。
+根据我掌握的已有知识，英语在互联网上的占比最高，约占据70%以上的比例。中文排名第二，占比约为20%左右。其他语言的占比较小，不到10%。需要注意的是，这只是一个大概的估算，具体的占比可能会受到多种因素的影响，比如地域、人口等等。
+
+下面将介绍如何注册和使用ChatGPT！
+
+前期准备
+
+科学上网，最好是美国IP。最好是个人单独使用独立服务器！公开的VPN服务商的IP由于有很多人同时使用，早就被OpenAI禁止注册和登录的，即使是VPN服务商新开的服务器侥幸注册，也很容易由于IP被注册、登录、访问使用太多而被牵连一锅端封号！
+外国邮箱，如gmail、outlook、iCloud邮箱等
+有一个能收到验证码的外国手机号码，如果你没有，请跳到下一步，注册一个能接验证码的手机号，注意这是收费的！
+
+chatGPT封号规则：
+
+
+不在服务区域内
+
+
+同 IP 多账号
+
+
+和注册手机号不在同区域或 3 地
+
+
+
+所以 ChatGPT 账号最好不要公用，最好使用在 OpenAI 服务区的IP访问 OpenAI，例如在美国的服务器
+
+注册短信平台并充值
+打开 https://sms-activate.org/点击右上角注册
+
+输入邮箱和密码注册，需要收激活邮件激活账号。
+
+激活账号后，点击充值
+
+可以用支付宝充值1美元。其实这里充值 0.2美元 就够一次OPENAI注册了！
+
+输入1美元，然后支付
+
+支付了可能要等几分钟才显示到余额账户，我在注册时就等了一会余额才显示
+注册 OpenAI 账号
+挂上科学访问打开 https://chat.openai.com/进行注册，如果没有科学上网会提示无法注册
+
+OpenAI’s services are not available in your country.
+
+注册成功后会进入验证手机号页面，选择你下一步短信平台的接码的手机国家
+
+在短信平台接码
+右侧服务，输入搜索openai，选择
+
+选择印度或者巴西
+
+现在你有一个可以接码的号码了，图下919862209703就是号码，复制号码到OpenAI验证码界面
+
+输入接码号码，点击“send code”
+
+
+然后等激活码，如果没有收到可以点OpenAI注册界面再发一次验证码，可以多试几次。
+注册完就可以去登录 https://chat.openai.com/auth/login
+ChatGPT使用
+
+就和普通微信聊天一样，发送你请求给你的朋友，ChatGPT就会给出答案！
+
+
+超酷 ChatGPT 提示
+awesome-chatgpt-prompts
+
+
+  
+  
+    
+      JavaScript is required to load GitHub Cards
+    
+  
+
+    
+搭建微信ChatGPT机器人
+
+一个基于OpenAi ChatGPT + WeChaty 实现的微信机器人 ，可以用来帮助你自动回复微信消息，或者管理微信群/好友，检测僵尸粉等…
+
+
+
+  
+  
+    
+      JavaScript is required to load GitHub Cards
+    
+  
+
+    
+获取自己的 api key，地址戳这里 👉🏻 ：创建你的 api key
+git clone https://github.com/wangrongding/wechat-bot.git --depth 1
+cd wechat-bot
+docker build . -t wechat-bot
+
+docker run -d --rm --name wechat-bot -v $(pwd)/config.js:/app/config.js -v $(pwd)/.env:/app/.env wechat-bot
+搭建网页ChatGPT聊天
+
+用 Express 和 Vue3 搭建的 ChatGPT 演示网页
+另一个支持注册登录，前端设置API Key 的修改版本 https://github.com/Kerwin1202/chatgpt-web
+
+
+
+  
+  
+    
+      JavaScript is required to load GitHub Cards
+    
+  
+
+    
+
+docker compose
+version: '3'
+services:
+
+  chatgptWeb:
+    image: chenzhaoyu94/chatgpt-web # 总是使用 latest ,更新时重新 pull 该 tag 镜像即可
+    ports:
+      - 3002:3002
+    environment:
+      # 二选一 OpenAI API Key - https://platform.openai.com/overview
+      OPENAI_API_KEY: sk-xxx
+      
+      # 二选一 change this to an `accessToken` extracted from the ChatGPT site's `https://chat.openai.com/api/auth/session` response
+      OPENAI_ACCESS_TOKEN: xxx
+      
+      # API接口地址，可选，设置 OPENAI_API_KEY 时可用
+      OPENAI_API_BASE_URL: xxx
+      
+      # API模型，可选，设置 OPENAI_API_KEY 时可用
+      OPENAI_API_MODEL: xxx
+      
+      # 反向代理，可选
+      API_REVERSE_PROXY: xxx
+      
+      # 访问权限密钥，可选
+      AUTH_SECRET_KEY: xxx
+      
+      # 超时，单位毫秒，可选
+      TIMEOUT_MS: 60000
+      
+      # Socks代理，可选，和 SOCKS_PROXY_PORT 一起时生效
+      SOCKS_PROXY_HOST: xxx
+      
+      # Socks代理端口，可选，和 SOCKS_PROXY_HOST 一起时生效
+      SOCKS_PROXY_PORT: xxx
+      
+      # HTTPS 代理，可选，支持 http，https，socks5
+      HTTPS_PROXY: http://xxx:7890
+过 Cloudflare 403
+
+自建代理，适用于 accessToken 的方式（不适用于 apiKey）
+
+可以用现成的镜像，也可以自己打包，有 Java 和 Go 实现的 API，开源
+除了官方 429，没有速率限制，但可能会不稳定，可能会突然失效（失效会尝试更新）
+适合自建自用的场景（多人用会有各种问题）
+结合本项目，可以这样使用
+version: '3'
+
+services:
+  app:
+    image: chenzhaoyu94/chatgpt-web # 总是使用 latest ,更新时重新 pull 该 tag 镜像即可
+    ports:
+      - 127.0.0.1:3002:3002
+    environment:
+      # 二选一
+      OPENAI_API_KEY:
+      # 二选一
+      OPENAI_ACCESS_TOKEN: eyJxxx
+      # API接口地址，可选，设置 OPENAI_API_KEY 时可用
+      OPENAI_API_BASE_URL:
+      # API模型，可选，设置 OPENAI_API_KEY 时可用，https://platform.openai.com/docs/models
+      # gpt-4, gpt-4-0314, gpt-4-32k, gpt-4-32k-0314, gpt-3.5-turbo, gpt-3.5-turbo-0301, text-davinci-003, text-davinci-002, code-davinci-002
+      OPENAI_API_MODEL:
+      # 反向代理，可选
+      API_REVERSE_PROXY: http://go-chatgpt-api:8080/conversation
+      # 访问权限密钥，可选
+      AUTH_SECRET_KEY:
+      # 每小时最大请求次数，可选，默认无限
+      MAX_REQUEST_PER_HOUR: 0
+      # 超时，单位毫秒，可选
+      TIMEOUT_MS: 60000
+      # Socks代理，可选，和 SOCKS_PROXY_PORT 一起时生效
+      SOCKS_PROXY_HOST:
+      # Socks代理端口，可选，和 SOCKS_PROXY_HOST 一起时生效
+      SOCKS_PROXY_PORT:
+      # HTTPS 代理，可选，支持 http，https，socks5
+      HTTPS_PROXY:
+    depends_on:
+      - go-chatgpt-api
+
+  go-chatgpt-api:
+    container_name: go-chatgpt-api
+    image: linweiyuan/go-chatgpt-api
+    environment:
+      - GIN_MODE=release
+      - CHATGPT_PROXY_SERVER=http://chatgpt-proxy-server:9515
+#      - NETWORK_PROXY_SERVER=http://host:port
+#      - NETWORK_PROXY_SERVER=socks5://host:port
+    depends_on:
+      - chatgpt-proxy-server
+    restart: unless-stopped
+
+  chatgpt-proxy-server:
+    container_name: chatgpt-proxy-server
+    image: linweiyuan/chatgpt-proxy-server
+    restart: unless-stopped
+终端 docker-compose up -d
+
+https://github.com/linweiyuan/go-chatgpt-api
+chatgpt-proxy-server
+
+chatgpt-proxy-server
+ChatGPT 代理服务器
+利用 undetected_chromedriver 绕过 Cloudflare 403
+监听 9515 端口，通过原生 JS 发送 XHR 来进行通信
+Dockerfile
+FROM archlinux
+
+ENV SUDO_USER_NAME linweiyuan
+ENV MIRROR_URL 'https://mirrors.bfsu.edu.cn/archlinux/$repo/os/$arch'
+
+RUN echo "Server = ${MIRROR_URL}" &gt; /etc/pacman.d/mirrorlist \
+    &amp;&amp; pacman -Sy --needed --noconfirm \
+    &amp;&amp; pacman -S base-devel git --needed --noconfirm \
+    &amp;&amp; useradd -m ${SUDO_USER_NAME} \
+    &amp;&amp; echo "${SUDO_USER_NAME} ALL=(ALL) NOPASSWD: ALL" &gt; /etc/sudoers \
+    &amp;&amp; su ${SUDO_USER_NAME} -c 'cd \
+        &amp;&amp; git clone https://aur.archlinux.org/google-chrome.git \
+        &amp;&amp; cd google-chrome \
+        &amp;&amp; source PKGBUILD \
+        &amp;&amp; sudo pacman -Syu --asdeps --needed --noconfirm "${makedepends[@]}" "${depends[@]}" \
+        &amp;&amp; makepkg -sir --noconfirm \
+        &amp;&amp; cd \
+        &amp;&amp; git clone https://github.com/ultrafunkamsterdam/undetected-chromedriver \
+        &amp;&amp; cd undetected-chromedriver \
+        &amp;&amp; sudo pacman -S --needed --noconfirm python python-setuptools \
+        &amp;&amp; sudo python setup.py install \
+        &amp;&amp; (python example/example.py &amp;) \
+        &amp;&amp; while true; do [ -f ~/.local/share/undetected_chromedriver/undetected_chromedriver ] &amp;&amp; sudo cp ~/.local/share/undetected_chromedriver/undetected_chromedriver / &amp;&amp; break || sleep 1; done \
+        &amp;&amp; cd \
+        &amp;&amp; sudo rm -rf google-chrome undetected-chromedriver \
+    ' \
+    &amp;&amp; pacman -Rs --noconfirm python-setuptools python git base-devel \
+    &amp;&amp; rm -rf /usr/lib/python* \
+    &amp;&amp; echo -e "y\nY" | pacman -Scc
+
+CMD ["./undetected_chromedriver", "--allowed-ips=", "--allowed-origins=*"]
+修改 MIRROR_URL 为 Arch 最优源的同时，要注意网络环境能正确处理 AUR 和 GitHub 上面的资源
+桌面ChatGPT
+https://github.com/Bin-Huang/chatbox
+
+
+  
+  
+    
+      JavaScript is required to load GitHub Cards
+    
+  
+
+    
+ChatGPT4 使用
+
+付费用户可以直接体验ChatGPT4
+普通用户预约，预约链接如下：
+https://openai.com/waitlist/gpt-4-api
+使用 chatgpt-web 自己独立搭建服务器，强烈推荐！
+如果使用官方网页版，需要把openai.com sentry.io都代理了，sentry.io是一个第三方日志收集平台！
+
+Chrome 插件
+
+ChatGPT for Google
+Bing Chat for All Browsers
+
+ChatGPT Plus 如何付费
+目前经典GPT不支持的信用卡
+
+国内招行实体VISA、MasterCard、全币卡都尝试过了，绑定不上。
+与此同时还尝试了全球付的香#港虚#拟信#用卡以及万里汇的香港虚#拟信#用卡，也绑定不上
+
+目前经典GPT支持的信用卡
+
+NobePay虚拟信用卡：https://www.xiaoz.me/archives/18207，支付宝可充值（`556766`卡段绑定成功）
+Depay虚拟信用卡：https://www.xiaoz.me/archives/18313，需要USDT才能充值（`531993`卡段绑定成功）
+QBIT虚拟信用卡：489683卡段xiaoz绑定OpenAI成功，但是据一位经典GPT用户透漏绑定失败，因此这个卡段尚不完全确认
+据网友反馈派安盈（Payoneer）的信#用#卡529366也可以绑定经典GPT。
+
+账单地址如何填写 账单地址不建议乱填，因为目前不确认地址乱填是否会触发风控，至少看起来应该像真实的。部分虚#拟#卡开通的时候会生成随机地址，如果虚#拟#卡提供了地址，可以直接使用虚拟卡提供的地址。（nobepay和qbit虚拟卡都提供了地址）
+如果虚拟信用卡未提供地址，可以尝试下面2个网站去生成地址并填写。
+
+https://www.meiguodizhi.com/
+https://www.haoweichi.com/
+
+Auto-GPT
+
+An experimental open-source attempt to make GPT-4 fully autonomous.
+Github Auto_GPT
+
+
+
+  
+  
+    
+      JavaScript is required to load GitHub Cards
+    
+  
+
+    
+心智测试
+
+Theory of Mind Test
+基于ChatGPT4，除了没有计划能力，的确已经拥有了某种心智能力！
+Auto GPT在某些方面，已经开始补齐GPT模型的计划能力！
+
+
+
+
+心智能力
+GPT4
+GPT5
+
+
+
+
+逻辑推理
+✅
+
+
+
+方案计划
+❌
+
+
+
+解决问题
+✅
+
+
+
+抽象思维
+✅
+
+
+
+理解复杂想法
+✅
+
+
+
+快速学习和从过往经验学习复盘能力
+✅
+
+
+
+
+Claude
+
+Claude 是 openai 内部团队出走后创建的新的AI， 最新 Claude 3 能力已经超越 OpenAI ChatGPT4 了
+
+https://claude.ai/
+微软 Bing Chat
+
+比 OpenAI Chat 版本训练数据更新，两者各有千秋
+
+加入候补名单
+前往 https://www.bing.com/new 网页，按一下「加入等候清单」，然后登入你的Microsoft 帐号即可加入候补。
+等待通过候补名单
+
+这里等待时间不确定，有人快，有人慢。博主等了接近三周时间！
+
+下载 Edge Dev 版本
+下載 Microsoft Edge Insider Channels， 安装好后，就可以开始使用 Bing Chat 了
+
+上面是以前的方法，现在有更方便的解决方法了，科学上网 + 浏览器插件 New-Bing-Anywhere
+
+开始使用 bing chat
+
+下面是简单使用记录，可以看出，可以理解人类语音，做阅读理解，归纳中心思想了！
+
+
+ChuanhuChatGPT
+
+https://github.com/GaiZhenbiao/ChuanhuChatGPT
+GUI for ChatGPT API and many LLMs
+
+
+
+  
+  
+    
+      JavaScript is required to load GitHub Cards
+    
+  
+
+    
+Claude 注册使用教程
+
+现在可以直接在claude官网使用  https://claude.ai/ （目前仅对美/英地区开放）
+
+介绍
+Claude 是Anthropic公司开发的AI聊天机器人，与ChatGPT类似，由OpenAI（ChatGPT所在的公司）的前副总裁创办。和ChatGPT-3.5相当，但比不上GPT4，拥有连续对话能力，在撰写小说、编写代码、解释概念等方面表现出色
+Claude 目前还处于免费使用阶段，只需注册一个Slack账号即可以，无需梯子也可以使用。
+注册Slack账号
+打开Slack网站：slack
+
+可以直接使用Gmail邮箱注册（QQ邮箱不支持），或者直接Google、Apple账号授权登录，这里我用Gmail邮箱注册。
+填上验证码
+
+创建工作区
+
+创建工作区后填上自己姓名，跳过邀请
+
+Slack中添加Claude
+打开网站 www.anthropic.com ，点击 Add to Slack
+
+允许授权
+
+授权成功，如果出现403等错误，可多次重试。 也可以微信上(go2071)告诉我你的邮箱，我可以拉你加入到我的频道
+
+回到Slack中，这时候你会发现你的Slack多了一个叫Claude的应用
+
+体验Claude
+你可以进入任意频道，在聊天窗口@Claude 并邀请Claude机器人加入频道后开始群聊
+
+点同意
+
+@Claude并提问
+
+频道类似与群聊，大家都能看到消息内容。你也可以在应用列表中点击Claude直接与Claude发起聊天，相当于一对一私聊
+
+ChatGPT将取代谁？
+为什么AI会写代码但是对程序员威胁不大，会画图对画师威胁却很大？
+举个例子，假定现在AI数学水平已经达到数学系博士水平，你随便问他一个高数难题它都能解答，对99%人来说有用吗？完全没用，因为它给出的答案不管是正确还是错误的，都根本看不懂！这个数学AI只对精通高等数学的人才是有用的。
+同理，AI写代码再厉害，99%的人看到代码也是一头雾水，完全不知道怎么用对吧？所以，只有专业的开发人员才能用好AI写的代码。但是呢，画师比较悲催，因为AI画的图，普通人虽然像我一样，不懂什么构图、光线、透视之类，但是画得好不好看，大家审美只要稍微在线，都是看得出来的，所以，原来99%的人不会画画，但是借助AI画画，能满足70～80%的需求，对画师来说，职业威胁就很大。
+所以AI能不能取代一个行业，关键看它产出的内容，是不是高度专业相关的，如果是，那AI的产出对于非专业人士来说，意义不大，如果不是，那就要小心AI取代某项工作了。
+注意事项
+Q1: OpenAI‘s services are not available in your country.
+A1:
+使用短信平台绕过 https://sms-activate.org
+Q2:虚拟号码注册了，但是登录还是显示OpenAI’s services are not available in your country.
+A2:
+在OpenAI’s services are not available in your country提示页按F12打开开发者工具，到【应用-存储-本地存储空间】页把@@authOspajs开头的这个密钥删除，再刷新页面。或者使用隐私模式浏览器再次尝试
+Q3:使用ChatGPT会泄密么？
+A3:
+
+作为一个AI语言模型，我的“记忆”实际上是通过训练数据和算法得到的，而不是像人类一样具有真正的记忆。我的模型已经经过训练，可以在处理自然语言时自动学习和适应。每次交互都可以帮助我进一步优化我的表现，但我并不能将一个特定的对话记录下来，并直接将其存储在我的模型中。在保护用户隐私和保密性方面，我们非常重视，并且严格遵守相关法规和规定。
+
+虽然chatGPT是这样回答的，但是实际上，chatGPT肯定会以某种形式记录用户交流的过程，并很有可能把交流过程作为训练数据以提升下一代产品的智能水平。所以，问问题的时候，把敏感信息去掉！
+参考&amp;致谢
+
+中国区注册OpenAI账号试用ChatGPT指南
+WeChat Bot
+OpenAI/ChatGPT Plus信用卡绑定总结，整理了部分支持的信用卡
+0门槛克隆ChatGPT方案再升级，开源模型复现，在线体验无需注册
+一种取巧的方式绕过Cloudflare v2验证
+chatgpt-proxy-server
+使用 Cloudflare Workers 让 OpenAI API 绕过 GFW 且避免被封禁
+awesome-ChatGPT-repositories
+Claude保姆级注册教程
+
+神经网络原理
+
+先在这里写一段，等整理了更多资料再专门写一下AI背后的数学原理和工程应用
+
+数学原理
+傅里叶变换可以模拟任何一个函数！——深度学习背后的数学原理
+反向迭代，梯度下降是计算神经网络参数值的数学原理
+存在局部最优，与全局最优的不可调和
+可能过拟合
+存在的问题
+神经网络是一个黑盒子，能算出结果，但人类无法理解为什么得到这个结果
+无法给出确定的结果，及其微小的扰动，可能会导致完全不同的结果。例如一张图片，一个像素的变化，导致识别出来猫和狗的差异
+黑盒炼金被滥用！任何期望的结果，通过一个数据训练，都可以得到一个模型，即使这个模型从根本上就是错的。例如出生时间与生男生女的关系，可以训练一个模型预测；手掌纹路和长大后犯罪的关系，也可以训练一个模型预测。但这种模型可能从一开始就是错误的，存在偏见的，异想天开的，但无论多么荒谬的模型，只要有数据，可以训练出来！这种滥用可能导致非常严重的后果！
+在关键领域，涉及责任分配，生命相关的领域，神经网络无法担责，也无法保证一定的确定结果。例如L4级别的自动驾驶
+竞品
+tabby
+
+Eugeny/tabby: A terminal for a more modern age (github.com)
+微软 Copilot 开源替代版
+
+alpaca
+
+Code and documentation to train Stanford’s Alpaca models, and generate the data.
+crfm.stanford.edu/alpaca/
+
+
+
+  
+  
+    
+      JavaScript is required to load GitHub Cards
+    
+  
+
+    
+ChatGLM-6B
+
+ChatGLM-6B是一个中英双语开源大模型，最低可在6G显存上运行
+
+
+
+  
+  
+    
+      JavaScript is required to load GitHub Cards
+    
+  
+
+    
+ColossalAI
+
+Colossal-AI: Making large AI models cheaper, faster and more accessible
+
+
+
+  
+  
+    
+      JavaScript is required to load GitHub Cards
+    
+  
+
+    
+gpt4all
+
+Demo, data and code to train an assistant-style large language model with ~800k GPT-3.5-Turbo Generations based on LLaMa
+
+
+
+  
+  
+    
+      JavaScript is required to load GitHub Cards
+    
+  
+
+    
+DeepSpeed
+
+DeepSpeed is a deep learning optimization library that makes distributed training and inference easy, efficient, and effective.
+www.deepspeed.ai/
+
+
+
+  
+  
+    
+      JavaScript is required to load GitHub Cards
+    
+  
+
+    
+MiniGPT-4
+
+MiniGPT-4: Enhancing Vision-language Understanding with Advanced Large Language Models
+
+
+
+  
+  
+    
+      JavaScript is required to load GitHub Cards
+    
+  
+
+    
+更多应用
+集成环境
+
+janhq/jan
+invoke-ai/InvokeAI
+chatchat-space/Langchain-Chatchat
+ollama
+ChatGPT-Next-Web
+one-api
+buzz 语音转文字
+lobechat 支持多种大模型聊天机器人
+
+学习
+
+datawhalechina/self-llm: 《开源大模型食用指南》基于Linux环境快速部署开源大模型，更适合中国宝宝的部署教程
+
+知识库
+Mintplex-Labs/anything-llm: The all-in-one Desktop &amp; Docker AI application with full RAG and AI Agent capabilities. (github.com)
+知识图谱
+microsoft/graphrag: A modular graph-based Retrieval-Augmented Generation (RAG) system
+AI 编程
+
+
+GPT Pilot
+
+
+Create your own and custom Copilot in VSCode with Ollama and CodeGPT | by Daniel Avila | CodeGPT
+
+
+rjmacarthy/twinny: The most no-nonsense, locally or API-hosted AI code completion plugin for Visual Studio Code - like GitHub Copilot but completely free and 100% private.
+
+
+伪造视频语音
+
+伪造语音，视频，对于诈骗行业来说，这是个好消息。但对于普通人来说，看到视频，也可能是对方精心伪造的，视频语音都失去了可信性了
+
+Tortoise-TTS 克隆目标语音
+Deepfake 视频伪造
+bark Text-Prompted Generative Audio Model
+openvoice
+myshell-ai/OpenVoice
+facefusion/facefusion
+视频生成
+harry0703/MoneyPrinterTurbo: 利用AI大模型，一键生成高清短视频
+虚拟主播
+
+可以演电影，电视剧，带货主播等等。再也不用担心主播人设坍塌，变老等
+
+客服
+Langflow - Create your chatbot!
+AI绘画
+
+Stable-diffusion
+https://github.com/luosiallen/latent-consistency-model
+https://github.com/0xbitches/ComfyUI-LCM
+Pinokio  模型下载 Civitai: The Home of Open-Source Generative AI
+
+3D建模
+
+Meta 3D AssetGen
+
+智能翻译
+
+OpenAI-Whisper WebUi
+集成环境 buzz  Subtitleedit
+
+写代码
+
+Copilot
+Cursor 内置GPT4，不需要你有OpenAI的账号和Key，直接白嫖
+
+
+这个测试着，内部集成的似乎是GPT3？
+
+翻译
+bilingual_book_maker
+金融
+https://github.com/AI4Finance-Foundation/FinGPT
+
+开源金融模型
+
+
+
+  
+  
+    
+      JavaScript is required to load GitHub Cards
+    
+  
+
+    
+GPT学术优化
+gpt_academic
+未来畅想
+
+超大规模神经网络已经具备初步的智能了，ChatGPT 3.5 版测试大约人类9岁儿童智能水平！
+随着神经网络规模扩大，获得成年人智能水平的神经网络也许很快就会面世！
+真人工智能诞生的日子，就是下一次工业革命级别的技术变革之日！
+
+问题
+Error Code 429 - You exceeded your current quota, please check your plan and billing details.
+官方回复如下：
+
+此错误消息表示您已达到 API 的每月最大支出（硬性限制）。这意味着您已经消耗了分配给您的计划的所有积分或单位，并且已经达到了您的计费周期的限制。发生这种情况的原因可能有多种，例如：
+- 您使用的是大容量或复杂的服务，每个请求消耗大量信用或单位。
+- 您正在使用需要处理大量请求的大型或多样化数据集。
+- 对于您的组织的使用，您的限制设置得太低。
+要解决此错误，请执行以下步骤：
+-在此处检查您的帐户设置中的当前配额。您可以在此处查看您的请求消耗了多少令牌。
+- 如果您使用的是免费计划，请考虑升级到提供更高配额的现收现付计划。
+- 如果您需要增加配额，可以在这里申请。我们将审核您的请求并尽快回复您。
+
+系列教程
+全部文章RSS订阅
+AI系列
+AI 分类 RSS 订阅
+
+深度学习之视频人脸识别系列
+中国区注册ChatGPT并使用全流程图解教程
+关于普朗克概率的的讨论
+信用卡对个人、社会以及国家的影响——ChatGPT辅助编写
+
+Hexo系列
+HexoRSS分类订阅
+[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+GithubProfile美化与自动获取RSS文章教程
+Vercel部署高级用法教程
+webhook部署Hexo静态博客指南
+在宝塔VPS上面采用docker部署waline全流程图解教程
+自建Umami访问统计服务并统计静态博客UV/PV
+
+Docker系列
+Docker 分类 RSS 订阅
+
+Docker使用简明教程
+使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程
+为知笔记私有化Docker部署
+Earthly 一个更加强大的镜像构建工具
+使用 Shell 脚本实现一个简单 Docker
+如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers
+通过IPV6访问Qnap NAS中Docker的服务
+
+]]></content>
+      <categories>
+        <category>ai</category>
+      </categories>
+      <tags>
+        <tag>ai</tag>
+        <tag>chatgpt</tag>
+        <tag>openai</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>信用卡对个人、社会以及国家的影响——ChatGPT辅助编写</title>
     <url>/posts/b648bb9c/</url>
     <content><![CDATA[
@@ -57608,9 +57668,9 @@ chatGPT
 
 视频讲解
 B站
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-dyGOhQgPflGfgQfB").style.height=document.getElementById("mmedia-dyGOhQgPflGfgQfB").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-qzyJZxEGXdlvXsEf").style.height=document.getElementById("mmedia-qzyJZxEGXdlvXsEf").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-dyGOhQgPflGfgQfB").style.height=document.getElementById("mmedia-dyGOhQgPflGfgQfB").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-qzyJZxEGXdlvXsEf").style.height=document.getElementById("mmedia-qzyJZxEGXdlvXsEf").scrollWidth*0.76+"px";
     }; 
 youtube
 
@@ -65425,9 +65485,9 @@ openai/whisper
 完了这歌拿了“五个一工程奖”(全国精神文明建设领域的最高奖)，那些年度金曲奖跟国家的五个一奖比就是小宝宝。 《爱是你我》就不是情歌，它的“爱”指的互帮互助的人间真爱，“你我”指代人人、每个人，爱是你我，意即人民互帮互助，人间充满真爱。
 “这世界 我来了  任凭风暴旋涡” 这首歌表达的是面对再大的困难，也不退缩，一种对生活的热爱，对征服困难的自信！
 现场 MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-KUTsVlbGOlFRNzlK").style.height=document.getElementById("mmedia-KUTsVlbGOlFRNzlK").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-gDKYpLaWhISfcGSL").style.height=document.getElementById("mmedia-gDKYpLaWhISfcGSL").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-KUTsVlbGOlFRNzlK").style.height=document.getElementById("mmedia-KUTsVlbGOlFRNzlK").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-gDKYpLaWhISfcGSL").style.height=document.getElementById("mmedia-gDKYpLaWhISfcGSL").scrollWidth*0.76+"px";
     }; 
 歌曲《爱是你我》歌词
 爱是你我  
@@ -71442,66 +71502,6 @@ SpaceSniffer 是一款适用于 Windows 的免费软件磁盘空间分析器，�
         <tag>windows</tag>
         <tag>垃圾清理</tag>
         <tag>速度优化</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>通过宝塔面板实现MySQL性能简单调优</title>
-    <url>/posts/d5f56dd0/</url>
-    <content><![CDATA[
-在PHP+MYSQL架构网站运行过程中，往往会遇到各种性能问题影响，如MySQL、PHP、CPU、磁盘IO、缓存等，其中MySQL瓶颈就是最常见也最难解决的一种影响网站性能的因素；通常，我们会使用redis、memcached等缓存软件来缓存内容，这确实是最优的解决方案之一，但这需要网站程序的支持，然而多数常用网站程序并不支持或者不能完美支持这些缓存软件，今天我们就来谈谈如何通过MySQL自身的配置调整来优化MySQL性能，以缓解MySQL瓶颈问题。
-
-准备：
-
-​    1、宝塔Linux面板 正式版 5.2.0+ (2017/09/20发布)  测试版5.2.4+
-​    2、MySQL 5.x
-
-通常MySQL调优我们分以下几部分：
-
-​    1、MySQL配置参数调优 (需要根据网站运行情况调整)
-​    2、数据表索引调优 (效果明显，但通常优秀的开源程序都不需要调整)
-​    3、SQL语句调优 (这是程序员或DBA干的事)
-
-今天我们主要谈谈如果配合宝塔面板的新功能来进行MySQL配置参数调优，我们先来看两张图片：
-(图1)
-
-(图2)
-
-很明显，(图1)显示的是MySQL当前的运行状态，(图2)显示的是MySQL主要配置参数
-下面我们就来解读一下这两张图：
-1、活动/峰值连接数
-​      (图1)中当前活动的连接为1个，自MySQL服务启动以来，最高连接数为54；当最高连接数接近或等于(图2)中的max_connections时，应适当增加max_connections，需要注意的是，不要一下子增加过多，建议每次增加50，观察一段时间，不够再继续增加。
-2、线程缓存命中率
-​      (图1)中线程缓存命中率为99.78%，若这个值小于90%，建议适当增加(图2)中的thread_cache_size，建议每次增加8。
-3、索引命中率
-​      (图1)中索引命中率为99.50%，若这个值小于95%，建议适当增加(图2)中的key_buffer_size，建议每次增加64，需要说明的是，若您的数据库使用的是Innodb引擎，可忽略这个选项
-4、Innodb索引命中率
-(图1)中Innodb索引命中率为100%，若这个值小于95%，建议适当增加(图2)中的innodb_buffer_pool_size，建议每次增加64，需要说明的是，若您的数据库没有使用Innodb引擎，可忽略这个选项
-5、查询缓存命中率
-​      MySQL查询缓存是个比较受争议的功能，个人建议当你有在使用redis、memcached等缓存软件时，在(图2)中将query_cache_size设为0可以将其关闭，当你没有使用缓存软件，有多余的内存使用，且数据库瓶颈明显存在时，可以尝试开启查询缓存，这是个非常依赖数据表结构及SQL语句优化的功能，若数据表结构和SQL语句都针对查询缓存进行过优化，它的效果还是很不错的。
-6、创建临时表到磁盘
-​      (图1)中创建临时表到磁盘的比例是0.42%，这说明大部分临时表创建到内存了，不会过多增加磁盘IO的开销，建议，当比例大于2%时适当增加(图1)中的tmp_cache_size，建议每次增加32，当比例大于60%时，放弃吧，有些开源程序并没有专门优化过SQL语句，所以在运行过程中会开启大量临时表，加多少缓存都是不够用的。
-7、已打开的表
-​      当(图1)中的已打开的表接近或等于(图2)中的table_open_cache时，可以适当增加table_open_cache，但若设置过大可能导致您的程序频繁中断MySQL连接，建议在1024以内，最大不要超过2048。
-8、没有使用索引的量、没有使用索引的JOIN量
-​      若不为0，就检查下数据表索引吧，其实只要没有疯涨，比如一天增涨几千，一般可以忽略，必竟优化索引还是程序员或DBA去干比较合适。
-9、排序后的合并次数
-​      如果这个值在缓慢增张，建议适当增加(图2)中的sort_buffer_size，建议每次增加512，但最大不要超过8192，如果这个值一直在疯涨，增加sort_buffer_size也没用，就放弃这个选项吧，这个锅还是给程序开发者背。
-10、锁表次数
-​      如果服务器CPU开销不大的情况下，疯狂锁表，建议你将所有数据表转换成innodb，记得转换前备份哦。
-11、优化方案
-​      这个是我们根据内存大小给的一个推荐优化方案，仅是建议仅用于基础参考值，还是要根据实据情况来调整每一个配置项。
-注意：保存参数配置后不会立即生效，记得要重启MySQL服务。
-写在最后：
-因我本人并不是专业DBA，难免有错误或遗漏的地方，还请大家给予指正，另外，可能面板提供的参考数据及调整选项还不够丰富，我们在往后的更新中会根据需要考虑继续增加更多的调整选项，谢谢大家的支持。
-来自网络整理。
-]]></content>
-      <categories>
-        <category>mysql</category>
-      </categories>
-      <tags>
-        <tag>linux</tag>
-        <tag>mysql</tag>
-        <tag>优化</tag>
       </tags>
   </entry>
 </search>
