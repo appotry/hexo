@@ -1104,6 +1104,389 @@ ISP 数字图像处理 算法概述、工作原理、架构、处理流程
       </tags>
   </entry>
   <entry>
+    <title>Gitlab的安装及使用</title>
+    <url>/posts/d08eb7b/</url>
+    <content><![CDATA[Gitlab概述
+1.1 GitLab介绍
+GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。
+GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。
+它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找
+1.2 Gitlab服务构成
+
+
+Nginx：静态web服务器。
+
+
+gitlab-shell：用于处理Git命令和修改authorized keys列表。
+
+
+gitlab-workhorse: 轻量级的反向代理服务器。
+
+
+logrotate：日志文件管理工具。
+
+
+postgresql：数据库。
+
+
+redis：缓存数据库。
+
+
+sidekiq：用于在后台执行队列任务（异步执行）。
+
+
+unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。
+
+
+1.3 Gitlab工作流程
+
+1.4 GitLab Shell
+GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表
+当通过SSH访问GitLab Server时，GitLab Shell会：
+
+限制执行预定义好的Git命令（git push，git pull，git annex）
+调用GitLab Rails API检查权限
+执行pre-receive钩子（在企业版中叫做Git钩子）
+执行用户请求的动作，处理GitLab的post-receive动作
+处理自定义的post-receive动作
+
+当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：
+如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作
+如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：
+
+调用GitLab Rails API 检查权限
+执行pre-receive钩子（在GitLab企业版中叫做Git钩子）
+执行你请求的动作
+处理GitLab的post-receive动作
+处理自定义的post-receive动作
+
+1.5 GitLab Workhorse
+GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。
+Gitlab的安装部署
+
+
+Gitlab要求服务器内存2G以上
+
+2.1 方式一:下载gitlab-ce的rpm包
+
+gitlab官方rpm包下载
+清华的源
+
+将对应版本的gitlab-ce下载到本地后，直接yum安装即可
+要先将这个rpm包下载到本地
+yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm
+2.2 方式二:配置yum源
+在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：
+[gitlab-ce]
+name=gitlab-ce
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/ Repo_gpgcheck=0
+Enabled=1 Gpgkey=https://packages.gitlab.com/gpg.key
+然后创建cache，再直接安装gitlab-ce
+yum makecache  # 这一步会创建大量的数据
+直接安装最新版
+yum install -y gitlab-ce # 如果要安装指定的版本，在后面填上版本号即可
+yum install -y  gitlab-ce-13.6.1
+如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
+yum install gitlab-ce -y --nogpgcheck
+2.3 gitlab的配置
+配置文件位置  /etc/gitlab/gitlab.rb
+[root@centos7 test]# vim /etc/gitlab/gitlab.rb
+[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
+external_url 'http://10.0.0.51'  # 这里一定要加上http://
+配置邮件服务
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.qq.com" gitlab_rails['smtp_port'] = 25 gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
+gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
+gitlab_rails['smtp_domain'] = "qq.com" gitlab_rails['smtp_authentication'] = "login" gitlab_rails['smtp_enable_starttls_auto'] = true
+gitlab_rails['smtp_tls'] = false
+gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
+user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址
+修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。
+gitlab-ctl reconfigure # 重载配置文件
+2.4 Gitlab常用命令
+gitlab-ctl start         # 启动所有 gitlab 组件
+gitlab-ctl stop          # 停止所有 gitlab 组件
+gitlab-ctl restart       # 重启所有 gitlab 组件
+gitlab-ctl status        # 查看服务状态
+gitlab-ctl reconfigure   # 启动服务
+gitlab-ctl show-config   # 验证配置文件
+gitlab-ctl tail          # 查看日志
+gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
+vim /etc/gitlab/gitlab.rb # 修改默认的配置文件
+Gitlab的使用
+
+
+Gitlab安装好后，设置密码，管理账户为root
+
+3.1 创建Group
+
+填上组名即可，这里组名为java
+
+
+
+3.2 创建User
+
+创建四个User：pm、dev1、dev2、dev3
+
+
+
+3.3 添加User到Group中并授权
+
+3.4 创建Project并配置SSH
+
+
+
+
+3.5 在项目中添加成员
+
+
+3.6 将本地文件推送到Gitlab
+将app01项目克隆下来
+git clone git@10.0.0.51:java/app01.git # 初始化配置
+git config --global user.name "hgzero" git config --global user.email "hgzero@qq.com"
+在app01目录下新建一些文件
+推送到gitlab
+git add .
+git commit -m "first edition" git push origin master
+
+
+制定开发计划
+
+
+4.1 创建开发计划
+
+项目：app01
+版本：v1.0
+
+
+4.2 创建里程碑Milestones
+
+用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）
+要根据开发计划来创建Milestones
+
+
+
+
+
+4.3 根据开发计划创建issue
+
+创建4个issue，分派给dev1和dev2这两个开发人员
+
+
+
+
+
+
+
+**4.4 开发者登录账号查看分派的任务 **
+
+然后开发dev1登录gitlab，就能看到任务已经分配过来了
+
+
+4.5 开发流程
+
+公司里的开发开始任务
+
+1. 先从仓库把项目拉下来
+git clone git@10.0.0.51:java/app01.git
+cd app01/
+2.先创建一个自己的分支，然后进行开发
+git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
+git status # 3. 开始开发首页
+echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
+4. 开发完成后，把项目传到仓库
+git add .
+git commit -m "index"
+如果写成 git commit -m “close #2” ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
+传到index分支
+git push origin index
+4.6 合并分支
+1）开发dev1发送合并分支请求给pm
+
+
+
+2）pm收到开发的Merge请求后进行处理
+
+使用pm登录，就可以看到pm已经收到了合并请求merge request
+
+
+
+
+
+3）开发dev1确认任务完成
+
+退出pm账户，登入dev1账户：
+
+
+
+或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close
+
+
+
+这个时候Milestones的进度已经往前进了一些了：
+
+
+4.7 开发其他功能
+
+然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发
+
+git checkout master  # 切换到master
+git pull             # 从远端仓库拉取数据
+然后再进行其他操作
+Gitlab备份恢复
+
+5.1 备份gitlab
+1）修改配置文件
+
+/etc/gitlab/gitlab.rb
+
+备份保存的位置，这里是默认位置，可修改成指定的位置
+gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
+设置备份保存的时间，超过此时间的日志将会被新覆盖
+gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
+特别注意： # 如果自定义了备份保存位置，则要修改备份目录的权限，比如： # chown -R git.git /data/backup/gitlab
+
+配置完成后要重启以使配置生效
+
+重读配置文件
+gitlab-ctl reconfigure # 重启gitlab
+gitlab-ctl restart
+2）设置定时任务
+每天凌晨2点定时创建备份 # 将一下内容写入到定时任务中 crontab -e
+0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create # 备份策略建议： # 本地保留3到7天，在异地备份永久保存
+3）备份时间的识别
+备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
+data -d  @1494170842
+5.2 恢复gitlab
+1）停止数据写入服务
+停止数据写入服务
+gitlab-ctl stop unicorn
+gitlab-ctl stop sidekiq
+2）进行数据恢复并重启
+进行恢复
+gitlab-rake gitlab:backup:restore BACKUP=1494170842  # 这个时间戳就是刚刚备份的文件前面的时间戳
+重启
+gitlab-ctl restart
+gitlab邮件通知配置
+
+
+vim  /etc/gitlab/gitlab.rb
+
+gitlab_rails['time_zone'] = 'Asia/Shanghai' gitlab_rails['gitlab_email_enabled'] = true
+gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
+gitlab_rails['gitlab_email_display_name'] = 'gitlab' gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
+gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
+gitlab_rails['smtp_user_name'] = "smtp用户名" gitlab_rails['smtp_password'] = "smtp用户密码" gitlab_rails['smtp_domain'] = "163.com" gitlab_rails['smtp_authentication'] = "login"
+
+
+使用SourceTree进行项目开发
+
+
+
+7.1 项目拉取
+
+先把项目克隆下来
+
+
+
+
+如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加
+
+
+
+7.2 创建分支进行功能开发
+1）新建立一个叫“pay”的分支
+
+
+2）进行功能开发
+
+7.3 提交项目
+1）开发pay功能完成后进行提交
+
+可以看到SourceTree中已经有“未提交的更改”
+
+
+
+2）添加“用户信息”
+
+** 3）进行提交**
+
+
+注释也可以写成  close #3    ，作用是提交完成后关闭3号issue
+
+7.4 推送到仓库
+
+
+
+然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了
+
+7.5 项目上线
+1）当所有工作完成之后，就可以进行上线了
+
+2）打标签
+
+上线先打个标签
+
+
+
+
+** 3）删除无用分支**
+
+然后删除已经合并到主干中的不必要的分支，如index、pay等
+最后一定要注意时间一定要同步，不然会错乱
+
+参考
+
+Praywu
+
+系列教程
+全部文章RSS订阅
+
+Gitlab 使用系列
+Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+
+Devops系列
+Devops 分类 RSS 订阅
+
+自建全套开源Devops开发系统
+Git介绍以及分支模型图解
+三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
+DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
+项目开发管理工具推荐
+Gitlab的安装及使用教程完全版
+Gitlab的安装及使用
+那些有用的Github工具介绍！Action、app、workflow等
+
+
+项目管理系列
+AI 分类 RSS 订阅
+
+如何做一个完整的硬件项目的项目管理之简明教程
+几种常用管理模型和方法
+PMBOK指南（第6版）
+如何做好竞品分析
+一大堆寓意深刻的管理故事锦集
+人格类型分类总结归纳
+
+
+]]></content>
+      <categories>
+        <category>devops</category>
+      </categories>
+      <tags>
+        <tag>gitlab</tag>
+        <tag>git</tag>
+        <tag>crack</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>PT 工具集，Linux硬链接助手</title>
     <url>/posts/bb600b4b/</url>
     <content><![CDATA[由于自我需求，写了两个脚本完成PT下载和保种两全其美的硬链接 Linux shell 脚本方案。
@@ -1775,386 +2158,350 @@ webhook部署Hexo静态博客指南
       </tags>
   </entry>
   <entry>
-    <title>Gitlab的安装及使用</title>
-    <url>/posts/d08eb7b/</url>
-    <content><![CDATA[Gitlab概述
-1.1 GitLab介绍
-GitLab是利用Ruby on Rails一个开源的版本管理系统，实现一个自托管的Git项目仓库，可通过Web界面进行访问公开的或者私人项目。
-GitLab能够浏览源代码，管理缺陷和注释。可以管理团队对仓库的访问，它非常易于浏览提交过的版本并提供一个文件历史库。团队成员可以利用内置的简单聊天程序(Wall)进行交流。
-它还提供一个代码片段收集功能可以轻松实现代码复用，便于日后有需要的时候进行查找
-1.2 Gitlab服务构成
+    <title>3G,4G,Wifi选型需求分析及技术简介</title>
+    <url>/posts/6b2ba137/</url>
+    <content><![CDATA[3G,4G,Wifi选型需求分析及技术简介
 
 
-Nginx：静态web服务器。
+文章写了好多年了，只在一个网站发布过PDF版本，行业内应该很多人看过这个。
 
 
-gitlab-shell：用于处理Git命令和修改authorized keys列表。
+关于本blog，图床一般使用github，已经配置了CDN，如果图片还是未显示请自行代理解决
 
 
-gitlab-workhorse: 轻量级的反向代理服务器。
+原创声明警告，本文禁止转载，禁止发布到其它任何网站，可以接受约稿。
 
 
-logrotate：日志文件管理工具。
-
-
-postgresql：数据库。
-
-
-redis：缓存数据库。
-
-
-sidekiq：用于在后台执行队列任务（异步执行）。
-
-
-unicorn：An HTTP server for Rack applications，GitLab Rails应用是托管在这个服务器上面的。
-
-
-1.3 Gitlab工作流程
-
-1.4 GitLab Shell
-GitLab Shell有两个作用：为GitLab处理Git命令、修改authorized keys列表
-当通过SSH访问GitLab Server时，GitLab Shell会：
-
-限制执行预定义好的Git命令（git push，git pull，git annex）
-调用GitLab Rails API检查权限
-执行pre-receive钩子（在企业版中叫做Git钩子）
-执行用户请求的动作，处理GitLab的post-receive动作
-处理自定义的post-receive动作
-
-当通过http(s)访问GitLab Server时，工作流程取决于你是从Git仓库拉取(pull)代码还是向git仓库推送(push)代码：
-如果是从Git仓库拉取(pull)代码，GitLab Rails应用会全权负责处理用户鉴权和执行Git命令的工作
-如果是向Git仓库推送(push)代码，GitLab Rails应用既不会进行用户鉴权也不会执行Git命令，它会把以下工作交由GitLab Shell进行处理：
-
-调用GitLab Rails API 检查权限
-执行pre-receive钩子（在GitLab企业版中叫做Git钩子）
-执行你请求的动作
-处理GitLab的post-receive动作
-处理自定义的post-receive动作
-
-1.5 GitLab Workhorse
-GitLab Workhorse是一个敏捷的反向代理。它会处理一些大的HTTP请求，比如文件上传、文件下载、Git push/pull和Git包下载。其它请求会反向代理到GitLab Rails应用，即反向代理给后端的unicorn。
-Gitlab的安装部署
-
-
-Gitlab要求服务器内存2G以上
-
-2.1 方式一:下载gitlab-ce的rpm包
-
-gitlab官方rpm包下载
-清华的源
-
-将对应版本的gitlab-ce下载到本地后，直接yum安装即可
-要先将这个rpm包下载到本地
-yum install -y gitlab-ce-13.6.1-ce.0.el7.x86_64.rpm
-2.2 方式二:配置yum源
-在 /etc/yum.repos.d/ 下新建 gitlab-ce.repo，写入如下内容：
-[gitlab-ce]
-name=gitlab-ce
-baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el7/ Repo_gpgcheck=0
-Enabled=1 Gpgkey=https://packages.gitlab.com/gpg.key
-然后创建cache，再直接安装gitlab-ce
-yum makecache  # 这一步会创建大量的数据
-直接安装最新版
-yum install -y gitlab-ce # 如果要安装指定的版本，在后面填上版本号即可
-yum install -y  gitlab-ce-13.6.1
-如果安装时出现gpgkey验证错误，只需在安装时明确指明不进行gpgkey验证
-yum install gitlab-ce -y --nogpgcheck
-2.3 gitlab的配置
-配置文件位置  /etc/gitlab/gitlab.rb
-[root@centos7 test]# vim /etc/gitlab/gitlab.rb
-[root@centos7 test]# grep "^[a-Z]" /etc/gitlab/gitlab.rb
-external_url 'http://10.0.0.51'  # 这里一定要加上http://
-配置邮件服务
-gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.qq.com" gitlab_rails['smtp_port'] = 25 gitlab_rails['smtp_user_name'] = "hgzerowzh@qq.com"  # 自己的qq邮箱账号
-gitlab_rails['smtp_password'] = "xxx"  # 开通smtp时返回的授权码
-gitlab_rails['smtp_domain'] = "qq.com" gitlab_rails['smtp_authentication'] = "login" gitlab_rails['smtp_enable_starttls_auto'] = true
-gitlab_rails['smtp_tls'] = false
-gitlab_rails['gitlab_email_from'] = "hgzerowzh@qq.com"  # 指定发送邮件的邮箱地址
-user["git_user_email"] = "shit@qq.com"   # 指定接收邮件的邮箱地址
-修改好配置文件后，要使用 gitlab-ctl reconfigure 命令重载一下配置文件，否则不生效。
-gitlab-ctl reconfigure # 重载配置文件
-2.4 Gitlab常用命令
-gitlab-ctl start         # 启动所有 gitlab 组件
-gitlab-ctl stop          # 停止所有 gitlab 组件
-gitlab-ctl restart       # 重启所有 gitlab 组件
-gitlab-ctl status        # 查看服务状态
-gitlab-ctl reconfigure   # 启动服务
-gitlab-ctl show-config   # 验证配置文件
-gitlab-ctl tail          # 查看日志
-gitlab-rake gitlab:check SANITIZE=true --trace    # 检查gitlab
-vim /etc/gitlab/gitlab.rb # 修改默认的配置文件
-Gitlab的使用
-
-
-Gitlab安装好后，设置密码，管理账户为root
-
-3.1 创建Group
-
-填上组名即可，这里组名为java
-
-
-
-3.2 创建User
-
-创建四个User：pm、dev1、dev2、dev3
-
-
-
-3.3 添加User到Group中并授权
-
-3.4 创建Project并配置SSH
-
-
-
-
-3.5 在项目中添加成员
-
-
-3.6 将本地文件推送到Gitlab
-将app01项目克隆下来
-git clone git@10.0.0.51:java/app01.git # 初始化配置
-git config --global user.name "hgzero" git config --global user.email "hgzero@qq.com"
-在app01目录下新建一些文件
-推送到gitlab
-git add .
-git commit -m "first edition" git push origin master
-
-
-制定开发计划
-
-
-4.1 创建开发计划
-
-项目：app01
-版本：v1.0
-
-
-4.2 创建里程碑Milestones
-
-用pm账号登录gitlab后操作（先要在admin中设置pm账号的密码）
-要根据开发计划来创建Milestones
-
-
-
-
-
-4.3 根据开发计划创建issue
-
-创建4个issue，分派给dev1和dev2这两个开发人员
-
-
-
-
-
-
-
-**4.4 开发者登录账号查看分派的任务 **
-
-然后开发dev1登录gitlab，就能看到任务已经分配过来了
-
-
-4.5 开发流程
-
-公司里的开发开始任务
-
-1. 先从仓库把项目拉下来
-git clone git@10.0.0.51:java/app01.git
-cd app01/
-2.先创建一个自己的分支，然后进行开发
-git checkout -b index   # 创建一个叫index的分支，并切换到这个分支
-git status # 3. 开始开发首页
-echo "&lt;h1&gt;welcome to this app&lt;/h1&gt;" &gt; index.html  # 假设就开发了一个index页面
-4. 开发完成后，把项目传到仓库
-git add .
-git commit -m "index"
-如果写成 git commit -m “close #2” ，则表示merge请求允许且merge成功之后，自动删除编号为#2的issue
-传到index分支
-git push origin index
-4.6 合并分支
-1）开发dev1发送合并分支请求给pm
-
-
-
-2）pm收到开发的Merge请求后进行处理
-
-使用pm登录，就可以看到pm已经收到了合并请求merge request
-
-
-
-
-
-3）开发dev1确认任务完成
-
-退出pm账户，登入dev1账户：
-
-
-
-或者点进去后，在侧边栏进行标识Done，然后已经完成的issue，可以将其Close
-
-
-
-这个时候Milestones的进度已经往前进了一些了：
-
-
-4.7 开发其他功能
-
-然后其他开发者或者自己再次进行开发时，先要把刚刚更新后的内容（master主干）拉回来，然后再进行开发
-
-git checkout master  # 切换到master
-git pull             # 从远端仓库拉取数据
-然后再进行其他操作
-Gitlab备份恢复
-
-5.1 备份gitlab
-1）修改配置文件
-
-/etc/gitlab/gitlab.rb
-
-备份保存的位置，这里是默认位置，可修改成指定的位置
-gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
-设置备份保存的时间，超过此时间的日志将会被新覆盖
-gitlab_rails['backup_keep_time'] = 604800  # 这里是默认设置，保存7天
-特别注意： # 如果自定义了备份保存位置，则要修改备份目录的权限，比如： # chown -R git.git /data/backup/gitlab
-
-配置完成后要重启以使配置生效
-
-重读配置文件
-gitlab-ctl reconfigure # 重启gitlab
-gitlab-ctl restart
-2）设置定时任务
-每天凌晨2点定时创建备份 # 将一下内容写入到定时任务中 crontab -e
-0 2 * * * /usr/bin/gitlab-rake gitlab:backup:create # 备份策略建议： # 本地保留3到7天，在异地备份永久保存
-3）备份时间的识别
-备份后的文件类似这样的形式：1494170842_gitlab_backup.tar，可以根据前面的时间戳确认备份生成的时间
-data -d  @1494170842
-5.2 恢复gitlab
-1）停止数据写入服务
-停止数据写入服务
-gitlab-ctl stop unicorn
-gitlab-ctl stop sidekiq
-2）进行数据恢复并重启
-进行恢复
-gitlab-rake gitlab:backup:restore BACKUP=1494170842  # 这个时间戳就是刚刚备份的文件前面的时间戳
-重启
-gitlab-ctl restart
-gitlab邮件通知配置
-
-
-vim  /etc/gitlab/gitlab.rb
-
-gitlab_rails['time_zone'] = 'Asia/Shanghai' gitlab_rails['gitlab_email_enabled'] = true
-gitlab_rails['gitlab_email_from'] = 'example@163.com' # 填写发件人的邮箱地址
-gitlab_rails['gitlab_email_display_name'] = 'gitlab' gitlab_rails['smtp_enable'] = true
-gitlab_rails['smtp_address'] = "smtp.163.com"  # smtp服务器的地址,如网易的地址
-gitlab_rails['smtp_port'] = 25                 # 要注意如果使用了SSL/TLS的话,端口可能不是25
-gitlab_rails['smtp_user_name'] = "smtp用户名" gitlab_rails['smtp_password'] = "smtp用户密码" gitlab_rails['smtp_domain'] = "163.com" gitlab_rails['smtp_authentication'] = "login"
-
-
-使用SourceTree进行项目开发
-
-
-
-7.1 项目拉取
-
-先把项目克隆下来
-
-
-
-
-如果ssh的方式克隆失败，可能是因为SSH Key没找到，可以在这里添加
-
-
-
-7.2 创建分支进行功能开发
-1）新建立一个叫“pay”的分支
-
-
-2）进行功能开发
-
-7.3 提交项目
-1）开发pay功能完成后进行提交
-
-可以看到SourceTree中已经有“未提交的更改”
-
-
-
-2）添加“用户信息”
-
-** 3）进行提交**
-
-
-注释也可以写成  close #3    ，作用是提交完成后关闭3号issue
-
-7.4 推送到仓库
-
-
-
-然后就可以在gitlab上进行发送merge请求了，后面就可以进行其他操作了
-
-7.5 项目上线
-1）当所有工作完成之后，就可以进行上线了
-
-2）打标签
-
-上线先打个标签
-
-
-
-
-** 3）删除无用分支**
-
-然后删除已经合并到主干中的不必要的分支，如index、pay等
-最后一定要注意时间一定要同步，不然会错乱
-
-参考
-
-Praywu
+用户需求分析
+减少布线，或有的地方很难布线。
+​    例如：偏远森林，沙漠，海岛，土地所有制导致不能随便开挖等各种原因。
+–3G，4G–
+优点： 布线，距离远。
+缺点：流量费高（可以和运营商合作 ）
+–Wifi–
+优点：费用低，
+缺点：距离近
+研发需求分析
+WANTED!
+3G，4G选型标准需求
+1：产品生命周期，时间空间的重叠。 初产时间较近，出货时间长，
+2：客户那里运营商网络制式？？（例如TD-LTE****，FDD-LTE，CDMA2000等等），
+​    运营商名称？？（一般不同国家不一样，一个国家很多个运营商）
+3：3G，4G具体型号选择： 1：厂家选择？？？ 2：网络制式选择（需要选择制式尽可能支持区域大的，亚洲，欧美，日韩）？？？ 3：USB 使用的技术代差（1：usb猫，2：usb光驱，3：html拨号）
+4：客户3G，4G使用场景？？。流量大小，费用
+**注意：**可能客户那里支持的制式和国内不一样，我们这边验证的制式在客户那里不能用，客户那里支持的制式在国内又没法验证。选择制式的时候特别需要注意。
+Wifi选择需求
+5：芯片厂家需要支持Linux驱动。 芯片出来年代？？？，价格？？？，协议标准（决定速度），网络信号质量？？？，传输速度（不同距离速度，是否要求穿墙）？？？
+6：对应的无线路由器调试
+7：客户Wifi使用场景？？。 主要是使用距离引起速度衰变， 现在有2,4G，5G路由，速度有150Mbit/s 300Mbit/s，450Mbit/s。需要ap评估这种速度能否满足各种场景使用需求
+3G，4G部分
+中国2G，3G，4G制式标准
+
+UMTS(Universal Mobile Telecommunications System)，意即通用移动通信系统。UMTS是国际标准化组织3GPP制定的全球3G标准之一。作为一个完整的3G移动通信技术标准，UMTS并不仅限于定义空中接口。它的主体包括CDMA接入网络和分组化的核心网络等一系列技术规范和接口协议。除WCDMA作为首选空中接口技术获得不断完善外，UMTS还相继引入了TD-SCDMA和HSDPA技术。
+UMTS网络优先选择的就是WCDMA，国内就是中国联通
+电信
+
+2G CDMA
+3G CDMA2000
+4G TD-LTE**，**FDD-LTE
+
+移动
+
+2G GSM
+3G TD-SCDMA
+4G TD-LTE**，**FDD-LTE
+
+联通
+
+
+2G GSM
+
+
+3G WCDMA
+
+
+4G TD-LTE**，**FDD-LTE
+
+
+中国移动TD-LTE：支持频段38、39、40
+
+
+中国联通TD-LTE：支持频段40、41
+
+
+中国电信TD-LTE：支持频段40、41
+
+
+中国联通FDD-LTE：支持频段3
+
+
+中国电信FDD-LTE：支持频段3
+
+
+全球制式和区域
+2G有GSM，还有CDMA。
+​    我们平时说的G 网或者C 网了。联通和移动都是GSM，电信的133号段（之前是联通主营，后来转移给电信）是C网
+3G有3种：WCDMA，CDMA2000，TD_CDMA
+WCDMA（日本、欧洲）、CDMA2000（北美）、TD-SCDMA（中国移动）
+使用最广泛的是WCDMA。美国、欧洲等国很多是WCDMA和CDMA2000都有的。
+另外WCDMA、CDMA2000里面还有更细的划分，主要是技术、标准、速度的细微差别。
+WCDMA（欧洲版）：这个是欧洲的主流，也是目前世界范围3G 的使用模式最广的，在中国大陆，是中国联通3G （沃）的模式。
+CDMA2000（美国版）：这个数量相对少些，由美国为代表。在大陆，是中国电信3G （天翼）的模式
+TD-SCDMA（中国版）：这个是中国大陆自主知识产权的，可以说是中国特色的3G ，虽然大部分的通讯厂商宣布对此技术可以支持，但世界范围内使用的范围有限。在大陆，是中国移动3G的网络模式。
+4G有2种: LTE FDD，LTE TDD
+LTE FDD（世界绝大多数国家）、LTE TDD（中国移动和国外极少数地区的个别运营商）。
+TD- LTE是我国自主研发的4G标准，是由TD-SCDMA（3G网络）发展而来。
+LTE FDD是现在国际上主流的，使用最广泛的4G网络，由WCDMA演化而来。
+现在全球有超过200个LTE的商用网络，其中超过90%是FDD的。
+从技术上说，TD- LTE采用的是时分双工，而LTE FDD采用的是频分双工
+TD-LTE和FDD-LTE 是4G的两种国际标准，各有利弊。TD-LTE占用频段少，节省资源，带宽长，适合区域热点覆盖；FDD速度更快，覆盖更广，但占用资源多。适合广域覆盖。
+国内三家运营商4G网络制式分别如下：
+联通4G：TD-LTE、FDD-LTE
+电信4G：TD-LTE、FDD-LTE
+移动4G：TD-LTE
+虽然联通跟电信都是采用双4G网络制式，但目前4G网络仅在部分地区覆盖，3G网络仍然是不可或缺的。而联通3G采用的是WCDMA，为欧洲标准，是技术发展最成熟、国际通用和覆盖范围最广的制式，目前是国内3G网络最快的，最高可达42Mbps，在国外已将其定义为4G标准。
+综合以上，选型推荐。
+3G推荐选型：WCDMA欧洲，CDMA2000美国
+4G推荐选型：FDD-LTE
+WIFI部分
+2.4G和5G究竟是什么
+   以往我们一直使用的Wi-Fi大多数是支持 IEEE 802.11n（第四代）无线标准的，而且工作在2.4GHz这个频段上的，所以称之为2.4gWi-Fi，但是严格来说工作在5GHz频段上的不一定就是5G Wi-Fi，因为IEEE 802.11a（第一代）IEEE 802.11n（第四代）和IEEE 802.11ac（第五代)这三种标准都可以工作在5GHz这个频段上。
+   严格来说只有支持802.11ac的才是真正5G Wi-Fi（在这个视频里我们将它称作ac 5G)，现来在说支持2.4G和5G双频的路由器其实很多都是指支持第四代无线标准，也就是802.11n的双频，而真正支持ac 5G的路由最便宜都要400、500甚至上千元
+   我们的路由器一般会有标有一些类似54Mbps，150Mbps，300Mbps这样的参数，要说明一下，这个参数不是指路由器的无线覆盖范围，而是指它的最高传输速率。若要支持ac 5G的也要双方同时支持，单方面支持是不行的。
+   这个速率就相当于车道上的限速标志，当然也不能完全等同与限速标志，因为如果网络中多个设备同时传输要分流的
+
+最后不要忘记要考虑空间的大小，200多平米的房子一般普通无线路由器的2.4G勉强可以覆盖，5G的话150平米就开始有压力，如果房屋太大或者多楼层的话可能就要考虑一下多个无线路由桥接了。
+5GWifi速度快，穿墙弱
+5G Wi-Fi的最大缺点就是穿墙能力比较弱，墙体对Wi-Fi信号的强度影响是比较大的，每穿过一面墙，Wi-Fi信号就要减弱不少。
+路由器摆放小技巧。增强信号。
+最根本一半是有线速度限制，但信号强度也很重要
+另外分享一个摆放路由器的方法，如果受制与网线或者台式电脑的位置就没得说，但是如果可以移动的话，这个位置的原则是要经过尽量少的墙体
+最好不要放在地上，更不要放在角落，
+放在高处
+而且应该经适当的放高一点，而不是放在地上，这和手机信号塔的原理是一样的，更加不应该因为他碍眼把它放进抽屉、柜子等里面。这些方法可以略微增强信号强度，不过想从根本上解决信号问题，还是要换一款更好的路由。
+无线网卡选购简介
+常见值得选购的USB无线网卡按技术规格和价位，大致可以分为如下3类：
+单频11n网卡，标注速度200-300M，20-30元。
+双频11n网卡，支持5g频段，标注速度600M，40-50元。
+双频11ac网卡，支持5g频段，标注速度900-1200M或更高，80元以上。
+无线网卡要想达到标注的技术标准和速度，首先需要路由器支持该标准及速度，否则会降速运行。
+USB协议：速度，选择2.0还是3.0
+USB2.0的速度传输，理论最大速率480M bit/S。 60MB/S
+USB3.0的理论最大速率是5G bit/S，要比USB2.0快10倍！ 640MB/S
+看线路，工艺质量，实际速度可能不到理论速度一半
+USB3.0 对wifi和BlueTooth干扰。
+USB3.0的传输频率确实是5GHz串行，但USB3.0使用4条数据线组成2组，每组负责一个传输方向，实现全双工双向5GHz，而每条数据线的基准频率是2.5GHz。
+所以，总带宽是5GHz没错，但每条线上是2.5GHz，这个频率距离2.4G Wifi的频率太近了，又因为高频设备大多数都使用了SSC技术（扩频时钟？）使得信号不完全分布在一个固定频率上，所以就波及了2.5GHz附近的其它频率，所以对Wifi和蓝牙产生了较大的干扰。
+USB 3.0 干扰 Wifi 2.4G通讯的问题和解决方法
+USB3.0 WIFI干扰解决方法
+USB3.0的确对2.4G有影响，不过一样可以解决，比如网件的解决方法就是，USB3.0 和网口,天线不在一面，USB3.0接口弄到前面，而且是所有接口有金属屏蔽罩（包括WAN和LAN口），连USB接口与主板连线处都用屏蔽胶布包裹。可惜国内厂商哪怕是大如华为，网口也舍不得这点成本用金属屏蔽的。
+带有USB 3.0接口的无线路由，如果出现外接3.0移动硬盘后网速下降，断网，或者ping延时变得很高，说明出现了3.0对无线的干扰。
+USB3.0与无线冲突解决办法：
+第一种：给USB接口加金属膜做屏蔽可以适当降低干扰，但不能完全屏蔽
+第二种：给主板的USB底座增加统一（并与使用设备）接地和增加金属屏蔽罩，基本可以排除
+【推荐】第三种：用1.2米 双磁环带屏蔽层的USB延长线将移动硬盘放到一米外的地方使用，基本可以完全可以排除
+其实不单是无线路由，像我们平常使用的无线鼠标键盘、蓝牙、wifi电视、iPad、手机等各种使用民用2.4G的通信设备都会出现与USB3.0冲突的情况。
+USB3.0 移动硬盘干扰解决方法
+相信随着USB3.0使用的用户越来越多，不少人遇到了一插上USB3.0的硬盘，wifi就出现降速或者中断的问题。其本质原因是USB 3.0 干扰2.4GHz下的Wifi通讯。
+解决方法如下，
+1.更换无线路由为5GHz，因为USB 3.0对5GHz的Wifi干扰程度较低
+2.把硬盘盒从USB3.0接口换到USB2.0接口也可以将问题解决
+3.使用高质量带屏蔽的USB3.0设备/线缆/接口。或者在USB3.0接口处加屏蔽罩（金属箔即可）
+4.最简单的，使用1m以上的高质量USB3.0延长线。将USB3.0设备远离电脑主机。
+Intel官方对USB3.0对WIFI干扰的描述文档：
+http://www.usb.org/developers/whitepapers/327216.pdf
+目前在调试的两款型号：
+TL-WN823N
+
+​         Bus 002 Device 007: ID 0bda:818b
+​         RTL8192EU
+​         300M迷你型无线USB网卡 TL-WN823N
+
+TL-WN725N
+
+​         Bus 002 Device 008: ID 0bda:8179
+​         rtl8188eu
+​         150M无线USB网卡 TL-WN725N
+​         网上的驱动版本数据结构和3.10差异较大，不能用
+
+Wifi芯片厂家
+Realtek：
+​         官方无linux驱动支持
+Ralink
+（已经被MTK收购）： 官方有linux驱动
+Atheros
+（已经被高通qualcomm收购）：AR9271
+整理推荐芯片型号：
+USB 2.0 Mbit/s
+rt3070
+
+http://www.mediatek.cn/products/broadbandWifi/rt3070
+IEEE 802.11:b/g/n
+Wi-Fi Frequency:2.4GHz
+Antenna:1T1R
+Data Throughput:150Mbit/s
+
+rt5370
+
+http://www.mediatek.cn/products/broadbandWifi/rt5370
+IEEE 802.11:b/g/n
+Wi-Fi Frequency:2.4GHz
+Antenna:1T1R
+Data Throughput:150Mbit/s
+
+RT3573
+
+http://www.mediatek.cn/products/broadbandWifi/rt3573
+IEEE 802.11:b/g/n/ac
+Wi-Fi Frequency:2.4GHz, 5GHz
+Antenna:3T3R
+Data Throughput:450Mbit/s
+
+RT5572
+
+http://www.mediatek.cn/products/broadbandWifi/rt5572
+IEEE 802.11:b/g/n/ac
+Wi-Fi Frequency:2.4GHz, 5GHz
+Antenna:2T2R
+Data Throughput:300Mbit/s
+
+集成分析
+
+3G，4G集成分析
+根据拨号技术流程，现在已经发现的USB上网有三种
+
+1：默认识别为USB Modem，使用pppoe拨号脚本拨号。
+2：默认识别为usb cdrom，使用usb-modeswitch 转换usb设备工作状态，转换为USB Modem后再采用pppoe拨号脚本拨号。
+3：使用CGI 调用Html链接方式拨号。不需要我们配置用户名密码，网络制式，最方便。
+
+1：Pppoe拨号
+pppd call wcdma 
+2：usb_modeswitch转换usb设备工作模式。
+usb_modeswitch -W -c /etc/usb_modeswitch.d/19D2:0117
+3：CGI拨号示例
+从集成实现来说，这种最方便。
+./curl --header "Referer: http://192.168.0.1/index.html" http://192.168.0.1/goform/goform_set_cmd_process?goformId=SET_CONNECTION_MODE&amp;ConnectionMode=auto_dial
+
+./curl --header "Referer: http://192.168.0.1/index.html" http://192.168.0.1/goform/goform_process?goformId=MODE_SWITCH&amp;switchCmd=FACTORY
+Wifi集成分析
+步骤：
+
+1：驱动移植识别
+2：wireless_tools或者wpa_supplicant拨号
+
+wpa_supplicant依赖openssl和libnl，支持PSK加密需要用到这个。wireless_tools只支持普通web加密。
+带宽性能测试
+服务器运行 iperf -s
+客户端运行 iperf -c 服务器ip -t 60000 -i 2
+iperf -c 192.168.1.100 -t 60000 -i 2
+TP—Link 845
+笔记本有线连接运行服务端, H3531a（2716TE_C）使用TL-WN823N连接
+[root@Tvt iperf]# ./iperf.hisi3531A -c 192.168.1.100 -t 60000 -i 2
+\------------------------------------------------------------
+Client connecting to 192.168.1.100, TCP port 5001
+TCP window size: 21.0 KByte (default)
+\------------------------------------------------------------
+[ 3] local 192.168.1.103 port 47671 connected with 192.168.1.100 port 5001
+[ ID] Interval    Transfer   Bandwidth
+[ 3] 0.0- 2.0 sec 2.25 MBytes 9.44 Mbits/sec
+[ 3] 2.0- 4.0 sec  256 KBytes 1.05 Mbits/sec
+[ 3] 4.0- 6.0 sec  128 KBytes  524 Kbits/sec
+[ 3] 6.0- 8.0 sec  256 KBytes 1.05 Mbits/sec
+[ 3] 8.0-10.0 sec 1.25 MBytes 5.24 Mbits/sec
+[ 3] 10.0-12.0 sec 3.75 MBytes 15.7 Mbits/sec
+[ 3] 12.0-14.0 sec 4.25 MBytes 17.8 Mbits/sec
+[ 3] 14.0-16.0 sec 3.13 MBytes 13.1 Mbits/sec
+[ 3] 16.0-18.0 sec 1.75 MBytes 7.34 Mbits/sec
+[ 3] 18.0-20.0 sec 1.38 MBytes 5.77 Mbits/sec
+[ 3] 20.0-22.0 sec 1.13 MBytes 4.72 Mbits/sec
+[ 3] 22.0-24.0 sec  256 KBytes 1.05 Mbits/sec
+[ 3] 24.0-26.0 sec  128 KBytes  524 Kbits/sec
+[ 3] 26.0-28.0 sec  128 KBytes  524 Kbits/sec
+[ 3] 28.0-30.0 sec  512 KBytes 2.10 Mbits/sec
+[ 3] 30.0-32.0 sec 2.88 MBytes 12.1 Mbits/sec
+[ 3] 32.0-34.0 sec 1.63 MBytes 6.82 Mbits/sec
+[ 3] 34.0-36.0 sec 3.50 MBytes 14.7 Mbits/sec
+[ 3] 36.0-38.0 sec  768 KBytes 3.15 Mbits/sec
+[ 3] 38.0-40.0 sec 4.38 MBytes 18.4 Mbits/sec
+[ 3] 40.0-42.0 sec 5.38 MBytes 22.5 Mbits/sec
+[ 3] 42.0-44.0 sec 7.13 MBytes 29.9 Mbits/sec
+[ 3] 44.0-46.0 sec 6.63 MBytes 27.8 Mbits/sec
+[ 3] 46.0-48.0 sec 5.38 MBytes 22.5 Mbits/sec
+[ 3] 48.0-50.0 sec 5.75 MBytes 24.1 Mbits/sec
+[ 3] 50.0-52.0 sec 7.50 MBytes 31.5 Mbits/sec
+[ 3] 52.0-54.0 sec 4.63 MBytes 19.4 Mbits/sec
+[ 3] 54.0-56.0 sec 7.50 MBytes 31.5 Mbits/sec
+[ 3] 56.0-58.0 sec 6.75 MBytes 28.3 Mbits/sec
+[ 3] 58.0-60.0 sec 5.13 MBytes 21.5 Mbits/sec
+[ 3] 60.0-62.0 sec 5.38 MBytes 22.5 Mbits/sec
+[ 3] 62.0-64.0 sec 4.75 MBytes 19.9 Mbits/sec
+[ 3] 64.0-66.0 sec 6.00 MBytes 25.2 Mbits/sec
+[ 3] 66.0-68.0 sec 3.50 MBytes 14.7 Mbits/sec
+[ 3] 68.0-70.0 sec 5.50 MBytes 23.1 Mbits/sec
+[ 3] 70.0-72.0 sec 4.75 MBytes 19.9 Mbits/sec
+[ 3] 72.0-74.0 sec 1.50 MBytes 6.29 Mbits/sec
+[ 3] 74.0-76.0 sec 4.50 MBytes 18.9 Mbits/sec
+[ 3] 76.0-78.0 sec 4.25 MBytes 17.8 Mbits/sec
+[ 3] 78.0-80.0 sec 5.13 MBytes 21.5 Mbits/sec
+[ 3] 80.0-82.0 sec 7.88 MBytes 33.0 Mbits/sec
+[ 3] 82.0-84.0 sec 7.38 MBytes 30.9 Mbits/sec
+[ 3] 84.0-86.0 sec 4.38 MBytes 18.4 Mbits/sec
+[ 3] 86.0-88.0 sec 5.25 MBytes 22.0 Mbits/sec
+[ 3] 88.0-90.0 sec 6.63 MBytes 27.8 Mbits/sec
+[ 3] 90.0-92.0 sec 5.00 MBytes 21.0 Mbits/sec
+[ 3] 92.0-94.0 sec 6.88 MBytes 28.8 Mbits/sec
+[ 3] 94.0-96.0 sec 8.25 MBytes 34.6 Mbits/sec
+[ 3] 96.0-98.0 sec 7.25 MBytes 30.4 Mbits/sec
+附录
+1：TD- LTE和LTE FDD标准差异
+TD- LTE是我国自主研发的4G标准，是由TD-SCDMA（3G网络）发展而来。
+LTE FDD是现在国际上主流的，使用最广泛的4G网络。
+现在全球有超过200个LTE的商用网络，其中超过90%是FDD的。
+从技术上说，TD- LTE采用的是时分双工，而LTE FDD采用的是频分双工
+那什么是频分双工，什么又是时分双工呢？
+先来解释“双工”。
+移动通信系统的工作方式分为：单工、半双工和全双工
+1，单工就是信息只能向一个方向传播。例如寻呼机和收音机，只能接收信息，不能发出信息。
+2，半双工就是信息可以双向传播，但是上传信息的时候只能上传，下载的时候只能下载。例如对讲机，你说话的时候听不见别人别人说，听别人说的时候自己不能说。
+3， 全双工就是信息可以同时双向传播。例如手机，可以边听边说。
+其中全双工又分为：时分双工TDD，与频分双工FDD。
+​    所谓的频分双工就是将信息上传和信息下载放在两个不同的频段，称为上行频段和下行频段，且这两个频段必须对称。为了不防止上下行频段之间的信息串频，两个频段不能重叠，而且中间必须隔开一段，称为保护频。如下图：上行和下行频段相互分开
+
+所谓的时分双工就是将上传和下载放在同一个频段，也就是上行频段和下行频段完全一样。那它是如何做到上下的信息不串频呢？其实很简单，顾名思义，频分双工分的是频段，那时分双工分的就是时间。将波传播的时间轴一分为二，
+前半部分用于信息的上传，后一部分用于信息的下载。其实这从理论上更像是同步的半双工，但是由于上行和下行时间差距极短，我们无法感觉到，所以从效果上也是全双工。如下图：时间帧的第一帧为上行，第二帧而为下行，上下行共用一个频段，用时间的差将他们隔开。
+
+​    接下来说一说移动TD- LTE和电信联通LTE FDD的优缺点，其实就是时分双工与频分双工的特点。
+​     TD- LTE由于采用上行和下行分时，所以上行和下行的时间差导致他信息传输的速度受到一定的限制。他的理论下载峰值为100Mbps，相比FDD的150Mbps来说，慢了不少。当然TD- LTE的基站信号覆盖半径也比LTE FDD小一点。
+​    LTE FDD也并非都是优点。FDD制式必须要找对称分开的上行、下行频段，也就是说它必须浪费更多的频段资源。那中国联通的FDD网为例，工信部给他发的频段牌照为，上行17551765MHz和下行18501860MHz（2×10M），实际联通只得到了上下各10M的频段，但是加上当中的保护频段，一共占用了1755~1860MHz也就是105MHz的频段。这就导致了频段资源利用率低，是一种资源的浪费。目前，频率资源本身就紧张，能找到对称的上行和下行频段就尤其难。频率除了用在手机上网通讯上，像广播，军事,甚至无线路由器等民用领域也广泛使用。将来随着科技的进步，频率频段的稀缺会日益严重。
+​    TD-LTE和FDD-LTE 是4G的两种国际标准，各有利弊。TD-LTE占用频段少，节省资源，带宽长，适合区域热点覆盖；FDD速度更快，覆盖更广，但占用资源多。适合广域覆盖。
+
+
+Kernel wireless 支持列表
 
 系列教程
 全部文章RSS订阅
 
-Gitlab 使用系列
-Gitlab RSS 分类订阅
+Embeded系列
+Embeded 分类 RSS 订阅
 
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-
-Devops系列
-Devops 分类 RSS 订阅
-
-自建全套开源Devops开发系统
-Git介绍以及分支模型图解
-三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境
-DevOps系列—【Jenkinsfile+Dockerfile+nginx+vue】
-项目开发管理工具推荐
-Gitlab的安装及使用教程完全版
-Gitlab的安装及使用
-那些有用的Github工具介绍！Action、app、workflow等
-
-
-项目管理系列
-AI 分类 RSS 订阅
-
-如何做一个完整的硬件项目的项目管理之简明教程
-几种常用管理模型和方法
-PMBOK指南（第6版）
-如何做好竞品分析
-一大堆寓意深刻的管理故事锦集
-人格类型分类总结归纳
+海思MPP&amp;UNF构架源代码级分析
+3G,4G,Wifi选型需求分析及技术简介
+自动曝光原理
+ISP 数字图像处理 算法概述、工作原理、架构、处理流程
 
 
 ]]></content>
       <categories>
-        <category>devops</category>
+        <category>embeded</category>
       </categories>
       <tags>
-        <tag>gitlab</tag>
-        <tag>git</tag>
-        <tag>crack</tag>
+        <tag>embeded</tag>
+        <tag>linux</tag>
+        <tag>3G</tag>
+        <tag>4G</tag>
+        <tag>3531a</tag>
+        <tag>移植</tag>
+        <tag>嵌入式</tag>
       </tags>
   </entry>
   <entry>
@@ -4469,353 +4816,6 @@ network.protocol-handler.app.ed2k
         <tag>laptop</tag>
         <tag>ed2k</tag>
         <tag>ati</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>3G,4G,Wifi选型需求分析及技术简介</title>
-    <url>/posts/6b2ba137/</url>
-    <content><![CDATA[3G,4G,Wifi选型需求分析及技术简介
-
-
-文章写了好多年了，只在一个网站发布过PDF版本，行业内应该很多人看过这个。
-
-
-关于本blog，图床一般使用github，已经配置了CDN，如果图片还是未显示请自行代理解决
-
-
-原创声明警告，本文禁止转载，禁止发布到其它任何网站，可以接受约稿。
-
-
-用户需求分析
-减少布线，或有的地方很难布线。
-​    例如：偏远森林，沙漠，海岛，土地所有制导致不能随便开挖等各种原因。
-–3G，4G–
-优点： 布线，距离远。
-缺点：流量费高（可以和运营商合作 ）
-–Wifi–
-优点：费用低，
-缺点：距离近
-研发需求分析
-WANTED!
-3G，4G选型标准需求
-1：产品生命周期，时间空间的重叠。 初产时间较近，出货时间长，
-2：客户那里运营商网络制式？？（例如TD-LTE****，FDD-LTE，CDMA2000等等），
-​    运营商名称？？（一般不同国家不一样，一个国家很多个运营商）
-3：3G，4G具体型号选择： 1：厂家选择？？？ 2：网络制式选择（需要选择制式尽可能支持区域大的，亚洲，欧美，日韩）？？？ 3：USB 使用的技术代差（1：usb猫，2：usb光驱，3：html拨号）
-4：客户3G，4G使用场景？？。流量大小，费用
-**注意：**可能客户那里支持的制式和国内不一样，我们这边验证的制式在客户那里不能用，客户那里支持的制式在国内又没法验证。选择制式的时候特别需要注意。
-Wifi选择需求
-5：芯片厂家需要支持Linux驱动。 芯片出来年代？？？，价格？？？，协议标准（决定速度），网络信号质量？？？，传输速度（不同距离速度，是否要求穿墙）？？？
-6：对应的无线路由器调试
-7：客户Wifi使用场景？？。 主要是使用距离引起速度衰变， 现在有2,4G，5G路由，速度有150Mbit/s 300Mbit/s，450Mbit/s。需要ap评估这种速度能否满足各种场景使用需求
-3G，4G部分
-中国2G，3G，4G制式标准
-
-UMTS(Universal Mobile Telecommunications System)，意即通用移动通信系统。UMTS是国际标准化组织3GPP制定的全球3G标准之一。作为一个完整的3G移动通信技术标准，UMTS并不仅限于定义空中接口。它的主体包括CDMA接入网络和分组化的核心网络等一系列技术规范和接口协议。除WCDMA作为首选空中接口技术获得不断完善外，UMTS还相继引入了TD-SCDMA和HSDPA技术。
-UMTS网络优先选择的就是WCDMA，国内就是中国联通
-电信
-
-2G CDMA
-3G CDMA2000
-4G TD-LTE**，**FDD-LTE
-
-移动
-
-2G GSM
-3G TD-SCDMA
-4G TD-LTE**，**FDD-LTE
-
-联通
-
-
-2G GSM
-
-
-3G WCDMA
-
-
-4G TD-LTE**，**FDD-LTE
-
-
-中国移动TD-LTE：支持频段38、39、40
-
-
-中国联通TD-LTE：支持频段40、41
-
-
-中国电信TD-LTE：支持频段40、41
-
-
-中国联通FDD-LTE：支持频段3
-
-
-中国电信FDD-LTE：支持频段3
-
-
-全球制式和区域
-2G有GSM，还有CDMA。
-​    我们平时说的G 网或者C 网了。联通和移动都是GSM，电信的133号段（之前是联通主营，后来转移给电信）是C网
-3G有3种：WCDMA，CDMA2000，TD_CDMA
-WCDMA（日本、欧洲）、CDMA2000（北美）、TD-SCDMA（中国移动）
-使用最广泛的是WCDMA。美国、欧洲等国很多是WCDMA和CDMA2000都有的。
-另外WCDMA、CDMA2000里面还有更细的划分，主要是技术、标准、速度的细微差别。
-WCDMA（欧洲版）：这个是欧洲的主流，也是目前世界范围3G 的使用模式最广的，在中国大陆，是中国联通3G （沃）的模式。
-CDMA2000（美国版）：这个数量相对少些，由美国为代表。在大陆，是中国电信3G （天翼）的模式
-TD-SCDMA（中国版）：这个是中国大陆自主知识产权的，可以说是中国特色的3G ，虽然大部分的通讯厂商宣布对此技术可以支持，但世界范围内使用的范围有限。在大陆，是中国移动3G的网络模式。
-4G有2种: LTE FDD，LTE TDD
-LTE FDD（世界绝大多数国家）、LTE TDD（中国移动和国外极少数地区的个别运营商）。
-TD- LTE是我国自主研发的4G标准，是由TD-SCDMA（3G网络）发展而来。
-LTE FDD是现在国际上主流的，使用最广泛的4G网络，由WCDMA演化而来。
-现在全球有超过200个LTE的商用网络，其中超过90%是FDD的。
-从技术上说，TD- LTE采用的是时分双工，而LTE FDD采用的是频分双工
-TD-LTE和FDD-LTE 是4G的两种国际标准，各有利弊。TD-LTE占用频段少，节省资源，带宽长，适合区域热点覆盖；FDD速度更快，覆盖更广，但占用资源多。适合广域覆盖。
-国内三家运营商4G网络制式分别如下：
-联通4G：TD-LTE、FDD-LTE
-电信4G：TD-LTE、FDD-LTE
-移动4G：TD-LTE
-虽然联通跟电信都是采用双4G网络制式，但目前4G网络仅在部分地区覆盖，3G网络仍然是不可或缺的。而联通3G采用的是WCDMA，为欧洲标准，是技术发展最成熟、国际通用和覆盖范围最广的制式，目前是国内3G网络最快的，最高可达42Mbps，在国外已将其定义为4G标准。
-综合以上，选型推荐。
-3G推荐选型：WCDMA欧洲，CDMA2000美国
-4G推荐选型：FDD-LTE
-WIFI部分
-2.4G和5G究竟是什么
-   以往我们一直使用的Wi-Fi大多数是支持 IEEE 802.11n（第四代）无线标准的，而且工作在2.4GHz这个频段上的，所以称之为2.4gWi-Fi，但是严格来说工作在5GHz频段上的不一定就是5G Wi-Fi，因为IEEE 802.11a（第一代）IEEE 802.11n（第四代）和IEEE 802.11ac（第五代)这三种标准都可以工作在5GHz这个频段上。
-   严格来说只有支持802.11ac的才是真正5G Wi-Fi（在这个视频里我们将它称作ac 5G)，现来在说支持2.4G和5G双频的路由器其实很多都是指支持第四代无线标准，也就是802.11n的双频，而真正支持ac 5G的路由最便宜都要400、500甚至上千元
-   我们的路由器一般会有标有一些类似54Mbps，150Mbps，300Mbps这样的参数，要说明一下，这个参数不是指路由器的无线覆盖范围，而是指它的最高传输速率。若要支持ac 5G的也要双方同时支持，单方面支持是不行的。
-   这个速率就相当于车道上的限速标志，当然也不能完全等同与限速标志，因为如果网络中多个设备同时传输要分流的
-
-最后不要忘记要考虑空间的大小，200多平米的房子一般普通无线路由器的2.4G勉强可以覆盖，5G的话150平米就开始有压力，如果房屋太大或者多楼层的话可能就要考虑一下多个无线路由桥接了。
-5GWifi速度快，穿墙弱
-5G Wi-Fi的最大缺点就是穿墙能力比较弱，墙体对Wi-Fi信号的强度影响是比较大的，每穿过一面墙，Wi-Fi信号就要减弱不少。
-路由器摆放小技巧。增强信号。
-最根本一半是有线速度限制，但信号强度也很重要
-另外分享一个摆放路由器的方法，如果受制与网线或者台式电脑的位置就没得说，但是如果可以移动的话，这个位置的原则是要经过尽量少的墙体
-最好不要放在地上，更不要放在角落，
-放在高处
-而且应该经适当的放高一点，而不是放在地上，这和手机信号塔的原理是一样的，更加不应该因为他碍眼把它放进抽屉、柜子等里面。这些方法可以略微增强信号强度，不过想从根本上解决信号问题，还是要换一款更好的路由。
-无线网卡选购简介
-常见值得选购的USB无线网卡按技术规格和价位，大致可以分为如下3类：
-单频11n网卡，标注速度200-300M，20-30元。
-双频11n网卡，支持5g频段，标注速度600M，40-50元。
-双频11ac网卡，支持5g频段，标注速度900-1200M或更高，80元以上。
-无线网卡要想达到标注的技术标准和速度，首先需要路由器支持该标准及速度，否则会降速运行。
-USB协议：速度，选择2.0还是3.0
-USB2.0的速度传输，理论最大速率480M bit/S。 60MB/S
-USB3.0的理论最大速率是5G bit/S，要比USB2.0快10倍！ 640MB/S
-看线路，工艺质量，实际速度可能不到理论速度一半
-USB3.0 对wifi和BlueTooth干扰。
-USB3.0的传输频率确实是5GHz串行，但USB3.0使用4条数据线组成2组，每组负责一个传输方向，实现全双工双向5GHz，而每条数据线的基准频率是2.5GHz。
-所以，总带宽是5GHz没错，但每条线上是2.5GHz，这个频率距离2.4G Wifi的频率太近了，又因为高频设备大多数都使用了SSC技术（扩频时钟？）使得信号不完全分布在一个固定频率上，所以就波及了2.5GHz附近的其它频率，所以对Wifi和蓝牙产生了较大的干扰。
-USB 3.0 干扰 Wifi 2.4G通讯的问题和解决方法
-USB3.0 WIFI干扰解决方法
-USB3.0的确对2.4G有影响，不过一样可以解决，比如网件的解决方法就是，USB3.0 和网口,天线不在一面，USB3.0接口弄到前面，而且是所有接口有金属屏蔽罩（包括WAN和LAN口），连USB接口与主板连线处都用屏蔽胶布包裹。可惜国内厂商哪怕是大如华为，网口也舍不得这点成本用金属屏蔽的。
-带有USB 3.0接口的无线路由，如果出现外接3.0移动硬盘后网速下降，断网，或者ping延时变得很高，说明出现了3.0对无线的干扰。
-USB3.0与无线冲突解决办法：
-第一种：给USB接口加金属膜做屏蔽可以适当降低干扰，但不能完全屏蔽
-第二种：给主板的USB底座增加统一（并与使用设备）接地和增加金属屏蔽罩，基本可以排除
-【推荐】第三种：用1.2米 双磁环带屏蔽层的USB延长线将移动硬盘放到一米外的地方使用，基本可以完全可以排除
-其实不单是无线路由，像我们平常使用的无线鼠标键盘、蓝牙、wifi电视、iPad、手机等各种使用民用2.4G的通信设备都会出现与USB3.0冲突的情况。
-USB3.0 移动硬盘干扰解决方法
-相信随着USB3.0使用的用户越来越多，不少人遇到了一插上USB3.0的硬盘，wifi就出现降速或者中断的问题。其本质原因是USB 3.0 干扰2.4GHz下的Wifi通讯。
-解决方法如下，
-1.更换无线路由为5GHz，因为USB 3.0对5GHz的Wifi干扰程度较低
-2.把硬盘盒从USB3.0接口换到USB2.0接口也可以将问题解决
-3.使用高质量带屏蔽的USB3.0设备/线缆/接口。或者在USB3.0接口处加屏蔽罩（金属箔即可）
-4.最简单的，使用1m以上的高质量USB3.0延长线。将USB3.0设备远离电脑主机。
-Intel官方对USB3.0对WIFI干扰的描述文档：
-http://www.usb.org/developers/whitepapers/327216.pdf
-目前在调试的两款型号：
-TL-WN823N
-
-​         Bus 002 Device 007: ID 0bda:818b
-​         RTL8192EU
-​         300M迷你型无线USB网卡 TL-WN823N
-
-TL-WN725N
-
-​         Bus 002 Device 008: ID 0bda:8179
-​         rtl8188eu
-​         150M无线USB网卡 TL-WN725N
-​         网上的驱动版本数据结构和3.10差异较大，不能用
-
-Wifi芯片厂家
-Realtek：
-​         官方无linux驱动支持
-Ralink
-（已经被MTK收购）： 官方有linux驱动
-Atheros
-（已经被高通qualcomm收购）：AR9271
-整理推荐芯片型号：
-USB 2.0 Mbit/s
-rt3070
-
-http://www.mediatek.cn/products/broadbandWifi/rt3070
-IEEE 802.11:b/g/n
-Wi-Fi Frequency:2.4GHz
-Antenna:1T1R
-Data Throughput:150Mbit/s
-
-rt5370
-
-http://www.mediatek.cn/products/broadbandWifi/rt5370
-IEEE 802.11:b/g/n
-Wi-Fi Frequency:2.4GHz
-Antenna:1T1R
-Data Throughput:150Mbit/s
-
-RT3573
-
-http://www.mediatek.cn/products/broadbandWifi/rt3573
-IEEE 802.11:b/g/n/ac
-Wi-Fi Frequency:2.4GHz, 5GHz
-Antenna:3T3R
-Data Throughput:450Mbit/s
-
-RT5572
-
-http://www.mediatek.cn/products/broadbandWifi/rt5572
-IEEE 802.11:b/g/n/ac
-Wi-Fi Frequency:2.4GHz, 5GHz
-Antenna:2T2R
-Data Throughput:300Mbit/s
-
-集成分析
-
-3G，4G集成分析
-根据拨号技术流程，现在已经发现的USB上网有三种
-
-1：默认识别为USB Modem，使用pppoe拨号脚本拨号。
-2：默认识别为usb cdrom，使用usb-modeswitch 转换usb设备工作状态，转换为USB Modem后再采用pppoe拨号脚本拨号。
-3：使用CGI 调用Html链接方式拨号。不需要我们配置用户名密码，网络制式，最方便。
-
-1：Pppoe拨号
-pppd call wcdma 
-2：usb_modeswitch转换usb设备工作模式。
-usb_modeswitch -W -c /etc/usb_modeswitch.d/19D2:0117
-3：CGI拨号示例
-从集成实现来说，这种最方便。
-./curl --header "Referer: http://192.168.0.1/index.html" http://192.168.0.1/goform/goform_set_cmd_process?goformId=SET_CONNECTION_MODE&amp;ConnectionMode=auto_dial
-
-./curl --header "Referer: http://192.168.0.1/index.html" http://192.168.0.1/goform/goform_process?goformId=MODE_SWITCH&amp;switchCmd=FACTORY
-Wifi集成分析
-步骤：
-
-1：驱动移植识别
-2：wireless_tools或者wpa_supplicant拨号
-
-wpa_supplicant依赖openssl和libnl，支持PSK加密需要用到这个。wireless_tools只支持普通web加密。
-带宽性能测试
-服务器运行 iperf -s
-客户端运行 iperf -c 服务器ip -t 60000 -i 2
-iperf -c 192.168.1.100 -t 60000 -i 2
-TP—Link 845
-笔记本有线连接运行服务端, H3531a（2716TE_C）使用TL-WN823N连接
-[root@Tvt iperf]# ./iperf.hisi3531A -c 192.168.1.100 -t 60000 -i 2
-\------------------------------------------------------------
-Client connecting to 192.168.1.100, TCP port 5001
-TCP window size: 21.0 KByte (default)
-\------------------------------------------------------------
-[ 3] local 192.168.1.103 port 47671 connected with 192.168.1.100 port 5001
-[ ID] Interval    Transfer   Bandwidth
-[ 3] 0.0- 2.0 sec 2.25 MBytes 9.44 Mbits/sec
-[ 3] 2.0- 4.0 sec  256 KBytes 1.05 Mbits/sec
-[ 3] 4.0- 6.0 sec  128 KBytes  524 Kbits/sec
-[ 3] 6.0- 8.0 sec  256 KBytes 1.05 Mbits/sec
-[ 3] 8.0-10.0 sec 1.25 MBytes 5.24 Mbits/sec
-[ 3] 10.0-12.0 sec 3.75 MBytes 15.7 Mbits/sec
-[ 3] 12.0-14.0 sec 4.25 MBytes 17.8 Mbits/sec
-[ 3] 14.0-16.0 sec 3.13 MBytes 13.1 Mbits/sec
-[ 3] 16.0-18.0 sec 1.75 MBytes 7.34 Mbits/sec
-[ 3] 18.0-20.0 sec 1.38 MBytes 5.77 Mbits/sec
-[ 3] 20.0-22.0 sec 1.13 MBytes 4.72 Mbits/sec
-[ 3] 22.0-24.0 sec  256 KBytes 1.05 Mbits/sec
-[ 3] 24.0-26.0 sec  128 KBytes  524 Kbits/sec
-[ 3] 26.0-28.0 sec  128 KBytes  524 Kbits/sec
-[ 3] 28.0-30.0 sec  512 KBytes 2.10 Mbits/sec
-[ 3] 30.0-32.0 sec 2.88 MBytes 12.1 Mbits/sec
-[ 3] 32.0-34.0 sec 1.63 MBytes 6.82 Mbits/sec
-[ 3] 34.0-36.0 sec 3.50 MBytes 14.7 Mbits/sec
-[ 3] 36.0-38.0 sec  768 KBytes 3.15 Mbits/sec
-[ 3] 38.0-40.0 sec 4.38 MBytes 18.4 Mbits/sec
-[ 3] 40.0-42.0 sec 5.38 MBytes 22.5 Mbits/sec
-[ 3] 42.0-44.0 sec 7.13 MBytes 29.9 Mbits/sec
-[ 3] 44.0-46.0 sec 6.63 MBytes 27.8 Mbits/sec
-[ 3] 46.0-48.0 sec 5.38 MBytes 22.5 Mbits/sec
-[ 3] 48.0-50.0 sec 5.75 MBytes 24.1 Mbits/sec
-[ 3] 50.0-52.0 sec 7.50 MBytes 31.5 Mbits/sec
-[ 3] 52.0-54.0 sec 4.63 MBytes 19.4 Mbits/sec
-[ 3] 54.0-56.0 sec 7.50 MBytes 31.5 Mbits/sec
-[ 3] 56.0-58.0 sec 6.75 MBytes 28.3 Mbits/sec
-[ 3] 58.0-60.0 sec 5.13 MBytes 21.5 Mbits/sec
-[ 3] 60.0-62.0 sec 5.38 MBytes 22.5 Mbits/sec
-[ 3] 62.0-64.0 sec 4.75 MBytes 19.9 Mbits/sec
-[ 3] 64.0-66.0 sec 6.00 MBytes 25.2 Mbits/sec
-[ 3] 66.0-68.0 sec 3.50 MBytes 14.7 Mbits/sec
-[ 3] 68.0-70.0 sec 5.50 MBytes 23.1 Mbits/sec
-[ 3] 70.0-72.0 sec 4.75 MBytes 19.9 Mbits/sec
-[ 3] 72.0-74.0 sec 1.50 MBytes 6.29 Mbits/sec
-[ 3] 74.0-76.0 sec 4.50 MBytes 18.9 Mbits/sec
-[ 3] 76.0-78.0 sec 4.25 MBytes 17.8 Mbits/sec
-[ 3] 78.0-80.0 sec 5.13 MBytes 21.5 Mbits/sec
-[ 3] 80.0-82.0 sec 7.88 MBytes 33.0 Mbits/sec
-[ 3] 82.0-84.0 sec 7.38 MBytes 30.9 Mbits/sec
-[ 3] 84.0-86.0 sec 4.38 MBytes 18.4 Mbits/sec
-[ 3] 86.0-88.0 sec 5.25 MBytes 22.0 Mbits/sec
-[ 3] 88.0-90.0 sec 6.63 MBytes 27.8 Mbits/sec
-[ 3] 90.0-92.0 sec 5.00 MBytes 21.0 Mbits/sec
-[ 3] 92.0-94.0 sec 6.88 MBytes 28.8 Mbits/sec
-[ 3] 94.0-96.0 sec 8.25 MBytes 34.6 Mbits/sec
-[ 3] 96.0-98.0 sec 7.25 MBytes 30.4 Mbits/sec
-附录
-1：TD- LTE和LTE FDD标准差异
-TD- LTE是我国自主研发的4G标准，是由TD-SCDMA（3G网络）发展而来。
-LTE FDD是现在国际上主流的，使用最广泛的4G网络。
-现在全球有超过200个LTE的商用网络，其中超过90%是FDD的。
-从技术上说，TD- LTE采用的是时分双工，而LTE FDD采用的是频分双工
-那什么是频分双工，什么又是时分双工呢？
-先来解释“双工”。
-移动通信系统的工作方式分为：单工、半双工和全双工
-1，单工就是信息只能向一个方向传播。例如寻呼机和收音机，只能接收信息，不能发出信息。
-2，半双工就是信息可以双向传播，但是上传信息的时候只能上传，下载的时候只能下载。例如对讲机，你说话的时候听不见别人别人说，听别人说的时候自己不能说。
-3， 全双工就是信息可以同时双向传播。例如手机，可以边听边说。
-其中全双工又分为：时分双工TDD，与频分双工FDD。
-​    所谓的频分双工就是将信息上传和信息下载放在两个不同的频段，称为上行频段和下行频段，且这两个频段必须对称。为了不防止上下行频段之间的信息串频，两个频段不能重叠，而且中间必须隔开一段，称为保护频。如下图：上行和下行频段相互分开
-
-所谓的时分双工就是将上传和下载放在同一个频段，也就是上行频段和下行频段完全一样。那它是如何做到上下的信息不串频呢？其实很简单，顾名思义，频分双工分的是频段，那时分双工分的就是时间。将波传播的时间轴一分为二，
-前半部分用于信息的上传，后一部分用于信息的下载。其实这从理论上更像是同步的半双工，但是由于上行和下行时间差距极短，我们无法感觉到，所以从效果上也是全双工。如下图：时间帧的第一帧为上行，第二帧而为下行，上下行共用一个频段，用时间的差将他们隔开。
-
-​    接下来说一说移动TD- LTE和电信联通LTE FDD的优缺点，其实就是时分双工与频分双工的特点。
-​     TD- LTE由于采用上行和下行分时，所以上行和下行的时间差导致他信息传输的速度受到一定的限制。他的理论下载峰值为100Mbps，相比FDD的150Mbps来说，慢了不少。当然TD- LTE的基站信号覆盖半径也比LTE FDD小一点。
-​    LTE FDD也并非都是优点。FDD制式必须要找对称分开的上行、下行频段，也就是说它必须浪费更多的频段资源。那中国联通的FDD网为例，工信部给他发的频段牌照为，上行17551765MHz和下行18501860MHz（2×10M），实际联通只得到了上下各10M的频段，但是加上当中的保护频段，一共占用了1755~1860MHz也就是105MHz的频段。这就导致了频段资源利用率低，是一种资源的浪费。目前，频率资源本身就紧张，能找到对称的上行和下行频段就尤其难。频率除了用在手机上网通讯上，像广播，军事,甚至无线路由器等民用领域也广泛使用。将来随着科技的进步，频率频段的稀缺会日益严重。
-​    TD-LTE和FDD-LTE 是4G的两种国际标准，各有利弊。TD-LTE占用频段少，节省资源，带宽长，适合区域热点覆盖；FDD速度更快，覆盖更广，但占用资源多。适合广域覆盖。
-
-
-Kernel wireless 支持列表
-
-系列教程
-全部文章RSS订阅
-
-Embeded系列
-Embeded 分类 RSS 订阅
-
-海思MPP&amp;UNF构架源代码级分析
-3G,4G,Wifi选型需求分析及技术简介
-自动曝光原理
-ISP 数字图像处理 算法概述、工作原理、架构、处理流程
-
-
-]]></content>
-      <categories>
-        <category>embeded</category>
-      </categories>
-      <tags>
-        <tag>embeded</tag>
-        <tag>linux</tag>
-        <tag>3G</tag>
-        <tag>4G</tag>
-        <tag>3531a</tag>
-        <tag>移植</tag>
-        <tag>嵌入式</tag>
       </tags>
   </entry>
   <entry>
@@ -13379,9 +13379,9 @@ n1 与 n2 为数字。在第 n1 与 n2 行之间将 word1 替换为 word2 。特
     <title>从文学的角度，分析韩红的《天亮了》</title>
     <url>/posts/cb623532/</url>
     <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-BHwURxVaoBxAwHwC").style.height=document.getElementById("mmedia-BHwURxVaoBxAwHwC").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-gugzPneAoVmsFosB").style.height=document.getElementById("mmedia-gugzPneAoVmsFosB").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-BHwURxVaoBxAwHwC").style.height=document.getElementById("mmedia-BHwURxVaoBxAwHwC").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-gugzPneAoVmsFosB").style.height=document.getElementById("mmedia-gugzPneAoVmsFosB").scrollWidth*0.76+"px";
     }; 
 
 精品分析： 原作：石晶兰 短文吧
@@ -19353,8 +19353,8 @@ mmedia 插件允许在 contents 部分使用 JSON 编写配置，由于允许使
 
 列表
 
- var GJelQHcjDeZVOQTc_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    GJelQHcjDeZVOQTc_options.container = document.getElementById("mmedia-GJelQHcjDeZVOQTc");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(GJelQHcjDeZVOQTc_options); 
+ var DBAdSXqAfgBAmDfM_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.site/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.site/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_Original Motion Picture Score\",\"url\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.site/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    DBAdSXqAfgBAmDfM_options.container = document.getElementById("mmedia-DBAdSXqAfgBAmDfM");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(DBAdSXqAfgBAmDfM_options); 
 例子
 {% mmedias "aplayer" "autoplay:false" %}
 {
@@ -20702,158 +20702,6 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
-    <title>音乐推荐-曾经我也想过一了百了</title>
-    <url>/posts/8b7d3a9a/</url>
-    <content><![CDATA[现场MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-CDXnRjbUZtEMmgai").style.height=document.getElementById("mmedia-CDXnRjbUZtEMmgai").scrollWidth*0.76+"px";
-    window.onresize = function(){
-      document.getElementById("mmedia-CDXnRjbUZtEMmgai").style.height=document.getElementById("mmedia-CDXnRjbUZtEMmgai").scrollWidth*0.76+"px";
-    }; 
-
-## 背景介绍
-
-《曾经我也想过一了百了》是日本歌手中岛美嘉演唱的歌曲，由秋田弘填词和谱曲、出羽良彰编曲，于2013年8月28日发行，收录在中岛美嘉个人专辑《TOUGH 为爱勇敢》中。该歌曲勾勒出向死而生、努力活着的人，让人感到温暖和希望，让因为压力迷茫无助而有轻生想法的人，开始积极拥抱生活。 《曾经我也想过一了百了》由日本摇滚乐队amazarashi的主唱秋田弘创作，创作理念为“为了描写浓烈的希望，必须先描写深层的黑暗”。2010年，迎来出道十周年的中岛美嘉宣布自己因耳咽管开放症暂停一切音乐活动。在疾病的影响下，歌唱对她而言变得无比艰难。2011年，她携单曲《Dear》复出，但复出后始终经历着状态的起伏和媒体的质疑。 中岛美嘉起先向amazarashi提出合作请求，希望乐队能为自己创作一首节奏明快的歌曲，但随后秋田弘向她播放了乐队一首未发行的样本歌曲，并认为该曲很适合由她来演唱。收到该曲时，中岛美嘉起先感到十分惊讶，但听到最后泪流不止，感到自己的心变得柔和，便立即要求演唱该曲。录制过程中，中岛美嘉将自己的心声融入到了该曲中，希望能将力量传达给低迷苦闷的听众。
-
-## 中文翻唱
-
- var bXpZPfdqRuHSzAAQ_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
-    bXpZPfdqRuHSzAAQ_options.container = document.getElementById("mmedia-bXpZPfdqRuHSzAAQ");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(bXpZPfdqRuHSzAAQ_options); 
-LRC歌词
-[00:02.09]作曲 : 秋田 ひろむ
-[00:02.64]曾经我也想过一了百了
-[00:03.21]原唱：中岛美嘉
-[00:04.46] 
-[00:29.85]曾经我 也想过 一了百了
-[00:34.79]因为看见蜷缩的猫
-[00:37.40]在码头望着远方
-[00:40.40]海浪拍打在岸上
-[00:43.44]一阵又一阵侵踏
-[00:46.22]希望那些过往都消失
-[00:49.38]不再回望
-[00:52.43]曾经我 也想过
-[00:54.82]一了百了
-[00:57.46]是因为生日的那天
-[01:00.10]杏花 又开放
-[01:03.75]阳光灿烂树荫下
-[01:06.41]落花已沉睡安详
-[01:09.84]是否我也 能化作尘土
-[01:12.16]不再流浪
-[01:15.76]仍放抽屉里过期的糖
-[01:18.28]迷路的单车被留在回家路上
-[01:21.27]还有海边抛弃的避风港
-[01:23.88]全都提醒 我和他们一样
-[01:26.75]昨天和今天的画面不断浮现
-[01:29.74]明天 渴望能不能有
-[01:31.54]新的改变
-[01:32.90]不能沮丧 我知道啊
-[01:35.55]可是啊
-[01:40.88]曾经我 也想过 一了百了
-[01:46.24]身边一切都像在问我
-[01:49.19]过得好不好
-[01:52.28]泪不能停止的流
-[01:55.05]流进心底的荒漠
-[01:58.28]这颗心中的模样
-[02:00.17]早空如一具躯壳
-[02:26.84]曾经我 也想过 一了百了
-[02:32.71]因为我的存在
-[02:34.23]总让别人失望
-[02:37.98]不曾拥有就不怕
-[02:40.80]关于人与人的伤
-[02:44.18]这么简单的道理
-[02:45.96]我也只会搞砸
-[02:49.80]曾经我 也想过 一了百了
-[02:55.49]是因为墙上
-[02:56.52]那张骄傲的自画像
-[03:00.96]无力反驳地跪下
-[03:03.66]只说的出一句话
-[03:06.99]生而为人的我
-[03:08.61]真的对不起呀
-[03:12.75]房间里闪烁着荧幕微光
-[03:15.56]伴随着屋外夜色的声音嘈杂
-[03:18.43]电话那头传来窒息的话
-[03:21.28]刺痛在笼中
-[03:22.44]备受折磨的时间啊
-[03:24.25]黑暗中我装备
-[03:25.58]唐吉轲德的毅力
-[03:26.89]对抗看不见的敌人
-[03:28.38]摧毁我的决心
-[03:29.85]不要害怕我知道啊可是啊
-[03:38.04]曾经我也想过一了百了
-[03:44.29]为何人们都说我无可救药
-[03:49.69]不强求能明白我
-[03:52.60]不奢望时间倒流
-[03:55.70]因为很久很久以前我曾爱过
-[04:00.86]曾经我 也想过 一了百了
-[04:06.89]是因为我该那样
-[04:08.43]灿烂那样美好
-[04:12.49]一味消极着过去
-[04:14.95]离去的念头缠绕
-[04:17.29]闭上眼能感受到
-[04:20.04]更好的明天来到
-[04:24.35]茫茫人海中的你
-[04:27.01]泪光中微笑的你
-[04:30.26]在我耳边温柔唱起这首歌曲
-[00:00.10]僕が死のうと思ったのは (曾经我也想过一了百了) - 中島美嘉 (なかしま みか)
-[00:00.20]词：秋田ひろむ
-[00:00.30]曲：秋田ひろむ
-[00:00.40]编曲：出羽良彰
-[00:27.95]僕が死のうと思ったのは
-[00:33.83]ウミネコが桟橋で鳴いたから
-[00:39.20]波の随意に浮かんで消える
-[00:45.33]過去も啄ばんで飛んでいけ
-[00:50.70]僕が死のうと思ったのは
-[00:56.52]誕生日に杏の花が咲いたから
-[01:02.22]その木漏れ日でうたた寝したら
-[01:08.09]虫の死骸と土になれるかな
-[01:14.09]薄荷飴 漁港の灯台
-[01:17.05]錆びたアーチ橋 捨てた自転車
-[01:19.74]木造の駅のストーブの前で
-[01:22.74]どこにも旅立てない心
-[01:25.61]今日はまるで昨日みたいだ
-[01:28.30]明日を変えるなら今日を変えなきゃ
-[01:31.56]分かってる 分かってる けれど
-[01:39.71]僕が死のうと思ったのは
-[01:44.89]心が空っぽになったから
-[01:50.71]満たされないと泣いているのは
-[01:56.39]きっと満たされたいと願うから
-[02:25.49]僕が死のうと思ったのは
-[02:30.69]靴紐が解けたから
-[02:36.57]結びなおすのは苦手なんだよ
-[02:42.25]人との繋がりもまた然り
-[02:47.90]僕が死のうと思ったのは
-[02:53.65]少年が僕を見つめていたから
-[02:59.30]ベッドの上で土下座してるよ
-[03:05.12]あの日の僕にごめんなさいと
-[03:11.43]パソコンの薄明かり
-[03:14.05]上階の部屋の生活音
-[03:16.80]インターフォンのチャイムの音
-[03:19.80]耳を塞ぐ鳥かごの少年
-[03:22.87]見えない敵と戦ってる
-[03:25.43]六畳一間のドンキホーテ
-[03:28.30]ゴールはどうせ醜いものさ
-[03:36.74]僕が死のうと思ったのは
-[03:42.05]冷たい人と言われたから
-[03:47.94]愛されたいと泣いているのは
-[03:53.63]人の温もりを知ってしまったから
-[04:22.79]僕が死のうと思ったのは
-[04:27.91]あなたが綺麗に笑うから
-[04:33.49]死ぬことばかり考えてしまうのは
-[04:39.62]きっと生きる事に真面目すぎるから
-[04:45.43]僕が死のうと思ったのは
-[04:50.70]まだあなたに出会ってなかったから
-[04:56.51]あなたのような人が生まれた
-[05:02.09]世界を少し好きになったよ
-[05:07.96]あなたのような人が生きてる
-[05:13.65]世界に少し期待するよ]]></content>
-      <categories>
-        <category>music</category>
-      </categories>
-      <tags>
-        <tag>music</tag>
-        <tag>中岛美嘉</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>私人在线音乐服务器搭建与使用介绍</title>
     <url>/posts/2b9325d0/</url>
     <content><![CDATA[
@@ -20884,13 +20732,13 @@ Aplayer 在线音乐
 
 博文页面内插入音乐列表
 
- var ZGHJJbLWoSqDNvri_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
-    ZGHJJbLWoSqDNvri_options.container = document.getElementById("mmedia-ZGHJJbLWoSqDNvri");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(ZGHJJbLWoSqDNvri_options); 
+ var dUMtLSdkJsSxOhtL_options = JSON.parse('{\"volume\":0.66,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\"}]}');
+    dUMtLSdkJsSxOhtL_options.container = document.getElementById("mmedia-dUMtLSdkJsSxOhtL");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(dUMtLSdkJsSxOhtL_options); 
 
 
 
- var UOtSLPwyRkPVNtNi_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
-    UOtSLPwyRkPVNtNi_options.container = document.getElementById("mmedia-UOtSLPwyRkPVNtNi");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(UOtSLPwyRkPVNtNi_options); 
+ var xycTyMmOzSwnGcyH_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"Hotel California\",\"artist\":\"Camille and Kennerly\",\"url\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Hotel%20California/Hotel%20California.webp\",\"lrc\":\"https://cdn.17lai.fun/media/music/Hotel%20California/01%20Hotel%20California.lrc\",\"theme\":\"#ebd0c2\"},{\"name\":\"Sold Out\",\"artist\":\"Diamonds\",\"url\":\"https://cdn.17lai.fun/media/music/Diamonds/05%20Sold%20Out.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Diamonds/Diamonds.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\"The Final Bell\",\"artist\":\"Rocky_ Original Motion Picture Score\",\"url\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/12%20Bill%20Conti%20-%20The%20Final%20Bell.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/Rocky_%20Original%20Motion%20Picture%20Score/Rocky_%20Original%20Motion%20Picture%20Score.jpg\",\"theme\":\"#ebd0c2\"},{\"name\":\" Croatian Rhapsody\",\"artist\":\"The Piano Player\",\"url\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/11%20Croatian%20Rhapsody.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/The%20Piano%20Player/The%20Piano%20Player.jpg\",\"theme\":\"#ebd0c2\"}],\"volume\":0.8}');
+    xycTyMmOzSwnGcyH_options.container = document.getElementById("mmedia-xycTyMmOzSwnGcyH");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(xycTyMmOzSwnGcyH_options); 
 单独Aplayer音乐页面
 
 直接戳这里 -&gt; Musics
@@ -21094,6 +20942,158 @@ Earthly 一个更加强大的镜像构建工具
         <tag>music</tag>
         <tag>mstream</tag>
         <tag>selfhost</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>音乐推荐-曾经我也想过一了百了</title>
+    <url>/posts/8b7d3a9a/</url>
+    <content><![CDATA[现场MV
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-knimomyUPkQxvjRs").style.height=document.getElementById("mmedia-knimomyUPkQxvjRs").scrollWidth*0.76+"px";
+    window.onresize = function(){
+      document.getElementById("mmedia-knimomyUPkQxvjRs").style.height=document.getElementById("mmedia-knimomyUPkQxvjRs").scrollWidth*0.76+"px";
+    }; 
+
+## 背景介绍
+
+《曾经我也想过一了百了》是日本歌手中岛美嘉演唱的歌曲，由秋田弘填词和谱曲、出羽良彰编曲，于2013年8月28日发行，收录在中岛美嘉个人专辑《TOUGH 为爱勇敢》中。该歌曲勾勒出向死而生、努力活着的人，让人感到温暖和希望，让因为压力迷茫无助而有轻生想法的人，开始积极拥抱生活。 《曾经我也想过一了百了》由日本摇滚乐队amazarashi的主唱秋田弘创作，创作理念为“为了描写浓烈的希望，必须先描写深层的黑暗”。2010年，迎来出道十周年的中岛美嘉宣布自己因耳咽管开放症暂停一切音乐活动。在疾病的影响下，歌唱对她而言变得无比艰难。2011年，她携单曲《Dear》复出，但复出后始终经历着状态的起伏和媒体的质疑。 中岛美嘉起先向amazarashi提出合作请求，希望乐队能为自己创作一首节奏明快的歌曲，但随后秋田弘向她播放了乐队一首未发行的样本歌曲，并认为该曲很适合由她来演唱。收到该曲时，中岛美嘉起先感到十分惊讶，但听到最后泪流不止，感到自己的心变得柔和，便立即要求演唱该曲。录制过程中，中岛美嘉将自己的心声融入到了该曲中，希望能将力量传达给低迷苦闷的听众。
+
+## 中文翻唱
+
+ var HKVftWcuXXZgJNIt_options = JSON.parse('{\"autoplay\":false,\"audio\":[{\"name\":\"曾经我也想过一了百了\",\"artist\":\"一么\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/曾经我也想过一了百了-一么.lrc\"},{\"name\":\"僕が死のうと思ったのは\",\"artist\":\"中岛美嘉\",\"url\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.mp3\",\"cover\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/僕が死のうと思ったのは.jpg\",\"lrc\":\"https://cdn.17lai.fun/media/music/僕が死のうと思ったのは/01%20僕が死のうと思ったのは.lrc\"}],\"volume\":0.8}');
+    HKVftWcuXXZgJNIt_options.container = document.getElementById("mmedia-HKVftWcuXXZgJNIt");HEXO_MMEDIA_DATA.css.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.css");HEXO_MMEDIA_DATA.js.push("https://cdn.jsdelivr.net/npm/aplayer@1/dist/APlayer.min.js");HEXO_MMEDIA_DATA.aplayerData.push(HKVftWcuXXZgJNIt_options); 
+LRC歌词
+[00:02.09]作曲 : 秋田 ひろむ
+[00:02.64]曾经我也想过一了百了
+[00:03.21]原唱：中岛美嘉
+[00:04.46] 
+[00:29.85]曾经我 也想过 一了百了
+[00:34.79]因为看见蜷缩的猫
+[00:37.40]在码头望着远方
+[00:40.40]海浪拍打在岸上
+[00:43.44]一阵又一阵侵踏
+[00:46.22]希望那些过往都消失
+[00:49.38]不再回望
+[00:52.43]曾经我 也想过
+[00:54.82]一了百了
+[00:57.46]是因为生日的那天
+[01:00.10]杏花 又开放
+[01:03.75]阳光灿烂树荫下
+[01:06.41]落花已沉睡安详
+[01:09.84]是否我也 能化作尘土
+[01:12.16]不再流浪
+[01:15.76]仍放抽屉里过期的糖
+[01:18.28]迷路的单车被留在回家路上
+[01:21.27]还有海边抛弃的避风港
+[01:23.88]全都提醒 我和他们一样
+[01:26.75]昨天和今天的画面不断浮现
+[01:29.74]明天 渴望能不能有
+[01:31.54]新的改变
+[01:32.90]不能沮丧 我知道啊
+[01:35.55]可是啊
+[01:40.88]曾经我 也想过 一了百了
+[01:46.24]身边一切都像在问我
+[01:49.19]过得好不好
+[01:52.28]泪不能停止的流
+[01:55.05]流进心底的荒漠
+[01:58.28]这颗心中的模样
+[02:00.17]早空如一具躯壳
+[02:26.84]曾经我 也想过 一了百了
+[02:32.71]因为我的存在
+[02:34.23]总让别人失望
+[02:37.98]不曾拥有就不怕
+[02:40.80]关于人与人的伤
+[02:44.18]这么简单的道理
+[02:45.96]我也只会搞砸
+[02:49.80]曾经我 也想过 一了百了
+[02:55.49]是因为墙上
+[02:56.52]那张骄傲的自画像
+[03:00.96]无力反驳地跪下
+[03:03.66]只说的出一句话
+[03:06.99]生而为人的我
+[03:08.61]真的对不起呀
+[03:12.75]房间里闪烁着荧幕微光
+[03:15.56]伴随着屋外夜色的声音嘈杂
+[03:18.43]电话那头传来窒息的话
+[03:21.28]刺痛在笼中
+[03:22.44]备受折磨的时间啊
+[03:24.25]黑暗中我装备
+[03:25.58]唐吉轲德的毅力
+[03:26.89]对抗看不见的敌人
+[03:28.38]摧毁我的决心
+[03:29.85]不要害怕我知道啊可是啊
+[03:38.04]曾经我也想过一了百了
+[03:44.29]为何人们都说我无可救药
+[03:49.69]不强求能明白我
+[03:52.60]不奢望时间倒流
+[03:55.70]因为很久很久以前我曾爱过
+[04:00.86]曾经我 也想过 一了百了
+[04:06.89]是因为我该那样
+[04:08.43]灿烂那样美好
+[04:12.49]一味消极着过去
+[04:14.95]离去的念头缠绕
+[04:17.29]闭上眼能感受到
+[04:20.04]更好的明天来到
+[04:24.35]茫茫人海中的你
+[04:27.01]泪光中微笑的你
+[04:30.26]在我耳边温柔唱起这首歌曲
+[00:00.10]僕が死のうと思ったのは (曾经我也想过一了百了) - 中島美嘉 (なかしま みか)
+[00:00.20]词：秋田ひろむ
+[00:00.30]曲：秋田ひろむ
+[00:00.40]编曲：出羽良彰
+[00:27.95]僕が死のうと思ったのは
+[00:33.83]ウミネコが桟橋で鳴いたから
+[00:39.20]波の随意に浮かんで消える
+[00:45.33]過去も啄ばんで飛んでいけ
+[00:50.70]僕が死のうと思ったのは
+[00:56.52]誕生日に杏の花が咲いたから
+[01:02.22]その木漏れ日でうたた寝したら
+[01:08.09]虫の死骸と土になれるかな
+[01:14.09]薄荷飴 漁港の灯台
+[01:17.05]錆びたアーチ橋 捨てた自転車
+[01:19.74]木造の駅のストーブの前で
+[01:22.74]どこにも旅立てない心
+[01:25.61]今日はまるで昨日みたいだ
+[01:28.30]明日を変えるなら今日を変えなきゃ
+[01:31.56]分かってる 分かってる けれど
+[01:39.71]僕が死のうと思ったのは
+[01:44.89]心が空っぽになったから
+[01:50.71]満たされないと泣いているのは
+[01:56.39]きっと満たされたいと願うから
+[02:25.49]僕が死のうと思ったのは
+[02:30.69]靴紐が解けたから
+[02:36.57]結びなおすのは苦手なんだよ
+[02:42.25]人との繋がりもまた然り
+[02:47.90]僕が死のうと思ったのは
+[02:53.65]少年が僕を見つめていたから
+[02:59.30]ベッドの上で土下座してるよ
+[03:05.12]あの日の僕にごめんなさいと
+[03:11.43]パソコンの薄明かり
+[03:14.05]上階の部屋の生活音
+[03:16.80]インターフォンのチャイムの音
+[03:19.80]耳を塞ぐ鳥かごの少年
+[03:22.87]見えない敵と戦ってる
+[03:25.43]六畳一間のドンキホーテ
+[03:28.30]ゴールはどうせ醜いものさ
+[03:36.74]僕が死のうと思ったのは
+[03:42.05]冷たい人と言われたから
+[03:47.94]愛されたいと泣いているのは
+[03:53.63]人の温もりを知ってしまったから
+[04:22.79]僕が死のうと思ったのは
+[04:27.91]あなたが綺麗に笑うから
+[04:33.49]死ぬことばかり考えてしまうのは
+[04:39.62]きっと生きる事に真面目すぎるから
+[04:45.43]僕が死のうと思ったのは
+[04:50.70]まだあなたに出会ってなかったから
+[04:56.51]あなたのような人が生まれた
+[05:02.09]世界を少し好きになったよ
+[05:07.96]あなたのような人が生きてる
+[05:13.65]世界に少し期待するよ]]></content>
+      <categories>
+        <category>music</category>
+      </categories>
+      <tags>
+        <tag>music</tag>
+        <tag>中岛美嘉</tag>
       </tags>
   </entry>
   <entry>
@@ -28482,886 +28482,6 @@ CI/CD与Git Flow与GitLab
       </tags>
   </entry>
   <entry>
-    <title>基于Hexo的matery主题搭建博客自定义修改篇2</title>
-    <url>/posts/4d8a0b22/</url>
-    <content><![CDATA[Hexo系列
-HexoRSS分类订阅
-[十万字图文教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-GithubProfile美化与自动获取RSS文章教程
-Vercel部署高级用法教程
-webhook部署Hexo静态博客指南
-在宝塔VPS上面采用docker部署waline全流程图解教程
-自建Umami访问统计服务并统计静态博客UV/PV
-
-
-如果本主题中的诸多功能和主题色彩你不满意，可以在主题中自定义修改，很多更自由的功能和细节点的修改难以在主题的 _config.yml 中完成，需要修改源代码才来完成。以下列出了可能有用的地方：
-自定义Logo
-免费生成 logo 的网站很多，这里给一个个人使用的网站。
-
-找一个喜欢的图片
-https://www.logosc.cn/logo/ 图片上传到这里，然后安装提示生成图片
-下载生成的图标文件，替换主题中对应的文件！
-
-还有其它的服务推荐
-
-Iconifier：
-
-网址：https://iconifier.net/
-Iconifier 是一个简单易用的在线图标生成器，支持导入 PNG、JPG 和 GIF 格式的图片，并生成相应的 SVG 图标。你可以通过上传图片或者提供图片的 URL 来生成图标。
-
-
-SVGOMG：
-
-网址：https://jakearchibald.github.io/svgomg/
-SVGOMG 是一个由 Google 开发的 SVG 优化工具，它可以帮助你压缩和优化现有的 SVG 文件，并提供一些额外的编辑功能，比如调整路径和属性。你可以在这个工具中导入已有的 SVG 文件并进行编辑和优化。
-
-
-Flaticon：
-
-网址：https://www.flaticon.com/
-Flaticon 是一个图标搜索引擎，提供了大量的免费图标资源供用户选择。你可以在 Flaticon 上搜索你需要的图标，然后下载为 SVG 格式。虽然 Flaticon 提供了大量的免费图标资源，但一些高质量的图标可能需要付费下载。
-
-
-
-修改主题颜色
-配色包括导航栏，底部栏，a标签等，主题配色是绿色。
-修改themes\Matery\source\css\matery.css样式
-快捷键ctrl+F查找到#4cbf30（浅绿色）和#0f9d58（深绿色）还有首页字体颜色，修改为你喜欢的颜色
-/* 整体背景颜色，包括导航、移动端的导航、页尾、标签页等的背景颜色. */ 
-.bg-color { 
-	background-image: linear-gradient(to right, #4cbf30 0%, #0f9d58 100%); 
-} 
-/*如果想去掉banner图的颜色渐变效果，请将以下的css属性注释掉或者删除掉即可*/ 
-@-webkit-keyframes rainbow { 
-	/* 动态切换背景颜色. */ 
-} 
-@keyframes rainbow { 
-	/* 动态切换背景颜色. */ 
-}
-
-背景樱花飘落效果
-在themes/matery/source/js目录下新建sakura.js文件，打开这个网址传送门，将内容复制粘贴到sakura.js即可。
-然后在themes/matery/layout/layout.ejs文件内添加下面的内容：
-&lt;script type="text/javascript"&gt;
-//只在桌面版网页启用特效
-var windowWidth = $(window).width();
-if (windowWidth &gt; 768) {
-    document.write('&lt;script type="text/javascript" src="/js/sakura.js"&gt;&lt;\/script&gt;');
-}
-&lt;/script&gt;
-修改花瓣的数量
-因为普遍在使用的樱花背景效果花瓣数太多了，一些人不太喜欢。
-于是按不同花瓣数量做了几个新的 js ，并提供如下 cdn 形式的引用：
-https://cdn.jsdelivr.net/gh/fz6m/Private-web@1.2/js/sakura/sakura-small.js
-以上为少量樱花效果，另提供几个不同数量的文件引用名：
-
-
-
-文件名
-说明
-
-
-
-
-sakura-small.js
-少量樱花
-
-
-sakura-half.js
-樱花相对原效果数量减半
-
-
-sakura-reduce.js
-樱花相对原效果减少1/4
-
-
-sakura-original.js
-樱花数量不变（原效果）
-
-
-
-自定义鼠标样式
-首先将鼠标样式下载到本地，推荐大家一个网站：https://zhutix.com/ico/ori-cursors/
-以我的为例，我将鼠标指针样式放在了主题文件夹下的medias目录下，然后打开themes\matery\source\css下的my.css文件，添加内容如下：
-*{
-    cursor: url("/medias/imgs/zhengchang.ico"),auto!important;
-}
-:active{
-    cursor: url("/medias/imgs/dianji.ico"),auto!important;
-}
-取消首页渐变颜色动画
-在themes\Matery\source\css\matery.css，ctrl+F快捷键查找.bg-cover:after，注释掉即可。
-/* .bg-cover:after {
-    -webkit-animation: rainbow 60s infinite;
-    animation: rainbow 60s infinite;
-} */
-首页随机图片轮播
-themes\matery\layout\_partial\bg-cover-content.ejs
-修改随机获取一张图片：
-$('.bg-cover').css('background-image', 'url(&lt;%- theme.featureImages[Math.floor(Math.random() * theme.featureImages.length + 1)-1] %&gt;)');
-优化目录栏，透明化
-目录样式竟然在：themes\Matery\layout\_partial\post-detail-toc.ejs
-.toc-widget {
-    width: 345px;
-    padding-left: 20px;
-    background-color: rgb(255, 255, 255,0.7);
-    border-radius: 10px;
-    box-shadow: 0 10px 35px 2px rgba(0, 0, 0, .15), 0 5px 15px rgba(0, 0, 0, .07), 0 2px 5px -5px rgba(0, 0, 0, .1) !important;
-}
-增加点击跳转评论按钮
-新建文件themes\Matery\layout\_partial\back-comment.ejs,粘贴如下代码
-我这里评论是valine，直接填写的valine的id——href="#vcomments",如果是其他评论，对应修改即可。
-&lt;!-- 直达评论 --&gt;
-&lt;div id="to_comment" class="comment-scroll"&gt;
-    &lt;a class="btn-floating btn-large waves-effect waves-light" href="#vcomments" title="直达评论"&gt;
-        &lt;i class="fas fa-comments"&gt;&lt;/i&gt;
-    &lt;/a&gt;
-&lt;/div&gt;
-在themes\Matery\layout\_partial\valine.ejs文末添加一条，引用第一步的内容；
-&lt;%- partial('_partial/back-comment.ejs') %&gt;
-则只在valine存在的页面才显示直达评论，防止首页其他地方也出现按钮。其实还可以优化为浮动出现，有一点麻烦，我这里没有设置。
-增加样式在themes\Matery\source\css\matery.css添加内容如下：
-/*直达评论按钮样式*/
-.comment-scroll {
-    position: fixed;
-    right: 15px;
-    bottom: 135px;
-    padding-top: 15px;
-    margin-bottom: 0;
-    z-index: 998;
-}
-
-.comment-scroll .btn-floating {
-    background: linear-gradient(to bottom right, #FF9999 0%, #ff6666 100%);
-    width: 48px;
-    height: 48px;
-}
-
-.comment-scroll .btn-floating i {
-    line-height: 48px;
-    font-size: 1.8rem;
-}
-
-bottom: 135px;是距离底部的高度，看看你是否需要修改。
-添加简体繁体一键切换
-
-首先，我们可以在这里右键另存下载简繁字体切换所需的 tw_cn.js 文件，我们把这个文件放到 ~/themes/(你的主题名)/source/js/ 文件夹下。
-修改模板，在我们想要显示简繁转换按钮的地方添加如下代码。例如，我在 NexT 主题的布局文件 ~/themes/(你的主题名)/layout/_partials/footer.ejs 里添加了如下代码：
-
-&lt;div class="translate-style"&gt;
-繁/简：&lt;a id="translateLink" href="javascript:translatePage();"&gt;繁体
-&lt;/a&gt;
-&lt;/div&gt;
-&lt;script type="text/javascript" src="/js/tw_cn.js"&gt;&lt;/script&gt;
-&lt;script type="text/javascript"&gt;
-var defaultEncoding = 2; //网站编写字体是否繁体，1-繁体，2-简体
-var translateDelay = 0; //延迟时间,若不在前, 要设定延迟翻译时间, 如100表示100ms,默认为0
-var cookieDomain = "https://1han.wiki/"; //Cookie地址, 一定要设定, 通常为你的网址
-var msgToTraditionalChinese = "繁体"; //此处可以更改为你想要显示的文字
-var msgToSimplifiedChinese = "简体"; //同上，但两处均不建议更改
-var translateButtonId = "translateLink"; //默认互换id
-translateInitilization();
-&lt;/script&gt;
-读者可以在博客底部点击简体 / 繁体来看具体的切换字体效果。
-修改滑动条
-/* 滚动条 */
-::-webkit-scrollbar-thumb {
-    background-color: #FF2A68;
-    background-image: -webkit-linear-gradient(45deg,rgba(255,255,255,.4) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.4) 50%,rgba(255,255,255,.4) 75%,transparent 75%,transparent);
-    border-radius: 3em;
-}
-::-webkit-scrollbar-track {
-    background-color: #ffcacaff;
-    border-radius: 3em;
-}
-::-webkit-scrollbar {
-    width: 8px;
-    height: 15px;
-}
-文章标题添加打字机效果
-定位到文章标题代码 layout/_partial/post-cover.ejs
-&lt;h1 class="description center-align post-title"&gt;&lt;%= page.title %&gt;&lt;/h1&gt;
-文章标题代码替换成下面的代码
-&lt;script src="&lt;%- theme.jsDelivr.url %&gt;&lt;%- url_for(theme.libs.js.typed) %&gt;"&gt;&lt;/script&gt;
-&lt;% if (theme.post.enable) { %&gt;
-    &lt;script&gt;
-        var typedObj = new Typed("#post-title", {
-            strings: [ '&lt;%= page.title %&gt;' ],
-            startDelay: &lt;%= theme.post.startDelay %&gt;,
-            typeSpeed: &lt;%= theme.post.typeSpeed %&gt;,
-            loop: &lt;%= theme.post.loop %&gt;,
-            backSpeed: &lt;%= theme.post.backSpeed %&gt;,
-            showCursor: &lt;%= theme.post.showCursor %&gt;
-        });
-    &lt;/script&gt;
-&lt;% } %&gt;
-
-最后在主题配置文件中进行配置 _config.yml
-# 文章标题
-post:
-  enable: true
-  loop: false # 是否循环
-  showCursor: true # 是否显示光标
-  startDelay: 500 # 开始延迟
-  typeSpeed: 100 # 打字速度
-  backSpeed: 50 # 删除速度
-现在就完成了为一言和文章标题添加打字机效果
-更换字体
-一般网站的web字体都可以直接从Google-Font获取资源，这样不用担心字体商业带来的法律问题。
-常见的开源字体有：
-思源黑体 、 文泉驿 、 文鼎开放字体 、 柳体 、 cwTeX中文字体 、 濑户字体、江西拙楷体等。
-1）创建web字体引用
-@font-face{
-    font-family: '引用的字体名称';
-    src: url('谷歌字体路径（或者其他什么字体引用）');   
-}
-2）在网页合适的位置进行字体引用
-①利用浏览器检查元素，获取需要定义字体的部分
-②在主体的配置文件中(hexo-theme-matery/layout/…)找到对应的渲染(.ejs)文件，查找需要修改的部分
-①演示一下利用浏览器获取定义字体的部分
-
-对获取到的id选择器：#artDetail进行css渲染
-#artDetail {
-    font-family: '引用的web字体';
-}
-②利用主体的ejs渲染文件找出需要修饰的部分（加入自定义类）
-
-/*使用我在文章内容详情定义的diyFnot类**/
-.diyfont {
-   font-family: '引用的web字体'; 
-}
-
-/*也可以使用自带的id*/
-#artDetail {
-    font-family: '引用的web字体'; 
-}
-网站全局化字体定义
-@font-face{
-    font-family: '引用的字体名称';
-    src: url('谷歌字体路径（或者其他什么字体引用）');   
-}
-
-body {
-    font-family: '引用的web字体名称'; 
-}
-引用本地的字体文件
-当然有时候那个谷歌字体的网站可能登录不上去，需要科学上网，很烦人！我们也可以直接下载下字体文件，将他放在本地，进行直接引用！看下面操作👇
-①在本地的hexo根目录的source文件下创立diy-font文件夹:/source/diy-font
-在该文件下存放你的字体文件，比如：/source/diy-font/IBMPlexMono-Italic.ttf
-②引用本地字体（仍然是在my.css文件中书写代码）
-@font-face{
-    font-family: 'hl';
-    src: url('../diy-font/IBMPlexMono-Italic.ttf');
-}
-
-/** 表示全局使用，如果不想全局使用不要添加该段 */
-body{
-    font-family: 'hl';
-}
-
-
-/* 可以局部使用，建议添加 */
-.diyFont{
-    font-family: 'hl';
-}
-这样我们就可以实现引用本地的字体了，并且在web有效！
-在你想要使用的元素的 class 里面加上 diyFont 即可。
-
-
-直接使用
-F12，找到对应的代码片段即可：
-
-
-&lt;span class="logo-span diyFont"&gt;测试字体&lt;/span&gt;
-
-
-模板使用
-找到对应的模板 header.ejs中的代码片段使用即可：
-
-
-&lt;span class="logo-span diyFont"&gt;&lt;%= config.title %&gt;&lt;/span&gt;
-修改主题颜色
-在主题文件的 /source/css/matery.css 文件中，搜索 .bg-color 来修改背景颜色：
-/* 整体背景颜色，包括导航、移动端的导航、页尾、标签页等的背景颜色. */
-.bg-color {
-  background-image: linear-gradient(to right, #4cbf30 0%, #0f9d58 100%);
-}
-
-@-webkit-keyframes rainbow {
-  /* 动态切换背景颜色. */
-}
-
-@keyframes rainbow {
-  /* 动态切换背景颜色. */
-}
-修改 banner 图和文章特色图
-可以直接在 /source/medias/banner 文件夹中更换喜欢的 banner 图片，主题代码中是每天动态切换一张，只需 7 张即可。如果会 JavaScript 代码，可以修改成自己喜欢切换逻辑，如：随机切换等，banner 切换的代码位置在 /layout/_partial/bg-cover-content.ejs 文件的 &lt;script&gt;&lt;/script&gt; 代码中：
-$(".bg-cover").css("background-image", "url(/medias/banner/" + new Date().getDay() + ".jpg)");
-在 /source/medias/featureimages 文件夹中默认有 24 张特色图片，你可以再增加或者减少，并需要在 _config.yml 做同步修改。
-Hexo 跳过渲染
-在Hexo部署时会默认渲染source下的所有html页面，但有时候想在Hexo博客上单独自定义html页面或README.md时，却不希望被Hexo渲染。因此对某个文件或者目录进行排除渲染是非常必要的。
-方法一：font matter
-Hexo新建网站页面，然后将你的代码直接写入 index.md 中
-在 Front matter 中添加 layout: false，此方法适用于单一的纯HTML
-CSS 页面。
----
-title: tools
-date: 2020-04-28 00:00:00
-type: "tools"
-layout: false
----
-方法二：skip rende
-在博客根目录下的 _config.yml，找到 skip_render，大概在32行左右，写入你想要的跳过渲染的路径，注意缩进和空格。
-# 指定目录跳过hexo渲染
-skip_render:
-  - 'tools/*'
-  - 'tools/**'
-
-注释：tools/* 表示在目录 source/fireworks 下的文件全部跳过渲染，tools/** 表示在博客根目录 source/tools/ 文件夹下的文件全部跳过渲染（例如页面的 js、css 在另一个文件夹中）。
-
-博客中插入音乐
-hexo-tag-aplayer
-hexo-tag-aplayerAPlayer 播放器的 Hexo 标签插件（现已支持 MetingJS）。
-安装
-npm install --save hexo-tag-aplayer
-使用方法——aplayer
-{% aplayer title author url [picture_url, narrow, autoplay, width:xxx, lrc:xxx] %}
-
-title : 曲目标题
-author: 曲目作者
-url: 音乐文件 URL 地址
-picture_url: (可选) 音乐对应的图片地址
-narrow: （可选）播放器袖珍风格
-autoplay: (可选) 自动播放，移动端浏览器暂时不支持此功能
-width:xxx: (可选) 播放器宽度 (默认: 100%)
-lrc:xxx: （可选）歌词文件 URL 地址
-例如：
-
-{% aplayer "她的睫毛" "周杰伦" "http://home.ustc.edu.cn/~mmmwhy/%d6%dc%bd%dc%c2%d7%20-%20%cb%fd%b5%c4%bd%de%c3%ab.mp3"  "http://home.ustc.edu.cn/~mmmwhy/jay.jpg" %}
-如果你觉得前面的方法不太好用，可以用下面的方法，使用MetingJS。
-使用方法——MetingJS
-MetingJS 是基于Meting API 的 APlayer 衍生播放器，支持对于 QQ音乐、网易云音乐、虾米、酷狗、百度等平台的音乐播放。
-第一步：修改_config.yml配置
-在hexo的配置文件_config.yml中添加：
-aplayer:
-	meting: true
-第二步：使用MetingJS 播放器
-&lt;!-- 简单示例 (id, server, type)  --&gt;
-{% meting "571184509" "xiami" "playlist" %}
-有关的选项列表如下:
-
-
-
-选项
-默认值
-描述
-
-
-
-
-id
-必须值
-歌曲 id / 播放列表 id / 相册 id / 搜索关键字
-
-
-server
-必须值
-音乐平台: netease, tencent, kugou, xiami, baidu
-
-
-type
-必须值
-song, playlist, album, search, artist
-
-
-fixed
-false
-开启固定模式
-
-
-mini
-false
-开启迷你模式
-
-
-loop
-all
-列表循环模式：all, one,none
-
-
-order
-list
-列表播放模式： list, random
-
-
-volume
-0.7
-播放器音量
-
-
-lrctype
-0
-歌词格式类型
-
-
-listfolded
-false
-指定音乐播放列表是否折叠
-
-
-storagename
-metingjs
-LocalStorage 中存储播放器设定的键名
-
-
-autoplay
-true
-自动播放，移动端浏览器暂时不支持此功能
-
-
-mutex
-true
-该选项开启时，如果同页面有其他 aplayer 播放，该播放器会暂停
-
-
-listmaxheight
-340px
-播放列表的最大长度
-
-
-preload
-auto
-音乐文件预载入模式，可选项： none, metadata, auto
-
-
-theme
-#ad7a86
-播放器风格色彩设置
-
-
-
-博客中插入视频
-hexo-tag-dplayer
-hexo-tag-dplayer 是 DPlayer 播放器的 Hexo 标签插件
-安装
-npm install --save hexo-tag-dplayer
-使用
-{% dplayer key=value ... %}
-例：
-{% dplayer "url=http://www.nenu.edu.cn/_upload/article/videos/03/5f/7c999eed42e3aadc413d7f851f0e/0f50b3eb-9285-41d2-ac4d-6cc363651aad_B.mp4"  "autoplay=true" "preload=metadata" "hotkey=true" %} 
-有关的选项列表如下:
-
-
-
-选项
-默认值
-描述
-
-
-
-
-url
-必须值
-视频地址
-
-
-loop
-false
-视频循环播放
-
-
-volume
-0.7
-播放器音量
-
-
-hotkey
-true
-开启热键
-
-
-autoplay
-true
-自动播放，移动端浏览器暂时不支持此功能
-
-
-logo
--
-在左上角展示一个 logo，你可以通过 CSS 调整它的大小和位置
-
-
-mutex
-true
-该选项开启时，如果同页面有其他播放，该播放器会暂停
-
-
-highlight
-[]
-自定义进度条提示点
-
-
-preload
-auto
-视频文件预载入模式，可选项： none, metadata, auto
-
-
-theme
-#ad7a86
-播放器风格色彩设置
-
-
-
-注：如果使用腾讯视频、优酷视频等在线视频网站的资源，需要先进行视频地址解析，如点量视频解析，获取到实际的视频地址。
-其他使用方法
-在使用优酷或者腾讯视频时可以直接复制分享代码到文章中，如：
-&lt;iframe height=498 width=510 src='https://player.youku.com/embed/XMjk4ODAyMzIyOA==' frameborder=0 'allowfullscreen'&gt;&lt;/iframe&gt;
-参考文献
-
-
-hexo-tag-aplayer
-hexo-tag-dplayer
-
-
-hexo-tag-videojs
-
-录屏：OBS	OBS Studio录屏教程
-视频切片：FFmpeg
-托管：任何一个支持静态资源访问的都可以，比如跑个 Nginx
-Hexo 插件：hexo-tag-videojs
-
-
-Video标签需要加载完整个视频文件（如mp4）才能开始播放，拖动不便。
-使用bilibili服务，审查手段未知，可能看你白嫖就封号了
-自托管ts切片综合考虑是最佳方案！
-
-FFmpeg m3u8 切片
-要使用FFmpeg将一个MP4文件制作为M3U8文件并使用TS分片，您可以按照以下步骤进行操作：
-
-安装FFmpeg
-
-首先，您需要安装FFmpeg。可以在FFmpeg的官方网站（https://ffmpeg.org/）上下载适用于您的操作系统的二进制文件。
-
-制作M3U8文件和TS分片
-
-使用以下命令，将您的MP4文件制作为M3U8文件和TS分片：
-ffmpeg -i input.mp4 -codec copy -vbsf h264_mp4toannexb -map 0 -f segment -segment_list output.m3u8 -segment_time 10 output%03d.ts
-
--i input.mp4：指定输入文件为input.mp4。
--codec copy：使用与输入文件相同的编解码器。
--vbsf h264_mp4toannexb：将MP4的H.264视频流转换为MPEG-TS格式，以便进行分片。
--map 0：将所有输入流映射到输出中。
--f segment：指定输出格式为segment，表示进行分段。
--segment_list output.m3u8：指定输出的M3U8文件名为output.m3u8。
--segment_time 10：指定每个TS分片的时长为10秒。
-output%03d.ts：指定输出的TS分片文件名为output001.ts、output002.ts等。
-
-执行命令后，FFmpeg将开始处理您的视频，并将其制作为M3U8文件和多个TS分片。
-
-检查输出
-
-完成后，您可以在当前目录下找到一个名为output.m3u8的文件，以及一系列以output001.ts、output002.ts等命名的TS分片文件。您可以使用任何支持M3U8格式的播放器来播放此视频。
-外链跳转插件
-使用 npm 或者 yarn 安装
-## npm 安装
-npm install hexo-external-link --save
-## yarn 安装
-yarn add hexo-external-link
-之后在博客站点根目录下添加如下配置：
-hexo_external_link:
-  enable: true
-  enable_base64_encode: true
-  url_param_name: 'u'
-  html_file_name: 'go.html'
-  target_blank: true
-  link_rel: 'external nofollow noopener noreferrer'
-  domain: 'your_domain' # 如果开启了防盗链，填写你的域名
-  safety_chain: true
-文章生成永久链接
-主题默认的文章链接配置是
-premalink: :year/:month/:day/:title
-这种生成的链接地址很长，文章版权的链接地址会出现一大串字符编码，一点也不好看。因此需要修改文章生成链接的格式。 首先再根目录下执行下面的命令： hexo-abbrlinkGitHub地址
-npm install hexo-abbrlink --save
-然后再站点配置文件下添加如下配置：
-abbrlink: 
-    alg: crc16 #算法：
-    crc16(default) and crc32 rep: hex #进制： dec(default) and hex: dec #输出进制：十进制和十六进制，默认为10进制。丨dec为十进制，hex为十六进制
-再将站点配置文件的permalink的值修改为：
-permalink: posts/:abbrlink.html  # 此处可以自己设置，也可以直接使用 :/abbrlink
-生成完后，原md文件的Front-matter 内会增加abbrlink 字段，值为生成的ID 。这个字段确保了在我们修改了Front-matter 内的博客标题title或创建日期date字段之后而不会改变链接地址.
-Hexo 插件推荐
-
-hexo 的强大之处在于，拥有非常多的免费开源插件给你使用！
-
-
-
-
-插件
-功能
-文档链接
-
-
-
-
-hexo-generator-index-pin-top
-文章置顶
-https://github.com/netcan/hexo-generator-index-pin-top
-
-
-hexo-wordcount
-文章字数统计和阅读时长统计
-https://github.com/willin/hexo-wordcount
-
-
-hexo-abbrlink
-生成URL短链接
-https://github.com/rozbo/hexo-abbrlink
-
-
-hexo-lazyload-image
-图片懒加载
-https://github.com/Troy-Yang/hexo-lazyload-image
-
-
-hexo-generator-baidu-sitemap
-生成baidusitemap.xml
-https://github.com/coneycode/hexo-generator-baidu-sitemap
-
-
-hexo-generator-sitemap
-生成sitemap.xml
-https://github.com/hexojs/hexo-generator-sitemap
-
-
-hexo-generator-feed
-生成RSS文件
-https://github.com/hexojs/hexo-generator-feed
-
-
-hexo-external-link
-外链跳转
-https://github.com/hvnobug/hexo-external-link
-
-
-hexo-autonofollow
-自动对外部链接增加nofollow属性
-https://github.com/liuzc/hexo-autonofollow
-
-
-hexo-filter-nofollow
-为外链添加 rel="noopener external nofollow noreferrer"
-https://github.com/hexojs/hexo-filter-nofollow
-
-
-hexo-prism-plugin
-代码高亮
-https://github.com/ele828/hexo-prism-plugin
-
-
-hexo-neat
-博客压缩
-https://github.com/rozbo/hexo-neat
-
-
-hexo-allminifier
-https://developer.aliyun.com/mirror/npm/package/hexo-all-minifier
-
-
-
-hexo-tag-aplayer
-aplayer音乐播放器
-https://github.com/MoePlayer/hexo-tag-aplayer
-
-
-hexo-tag-dplayer
-dplayer视频播放器
-https://github.com/MoePlayer/hexo-tag-dplayer
-
-
-hexo-douban
-添加豆瓣读书，电影，游戏页面
-https://github.com/mythsman/hexo-douban
-
-
-hexo-generator-searchdb
-本地搜索,生成search.xml
-https://github.com/theme-next/hexo-generator-searchdb
-
-
-hexo-algoliasearch
-搜索系统
-https://github.com/LouisBarranqueiro/hexo-algoliasearch
-
-
-hexo-algolia
-https://github.com/oncletom/hexo-algolia
-
-
-
-hexo-generator-search
-本地搜索系统
-https://github.com/wzpan/hexo-generator-search
-
-
-hexo-baidu-url-submit
-百度站长主动推送
-https://github.com/huiwang/hexo-baidu-url-submit
-
-
-hexo-offline
-开启PWA
-https://github.com/JLHwung/hexo-offline
-
-
-hexo-pwa
-https://github.com/lavas-project/hexo-pwa
-
-
-
-hexo-helper-live2d
-看板娘
-https://github.com/EYHN/hexo-helper-live2d
-
-
-hexo-addlink
-文末添加当前文章链接和版权声明
-https://github.com/acwong00/hexo-addlink
-
-
-hexo-blog-encrypt
-博客文章加密
-https://github.com/MikeCoder/hexo-blog-encrypt
-
-
-hexo-simple-mindmap
-博客添加脑图
-https://github.com/HunterXuan/hexo-simple-mindmap
-
-
-hexo-pdf
-博客展示pdf
-https://github.com/superalsrk/hexo-pdf
-
-
-hexo-tag-echarts
-博客添加图表
-https://github.com/zhoulvjun/hexo-tag-echarts
-
-
-hexo-steam-games
-添加Steam游戏界面
-https://github.com/HCLonely/hexo-steam-games
-
-
-hexo-bilibili-bangumi
-添加bilibili番剧页面
-https://github.com/HCLonely/hexo-bilibili-bangumi
-
-
-hexo-generator-random
-生成随机文章页面
-https://github.com/Drew233/hexo-generator-random
-
-
-hexo-web-push-notification
-web推送插件
-https://github.com/glazec/hexo-web-push-notification
-
-
-
-
-本教程还有其它五大部分，更多内容请见Hexo系列教程
-
-系列教程
-全部文章RSS订阅
-
-Hexo系列
-HexoRSS分类订阅
-[十万字图文教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
-
-Hexo Docker环境与Hexo基础配置篇
-hexo博客自定义修改篇
-hexo博客网络优化篇
-hexo博客增强部署篇
-hexo博客个性定制篇
-hexo博客常见问题篇
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Hexo Markdown以及各种插件功能测试
-
-
-
-markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
-
-
-
-在 Hexo 博客中插入 ECharts 动态图表
-使用nodeppt给hexo博客嵌入PPT演示
-GithubProfile美化与自动获取RSS文章教程
-Vercel部署高级用法教程
-webhook部署Hexo静态博客指南
-在宝塔VPS上面采用docker部署waline全流程图解教程
-自建Umami访问统计服务并统计静态博客UV/PV
-
-
-笔记系列
-Note分类RSS订阅
-
-完美笔记进化论
-hexo博客博文撰写篇之完美笔记大攻略终极完全版
-Joplin入门指南&amp;实践方案
-替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
-Joplin 插件以及其Markdown语法。All in One!
-Joplin 插件使用推荐
-为知笔记私有化Docker部署
-
-
-Gitbook使用系列
-Gitbook分类RSS订阅
-
-GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
-GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
-自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
-
-
-Gitlab 使用系列
-Gitlab RSS 分类订阅
-
-Gitlab的安装及使用教程完全版
-破解Gitlab EE
-Gitlab的安装及使用
-CI/CD与Git Flow与GitLab
-
-
-]]></content>
-      <categories>
-        <category>hexo</category>
-      </categories>
-      <tags>
-        <tag>github</tag>
-        <tag>hexo</tag>
-        <tag>matery</tag>
-        <tag>cdn</tag>
-        <tag>seo</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>基于Hexo的matery主题搭建博客网络优化篇3</title>
     <url>/posts/9b056c86/</url>
     <content><![CDATA[
@@ -31138,6 +30258,886 @@ search:
 
 重新生成search.xml文件
 还可以给search.xml添加上jsdelivr cdn 加速！
+
+
+本教程还有其它五大部分，更多内容请见Hexo系列教程
+
+系列教程
+全部文章RSS订阅
+
+Hexo系列
+HexoRSS分类订阅
+[十万字图文教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+GithubProfile美化与自动获取RSS文章教程
+Vercel部署高级用法教程
+webhook部署Hexo静态博客指南
+在宝塔VPS上面采用docker部署waline全流程图解教程
+自建Umami访问统计服务并统计静态博客UV/PV
+
+
+笔记系列
+Note分类RSS订阅
+
+完美笔记进化论
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Joplin入门指南&amp;实践方案
+替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化
+Joplin 插件以及其Markdown语法。All in One!
+Joplin 插件使用推荐
+为知笔记私有化Docker部署
+
+
+Gitbook使用系列
+Gitbook分类RSS订阅
+
+GitBook+GitLab撰写发布技术文档-Part1:GitBook篇
+GitBook+GitLab撰写发布技术文档-Part2:GitLab篇
+自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）
+
+
+Gitlab 使用系列
+Gitlab RSS 分类订阅
+
+Gitlab的安装及使用教程完全版
+破解Gitlab EE
+Gitlab的安装及使用
+CI/CD与Git Flow与GitLab
+
+
+]]></content>
+      <categories>
+        <category>hexo</category>
+      </categories>
+      <tags>
+        <tag>github</tag>
+        <tag>hexo</tag>
+        <tag>matery</tag>
+        <tag>cdn</tag>
+        <tag>seo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>基于Hexo的matery主题搭建博客自定义修改篇2</title>
+    <url>/posts/4d8a0b22/</url>
+    <content><![CDATA[Hexo系列
+HexoRSS分类订阅
+[十万字图文教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+Hexo Docker环境与Hexo基础配置篇
+hexo博客自定义修改篇
+hexo博客网络优化篇
+hexo博客增强部署篇
+hexo博客个性定制篇
+hexo博客常见问题篇
+hexo博客博文撰写篇之完美笔记大攻略终极完全版
+Hexo Markdown以及各种插件功能测试
+
+
+
+markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+
+
+在 Hexo 博客中插入 ECharts 动态图表
+使用nodeppt给hexo博客嵌入PPT演示
+GithubProfile美化与自动获取RSS文章教程
+Vercel部署高级用法教程
+webhook部署Hexo静态博客指南
+在宝塔VPS上面采用docker部署waline全流程图解教程
+自建Umami访问统计服务并统计静态博客UV/PV
+
+
+如果本主题中的诸多功能和主题色彩你不满意，可以在主题中自定义修改，很多更自由的功能和细节点的修改难以在主题的 _config.yml 中完成，需要修改源代码才来完成。以下列出了可能有用的地方：
+自定义Logo
+免费生成 logo 的网站很多，这里给一个个人使用的网站。
+
+找一个喜欢的图片
+https://www.logosc.cn/logo/ 图片上传到这里，然后安装提示生成图片
+下载生成的图标文件，替换主题中对应的文件！
+
+还有其它的服务推荐
+
+Iconifier：
+
+网址：https://iconifier.net/
+Iconifier 是一个简单易用的在线图标生成器，支持导入 PNG、JPG 和 GIF 格式的图片，并生成相应的 SVG 图标。你可以通过上传图片或者提供图片的 URL 来生成图标。
+
+
+SVGOMG：
+
+网址：https://jakearchibald.github.io/svgomg/
+SVGOMG 是一个由 Google 开发的 SVG 优化工具，它可以帮助你压缩和优化现有的 SVG 文件，并提供一些额外的编辑功能，比如调整路径和属性。你可以在这个工具中导入已有的 SVG 文件并进行编辑和优化。
+
+
+Flaticon：
+
+网址：https://www.flaticon.com/
+Flaticon 是一个图标搜索引擎，提供了大量的免费图标资源供用户选择。你可以在 Flaticon 上搜索你需要的图标，然后下载为 SVG 格式。虽然 Flaticon 提供了大量的免费图标资源，但一些高质量的图标可能需要付费下载。
+
+
+
+修改主题颜色
+配色包括导航栏，底部栏，a标签等，主题配色是绿色。
+修改themes\Matery\source\css\matery.css样式
+快捷键ctrl+F查找到#4cbf30（浅绿色）和#0f9d58（深绿色）还有首页字体颜色，修改为你喜欢的颜色
+/* 整体背景颜色，包括导航、移动端的导航、页尾、标签页等的背景颜色. */ 
+.bg-color { 
+	background-image: linear-gradient(to right, #4cbf30 0%, #0f9d58 100%); 
+} 
+/*如果想去掉banner图的颜色渐变效果，请将以下的css属性注释掉或者删除掉即可*/ 
+@-webkit-keyframes rainbow { 
+	/* 动态切换背景颜色. */ 
+} 
+@keyframes rainbow { 
+	/* 动态切换背景颜色. */ 
+}
+
+背景樱花飘落效果
+在themes/matery/source/js目录下新建sakura.js文件，打开这个网址传送门，将内容复制粘贴到sakura.js即可。
+然后在themes/matery/layout/layout.ejs文件内添加下面的内容：
+&lt;script type="text/javascript"&gt;
+//只在桌面版网页启用特效
+var windowWidth = $(window).width();
+if (windowWidth &gt; 768) {
+    document.write('&lt;script type="text/javascript" src="/js/sakura.js"&gt;&lt;\/script&gt;');
+}
+&lt;/script&gt;
+修改花瓣的数量
+因为普遍在使用的樱花背景效果花瓣数太多了，一些人不太喜欢。
+于是按不同花瓣数量做了几个新的 js ，并提供如下 cdn 形式的引用：
+https://cdn.jsdelivr.net/gh/fz6m/Private-web@1.2/js/sakura/sakura-small.js
+以上为少量樱花效果，另提供几个不同数量的文件引用名：
+
+
+
+文件名
+说明
+
+
+
+
+sakura-small.js
+少量樱花
+
+
+sakura-half.js
+樱花相对原效果数量减半
+
+
+sakura-reduce.js
+樱花相对原效果减少1/4
+
+
+sakura-original.js
+樱花数量不变（原效果）
+
+
+
+自定义鼠标样式
+首先将鼠标样式下载到本地，推荐大家一个网站：https://zhutix.com/ico/ori-cursors/
+以我的为例，我将鼠标指针样式放在了主题文件夹下的medias目录下，然后打开themes\matery\source\css下的my.css文件，添加内容如下：
+*{
+    cursor: url("/medias/imgs/zhengchang.ico"),auto!important;
+}
+:active{
+    cursor: url("/medias/imgs/dianji.ico"),auto!important;
+}
+取消首页渐变颜色动画
+在themes\Matery\source\css\matery.css，ctrl+F快捷键查找.bg-cover:after，注释掉即可。
+/* .bg-cover:after {
+    -webkit-animation: rainbow 60s infinite;
+    animation: rainbow 60s infinite;
+} */
+首页随机图片轮播
+themes\matery\layout\_partial\bg-cover-content.ejs
+修改随机获取一张图片：
+$('.bg-cover').css('background-image', 'url(&lt;%- theme.featureImages[Math.floor(Math.random() * theme.featureImages.length + 1)-1] %&gt;)');
+优化目录栏，透明化
+目录样式竟然在：themes\Matery\layout\_partial\post-detail-toc.ejs
+.toc-widget {
+    width: 345px;
+    padding-left: 20px;
+    background-color: rgb(255, 255, 255,0.7);
+    border-radius: 10px;
+    box-shadow: 0 10px 35px 2px rgba(0, 0, 0, .15), 0 5px 15px rgba(0, 0, 0, .07), 0 2px 5px -5px rgba(0, 0, 0, .1) !important;
+}
+增加点击跳转评论按钮
+新建文件themes\Matery\layout\_partial\back-comment.ejs,粘贴如下代码
+我这里评论是valine，直接填写的valine的id——href="#vcomments",如果是其他评论，对应修改即可。
+&lt;!-- 直达评论 --&gt;
+&lt;div id="to_comment" class="comment-scroll"&gt;
+    &lt;a class="btn-floating btn-large waves-effect waves-light" href="#vcomments" title="直达评论"&gt;
+        &lt;i class="fas fa-comments"&gt;&lt;/i&gt;
+    &lt;/a&gt;
+&lt;/div&gt;
+在themes\Matery\layout\_partial\valine.ejs文末添加一条，引用第一步的内容；
+&lt;%- partial('_partial/back-comment.ejs') %&gt;
+则只在valine存在的页面才显示直达评论，防止首页其他地方也出现按钮。其实还可以优化为浮动出现，有一点麻烦，我这里没有设置。
+增加样式在themes\Matery\source\css\matery.css添加内容如下：
+/*直达评论按钮样式*/
+.comment-scroll {
+    position: fixed;
+    right: 15px;
+    bottom: 135px;
+    padding-top: 15px;
+    margin-bottom: 0;
+    z-index: 998;
+}
+
+.comment-scroll .btn-floating {
+    background: linear-gradient(to bottom right, #FF9999 0%, #ff6666 100%);
+    width: 48px;
+    height: 48px;
+}
+
+.comment-scroll .btn-floating i {
+    line-height: 48px;
+    font-size: 1.8rem;
+}
+
+bottom: 135px;是距离底部的高度，看看你是否需要修改。
+添加简体繁体一键切换
+
+首先，我们可以在这里右键另存下载简繁字体切换所需的 tw_cn.js 文件，我们把这个文件放到 ~/themes/(你的主题名)/source/js/ 文件夹下。
+修改模板，在我们想要显示简繁转换按钮的地方添加如下代码。例如，我在 NexT 主题的布局文件 ~/themes/(你的主题名)/layout/_partials/footer.ejs 里添加了如下代码：
+
+&lt;div class="translate-style"&gt;
+繁/简：&lt;a id="translateLink" href="javascript:translatePage();"&gt;繁体
+&lt;/a&gt;
+&lt;/div&gt;
+&lt;script type="text/javascript" src="/js/tw_cn.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript"&gt;
+var defaultEncoding = 2; //网站编写字体是否繁体，1-繁体，2-简体
+var translateDelay = 0; //延迟时间,若不在前, 要设定延迟翻译时间, 如100表示100ms,默认为0
+var cookieDomain = "https://1han.wiki/"; //Cookie地址, 一定要设定, 通常为你的网址
+var msgToTraditionalChinese = "繁体"; //此处可以更改为你想要显示的文字
+var msgToSimplifiedChinese = "简体"; //同上，但两处均不建议更改
+var translateButtonId = "translateLink"; //默认互换id
+translateInitilization();
+&lt;/script&gt;
+读者可以在博客底部点击简体 / 繁体来看具体的切换字体效果。
+修改滑动条
+/* 滚动条 */
+::-webkit-scrollbar-thumb {
+    background-color: #FF2A68;
+    background-image: -webkit-linear-gradient(45deg,rgba(255,255,255,.4) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.4) 50%,rgba(255,255,255,.4) 75%,transparent 75%,transparent);
+    border-radius: 3em;
+}
+::-webkit-scrollbar-track {
+    background-color: #ffcacaff;
+    border-radius: 3em;
+}
+::-webkit-scrollbar {
+    width: 8px;
+    height: 15px;
+}
+文章标题添加打字机效果
+定位到文章标题代码 layout/_partial/post-cover.ejs
+&lt;h1 class="description center-align post-title"&gt;&lt;%= page.title %&gt;&lt;/h1&gt;
+文章标题代码替换成下面的代码
+&lt;script src="&lt;%- theme.jsDelivr.url %&gt;&lt;%- url_for(theme.libs.js.typed) %&gt;"&gt;&lt;/script&gt;
+&lt;% if (theme.post.enable) { %&gt;
+    &lt;script&gt;
+        var typedObj = new Typed("#post-title", {
+            strings: [ '&lt;%= page.title %&gt;' ],
+            startDelay: &lt;%= theme.post.startDelay %&gt;,
+            typeSpeed: &lt;%= theme.post.typeSpeed %&gt;,
+            loop: &lt;%= theme.post.loop %&gt;,
+            backSpeed: &lt;%= theme.post.backSpeed %&gt;,
+            showCursor: &lt;%= theme.post.showCursor %&gt;
+        });
+    &lt;/script&gt;
+&lt;% } %&gt;
+
+最后在主题配置文件中进行配置 _config.yml
+# 文章标题
+post:
+  enable: true
+  loop: false # 是否循环
+  showCursor: true # 是否显示光标
+  startDelay: 500 # 开始延迟
+  typeSpeed: 100 # 打字速度
+  backSpeed: 50 # 删除速度
+现在就完成了为一言和文章标题添加打字机效果
+更换字体
+一般网站的web字体都可以直接从Google-Font获取资源，这样不用担心字体商业带来的法律问题。
+常见的开源字体有：
+思源黑体 、 文泉驿 、 文鼎开放字体 、 柳体 、 cwTeX中文字体 、 濑户字体、江西拙楷体等。
+1）创建web字体引用
+@font-face{
+    font-family: '引用的字体名称';
+    src: url('谷歌字体路径（或者其他什么字体引用）');   
+}
+2）在网页合适的位置进行字体引用
+①利用浏览器检查元素，获取需要定义字体的部分
+②在主体的配置文件中(hexo-theme-matery/layout/…)找到对应的渲染(.ejs)文件，查找需要修改的部分
+①演示一下利用浏览器获取定义字体的部分
+
+对获取到的id选择器：#artDetail进行css渲染
+#artDetail {
+    font-family: '引用的web字体';
+}
+②利用主体的ejs渲染文件找出需要修饰的部分（加入自定义类）
+
+/*使用我在文章内容详情定义的diyFnot类**/
+.diyfont {
+   font-family: '引用的web字体'; 
+}
+
+/*也可以使用自带的id*/
+#artDetail {
+    font-family: '引用的web字体'; 
+}
+网站全局化字体定义
+@font-face{
+    font-family: '引用的字体名称';
+    src: url('谷歌字体路径（或者其他什么字体引用）');   
+}
+
+body {
+    font-family: '引用的web字体名称'; 
+}
+引用本地的字体文件
+当然有时候那个谷歌字体的网站可能登录不上去，需要科学上网，很烦人！我们也可以直接下载下字体文件，将他放在本地，进行直接引用！看下面操作👇
+①在本地的hexo根目录的source文件下创立diy-font文件夹:/source/diy-font
+在该文件下存放你的字体文件，比如：/source/diy-font/IBMPlexMono-Italic.ttf
+②引用本地字体（仍然是在my.css文件中书写代码）
+@font-face{
+    font-family: 'hl';
+    src: url('../diy-font/IBMPlexMono-Italic.ttf');
+}
+
+/** 表示全局使用，如果不想全局使用不要添加该段 */
+body{
+    font-family: 'hl';
+}
+
+
+/* 可以局部使用，建议添加 */
+.diyFont{
+    font-family: 'hl';
+}
+这样我们就可以实现引用本地的字体了，并且在web有效！
+在你想要使用的元素的 class 里面加上 diyFont 即可。
+
+
+直接使用
+F12，找到对应的代码片段即可：
+
+
+&lt;span class="logo-span diyFont"&gt;测试字体&lt;/span&gt;
+
+
+模板使用
+找到对应的模板 header.ejs中的代码片段使用即可：
+
+
+&lt;span class="logo-span diyFont"&gt;&lt;%= config.title %&gt;&lt;/span&gt;
+修改主题颜色
+在主题文件的 /source/css/matery.css 文件中，搜索 .bg-color 来修改背景颜色：
+/* 整体背景颜色，包括导航、移动端的导航、页尾、标签页等的背景颜色. */
+.bg-color {
+  background-image: linear-gradient(to right, #4cbf30 0%, #0f9d58 100%);
+}
+
+@-webkit-keyframes rainbow {
+  /* 动态切换背景颜色. */
+}
+
+@keyframes rainbow {
+  /* 动态切换背景颜色. */
+}
+修改 banner 图和文章特色图
+可以直接在 /source/medias/banner 文件夹中更换喜欢的 banner 图片，主题代码中是每天动态切换一张，只需 7 张即可。如果会 JavaScript 代码，可以修改成自己喜欢切换逻辑，如：随机切换等，banner 切换的代码位置在 /layout/_partial/bg-cover-content.ejs 文件的 &lt;script&gt;&lt;/script&gt; 代码中：
+$(".bg-cover").css("background-image", "url(/medias/banner/" + new Date().getDay() + ".jpg)");
+在 /source/medias/featureimages 文件夹中默认有 24 张特色图片，你可以再增加或者减少，并需要在 _config.yml 做同步修改。
+Hexo 跳过渲染
+在Hexo部署时会默认渲染source下的所有html页面，但有时候想在Hexo博客上单独自定义html页面或README.md时，却不希望被Hexo渲染。因此对某个文件或者目录进行排除渲染是非常必要的。
+方法一：font matter
+Hexo新建网站页面，然后将你的代码直接写入 index.md 中
+在 Front matter 中添加 layout: false，此方法适用于单一的纯HTML
+CSS 页面。
+---
+title: tools
+date: 2020-04-28 00:00:00
+type: "tools"
+layout: false
+---
+方法二：skip rende
+在博客根目录下的 _config.yml，找到 skip_render，大概在32行左右，写入你想要的跳过渲染的路径，注意缩进和空格。
+# 指定目录跳过hexo渲染
+skip_render:
+  - 'tools/*'
+  - 'tools/**'
+
+注释：tools/* 表示在目录 source/fireworks 下的文件全部跳过渲染，tools/** 表示在博客根目录 source/tools/ 文件夹下的文件全部跳过渲染（例如页面的 js、css 在另一个文件夹中）。
+
+博客中插入音乐
+hexo-tag-aplayer
+hexo-tag-aplayerAPlayer 播放器的 Hexo 标签插件（现已支持 MetingJS）。
+安装
+npm install --save hexo-tag-aplayer
+使用方法——aplayer
+{% aplayer title author url [picture_url, narrow, autoplay, width:xxx, lrc:xxx] %}
+
+title : 曲目标题
+author: 曲目作者
+url: 音乐文件 URL 地址
+picture_url: (可选) 音乐对应的图片地址
+narrow: （可选）播放器袖珍风格
+autoplay: (可选) 自动播放，移动端浏览器暂时不支持此功能
+width:xxx: (可选) 播放器宽度 (默认: 100%)
+lrc:xxx: （可选）歌词文件 URL 地址
+例如：
+
+{% aplayer "她的睫毛" "周杰伦" "http://home.ustc.edu.cn/~mmmwhy/%d6%dc%bd%dc%c2%d7%20-%20%cb%fd%b5%c4%bd%de%c3%ab.mp3"  "http://home.ustc.edu.cn/~mmmwhy/jay.jpg" %}
+如果你觉得前面的方法不太好用，可以用下面的方法，使用MetingJS。
+使用方法——MetingJS
+MetingJS 是基于Meting API 的 APlayer 衍生播放器，支持对于 QQ音乐、网易云音乐、虾米、酷狗、百度等平台的音乐播放。
+第一步：修改_config.yml配置
+在hexo的配置文件_config.yml中添加：
+aplayer:
+	meting: true
+第二步：使用MetingJS 播放器
+&lt;!-- 简单示例 (id, server, type)  --&gt;
+{% meting "571184509" "xiami" "playlist" %}
+有关的选项列表如下:
+
+
+
+选项
+默认值
+描述
+
+
+
+
+id
+必须值
+歌曲 id / 播放列表 id / 相册 id / 搜索关键字
+
+
+server
+必须值
+音乐平台: netease, tencent, kugou, xiami, baidu
+
+
+type
+必须值
+song, playlist, album, search, artist
+
+
+fixed
+false
+开启固定模式
+
+
+mini
+false
+开启迷你模式
+
+
+loop
+all
+列表循环模式：all, one,none
+
+
+order
+list
+列表播放模式： list, random
+
+
+volume
+0.7
+播放器音量
+
+
+lrctype
+0
+歌词格式类型
+
+
+listfolded
+false
+指定音乐播放列表是否折叠
+
+
+storagename
+metingjs
+LocalStorage 中存储播放器设定的键名
+
+
+autoplay
+true
+自动播放，移动端浏览器暂时不支持此功能
+
+
+mutex
+true
+该选项开启时，如果同页面有其他 aplayer 播放，该播放器会暂停
+
+
+listmaxheight
+340px
+播放列表的最大长度
+
+
+preload
+auto
+音乐文件预载入模式，可选项： none, metadata, auto
+
+
+theme
+#ad7a86
+播放器风格色彩设置
+
+
+
+博客中插入视频
+hexo-tag-dplayer
+hexo-tag-dplayer 是 DPlayer 播放器的 Hexo 标签插件
+安装
+npm install --save hexo-tag-dplayer
+使用
+{% dplayer key=value ... %}
+例：
+{% dplayer "url=http://www.nenu.edu.cn/_upload/article/videos/03/5f/7c999eed42e3aadc413d7f851f0e/0f50b3eb-9285-41d2-ac4d-6cc363651aad_B.mp4"  "autoplay=true" "preload=metadata" "hotkey=true" %} 
+有关的选项列表如下:
+
+
+
+选项
+默认值
+描述
+
+
+
+
+url
+必须值
+视频地址
+
+
+loop
+false
+视频循环播放
+
+
+volume
+0.7
+播放器音量
+
+
+hotkey
+true
+开启热键
+
+
+autoplay
+true
+自动播放，移动端浏览器暂时不支持此功能
+
+
+logo
+-
+在左上角展示一个 logo，你可以通过 CSS 调整它的大小和位置
+
+
+mutex
+true
+该选项开启时，如果同页面有其他播放，该播放器会暂停
+
+
+highlight
+[]
+自定义进度条提示点
+
+
+preload
+auto
+视频文件预载入模式，可选项： none, metadata, auto
+
+
+theme
+#ad7a86
+播放器风格色彩设置
+
+
+
+注：如果使用腾讯视频、优酷视频等在线视频网站的资源，需要先进行视频地址解析，如点量视频解析，获取到实际的视频地址。
+其他使用方法
+在使用优酷或者腾讯视频时可以直接复制分享代码到文章中，如：
+&lt;iframe height=498 width=510 src='https://player.youku.com/embed/XMjk4ODAyMzIyOA==' frameborder=0 'allowfullscreen'&gt;&lt;/iframe&gt;
+参考文献
+
+
+hexo-tag-aplayer
+hexo-tag-dplayer
+
+
+hexo-tag-videojs
+
+录屏：OBS	OBS Studio录屏教程
+视频切片：FFmpeg
+托管：任何一个支持静态资源访问的都可以，比如跑个 Nginx
+Hexo 插件：hexo-tag-videojs
+
+
+Video标签需要加载完整个视频文件（如mp4）才能开始播放，拖动不便。
+使用bilibili服务，审查手段未知，可能看你白嫖就封号了
+自托管ts切片综合考虑是最佳方案！
+
+FFmpeg m3u8 切片
+要使用FFmpeg将一个MP4文件制作为M3U8文件并使用TS分片，您可以按照以下步骤进行操作：
+
+安装FFmpeg
+
+首先，您需要安装FFmpeg。可以在FFmpeg的官方网站（https://ffmpeg.org/）上下载适用于您的操作系统的二进制文件。
+
+制作M3U8文件和TS分片
+
+使用以下命令，将您的MP4文件制作为M3U8文件和TS分片：
+ffmpeg -i input.mp4 -codec copy -vbsf h264_mp4toannexb -map 0 -f segment -segment_list output.m3u8 -segment_time 10 output%03d.ts
+
+-i input.mp4：指定输入文件为input.mp4。
+-codec copy：使用与输入文件相同的编解码器。
+-vbsf h264_mp4toannexb：将MP4的H.264视频流转换为MPEG-TS格式，以便进行分片。
+-map 0：将所有输入流映射到输出中。
+-f segment：指定输出格式为segment，表示进行分段。
+-segment_list output.m3u8：指定输出的M3U8文件名为output.m3u8。
+-segment_time 10：指定每个TS分片的时长为10秒。
+output%03d.ts：指定输出的TS分片文件名为output001.ts、output002.ts等。
+
+执行命令后，FFmpeg将开始处理您的视频，并将其制作为M3U8文件和多个TS分片。
+
+检查输出
+
+完成后，您可以在当前目录下找到一个名为output.m3u8的文件，以及一系列以output001.ts、output002.ts等命名的TS分片文件。您可以使用任何支持M3U8格式的播放器来播放此视频。
+外链跳转插件
+使用 npm 或者 yarn 安装
+## npm 安装
+npm install hexo-external-link --save
+## yarn 安装
+yarn add hexo-external-link
+之后在博客站点根目录下添加如下配置：
+hexo_external_link:
+  enable: true
+  enable_base64_encode: true
+  url_param_name: 'u'
+  html_file_name: 'go.html'
+  target_blank: true
+  link_rel: 'external nofollow noopener noreferrer'
+  domain: 'your_domain' # 如果开启了防盗链，填写你的域名
+  safety_chain: true
+文章生成永久链接
+主题默认的文章链接配置是
+premalink: :year/:month/:day/:title
+这种生成的链接地址很长，文章版权的链接地址会出现一大串字符编码，一点也不好看。因此需要修改文章生成链接的格式。 首先再根目录下执行下面的命令： hexo-abbrlinkGitHub地址
+npm install hexo-abbrlink --save
+然后再站点配置文件下添加如下配置：
+abbrlink: 
+    alg: crc16 #算法：
+    crc16(default) and crc32 rep: hex #进制： dec(default) and hex: dec #输出进制：十进制和十六进制，默认为10进制。丨dec为十进制，hex为十六进制
+再将站点配置文件的permalink的值修改为：
+permalink: posts/:abbrlink.html  # 此处可以自己设置，也可以直接使用 :/abbrlink
+生成完后，原md文件的Front-matter 内会增加abbrlink 字段，值为生成的ID 。这个字段确保了在我们修改了Front-matter 内的博客标题title或创建日期date字段之后而不会改变链接地址.
+Hexo 插件推荐
+
+hexo 的强大之处在于，拥有非常多的免费开源插件给你使用！
+
+
+
+
+插件
+功能
+文档链接
+
+
+
+
+hexo-generator-index-pin-top
+文章置顶
+https://github.com/netcan/hexo-generator-index-pin-top
+
+
+hexo-wordcount
+文章字数统计和阅读时长统计
+https://github.com/willin/hexo-wordcount
+
+
+hexo-abbrlink
+生成URL短链接
+https://github.com/rozbo/hexo-abbrlink
+
+
+hexo-lazyload-image
+图片懒加载
+https://github.com/Troy-Yang/hexo-lazyload-image
+
+
+hexo-generator-baidu-sitemap
+生成baidusitemap.xml
+https://github.com/coneycode/hexo-generator-baidu-sitemap
+
+
+hexo-generator-sitemap
+生成sitemap.xml
+https://github.com/hexojs/hexo-generator-sitemap
+
+
+hexo-generator-feed
+生成RSS文件
+https://github.com/hexojs/hexo-generator-feed
+
+
+hexo-external-link
+外链跳转
+https://github.com/hvnobug/hexo-external-link
+
+
+hexo-autonofollow
+自动对外部链接增加nofollow属性
+https://github.com/liuzc/hexo-autonofollow
+
+
+hexo-filter-nofollow
+为外链添加 rel="noopener external nofollow noreferrer"
+https://github.com/hexojs/hexo-filter-nofollow
+
+
+hexo-prism-plugin
+代码高亮
+https://github.com/ele828/hexo-prism-plugin
+
+
+hexo-neat
+博客压缩
+https://github.com/rozbo/hexo-neat
+
+
+hexo-allminifier
+https://developer.aliyun.com/mirror/npm/package/hexo-all-minifier
+
+
+
+hexo-tag-aplayer
+aplayer音乐播放器
+https://github.com/MoePlayer/hexo-tag-aplayer
+
+
+hexo-tag-dplayer
+dplayer视频播放器
+https://github.com/MoePlayer/hexo-tag-dplayer
+
+
+hexo-douban
+添加豆瓣读书，电影，游戏页面
+https://github.com/mythsman/hexo-douban
+
+
+hexo-generator-searchdb
+本地搜索,生成search.xml
+https://github.com/theme-next/hexo-generator-searchdb
+
+
+hexo-algoliasearch
+搜索系统
+https://github.com/LouisBarranqueiro/hexo-algoliasearch
+
+
+hexo-algolia
+https://github.com/oncletom/hexo-algolia
+
+
+
+hexo-generator-search
+本地搜索系统
+https://github.com/wzpan/hexo-generator-search
+
+
+hexo-baidu-url-submit
+百度站长主动推送
+https://github.com/huiwang/hexo-baidu-url-submit
+
+
+hexo-offline
+开启PWA
+https://github.com/JLHwung/hexo-offline
+
+
+hexo-pwa
+https://github.com/lavas-project/hexo-pwa
+
+
+
+hexo-helper-live2d
+看板娘
+https://github.com/EYHN/hexo-helper-live2d
+
+
+hexo-addlink
+文末添加当前文章链接和版权声明
+https://github.com/acwong00/hexo-addlink
+
+
+hexo-blog-encrypt
+博客文章加密
+https://github.com/MikeCoder/hexo-blog-encrypt
+
+
+hexo-simple-mindmap
+博客添加脑图
+https://github.com/HunterXuan/hexo-simple-mindmap
+
+
+hexo-pdf
+博客展示pdf
+https://github.com/superalsrk/hexo-pdf
+
+
+hexo-tag-echarts
+博客添加图表
+https://github.com/zhoulvjun/hexo-tag-echarts
+
+
+hexo-steam-games
+添加Steam游戏界面
+https://github.com/HCLonely/hexo-steam-games
+
+
+hexo-bilibili-bangumi
+添加bilibili番剧页面
+https://github.com/HCLonely/hexo-bilibili-bangumi
+
+
+hexo-generator-random
+生成随机文章页面
+https://github.com/Drew233/hexo-generator-random
+
+
+hexo-web-push-notification
+web推送插件
+https://github.com/glazec/hexo-web-push-notification
+
+
 
 
 本教程还有其它五大部分，更多内容请见Hexo系列教程
@@ -42788,100 +42788,6 @@ Useful Tutorials on Linux and UNIX for Beginners and Experts Alike
       </tags>
   </entry>
   <entry>
-    <title>如何做好竞品分析</title>
-    <url>/posts/99be6dfb/</url>
-    <content><![CDATA[
-竞品分析可以帮助我们更好地找准自身产品定位，发现自己产品的优劣所在，进而推动产品的优化迭代。
-Tips：友情提示，部分内容RSS输出获取不到，请跳转到源网页地址浏览全文！
-
-
-
-
-  
-
-
-如何做好竞品分析？竞品分析的六大维度
-
-一、为什么做竞品分析？
-1.知己知彼百战百胜
-2.为自身的产品设计提供功能、可用性、关键技术等方面的参考
-3.提高自身产品的差异化程度
-4.降低风险
-二、如何选择竞品？
-1.寻找行业内领先的榜样产品（取其精华）
-2.类似于自己的产品（竞争关系最大）
-3.有潜力的竞品（存活原因）
-三、如何做竞品调研？
-1.市场分析：了解产业和行业的运作模式、所处环境和市场数据，便于筛选目标市场
-2.用户分析：了解目标市场中全部用户的分层及画像，便于筛选目标用户
-3.产品分析：了解开发生命周期中的差异
-4.产品调研：了解产品生命周期中的差异
-5.用户运营：了解产品中存量用户的细分，便于精细化运营
-6.用户调研：了解用户的体验和评价
-7.竞品分析：从产品背后看企业，了解竞争者的资源配置情况
-四、竞品分析的基本思路
-1.分析目的有哪些？
-2.分析对象有哪些？
-3.分析角度有哪些？
-4.竞品信息的来源有哪些？
-5.竞品信息的处理流程有哪些？
-6.分析方法有哪些？
-7.结论如何呈现？
-五、竞品分析的模型方法
-1.PEST分析模型
-2.STP理论
-3.波特五力模型
-4.波士顿矩阵分析
-5.用户体验五要素
-6.APPEALS模型
-7.SWOT分析法
-六、竞品分析报告模板
-1.分析目的：为什么做分析报告
-2.确定竞品：分析了哪些、产品形态、产品版本、体验环境
-3.竞品分析：战略定位、目标用户、商业模式、运营策略、产品功能及设计、市场推广、盈利模式
-4.复盘总结：优缺点总结、结论、趋势预测
-参考
-
-如何做好竞品分析
-
-附赠
-钱学森《论系统工程》
-
-钱学森诞辰110周年：重读经典，钱学森《论系统工程》笔记摘要
-
-钱老从中国传统哲学角度出发，把工业企业运行分为人、物、事三类要素。“人”就是组织、岗位和人员；“物”就是产品、设备等；“事”就是事物运转的流程。与国外的TOGAF建模方法不同，钱老说的模型太接地气了，中国人一听就懂。
-事实上，钱老刚回国，一穷二白，怎么搞航天，就是靠得这种系统工程理论，层层递进，才成就复杂的两弹一星工程。我们现在开发工业管理软件，实际上就是要找到这种底层的事物的规律，才可能起到事半功倍的效果，可以说是面向对象的中国特色版：
-以下是钱老的原文，大家可以一起学习下：
-
-就一个工厂甚至任何一个环节而言，都由下列人、物、事三类要素组成。其中“人”当然是第一要素；物包括三个要素即：物资（能源、原料、半成品、成品等），设备（土木建筑、机电设备、工具仪表等）和财（工资、流动资金等）；事包括两个要素：任务的推进（上级所下达的任务或与其他单位所订的合约）与信息的传递（数据、图纸、报表、规章、决策等等）。从历史上一个个体劳动者泥瓦匠的工作开始，就包含这六个要素。
-人、物资、设备、财、任务和信息这六个要素，都要满足一定的制约，一是经济规律的制约，一是技术条件的制约。进行经营管理首先要认识这种制约，并从而能动地求得在制约下的系统的最优运转。通过六个要素，把一个复杂的生产体系组织管理好，需要科学，即所谓经营科学。从历史上一个个体劳动者泥瓦匠的工作开始，就包含这六个要素。那时人当然是有的，不过是个体；砖瓦木料便是物资；斧锯瓦刀是设备；钱当然是个因素，任务指标是明确的；至于信息可能全部都存放在泥瓦匠这个人的头脑中。在现代的大工厂中，还是这六种要素，只不过规模空前地扩大。在工厂这个整系统中，各分系统之间的相互作用和相互依赖的关系，就凭这六个要素的流通而得以体现。
-中国为什么没有自己的编程语言？哲学、数学和语言学基础是关键
-钱老的物、事、人的理论是生根于中国历史文化中，有着具有中国特色的世界观和价值观，这也是中国哲学的基础研究问题。所以非常容易被东方文化人群所接受，每一个中国人都很容易理解物、事和人的划分，这就为理论应用奠定了基础。
-
-系列教程
-全部文章RSS订阅
-
-项目管理系列
-AI 分类 RSS 订阅
-
-如何做一个完整的硬件项目的项目管理之简明教程
-几种常用管理模型和方法
-PMBOK指南（第6版）
-如何做好竞品分析
-一大堆寓意深刻的管理故事锦集
-人格类型分类总结归纳
-
-
-]]></content>
-      <categories>
-        <category>管理</category>
-      </categories>
-      <tags>
-        <tag>管理</tag>
-        <tag>竞品分析</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>中西医的优缺点</title>
     <url>/posts/a2a43504/</url>
     <content><![CDATA[
@@ -43136,6 +43042,100 @@ tree -F -L 2 ./自学倪海厦人纪
         <tag>中医</tag>
         <tag>西医</tag>
         <tag>文化历史</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>如何做好竞品分析</title>
+    <url>/posts/99be6dfb/</url>
+    <content><![CDATA[
+竞品分析可以帮助我们更好地找准自身产品定位，发现自己产品的优劣所在，进而推动产品的优化迭代。
+Tips：友情提示，部分内容RSS输出获取不到，请跳转到源网页地址浏览全文！
+
+
+
+
+  
+
+
+如何做好竞品分析？竞品分析的六大维度
+
+一、为什么做竞品分析？
+1.知己知彼百战百胜
+2.为自身的产品设计提供功能、可用性、关键技术等方面的参考
+3.提高自身产品的差异化程度
+4.降低风险
+二、如何选择竞品？
+1.寻找行业内领先的榜样产品（取其精华）
+2.类似于自己的产品（竞争关系最大）
+3.有潜力的竞品（存活原因）
+三、如何做竞品调研？
+1.市场分析：了解产业和行业的运作模式、所处环境和市场数据，便于筛选目标市场
+2.用户分析：了解目标市场中全部用户的分层及画像，便于筛选目标用户
+3.产品分析：了解开发生命周期中的差异
+4.产品调研：了解产品生命周期中的差异
+5.用户运营：了解产品中存量用户的细分，便于精细化运营
+6.用户调研：了解用户的体验和评价
+7.竞品分析：从产品背后看企业，了解竞争者的资源配置情况
+四、竞品分析的基本思路
+1.分析目的有哪些？
+2.分析对象有哪些？
+3.分析角度有哪些？
+4.竞品信息的来源有哪些？
+5.竞品信息的处理流程有哪些？
+6.分析方法有哪些？
+7.结论如何呈现？
+五、竞品分析的模型方法
+1.PEST分析模型
+2.STP理论
+3.波特五力模型
+4.波士顿矩阵分析
+5.用户体验五要素
+6.APPEALS模型
+7.SWOT分析法
+六、竞品分析报告模板
+1.分析目的：为什么做分析报告
+2.确定竞品：分析了哪些、产品形态、产品版本、体验环境
+3.竞品分析：战略定位、目标用户、商业模式、运营策略、产品功能及设计、市场推广、盈利模式
+4.复盘总结：优缺点总结、结论、趋势预测
+参考
+
+如何做好竞品分析
+
+附赠
+钱学森《论系统工程》
+
+钱学森诞辰110周年：重读经典，钱学森《论系统工程》笔记摘要
+
+钱老从中国传统哲学角度出发，把工业企业运行分为人、物、事三类要素。“人”就是组织、岗位和人员；“物”就是产品、设备等；“事”就是事物运转的流程。与国外的TOGAF建模方法不同，钱老说的模型太接地气了，中国人一听就懂。
+事实上，钱老刚回国，一穷二白，怎么搞航天，就是靠得这种系统工程理论，层层递进，才成就复杂的两弹一星工程。我们现在开发工业管理软件，实际上就是要找到这种底层的事物的规律，才可能起到事半功倍的效果，可以说是面向对象的中国特色版：
+以下是钱老的原文，大家可以一起学习下：
+
+就一个工厂甚至任何一个环节而言，都由下列人、物、事三类要素组成。其中“人”当然是第一要素；物包括三个要素即：物资（能源、原料、半成品、成品等），设备（土木建筑、机电设备、工具仪表等）和财（工资、流动资金等）；事包括两个要素：任务的推进（上级所下达的任务或与其他单位所订的合约）与信息的传递（数据、图纸、报表、规章、决策等等）。从历史上一个个体劳动者泥瓦匠的工作开始，就包含这六个要素。
+人、物资、设备、财、任务和信息这六个要素，都要满足一定的制约，一是经济规律的制约，一是技术条件的制约。进行经营管理首先要认识这种制约，并从而能动地求得在制约下的系统的最优运转。通过六个要素，把一个复杂的生产体系组织管理好，需要科学，即所谓经营科学。从历史上一个个体劳动者泥瓦匠的工作开始，就包含这六个要素。那时人当然是有的，不过是个体；砖瓦木料便是物资；斧锯瓦刀是设备；钱当然是个因素，任务指标是明确的；至于信息可能全部都存放在泥瓦匠这个人的头脑中。在现代的大工厂中，还是这六种要素，只不过规模空前地扩大。在工厂这个整系统中，各分系统之间的相互作用和相互依赖的关系，就凭这六个要素的流通而得以体现。
+中国为什么没有自己的编程语言？哲学、数学和语言学基础是关键
+钱老的物、事、人的理论是生根于中国历史文化中，有着具有中国特色的世界观和价值观，这也是中国哲学的基础研究问题。所以非常容易被东方文化人群所接受，每一个中国人都很容易理解物、事和人的划分，这就为理论应用奠定了基础。
+
+系列教程
+全部文章RSS订阅
+
+项目管理系列
+AI 分类 RSS 订阅
+
+如何做一个完整的硬件项目的项目管理之简明教程
+几种常用管理模型和方法
+PMBOK指南（第6版）
+如何做好竞品分析
+一大堆寓意深刻的管理故事锦集
+人格类型分类总结归纳
+
+
+]]></content>
+      <categories>
+        <category>管理</category>
+      </categories>
+      <tags>
+        <tag>管理</tag>
+        <tag>竞品分析</tag>
       </tags>
   </entry>
   <entry>
@@ -47844,7 +47844,7 @@ Stacked area chart
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts2020'));
+        var myChart = echarts.init(document.getElementById('echarts7039'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -47938,7 +47938,7 @@ Area Pieces
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts853'));
+        var myChart = echarts.init(document.getElementById('echarts3901'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -48007,7 +48007,7 @@ Rainfall
 
 
         // 基于准备好的dom，初始化echarts实例
-        var myChart = echarts.init(document.getElementById('echarts7567'));
+        var myChart = echarts.init(document.getElementById('echarts5647'));
 
         // 指定图表的配置项和数据
         var option = option = {
@@ -57519,9 +57519,9 @@ chatGPT
 
 视频讲解
 B站
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-AUtHzAWLMqdnTCqC").style.height=document.getElementById("mmedia-AUtHzAWLMqdnTCqC").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-TkrSSYSFltpBlpPz").style.height=document.getElementById("mmedia-TkrSSYSFltpBlpPz").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-AUtHzAWLMqdnTCqC").style.height=document.getElementById("mmedia-AUtHzAWLMqdnTCqC").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-TkrSSYSFltpBlpPz").style.height=document.getElementById("mmedia-TkrSSYSFltpBlpPz").scrollWidth*0.76+"px";
     }; 
 youtube
 
@@ -65352,9 +65352,9 @@ openai/whisper
 完了这歌拿了“五个一工程奖”(全国精神文明建设领域的最高奖)，那些年度金曲奖跟国家的五个一奖比就是小宝宝。 《爱是你我》就不是情歌，它的“爱”指的互帮互助的人间真爱，“你我”指代人人、每个人，爱是你我，意即人民互帮互助，人间充满真爱。
 “这世界 我来了  任凭风暴旋涡” 这首歌表达的是面对再大的困难，也不退缩，一种对生活的热爱，对征服困难的自信！
 现场 MV
-.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-XCAPSKbhczbTJyww").style.height=document.getElementById("mmedia-XCAPSKbhczbTJyww").scrollWidth*0.76+"px";
+.bbplayer{width: 100%; max-width: 850px; margin: auto} document.getElementById("mmedia-ERZmFYmmlwpUInBB").style.height=document.getElementById("mmedia-ERZmFYmmlwpUInBB").scrollWidth*0.76+"px";
     window.onresize = function(){
-      document.getElementById("mmedia-XCAPSKbhczbTJyww").style.height=document.getElementById("mmedia-XCAPSKbhczbTJyww").scrollWidth*0.76+"px";
+      document.getElementById("mmedia-ERZmFYmmlwpUInBB").style.height=document.getElementById("mmedia-ERZmFYmmlwpUInBB").scrollWidth*0.76+"px";
     }; 
 歌曲《爱是你我》歌词
 爱是你我  
