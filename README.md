@@ -1,9 +1,9 @@
-
 ## 夜法之书的 Hexo 博客
 
 
 <p style="text-align:center;color:#13a768;font-size:1.5em;font-weight: bold;">
 深度思考，深入生活！所有文章均持续滚动更新！</p>
+
 
 <h2 align="center">Hi 👋, I'm appotry (夜法之书) </h2>
 
@@ -13,14 +13,16 @@
 
 > ~软件驱动世界~个人独立技术博客，关于Linux,开源，Nas，Docker，嵌入式，理财，健身等主题！
 
-主域名： https://blog.17lai.site/
+**主域名**： https://blog.17lai.site/
 
-镜像：
+**镜像**：
 
-- https://cfblog.17lai.site/
+- https://cfblog.17lai.site/ 
 - https://17lai.pages.dev/
 - https://fast.17lai.site/
 - https://v20blog.17lai.site/
+
+
 
 ## 精品博文推荐
 
@@ -35,7 +37,9 @@
 
 ### Hexo 博客教程
 
-[三万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+> 整个系列历时好几年，基本敢说是目前整个互联网最详细，深入的 hexo 博客系列教程了！
+
+[十万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
 
 - [Hexo Docker环境与Hexo基础配置篇](https://blog.17lai.site/posts/40300608/)
 - [hexo博客自定义修改篇](https://blog.17lai.site/posts/4d8a0b22/)
@@ -58,6 +62,9 @@
 
 ### Nas 系列教程
 
+> - 教你在家创建一个替代整个互联网大厂的所有服务！
+> - 学会玩PT，从入门到精通，从此可以找到几乎所有互联网资源
+
 - [从零开始玩PT-入门到精通](https://blog.17lai.site/posts/9806d7f1/)
 - [如何建立自己的私人电子图书馆--出版书籍，网络小说，漫画一网打尽!](https://blog.17lai.site/posts/dc1c8194/)
 - [音视频图书和音乐自动化管理框架图解](https://blog.17lai.site/posts/db7bf49b/)
@@ -73,6 +80,8 @@
 
 ### **系统编程系列** 
 
+> 教你从头写操作系统！
+
 - [如何实现自己的操作系统](https://blog.17lai.site/posts/ffcce55d/)
 - [手把手教你构建 C 语言编译器](https://blog.17lai.site/posts/32570315/)
 - [如何编写Linux驱动？](https://blog.17lai.site/posts/ed364362/)
@@ -81,6 +90,7 @@
 
 ### **Embeded系列** 
 
+> 一些嵌入式系统技术介绍
 
 - [海思MPP&UNF构架源代码级分析](https://blog.17lai.site/posts/13894dce/)
 - [3G,4G,Wifi选型需求分析及技术简介](https://blog.17lai.site/posts/6b2ba137/)
@@ -88,6 +98,8 @@
 - [ISP 数字图像处理 算法概述、工作原理、架构、处理流程](https://blog.17lai.site/posts/798e6e62/)
 
 ### **Devops系列** 
+
+> 教你从0开始搭建一个自己的开源devops系统
 
 - [自建全套开源Devops开发系统](https://blog.17lai.site/posts/ab63eb8f/)
 - [Git介绍以及分支模型图解](https://blog.17lai.site/posts/d32a07a7/)
@@ -100,6 +112,8 @@
 
 ### **Docker系列** 
 
+> 一些docker使用高级技巧
+
 - [Docker使用简明教程](https://blog.17lai.site/posts/42b6a86d/)
 - [使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程](https://blog.17lai.site/posts/9912bd5d/)
 - [为知笔记私有化Docker部署](https://blog.17lai.site/posts/1802a8a7/)
@@ -110,6 +124,8 @@
 
 ### **项目管理系列** 
 
+> 现代企业管理入门到精通全系列
+
 - [如何做一个完整的硬件项目的项目管理之简明教程](https://blog.17lai.site/posts/d8b1e381/)
 - [几种常用管理模型和方法](https://blog.17lai.site/posts/ca630feb/)
 - [PMBOK指南（第6版）](https://blog.17lai.site/posts/ac0df556/)
@@ -119,6 +135,8 @@
 
 ### **AI系列**
 
+> 介绍如何使用AI，不会AI就完全落伍啦！
+
   [**AI 分类 RSS 订阅**](https://blog.17lai.site/categories/ai/atom.xml)
 
   - [深度学习之视频人脸识别系列](https://blog.17lai.site/posts/a0f3c838/)
@@ -127,6 +145,8 @@
   - [信用卡对个人、社会以及国家的影响——ChatGPT辅助编写](https://blog.17lai.site/posts/b648bb9c/)
 
 ### **笔记系列**
+
+> 教你如何记笔记
 
   [**Note分类RSS订阅**](https://blog.17lai.site/categories/note/atom.xml)
 
@@ -140,6 +160,8 @@
 
 ### **Gitbook使用系列**
 
+> 教你如何写一个完整，完善的电子书
+
   [Gitbook分类RSS订阅](https://blog.17lai.site/categories/gitbook/atom.xml)
 
   - [GitBook+GitLab撰写发布技术文档-Part1:GitBook篇](https://blog.17lai.site/posts/7fe86002/)
@@ -148,9 +170,28 @@
 
 ### **Gitlab 使用系列**
 
+> 教你如何搭建一个私有的github
+
   [**Gitlab RSS 分类订阅**](https://blog.17lai.site/categories/gitlab/atom.xml)
 
   - [**Gitlab的安装及使用教程完全版**](https://blog.17lai.site/posts/acc13b70/)
   - [破解Gitlab EE](https://blog.17lai.site/posts/29a820b3/)
   - [Gitlab的安装及使用](https://blog.17lai.site/posts/d08eb7b/)
   - [CI/CD与Git Flow与GitLab](https://blog.17lai.site/posts/1879721e/)
+
+### 文化历史系列
+
+> 一些中国传统文化介绍
+
+- [易学入门](https://blog.17lai.site/posts/1accbe50/)
+- [阴历、阳历、阴阳和历的来龙去脉](https://blog.17lai.site/posts/5109c184/)
+- [中西医的优缺点](https://blog.17lai.site/posts/a2a43504/)
+
+### **健康系列**  
+
+> 健康是一切生活工作的基础盘
+
+- [如何将身体恢复到完美状态](https://blog.17lai.site/posts/b41201e6/)
+- [健身从基础常识到实践指导！](https://blog.17lai.site/posts/4159851c/)
+- [中西医的优缺点](https://blog.17lai.site/posts/a2a43504/)
+
