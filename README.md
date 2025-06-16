@@ -32,8 +32,9 @@
 
 
 
-
 ## 系列教程
+
+> 博客文章不完全归纳整理，成体系的文章，部分系列教程如下
 
 ### Hexo 博客教程
 
@@ -109,6 +110,20 @@
 - [Gitlab的安装及使用教程完全版](https://blog.17lai.site/posts/acc13b70/)
 - [Gitlab的安装及使用](https://blog.17lai.site/posts/d08eb7b/)
 - [那些有用的Github工具介绍！Action、app、workflow等](https://blog.17lai.site/posts/78c3371/)
+
+### **Web系列**
+
+> web技术一直在技术发展最前沿，开放标准，源码众多，不懂web就落伍了
+
+- [浏览器的渲染过程](https://blog.17lai.site/posts/69a052c9/)
+- [在浏览器输入 URL 回车之后发生了什么](https://blog.17lai.site/posts/656a0abb/)
+- [1.5 万字 CSS 基础拾遗（核心知识、常见需求）](https://blog.17lai.site/posts/448f849b/)
+- [http 错误代码表](https://blog.17lai.site/posts/80906b88/)
+- [写了些浏览器增强脚本](https://blog.17lai.site/posts/8f873c0f/)
+- [如何防止密码泄露，保护密码安全？](https://blog.17lai.site/posts/1d87ed2/)
+- [ESNI和加密DNS - 保护信息隐私的最后一块拼图](https://blog.17lai.site/posts/ec2cad2/)
+- [node 项目从构建到使用 jenkins + docker + nginx + mysql + redis 自动化部署](https://blog.17lai.site/posts/68d3867d/)
+- [Github Pages + jekyll 全面介绍极简搭建个人网站和博客](https://blog.17lai.site/posts/1991789c/)
 
 ### **Docker系列** 
 
