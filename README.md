@@ -74,6 +74,7 @@
 - [Potplayer终极优化教程实现PC视频播放最强画质](https://blog.17lai.site/posts/2f8fb473/)
 - [Transmission 使用及其配置](https://blog.17lai.site/posts/8f76d9dd/)
 - [Qbittorrent 参数详细设置教程](https://blog.17lai.site/posts/f6b32521/)
+- [家庭网络优化指南：提升NAT类型，降低游戏延迟、提高下载速度](https://blog.17lai.site/posts/9404dba0)
 - [PT 工具集，Linux硬链接助手](https://blog.17lai.site/posts/bb600b4b/)
 - [QNAP 修改应用启动顺序](https://blog.17lai.site/posts/77da2f80/)
 - [qnap硬盘移动位置](https://blog.17lai.site/posts/10fee780/)
