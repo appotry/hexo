@@ -75,6 +75,7 @@
 - [Transmission 使用及其配置](https://blog.17lai.site/posts/8f76d9dd/)
 - [Qbittorrent 参数详细设置教程](https://blog.17lai.site/posts/f6b32521/)
 - [家庭网络优化指南：提升NAT类型，降低游戏延迟、提高下载速度](https://blog.17lai.site/posts/9404dba0)
+- [如何创建属于自己的私人资料库与私人搜索引擎](https://blog.17lai.site/posts/8f152670)
 - [PT 工具集，Linux硬链接助手](https://blog.17lai.site/posts/bb600b4b/)
 - [QNAP 修改应用启动顺序](https://blog.17lai.site/posts/77da2f80/)
 - [qnap硬盘移动位置](https://blog.17lai.site/posts/10fee780/)
@@ -111,6 +112,22 @@
 - [Gitlab的安装及使用教程完全版](https://blog.17lai.site/posts/acc13b70/)
 - [Gitlab的安装及使用](https://blog.17lai.site/posts/d08eb7b/)
 - [那些有用的Github工具介绍！Action、app、workflow等](https://blog.17lai.site/posts/78c3371/)
+
+### **tools系列** 
+
+[<i class="fas fa-rss"></i>**Tools 分类 RSS 订阅**](https://blog.17lai.site/categories/tools/atom.xml) 
+
+- [Doxygen入门教程](https://blog.17lai.site/posts/1acb0edb/)
+- [Vim IDE Docker 以及中文指南](https://blog.17lai.site/posts/647e6265/)
+- [第一次使用VS CODE时你应该指导的一切配置](https://blog.17lai.site/posts/44557ab0/)
+- [winrar去广告和破解](https://blog.17lai.site/posts/3b296307/)
+- [RSS的使用与Tiny Tiny RSS Selfhost自建](https://blog.17lai.site/posts/f4926c88/)
+- [如何创建属于自己的私人资料库与私人搜索引擎](https://blog.17lai.site/posts/8f152670/)
+- [信息时代必备的搜索引擎高级技巧使用指南](https://blog.17lai.site/posts/f12af66/)
+- [如何安装OfficeLTSC2021并KMS破解激活教程](https://blog.17lai.site/posts/c17af2e6/)
+- [windows系统空间清理与速度优化](https://blog.17lai.site/posts/3194c5b3/)
+
+
 
 ### **Web系列**
 
