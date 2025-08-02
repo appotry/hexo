@@ -99,6 +99,7 @@
 - [3G,4G,Wifi选型需求分析及技术简介](https://blog.17lai.site/posts/6b2ba137/)
 - [自动曝光原理](https://blog.17lai.site/posts/509c7bd3/)
 - [ISP 数字图像处理 算法概述、工作原理、架构、处理流程](https://blog.17lai.site/posts/798e6e62/)
+- [QNAP添加man pages](https://blog.17lai.site/posts/ba4ef326/)
 
 ### **Devops系列** 
 
@@ -114,8 +115,6 @@
 - [那些有用的Github工具介绍！Action、app、workflow等](https://blog.17lai.site/posts/78c3371/)
 
 ### **tools系列** 
-
-[<i class="fas fa-rss"></i>**Tools 分类 RSS 订阅**](https://blog.17lai.site/categories/tools/atom.xml) 
 
 - [Doxygen入门教程](https://blog.17lai.site/posts/1acb0edb/)
 - [Vim IDE Docker 以及中文指南](https://blog.17lai.site/posts/647e6265/)
