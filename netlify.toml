@@ -1,115 +1,122 @@
 # https://docs.netlify.com/configure-builds/file-based-configuration/#sample-netlify-toml-file
 # https://docs.netlify.com/routing/headers/#custom-headers 
 # https://gist.github.com/robsonsobral/5b8d1ff10a10dd35793a768f8531cc18
+[build]
+  publish = "public"  # 请根据你站点构建输出目录调整
 
 [[redirects]]
   from = "/search.xml"
   to = "https://cfblog.17lai.site/search.xml"
-  
+  status = 301
+  force = true
+
 [[redirects]]
   from = "/atom.xml"
   to = "https://cfblog.17lai.site/atom.xml"
+  status = 301
+  force = true
 
 [[redirects]]
   from = "/feed.json"
   to = "https://cfblog.17lai.site/feed.json"
-  
+  status = 301
+  force = true
+
 [[redirects]]
   from = "/rss.xml"
   to = "https://cfblog.17lai.site/rss.xml"
-  
+  status = 301
+  force = true
+
+# 长期缓存：静态媒体与字体（假设已指纹化）
 [[headers]]
-  # Define which paths this specific [[headers]] block will cover.
+  for = "/medias_webp/*"
+  [headers.values]
+    Cache-Control = "public, s-maxage=31536000, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/media/*"
+  [headers.values]
+    Cache-Control = "public, s-maxage=31536000, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/libs/*"
+  [headers.values]
+    Cache-Control = "public, s-maxage=31536000, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.woff2"
+  [headers.values]
+    Cache-Control = "public, s-maxage=31536000, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.woff"
+  [headers.values]
+    Cache-Control = "public, s-maxage=31536000, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.ttf"
+  [headers.values]
+    Cache-Control = "public, s-maxage=31536000, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.webp"
+  [headers.values]
+    Cache-Control = "public, s-maxage=31536000, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, s-maxage=31536000, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.jpg"
+  [headers.values]
+    Cache-Control = "public, s-maxage=31536000, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.svg"
+  [headers.values]
+    Cache-Control = "public, s-maxage=31536000, max-age=31536000, immutable"
+
+# 中期缓存：json/xml 等（一天或 12 小时）
+[[headers]]
+  for = "/*.json"
+  [headers.values]
+    Cache-Control = "public, s-maxage=43200, max-age=43200"
+
+[[headers]]
+  for = "/*.xml"
+  [headers.values]
+    Cache-Control = "public, s-maxage=43200, max-age=43200"
+
+# HTML 页面：较短缓存或 no-cache
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Service worker 要短缓存以便更新
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# 全局安全 & CORS 头（置于底部，覆盖默认）
+[[headers]]
   for = "/*"
-    [headers.values]
-    Access-Control-Allow-Headers = "X-Requested-With, Content-Type, Accept, Origin, Authorization"
-    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE"
+  [headers.values]
+    # CORS —— 目前选择允许所有域（仅在不带凭证时）
     Access-Control-Allow-Origin = "*"
-	X-Content-Type-Options = "nosniff"
-  
-[[headers]]
-  for = "*.webp"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "*.png"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "*.jpg"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "*.jpeg"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "*.svg"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "*.ttf"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "*.woff"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "*.woff2"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "/medias_webp/**"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "/libs/**"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "/libs/**.*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "/libs/**/*.*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "/data/**"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "/media/**"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "*.html"
-  [headers.values]
-    Cache-Control = "public, max-age=1800"
-[[headers]]
-  for = "/css/*.css"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "/js/*.js"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "*.lrc"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-[[headers]]
-  for = "*.mp3"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000"
-    
-[[headers]]
-  for = "*.json"
-  [headers.values]
-    Cache-Control = "public, max-age=43200"
-[[headers]]
-  for = "*.xml"
-  [headers.values]
-    Cache-Control = "public, max-age=43200"
-    
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "X-Requested-With, Content-Type, Accept, Origin, Authorization"
+
+    # 安全头
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    # X-Frame-Options = "DENY"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+
+    # Content-Security-Policy: 请根据你的第三方域名调整（示例）
+    # Content-Security-Policy = "default-src 'self' https:; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://ana.17lai.site https://cdn.webpushr.com https://cfblog.17lai.site https://v20blog.17lai.site https://nblog.17lai.site https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://ajax.googleapis.com; connect-src 'self' https://www.google-analytics.com https://ana.17lai.site https://cdn.webpushr.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https: https://cimg1.17lai.site https://cimg1.17lai.fun; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; object-src 'none';"
