@@ -77,6 +77,7 @@
 - [Qbittorrent 参数详细设置教程](https://blog.17lai.site/posts/f6b32521/)
 - [IPFS从零开始快速入门教程](https://blog.17lai.site/posts/43241a29)
 - [家庭网络优化指南：提升NAT类型，降低游戏延迟、提高下载速度](https://blog.17lai.site/posts/9404dba0)
+- [内网域名管理+DNS加速+DNS去广告+魔法上网的终极系统](https://blog.17lai.site/posts/b82c9d4e)
 - [如何创建属于自己的私人资料库与私人搜索引擎](https://blog.17lai.site/posts/8f152670)
 - [PT 工具集，Linux硬链接助手](https://blog.17lai.site/posts/bb600b4b/)
 - [QNAP 修改应用启动顺序](https://blog.17lai.site/posts/77da2f80/)
