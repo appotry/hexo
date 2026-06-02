@@ -186,6 +186,7 @@
 
   - [深度学习之视频人脸识别系列](https://blog.17lai.site/posts/a0f3c838/)
   - [中国区注册ChatGPT并使用全流程图解教程](https://blog.17lai.site/posts/1336c869/)
+  - [2026 年免费 LLM API 完全指南：13 家提供商 + AI 网关高级玩法 + 本地模型](https://blog.17lai.site/posts/9h3d325f/)
   - [关于普朗克概率的的讨论](https://blog.17lai.site/posts/60146716/)
   - [信用卡对个人、社会以及国家的影响——ChatGPT辅助编写](https://blog.17lai.site/posts/b648bb9c/)
 
