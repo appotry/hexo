@@ -5,8 +5,8 @@
         <link>https://blog.17lai.site</link>
         <description>~软件驱动世界~个人独立技术博客，关于Linux,开源，Nas，Docker，嵌入式，理财，健身等主题！</description>
         <language>zh-CN</language>
-        <pubDate>Fri, 31 May 2024 14:42:11 +0800</pubDate>
-        <lastBuildDate>Fri, 31 May 2024 14:42:11 +0800</lastBuildDate>
+        <pubDate>Thu, 04 Jun 2026 17:04:45 +0800</pubDate>
+        <lastBuildDate>Thu, 04 Jun 2026 17:04:45 +0800</lastBuildDate>
         <category>github</category>
         <category>jekyll</category>
         <category>blog</category>
@@ -80,6 +80,7 @@
         <category>mariadb</category>
         <category>note</category>
         <category>mermaid</category>
+        <category>webdav</category>
         <category>hexo</category>
         <category>matery</category>
         <category>npm</category>
@@ -198,7 +199,6 @@
         <category>search</category>
         <category>开源</category>
         <category>读书评鉴</category>
-        <category>穿越必备</category>
         <category>易学</category>
         <category>高考</category>
         <category>专业</category>
@@ -227,11 +227,11 @@
         <category>windows</category>
         <category>垃圾清理</category>
         <category>速度优化</category>
+        <category>天干</category>
+        <category>地支</category>
         <category>阳历</category>
         <category>阴历</category>
         <category>阴阳和历</category>
-        <category>天干</category>
-        <category>地支</category>
         <category>热水器</category>
         <category>维护</category>
         <category>汽车</category>
@@ -256,7 +256,134 @@
         <category>api</category>
         <category>免费</category>
         <category>ollama</category>
-        <category>webdav</category>
+        <category>穿越必备</category>
+        <item>
+            <guid isPermalink="true">https://blog.17lai.site/posts/2bcf4ad9/</guid>
+            <title>如何优雅的给npm包打补丁--以hexo-minify包为例</title>
+            <link>https://blog.17lai.site/posts/2bcf4ad9/</link>
+            <category>hexo</category>
+            <category>npm</category>
+            <category>node</category>
+            <pubDate>Thu, 04 Jun 2026 17:04:45 +0800</pubDate>
+            <description><![CDATA[ &lt;p&gt;本文将以修复 &lt;code&gt;hexo-minify&lt;/code&gt; 的这个报错为例，详细介绍两种在前端开发中&lt;strong&gt;最优雅、最常用且能一劳永逸&lt;/strong&gt;的 npm 包打补丁方法。&lt;/p&gt;
+&lt;span id=&#34;more&#34;&gt;&lt;/span&gt;
+&lt;hr&gt;
+&lt;p&gt;在维护 Hexo 博客或进行前端开发时，我们经常会遇到这样的尴尬局面：&lt;strong&gt;某个长期不更新的第三方插件，因为它的深层依赖项升级，导致整个项目直接崩溃。&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;最近升级 hexo 内部包版本，就遇到了几个兼容性问题。其中一个报错&lt;/p&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34; data-start=&#34;1&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;FATAL Something&amp;#39;s wrong. Maybe you can find the solution here: https:&amp;#x2F;&amp;#x2F;hexo.io&amp;#x2F;docs&amp;#x2F;troubleshooting.html
+TypeError: minimatch is not a function
+    at &amp;#x2F;app&amp;#x2F;node_modules&amp;#x2F;hexo-minify&amp;#x2F;lib&amp;#x2F;filter.js:20:33
+    at Array.some (&amp;lt;anonymous&amp;gt;)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;h2 id=&#34;🔍-问题起因&#34;&gt;🔍 问题起因&lt;/h2&gt;
+&lt;p&gt;报错信息指向了 &lt;code&gt;hexo-minify/lib/filter.js&lt;/code&gt;。导致这个报错的根本原因是：&lt;br&gt;
+&lt;code&gt;hexo-minify&lt;/code&gt; 依赖的 &lt;code&gt;minimatch&lt;/code&gt; 库最近发布了破坏性更新（v9.x+），将默认导出（Default Export）改为了命名导出（Named Export）。&lt;/p&gt;
+&lt;p&gt;而旧版的 &lt;code&gt;hexo-minify&lt;/code&gt; 仍在像以前一样，试图将 &lt;code&gt;minimatch&lt;/code&gt; 当作一个函数直接调用：&lt;/p&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-javascript&#34; data-language=&#34;javascript&#34; data-start=&#34;1&#34;&gt;&lt;code class=&#34;language-javascript&#34;&gt;const minimatch &amp;#x3D; require(&amp;#39;minimatch&amp;#39;); &amp;#x2F;&amp;#x2F; 此时导入的是一个对象，而不是函数
+minimatch(file, pattern); &amp;#x2F;&amp;#x2F; 报错：TypeError: minimatch is not a function&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;p&gt;面对这种情况，等待原作者更新可能遥遥无期。我们需要自己动手解决，并且要保证&lt;strong&gt;团队其他成员拉取代码、或者下次重新 &lt;code&gt;npm install&lt;/code&gt; 时，这个修复依然有效&lt;/strong&gt;。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;🛠️-方法一：使用依赖覆盖（Overrides）——-适合版本不兼容问题&#34;&gt;🛠️ 方法一：使用依赖覆盖（Overrides）—— 适合版本不兼容问题&lt;/h2&gt;
+&lt;p&gt;如果你的 Node.js 版本在 16+ 且使用 npm v8.3.0 以上，最省心的方法是&lt;strong&gt;强行锁死深层依赖的版本&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;由于 &lt;code&gt;minimatch&lt;/code&gt; 在 &lt;code&gt;v5&lt;/code&gt; 及以下版本是兼容函数调用的，我们可以通过配置 &lt;code&gt;package.json&lt;/code&gt;，强制让所有子依赖都使用旧版的 &lt;code&gt;minimatch&lt;/code&gt;。&lt;/p&gt;
+&lt;h3 id=&#34;操作步骤&#34;&gt;操作步骤&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;打开项目根目录下的 &lt;code&gt;package.json&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;添加 &lt;code&gt;overrides&lt;/code&gt; 字段（如果你使用的是 Yarn，请使用 &lt;code&gt;resolutions&lt;/code&gt;）：&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;=== “npm”&lt;br&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-json&#34; data-language=&#34;json&#34; data-start=&#34;1&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;#123;
+  &amp;quot;dependencies&amp;quot;: &amp;#123;
+    &amp;quot;hexo-minify&amp;quot;: &amp;quot;^x.x.x&amp;quot;
+  &amp;#125;,
+  &amp;quot;overrides&amp;quot;: &amp;#123;
+    &amp;quot;minimatch&amp;quot;: &amp;quot;^5.1.6&amp;quot;
+  &amp;#125;
+&amp;#125;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;&lt;/p&gt;
+&lt;p&gt;=== “Yarn”&lt;br&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-json&#34; data-language=&#34;json&#34; data-start=&#34;1&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;#123;
+  &amp;quot;dependencies&amp;quot;: &amp;#123;
+    &amp;quot;hexo-minify&amp;quot;: &amp;quot;^x.x.x&amp;quot;
+  &amp;#125;,
+  &amp;quot;resolutions&amp;quot;: &amp;#123;
+    &amp;quot;minimatch&amp;quot;: &amp;quot;^5.1.6&amp;quot;
+  &amp;#125;
+&amp;#125;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;&lt;/p&gt;
+&lt;p&gt;=== “pnpm”&lt;br&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-json&#34; data-language=&#34;json&#34; data-start=&#34;1&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;#123;
+  &amp;quot;pnpm&amp;quot;: &amp;#123;
+    &amp;quot;overrides&amp;quot;: &amp;#123;
+      &amp;quot;minimatch&amp;quot;: &amp;quot;^5.1.6&amp;quot;
+    &amp;#125;
+  &amp;#125;
+&amp;#125;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;&lt;/p&gt;
+&lt;ol start=&#34;3&#34;&gt;
+&lt;li&gt;清理缓存并重新安装：&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34; data-start=&#34;1&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;rm -rf node_modules package-lock.json
+npm install&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;💡-优缺点分析&#34;&gt;💡 优缺点分析&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;优点&lt;/strong&gt;：无需修改任何源码，纯配置解决，极其优雅。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;缺点&lt;/strong&gt;：只适用于通过“降低/锁定依赖版本”能解决的问题。如果必须修改源码，此方法无效。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;🛠️-方法二：使用-patch-package-自动打补丁-——-适合需要修改源码的场景&#34;&gt;🛠️ 方法二：使用 &lt;code&gt;patch-package&lt;/code&gt; 自动打补丁 —— 适合需要修改源码的场景&lt;/h2&gt;
+&lt;p&gt;如果你必须使用新版的依赖，或者报错的根本不是版本问题，而是代码本身有 Bug，那么就需要直接修改 &lt;code&gt;node_modules&lt;/code&gt; 里的源码。&lt;/p&gt;
+&lt;p&gt;但是，直接修改 &lt;code&gt;node_modules&lt;/code&gt; 是临时的，一旦重新 &lt;code&gt;npm install&lt;/code&gt; 就会被覆盖。&lt;code&gt;patch-package&lt;/code&gt; 就是为了解决这个痛点而生的工具。&lt;/p&gt;
+&lt;h3 id=&#34;操作步骤-2&#34;&gt;操作步骤&lt;/h3&gt;
+&lt;h4 id=&#34;1-安装-patch-package&#34;&gt;1. 安装 &lt;code&gt;patch-package&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;在项目根目录下安装它：&lt;/p&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34; data-start=&#34;1&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install patch-package --save-dev&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;h4 id=&#34;2-手动修改-node-modules-中的错误代码&#34;&gt;2. 手动修改 &lt;code&gt;node_modules&lt;/code&gt; 中的错误代码&lt;/h4&gt;
+&lt;p&gt;打开报错的文件：&lt;code&gt;node_modules/hexo-minify/lib/filter.js&lt;/code&gt;。找到顶部引入 &lt;code&gt;minimatch&lt;/code&gt; 的地方：&lt;/p&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-javascript&#34; data-language=&#34;javascript&#34; data-start=&#34;1&#34;&gt;&lt;code class=&#34;language-javascript&#34;&gt;const minimatch &amp;#x3D; require(&amp;#39;minimatch&amp;#39;);&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;p&gt;将其修改为兼容新旧版本的写法：&lt;/p&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-javascript&#34; data-language=&#34;javascript&#34; data-start=&#34;1&#34;&gt;&lt;code class=&#34;language-javascript&#34;&gt;const minimatchModule &amp;#x3D; require(&amp;#39;minimatch&amp;#39;);
+&amp;#x2F;&amp;#x2F; 兼容处理：如果导入的是函数则直接用，否则使用其导出的 minimatch 属性
+const minimatch &amp;#x3D; typeof minimatchModule &amp;#x3D;&amp;#x3D;&amp;#x3D; &amp;#39;function&amp;#39; ? minimatchModule : minimatchModule.minimatch;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;h4 id=&#34;3-创建补丁文件（Patch）&#34;&gt;3. 创建补丁文件（Patch）&lt;/h4&gt;
+&lt;p&gt;在终端运行 &lt;code&gt;patch-package&lt;/code&gt; 命令，传入你修改过的包名：&lt;/p&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34; data-start=&#34;1&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;npx patch-package hexo-minify&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;p&gt;运行成功后，你会发现项目根目录下多出了一个 &lt;code&gt;patches&lt;/code&gt; 文件夹，里面有一个类似 &lt;code&gt;hexo-minify+0.5.0.patch&lt;/code&gt; 的文件。这个文件记录了你对该包的修改。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;📌 &lt;strong&gt;注意&lt;/strong&gt;：请把这个 &lt;code&gt;patches&lt;/code&gt; 文件夹提交到你的 Git 仓库中。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id=&#34;4-配置自动修补脚本&#34;&gt;4. 配置自动修补脚本&lt;/h4&gt;
+&lt;p&gt;为了让其他人拉取代码后、或者每次执行 &lt;code&gt;npm install&lt;/code&gt; 时都自动应用这个补丁，我们需要在 &lt;code&gt;package.json&lt;/code&gt; 的 &lt;code&gt;scripts&lt;/code&gt; 中配置 &lt;code&gt;postinstall&lt;/code&gt; 钩子：&lt;/p&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-json&#34; data-language=&#34;json&#34; data-start=&#34;1&#34;&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;#123;
+  &amp;quot;scripts&amp;quot;: &amp;#123;
+    &amp;quot;postinstall&amp;quot;: &amp;quot;patch-package&amp;quot;,
+    &amp;quot;build&amp;quot;: &amp;quot;hexo generate&amp;quot;
+  &amp;#125;
+&amp;#125;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;h3 id=&#34;🧪-测试效果&#34;&gt;🧪 测试效果&lt;/h3&gt;
+&lt;p&gt;现在你可以放心删掉整个 &lt;code&gt;node_modules&lt;/code&gt; 文件夹，然后重新执行：&lt;/p&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-bash&#34; data-language=&#34;bash&#34; data-start=&#34;1&#34;&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;p&gt;你会看到控制台在安装完成后自动输出：&lt;/p&gt;
+&lt;figure&gt;&lt;div class=&#34;code-area&#34;&gt;&lt;pre class=&#34;line-numbers language-text&#34; data-language=&#34;text&#34; data-start=&#34;1&#34;&gt;&lt;code class=&#34;language-text&#34;&gt;&amp;gt; patch-package
+&amp;gt; Applying patches...
+&amp;gt; hexo-minify@0.5.0 ✔&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/figure&gt;
+&lt;p&gt;这说明补丁已经被自动应用了！再次运行 &lt;code&gt;hexo g&lt;/code&gt;，报错完美解决。&lt;/p&gt;
+&lt;h3 id=&#34;💡-优缺点分析-2&#34;&gt;💡 优缺点分析&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;优点&lt;/strong&gt;：非常强大，可以直接修改任何第三方库的源码；补丁文件跟随 Git 仓库，团队成员及 CI/CD 流程能自动同步。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;缺点&lt;/strong&gt;：如果第三方库本身进行了大版本升级，补丁可能会因为源码行数对不上而失效（此时需要重新生成补丁）。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;📝-总结与建议&#34;&gt;📝 总结与建议&lt;/h2&gt;
+&lt;p&gt;在面对 npm 依赖问题时，我们的排查和解决思路应该是：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;查&lt;/strong&gt;：先看社区有没有提 Issue，原作者有没有修复。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;套&lt;/strong&gt;：如果只是深层依赖的版本冲突，优先使用 &lt;strong&gt;方法一（Overrides/Resolutions）&lt;/strong&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;改&lt;/strong&gt;：如果需要改动源码才能解决，果断使用 &lt;strong&gt;方法二（patch-package）&lt;/strong&gt;。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;通过这两种方法，我们不仅能快速解决眼前的 Bug，还能保证项目的构建流程在任何环境下都具备极高的稳定性。希望这篇文章能帮到正在为 Node.js 依赖报错头疼的你！&lt;/p&gt;
+&lt;link rel=&#34;stylesheet&#34; href=&#34;https://fastly.jsdelivr.net/npm/markmap-toolbar@0.18.10/dist/style.css&#34;&gt;&lt;script src=&#34;https://fastly.jsdelivr.net/npm/d3@7&#34;&gt;&lt;/script&gt;&lt;script src=&#34;https://fastly.jsdelivr.net/npm/markmap-view@0.18.10&#34;&gt;&lt;/script&gt;&lt;script src=&#34;https://fastly.jsdelivr.net/npm/markmap-toolbar@0.18.10&#34;&gt;&lt;/script&gt;
+&lt;link rel=&#34;stylesheet&#34; href=&#34;/css/markmap.css&#34;&gt;
+
+&lt;script src=&#34;/js/markmap.js&#34;&gt;&lt;/script&gt;
+ ]]></description>
+        </item>
         <item>
             <guid isPermalink="true">https://blog.17lai.site/posts/1d87ed2/</guid>
             <title>如何防止密码泄露，保护密码安全？</title>
@@ -3711,93 +3838,6 @@ img &amp;#123;float: right;&amp;#125;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/f
 &lt;li&gt;还有一些找不到了。。。。。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;From: &lt;a href=&#34;https://4ark.me/post/b6c7c0a2.html&#34;&gt;4ark.me&lt;/a&gt;&lt;/p&gt;
-&lt;link rel=&#34;stylesheet&#34; href=&#34;https://fastly.jsdelivr.net/npm/markmap-toolbar@0.18.10/dist/style.css&#34;&gt;&lt;script src=&#34;https://fastly.jsdelivr.net/npm/d3@7&#34;&gt;&lt;/script&gt;&lt;script src=&#34;https://fastly.jsdelivr.net/npm/markmap-view@0.18.10&#34;&gt;&lt;/script&gt;&lt;script src=&#34;https://fastly.jsdelivr.net/npm/markmap-toolbar@0.18.10&#34;&gt;&lt;/script&gt;
-&lt;link rel=&#34;stylesheet&#34; href=&#34;/css/markmap.css&#34;&gt;
-
-&lt;script src=&#34;/js/markmap.js&#34;&gt;&lt;/script&gt;
- ]]></description>
-        </item>
-        <item>
-            <guid isPermalink="true">https://blog.17lai.site/posts/ec2cad2/</guid>
-            <title>ESNI和加密DNS - 保护信息隐私的最后一块拼图</title>
-            <link>https://blog.17lai.site/posts/ec2cad2/</link>
-            <category>ssl</category>
-            <category>tls</category>
-            <category>隐私</category>
-            <category>安全</category>
-            <pubDate>Mon, 06 Sep 2021 09:25:00 +0800</pubDate>
-            <description><![CDATA[ &lt;p&gt;随着&lt;a href=&#34;https://www.ietf.org/blog/tls13/&#34;&gt;TLS1.3&lt;/a&gt;的发布，让该协议成为有史以来最安全、也是最复杂的TLS协议。在该协议之中，有很多的对于以往协议安全漏洞的修复，包括废弃RSA启用新的秘钥交换机制PSK等等。而&lt;code&gt;Encrypted SNI&lt;/code&gt;作为一个&lt;code&gt;TLS1.3&lt;/code&gt;的扩展协议用来防止传统的HTTPS流量受到ISP或者陌生网络环境的窥探以及一些网络审查。在过去，由于&lt;code&gt;HTTPS&lt;/code&gt;协议之中&lt;code&gt;Server Name Indication - SNI&lt;/code&gt;的使用，我们的HTTPS流量经常被窥探我们所访问站点的域名&lt;/p&gt;
-&lt;h3 id=&#34;那么什么是SNI？&#34;&gt;那么什么是SNI？&lt;/h3&gt;
-&lt;blockquote&gt;
-&lt;p&gt;服务器名称指示（英语：Server Name Indication，简称SNI）是一个扩展的TLS计算机联网协议，在该协议下，在握手过程开始时客户端告诉它正在连接的服务器要连接的主机名称。这允许服务器在相同的IP地址和TCP端口号上呈现多个证书，并且因此允许在相同的IP地址上提供多个安全（HTTPS）网站（或其他任何基于TLS的服务），而不需要所有这些站点使用相同的证书。它与HTTP/1.1基于名称的虚拟主机的概念相同，但是用于HTTPS。所需的主机名未加密， 因此窃听者可以查看请求的网站 为了使SNI协议起作用，绝大多数访问者必须使用实现它的Web浏览器。使用未实现SNI浏览器的用户将被提供默认证书，因此很可能会收到证书警告&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;ul&gt;
-&lt;li&gt;SNI协议示意图&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://cimg1.17lai.site/data/2021/08/2820210828144946.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;TLS1.3完整握手流程&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://cimg1.17lai.site/data/2021/08/2820210828144904.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
-&lt;h3 id=&#34;为了弥补缺陷因应运而生的ESNI&#34;&gt;为了弥补缺陷因应运而生的ESNI&lt;/h3&gt;
-&lt;p&gt;在上述过程之中，存在的问题就是，在ClientHello环节中，TLS会在这个位置以&lt;strong&gt;明文&lt;/strong&gt;的形式讲要请求的Host写在数据包之中，如果在网络路由中有任何的监听节点，那么用户所访问网站的域名将暴露无遗，这将是巨大的用户隐私泄露: &lt;img src=&#34;https://cimg1.17lai.site/data/2021/08/2820210828144907.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
-&lt;p&gt;所以在最新的关于&lt;a href=&#34;https://tools.ietf.org/html/draft-rescorla-tls-esni-00&#34;&gt;ESNI的草案&lt;/a&gt;中，&lt;code&gt;IETF&lt;/code&gt;重新设计了一种加密的Client Hello机制，从而修复了这个问题: &lt;img src=&#34;https://cimg1.17lai.site/data/2021/08/2820210828144915.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;不过这里问题又来了，之前服务器和客户端并没有事先交换任何数据啊，这个加密的凭证从何而来啊？？？&lt;/strong&gt;&lt;/p&gt;
-&lt;h3 id=&#34;依靠安全DNS的ESNI&#34;&gt;依靠安全DNS的ESNI&lt;/h3&gt;
-&lt;p&gt;上一个问题没有难倒工程师们，他们设计了这样一个办法。首先让网站提供者在DNS提供商上公布一个记录，这个记录包含着一个&lt;code&gt;公钥&lt;/code&gt;，这个公钥由网站提供者生成，其&lt;code&gt;私钥&lt;/code&gt;存储在Web服务器等待着被Web程序读取。如此，当用户想通过TLS1.3协议访问这个域名的时候，首先读取这个公开的公钥，在用公钥加密其想访问的&lt;code&gt;域名Host&lt;/code&gt;，装在&lt;code&gt;Client Hello&lt;/code&gt;里面发送给目标服务器，目标服务器再用自己的私钥解密，从而和用户建立HTTPS链接，这样就不会暴露Host信息 这时候有人会想，如果有人某Wall想给你的DNS偷天换日，那会不会很不安全啊,请继续向下看&lt;/p&gt;
-&lt;p&gt;在&lt;code&gt;ESNI&lt;/code&gt;的实现草案之中，里面要求&lt;code&gt;安全加密的DNS&lt;/code&gt;&lt;strong&gt;是推荐的&lt;/strong&gt;。大家都知道我们的DNS查询一般是&lt;code&gt;TCP&lt;/code&gt;报文或者是&lt;code&gt;UDP&lt;/code&gt;报文，本身它是不加密的，所以如果有人想在篡改你的DNS是相对简单的，大家可能都知道我们伟大的妨炎蔷会使用DNS污染的方式干扰一些网站的正常访问。正式由于DNS的非加密性，DNS也成为了审查信息的利器。此时加密的DNS势在必行&lt;/p&gt;
-&lt;h3 id=&#34;DNS-over-TLS-DoT-and-DNS-over-HTTPS-DoH&#34;&gt;DNS over TLS (DoT) and DNS over HTTPS (DoH)&lt;/h3&gt;
-&lt;p&gt;于是出现了这两种新型的DNS查询方式&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;DNS over HTTPS (DoH)&lt;/li&gt;
-&lt;/ul&gt;
-&lt;blockquote&gt;
-&lt;p&gt;DNS Over HTTPS (DOH) 是一个进行安全化的域名解析的方案，当前尚处于实验性阶段。其意义在于以加密的HTTPS协议进行DNS解析请求，避免原始DNS协议中用户的DNS解析请求被窃听或者修改的问题（例如中间人攻击）来达到保护用户隐私的目的。 Google及Mozilla基金会正在测试这一协议，作为其提高网络安全性的努力的一部分。 当前，该方案由IETF支持，其规范文档以 RFC 8484 的名义发布。2018年9月5日发布的Firefox 62正式版加入了这项功能，但需要用户手动开启 DNS Over HTTPS利用HTTP协议的GET命令发出经由JSON等编码的DNS解析请求。较于传统的DNS协议，此处的HTTP协议通信处于具有加密作用的SSL/TLS协议（两者统称作HTTPS）的保护之下。但是，由于其基于HTTPS，而HTTPS本身需要经由多次数据来回传递才能完成协议初始化，其域名解析耗时较原DNS协议会显著增加。 传统的DNS协议形成于互联网早期，直接基于UDP或TCP协议，且彼时未虑及现代安全性的需要，未利用密码学等手段进行加密或验证。因而，其无法抵御现代互联网常见的DNS投毒污染等攻击手段或监听。虽然后来的DNSSEC方案通过电子签名进行验证，强化了DNS的安全性，并能够抵御DNS投毒污染等篡改通信的手段，但其对于中间网络设备进行的监听仍然没有抵御能力（随后，监听者可以通过获取的通信数据知晓用户访问了哪一域名，而域名往往与具体的网站相关系）。此外，DNSSEC的起效要求现有的大量DNS解析服务的提供商（常为互联网服务提供商或第三方大型互联网机构）对已有的DNS服务器进行大范围修改等问题，其推进进程并不理想。而对于DNS Over HTTPS，在正确部署服务端并妥善配置客户端的前提下，互联网服务提供商或其它中间网络设备无法解密（亦即无法获知请求的实际内容）或者篡改已经加密的HTTPS通信，故其能够有效保护互联网用户的安全及隐私；另一方面，其基于已经成熟并已广泛部署的HTTPS协议，客户端进行利用较为方便。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;ul&gt;
-&lt;li&gt;DNS over TLS (DoT)&lt;/li&gt;
-&lt;/ul&gt;
-&lt;blockquote&gt;
-&lt;p&gt;DNS over TLS (DoT) 是通过传输层安全协议（TLS）来加密并打包域名系统（DNS）的安全协议。此协议旨在防止中间人攻击与控制DNS数据以保护用户隐私。 RFC 7858及RFC 8310定义了DNS over TLS。 截至2018年，Cloudflare、Quad9与CleanBrowsing均向大众提供支持DNS over TLS的公共DNS解析服务。2018年4月，Google宣布Android P将包含对DNS over TLS的支持。PowerDNS的DNSDist也宣布在其最新的1.3.0版本中添加了对DNS over TLS的支持。BIND用户也可以通过stunnel代理提供DNS over TLS服务。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h3 id=&#34;手动配置&#34;&gt;手动配置&lt;/h3&gt;
-&lt;p&gt;Firefox所在的Mozilla宣布从&lt;code&gt;Firefox 62&lt;/code&gt;版本之后开始支持&lt;code&gt;ESNI&lt;/code&gt;，默认没有开启，需要用户手动配置打开，那么我们现在试验一下 这里Firefox的解决方案是使用&lt;code&gt;DNS over HTTPS (DoH)&lt;/code&gt;和&lt;code&gt;ESNI&lt;/code&gt;&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;
-&lt;p&gt;安装&lt;code&gt;Firefox Nightly&lt;/code&gt;版本，这个版本是预发布版本，使得开发这和即可门可以提前尝鲜到新功能。&lt;a href=&#34;https://www.mozilla.org/zh-CN/firefox/nightly/all/&#34;&gt;下载地址&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;在浏览器地址栏输入&lt;code&gt;about:config&lt;/code&gt;并回车，打开配置页面，在搜索位置搜索&lt;code&gt;network.trr.mode&lt;/code&gt;，这个是打开浏览器对于&lt;code&gt;DoH&lt;/code&gt;的支持，将此项的数值修改为3（&lt;code&gt;0&lt;/code&gt;对应的是不开启此功能；&lt;code&gt;1&lt;/code&gt;对应的是交由浏览器选择&lt;code&gt;DoH&lt;/code&gt;与传统方式那种更快；&lt;code&gt;2&lt;/code&gt;代表优先使用加密DNS查询，如果失败则回落到普通DNS查询；&lt;code&gt;3&lt;/code&gt;代表只使用加密DNS查询；&lt;code&gt;5&lt;/code&gt;代表明确的关闭此功能）&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;继续搜索&lt;code&gt;network.trr.uri&lt;/code&gt;，将此项的值修改为&lt;code&gt;https://mozilla.cloudflare-dns.com/dns-query&lt;/code&gt;，这个是默认的&lt;code&gt;DoH&lt;/code&gt;查询地址，当然我们也可以使用诸如&lt;code&gt;https://1.1.1.1/dns-query&lt;/code&gt;、&lt;code&gt;https://dns.google.com/experimental&lt;/code&gt;这样的地址，我们可以事先&lt;code&gt;ping&lt;/code&gt;检测一下对比哪个延迟更低来使用&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;（可选）搜索&lt;code&gt;network.trr.bootstrapAddress&lt;/code&gt;，讲此值修改位第三步的DNS域名的&lt;code&gt;IP&lt;/code&gt;。此举是为了避免使用操作系统DNS查询域名受到劫持，一般来说这些DNS的&lt;code&gt;IP&lt;/code&gt;是不会变的&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cimg1.17lai.site/data/2021/08/2820210828145006.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
-&lt;ol start=&#34;5&#34;&gt;
-&lt;li&gt;
-&lt;p&gt;将&lt;code&gt;network.security.esni.enabled&lt;/code&gt;设置为&lt;code&gt;true&lt;/code&gt;,此举为了打开浏览器对于ESNI的支持（感谢&lt;a href=&#34;https://github.com/chenIshi&#34;&gt;chenlshi&lt;/a&gt;同学的提醒，在原版的文章中我不小心遗漏了这个关键的步骤）&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;完成配置后重启浏览器，再打开&lt;a href=&#34;https://encryptedsni.com/&#34;&gt;在线验证页面验证&lt;/a&gt;来查询你的浏览器是否完全支持&lt;code&gt;ESNI&lt;/code&gt;功能，如果出现如图说明配置成功了&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cimg1.17lai.site/data/2021/08/2820210828144924.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
-&lt;h3 id=&#34;验证&#34;&gt;验证&lt;/h3&gt;
-&lt;p&gt;为了验证是否真的加密了&lt;code&gt;Client Hello&lt;/code&gt;，我们使用&lt;code&gt;Wireshark&lt;/code&gt;进行网络抓包 由于这个特性仍在试验阶段，并没有太多站点支持这个特性，&lt;a href=&#34;https://cloudflare.com/&#34;&gt;CloudFlare&lt;/a&gt;是第一个全站支持&lt;code&gt;ESNI&lt;/code&gt;的网站，这里我们使用&lt;a href=&#34;https://blog.cloudflare.com/&#34;&gt;blog.cloudflare.com&lt;/a&gt;来做测试：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;首先打开&lt;code&gt;Wireshark&lt;/code&gt;的抓包功能，然后开启&lt;code&gt;Chrome&lt;/code&gt;浏览器打开上述网址，页面加载完后停止抓包，在得到的结果中查询协议为&lt;code&gt;TLS1.3&lt;/code&gt;和报文为&lt;code&gt;Client Hello&lt;/code&gt;的报文，通过观察发现域名的Host果然被以明文形式写在数据包中（参见&lt;code&gt;Server_Name&lt;/code&gt;字段）：&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cimg1.17lai.site/data/2021/08/2820210828144932.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
-&lt;ol start=&#34;2&#34;&gt;
-&lt;li&gt;然后打开&lt;code&gt;Firefox Nightly&lt;/code&gt;浏览器重复上述操作，这次发现在整个数据包中根本找不到&lt;code&gt;Server_Name&lt;/code&gt;字段，说明&lt;code&gt;Host&lt;/code&gt;已经被加密：&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cimg1.17lai.site/data/2021/08/2820210828144933.webp&#34; alt=&#34;&#34;&gt;&lt;/p&gt;
-&lt;p&gt;目前来说，我查阅了相关的关键词，仍然没有任何一篇教程有介绍如何在自己的服务器上支持&lt;code&gt;ESNI&lt;/code&gt;，同时我也看到在&lt;code&gt;Nginx&lt;/code&gt;的论坛里面有人呼吁尽快支持&lt;code&gt;ESNI&lt;/code&gt;，所以我推测这个功能仍然在试验期，还没有被这两个Web软件所支持，起劲为止我也没有查阅到任何的Web软件预计支持此项功能。这项扩展已经进入&lt;code&gt;IETF&lt;/code&gt;的草案阶段，可以预见到，在不就的将来，这项技术可以普及开来，为我们的网络隐私保驾护航 目前来说，有了&lt;code&gt;HTTPS&lt;/code&gt;+&lt;code&gt;TLS1.3&lt;/code&gt;+&lt;code&gt;ESNI&lt;/code&gt;+&lt;code&gt;DoH/DoT&lt;/code&gt;的加持，我们的网络隐私的到了极大的保障，最后还有一个问题是访问服务器&lt;code&gt;IP&lt;/code&gt;的泄露仍然无法被避免，迫于&lt;code&gt;IP协议&lt;/code&gt;设计的机制，他目前还不能被解决。不过我相信，随着网技术不断的趋于保护个人隐私和更快速的发展方向，这个问题可以最终被解决&lt;/p&gt;
-&lt;p&gt;From: &lt;a href=&#34;https://blog.hackerchai.com/post/encrypted-sni-anti-censorship/&#34;&gt;hackerchai&lt;/a&gt;&lt;/p&gt;
 &lt;link rel=&#34;stylesheet&#34; href=&#34;https://fastly.jsdelivr.net/npm/markmap-toolbar@0.18.10/dist/style.css&#34;&gt;&lt;script src=&#34;https://fastly.jsdelivr.net/npm/d3@7&#34;&gt;&lt;/script&gt;&lt;script src=&#34;https://fastly.jsdelivr.net/npm/markmap-view@0.18.10&#34;&gt;&lt;/script&gt;&lt;script src=&#34;https://fastly.jsdelivr.net/npm/markmap-toolbar@0.18.10&#34;&gt;&lt;/script&gt;
 &lt;link rel=&#34;stylesheet&#34; href=&#34;/css/markmap.css&#34;&gt;
 
