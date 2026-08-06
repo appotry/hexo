@@ -1,1 +1,0 @@
-window.SearchEngine=class{constructor(n){this.config=n,this.container=null}init(n){}search(n){}destroy(){}},window.SearchEngines={},window.registerSearchEngine=function(n,i){window.SearchEngines[n]=i};
