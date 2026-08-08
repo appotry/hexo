@@ -1,0 +1,243 @@
+## 夜法之书的 Hexo 博客
+
+
+<p style="text-align:center;color:#13a768;font-size:1.5em;font-weight: bold;">
+深度思考，深入生活！所有文章均持续滚动更新！</p>
+
+
+<h2 align="center">Hi 👋, I'm appotry (夜法之书) </h2>
+
+
+
+## 站点简介：
+
+> ~软件驱动世界~个人独立技术博客，关于Linux,开源，Nas，Docker，嵌入式，理财，健身等主题！
+
+**主域名**： https://blog.17lai.site/
+
+**镜像**：
+
+- https://cfblog.17lai.site/ 
+- https://17lai.pages.dev/
+- https://fast.17lai.site/
+- https://v20blog.17lai.site/
+
+
+
+## 精品博文推荐
+
+| [海思MPP&UNF源代码级分析](https://blog.17lai.site/posts/13894dce/) | [如何编写Linux驱动？](https://blog.17lai.site/posts/ed364362/) | [**自建全套开源Devops开发系统**](https://blog.17lai.site/posts/ab63eb8f/) | [**硬件项目管理全流程简明教程**](https://blog.17lai.site/posts/d8b1e381/) |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| [**全套自建Hexo博客教程**](https://blog.17lai.site/posts/40300608/) | [**超全博客写作技巧教程**](https://blog.17lai.site/posts/253706ff/) | [**自建全套家庭多媒体中心**](https://blog.17lai.site/posts/9912bd5d/) | [**自建全套电子图书馆教程**](https://blog.17lai.site/posts/dc1c8194/) |
+
+
+
+## 系列教程
+
+> 博客文章不完全归纳整理，成体系的文章，部分系列教程如下
+
+### Hexo 博客教程
+
+> 整个系列历时好几年，基本敢说是目前整个互联网最详细，深入的 hexo 博客系列教程了！
+
+[十万字教程]基于Hexo的matery主题搭建博客并深度优化完全一站式教程
+
+- [Hexo Docker环境与Hexo基础配置篇](https://blog.17lai.site/posts/40300608/)
+- [hexo博客自定义修改篇](https://blog.17lai.site/posts/4d8a0b22/)
+- [hexo博客网络优化篇](https://blog.17lai.site/posts/9b056c86/)
+- [hexo博客增强部署篇](https://blog.17lai.site/posts/5311b619/)
+- [hexo博客个性定制篇](https://blog.17lai.site/posts/4a2050e2/)
+- [hexo博客常见问题篇](https://blog.17lai.site/posts/84b4059a/)
+- [hexo博客博文撰写篇之完美笔记大攻略终极完全版](https://blog.17lai.site/posts/253706ff/)
+- [Hexo Markdown以及各种插件功能测试](https://blog.17lai.site/posts/cf0f47fd/)
+
+> - markdown 各种其它语法插件，latex公式支持，mermaid图表，plant uml图表，URL卡片，bilibili卡片，github卡片，豆瓣卡片，插入音乐和视频，插入脑图，插入PDF，嵌入iframe
+
+- [在 Hexo 博客中插入 ECharts 动态图表](https://blog.17lai.site/posts/217ccdc1/)
+- [使用nodeppt给hexo博客嵌入PPT演示](https://blog.17lai.site/posts/546887ac/)
+- [Vercel部署高级用法教程](https://blog.17lai.site/posts/e922fac8/)
+- [webhook部署Hexo静态博客指南](https://blog.17lai.site/posts/eb731135/)
+- [在宝塔VPS上面采用docker部署waline全流程图解教程](https://blog.17lai.site/posts/8f9792ab/)
+
+
+
+### Nas 系列教程
+
+> - 教你在家创建一个替代整个互联网大厂的所有服务！
+> - 学会玩PT，从入门到精通，从此可以找到几乎所有互联网资源
+
+- [从零开始玩PT-入门到精通](https://blog.17lai.site/posts/9806d7f1/)
+- [如何建立自己的私人电子图书馆–出版书籍，网络小说，漫画一网打尽!](https://blog.17lai.site/posts/dc1c8194/)
+- [Zlibrary 图书资源下载与 Calibre 图书管理打造结构化电子图书馆高阶教程](https://blog.17lai.site/posts/7d34898d)
+- [音视频图书和音乐自动化管理框架图解](https://blog.17lai.site/posts/db7bf49b/)
+- [使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程](https://blog.17lai.site/posts/9912bd5d/)
+- [如何使用tinyMediaManager刮削电影和电视剧，动画，并自动下载字幕](https://blog.17lai.site/posts/e6d40157/)
+- [Potplayer终极优化教程实现PC视频播放最强画质](https://blog.17lai.site/posts/2f8fb473/)
+- [Transmission 使用及其配置](https://blog.17lai.site/posts/8f76d9dd/)
+- [Qbittorrent 参数详细设置教程](https://blog.17lai.site/posts/f6b32521/)
+- [IPFS从零开始快速入门教程](https://blog.17lai.site/posts/43241a29)
+- [家庭网络优化指南：提升NAT类型，降低游戏延迟、提高下载速度](https://blog.17lai.site/posts/9404dba0)
+- [内网域名管理+DNS加速+DNS去广告+魔法上网的终极系统](https://blog.17lai.site/posts/b82c9d4e)
+- [如何创建属于自己的私人资料库与私人搜索引擎](https://blog.17lai.site/posts/8f152670)
+- [PT 工具集，Linux硬链接助手](https://blog.17lai.site/posts/bb600b4b/)
+- [QNAP 修改应用启动顺序](https://blog.17lai.site/posts/77da2f80/)
+- [qnap硬盘移动位置](https://blog.17lai.site/posts/10fee780/)
+- [qnap IO 错误消除](https://blog.17lai.site/posts/5b1993ac/)
+
+### **系统编程系列** 
+
+> 教你从头写操作系统！
+
+- [如何实现自己的操作系统](https://blog.17lai.site/posts/ffcce55d/)
+- [手把手教你构建 C 语言编译器](https://blog.17lai.site/posts/32570315/)
+- [如何编写Linux驱动？](https://blog.17lai.site/posts/ed364362/)
+- [海思MPP&UNF构架源代码级分析](https://blog.17lai.site/posts/13894dce/)
+- [使用 Shell 脚本实现一个简单 Docker](https://blog.17lai.site/posts/90e60aac/)
+
+### **Embeded系列** 
+
+> 一些嵌入式系统技术介绍
+
+- [海思MPP&UNF构架源代码级分析](https://blog.17lai.site/posts/13894dce/)
+- [3G,4G,Wifi选型需求分析及技术简介](https://blog.17lai.site/posts/6b2ba137/)
+- [自动曝光原理](https://blog.17lai.site/posts/509c7bd3/)
+- [ISP 数字图像处理 算法概述、工作原理、架构、处理流程](https://blog.17lai.site/posts/798e6e62/)
+- [QNAP添加man pages](https://blog.17lai.site/posts/ba4ef326/)
+
+### **Devops系列** 
+
+> 教你从0开始搭建一个自己的开源devops系统
+
+- [自建全套开源Devops开发系统](https://blog.17lai.site/posts/ab63eb8f/)
+- [Git介绍以及分支模型图解](https://blog.17lai.site/posts/d32a07a7/)
+- [三万字无坑搭建基于Docker+K8S+GitLab/SVN+Jenkins+Harbor持续集成交付环境](https://blog.17lai.site/posts/39563241/)
+- [DevOps系列---【Jenkinsfile+Dockerfile+nginx+vue】](https://blog.17lai.site/posts/3437994a/)
+- [项目开发管理工具推荐](https://blog.17lai.site/posts/f4c3ad41/)
+- [Gitlab的安装及使用教程完全版](https://blog.17lai.site/posts/acc13b70/)
+- [Gitlab的安装及使用](https://blog.17lai.site/posts/d08eb7b/)
+- [那些有用的Github工具介绍！Action、app、workflow等](https://blog.17lai.site/posts/78c3371/)
+
+### **tools系列** 
+
+- [Doxygen入门教程](https://blog.17lai.site/posts/1acb0edb/)
+- [Vim IDE Docker 以及中文指南](https://blog.17lai.site/posts/647e6265/)
+- [第一次使用VS CODE时你应该指导的一切配置](https://blog.17lai.site/posts/44557ab0/)
+- [winrar去广告和破解](https://blog.17lai.site/posts/3b296307/)
+- [RSS的使用与Tiny Tiny RSS Selfhost自建](https://blog.17lai.site/posts/f4926c88/)
+- [如何创建属于自己的私人资料库与私人搜索引擎](https://blog.17lai.site/posts/8f152670/)
+- [信息时代必备的搜索引擎高级技巧使用指南](https://blog.17lai.site/posts/f12af66/)
+- [如何安装OfficeLTSC2021并KMS破解激活教程](https://blog.17lai.site/posts/c17af2e6/)
+- [windows系统空间清理与速度优化](https://blog.17lai.site/posts/3194c5b3/)
+
+
+
+### **Web系列**
+
+> web技术一直在技术发展最前沿，开放标准，源码众多，不懂web就落伍了
+
+- [浏览器的渲染过程](https://blog.17lai.site/posts/69a052c9/)
+- [在浏览器输入 URL 回车之后发生了什么](https://blog.17lai.site/posts/656a0abb/)
+- [1.5 万字 CSS 基础拾遗（核心知识、常见需求）](https://blog.17lai.site/posts/448f849b/)
+- [http 错误代码表](https://blog.17lai.site/posts/80906b88/)
+- [写了些浏览器增强脚本](https://blog.17lai.site/posts/8f873c0f/)
+- [如何防止密码泄露，保护密码安全？](https://blog.17lai.site/posts/1d87ed2/)
+- [ESNI和加密DNS - 保护信息隐私的最后一块拼图](https://blog.17lai.site/posts/ec2cad2/)
+- [node 项目从构建到使用 jenkins + docker + nginx + mysql + redis 自动化部署](https://blog.17lai.site/posts/68d3867d/)
+- [Github Pages + jekyll 全面介绍极简搭建个人网站和博客](https://blog.17lai.site/posts/1991789c/)
+
+### **数据库系列** 
+
+- [SQL命令使用教程：从入门到精通](https://blog.17lai.site/posts/b2f7c564/)
+- [SQLite使用全面教程：轻量级数据库的终极指南](https://blog.17lai.site/posts/847851a6/)
+- [MySQL命令行使用全面教程：从入门到精通](https://blog.17lai.site/posts/a460ae99/)
+- [MySQL 使用全面指南：从入门到高级实践](https://blog.17lai.site/posts/622f0f0f/)
+- [PostgreSQL 使用全面指南：从入门到企业级应用](https://blog.17lai.site/posts/16bffe88/)
+- [PostgreSQL命令行使用教程：掌握 psql 工具](https://blog.17lai.site/posts/6c6f64dc/)
+- [PostgreSQL 实现原理深度剖析：高性能数据库引擎的核心机制](https://blog.17lai.site/posts/a416ccaa/)
+
+### **Docker系列** 
+
+> 一些docker使用高级技巧
+
+- [Docker使用简明教程](https://blog.17lai.site/posts/42b6a86d/)
+- [使用jeckett,sonarr,iyuu,qt,emby打造全自动追剧流程](https://blog.17lai.site/posts/9912bd5d/)
+- [为知笔记私有化Docker部署](https://blog.17lai.site/posts/1802a8a7/)
+- [Earthly 一个更加强大的镜像构建工具](https://blog.17lai.site/posts/593cc323/)
+- [使用 Shell 脚本实现一个简单 Docker](https://blog.17lai.site/posts/90e60aac/)
+- [如何使用Traefik V2 在Ubuntu20.04 上面来做 Dockers](https://blog.17lai.site/posts/465d2738/) 
+- [通过IPV6访问Qnap NAS中Docker的服务](https://blog.17lai.site/posts/462f1e5c/)
+
+### **项目管理系列** 
+
+> 现代企业管理入门到精通全系列
+
+- [如何做一个完整的硬件项目的项目管理之简明教程](https://blog.17lai.site/posts/d8b1e381/)
+- [几种常用管理模型和方法](https://blog.17lai.site/posts/ca630feb/)
+- [PMBOK指南（第6版）](https://blog.17lai.site/posts/ac0df556/)
+- [如何做好竞品分析](https://blog.17lai.site/posts/99be6dfb/)
+- [一大堆寓意深刻的管理故事锦集](https://blog.17lai.site/posts/a6477052/)
+- [人格类型分类总结归纳](https://blog.17lai.site/posts/ec34b111/) 
+
+### **AI系列**
+
+> 介绍如何使用AI，不会AI就完全落伍啦！
+
+  [**AI 分类 RSS 订阅**](https://blog.17lai.site/categories/ai/atom.xml)
+
+  - [深度学习之视频人脸识别系列](https://blog.17lai.site/posts/a0f3c838/)
+  - [中国区注册ChatGPT并使用全流程图解教程](https://blog.17lai.site/posts/1336c869/)
+  - [2026 年免费 LLM API 完全指南：13 家提供商 + AI 网关高级玩法 + 本地模型](https://blog.17lai.site/posts/9h3d325f/)
+  - [关于普朗克概率的的讨论](https://blog.17lai.site/posts/60146716/)
+  - [信用卡对个人、社会以及国家的影响——ChatGPT辅助编写](https://blog.17lai.site/posts/b648bb9c/)
+
+### **笔记系列**
+
+> 教你如何记笔记
+
+  [**Note分类RSS订阅**](https://blog.17lai.site/categories/note/atom.xml)
+
+  - [完美笔记进化论](https://blog.17lai.site/posts/a8535f26/)
+  - [hexo博客博文撰写篇之完美笔记大攻略终极完全版](https://blog.17lai.site/posts/253706ff/)
+  - [Joplin入门指南&实践方案](https://blog.17lai.site/posts/e6086437/)
+  - [替代Evernote免费开源笔记Joplin-网盘同步笔记历史版本Markdown可视化](https://blog.17lai.site/posts/45f878cd/)
+  - [Joplin 插件以及其Markdown语法。All in One!](https://blog.17lai.site/posts/92d347d6/)
+  - [Joplin 插件使用推荐](https://blog.17lai.site/posts/e3ee7f8b/)
+  - [为知笔记私有化Docker部署](https://blog.17lai.site/posts/1802a8a7/)
+
+### **Gitbook使用系列**
+
+> 教你如何写一个完整，完善的电子书
+
+  [Gitbook分类RSS订阅](https://blog.17lai.site/categories/gitbook/atom.xml)
+
+  - [GitBook+GitLab撰写发布技术文档-Part1:GitBook篇](https://blog.17lai.site/posts/7fe86002/)
+  - [GitBook+GitLab撰写发布技术文档-Part2:GitLab篇](https://blog.17lai.site/posts/7790e989/)
+  - [自己动手制作电子书的最佳方式（支持PDF、ePub、mobi等格式）](https://blog.17lai.site/posts/d6bad1e5/)
+
+### **Gitlab 使用系列**
+
+> 教你如何搭建一个私有的github
+
+  [**Gitlab RSS 分类订阅**](https://blog.17lai.site/categories/gitlab/atom.xml)
+
+  - [**Gitlab的安装及使用教程完全版**](https://blog.17lai.site/posts/acc13b70/)
+  - [破解Gitlab EE](https://blog.17lai.site/posts/29a820b3/)
+  - [Gitlab的安装及使用](https://blog.17lai.site/posts/d08eb7b/)
+  - [CI/CD与Git Flow与GitLab](https://blog.17lai.site/posts/1879721e/)
+
+### 文化历史系列
+
+> 一些中国传统文化介绍
+
+- [易学入门](https://blog.17lai.site/posts/1accbe50/)
+- [阴历、阳历、阴阳和历的来龙去脉](https://blog.17lai.site/posts/5109c184/)
+- [中西医的优缺点](https://blog.17lai.site/posts/a2a43504/)
+
+### **健康系列**  
+
+> 健康是一切生活工作的基础盘
+
+- [如何将身体恢复到完美状态](https://blog.17lai.site/posts/b41201e6/)
+- [健身从基础常识到实践指导！](https://blog.17lai.site/posts/4159851c/)
+- [中西医的优缺点](https://blog.17lai.site/posts/a2a43504/)
+
